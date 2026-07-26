@@ -1,0 +1,110 @@
+export const SCHEDULE_DATA = [
+  {
+    id: "sch-1",
+    sport: "Cricket",
+    event: "Prelims Group A Match 1",
+    team1: "St. Xavier's Titans",
+    team2: "Loyola Strikers",
+    date: "2026-07-28",
+    time: "08:00 AM",
+    venue: "Main Stadium Ground 1",
+    status: "Upcoming",
+    gender: "Men"
+  },
+  {
+    id: "sch-2",
+    sport: "Football",
+    event: "Quarter Final 1",
+    team1: "Christ University FC",
+    team2: "BITS Pilani Eagles",
+    date: "2026-07-28",
+    time: "10:30 AM",
+    venue: "Turf Football Field A",
+    status: "Upcoming",
+    gender: "Men"
+  },
+  {
+    id: "sch-3",
+    sport: "Badminton",
+    event: "Womens Singles Round 16",
+    team1: "Ananya Roy (IIT)",
+    team2: "Priya S. (SRM)",
+    date: "2026-07-28",
+    time: "11:00 AM",
+    venue: "Badminton Court 3",
+    status: "Upcoming",
+    gender: "Women"
+  },
+  {
+    id: "sch-4",
+    sport: "Table Tennis",
+    event: "Mens Doubles Semi Final",
+    team1: "MIT Pair A",
+    team2: "VIT Pair B",
+    date: "2026-07-29",
+    time: "09:30 AM",
+    venue: "Indoor Complex Hall A",
+    status: "Upcoming",
+    gender: "Men"
+  },
+  {
+    id: "sch-5",
+    sport: "Chess",
+    event: "Round 1 Swiss Rapid",
+    team1: "All Open Participants",
+    team2: "N/A",
+    date: "2026-07-29",
+    time: "02:00 PM",
+    venue: "Central Auditorium",
+    status: "Upcoming",
+    gender: "Mixed"
+  },
+  {
+    id: "sch-6",
+    sport: "Basketball",
+    event: "Group B Match 3",
+    team1: "Loyola Ballers",
+    team2: "St. Joseph Warriors",
+    date: "2026-07-29",
+    time: "04:30 PM",
+    venue: "Outdoor Court 1",
+    status: "Upcoming",
+    gender: "Men"
+  },
+  {
+    id: "sch-7",
+    sport: "Kabaddi",
+    event: "Knockout Quarter Final",
+    team1: "Panjab Uni Raiders",
+    team2: "Delhi Uni Defenders",
+    date: "2026-07-30",
+    time: "10:00 AM",
+    venue: "Indoor Mat 1",
+    status: "Upcoming",
+    gender: "Men"
+  },
+  {
+    id: "sch-8",
+    sport: "Athletics",
+    event: "100m Sprint Men & Women Finals",
+    team1: "Top 8 Qualifiers",
+    team2: "N/A",
+    date: "2026-07-30",
+    time: "03:00 PM",
+    venue: "Synthetic Track 100m Straight",
+    status: "Upcoming",
+    gender: "Mixed"
+  },
+  {
+    id: "sch-9",
+    sport: "Tug of War",
+    event: "Grand Final",
+    team1: "St. Xavier Heavyweights",
+    team2: "IIT Giants",
+    date: "2026-07-31",
+    time: "04:00 PM",
+    venue: "Main Central Grass Field",
+    status: "Upcoming",
+    gender: "Men"
+  }
+];
