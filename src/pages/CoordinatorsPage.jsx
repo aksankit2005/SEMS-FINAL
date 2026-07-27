@@ -26,7 +26,7 @@ export const CoordinatorsPage = () => {
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-12">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wider mb-3">
-            <Users className="w-4 h-4 text-orange-500" /> SEMS Organizing Directory
+            <Users className="w-4 h-4 text-orange-500" /> APEX Organizing Directory
           </div>
           <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight">
             Tournament <span className="bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent">Coordinators</span>

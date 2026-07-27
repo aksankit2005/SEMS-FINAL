@@ -13,7 +13,7 @@ export const AuthProvider = ({ children }) => {
     const saved = localStorage.getItem('sems_registrations');
     return saved ? JSON.parse(saved) : [
       {
-        receiptId: "REC-SEMS-88912",
+        receiptId: "REC-APEX-88912",
         sportName: "Badminton",
         category: "Mens Singles",
         participantName: "Rahul Sharma",
@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
         feePaid: 400,
         status: "CONFIRMED",
         date: "2026-07-26",
-        passCode: "PASS-BADM-991"
+        passCode: "ST-XAVIERS-PASS-BADM-991"
       }
     ];
   });

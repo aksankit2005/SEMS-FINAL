@@ -244,16 +244,29 @@ export const PlayerDetailsCard = ({
           disabled={isFirstPlayer && sameAsCaptain}
         />
 
-        <div className="sm:col-span-2">
-          <SelectField
-            label="Gender"
-            value={player.gender}
-            onChange={(e) => handleChange('gender', e.target.value)}
-            options={genders}
-            required
-            error={errors.gender}
-          />
-        </div>
+        <InputField
+          label="Father's / Mother's Name"
+          value={player.fatherName || ''}
+          onChange={(e) => handleChange('fatherName', e.target.value)}
+          placeholder="e.g. Guardian Name"
+          icon={User}
+        />
+
+        <InputField
+          label="Date of Birth"
+          type="date"
+          value={player.dob || ''}
+          onChange={(e) => handleChange('dob', e.target.value)}
+        />
+
+        <SelectField
+          label="Gender"
+          value={player.gender}
+          onChange={(e) => handleChange('gender', e.target.value)}
+          options={genders}
+          required
+          error={errors.gender}
+        />
       </div>
     </div>
   );

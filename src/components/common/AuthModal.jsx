@@ -23,7 +23,7 @@ export const AuthModal = () => {
       name: role === 'admin' ? 'Dr. Director Admin' : email.split('@')[0],
       email: email,
       role: role,
-      college: role === 'admin' ? 'SEMS Admin Council' : 'St. Xavier\'s College'
+      college: role === 'admin' ? 'APEX Admin Council' : 'St. Xavier\'s College'
     };
 
     login(userData);
@@ -33,7 +33,7 @@ export const AuthModal = () => {
 
   const handleQuickDemo = (demoRole) => {
     const userData = demoRole === 'admin' 
-      ? { name: 'Dr. Director Admin', email: 'admin@sems.edu', role: 'admin', college: 'SEMS Central Sports Directorate' }
+      ? { name: 'Dr. Director Admin', email: 'admin@apex.edu', role: 'admin', college: 'APEX Central Sports Directorate' }
       : { name: 'Rahul Sharma', email: 'rahul.student@stxaviers.edu', role: 'student', college: 'St. Xavier\'s College' };
     
     login(userData);
@@ -49,13 +49,23 @@ export const AuthModal = () => {
         <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-500">
-              <Sparkles className="w-5 h-5" />
+          <div className="flex items-center gap-3">
+            <img 
+              src="/logo-dark.png" 
+              alt="APEX Logo" 
+              className="hidden dark:block h-10 w-auto object-contain"
+            />
+            <img 
+              src="/logo-light.png" 
+              alt="APEX Logo" 
+              className="block dark:hidden h-10 w-auto object-contain"
+            />
+            <div>
+              <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                APEX Account Portal
+              </h2>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Spirit of Sporting Excellence</p>
             </div>
-            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-              SEMS Account Portal
-            </h2>
           </div>
           <button
             onClick={() => setIsAuthModalOpen(false)}
@@ -105,7 +115,7 @@ export const AuthModal = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={role === 'admin' ? 'admin@sems.edu' : 'athlete@college.edu'}
+                placeholder={role === 'admin' ? 'admin@apex.edu' : 'athlete@college.edu'}
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 transition text-sm"
               />
             </div>

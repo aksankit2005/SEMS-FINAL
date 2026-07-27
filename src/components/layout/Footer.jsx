@@ -13,7 +13,7 @@ export const Footer = () => {
       addToast('Please enter a valid email address', 'error');
       return;
     }
-    addToast('Subscribed to SEMS Tournament Alerts!', 'success');
+    addToast('Subscribed to APEX Tournament Alerts!', 'success');
     setNewsletterEmail('');
   };
 
@@ -29,15 +29,22 @@ export const Footer = () => {
           {/* Brand Col */}
           <div className="lg:col-span-2 space-y-4">
             <Link to="/" className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-emerald-500 text-slate-950 shadow-lg shadow-cyan-500/30">
-                <Trophy className="w-5 h-5 text-slate-950" />
-              </div>
+              <img 
+                src="/logo-dark.png" 
+                alt="APEX Logo" 
+                className="hidden dark:block h-10 w-auto object-contain"
+              />
+              <img 
+                src="/logo-light.png" 
+                alt="APEX Logo" 
+                className="block dark:hidden h-10 w-auto object-contain"
+              />
               <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                SEMS <span className="text-cyan-550 dark:text-cyan-400">2026</span>
+                APEX <span className="text-cyan-550 dark:text-cyan-400">2026</span>
               </span>
             </Link>
             <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-sm">
-              The premier inter-college Sports Event Management System. Empowering athletes, live scoring, fixtures, and championship leaderboard tracking nationwide.
+              Spirit of Sporting Excellence. The premier inter-college Sports Event Management System. Empowering athletes, live scoring, fixtures, and championship leaderboard tracking nationwide.
             </p>
             <div className="flex items-center gap-3 pt-2">
               <a href="#" className="p-2.5 rounded-xl bg-slate-100 hover:bg-cyan-500/15 dark:bg-slate-900 dark:hover:bg-cyan-500/20 text-slate-600 hover:text-cyan-600 dark:text-slate-350 dark:hover:text-cyan-400 transition" title="Global Network">
@@ -113,7 +120,7 @@ export const Footer = () => {
 
         {/* Bottom bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© 2026 SEMS - Sports Event Management System. All rights reserved.</p>
+          <p>© 2026 APEX - Spirit of Sporting Excellence. All rights reserved.</p>
           <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
             <span>Engineered for modern sports platforms</span>
             <ShieldCheck className="w-4 h-4 text-emerald-400" />

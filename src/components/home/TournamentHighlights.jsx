@@ -105,7 +105,7 @@ export const TournamentHighlights = () => {
 
             <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 text-center">
               <span className="text-xs text-slate-400">
-                Official notices broadcast by SEMS Sports Directorate.
+                Official notices broadcast by APEX Sports Directorate.
               </span>
             </div>
           </div>

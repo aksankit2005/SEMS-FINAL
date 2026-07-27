@@ -52,23 +52,17 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
                 <Menu className="w-5 h-5" />
               </button>
 
-              <Link to="/" className="flex items-center gap-3 group">
-                <div className="flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-orange-500 text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-                  <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                </div>
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-blue-600 to-orange-500 dark:from-blue-400 dark:to-orange-400 bg-clip-text text-transparent">
-                      SEMS
-                    </span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                      2026
-                    </span>
-                  </div>
-                  <span className="text-[9px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase -mt-1 hidden sm:inline">
-                    Sports Event Platform
-                  </span>
-                </div>
+              <Link to="/" className="flex items-center group">
+                <img 
+                  src="/logo-dark.png" 
+                  alt="APEX Logo" 
+                  className="hidden dark:block h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
+                />
+                <img 
+                  src="/logo-light.png" 
+                  alt="APEX Logo" 
+                  className="block dark:hidden h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
+                />
               </Link>
             </div>
 

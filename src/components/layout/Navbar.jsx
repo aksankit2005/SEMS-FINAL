@@ -32,24 +32,17 @@ export const Navbar = () => {
           <div className="flex items-center justify-between h-20">
             
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-3 group">
-              <div className="relative flex items-center justify-center w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-500 via-emerald-500 to-teal-600 text-slate-950 shadow-lg shadow-cyan-500/25 group-hover:scale-105 transition-transform duration-300">
-                <Trophy className="w-6 h-6 text-slate-950" />
-                <div className="absolute inset-0 rounded-2xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-1">
-                  <span className="text-2xl font-black tracking-tight bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600 dark:from-cyan-400 dark:via-teal-400 dark:to-emerald-400 bg-clip-text text-transparent">
-                    SEMS
-                  </span>
-                  <span className="text-xs px-1.5 py-0.5 rounded-full font-bold bg-cyan-500/10 text-cyan-500 border border-cyan-500/20">
-                    2026
-                  </span>
-                </div>
-                <span className="text-[10px] font-semibold tracking-wider text-slate-500 dark:text-slate-400 uppercase -mt-1">
-                  Sports Event System
-                </span>
-              </div>
+            <Link to="/" className="flex items-center group">
+              <img 
+                src="/logo-dark.png" 
+                alt="APEX Logo" 
+                className="hidden dark:block h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
+              />
+              <img 
+                src="/logo-light.png" 
+                alt="APEX Logo" 
+                className="block dark:hidden h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
+              />
             </Link>
 
             {/* Desktop Navigation Links */}

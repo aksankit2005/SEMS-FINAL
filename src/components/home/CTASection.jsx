@@ -15,7 +15,7 @@ export const CTASection = () => {
         </div>
 
         <h2 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-tight">
-          REGISTER YOUR COLLEGE SQUAD FOR <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">SEMS 2026</span>
+          REGISTER YOUR COLLEGE SQUAD FOR <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">APEX 2026</span>
         </h2>
 
         <p className="text-slate-600 dark:text-slate-300 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">

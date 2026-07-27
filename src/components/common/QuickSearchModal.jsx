@@ -186,7 +186,7 @@ export const QuickSearchModal = ({ isOpen, onClose }) => {
         {/* Footer info */}
         <div className="px-4 py-2 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-400 flex items-center justify-between">
           <span>Press <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono">ESC</kbd> to close</span>
-          <span>SEMS Command Palette</span>
+          <span>APEX Command Palette</span>
         </div>
       </div>
     </div>

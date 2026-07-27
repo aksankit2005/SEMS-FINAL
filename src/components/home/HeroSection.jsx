@@ -22,13 +22,23 @@ export const HeroSection = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
         
         {/* Championship Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 backdrop-blur-md mb-8 shadow-xl animate-float">
+        <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 backdrop-blur-md mb-8 shadow-xl animate-float">
+          <img 
+            src="/logo-dark.png" 
+            alt="APEX Logo" 
+            className="hidden dark:block h-5 w-auto object-contain"
+          />
+          <img 
+            src="/logo-light.png" 
+            alt="APEX Logo" 
+            className="block dark:hidden h-5 w-auto object-contain"
+          />
           <span className="flex h-2 w-2 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
           </span>
           <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-            SEMS 2026 Inter-College Championship
+            APEX 2026 Inter-College Championship
           </span>
           <span className="text-slate-300 dark:text-slate-600">|</span>
           <span className="text-xs text-slate-500 dark:text-slate-300">Jul 28 - Aug 02</span>

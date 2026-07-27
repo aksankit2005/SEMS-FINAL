@@ -8,7 +8,7 @@ export const ANNOUNCEMENTS_DATA = [
     isImportant: true,
     author: "Organizing Committee",
     summary: "All participating college teams are requested to assemble at the Main Stadium in official university kits by 8:30 AM sharp for march-past rehearsal.",
-    content: "The Grand Inauguration of SEMS 2026 will take place tomorrow at the Main Stadium Ground. The Vice-Chancellor and Olympic Guest of Honor will address the gathering. Mandatory attendance for team captains."
+    content: "The Grand Inauguration of APEX 2026 will take place tomorrow at the Main Stadium Ground. The Vice-Chancellor and Olympic Guest of Honor will address the gathering. Mandatory attendance for team captains."
   },
   {
     id: "ann-2",
@@ -30,7 +30,7 @@ export const ANNOUNCEMENTS_DATA = [
     isImportant: false,
     author: "Indoor Games Committee",
     summary: "Owing to popular demand, late spot registrations for FIDE Blitz Chess will remain open till 11:59 PM tonight.",
-    content: "Both individual and college team nominations will be accepted via the SEMS online portal. Cash prize pool boosted to ₹50,000."
+    content: "Both individual and college team nominations will be accepted via the APEX online portal. Cash prize pool boosted to ₹50,000."
   },
   {
     id: "ann-4",
@@ -50,7 +50,7 @@ export const ANNOUNCEMENTS_DATA = [
     date: "2026-07-25",
     time: "09:00 AM",
     isImportant: true,
-    author: "SEMS Health Board",
+    author: "APEX Health Board",
     summary: "Dedicated sports physiotherapists, ambulances, and emergency medical stations are active near Main Ground and Indoor Complex.",
     content: "Emergency Helpline: +91 98765 00911. Hydration booths providing glucose and electrolytes are set up near every match court."
   }

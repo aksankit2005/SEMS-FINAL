@@ -4,14 +4,13 @@ import { User, ShieldCheck, CreditCard, Ticket } from 'lucide-react';
 export const RegistrationStepper = ({ currentStep }) => {
   const steps = [
     { num: 1, label: 'Athlete Details', icon: User },
-    { num: 2, label: 'Declaration & Policy', icon: ShieldCheck },
-    { num: 3, label: 'Payment Verification', icon: CreditCard },
-    { num: 4, label: 'Receipt & Pass', icon: Ticket }
+    { num: 2, label: 'Declaration & Payment', icon: CreditCard },
+    { num: 3, label: 'Receipt & Pass', icon: Ticket }
   ];
 
   return (
     <div className="mb-10 bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-soft">
-      <div className="grid grid-cols-4 gap-2 text-center text-[10px] sm:text-xs font-bold">
+      <div className="grid grid-cols-3 gap-2 text-center text-[10px] sm:text-xs font-bold">
         {steps.map((s) => {
           const Icon = s.icon;
           const isActive = currentStep === s.num;

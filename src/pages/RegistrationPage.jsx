@@ -13,8 +13,9 @@ import { PlayerDetailsForm, validateIndividualForm } from '../components/registr
 import { TeamDetailsForm, validateTeamForm } from '../components/registration/TeamDetailsForm';
 import { PaymentForm } from '../components/registration/PaymentForm';
 import { RegistrationReceipt } from '../components/registration/RegistrationReceipt';
+import { generateCollegePassCode } from '../utils/pdfExporter';
 
-const MOCK_RECEIPT_IMAGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'><rect width='100%25' height='100%25' fill='%230f172a'/><text x='50%25' y='35%25' fill='%2310b981' font-family='sans-serif' font-size='22' font-weight='black' text-anchor='middle'>SEMS 2026</text><text x='50%25' y='50%25' fill='%23ffffff' font-family='sans-serif' font-size='14' font-weight='bold' text-anchor='middle'>MOCK PAYMENT SUCCESSFUL</text><text x='50%25' y='65%25' fill='%2364748b' font-family='sans-serif' font-size='10' font-weight='medium' text-anchor='middle'>UTR: TXN-SEMS-MOCK-998</text><rect x='20' y='220' width='260' height='50' fill='%231e293b' rx='10'/><text x='50%25' y='250%25' fill='%2338bdf8' font-family='sans-serif' font-size='12' font-weight='bold' text-anchor='middle'>VERIFIED DEMO RECEIPT</text></svg>";
+const MOCK_RECEIPT_IMAGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'><rect width='100%25' height='100%25' fill='%230f172a'/><text x='50%25' y='35%25' fill='%2310b981' font-family='sans-serif' font-size='22' font-weight='black' text-anchor='middle'>APEX 2026</text><text x='50%25' y='50%25' fill='%23ffffff' font-family='sans-serif' font-size='14' font-weight='bold' text-anchor='middle'>MOCK PAYMENT SUCCESSFUL</text><text x='50%25' y='65%25' fill='%2364748b' font-family='sans-serif' font-size='10' font-weight='medium' text-anchor='middle'>UTR: TXN-APEX-MOCK-998</text><rect x='20' y='220' width='260' height='50' fill='%231e293b' rx='10'/><text x='50%25' y='250%25' fill='%2338bdf8' font-family='sans-serif' font-size='12' font-weight='bold' text-anchor='middle'>VERIFIED DEMO RECEIPT</text></svg>";
 
 export const RegistrationPage = () => {
   const [searchParams] = useSearchParams();
@@ -26,7 +27,7 @@ export const RegistrationPage = () => {
 
   // Load configuration and merge with existing sports data
   const [sportsList] = useState(() => {
-    return SPORTS_DATA.map((sport) => {
+    const list = SPORTS_DATA.map((sport) => {
       const config = SPORTS_CONFIG[sport.id] || {
         startDate: "2026-07-20",
         endDate: "2026-08-15",
@@ -38,10 +39,41 @@ export const RegistrationPage = () => {
         ...config
       };
     });
+
+    const gullyCricket = {
+      id: "gully-cricket",
+      name: "Gully Cricket",
+      category: "Outdoor",
+      type: "Team (5-8 Players)",
+      tagline: "Nostalgic Gully Rules & Intense Matchups",
+      description: "Fast-paced, high-fun gully cricket with unique local rules. Bring your team and relive childhood memories!",
+      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYTENZs6EFVZgdCAhlvuzBiLHu0Pty9fKyTRI3Q5cuhQ&s=10",
+      icon: "Trophy",
+      status: "Open",
+      participantsCount: 8,
+      maxParticipants: 16,
+      entryFee: 1000,
+      teamSize: "5 - 8 Players",
+      venue: "Central Ground B",
+      rules: [
+        "Minimum 5 players, maximum 8 players per team.",
+        "Underarm bowling only.",
+        "One-tip out option valid as per gully rules.",
+        "Tennis balls will be used."
+      ],
+      schedule: "Day 3 - 09:30 AM onwards",
+      startDate: "2026-07-01",
+      endDate: "2026-08-30",
+      minPlayers: 5,
+      maxPlayers: 8
+    };
+
+    return [...list, gullyCricket];
   });
 
   const [activeSport, setActiveSport] = useState(null);
-  const [step, setStep] = useState(1); // 1: Details, 2: Payment, 3: Receipt
+  const [step, setStep] = useState(1); // 1: Details, 2: Declaration & Payment, 3: Receipt
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   const [formData, setFormData] = useState({
     collegeName: '',
@@ -52,9 +84,13 @@ export const RegistrationPage = () => {
     eventType: 'Singles', // TT/Badminton toggle: Singles or Doubles
     selectedEvents: [],   // Athletics
     roster: [],
-    utrNumber: 'TXN-SEMS-MOCK-998',
-    screenshot: MOCK_RECEIPT_IMAGE,
-    screenshotName: 'mock_payment_receipt.png',
+    paymentMethod: 'upi',
+    upiId: '',
+    cardNumber: '',
+    cardHolder: '',
+    cardExpiry: '',
+    cardCvv: '',
+    selectedBank: '',
     declarationAccepted: false,
     declarationTimestamp: null
   });
@@ -91,9 +127,13 @@ export const RegistrationPage = () => {
         eventType: activeSport.id === 'table-tennis' || activeSport.id === 'badminton' ? 'Singles' : 'Individual',
         selectedEvents: [],
         roster: [],
-        utrNumber: 'TXN-SEMS-MOCK-998',
-        screenshot: MOCK_RECEIPT_IMAGE,
-        screenshotName: 'mock_payment_receipt.png',
+        paymentMethod: 'upi',
+        upiId: '',
+        cardNumber: '',
+        cardHolder: '',
+        cardExpiry: '',
+        cardCvv: '',
+        selectedBank: '',
         declarationAccepted: false,
         declarationTimestamp: null
       });
@@ -120,56 +160,17 @@ export const RegistrationPage = () => {
     }
   };
 
-  // Process payment files upload
-  const handleFileChange = (file) => {
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        addToast('Please upload an image file (PNG/JPG/JPEG/WEBP)', 'error');
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        addToast('File is too large (maximum size is 5MB)', 'error');
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setFormData((prev) => ({
-          ...prev,
-          screenshot: event.target.result,
-          screenshotName: file.name
-        }));
-        if (errors.screenshot) {
-          setErrors((prev) => ({ ...prev, screenshot: null }));
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleRemoveFile = () => {
-    setFormData((prev) => ({
-      ...prev,
-      screenshot: null,
-      screenshotName: ''
-    }));
-  };
-
   // Step 1 Validation
   const handleDetailsSubmit = () => {
     let formErrors = {};
-    const isTeamLayout = 
-      ['football', 'basketball', 'volleyball', 'cricket', 'kabaddi', 'tug-of-war', 'kho-kho'].includes(activeSport.id) ||
+    const isTeamLayout =
+      ['football', 'basketball', 'volleyball', 'cricket', 'kabaddi', 'tug-of-war', 'kho-kho', 'gully-cricket'].includes(activeSport.id) ||
       ((activeSport.id === 'table-tennis' || activeSport.id === 'badminton') && formData.eventType === 'Doubles');
 
     if (isTeamLayout) {
       formErrors = validateTeamForm(activeSport, formData);
     } else {
       formErrors = validateIndividualForm(activeSport, formData);
-    }
-
-    if (!formData.declarationAccepted) {
-      formErrors.declarationAccepted = 'Please accept the declaration and verification policy';
     }
 
     if (Object.keys(formErrors).length > 0) {
@@ -181,73 +182,106 @@ export const RegistrationPage = () => {
 
     setErrors({});
     setStep(2);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Step 2 Submission (Payment)
+  // Step 2 Submission (Payment Gateway & Declaration)
   const handlePaymentSubmit = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
 
-    // Security check to prevent developer tool bypass
     if (!formData.declarationAccepted) {
-      addToast('Security Block: You must accept the declaration and verification policy.', 'error');
-      setStep(1);
+      setErrors((prev) => ({ ...prev, declarationAccepted: 'Please accept the declaration and verification policy' }));
+      addToast('Please accept the declaration and verification policy.', 'error');
       return;
     }
 
     const paymentErrors = {};
-    if (!formData.utrNumber?.trim()) {
-      paymentErrors.utrNumber = 'Transaction ID / UTR is required';
-    } else if (formData.utrNumber.trim().length < 6) {
-      paymentErrors.utrNumber = 'Transaction ID must be at least 6 characters';
-    }
+    const method = formData.paymentMethod || 'upi';
 
-    if (!formData.screenshot) {
-      paymentErrors.screenshot = 'Payment screenshot receipt is required';
+    if (method === 'upi') {
+      if (!formData.upiId?.trim()) {
+        paymentErrors.upiId = 'UPI ID is required';
+      } else if (!formData.upiId.includes('@')) {
+        paymentErrors.upiId = 'Invalid UPI ID format (must contain @)';
+      }
+    } else if (method === 'card') {
+      if (!formData.cardHolder?.trim()) {
+        paymentErrors.cardHolder = 'Cardholder name is required';
+      }
+      if (!formData.cardNumber?.trim() || formData.cardNumber.replace(/\s/g, '').length < 16) {
+        paymentErrors.cardNumber = 'Valid 16-digit card number is required';
+      }
+      if (!formData.cardExpiry?.trim() || !/^\d{2}\/\d{2}$/.test(formData.cardExpiry)) {
+        paymentErrors.cardExpiry = 'Expiry date must be MM/YY';
+      }
+      if (!formData.cardCvv?.trim() || formData.cardCvv.length < 3) {
+        paymentErrors.cardCvv = 'CVV is required (3 digits)';
+      }
+    } else if (method === 'netbanking') {
+      if (!formData.selectedBank) {
+        paymentErrors.selectedBank = 'Please select a bank';
+      }
     }
 
     if (Object.keys(paymentErrors).length > 0) {
       setErrors(paymentErrors);
-      addToast('Please complete all payment fields correctly.', 'error');
+      addToast('Please correct the payment errors before proceeding.', 'error');
       return;
     }
 
-    // Auto-generate details & passcode
-    const receiptId = `REC-SEMS-${Math.floor(10000 + Math.random() * 90000)}`;
-    const passCode = `PASS-${activeSport.name.substring(0, 4).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
+    // Simulate gateway processing (1.5s delay)
+    setIsProcessingPayment(true);
 
-    let eventCategory = activeSport.category;
-    if (activeSport.id === 'table-tennis' || activeSport.id === 'badminton') {
-      eventCategory = `${activeSport.category} (${formData.eventType})`;
-    } else if (activeSport.id === 'athletics') {
-      eventCategory = `Athletics (${formData.selectedEvents.join(', ')})`;
-    }
+    setTimeout(() => {
+      setIsProcessingPayment(false);
 
-    const receipt = {
-      receiptId,
-      sportName: activeSport.name,
-      category: eventCategory,
-      participantName: formData.captainName,
-      college: formData.collegeName,
-      email: formData.captainEmail,
-      phone: formData.captainPhone,
-      teamName: formData.teamName || '',
-      feePaid: activeSport.entryFee,
-      rosterCount: formData.roster.length,
-      roster: formData.roster,
-      utrNumber: formData.utrNumber,
-      screenshotName: formData.screenshotName,
-      screenshot: formData.screenshot,
-      declarationAccepted: formData.declarationAccepted,
-      declarationTimestamp: formData.declarationTimestamp,
-      status: 'PENDING APPROVAL',
-      date: new Date().toLocaleDateString('en-US') + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-      passCode
-    };
+      // Auto-generate details & passcode starting with College Name
+      const receiptId = `REC-APEX-${Math.floor(10000 + Math.random() * 90000)}`;
+      const firstRosterPlayer = formData.roster && formData.roster[0];
+      const selectedCollegeName = formData.collegeName || (firstRosterPlayer && firstRosterPlayer.college) || 'ST XAVIERS COLLEGE';
+      const passCode = generateCollegePassCode(selectedCollegeName, activeSport.name);
 
-    setCompletedReceipt(receipt);
-    addRegistration(receipt);
-    addToast('Registration Passed Successfully!', 'success');
-    setStep(3);
+      let eventCategory = activeSport.category;
+      if (activeSport.id === 'table-tennis' || activeSport.id === 'badminton') {
+        eventCategory = `${activeSport.category} (${formData.eventType})`;
+      } else if (activeSport.id === 'athletics') {
+        eventCategory = `Athletics (${formData.selectedEvents.join(', ')})`;
+      }
+
+      const utrNumber = `TXN-GW-${Math.floor(100000000000 + Math.random() * 900000000000)}`;
+
+      const receipt = {
+        receiptId,
+        sportName: activeSport.name,
+        category: eventCategory,
+        participantName: formData.captainName || (firstRosterPlayer && firstRosterPlayer.name) || 'Lead Athlete',
+        fatherName: (firstRosterPlayer && firstRosterPlayer.fatherName) || formData.fatherName || 'N/A',
+        gender: (firstRosterPlayer && firstRosterPlayer.gender) || formData.gender || 'Male',
+        dob: (firstRosterPlayer && firstRosterPlayer.dob) || formData.dob || '2004-05-15',
+        college: selectedCollegeName,
+        districtState: selectedCollegeName,
+        email: formData.captainEmail || (firstRosterPlayer && firstRosterPlayer.email) || 'athlete@college.edu',
+        phone: formData.captainPhone || (firstRosterPlayer && firstRosterPlayer.phone) || '+91 98765 43210',
+        teamName: formData.teamName || '',
+        feePaid: activeSport.entryFee,
+        rosterCount: formData.roster.length,
+        roster: formData.roster,
+        utrNumber,
+        screenshotName: 'gateway_processed.png',
+        screenshot: MOCK_RECEIPT_IMAGE,
+        declarationAccepted: formData.declarationAccepted,
+        declarationTimestamp: formData.declarationTimestamp,
+        status: 'PAID',
+        date: new Date().toLocaleDateString('en-US') + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        passCode
+      };
+
+      setCompletedReceipt(receipt);
+      addRegistration(receipt);
+      addToast('Registration & Payment Successful!', 'success');
+      setStep(3);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 1500);
   };
 
   // Handle Event Type Singles/Doubles toggle inside Details Step
@@ -277,22 +311,20 @@ export const RegistrationPage = () => {
               <button
                 type="button"
                 onClick={() => handleEventTypeToggle('Singles')}
-                className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 font-bold text-xs transition ${
-                  formData.eventType === 'Singles'
+                className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 font-bold text-xs transition ${formData.eventType === 'Singles'
                     ? 'border-blue-600 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-extrabold'
                     : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400'
-                }`}
+                  }`}
               >
                 <User className="w-4 h-4" /> Singles (1 Player)
               </button>
               <button
                 type="button"
                 onClick={() => handleEventTypeToggle('Doubles')}
-                className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 font-bold text-xs transition ${
-                  formData.eventType === 'Doubles'
+                className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 font-bold text-xs transition ${formData.eventType === 'Doubles'
                     ? 'border-blue-600 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-extrabold'
                     : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400'
-                }`}
+                  }`}
               >
                 <Users className="w-4 h-4" /> Doubles (2 Players)
               </button>
@@ -343,7 +375,7 @@ export const RegistrationPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white py-12 transition-colors">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Header */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wider mb-2">
@@ -362,7 +394,7 @@ export const RegistrationPage = () => {
                 🟢 Sports Status Dashboard
               </h2>
             </div>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {sportsList.map((sport) => (
                 <SportCard
@@ -376,9 +408,9 @@ export const RegistrationPage = () => {
         ) : (
           /* ACTIVE STEPS WIZARD */
           <div className="space-y-6">
-            
+
             {/* Back to selector link */}
-            {step < 4 && (
+            {step < 3 && (
               <button
                 onClick={handleBackToSports}
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-blue-500 dark:text-slate-400 transition"
@@ -392,7 +424,7 @@ export const RegistrationPage = () => {
 
             {/* Wizard Body Card */}
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-10 border border-slate-200 dark:border-slate-800 shadow-xl">
-              
+
               {/* STEP 1: DETAILS */}
               {step === 1 && (
                 <div className="space-y-6">
@@ -402,42 +434,46 @@ export const RegistrationPage = () => {
                       onClick={handleDetailsSubmit}
                       className="px-8 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-sm shadow-md shadow-blue-500/20 flex items-center gap-2 transition active:scale-[0.98]"
                     >
-                      <span>Proceed to Declaration</span>
+                      <span>Proceed to Payment</span>
                       <Trophy className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* STEP 2: DECLARATION & VERIFICATION */}
+              {/* STEP 2: DECLARATION & PAYMENT GATEWAY */}
               {step === 2 && (
-                <div className="space-y-6">
-                  {/* Card 1: Verification & Approval Information */}
-                  <div className="p-5 rounded-2xl border-2 border-blue-500/30 bg-blue-500/5 dark:bg-blue-500/10 text-slate-800 dark:text-blue-100 flex items-start gap-3">
-                    <Info className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                    <div className="text-xs space-y-2">
-                      <h4 className="font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">Verification & Approval</h4>
-                      <p className="leading-relaxed">
-                        After submission of the registration form, the participant's details will be forwarded to the respective Department/College for verification. Registration will be considered successful only after approval from the Department/College.
-                      </p>
-                      <p className="leading-relaxed">
-                        If the Department/College raises any objection regarding the participant's eligibility or any other relevant matter, the registration will be rejected. In such cases, the registration fee, if already paid, will be refunded to the participant.
-                      </p>
+                <form onSubmit={handlePaymentSubmit} className="space-y-6">
+                  
+                  {/* Card 1: MANDATORY DECLARATION CARD (FIRST THING USER SEES) */}
+                  <div className="p-6 rounded-3xl border-2 border-amber-500/40 bg-amber-500/5 dark:bg-amber-500/10 space-y-4 shadow-lg transition duration-300">
+                    <div className="flex items-center justify-between border-b border-amber-500/20 pb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400">
+                          <ShieldCheck className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="font-black uppercase tracking-wider text-slate-900 dark:text-white text-sm">
+                            1. Mandatory Athlete Declaration & Rules Agreement
+                          </h4>
+                          <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase">
+                            Must be read & accepted prior to payment checkout
+                          </p>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-amber-500 text-slate-950">
+                        Step 2 First Action
+                      </span>
                     </div>
-                  </div>
 
-                  {/* Card 2: Mandatory Declaration Card */}
-                  <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-4 hover:border-blue-500/40 dark:hover:border-blue-500/40 transition duration-300">
-                    <div className="flex items-center gap-2">
-                      <ShieldCheck className="w-5 h-5 text-blue-500" />
-                      <h4 className="font-black uppercase tracking-wider text-slate-950 dark:text-white text-xs">Declaration</h4>
+                    <div className="p-4 rounded-2xl bg-white/60 dark:bg-slate-900/80 border border-amber-500/20">
+                      <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic">
+                        "I hereby declare that the information provided by me in this registration form is true and correct to the best of my knowledge. I agree to abide by all the rules and regulations of the sports event. If I am found guilty of providing false information or engaging in any act of indiscipline or misconduct, I understand that I may be disqualified, and I agree to accept the decision of the Organizing Committee as final."
+                      </p>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed italic">
-                      "I hereby declare that the information provided by me in this registration form is true and correct to the best of my knowledge. I agree to abide by all the rules and regulations of the sports event. If I am found guilty of providing false information or engaging in any act of indiscipline or misconduct, I understand that I may be disqualified, and I agree to accept the decision of the Organizing Committee as final."
-                    </p>
-                    
+
                     {/* Mandatory Checkbox */}
-                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <label className="flex items-start gap-3 cursor-pointer select-none p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-amber-500 transition">
                       <input
                         type="checkbox"
                         checked={formData.declarationAccepted || false}
@@ -452,80 +488,76 @@ export const RegistrationPage = () => {
                             setErrors((prev) => ({ ...prev, declarationAccepted: null }));
                           }
                         }}
-                        className="w-4.5 h-4.5 rounded border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-blue-600 focus:ring-blue-500"
+                        className="w-5 h-5 mt-0.5 rounded border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-blue-600 focus:ring-blue-500 shrink-0"
                       />
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                        I have read, understood, and agree to the above declaration and verification policy.
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-snug">
+                        I have read, understood, and agree to the above mandatory declaration, discipline rules, and university verification policy.
                       </span>
                     </label>
+                    {errors.declarationAccepted && (
+                      <p className="text-xs text-rose-500 font-black flex items-center gap-1">
+                        ⚠️ {errors.declarationAccepted}
+                      </p>
+                    )}
                   </div>
 
-                  {/* Helpmessage next to button */}
-                  {!formData.declarationAccepted && (
-                    <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold text-right transition animate-pulse">
-                      ⚠️ Please accept the declaration before proceeding to payment.
-                    </p>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className="flex justify-between pt-6 border-t border-slate-100 dark:border-slate-800">
-                    <button
-                      type="button"
-                      onClick={handlePrevStep}
-                      className="px-6 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm flex items-center gap-2 transition hover:bg-slate-200 dark:hover:bg-slate-700"
-                    >
-                      <ArrowLeft className="w-4 h-4" /> Back
-                    </button>
-                    <button
-                      onClick={() => setStep(3)}
-                      disabled={!formData.declarationAccepted}
-                      className={`px-8 py-3 rounded-2xl font-bold text-sm shadow-md flex items-center gap-2 transition ${
-                        formData.declarationAccepted
-                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white shadow-blue-500/20 active:scale-[0.98]'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-200/40 dark:border-slate-700/40'
-                      }`}
-                      title={!formData.declarationAccepted ? "Please accept the declaration before proceeding to payment." : ""}
-                    >
-                      <span>Proceed to Payment</span>
-                      <Trophy className="w-4 h-4" />
-                    </button>
+                  {/* Card 2: Verification & Approval Information */}
+                  <div className="p-5 rounded-2xl border border-blue-500/30 bg-blue-500/5 dark:bg-blue-500/10 text-slate-800 dark:text-blue-100 flex items-start gap-3">
+                    <Info className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs space-y-1.5">
+                      <h4 className="font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">2. College Verification Policy</h4>
+                      <p className="leading-relaxed">
+                        After payment, your entry pass is generated immediately and sent to your College Sports Desk for verification. If any eligibility discrepancy is flagged, full payment refund will be processed to your source account.
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
 
-              {/* STEP 3: PAYMENT */}
-              {step === 3 && (
-                <form onSubmit={handlePaymentSubmit} className="space-y-6">
+                  {/* Card 3: Payment Gateway Form */}
                   <PaymentForm
                     sport={activeSport}
                     formData={formData}
                     setFormData={setFormData}
                     errors={errors}
                     setErrors={setErrors}
-                    onFileChange={handleFileChange}
-                    onRemoveFile={handleRemoveFile}
                   />
+
+                  {/* Action Buttons */}
                   <div className="flex justify-between pt-6 border-t border-slate-100 dark:border-slate-800">
                     <button
                       type="button"
+                      disabled={isProcessingPayment}
                       onClick={handlePrevStep}
-                      className="px-6 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm flex items-center gap-2 transition hover:bg-slate-200 dark:hover:bg-slate-700"
+                      className="px-6 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm flex items-center gap-2 transition hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50"
                     >
                       <ArrowLeft className="w-4 h-4" /> Back
                     </button>
+
                     <button
                       type="submit"
-                      className="px-8 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-sm shadow-md shadow-emerald-500/20 flex items-center gap-2 transition active:scale-[0.98]"
+                      disabled={isProcessingPayment || !formData.declarationAccepted}
+                      className={`px-8 py-3 rounded-2xl font-bold text-sm shadow-md flex items-center gap-2 transition ${formData.declarationAccepted && !isProcessingPayment
+                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white shadow-blue-500/20 active:scale-[0.98]'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-200/40 dark:border-slate-700/40'
+                        }`}
                     >
-                      <span>Verify & Generate pass</span>
-                      <Trophy className="w-4 h-4" />
+                      {isProcessingPayment ? (
+                        <>
+                          <div className="w-4 h-4 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+                          <span>Processing Pay...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Pay & Register</span>
+                          <Trophy className="w-4 h-4" />
+                        </>
+                      )}
                     </button>
                   </div>
                 </form>
               )}
 
-              {/* STEP 4: RECEIPT */}
-              {step === 4 && completedReceipt && (
+              {/* STEP 3: RECEIPT */}
+              {step === 3 && completedReceipt && (
                 <RegistrationReceipt
                   receipt={completedReceipt}
                   onGoToDashboard={handleBackToSports}

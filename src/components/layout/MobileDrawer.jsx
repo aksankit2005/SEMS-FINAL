@@ -36,16 +36,17 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
       {/* Drawer Panel */}
       <div className="relative w-4/5 max-w-xs bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white h-full flex flex-col z-10 shadow-2xl p-6 overflow-y-auto">
         <div className="flex items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-orange-500 flex items-center justify-center font-black text-xl text-white shadow-md">
-              <Trophy className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="font-black text-lg tracking-tight bg-gradient-to-r from-blue-600 to-orange-500 dark:from-blue-400 dark:to-orange-400 bg-clip-text text-transparent">
-                SEMS 2026
-              </span>
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Sports Event System</p>
-            </div>
+          <div className="flex items-center">
+            <img 
+              src="/logo-dark.png" 
+              alt="APEX Logo" 
+              className="hidden dark:block h-10 w-auto object-contain"
+            />
+            <img 
+              src="/logo-light.png" 
+              alt="APEX Logo" 
+              className="block dark:hidden h-10 w-auto object-contain"
+            />
           </div>
           <button 
             onClick={onClose} 

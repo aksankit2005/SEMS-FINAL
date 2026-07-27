@@ -16,7 +16,7 @@ export const ContactPage = () => {
       addToast('Please complete all required fields', 'error');
       return;
     }
-    addToast('Your message has been sent to the SEMS Help Desk!', 'success');
+    addToast('Your message has been sent to the APEX Help Desk!', 'success');
     setName('');
     setEmail('');
     setMessage('');
@@ -56,8 +56,8 @@ export const ContactPage = () => {
               </div>
               <div>
                 <h3 className="font-extrabold text-base">Email Support</h3>
-                <p className="text-xs text-slate-500">support.sems2026@university.edu</p>
-                <p className="text-xs text-slate-500">desk.sports@sems.edu</p>
+                <p className="text-xs text-slate-500">support.apex2026@university.edu</p>
+                <p className="text-xs text-slate-500">desk.sports@apex.edu</p>
               </div>
             </div>
 
