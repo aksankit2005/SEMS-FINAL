@@ -61,7 +61,7 @@ export const SportsPage = () => {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search sports by name..."
-              className="w-full pl-10 pr-4 py-2 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
@@ -108,9 +108,9 @@ export const SportsPage = () => {
                 </p>
 
                 {/* Specs */}
-                <div className="grid grid-cols-3 gap-2 py-3 px-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-xs">
+                <div className="grid grid-cols-3 gap-2 py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-xs">
                   <div>
-                    <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold">Format</span>
+                    <span className="text-slate-500 dark:text-slate-500 block text-[10px] uppercase font-bold">Format</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">{sport.type}</span>
                   </div>
                   <div>

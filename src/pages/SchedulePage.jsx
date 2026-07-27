@@ -62,7 +62,7 @@ export const SchedulePage = () => {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search teams or events..."
-                className="w-full pl-10 pr-4 py-2 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full pl-10 pr-4 py-2 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
 
@@ -139,7 +139,7 @@ export const SchedulePage = () => {
                   <span className="text-slate-400">{fix.time}</span>
                 </div>
                 <h3 className="font-bold text-base">{fix.event}</h3>
-                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 text-center font-black text-sm text-blue-600 dark:text-blue-400">
+                <div className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-950 text-center font-black text-sm text-blue-600 dark:text-blue-400">
                   {fix.team1} vs {fix.team2}
                 </div>
                 <div className="text-xs text-slate-400 flex items-center justify-between">

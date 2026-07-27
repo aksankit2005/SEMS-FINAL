@@ -91,7 +91,7 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
                   `flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition ${
                     isActive
                       ? 'bg-blue-600 text-white font-black shadow-md'
-                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`
                 }
               >

@@ -73,7 +73,7 @@ export const DashboardPage = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Welcome Banner */}
-        <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 mb-10 border border-slate-800 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white rounded-3xl p-6 sm:p-8 mb-10 border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-orange-500 text-white font-black text-2xl flex items-center justify-center shadow-md">
               {user.name.charAt(0)}
@@ -87,7 +87,7 @@ export const DashboardPage = () => {
                   {user.role}
                 </span>
               </div>
-              <p className="text-xs text-slate-400">{user.college} • {user.email}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{user.college} • {user.email}</p>
             </div>
           </div>
         </div>
@@ -117,19 +117,19 @@ export const DashboardPage = () => {
 
                   <div className="grid grid-cols-2 gap-3 text-xs">
                     <div>
-                      <span className="text-slate-400 block font-bold">Receipt ID</span>
-                      <span className="font-mono font-bold">{reg.receiptId}</span>
+                      <span className="text-slate-500 dark:text-slate-400 block font-bold">Receipt ID</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">{reg.receiptId}</span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block font-bold">Pass Code</span>
+                      <span className="text-slate-500 dark:text-slate-400 block font-bold">Pass Code</span>
                       <span className="font-mono font-bold text-orange-500">{reg.passCode}</span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block font-bold">Captain</span>
-                      <span className="font-bold">{reg.participantName}</span>
+                      <span className="text-slate-500 dark:text-slate-400 block font-bold">Captain</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{reg.participantName}</span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block font-bold">Fee Paid</span>
+                      <span className="text-slate-500 dark:text-slate-400 block font-bold">Fee Paid</span>
                       <span className="font-bold text-emerald-600 dark:text-emerald-400">₹{reg.feePaid}</span>
                     </div>
                   </div>
@@ -148,8 +148,8 @@ export const DashboardPage = () => {
                   <Activity className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="text-2xl font-black">4 Active</div>
-                  <div className="text-xs text-slate-400 font-bold">Live Arenas</div>
+                  <div className="text-2xl font-black text-slate-900 dark:text-white">4 Active</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 font-bold">Live Arenas</div>
                 </div>
               </div>
 
@@ -158,8 +158,8 @@ export const DashboardPage = () => {
                   <DollarSign className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="text-2xl font-black">₹1,45,000</div>
-                  <div className="text-xs text-slate-400 font-bold">Entry Fees Collected</div>
+                  <div className="text-2xl font-black text-slate-900 dark:text-white">₹1,45,000</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 font-bold">Entry Fees Collected</div>
                 </div>
               </div>
 
@@ -168,8 +168,8 @@ export const DashboardPage = () => {
                   <Trophy className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="text-2xl font-black">11 Sports</div>
-                  <div className="text-xs text-slate-400 font-bold">Categories Configured</div>
+                  <div className="text-2xl font-black text-slate-900 dark:text-white">11 Sports</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 font-bold">Categories Configured</div>
                 </div>
               </div>
             </div>
@@ -182,11 +182,11 @@ export const DashboardPage = () => {
 
               <form onSubmit={handleUpdateLiveScore} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Select Arena Match</label>
+                  <label className="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Select Arena Match</label>
                   <select
                     value={selectedMatchId}
                     onChange={(e) => setSelectedMatchId(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-semibold"
+                    className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {liveMatches.map((m) => (
                       <option key={m.id} value={m.id}>{m.sport}: {m.team1.name} vs {m.team2.name}</option>
@@ -195,24 +195,24 @@ export const DashboardPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Team 1 Score</label>
+                  <label className="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Team 1 Score</label>
                   <input
                     type="text"
                     value={team1ScoreInput}
                     onChange={(e) => setTeam1ScoreInput(e.target.value)}
                     placeholder="e.g. 175/4 or 3 goals"
-                    className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs"
+                    className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Team 2 Score</label>
+                  <label className="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Team 2 Score</label>
                   <input
                     type="text"
                     value={team2ScoreInput}
                     onChange={(e) => setTeam2ScoreInput(e.target.value)}
                     placeholder="e.g. 160/8 or 2 goals"
-                    className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs"
+                    className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -236,21 +236,21 @@ export const DashboardPage = () => {
               <form onSubmit={handlePostAnnouncement} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Notice Title</label>
+                    <label className="block text-xs font-bold uppercase text-slate-505 dark:text-slate-400 mb-1">Notice Title</label>
                     <input
-                      type="text"
+                       type="text"
                       value={annTitle}
                       onChange={(e) => setAnnTitle(e.target.value)}
                       placeholder="e.g. Schedule Revision for Basketball Semi Final"
-                      className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs"
+                      className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Category</label>
+                    <label className="block text-xs font-bold uppercase text-slate-505 dark:text-slate-400 mb-1">Category</label>
                     <select
                       value={annCategory}
                       onChange={(e) => setAnnCategory(e.target.value)}
-                      className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-semibold"
+                      className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="Schedule">Schedule</option>
                       <option value="Rules & Guidelines">Rules & Guidelines</option>
@@ -261,13 +261,13 @@ export const DashboardPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Notice Summary & Details</label>
+                  <label className="block text-xs font-bold uppercase text-slate-505 dark:text-slate-400 mb-1">Notice Summary & Details</label>
                   <textarea
                     rows={3}
                     value={annSummary}
                     onChange={(e) => setAnnSummary(e.target.value)}
                     placeholder="Enter broadcast details..."
-                    className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs"
+                    className="w-full p-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 

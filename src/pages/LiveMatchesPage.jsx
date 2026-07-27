@@ -148,10 +148,10 @@ export const LiveMatchesPage = () => {
             </div>
 
             <div className="space-y-4">
-              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-400">Play-By-Play Live Feed</h4>
+              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">Play-By-Play Live Feed</h4>
               <div className="space-y-2">
                 {activeMatchModal.commentary.map((c, i) => (
-                  <div key={i} className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs flex items-start gap-3">
+                  <div key={i} className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs flex items-start gap-3">
                     <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono font-bold shrink-0">
                       {c.time}
                     </span>
@@ -160,11 +160,11 @@ export const LiveMatchesPage = () => {
                 ))}
               </div>
 
-              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-400 pt-4">Match Metrics</h4>
+              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-550 dark:text-slate-400 pt-4">Match Metrics</h4>
               <div className="grid grid-cols-2 gap-3 text-xs">
                 {Object.entries(activeMatchModal.stats).map(([k, v]) => (
-                  <div key={k} className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800">
-                    <span className="text-slate-400 block uppercase font-bold text-[10px]">{k}</span>
+                  <div key={k} className="p-3 rounded-2xl bg-slate-100/80 dark:bg-slate-800">
+                    <span className="text-slate-500 dark:text-slate-400 block uppercase font-bold text-[10px]">{k}</span>
                     <span className="font-black text-slate-900 dark:text-white">{v}</span>
                   </div>
                 ))}

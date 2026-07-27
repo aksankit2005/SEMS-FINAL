@@ -90,49 +90,49 @@ export const ContactPage = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-slate-400 mb-1.5">Your Name *</label>
+                  <label className="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1.5">Your Name *</label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="John Doe"
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase text-slate-400 mb-1.5">Email Address *</label>
+                  <label className="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1.5">Email Address *</label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="john@college.edu"
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-400 mb-1.5">Inquiry Topic</label>
+                <label className="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1.5">Inquiry Topic</label>
                 <select
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="General Query">General Query</option>
-                  <option value="Registration Issue">Registration & Payment Issue</option>
-                  <option value="Schedule Inquiry">Schedule Clashes & Fixtures</option>
-                  <option value="Accommodation">Hostel & Accommodation Request</option>
+                  <option value="General Query" className="text-slate-900 bg-white dark:bg-slate-950">General Query</option>
+                  <option value="Registration Issue" className="text-slate-900 bg-white dark:bg-slate-950">Registration & Payment Issue</option>
+                  <option value="Schedule Inquiry" className="text-slate-900 bg-white dark:bg-slate-950">Schedule Clashes & Fixtures</option>
+                  <option value="Accommodation" className="text-slate-900 bg-white dark:bg-slate-950">Hostel & Accommodation Request</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-400 mb-1.5">Message Detail *</label>
+                <label className="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1.5">Message Detail *</label>
                 <textarea
                   rows={4}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Describe your inquiry..."
-                  className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-4 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -157,13 +157,13 @@ export const ContactPage = () => {
               <div key={idx} className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
                 <button
                   onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
-                  className="w-full p-4 text-left font-bold text-sm flex justify-between items-center bg-slate-50 dark:bg-slate-950"
+                  className="w-full p-4 text-left font-bold text-sm flex justify-between items-center bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800"
                 >
                   <span>{faq.q}</span>
                   <ChevronDown className={`w-4 h-4 transition-transform ${activeFaq === idx ? 'rotate-180' : ''}`} />
                 </button>
                 {activeFaq === idx && (
-                  <div className="p-4 text-xs text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+                  <div className="p-4 text-xs text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
                     {faq.a}
                   </div>
                 )}

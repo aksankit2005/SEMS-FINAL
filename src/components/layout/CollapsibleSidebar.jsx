@@ -59,7 +59,7 @@ export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
                 `group relative flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-xs font-bold transition-all duration-200 ${
                   isActive
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25 font-black'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
+                    : 'text-slate-700 dark:text-slate-450 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-950 dark:hover:text-white'
                 } ${isCollapsed ? 'justify-center px-0' : ''}`
               }
               title={isCollapsed ? item.name : undefined}
