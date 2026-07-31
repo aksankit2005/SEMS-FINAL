@@ -30,32 +30,40 @@ export const TournamentHighlights = () => {
                 </Link>
               </div>
 
-              {/* Top 3 Podium Mini Showcase */}
-              <div className="grid grid-cols-3 gap-3 my-6 text-center items-end">
-                {/* Silver - 2nd */}
-                <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-col items-center shadow-xs">
-                  <div className="text-2xl mb-1">{topPodium[1].logo}</div>
-                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 mb-1">2nd Silver</span>
-                  <div className="text-xs font-bold truncate max-w-full text-slate-900 dark:text-white">{topPodium[1].code}</div>
-                  <div className="text-xs text-orange-500 font-black">{topPodium[1].totalPoints} Pts</div>
+              {/* Top 3 Podium Mini Showcase / Empty State */}
+              {topPodium.length < 3 ? (
+                <div className="my-8 py-8 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+                  <Award className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                  <p className="text-xs font-bold text-slate-900 dark:text-white">No Standings Available Yet</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Leaderboard will be updated as matches conclude.</p>
                 </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-3 my-6 text-center items-end">
+                  {/* Silver - 2nd */}
+                  <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-col items-center shadow-xs">
+                    <div className="text-2xl mb-1">{topPodium[1].logo}</div>
+                    <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 mb-1">2nd Silver</span>
+                    <div className="text-xs font-bold truncate max-w-full text-slate-900 dark:text-white">{topPodium[1].code}</div>
+                    <div className="text-xs text-orange-500 font-black">{topPodium[1].totalPoints} Pts</div>
+                  </div>
 
-                {/* Gold - 1st (Taller) */}
-                <div className="p-5 rounded-2xl bg-gradient-to-b from-orange-500/10 to-white dark:to-slate-900 border-2 border-orange-500 flex flex-col items-center shadow-md scale-105">
-                  <div className="text-3xl mb-1">🏆</div>
-                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-orange-500 text-white mb-1">1st Champion</span>
-                  <div className="text-sm font-black truncate max-w-full text-orange-600 dark:text-orange-400">{topPodium[0].code}</div>
-                  <div className="text-sm text-orange-500 font-black">{topPodium[0].totalPoints} Pts</div>
-                </div>
+                  {/* Gold - 1st (Taller) */}
+                  <div className="p-5 rounded-2xl bg-gradient-to-b from-orange-500/10 to-white dark:to-slate-900 border-2 border-orange-500 flex flex-col items-center shadow-md scale-105">
+                    <div className="text-3xl mb-1">🏆</div>
+                    <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-orange-500 text-white mb-1">1st Champion</span>
+                    <div className="text-sm font-black truncate max-w-full text-orange-600 dark:text-orange-400">{topPodium[0].code}</div>
+                    <div className="text-sm text-orange-500 font-black">{topPodium[0].totalPoints} Pts</div>
+                  </div>
 
-                {/* Bronze - 3rd */}
-                <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-col items-center shadow-xs">
-                  <div className="text-2xl mb-1">{topPodium[2].logo}</div>
-                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-amber-900/20 text-amber-600 dark:text-amber-400 mb-1">3rd Bronze</span>
-                  <div className="text-xs font-bold truncate max-w-full text-slate-900 dark:text-white">{topPodium[2].code}</div>
-                  <div className="text-xs text-orange-500 font-black">{topPodium[2].totalPoints} Pts</div>
+                  {/* Bronze - 3rd */}
+                  <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-col items-center shadow-xs">
+                    <div className="text-2xl mb-1">{topPodium[2].logo}</div>
+                    <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-amber-900/20 text-amber-600 dark:text-amber-400 mb-1">3rd Bronze</span>
+                    <div className="text-xs font-bold truncate max-w-full text-slate-900 dark:text-white">{topPodium[2].code}</div>
+                    <div className="text-xs text-orange-500 font-black">{topPodium[2].totalPoints} Pts</div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center">
@@ -80,26 +88,34 @@ export const TournamentHighlights = () => {
               </div>
 
               <div className="space-y-3.5">
-                {latestNews.map((news) => (
-                  <Link
-                    key={news.id}
-                    to="/announcements"
-                    className="block p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-blue-500/50 transition group shadow-xs"
-                  >
-                    <div className="flex items-center justify-between mb-1 text-[11px]">
-                      <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold">
-                        {news.category}
-                      </span>
-                      <span className="text-slate-400">{news.date}</span>
-                    </div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition line-clamp-1">
-                      {news.title}
-                    </h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mt-1">
-                      {news.summary}
-                    </p>
-                  </Link>
-                ))}
+                {latestNews.length === 0 ? (
+                  <div className="py-8 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+                    <Bell className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">No Announcements Broadcasted</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Circulars will be listed here when published.</p>
+                  </div>
+                ) : (
+                  latestNews.map((news) => (
+                    <Link
+                      key={news.id}
+                      to="/announcements"
+                      className="block p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-blue-500/50 transition group shadow-xs"
+                    >
+                      <div className="flex items-center justify-between mb-1 text-[11px]">
+                        <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold">
+                          {news.category}
+                        </span>
+                        <span className="text-slate-400">{news.date}</span>
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition line-clamp-1">
+                        {news.title}
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mt-1">
+                        {news.summary}
+                      </p>
+                    </Link>
+                  ))
+                )}
               </div>
             </div>
 

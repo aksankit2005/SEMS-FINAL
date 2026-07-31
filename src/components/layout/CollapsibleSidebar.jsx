@@ -2,12 +2,15 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   Flame, Trophy, Radio, UserCheck, Calendar, BarChart3, 
-  Award, Users, Newspaper, Image, Mail, ChevronLeft, ChevronRight, LayoutDashboard 
+  Award, Users, Newspaper, Image, Mail, ChevronLeft, ChevronRight, LayoutDashboard, Camera 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
+import { galleryApi } from '../../services/galleryApi';
+
 export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
   const { user } = useAuth();
+  const isPRAuth = galleryApi.isPRAuthenticated() || (user && (user.role === 'PR' || user.role === 'pr_coordinator'));
 
   const navItems = [
     { name: 'Home', path: '/', icon: Flame },
@@ -20,6 +23,7 @@ export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
     { name: 'Coordinators', path: '/coordinators', icon: Users },
     { name: 'Announcements', path: '/announcements', icon: Newspaper },
     { name: 'Gallery', path: '/gallery', icon: Image },
+    ...(isPRAuth ? [{ name: 'PR Portal', path: '/pr-dashboard', icon: Camera }] : []),
     { name: 'Contact', path: '/contact', icon: Mail },
   ];
 
@@ -59,7 +63,7 @@ export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
                 `group relative flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-xs font-bold transition-all duration-200 ${
                   isActive
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25 font-black'
-                    : 'text-slate-700 dark:text-slate-450 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-950 dark:hover:text-white'
+                    : 'text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-950 dark:hover:text-white'
                 } ${isCollapsed ? 'justify-center px-0' : ''}`
               }
               title={isCollapsed ? item.name : undefined}

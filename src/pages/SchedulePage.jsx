@@ -84,8 +84,14 @@ export const SchedulePage = () => {
 
         </div>
 
-        {/* Fixtures List View */}
-        {viewMode === 'list' ? (
+        {/* Fixtures View / Empty State */}
+        {filteredFixtures.length === 0 ? (
+          <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-soft p-8">
+            <CalendarIcon className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">No Fixtures Scheduled</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Tournament match schedules will be published here.</p>
+          </div>
+        ) : viewMode === 'list' ? (
           <div className="space-y-4">
             {filteredFixtures.map((fix) => (
               <div
@@ -138,7 +144,7 @@ export const SchedulePage = () => {
                   <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">{fix.sport}</span>
                   <span className="text-slate-400">{fix.time}</span>
                 </div>
-                <h3 className="font-bold text-base">{fix.event}</h3>
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">{fix.event}</h3>
                 <div className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-950 text-center font-black text-sm text-blue-600 dark:text-blue-400">
                   {fix.team1} vs {fix.team2}
                 </div>

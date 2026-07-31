@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { Search, Menu, Trophy, User, ShieldCheck, Sparkles, LayoutDashboard } from 'lucide-react';
+import { Search, Menu, Trophy, User, ShieldCheck, Sparkles, LayoutDashboard, LogOut } from 'lucide-react';
 import { ThemeToggle } from '../common/ThemeToggle';
 import { QuickSearchModal } from '../common/QuickSearchModal';
 import { MobileDrawer } from './MobileDrawer';
@@ -9,7 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 export const Navbar = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const { user, setIsAuthModalOpen } = useAuth();
+  const { user, setIsAuthModalOpen, logout } = useAuth();
 
   const navLinks = [
     { name: 'Home', path: '/' },
@@ -87,19 +87,29 @@ export const Navbar = () => {
 
               <ThemeToggle />
 
-              {/* User Dashboard / Login Button */}
+              {/* User Dashboard / Log Out / Login Button */}
               {user ? (
-                <Link
-                  to="/dashboard"
-                  className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-semibold text-xs shadow-lg shadow-cyan-600/20 transition-all"
-                >
-                  {user.role === 'admin' ? (
-                    <ShieldCheck className="w-4 h-4 text-amber-300" />
-                  ) : (
-                    <LayoutDashboard className="w-4 h-4" />
-                  )}
-                  <span className="max-w-[100px] truncate">{user.name}</span>
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link
+                    to="/dashboard"
+                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-semibold text-xs shadow-lg shadow-cyan-600/20 transition-all"
+                  >
+                    {user.role === 'admin' ? (
+                      <ShieldCheck className="w-4 h-4 text-amber-300" />
+                    ) : (
+                      <LayoutDashboard className="w-4 h-4" />
+                    )}
+                    <span className="max-w-[100px] truncate">{user.name}</span>
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-500/30 font-bold text-xs transition"
+                    title="Log Out"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Log Out</span>
+                  </button>
+                </div>
               ) : (
                 <button
                   onClick={() => setIsAuthModalOpen(true)}

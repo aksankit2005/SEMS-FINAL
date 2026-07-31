@@ -17,22 +17,28 @@ export const LiveTicker = () => {
 
         {/* Ticker marquee */}
         <div className="flex-1 overflow-x-auto no-scrollbar flex items-center gap-6 text-xs sm:text-sm">
-          {liveMatches.map((match) => (
-            <Link
-              key={match.id}
-              to="/live"
-              className="flex items-center gap-3 bg-white dark:bg-slate-950/90 px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-blue-500/50 transition shrink-0 group shadow-sm"
-            >
-              <span className="font-bold text-blue-600 dark:text-blue-400">{match.sport}</span>
-              <span className="text-slate-300 dark:text-slate-600">|</span>
-              <span className="font-semibold text-slate-950 dark:text-white">{match.team1.name} ({match.team1.score})</span>
-              <span className="text-slate-400">vs</span>
-              <span className="font-semibold text-slate-950 dark:text-white">{match.team2.name} ({match.team2.score})</span>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
-                {match.currentInfo}
-              </span>
-            </Link>
-          ))}
+          {liveMatches.length === 0 ? (
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
+              No live matches currently in progress
+            </span>
+          ) : (
+            liveMatches.map((match) => (
+              <Link
+                key={match.id}
+                to="/live"
+                className="flex items-center gap-3 bg-white dark:bg-slate-950/90 px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-blue-500/50 transition shrink-0 group shadow-sm"
+              >
+                <span className="font-bold text-blue-600 dark:text-blue-400">{match.sport}</span>
+                <span className="text-slate-300 dark:text-slate-600">|</span>
+                <span className="font-semibold text-slate-950 dark:text-white">{match.team1.name} ({match.team1.score})</span>
+                <span className="text-slate-400">vs</span>
+                <span className="font-semibold text-slate-950 dark:text-white">{match.team2.name} ({match.team2.score})</span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+                  {match.currentInfo}
+                </span>
+              </Link>
+            ))
+          )}
         </div>
 
         {/* View All Matches */}

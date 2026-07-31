@@ -20,6 +20,11 @@ import { AnnouncementsPage } from './pages/AnnouncementsPage';
 import { GalleryPage } from './pages/GalleryPage';
 import { ContactPage } from './pages/ContactPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { PRLoginPage } from './pages/pr/PRLoginPage';
+import { PRDashboardPage } from './pages/pr/PRDashboardPage';
+import { PREventsPage } from './pages/pr/PREventsPage';
+import { PRUploadPage } from './pages/pr/PRUploadPage';
+import { PRProtectedRoute } from './components/pr/PRProtectedRoute';
 
 function App() {
   return (
@@ -42,6 +47,19 @@ function App() {
                   <Route path="/gallery" element={<GalleryPage />} />
                   <Route path="/contact" element={<ContactPage />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
+
+                  {/* Public PR Login Routes */}
+                  <Route path="/pr/login" element={<PRLoginPage />} />
+                  <Route path="/pr-login" element={<PRLoginPage />} />
+
+                  {/* Protected PR Coordinator Portal Routes */}
+                  <Route path="/pr/dashboard" element={<PRProtectedRoute><PRDashboardPage /></PRProtectedRoute>} />
+                  <Route path="/pr-dashboard" element={<PRProtectedRoute><PRDashboardPage /></PRProtectedRoute>} />
+                  <Route path="/pr/events" element={<PRProtectedRoute><PREventsPage /></PRProtectedRoute>} />
+                  <Route path="/pr/upload" element={<PRProtectedRoute><PRUploadPage /></PRProtectedRoute>} />
+                  <Route path="/pr/gallery-upload" element={<PRProtectedRoute><PRUploadPage /></PRProtectedRoute>} />
+                  <Route path="/pr/video-upload" element={<PRProtectedRoute><PRUploadPage /></PRProtectedRoute>} />
+                  <Route path="/pr/media-management" element={<PRProtectedRoute><PREventsPage /></PRProtectedRoute>} />
                 </Route>
               </Routes>
 

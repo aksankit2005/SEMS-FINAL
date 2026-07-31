@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
+@variant dark (&:where(.dark, .dark *));
 
 @layer base {
   :root {
@@ -22,13 +22,24 @@
     --bg-surface: #0f172a;
     --bg-surface-hover: #1e293b;
     --text-main: #f8fafc;
-    --text-secondary: #cbd5e1;
-    --text-muted: #94a3b8;
+    --text-secondary: #e2e8f0;
+    --text-muted: #cbd5e1;
     --border-subtle: #1e293b;
     --accent-blue: #3b82f6;
     --accent-orange: #fb923c;
     --accent-emerald: #34d399;
     --accent-red: #ef4444;
+  }
+
+  .dark option {
+    background-color: #0f172a;
+    color: #ffffff;
+  }
+
+  .dark input,
+  .dark select,
+  .dark textarea {
+    color: #ffffff;
   }
 
   body {
@@ -65,6 +76,13 @@
   background: rgba(15, 23, 42, 0.9);
   backdrop-filter: blur(12px);
   border-right: 1px solid rgba(30, 41, 59, 0.9);
+  color: #ffffff;
+}
+
+.dark .glass-sidebar a:not(.bg-blue-600):not(.bg-orange-500),
+.dark .glass-sidebar button,
+.dark .glass-sidebar span:not(.bg-rose-500) {
+  color: #ffffff;
 }
 
 .card-surface {

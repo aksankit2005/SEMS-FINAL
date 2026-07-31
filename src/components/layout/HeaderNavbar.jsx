@@ -2,19 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Trophy, Search, Bell, Clock, User, ShieldCheck, 
-  Menu, X, Sparkles, CheckCircle2, ChevronRight 
+  Menu, X, Sparkles, CheckCircle2, ChevronRight, LogOut, Camera 
 } from 'lucide-react';
 import { ThemeToggle } from '../common/ThemeToggle';
 import { QuickSearchModal } from '../common/QuickSearchModal';
 import { useAuth } from '../../context/AuthContext';
 import { useSportsData } from '../../context/SportsDataContext';
+import { galleryApi } from '../../services/galleryApi';
 
 export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  const { user, setIsAuthModalOpen } = useAuth();
+  const { user, setIsAuthModalOpen, logout } = useAuth();
   const { announcements } = useSportsData();
 
   // Clock tick interval
@@ -110,7 +111,9 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
                   title="Notifications"
                 >
                   <Bell className="w-4 h-4" />
-                  <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-orange-500 ring-2 ring-white dark:ring-slate-950 animate-pulse" />
+                  {announcements.length > 0 && (
+                    <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-orange-500 ring-2 ring-white dark:ring-slate-950 animate-pulse" />
+                  )}
                 </button>
 
                 {/* Notifications Popover */}
@@ -130,21 +133,25 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
                     </div>
 
                     <div className="space-y-2.5 my-3 max-h-64 overflow-y-auto pr-1">
-                      {announcements.slice(0, 3).map((ann) => (
-                        <Link
-                          key={ann.id}
-                          to="/announcements"
-                          onClick={() => setIsNotificationsOpen(false)}
-                          className="block p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 hover:bg-blue-50 dark:hover:bg-slate-800/80 transition"
-                        >
-                          <div className="flex items-center justify-between text-[10px] font-bold text-blue-600 dark:text-blue-400 mb-1">
-                            <span>{ann.category}</span>
-                            <span className="text-slate-400 font-normal">{ann.date}</span>
-                          </div>
-                          <h5 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1">{ann.title}</h5>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">{ann.summary}</p>
-                        </Link>
-                      ))}
+                      {announcements.length === 0 ? (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 text-center py-4">No active broadcasts</p>
+                      ) : (
+                        announcements.slice(0, 3).map((ann) => (
+                          <Link
+                            key={ann.id}
+                            to="/announcements"
+                            onClick={() => setIsNotificationsOpen(false)}
+                            className="block p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 hover:bg-blue-50 dark:hover:bg-slate-800/80 transition"
+                          >
+                            <div className="flex items-center justify-between text-[10px] font-bold text-blue-600 dark:text-blue-400 mb-1">
+                              <span>{ann.category}</span>
+                              <span className="text-slate-400 font-normal">{ann.date}</span>
+                            </div>
+                            <h5 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1">{ann.title}</h5>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">{ann.summary}</p>
+                          </Link>
+                        ))
+                      )}
                     </div>
 
                     <Link
@@ -158,22 +165,45 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
                 )}
               </div>
 
+              {/* PR Portal Link - Only visible when PR user is logged in */}
+              {galleryApi.isPRAuthenticated() && (
+                <Link
+                  to="/pr-dashboard"
+                  className="p-2.5 rounded-2xl bg-blue-600/10 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white transition flex items-center gap-1.5"
+                  title="PR Coordinator Portal"
+                >
+                  <Camera className="w-4 h-4 text-orange-500" />
+                  <span className="hidden xl:inline text-xs font-bold">PR Dashboard</span>
+                </Link>
+              )}
+
               {/* Theme Toggle */}
               <ThemeToggle />
 
-              {/* User Profile / Portal Sign In */}
+              {/* User Profile / Log Out / Portal Sign In */}
               {user ? (
-                <Link
-                  to="/dashboard"
-                  className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition"
-                >
-                  {user.role === 'admin' ? (
-                    <ShieldCheck className="w-4 h-4 text-orange-300" />
-                  ) : (
-                    <User className="w-4 h-4" />
-                  )}
-                  <span className="hidden sm:inline max-w-[100px] truncate">{user.name}</span>
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link
+                    to="/dashboard"
+                    className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition"
+                  >
+                    {user.role === 'admin' ? (
+                      <ShieldCheck className="w-4 h-4 text-orange-300" />
+                    ) : (
+                      <User className="w-4 h-4" />
+                    )}
+                    <span className="hidden sm:inline max-w-[100px] truncate">{user.name}</span>
+                  </Link>
+
+                  <button
+                    onClick={logout}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-rose-500/10 hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-500/30 font-bold text-xs transition"
+                    title="Log Out"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span className="hidden sm:inline">Log Out</span>
+                  </button>
+                </div>
               ) : (
                 <button
                   onClick={() => setIsAuthModalOpen(true)}

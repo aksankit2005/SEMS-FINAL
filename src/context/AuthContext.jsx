@@ -11,20 +11,7 @@ export const AuthProvider = ({ children }) => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [userRegistrations, setUserRegistrations] = useState(() => {
     const saved = localStorage.getItem('sems_registrations');
-    return saved ? JSON.parse(saved) : [
-      {
-        receiptId: "REC-APEX-88912",
-        sportName: "Badminton",
-        category: "Mens Singles",
-        participantName: "Rahul Sharma",
-        college: "St. Xavier's College",
-        email: "rahul.s@stxaviers.edu",
-        feePaid: 400,
-        status: "CONFIRMED",
-        date: "2026-07-26",
-        passCode: "ST-XAVIERS-PASS-BADM-991"
-      }
-    ];
+    return saved ? JSON.parse(saved) : [];
   });
 
   const login = (userData) => {

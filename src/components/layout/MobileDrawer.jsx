@@ -2,12 +2,15 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   X, Trophy, Calendar, Award, Users, Newspaper, Image, Mail, 
-  UserCheck, Flame, Radio, BarChart3, LayoutDashboard 
+  UserCheck, Flame, Radio, BarChart3, LayoutDashboard, Camera 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
+import { galleryApi } from '../../services/galleryApi';
+
 export const MobileDrawer = ({ isOpen, onClose }) => {
   const { user, setIsAuthModalOpen, logout } = useAuth();
+  const isPRAuth = galleryApi.isPRAuthenticated() || (user && (user.role === 'PR' || user.role === 'pr_coordinator'));
 
   if (!isOpen) return null;
 
@@ -22,6 +25,7 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
     { name: 'Coordinators', path: '/coordinators', icon: Users },
     { name: 'Announcements', path: '/announcements', icon: Newspaper },
     { name: 'Gallery', path: '/gallery', icon: Image },
+    ...(isPRAuth ? [{ name: 'PR Portal', path: '/pr-dashboard', icon: Camera }] : []),
     { name: 'Contact', path: '/contact', icon: Mail },
   ];
 
@@ -92,7 +96,7 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
                   `flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition ${
                     isActive
                       ? 'bg-blue-600 text-white font-black shadow-md'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      : 'text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`
                 }
               >

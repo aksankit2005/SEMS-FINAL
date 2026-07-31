@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   ShieldCheck, User, Trophy, Radio, Bell, 
-  Ticket, DollarSign, Activity, FileDown, Loader2 
+  Ticket, DollarSign, Activity, FileDown, Loader2, LogOut 
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSportsData } from '../context/SportsDataContext';
@@ -9,7 +10,7 @@ import { useToast } from '../context/ToastContext';
 import { downloadPassAsPDF } from '../utils/pdfExporter';
 
 export const DashboardPage = () => {
-  const { user, userRegistrations, setIsAuthModalOpen } = useAuth();
+  const { user, logout, userRegistrations, setIsAuthModalOpen } = useAuth();
   const { liveMatches, updateLiveMatchScore, addAnnouncement } = useSportsData();
   const { addToast } = useToast();
 
@@ -38,8 +39,8 @@ export const DashboardPage = () => {
               className="block dark:hidden h-14 w-auto object-contain"
             />
           </div>
-          <h2 className="text-2xl font-black">Portal Access Required</h2>
-          <p className="text-xs text-slate-500">Sign in as a Student Athlete or Admin Director to view your personalized APEX dashboard.</p>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white">Portal Access Required</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Sign in as a Student Athlete or Admin Director to view your personalized APEX dashboard.</p>
           <button
             onClick={() => setIsAuthModalOpen(true)}
             className="w-full py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs shadow-md"
@@ -92,7 +93,7 @@ export const DashboardPage = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-black">{user.name}</h1>
+                <h1 className="text-2xl font-black text-slate-900 dark:text-white">{user.name}</h1>
                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
                   user.role === 'admin' ? 'bg-orange-500 text-white' : 'bg-blue-600 text-white'
                 }`}>
@@ -102,71 +103,93 @@ export const DashboardPage = () => {
               <p className="text-xs text-slate-500 dark:text-slate-400">{user.college} • {user.email}</p>
             </div>
           </div>
+
+          <button
+            onClick={logout}
+            className="px-5 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-2 shadow-md transition-all self-start sm:self-auto"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Log Out</span>
+          </button>
         </div>
 
         {/* STUDENT DASHBOARD VIEW */}
         {user.role === 'student' && (
           <div className="space-y-8">
-            <h2 className="text-xl font-black flex items-center gap-2">
+            <h2 className="text-xl font-black flex items-center gap-2 text-slate-900 dark:text-white">
               <Ticket className="w-5 h-5 text-blue-500" /> My Tournament Entry Passes & Receipts ({userRegistrations.length})
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {userRegistrations.map((reg, idx) => (
-                <div
-                  key={idx}
-                  id={`pass-card-${idx}`}
-                  className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-soft space-y-4 relative overflow-hidden"
+            {userRegistrations.length === 0 ? (
+              <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-soft p-8 space-y-3">
+                <Ticket className="w-12 h-12 text-slate-400 mx-auto" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">No Event Passes Found</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">You have not registered for any sports events yet. Choose a sport and submit your entry pass!</p>
+                <Link
+                  to="/registration"
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs shadow-md mt-2"
                 >
-                  <div className="flex justify-between items-start border-b border-slate-100 dark:border-slate-800 pb-3">
-                    <div>
-                      <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase">{reg.category}</span>
-                      <h3 className="text-xl font-black text-slate-900 dark:text-white">{reg.sportName}</h3>
-                    </div>
-                    <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                      {reg.status}
-                    </span>
-                  </div>
-
-                  {/* College unique pass banner */}
-                  <div className="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 space-y-0.5">
-                    <span className="text-[9px] uppercase font-bold text-slate-400">Unique College Pass Number</span>
-                    <div className="text-base font-mono font-black text-orange-600 dark:text-amber-400">{reg.passCode}</div>
-                    <div className="text-[10px] text-slate-500 font-bold">College: {reg.college}</div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div>
-                      <span className="text-slate-500 dark:text-slate-400 block font-bold">Receipt ID</span>
-                      <span className="font-mono font-bold text-slate-900 dark:text-white">{reg.receiptId}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 dark:text-slate-400 block font-bold">Lead Captain</span>
-                      <span className="font-bold text-slate-900 dark:text-white">{reg.participantName}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 dark:text-slate-400 block font-bold">Fee Paid</span>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400">₹{reg.feePaid}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 dark:text-slate-400 block font-bold">Date</span>
-                      <span className="font-bold text-slate-700 dark:text-slate-300">{reg.date || '2026-07-28'}</span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={async () => {
-                      addToast('Generating your PDF Pass...', 'info');
-                      await downloadPassAsPDF(reg, `APEX_Pass_${reg.passCode || reg.receiptId}.pdf`);
-                      addToast('PDF Pass downloaded successfully!', 'success');
-                    }}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all"
+                  <Trophy className="w-4 h-4" /> Go to Registration
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {userRegistrations.map((reg, idx) => (
+                  <div
+                    key={idx}
+                    id={`pass-card-${idx}`}
+                    className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-soft space-y-4 relative overflow-hidden"
                   >
-                    <FileDown className="w-4 h-4" /> Download Pass (PDF)
-                  </button>
-                </div>
-              ))}
-            </div>
+                    <div className="flex justify-between items-start border-b border-slate-100 dark:border-slate-800 pb-3">
+                      <div>
+                        <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase">{reg.category}</span>
+                        <h3 className="text-xl font-black text-slate-900 dark:text-white">{reg.sportName}</h3>
+                      </div>
+                      <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        {reg.status}
+                      </span>
+                    </div>
+
+                    {/* College unique pass banner */}
+                    <div className="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 space-y-0.5">
+                      <span className="text-[9px] uppercase font-bold text-slate-400">Unique College Pass Number</span>
+                      <div className="text-base font-mono font-black text-orange-600 dark:text-amber-400">{reg.passCode}</div>
+                      <div className="text-[10px] text-slate-500 font-bold">College: {reg.college}</div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400 block font-bold">Receipt ID</span>
+                        <span className="font-mono font-bold text-slate-900 dark:text-white">{reg.receiptId}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400 block font-bold">Lead Captain</span>
+                        <span className="font-bold text-slate-900 dark:text-white">{reg.participantName}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400 block font-bold">Fee Paid</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">₹{reg.feePaid}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400 block font-bold">Date</span>
+                        <span className="font-bold text-slate-700 dark:text-slate-300">{reg.date || '2026-07-28'}</span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={async () => {
+                        addToast('Generating your PDF Pass...', 'info');
+                        await downloadPassAsPDF(reg, `APEX_Pass_${reg.passCode || reg.receiptId}.pdf`);
+                        addToast('PDF Pass downloaded successfully!', 'success');
+                      }}
+                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all"
+                    >
+                      <FileDown className="w-4 h-4" /> Download Pass (PDF)
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

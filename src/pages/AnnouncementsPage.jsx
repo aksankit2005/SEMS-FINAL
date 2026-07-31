@@ -66,38 +66,46 @@ export const AnnouncementsPage = () => {
 
         {/* News List */}
         <div className="space-y-6">
-          {filteredAnnouncements.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => setActiveModal(item)}
-              className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-soft hover:shadow-xl transition cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-6"
-            >
-              <div className="space-y-2 flex-1">
-                <div className="flex items-center gap-3">
-                  <span className="px-3 py-1 rounded-full text-xs font-black bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                    {item.category}
-                  </span>
-                  {item.isImportant && (
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white animate-pulse">
-                      IMPORTANT NOTICE
-                    </span>
-                  )}
-                  <span className="text-xs text-slate-400">{item.date} • {item.time}</span>
-                </div>
-                <h3 className="text-xl font-black text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition">
-                  {item.title}
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
-                  {item.summary}
-                </p>
-              </div>
-
-              <button className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1 shrink-0 self-start md:self-auto">
-                <span>Read Full Circular</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
+          {filteredAnnouncements.length === 0 ? (
+            <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-soft p-8">
+              <Bell className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">No Announcements Available</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">There are currently no official broadcast notices posted.</p>
             </div>
-          ))}
+          ) : (
+            filteredAnnouncements.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => setActiveModal(item)}
+                className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-soft hover:shadow-xl transition cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-6"
+              >
+                <div className="space-y-2 flex-1">
+                  <div className="flex items-center gap-3">
+                    <span className="px-3 py-1 rounded-full text-xs font-black bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                      {item.category}
+                    </span>
+                    {item.isImportant && (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white animate-pulse">
+                        IMPORTANT NOTICE
+                      </span>
+                    )}
+                    <span className="text-xs text-slate-400">{item.date} • {item.time}</span>
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
+                    {item.summary}
+                  </p>
+                </div>
+
+                <button className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1 shrink-0 self-start md:self-auto">
+                  <span>Read Full Circular</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            ))
+          )}
         </div>
 
       </div>

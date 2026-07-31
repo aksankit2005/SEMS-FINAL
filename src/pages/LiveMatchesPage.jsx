@@ -46,87 +46,95 @@ export const LiveMatchesPage = () => {
         </div>
 
         {/* Live Matches Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {filteredMatches.map((match) => (
-            <div
-              key={match.id}
-              className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-soft hover:shadow-xl transition flex flex-col justify-between"
-            >
-              {/* Top Banner */}
-              <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 rounded-full text-xs font-black bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                    {match.sport}
-                  </span>
-                  <span className="text-xs text-slate-400 font-medium truncate max-w-[200px]">
-                    {match.tournament}
-                  </span>
-                </div>
-                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-rose-500 text-white shadow-xs animate-pulse">
-                  <Radio className="w-3.5 h-3.5" /> LIVE
-                </span>
-              </div>
-
-              {/* Scoreboard Visual */}
-              <div className="grid grid-cols-3 gap-4 items-center my-4 text-center">
-                {/* Team 1 */}
-                <div className="space-y-2">
-                  <div className="text-4xl">{match.team1.logo}</div>
-                  <h3 className="font-black text-sm text-slate-900 dark:text-white leading-tight">
-                    {match.team1.name}
-                  </h3>
-                  <div className="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400">
-                    {match.team1.score}
+        {filteredMatches.length === 0 ? (
+          <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-soft p-8">
+            <Radio className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">No Live Matches Right Now</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Check back later or view the Schedule for upcoming fixtures.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {filteredMatches.map((match) => (
+              <div
+                key={match.id}
+                className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-soft hover:shadow-xl transition flex flex-col justify-between"
+              >
+                {/* Top Banner */}
+                <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full text-xs font-black bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                      {match.sport}
+                    </span>
+                    <span className="text-xs text-slate-400 font-medium truncate max-w-[200px]">
+                      {match.tournament}
+                    </span>
                   </div>
-                  {match.team1.overs && (
-                    <div className="text-[11px] text-slate-400 font-medium">{match.team1.overs}</div>
-                  )}
-                </div>
-
-                {/* VS Divider */}
-                <div className="space-y-1">
-                  <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-black text-slate-400">
-                    VS
+                  <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-rose-500 text-white shadow-xs animate-pulse">
+                    <Radio className="w-3.5 h-3.5" /> LIVE
                   </span>
-                  <div className="text-[11px] text-emerald-500 font-bold mt-2">
-                    In Progress
+                </div>
+
+                {/* Scoreboard Visual */}
+                <div className="grid grid-cols-3 gap-4 items-center my-4 text-center">
+                  {/* Team 1 */}
+                  <div className="space-y-2">
+                    <div className="text-4xl">{match.team1.logo}</div>
+                    <h3 className="font-black text-sm text-slate-900 dark:text-white leading-tight">
+                      {match.team1.name}
+                    </h3>
+                    <div className="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400">
+                      {match.team1.score}
+                    </div>
+                    {match.team1.overs && (
+                      <div className="text-[11px] text-slate-400 font-medium">{match.team1.overs}</div>
+                    )}
+                  </div>
+
+                  {/* VS Divider */}
+                  <div className="space-y-1">
+                    <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-black text-slate-400">
+                      VS
+                    </span>
+                    <div className="text-[11px] text-emerald-500 font-bold mt-2">
+                      In Progress
+                    </div>
+                  </div>
+
+                  {/* Team 2 */}
+                  <div className="space-y-2">
+                    <div className="text-4xl">{match.team2.logo}</div>
+                    <h3 className="font-black text-sm text-slate-900 dark:text-white leading-tight">
+                      {match.team2.name}
+                    </h3>
+                    <div className="text-2xl sm:text-3xl font-black text-rose-500">
+                      {match.team2.score}
+                    </div>
+                    {match.team2.overs && (
+                      <div className="text-[11px] text-slate-400 font-medium">{match.team2.overs}</div>
+                    )}
                   </div>
                 </div>
 
-                {/* Team 2 */}
-                <div className="space-y-2">
-                  <div className="text-4xl">{match.team2.logo}</div>
-                  <h3 className="font-black text-sm text-slate-900 dark:text-white leading-tight">
-                    {match.team2.name}
-                  </h3>
-                  <div className="text-2xl sm:text-3xl font-black text-rose-500">
-                    {match.team2.score}
-                  </div>
-                  {match.team2.overs && (
-                    <div className="text-[11px] text-slate-400 font-medium">{match.team2.overs}</div>
-                  )}
+                {/* Status Ticker Banner */}
+                <div className="my-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span className="font-semibold truncate">{match.currentInfo}</span>
+                </div>
+
+                {/* Footer */}
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <span className="text-xs text-slate-400 truncate">Venue: {match.venue}</span>
+                  <button
+                    onClick={() => setActiveMatchModal(match)}
+                    className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400 text-xs font-bold transition flex items-center gap-1.5"
+                  >
+                    <Info className="w-3.5 h-3.5" /> Commentary & Stats
+                  </button>
                 </div>
               </div>
-
-              {/* Status Ticker Banner */}
-              <div className="my-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                <Activity className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span className="font-semibold truncate">{match.currentInfo}</span>
-              </div>
-
-              {/* Footer */}
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <span className="text-xs text-slate-400 truncate">Venue: {match.venue}</span>
-                <button
-                  onClick={() => setActiveMatchModal(match)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400 text-xs font-bold transition flex items-center gap-1.5"
-                >
-                  <Info className="w-3.5 h-3.5" /> Commentary & Stats
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
       </div>
 
