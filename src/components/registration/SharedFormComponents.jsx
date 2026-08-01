@@ -78,7 +78,7 @@ export const SelectField = ({
           value={value}
           onChange={onChange}
           disabled={disabled}
-          className={`w-full px-4 py-3 rounded-xl border bg-white dark:bg-slate-950 text-slate-900 dark:text-white text-xs font-semibold transition-all focus:outline-none focus:ring-2 ${
+          className={`w-full px-4 py-3 rounded-xl border bg-white dark:bg-[#0b1220] text-slate-900 dark:text-white text-xs font-semibold transition-all focus:outline-none focus:ring-2 ${
             Icon ? 'pl-10' : ''
           } ${
             disabled ? 'opacity-70 cursor-not-allowed bg-slate-100 dark:bg-slate-900/40' : ''
@@ -89,7 +89,7 @@ export const SelectField = ({
           }`}
         >
           {options.map((opt) => (
-            <option key={opt.value} value={opt.value} className="text-slate-900 bg-white dark:bg-slate-950">
+            <option key={opt.value} value={opt.value} className="text-slate-900 bg-white dark:bg-[#0b1220] dark:text-white">
               {opt.label}
             </option>
           ))}
@@ -108,11 +108,13 @@ export const PlayerDetailsCard = ({
   showRemove = true,
   errors = {},
   availableCourses = [],
+  teamCollege = '',
+  teamGender = '',
   isFirstPlayer = false,
   sameAsCaptain = false,
   onToggleSameAsCaptain = null
 }) => {
-  const semesters = [
+  const allSemesters = [
     { value: '', label: 'Select Semester/Year' },
     { value: '1st Sem (1st Year)', label: '1st Semester (1st Year)' },
     { value: '2nd Sem (1st Year)', label: '2nd Semester (1st Year)' },
@@ -125,14 +127,23 @@ export const PlayerDetailsCard = ({
     { value: 'Intern', label: 'Intern' }
   ];
 
-  const genders = [
-    { value: '', label: 'Select Gender' },
-    { value: 'Male', label: 'Male' },
-    { value: 'Female', label: 'Female' },
-    { value: 'Other', label: 'Other' }
-  ];
+  const course = (player.branch || '').trim().toLowerCase();
+  let semesters = allSemesters;
+  if (course === 'bba' || course === 'bca') {
+    semesters = allSemesters.slice(0, 7);
+  } else if (course === 'mca' || course === 'mba') {
+    semesters = allSemesters.slice(0, 5);
+  }
 
   const handleChange = (field, val) => {
+    if (field === 'branch') {
+      const c = (val || '').trim().toLowerCase();
+      if ((c === 'mca' || c === 'mba') && ['5th Sem (3rd Year)', '6th Sem (3rd Year)', '7th Sem (4th Year)', '8th Sem (4th Year)', 'Intern'].includes(player.semester)) {
+        onChange(index, 'semester', '');
+      } else if ((c === 'bba' || c === 'bca') && ['7th Sem (4th Year)', '8th Sem (4th Year)', 'Intern'].includes(player.semester)) {
+        onChange(index, 'semester', '');
+      }
+    }
     onChange(index, field, val);
   };
 
@@ -188,6 +199,14 @@ export const PlayerDetailsCard = ({
         />
 
         <InputField
+          label="Father's / Mother's Name"
+          value={player.fatherName || ''}
+          onChange={(e) => handleChange('fatherName', e.target.value)}
+          placeholder="e.g. Guardian Name"
+          icon={User}
+        />
+
+        <InputField
           label="Roll / Student ID"
           value={player.rollNo}
           onChange={(e) => handleChange('rollNo', e.target.value)}
@@ -195,6 +214,39 @@ export const PlayerDetailsCard = ({
           required
           error={errors.rollNo}
           icon={Award}
+        />
+
+        <InputField
+          label="Date of Birth"
+          type="date"
+          value={player.dob || ''}
+          onChange={(e) => handleChange('dob', e.target.value)}
+          required
+        />
+
+        <InputField
+          label="Mobile Number"
+          type="tel"
+          value={player.phone}
+          onChange={(e) => handleChange('phone', e.target.value)}
+          placeholder="e.g. 9876543210"
+          required
+          error={errors.phone}
+          icon={Phone}
+          disabled={isFirstPlayer && sameAsCaptain}
+        />
+
+        <InputField
+          label="Aadhaar Number"
+          value={player.aadhaar || ''}
+          onChange={(e) => {
+            const val = e.target.value.replace(/\D/g, '').slice(0, 12);
+            handleChange('aadhaar', val);
+          }}
+          placeholder="e.g. 123456789012"
+          required
+          error={errors.aadhaar}
+          maxLength={12}
         />
 
         <SelectField
@@ -220,17 +272,29 @@ export const PlayerDetailsCard = ({
           icon={GraduationCap}
         />
 
-        <InputField
-          label="Mobile Number"
-          type="tel"
-          value={player.phone}
-          onChange={(e) => handleChange('phone', e.target.value)}
-          placeholder="e.g. 9876543210"
-          required
-          error={errors.phone}
-          icon={Phone}
-          disabled={isFirstPlayer && sameAsCaptain}
-        />
+        <div className="w-full">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-550 dark:text-slate-400 mb-1.5">
+            College / Institution <span className="text-rose-500">*</span>
+          </label>
+          <div className="px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/40 text-slate-900 dark:text-white text-xs font-semibold flex items-center justify-between">
+            <span className="truncate">{teamCollege || 'Not Selected'}</span>
+            <span className="text-slate-400 flex items-center gap-1 text-[11px] shrink-0">
+              🔒 <span className="text-[10px] italic font-normal hidden sm:inline">Inherited from Team Captain</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="w-full">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-550 dark:text-slate-400 mb-1.5">
+            Gender <span className="text-rose-500">*</span>
+          </label>
+          <div className="px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/40 text-slate-900 dark:text-white text-xs font-semibold flex items-center justify-between">
+            <span>{teamGender || 'Not Selected'}</span>
+            <span className="text-slate-400 flex items-center gap-1 text-[11px] shrink-0">
+              🔒 <span className="text-[10px] italic font-normal hidden sm:inline">Inherited from Team Captain</span>
+            </span>
+          </div>
+        </div>
 
         <InputField
           label="Email Address"
@@ -242,30 +306,6 @@ export const PlayerDetailsCard = ({
           error={errors.email}
           icon={Mail}
           disabled={isFirstPlayer && sameAsCaptain}
-        />
-
-        <InputField
-          label="Father's / Mother's Name"
-          value={player.fatherName || ''}
-          onChange={(e) => handleChange('fatherName', e.target.value)}
-          placeholder="e.g. Guardian Name"
-          icon={User}
-        />
-
-        <InputField
-          label="Date of Birth"
-          type="date"
-          value={player.dob || ''}
-          onChange={(e) => handleChange('dob', e.target.value)}
-        />
-
-        <SelectField
-          label="Gender"
-          value={player.gender}
-          onChange={(e) => handleChange('gender', e.target.value)}
-          options={genders}
-          required
-          error={errors.gender}
         />
       </div>
     </div>
