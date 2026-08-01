@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   Flame, Trophy, Radio, UserCheck, Calendar, BarChart3, 
-  Award, Users, Newspaper, Image, Mail, ChevronLeft, ChevronRight, LayoutDashboard, Camera 
+  Award, Users, Newspaper, Image, Info, ChevronLeft, ChevronRight, LayoutDashboard, Camera 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -24,7 +24,7 @@ export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
     { name: 'Announcements', path: '/announcements', icon: Newspaper },
     { name: 'Gallery', path: '/gallery', icon: Image },
     ...(isPRAuth ? [{ name: 'PR Portal', path: '/pr-dashboard', icon: Camera }] : []),
-    { name: 'Contact', path: '/contact', icon: Mail },
+    { name: 'About Us', path: '/about', icon: Info },
   ];
 
   return (
@@ -100,7 +100,11 @@ export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
             title={isCollapsed ? 'My Dashboard' : undefined}
           >
             <LayoutDashboard className="w-4 h-4 text-orange-400" />
-            {!isCollapsed && <span className="truncate">Athlete Portal</span>}
+            {!isCollapsed && (
+              <span className="truncate">
+                {user.role === 'admin' ? 'Admin Portal' : user.role === 'coordinator' ? 'Coord Portal' : 'Athlete Portal'}
+              </span>
+            )}
           </NavLink>
         </div>
       )}

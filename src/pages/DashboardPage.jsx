@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSportsData } from '../context/SportsDataContext';
 import { useToast } from '../context/ToastContext';
 import { downloadPassAsPDF } from '../utils/pdfExporter';
+import { Navigate } from 'react-router-dom';
 
 export const DashboardPage = () => {
   const { user, logout, userRegistrations, setIsAuthModalOpen } = useAuth();
@@ -335,6 +336,8 @@ export const DashboardPage = () => {
             </div>
           </div>
         )}
+
+
 
       </div>
     </div>
