@@ -11,7 +11,7 @@ import { AuthModal } from './components/common/AuthModal';
 import { HomePage } from './pages/HomePage';
 import { SportsPage } from './pages/SportsPage';
 import { RegistrationPage } from './pages/RegistrationPage';
-import { LiveMatchesPage } from './pages/LiveMatchesPage';
+import { LiveMatchPortalPage } from './pages/live/LiveMatchPortalPage';
 import { SchedulePage } from './pages/SchedulePage';
 import { ResultsPage } from './pages/ResultsPage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
@@ -26,6 +26,14 @@ import { PREventsPage } from './pages/pr/PREventsPage';
 import { PRUploadPage } from './pages/pr/PRUploadPage';
 import { PRProtectedRoute } from './components/pr/PRProtectedRoute';
 
+import { CollegeHeadLoginPage } from './pages/collegeHead/CollegeHeadLoginPage';
+import { CollegeHeadDashboardPage } from './pages/collegeHead/CollegeHeadDashboardPage';
+import { CollegeHeadProtectedRoute } from './components/collegeHead/CollegeHeadProtectedRoute';
+
+import { CoordinatorLoginPage } from './pages/coordinator/CoordinatorLoginPage';
+import { CoordinatorDashboardPage } from './pages/coordinator/CoordinatorDashboardPage';
+import { CoordinatorProtectedRoute } from './components/coordinator/CoordinatorProtectedRoute';
+
 function App() {
   return (
     <ThemeProvider>
@@ -38,7 +46,7 @@ function App() {
                   <Route path="/" element={<HomePage />} />
                   <Route path="/sports" element={<SportsPage />} />
                   <Route path="/registration" element={<RegistrationPage />} />
-                  <Route path="/live" element={<LiveMatchesPage />} />
+                  <Route path="/live" element={<LiveMatchPortalPage />} />
                   <Route path="/schedule" element={<SchedulePage />} />
                   <Route path="/results" element={<ResultsPage />} />
                   <Route path="/leaderboard" element={<LeaderboardPage />} />
@@ -61,6 +69,19 @@ function App() {
                   <Route path="/pr/gallery-upload" element={<PRProtectedRoute><PRUploadPage /></PRProtectedRoute>} />
                   <Route path="/pr/video-upload" element={<PRProtectedRoute><PRUploadPage /></PRProtectedRoute>} />
                   <Route path="/pr/media-management" element={<PRProtectedRoute><PREventsPage /></PRProtectedRoute>} />
+
+                  {/* Public College Head Login Route (ONLY ONE NEW PUBLIC LOGIN ROUTE) */}
+                  <Route path="/college-head/login" element={<CollegeHeadLoginPage />} />
+
+                  {/* Protected College Head Portal Routes */}
+                  <Route path="/college-head/dashboard" element={<CollegeHeadProtectedRoute><CollegeHeadDashboardPage /></CollegeHeadProtectedRoute>} />
+
+                  {/* Public Sport Coordinator Login Routes */}
+                  <Route path="/coordinator/login" element={<CoordinatorLoginPage />} />
+                  <Route path="/coordinator-login" element={<CoordinatorLoginPage />} />
+
+                  {/* Protected Sport Coordinator Portal Routes */}
+                  <Route path="/coordinator/dashboard" element={<CoordinatorProtectedRoute><CoordinatorDashboardPage /></CoordinatorProtectedRoute>} />
                 </Route>
               </Routes>
 

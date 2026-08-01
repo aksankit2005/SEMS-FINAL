@@ -2,24 +2,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Phone, ShieldCheck } from 'lucide-react';
 
-const InstagramIcon = (props) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width="16" 
-    height="16" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    {...props}
-  >
-    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
-    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
-  </svg>
-);
 
 export const Footer = () => {
   return (
@@ -89,21 +71,26 @@ export const Footer = () => {
             </h4>
             <ul className="space-y-3 text-xs text-slate-600 dark:text-slate-350">
               <li>
-                <a 
-                  href="https://www.instagram.com/apex_mpgi" 
-                  target="_blank" 
+                <a
+                  href="https://www.instagram.com/apex_mpgi"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2.5 hover:text-cyan-500 transition group"
                 >
                   <div className="p-2 rounded-xl bg-pink-500/10 text-pink-600 dark:text-pink-400 group-hover:scale-105 transition-transform">
-                    <InstagramIcon className="w-4 h-4" />
+                    {/* Instagram SVG icon */}
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                      <circle cx="12" cy="12" r="4" />
+                      <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none" />
+                    </svg>
                   </div>
                   <span className="font-semibold text-slate-800 dark:text-slate-200">@apex_mpgi</span>
                 </a>
               </li>
 
               <li>
-                <a 
+                <a
                   href="mailto:sports@mpgi.edu.in"
                   className="flex items-center gap-2.5 hover:text-cyan-500 transition group"
                 >
@@ -115,7 +102,7 @@ export const Footer = () => {
               </li>
 
               <li>
-                <a 
+                <a
                   href="tel:+919119705860"
                   className="flex items-center gap-2.5 hover:text-cyan-500 transition group"
                 >

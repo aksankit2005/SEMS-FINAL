@@ -4,6 +4,7 @@
 DROP TABLE IF EXISTS media CASCADE;
 DROP TABLE IF EXISTS events CASCADE;
 DROP TABLE IF EXISTS pr_users CASCADE;
+DROP TABLE IF EXISTS college_head_users CASCADE;
 
 -- PR Users / Coordinators Table
 CREATE TABLE pr_users (
@@ -11,6 +12,17 @@ CREATE TABLE pr_users (
   username VARCHAR(100) UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
   role VARCHAR(50) DEFAULT 'pr_coordinator',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- College Head Sports Faculty Users Table
+CREATE TABLE college_head_users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(100) UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  college VARCHAR(100) NOT NULL,
+  faculty_name VARCHAR(150) NOT NULL,
+  role VARCHAR(50) DEFAULT 'college_head',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -57,3 +69,34 @@ INSERT INTO media (event_id, media_type, title, media_url, uploaded_by) VALUES
 (2, 'video', 'Cricket Final Overs Thriller Match Video', 'https://www.w3schools.com/html/movie.mp4', 'PR Coordinator'),
 (3, 'image', 'Buzzer Beater Slam Dunk', 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1200&q=80', 'PR Coordinator'),
 (4, 'image', '100m Sprint Finish Line Photo', 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1200&q=80', 'PR Coordinator');
+
+-- Sport Coordinators Table
+CREATE TABLE IF NOT EXISTS sport_coordinators (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(100) UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  assigned_sport VARCHAR(50) NOT NULL,
+  sport_name VARCHAR(100) NOT NULL,
+  coordinator_name VARCHAR(150) NOT NULL,
+  email VARCHAR(150) NOT NULL,
+  role VARCHAR(50) DEFAULT 'sport_coordinator',
+  status VARCHAR(20) DEFAULT 'active',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Seed Initial Default Sport Coordinators
+INSERT INTO sport_coordinators (username, password_hash, assigned_sport, sport_name, coordinator_name, email) VALUES
+('coord_cricket', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6', 'cricket', 'Cricket', 'Vikramaditya Sharma', 'cricket.coord@sems.edu'),
+('coord_table_tennis', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6', 'table-tennis', 'Table Tennis', 'Rohan Mehta', 'tt.coord@sems.edu'),
+('coord_badminton', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6', 'badminton', 'Badminton', 'Pooja Deshmukh', 'badminton.coord@sems.edu'),
+('coord_chess', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6', 'chess', 'Chess', 'Grandmaster Anand Verma', 'chess.coord@sems.edu'),
+('coord_football', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6', 'football', 'Football', 'Carlos Rodriguez', 'football.coord@sems.edu'),
+('coord_basketball', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6', 'basketball', 'Basketball', 'Michael Jordan Singh', 'basketball.coord@sems.edu'),
+('coord_volleyball', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6', 'volleyball', 'Volleyball', 'Siddharth Rao', 'volleyball.coord@sems.edu'),
+('coord_kabaddi', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6', 'kabaddi', 'Kabaddi', 'Pradeep Narwal Kumar', 'kabaddi.coord@sems.edu'),
+('coord_kho_kho', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6', 'kho-kho', 'Kho-Kho', 'Sunita Jadhav', 'khokho.coord@sems.edu'),
+('coord_athletics', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6', 'athletics', 'Athletics', 'PT Usha Pillai', 'athletics.coord@sems.edu'),
+('coord_tug_of_war', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6', 'tug-of-war', 'Tug of War', 'Bheem Singh Power', 'tugofwar.coord@sems.edu'),
+('coord_gully_cricket', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6', 'gully-cricket', 'Gully Cricket', 'Chiku Bhai', 'gullycricket.coord@sems.edu')
+ON CONFLICT (username) DO NOTHING;
+
