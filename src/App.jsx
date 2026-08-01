@@ -18,7 +18,7 @@ import { LeaderboardPage } from './pages/LeaderboardPage';
 import { CoordinatorsPage } from './pages/CoordinatorsPage';
 import { AnnouncementsPage } from './pages/AnnouncementsPage';
 import { GalleryPage } from './pages/GalleryPage';
-import { ContactPage } from './pages/ContactPage';
+import { AboutPage } from './pages/AboutPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { PRLoginPage } from './pages/pr/PRLoginPage';
 import { PRDashboardPage } from './pages/pr/PRDashboardPage';
@@ -45,7 +45,8 @@ function App() {
                   <Route path="/coordinators" element={<CoordinatorsPage />} />
                   <Route path="/announcements" element={<AnnouncementsPage />} />
                   <Route path="/gallery" element={<GalleryPage />} />
-                  <Route path="/contact" element={<ContactPage />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="/contact" element={<AboutPage />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
 
                   {/* Public PR Login Routes */}
