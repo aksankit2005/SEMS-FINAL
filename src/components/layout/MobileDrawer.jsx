@@ -1,8 +1,9 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import { 
   X, Trophy, Calendar, Award, Users, Newspaper, Image, Info, 
-  UserCheck, Flame, Radio, BarChart3, LayoutDashboard, Camera 
+  UserCheck, Flame, Radio, BarChart3, LayoutDashboard, Camera,
+  Building2, Shield
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -113,6 +114,37 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
             );
           })}
         </div>
+
+        {/* Staff Portals Quick Navigation */}
+        {!user && (
+          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2 mb-2">Staff Portals</p>
+            <Link
+              to="/college-head/login"
+              onClick={onClose}
+              className="flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-slate-700 dark:text-white hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 dark:hover:text-emerald-400 transition"
+            >
+              <Building2 className="w-5 h-5 text-emerald-500" />
+              <span>College Head Login</span>
+            </Link>
+            <Link
+              to="/coordinator/login"
+              onClick={onClose}
+              className="flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-slate-700 dark:text-white hover:bg-orange-50 dark:hover:bg-orange-950/40 hover:text-orange-700 dark:hover:text-orange-400 transition"
+            >
+              <Shield className="w-5 h-5 text-orange-500" />
+              <span>Coordinator Login</span>
+            </Link>
+            <Link
+              to="/pr-login"
+              onClick={onClose}
+              className="flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-slate-700 dark:text-white hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:text-indigo-700 dark:hover:text-indigo-400 transition"
+            >
+              <Camera className="w-5 h-5 text-indigo-500" />
+              <span>PR Portal Login</span>
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

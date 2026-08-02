@@ -2,25 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Phone, ShieldCheck } from 'lucide-react';
 
-const InstagramIcon = (props) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
-    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-  </svg>
-);
-
 const FooterContactItem = ({ icon: Icon, bgClass, textClass, value, href, label }) => {
   const [show, setShow] = useState(false);
   const itemRef = useRef(null);
@@ -140,7 +121,11 @@ export const Footer = () => {
                   className="flex items-center gap-2.5 hover:text-cyan-500 transition group"
                 >
                   <div className="p-2 rounded-xl bg-pink-500/10 text-pink-600 dark:text-pink-400 group-hover:scale-105 transition-transform">
-                    <InstagramIcon className="w-4 h-4" />
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                      <circle cx="12" cy="12" r="4" />
+                      <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none" />
+                    </svg>
                   </div>
                   <span className="font-semibold text-slate-800 dark:text-slate-200">@apex_mpgi</span>
                 </a>

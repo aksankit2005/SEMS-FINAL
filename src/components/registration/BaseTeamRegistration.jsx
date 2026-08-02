@@ -18,6 +18,13 @@ export const BaseTeamRegistration = ({
     ...Object.keys(collegeCourses).map((c) => ({ value: c, label: c }))
   ];
 
+  const genders = [
+    { value: '', label: 'Select Gender' },
+    { value: 'Male', label: 'Male' },
+    { value: 'Female', label: 'Female' },
+    { value: 'Other', label: 'Other' }
+  ];
+
   // Initialize roster with the correct size if empty or incorrect
   useEffect(() => {
     if (!formData.roster || formData.roster.length < minPlayers) {
@@ -30,14 +37,17 @@ export const BaseTeamRegistration = ({
         semester: '',
         phone: '',
         email: '',
-        gender: ''
+        fatherName: '',
+        dob: '',
+        college: formData.collegeName || '',
+        gender: formData.gender || ''
       }));
       setFormData((prev) => ({
         ...prev,
         roster: [...currentRoster, ...newPlayers]
       }));
     }
-  }, [minPlayers, formData.roster, setFormData]);
+  }, [minPlayers, formData.roster, formData.collegeName, formData.gender, setFormData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -50,7 +60,16 @@ export const BaseTeamRegistration = ({
         if (prev.roster) {
           updated.roster = prev.roster.map((player) => ({
             ...player,
+            college: value,
             branch: ''
+          }));
+        }
+      }
+      if (name === 'gender') {
+        if (prev.roster) {
+          updated.roster = prev.roster.map((player) => ({
+            ...player,
+            gender: value
           }));
         }
       }
@@ -93,7 +112,10 @@ export const BaseTeamRegistration = ({
           semester: '',
           phone: '',
           email: '',
-          gender: ''
+          fatherName: '',
+          dob: '',
+          college: prev.collegeName || '',
+          gender: prev.gender || ''
         }
       ]
     }));
@@ -114,7 +136,7 @@ export const BaseTeamRegistration = ({
     return (
       <div className="space-y-6 animate-fade-in">
         <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-          <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" /> {sportName} Team & Captain Details
+          <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" /> {sportName} Team Information & Captain Details
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -132,13 +154,25 @@ export const BaseTeamRegistration = ({
 
           <div className="sm:col-span-2">
             <SelectField
-              label="Select College / University"
+              label="College / Institution"
               name="collegeName"
               value={formData.collegeName || ''}
               onChange={handleInputChange}
               options={colleges}
               required
               error={errors.collegeName}
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <SelectField
+              label="Gender"
+              name="gender"
+              value={formData.gender || ''}
+              onChange={handleInputChange}
+              options={genders}
+              required
+              error={errors.gender}
             />
           </div>
 
@@ -182,6 +216,8 @@ export const BaseTeamRegistration = ({
 
   if (step === 3) {
     const currentRosterSize = formData.roster ? formData.roster.length : 0;
+    const availableCourses = collegeCourses[formData.collegeName] || [];
+
     return (
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
@@ -193,16 +229,6 @@ export const BaseTeamRegistration = ({
               Currently: {currentRosterSize} Athletes ({minPlayers} Active + {currentRosterSize - minPlayers} Subs)
             </p>
           </div>
-
-          {currentRosterSize < maxPlayers && (
-            <button
-              type="button"
-              onClick={handleAddPlayer}
-              className="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 font-bold text-xs flex items-center gap-1.5 transition shadow-sm hover:shadow"
-            >
-              <Plus className="w-4 h-4" /> Add Sub Player (Max {maxPlayers})
-            </button>
-          )}
         </div>
 
         {currentRosterSize === maxPlayers && (
@@ -217,15 +243,13 @@ export const BaseTeamRegistration = ({
             formData.roster.map((player, idx) => {
               const playerErrors = {};
               // Gather errors specific to this player
-              const fields = ['name', 'rollNo', 'branch', 'semester', 'phone', 'email', 'gender'];
+              const fields = ['name', 'rollNo', 'aadhaar', 'branch', 'semester', 'phone', 'email'];
               fields.forEach((field) => {
                 const key = `player_${idx}_${field}`;
                 if (errors[key]) {
                   playerErrors[field] = errors[key];
                 }
               });
-
-              const availableCourses = collegeCourses[formData.collegeName] || [];
 
               return (
                 <PlayerDetailsCard
@@ -237,10 +261,23 @@ export const BaseTeamRegistration = ({
                   showRemove={currentRosterSize > minPlayers}
                   errors={playerErrors}
                   availableCourses={availableCourses}
+                  teamCollege={formData.collegeName}
+                  teamGender={formData.gender}
                 />
               );
             })}
         </div>
+
+        {currentRosterSize < maxPlayers && (
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={handleAddPlayer}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-sm hover:shadow"
+            >
+              <Plus className="w-4 h-4" /> Add Sub Player (Max {maxPlayers})
+            </button>
+          </div>
       </div>
     );
   }
@@ -258,6 +295,9 @@ export const validateTeamSport = (step, formData, minPlayers, maxPlayers) => {
     }
     if (!formData.collegeName) {
       errors.collegeName = 'Please select a college';
+    }
+    if (!formData.gender) {
+      errors.gender = 'Gender is required';
     }
     if (!formData.captainName?.trim()) {
       errors.captainName = 'Captain Name is required';
@@ -290,11 +330,28 @@ export const validateTeamSport = (step, formData, minPlayers, maxPlayers) => {
     }
 
     roster.forEach((player, idx) => {
+      player.college = formData.collegeName;
+      player.gender = formData.gender;
+
+      if (formData.collegeName && player.college && player.college !== formData.collegeName) {
+        errors.collegeName = 'All team members must belong to the same college as the Team Captain.';
+      }
+      if (formData.gender && player.gender && player.gender !== formData.gender) {
+        errors.gender = 'All team members must have the same gender as the Team Captain.';
+      }
+
       if (!player.name?.trim()) {
         errors[`player_${idx}_name`] = 'Full Name is required';
       }
       if (!player.rollNo?.trim()) {
         errors[`player_${idx}_rollNo`] = 'Roll Number is required';
+      }
+
+      const aadhaar = player.aadhaar?.trim();
+      if (!aadhaar) {
+        errors[`player_${idx}_aadhaar`] = 'Aadhaar Number is required.';
+      } else if (!/^\d{12}$/.test(aadhaar)) {
+        errors[`player_${idx}_aadhaar`] = 'Aadhaar Number must contain exactly 12 digits.';
       }
       if (!player.branch?.trim()) {
         errors[`player_${idx}_branch`] = 'Course/Branch is required';
@@ -315,10 +372,6 @@ export const validateTeamSport = (step, formData, minPlayers, maxPlayers) => {
         errors[`player_${idx}_email`] = 'Email Address is required';
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pEmail)) {
         errors[`player_${idx}_email`] = 'Enter a valid email address';
-      }
-
-      if (!player.gender) {
-        errors[`player_${idx}_gender`] = 'Gender is required';
       }
     });
   }

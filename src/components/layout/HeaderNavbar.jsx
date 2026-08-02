@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Trophy, Search, Bell, Clock, User, ShieldCheck, 
-  Menu, X, Sparkles, CheckCircle2, ChevronRight, LogOut, Camera 
+  Menu, X, Sparkles, CheckCircle2, ChevronRight, LogOut, Camera,
+  ChevronDown, Building2, Shield
 } from 'lucide-react';
 import { ThemeToggle } from '../common/ThemeToggle';
 import { QuickSearchModal } from '../common/QuickSearchModal';
@@ -205,13 +206,66 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
                   </button>
                 </div>
               ) : (
-                <button
-                  onClick={() => setIsAuthModalOpen(true)}
-                  className="flex items-center gap-1.5 px-4 py-2 sm:py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-500 hover:to-orange-400 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition"
-                >
-                  <User className="w-3.5 h-3.5" />
-                  <span>Portal Sign In</span>
-                </button>
+                <div className="relative group">
+                  <button className="flex items-center gap-2 px-4 py-2 sm:py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 hover:from-blue-500 hover:to-orange-400 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition cursor-pointer">
+                    <User className="w-3.5 h-3.5" />
+                    <span>Portal Sign In</span>
+                    <ChevronDown className="w-3.5 h-3.5 text-blue-200 group-hover:rotate-180 transition-transform duration-200" />
+                  </button>
+                  <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex flex-col overflow-hidden p-1.5 space-y-1">
+                    <div className="px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                      Select Access Portal
+                    </div>
+                    <button
+                      onClick={() => setIsAuthModalOpen(true)}
+                      className="w-full px-3 py-2.5 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-xl transition flex items-center gap-3 group/item"
+                    >
+                      <span className="p-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover/item:bg-blue-600 group-hover/item:text-white transition">
+                        <User className="w-3.5 h-3.5" />
+                      </span>
+                      <div>
+                        <p className="font-extrabold text-slate-900 dark:text-white">Student Portal</p>
+                        <p className="text-[10px] text-slate-400 font-medium">Athlete registration & results</p>
+                      </div>
+                    </button>
+                    <Link
+                      to="/college-head/login"
+                      className="px-3 py-2.5 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 rounded-xl transition flex items-center gap-3 group/item border-t border-slate-100 dark:border-slate-800/60"
+                    >
+                      <span className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover/item:bg-emerald-600 group-hover/item:text-white transition">
+                        <Building2 className="w-3.5 h-3.5" />
+                      </span>
+                      <div>
+                        <p className="font-extrabold text-slate-900 dark:text-white">College Head Login</p>
+                        <p className="text-[10px] text-slate-400 font-medium">Faculty college stats & medals</p>
+                      </div>
+                    </Link>
+                    <Link
+                      to="/coordinator/login"
+                      className="px-3 py-2.5 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-orange-50 dark:hover:bg-slate-800 rounded-xl transition flex items-center gap-3 group/item border-t border-slate-100 dark:border-slate-800/60"
+                    >
+                      <span className="p-1.5 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 group-hover/item:bg-orange-600 group-hover/item:text-white transition">
+                        <Shield className="w-3.5 h-3.5" />
+                      </span>
+                      <div>
+                        <p className="font-extrabold text-slate-900 dark:text-white">Coordinator Login</p>
+                        <p className="text-[10px] text-slate-400 font-medium">Sport matches & control panel</p>
+                      </div>
+                    </Link>
+                    <Link
+                      to="/pr-login"
+                      className="px-3 py-2.5 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded-xl transition flex items-center gap-3 group/item border-t border-slate-100 dark:border-slate-800/60"
+                    >
+                      <span className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover/item:bg-indigo-600 group-hover/item:text-white transition">
+                        <Camera className="w-3.5 h-3.5" />
+                      </span>
+                      <div>
+                        <p className="font-extrabold text-slate-900 dark:text-white">PR Portal Login</p>
+                        <p className="text-[10px] text-slate-400 font-medium">Media, gallery & album coverage</p>
+                      </div>
+                    </Link>
+                  </div>
+                </div>
               )}
 
             </div>

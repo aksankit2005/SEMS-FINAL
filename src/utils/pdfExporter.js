@@ -302,3 +302,289 @@ export const downloadPassAsPDF = async (receiptOrElementId, filename = 'APEX_Pas
   // Fallback
   return generateDirectPassPDF({}, filename);
 };
+
+/**
+ * Export tabular data as a downloadable CSV file.
+ */
+export const exportToCSV = (dataArray = [], filename = 'Export_Data') => {
+  if (!dataArray || dataArray.length === 0) return;
+
+  const headers = Object.keys(dataArray[0]);
+  const csvRows = [];
+  csvRows.push(headers.join(','));
+
+  dataArray.forEach((row) => {
+    const values = headers.map((header) => {
+      const escaped = ('' + (row[header] || '')).replace(/"/g, '\\"');
+      return `"${escaped}"`;
+    });
+    csvRows.push(values.join(','));
+  });
+
+  const csvString = csvRows.join('\n');
+  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `${filename}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+/**
+ * Export tabular data as a downloadable PDF document using jsPDF.
+ */
+export const exportToPDF = (title = 'Report', headers = [], rows = [], filename = 'Report') => {
+  try {
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, 297, 210, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text(String(title).toUpperCase(), 14, 18);
+
+    doc.setFontSize(10);
+    doc.setTextColor(148, 163, 184);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 25);
+
+    let y = 34;
+
+    // Header row
+    doc.setFillColor(30, 41, 59);
+    doc.rect(14, y, 269, 10, 'F');
+    doc.setTextColor(56, 189, 248);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+
+    const colW = 269 / Math.max(1, headers.length);
+    headers.forEach((h, idx) => {
+      doc.text(String(h), 18 + (idx * colW), y + 7);
+    });
+
+    y += 10;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+
+    rows.forEach((row, rIdx) => {
+      if (y > 195) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFillColor(rIdx % 2 === 0 ? 20 : 15, 23, 42);
+      doc.rect(14, y, 269, 8, 'F');
+      doc.setTextColor(226, 232, 240);
+
+      row.forEach((val, cIdx) => {
+        doc.text(String(val || '').substring(0, 25), 18 + (cIdx * colW), y + 5.5);
+      });
+      y += 8;
+    });
+
+    doc.save(`${filename}.pdf`);
+    return true;
+  } catch (err) {
+    console.error('exportToPDF error:', err);
+    return false;
+  }
+};
+
+/**
+ * Generates an official Match Result Certificate PDF when a live match ends.
+ */
+/**
+ * Generates an official Match Result Certificate PDF when a live match ends.
+ */
+export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
+  try {
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const pageW = doc.internal.pageSize.getWidth(); // 210mm
+    const margin = 12;
+    const contentW = pageW - (margin * 2);
+
+    // Helper to sanitize strings and strip UTF-8 emojis that cause garbled text (Ø<ßÆ) in jsPDF
+    const sanitizeText = (str) => {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F6D0}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}]/gu, '')
+        .replace(/[^\x20-\x7E]/g, '')
+        .trim();
+    };
+
+    const rawTitle = match.matchTitle || `${match.team1 || 'Team 1'} vs ${match.team2 || 'Team 2'}`;
+    const matchTitle = sanitizeText(rawTitle) || 'Official Match Result';
+
+    const rawWinner = match.winner || (match.score1 >= match.score2 ? match.team1 : match.team2) || 'Champion';
+    const winnerName = sanitizeText(rawWinner) || 'CHAMPION';
+
+    const team1Name = sanitizeText(match.team1) || 'Team 1';
+    const team2Name = sanitizeText(match.team2) || 'Team 2';
+
+    const format = sanitizeText(match.format || 'Standard Match');
+    const matchId = sanitizeText(match.id || `M${Math.floor(100000 + Math.random() * 900000)}`);
+    const completedAt = match.completedAt ? sanitizeText(match.completedAt) : new Date().toLocaleString();
+    const cleanSport = sanitizeText(sportName || match.sportName || 'Sports');
+
+    // Outer Dark Theme Container
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, 210, 297, 'F');
+
+    // Decorative Gold Border
+    doc.setDrawColor(245, 158, 11);
+    doc.setLineWidth(1.5);
+    doc.roundedRect(8, 8, 194, 281, 4, 4, 'D');
+    doc.setLineWidth(0.5);
+    doc.roundedRect(10, 10, 190, 277, 3, 3, 'D');
+
+    // Header Title
+    doc.setTextColor(245, 158, 11);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.text('SEMS APEX CHAMPIONSHIP 2026', pageW / 2, 26, { align: 'center' });
+
+    doc.setTextColor(148, 163, 184);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('OFFICIAL MATCH RESULT CERTIFICATE', pageW / 2, 33, { align: 'center' });
+
+    doc.setFontSize(8.5);
+    doc.setTextColor(203, 213, 225);
+    doc.text(`Sport: ${cleanSport.toUpperCase()}   |   Match ID: ${matchId}`, pageW / 2, 39, { align: 'center' });
+
+    // Divider Line
+    doc.setDrawColor(51, 65, 85);
+    doc.line(margin + 4, 44, pageW - margin - 4, 44);
+
+    // Match Title Box
+    let y = 52;
+    doc.setFillColor(30, 41, 59);
+    doc.roundedRect(margin, y, contentW, 20, 3, 3, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text(matchTitle, pageW / 2, y + 12, { align: 'center' });
+
+    // Winner Banner Box (Amber / Gold Accent)
+    y += 26;
+    doc.setFillColor(245, 158, 11);
+    doc.roundedRect(margin, y, contentW, 28, 4, 4, 'F');
+
+    doc.setTextColor(15, 23, 42);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('DECLARED MATCH WINNER', pageW / 2, y + 9, { align: 'center' });
+
+    doc.setFontSize(16);
+    doc.text(`[ WINNER: ${winnerName.toUpperCase()} ]`, pageW / 2, y + 20, { align: 'center' });
+
+    // Score Summary Grid
+    y += 34;
+    doc.setFillColor(30, 41, 59);
+    doc.setDrawColor(51, 65, 85);
+    doc.roundedRect(margin, y, contentW, 32, 3, 3, 'FD');
+
+    doc.setTextColor(148, 163, 184);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('FINAL MATCH SCOREBOARD', margin + 8, y + 10);
+
+    doc.setFontSize(14);
+    doc.setTextColor(255, 255, 255);
+
+    if (match.scoreSummary) {
+      doc.text(`Result: ${sanitizeText(match.scoreSummary)}`, margin + 8, y + 22);
+    } else if (typeof match.score1 === 'string' && match.score1.includes('-')) {
+      doc.text(`Result: ${sanitizeText(match.score1)}`, margin + 8, y + 22);
+    } else {
+      doc.text(`${team1Name}: ${match.score1 !== undefined ? match.score1 : 0}`, margin + 8, y + 22);
+      doc.text(`${team2Name}: ${match.score2 !== undefined ? match.score2 : 0}`, margin + (contentW / 2) + 8, y + 22);
+    }
+
+    // Sets Breakdown Table (if sets history exists)
+    y += 38;
+    if (match.setsHistory && Array.isArray(match.setsHistory) && match.setsHistory.length > 0) {
+      doc.setTextColor(245, 158, 11);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('SETS BREAKDOWN HISTORY', margin, y);
+
+      y += 4;
+      doc.setFillColor(51, 65, 85);
+      doc.rect(margin, y, contentW, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
+      doc.text('Set #', margin + 4, y + 5.5);
+      doc.text(`${team1Name} Score`, margin + 35, y + 5.5);
+      doc.text(`${team2Name} Score`, margin + 100, y + 5.5);
+      doc.text('Set Winner', margin + 155, y + 5.5);
+
+      y += 8;
+      match.setsHistory.forEach((s, idx) => {
+        doc.setFillColor(idx % 2 === 0 ? 30 : 15, 41, 59);
+        doc.rect(margin, y, contentW, 7, 'F');
+        doc.setTextColor(226, 232, 240);
+        doc.setFontSize(8);
+        doc.text(`Set ${s.set || idx + 1}`, margin + 4, y + 5);
+        doc.text(String(s.score1 !== undefined ? s.score1 : '-'), margin + 35, y + 5);
+        doc.text(String(s.score2 !== undefined ? s.score2 : '-'), margin + 100, y + 5);
+        doc.text(sanitizeText(s.winner || '-'), margin + 155, y + 5);
+        y += 7;
+      });
+      y += 6;
+    }
+
+    // Match Details Box
+    doc.setFillColor(30, 41, 59);
+    doc.setDrawColor(51, 65, 85);
+    doc.roundedRect(margin, y, contentW, 26, 3, 3, 'FD');
+
+    doc.setTextColor(148, 163, 184);
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Format: ${format}`, margin + 8, y + 8);
+    doc.text(`Venue: ${sanitizeText(match.tableNumber || match.venue || 'Main Arena')}`, margin + 8, y + 16);
+    doc.text(`Completed: ${completedAt}`, margin + (contentW / 2), y + 8);
+    doc.text(`Status: COMPLETED & VERIFIED`, margin + (contentW / 2), y + 16);
+
+    // Signatures & Stamp Footer
+    y += 34;
+    doc.setDrawColor(148, 163, 184);
+    doc.line(margin + 10, y + 14, margin + 70, y + 14);
+    doc.line(pageW - margin - 70, y + 14, pageW - margin - 10, y + 14);
+
+    doc.setTextColor(203, 213, 225);
+    doc.setFontSize(8);
+    doc.text('Chief Referee Signature', margin + 18, y + 19);
+    doc.text('Sport Coordinator Signature', pageW - margin - 65, y + 19);
+
+    // Bottom Verification Stamp
+    doc.setFillColor(16, 185, 129);
+    doc.roundedRect(margin, 268, contentW, 10, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('OFFICIAL VERIFIED RESULT CERTIFICATE - AUTOMATICALLY GENERATED BY SEMS APEX', pageW / 2, 274.5, { align: 'center' });
+
+    const safeFilename = `${matchTitle.replace(/[^a-zA-Z0-9_-]/g, '_')}_Result.pdf`;
+    doc.save(safeFilename);
+    return true;
+  } catch (err) {
+    console.error('Error generating match result PDF:', err);
+    return false;
+  }
+};
+
+
+

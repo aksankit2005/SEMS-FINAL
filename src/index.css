@@ -31,8 +31,38 @@
     --accent-red: #ef4444;
   }
 
+  select {
+    background-color: #ffffff;
+    color: #111827;
+  }
+
+  option {
+    background-color: #ffffff;
+    color: #111827;
+    padding: 8px 12px;
+  }
+
+  option:hover,
+  option:focus,
+  option:checked {
+    background-color: #2563eb;
+    color: #ffffff;
+  }
+
+  .dark select {
+    background-color: #0b1220;
+    color: #ffffff;
+  }
+
   .dark option {
-    background-color: #0f172a;
+    background-color: #0b1220;
+    color: #ffffff;
+  }
+
+  .dark option:hover,
+  .dark option:focus,
+  .dark option:checked {
+    background-color: #2563eb;
     color: #ffffff;
   }
 

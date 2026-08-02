@@ -15,11 +15,18 @@ export const TeamDetailsForm = ({
     ...Object.keys(collegeCourses).map((c) => ({ value: c, label: c }))
   ];
 
+  const genders = [
+    { value: '', label: 'Select Gender' },
+    { value: 'Male', label: 'Male' },
+    { value: 'Female', label: 'Female' },
+    { value: 'Other', label: 'Other' }
+  ];
+
   // Get constraints from sport
   const minPlayers = sport.minPlayers || 2;
   const maxPlayers = sport.maxPlayers || 2;
 
-  // Initialize roster with the correct size if empty or incorrect
+  // Initialize & enforce roster size strictly between minPlayers and maxPlayers
   useEffect(() => {
     const currentRoster = formData.roster || [];
     if (currentRoster.length < minPlayers) {
@@ -31,14 +38,22 @@ export const TeamDetailsForm = ({
         semester: '',
         phone: '',
         email: '',
-        gender: ''
+        fatherName: '',
+        dob: '',
+        college: formData.collegeName || '',
+        gender: formData.gender || ''
       }));
       setFormData((prev) => ({
         ...prev,
-        roster: [...currentRoster, ...newPlayers]
+        roster: [...(prev.roster || []), ...newPlayers]
+      }));
+    } else if (currentRoster.length > maxPlayers) {
+      setFormData((prev) => ({
+        ...prev,
+        roster: (prev.roster || []).slice(0, maxPlayers)
       }));
     }
-  }, [minPlayers, formData.roster, setFormData]);
+  }, [minPlayers, maxPlayers, setFormData]);
 
   // Keep captain details in roster player #1 updated
   useEffect(() => {
@@ -74,7 +89,16 @@ export const TeamDetailsForm = ({
         if (prev.roster) {
           updated.roster = prev.roster.map((player) => ({
             ...player,
+            college: value,
             branch: '' // clear course selection
+          }));
+        }
+      }
+      if (name === 'gender') {
+        if (prev.roster) {
+          updated.roster = prev.roster.map((player) => ({
+            ...player,
+            gender: value
           }));
         }
       }
@@ -126,7 +150,10 @@ export const TeamDetailsForm = ({
           semester: '',
           phone: '',
           email: '',
-          gender: ''
+          fatherName: '',
+          dob: '',
+          college: prev.collegeName || '',
+          gender: prev.gender || ''
         }
       ]
     }));
@@ -161,7 +188,7 @@ export const TeamDetailsForm = ({
 
       {/* Team Details Group */}
       <div className="p-5 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-4">
-        <h4 className="text-xs font-black uppercase text-blue-600 dark:text-blue-400">1. Team & Captain Details</h4>
+        <h4 className="text-xs font-black uppercase text-blue-600 dark:text-blue-400">1. Team Information & Captain Details</h4>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
@@ -178,13 +205,25 @@ export const TeamDetailsForm = ({
 
           <div className="sm:col-span-2">
             <SelectField
-              label="Select College / University"
+              label="College / Institution"
               name="collegeName"
               value={formData.collegeName || ''}
               onChange={handleInputChange}
               options={colleges}
               required
               error={errors.collegeName}
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <SelectField
+              label="Gender"
+              name="gender"
+              value={formData.gender || ''}
+              onChange={handleInputChange}
+              options={genders}
+              required
+              error={errors.gender}
             />
           </div>
 
@@ -233,16 +272,6 @@ export const TeamDetailsForm = ({
               Squad: {currentRosterSize} Athletes ({minPlayers} Active + {currentRosterSize - minPlayers} Subs)
             </p>
           </div>
-
-          {currentRosterSize < maxPlayers && (
-            <button
-              type="button"
-              onClick={handleAddPlayer}
-              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 transition shadow-sm"
-            >
-              <Plus className="w-4 h-4" /> Add Player (Max {maxPlayers})
-            </button>
-          )}
         </div>
 
         {currentRosterSize === maxPlayers && maxPlayers > minPlayers && (
@@ -256,7 +285,7 @@ export const TeamDetailsForm = ({
           {formData.roster &&
             formData.roster.map((player, idx) => {
               const playerErrors = {};
-              const fields = ['name', 'rollNo', 'branch', 'semester', 'phone', 'email', 'gender'];
+              const fields = ['name', 'rollNo', 'aadhaar', 'branch', 'semester', 'phone', 'email'];
               fields.forEach((field) => {
                 const key = `player_${idx}_${field}`;
                 if (errors[key]) {
@@ -274,6 +303,8 @@ export const TeamDetailsForm = ({
                   showRemove={currentRosterSize > minPlayers}
                   errors={playerErrors}
                   availableCourses={availableCourses}
+                  teamCollege={formData.collegeName}
+                  teamGender={formData.gender}
                   isFirstPlayer={idx === 0}
                   sameAsCaptain={formData.sameAsCaptain !== false}
                   onToggleSameAsCaptain={(val) => {
@@ -295,6 +326,18 @@ export const TeamDetailsForm = ({
               );
             })}
         </div>
+
+        {currentRosterSize < maxPlayers && (
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={handleAddPlayer}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-sm"
+            >
+              <Plus className="w-4 h-4" /> Add Player (Max {maxPlayers})
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -312,6 +355,9 @@ export const validateTeamForm = (sport, formData) => {
   }
   if (!formData.collegeName) {
     errors.collegeName = 'Please select a college';
+  }
+  if (!formData.gender) {
+    errors.gender = 'Gender is required';
   }
   if (!formData.captainName?.trim()) {
     errors.captainName = 'Captain Name is required';
@@ -342,11 +388,28 @@ export const validateTeamForm = (sport, formData) => {
   }
 
   roster.forEach((player, idx) => {
+    player.college = formData.collegeName;
+    player.gender = formData.gender;
+
+    if (formData.collegeName && player.college && player.college !== formData.collegeName) {
+      errors.collegeName = 'All team members must belong to the same college as the Team Captain.';
+    }
+    if (formData.gender && player.gender && player.gender !== formData.gender) {
+      errors.gender = 'All team members must have the same gender as the Team Captain.';
+    }
+
     if (!player.name?.trim()) {
       errors[`player_${idx}_name`] = 'Full Name is required';
     }
     if (!player.rollNo?.trim()) {
       errors[`player_${idx}_rollNo`] = 'Roll Number is required';
+    }
+
+    const aadhaar = player.aadhaar?.trim();
+    if (!aadhaar) {
+      errors[`player_${idx}_aadhaar`] = 'Aadhaar Number is required.';
+    } else if (!/^\d{12}$/.test(aadhaar)) {
+      errors[`player_${idx}_aadhaar`] = 'Aadhaar Number must contain exactly 12 digits.';
     }
     if (!player.branch?.trim()) {
       errors[`player_${idx}_branch`] = 'Course is required';
@@ -367,10 +430,6 @@ export const validateTeamForm = (sport, formData) => {
       errors[`player_${idx}_email`] = 'Email Address is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pEmail)) {
       errors[`player_${idx}_email`] = 'Enter a valid email address';
-    }
-
-    if (!player.gender) {
-      errors[`player_${idx}_gender`] = 'Gender is required';
     }
   });
 
