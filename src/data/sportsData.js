@@ -12,6 +12,10 @@ export const SPORTS_DATA = [
     participantsCount: 48,
     maxParticipants: 64,
     entryFee: 300,
+    singlesFee: 300,
+    doublesFee: 600,
+    startDate: "2026-08-01",
+    endDate: "2026-08-30",
     teamSize: "1 - 2 Players",
     venue: "Indoor Sports Complex Hall A",
     rules: [
@@ -35,6 +39,10 @@ export const SPORTS_DATA = [
     participantsCount: 64,
     maxParticipants: 80,
     entryFee: 400,
+    singlesFee: 300,
+    doublesFee: 600,
+    startDate: "2026-08-01",
+    endDate: "2026-08-30",
     teamSize: "1 - 2 Players",
     venue: "Badminton Arena Courts 1-4",
     rules: [

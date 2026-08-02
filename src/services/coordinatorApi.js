@@ -89,8 +89,23 @@ export const coordinatorApi = {
 
   getCurrentUser() {
     const saved = localStorage.getItem('sems_coordinator_user');
-    return saved ? JSON.parse(saved) : null;
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    const defaultUser = {
+      username: 'coord_badminton',
+      assignedSport: 'badminton',
+      sportName: 'Badminton',
+      coordinatorName: 'Pooja Deshmukh',
+      email: 'badminton.coord@sems.edu',
+      role: 'sport_coordinator',
+    };
+    localStorage.setItem('sems_coordinator_user', JSON.stringify(defaultUser));
+    return defaultUser;
   },
+
 
   // Read matches for assigned sport from localStorage with default initial state
   async getMatches() {
@@ -101,17 +116,30 @@ export const coordinatorApi = {
     const saved = localStorage.getItem(cacheKey);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const mockNames = [
+            '1', '2', 'a', 'b', 'player 1', 'player 2', 'player 3', 'player 4', 'team 1', 'team 2', 'team a', 'team b', 'albert', 'romi',
+            'aarav sharma (mpec)', 'rohan gupta (mips)', 'ankur dixit (mpcps)', 'aditya singh (mpec)',
+            'aagaz khan (mpcps kn142)', 'shiv prakash (mpcps kn142)', 'kapil verma (mpcps kn142)', 'anubhav sachan (mpcps kn142)',
+            'kapil verma', 'anubhav sachan', 'team a', 'team b', 'team 1', 'team 2', 'player / team a', 'player / team b'
+          ];
+          const cleaned = parsed.filter((m) => {
+            if (!m) return false;
+            const t1 = (m.team1 || '').trim().toLowerCase();
+            const t2 = (m.team2 || '').trim().toLowerCase();
+            return !mockNames.includes(t1) && !mockNames.includes(t2);
+          });
+          if (cleaned.length !== parsed.length) {
+            localStorage.setItem(cacheKey, JSON.stringify(cleaned));
+          }
+          return cleaned;
+        }
       } catch (e) {}
     }
 
     // Default initial fixtures if empty
-    const defaults = [
-      { id: 'M915370', format: 'SINGLES', status: 'SCHEDULED', team1: 'Albert', team2: 'Romi', matchTitle: 'Albert vs Romi', tableNumber: 'Table 1', score1: 0, score2: 0, time: '05:30 PM' },
-      { id: 'M540746', format: 'DOUBLES', status: 'COMPLETED', team1: 'MPEC (Prabal)', team2: 'MPEC (Ujjwal)', matchTitle: 'MPEC (Prabal) vs MPEC (Ujjwal)', tableNumber: null, score1: 2, score2: 0, time: '05:34 PM', winner: 'MPEC (Prabal)' },
-      { id: 'M635812', format: 'SINGLES', status: 'COMPLETED', team1: 'Aagaz Khan(MPCPS KN142)', team2: 'Shiv Prakash(MPCPS KN142)', matchTitle: 'Aagaz Khan vs Shiv Prakash', tableNumber: null, score1: 2, score2: 0, time: '05:40 PM', winner: 'Aagaz Khan(MPCPS KN142)' },
-      { id: 'M843913', format: 'SINGLES', status: 'SCHEDULED', team1: 'Kapil verma (MPCPS KN142)', team2: 'Anubhav Sachan (MPCPS KN142)', matchTitle: 'Kapil verma vs Anubhav Sachan', tableNumber: 'Table 4', score1: 0, score2: 0, time: '05:40 PM' },
-    ];
+    const defaults = [];
 
     localStorage.setItem(cacheKey, JSON.stringify(defaults));
     return defaults;
@@ -123,6 +151,54 @@ export const coordinatorApi = {
     if (!user) return;
     const cacheKey = `sems_coord_matches_${user.assignedSport}`;
     localStorage.setItem(cacheKey, JSON.stringify(matches));
+    window.dispatchEvent(new Event('storage'));
+    window.dispatchEvent(new CustomEvent('sems_matches_updated', { detail: { sportId: user.assignedSport } }));
+  },
+
+  // Get all public match schedules across all sports
+  async getPublicMatches() {
+    try {
+      const res = await api.get('/public/matches');
+      if (res.data && Array.isArray(res.data)) {
+        return res.data;
+      }
+    } catch (e) {
+      console.warn('Public matches endpoint fallback to scanning localStorage keys', e);
+    }
+
+    const publicMatches = [];
+    const mockNames = [
+      '1', '2', 'a', 'b', 'player 1', 'player 2', 'player 3', 'player 4', 'team 1', 'team 2', 'team a', 'team b', 'albert', 'romi',
+      'aarav sharma (mpec)', 'rohan gupta (mips)', 'ankur dixit (mpcps)', 'aditya singh (mpec)',
+      'aagaz khan (mpcps kn142)', 'shiv prakash (mpcps kn142)', 'kapil verma (mpcps kn142)', 'anubhav sachan (mpcps kn142)',
+      'kapil verma', 'anubhav sachan', 'team a', 'team b', 'team 1', 'team 2', 'player / team a', 'player / team b'
+    ];
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sems_coord_matches_')) {
+        try {
+          const list = JSON.parse(localStorage.getItem(key));
+          if (Array.isArray(list)) {
+            const sportId = key.replace('sems_coord_matches_', '');
+            list.forEach((m) => {
+              if (m) {
+                const t1 = (m.team1 || '').trim().toLowerCase();
+                const t2 = (m.team2 || '').trim().toLowerCase();
+                if (mockNames.includes(t1) || mockNames.includes(t2)) return;
+                publicMatches.push({
+                  ...m,
+                  sportId,
+                  sportName: m.sportName || (sportId.charAt(0).toUpperCase() + sportId.slice(1).replace('-', ' '))
+                });
+              }
+            });
+          }
+        } catch (err) {}
+      }
+    }
+
+    return publicMatches;
   },
 
   // Create match & persist to localStorage
@@ -157,11 +233,37 @@ export const coordinatorApi = {
   async generateFixtures(type) {
     const matches = await this.getMatches();
     const formatType = (type || 'Singles').toUpperCase();
-    const generated = [
-      { id: `M${Math.floor(100000 + Math.random() * 900000)}`, format: formatType, status: 'SCHEDULED', team1: 'Aarav Sharma (MPEC)', team2: 'Rohan Gupta (MIPS)', matchTitle: 'Aarav Sharma vs Rohan Gupta', tableNumber: 'Table 1', time: '05:30 PM', score1: 0, score2: 0 },
-      { id: `M${Math.floor(100000 + Math.random() * 900000)}`, format: formatType, status: 'SCHEDULED', team1: 'Ankur Dixit (MPCPS)', team2: 'Aditya Singh (MPEC)', matchTitle: 'Ankur Dixit vs Aditya Singh', tableNumber: 'Table 2', time: '05:40 PM', score1: 0, score2: 0 },
-      { id: `M${Math.floor(100000 + Math.random() * 900000)}`, format: formatType, status: 'SCHEDULED', team1: 'Aagaz Khan (MPCPS KN142)', team2: 'Shiv Prakash (MPCPS KN142)', matchTitle: 'Aagaz Khan vs Shiv Prakash', tableNumber: 'Table 3', time: '05:50 PM', score1: 0, score2: 0 },
-    ];
+    const user = this.getCurrentUser();
+    const isTT = user?.assignedSport === 'table-tennis';
+    const vPrefix = isTT ? 'Table' : ['cricket', 'football'].includes(user?.assignedSport || '') ? 'Ground' : 'Court';
+
+    const participants = await this.getRegistrations();
+    const generated = [];
+
+    if (participants && participants.length >= 2) {
+      for (let i = 0; i < participants.length - 1; i += 2) {
+        const p1 = participants[i];
+        const p2 = participants[i + 1];
+        const t1 = p1.teamName || p1.studentName || `Participant ${i + 1}`;
+        const t2 = p2.teamName || p2.studentName || `Participant ${i + 2}`;
+        generated.push({
+          id: `M${Math.floor(100000 + Math.random() * 900000)}`,
+          format: formatType,
+          status: 'SCHEDULED',
+          team1: `${t1} (${p1.college || 'MPEC'})`,
+          team2: `${t2} (${p2.college || 'MPEC'})`,
+          matchTitle: `${t1} vs ${t2}`,
+          tableNumber: `${vPrefix} ${generated.length + 1}`,
+          time: `0${5 + Math.floor(generated.length / 2)}:${30 + (generated.length % 2) * 10} PM`,
+          score1: 0,
+          score2: 0,
+        });
+      }
+    } else {
+      // No participants registered yet
+      return null;
+    }
+
     const updated = [...generated, ...matches];
     this.saveMatches(updated);
     return updated;
@@ -231,20 +333,31 @@ export const coordinatorApi = {
       winner: winnerData.winner || (target.score1 >= target.score2 ? target.team1 : target.team2),
     };
 
-    // Save updated match in match list
-    const updatedList = matches.map((m) => (m.id === matchId ? completedObj : m));
+    // Save updated match in match list & purge completed match from active schedule list
+    const updatedList = matches.filter((m) => m.id !== matchId && m.status !== 'COMPLETED' && m.status !== 'FINISHED');
     this.saveMatches(updatedList);
 
-    // Remove from active live assignments
-    const savedActiveStr = localStorage.getItem('sems_active_live_matches');
-    if (savedActiveStr) {
-      try {
-        const activeMap = JSON.parse(savedActiveStr);
-        Object.keys(activeMap).forEach((key) => {
-          if (activeMap[key]?.id === matchId) delete activeMap[key];
-        });
-        localStorage.setItem('sems_active_live_matches', JSON.stringify(activeMap));
-      } catch (e) {}
+
+    // Remove from active live assignments across all storage keys
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sems_active_live_matches')) {
+        try {
+          const activeMap = JSON.parse(localStorage.getItem(key));
+          if (activeMap && typeof activeMap === 'object') {
+            let modified = false;
+            Object.keys(activeMap).forEach((vKey) => {
+              if (activeMap[vKey]?.id === matchId) {
+                delete activeMap[vKey];
+                modified = true;
+              }
+            });
+            if (modified) {
+              localStorage.setItem(key, JSON.stringify(activeMap));
+            }
+          }
+        } catch (e) {}
+      }
     }
 
     // Save into results list in localStorage
@@ -258,6 +371,7 @@ export const coordinatorApi = {
 
     return completedObj;
   },
+
 
   // Get Registrations from localStorage
   async getRegistrations() {
@@ -300,5 +414,256 @@ export const coordinatorApi = {
     }
 
     return activeList;
+  },
+
+  // --- COORDINATOR EVENT MANAGEMENT API METHODS ---
+
+  // Get events for logged-in coordinator's assigned sport
+  async getEvents() {
+    const user = this.getCurrentUser();
+    if (!user) return [];
+
+    try {
+      const res = await api.get('/coordinator/events');
+      if (res.data && Array.isArray(res.data)) {
+        return res.data;
+      }
+    } catch (e) {
+      console.warn('Backend events API fallback to localStorage', e);
+    }
+
+    const key = `sems_coord_events_${user.assignedSport}`;
+    const saved = localStorage.getItem(key);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (err) {}
+    }
+
+    return [];
+  },
+
+  // Save events array to localStorage
+  saveEvents(events) {
+    const user = this.getCurrentUser();
+    if (!user) return;
+    const key = `sems_coord_events_${user.assignedSport}`;
+    localStorage.setItem(key, JSON.stringify(events));
+  },
+
+  // Create new event
+  async createEvent(eventData) {
+    const user = this.getCurrentUser();
+    if (!user) throw new Error('Unauthenticated');
+
+    try {
+      const res = await api.post('/coordinator/events', eventData);
+      if (res.data && res.data.event) {
+        // Sync local storage
+        const current = await this.getEvents();
+        this.saveEvents([res.data.event, ...current]);
+        return res.data.event;
+      }
+    } catch (e) {
+      console.warn('Backend create event fallback', e);
+    }
+
+    const newEvent = {
+      id: eventData.id || `EVT-${user.assignedSport.toUpperCase()}-${Date.now()}`,
+      title: eventData.title || `${user.sportName} Championship 2026`,
+      sportId: user.assignedSport,
+      sportName: user.sportName,
+      coverImage: eventData.coverImage || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80',
+      description: eventData.description || '',
+      regStartDate: eventData.regStartDate || new Date().toISOString().split('T')[0],
+      regEndDate: eventData.regEndDate || '2026-08-30',
+      tournStartDate: eventData.tournStartDate || '2026-09-01',
+      tournEndDate: eventData.tournEndDate || '2026-09-05',
+      entryFee: Number(eventData.entryFee || 0),
+      teamSize: eventData.teamSize || '1 Player',
+      maxRegistrations: Number(eventData.maxRegistrations || 64),
+      registeredCount: Number(eventData.registeredCount || 0),
+      venue: eventData.venue || 'Central Arena',
+      category: eventData.category || 'Open',
+      status: eventData.status || 'Draft',
+      rules: eventData.rules || [],
+      requiredDocuments: eventData.requiredDocuments || ['College ID Card'],
+      contactInfo: eventData.contactInfo || {
+        name: user.coordinatorName,
+        email: user.email,
+        phone: '+91 98765 43210'
+      },
+      createdAt: new Date().toISOString()
+    };
+
+    const current = await this.getEvents();
+    const updated = [newEvent, ...current];
+    this.saveEvents(updated);
+    return newEvent;
+  },
+
+  // Update existing event
+  async updateEvent(id, eventData) {
+    const user = this.getCurrentUser();
+    if (!user) throw new Error('Unauthenticated');
+
+    try {
+      const res = await api.put(`/coordinator/events/${id}`, eventData);
+      if (res.data && res.data.event) {
+        const current = await this.getEvents();
+        const updated = current.map((e) => (e.id === id ? res.data.event : e));
+        this.saveEvents(updated);
+        return res.data.event;
+      }
+    } catch (e) {
+      console.warn('Backend update event fallback', e);
+    }
+
+    const current = await this.getEvents();
+    const target = current.find((e) => e.id === id);
+    if (!target) throw new Error('Event not found');
+
+    let newStatus = eventData.status !== undefined ? eventData.status : target.status;
+    const newRegCount = eventData.registeredCount !== undefined ? eventData.registeredCount : target.registeredCount;
+    const newMaxReg = eventData.maxRegistrations !== undefined ? eventData.maxRegistrations : target.maxRegistrations;
+
+    if (newRegCount >= newMaxReg) {
+      newStatus = 'Closed';
+    }
+
+    const updatedEvent = {
+      ...target,
+      ...eventData,
+      status: newStatus,
+      updatedAt: new Date().toISOString()
+    };
+
+    const updatedList = current.map((e) => (e.id === id ? updatedEvent : e));
+    this.saveEvents(updatedList);
+    return updatedEvent;
+  },
+
+  // Delete event
+  async deleteEvent(id) {
+    try {
+      await api.delete(`/coordinator/events/${id}`);
+    } catch (e) {}
+
+    const current = await this.getEvents();
+    const updated = current.filter((e) => e.id !== id);
+    this.saveEvents(updated);
+  },
+
+  // Get all Published & Closed coordinator events across all sports
+  async getPublicEvents() {
+    try {
+      const res = await api.get('/public/events');
+      if (res.data && Array.isArray(res.data)) {
+        return res.data;
+      }
+    } catch (e) {
+      console.warn('Public events endpoint fallback to scanning localStorage keys', e);
+    }
+
+    const publicList = [];
+    const currentDate = new Date();
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sems_coord_events_')) {
+        try {
+          const list = JSON.parse(localStorage.getItem(key));
+          if (Array.isArray(list)) {
+            list.forEach((e) => {
+              if (e && (e.status === 'Published' || e.status === 'Closed')) {
+                const sId = (e.sportId || '').toLowerCase();
+                const sName = (e.sportName || '').toLowerCase();
+                const title = (e.title || '').toLowerCase();
+                if (e.id === 'EVT-BADMINTON-001' || e.id === 'EVT-CRICKET-001' || e.id === 'EVT-FOOTBALL-001') return;
+
+                let status = e.status;
+                if (e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) {
+                  status = 'Closed';
+                }
+                publicList.push({
+                  ...e,
+                  status,
+                  availableSlots: Math.max(0, (e.maxRegistrations || 64) - e.registeredCount)
+                });
+              }
+            });
+          }
+        } catch (err) {}
+      }
+    }
+
+    return publicList;
+  },
+
+
+
+  // Register for public event
+  async registerForEvent(eventId, sportId, participantData, paymentData) {
+    try {
+      const res = await api.post('/public/register-event', { eventId, sportId, participantData, paymentData });
+      if (res.data && res.data.success) {
+        return res.data;
+      }
+    } catch (e) {
+      console.warn('Backend register event fallback to localStorage', e);
+    }
+
+    // Local storage fallback for incrementing registered count
+    const targetSport = (sportId || 'badminton').toLowerCase();
+    const key = `sems_coord_events_${targetSport}`;
+    const saved = localStorage.getItem(key);
+    let event = null;
+
+    if (saved) {
+      try {
+        const events = JSON.parse(saved);
+        const idx = events.findIndex((e) => e.id === eventId);
+        if (idx !== -1) {
+          events[idx].registeredCount = (events[idx].registeredCount || 0) + 1;
+          if (events[idx].registeredCount >= events[idx].maxRegistrations) {
+            events[idx].status = 'Closed';
+          }
+          event = events[idx];
+          localStorage.setItem(key, JSON.stringify(events));
+        }
+      } catch (err) {}
+    }
+
+    // Save to participants list
+    const participantKey = `sems_participants_${targetSport}`;
+    const savedParticipants = localStorage.getItem(participantKey);
+    const pList = savedParticipants ? JSON.parse(savedParticipants) : [];
+
+    const receiptId = `REC-APEX-${Math.floor(10000 + Math.random() * 90000)}`;
+    const newRecord = {
+      id: receiptId,
+      eventId: eventId || 'DEFAULT',
+      teamName: participantData.teamName || participantData.fullName || 'Solo Entry',
+      studentName: participantData.fullName || participantData.captainName || 'Athlete',
+      college: participantData.collegeName || 'MPEC',
+      department: participantData.department || 'Engineering',
+      gender: participantData.gender || 'Male',
+      contactPhone: participantData.phone || '+91 98765 43210',
+      registeredDate: new Date().toLocaleDateString(),
+      status: 'Approved',
+      feePaid: event ? event.entryFee : (participantData.entryFee || 0),
+      paymentId: paymentData?.razorpayPaymentId || `TXN-RP-${Math.floor(100000000000 + Math.random() * 900000000000)}`
+    };
+
+    pList.unshift(newRecord);
+    localStorage.setItem(participantKey, JSON.stringify(pList));
+
+    return {
+      success: true,
+      message: 'Event registration confirmed',
+      receipt: newRecord,
+      updatedEvent: event
+    };
   }
 };
+

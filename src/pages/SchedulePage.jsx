@@ -1,22 +1,90 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, Clock, MapPin, Search, Trophy, Grid, List, X } from 'lucide-react';
 import { SCHEDULE_DATA } from '../data/scheduleData';
+import { coordinatorApi } from '../services/coordinatorApi';
 
 export const SchedulePage = () => {
   const [query, setQuery] = useState('');
   const [selectedSport, setSelectedSport] = useState('All');
   const [viewMode, setViewMode] = useState('list');
   const [activeVenueModal, setActiveVenueModal] = useState(null);
+  const [dynamicSchedules, setDynamicSchedules] = useState([]);
+
+  useEffect(() => {
+    const fetchSchedules = async () => {
+      const allSchedules = [];
+
+      const mockNames = [
+        '1', '2', 'a', 'b', 'player 1', 'player 2', 'player 3', 'player 4', 'team 1', 'team 2', 'team a', 'team b', 'albert', 'romi',
+        'aarav sharma (mpec)', 'rohan gupta (mips)', 'ankur dixit (mpcps)', 'aditya singh (mpec)',
+        'aagaz khan (mpcps kn142)', 'shiv prakash (mpcps kn142)', 'kapil verma (mpcps kn142)', 'anubhav sachan (mpcps kn142)',
+        'kapil verma', 'anubhav sachan', 'team a', 'team b', 'team 1', 'team 2', 'player / team a', 'player / team b'
+      ];
+
+      try {
+        const publicMatches = await coordinatorApi.getPublicMatches();
+        if (publicMatches && Array.isArray(publicMatches)) {
+          publicMatches.forEach((m) => {
+            if (m && m.status !== 'COMPLETED' && m.status !== 'FINISHED') {
+              const t1 = (m.team1 || '').trim().toLowerCase();
+              const t2 = (m.team2 || '').trim().toLowerCase();
+              if (mockNames.includes(t1) || mockNames.includes(t2)) return;
+
+              const sportId = (m.sportId || 'badminton').toLowerCase();
+              const rawSportName = m.sportName || (sportId.charAt(0).toUpperCase() + sportId.slice(1).replace('-', ' '));
+              const rawVenue = m.tableNumber || m.venue || 'Court 1';
+              const isTT = sportId === 'table-tennis';
+              const venueLabel = isTT ? 'Table' : ['cricket', 'football'].includes(sportId) ? 'Ground' : 'Court';
+              const displayVenue = rawVenue.replace(/Table/gi, venueLabel);
+
+              allSchedules.push({
+                id: m.id || `M-${Math.random()}`,
+                event: m.eventTitle || m.title || `${rawSportName} Championship 2026`,
+                sport: rawSportName,
+                gender: m.category || m.gender || 'Open',
+                team1: m.team1 || m.matchTitle?.split(' vs ')[0] || 'Team 1',
+                team2: m.team2 || m.matchTitle?.split(' vs ')[1] || 'Team 2',
+                venue: displayVenue,
+                date: m.date || 'Today',
+                time: m.time || '05:30 PM',
+                format: m.format || 'SINGLES',
+                mapUrl: 'https://maps.google.com'
+              });
+            }
+          });
+        }
+      } catch (e) {}
+
+      setDynamicSchedules(allSchedules);
+    };
+
+    fetchSchedules();
+
+    const handleRefresh = () => fetchSchedules();
+    window.addEventListener('storage', handleRefresh);
+    window.addEventListener('focus', handleRefresh);
+    window.addEventListener('sems_matches_updated', handleRefresh);
+
+    return () => {
+      window.removeEventListener('storage', handleRefresh);
+      window.removeEventListener('focus', handleRefresh);
+      window.removeEventListener('sems_matches_updated', handleRefresh);
+    };
+  }, []);
 
   const sportsList = ['All', 'Cricket', 'Football', 'Badminton', 'Table Tennis', 'Chess', 'Basketball', 'Kabaddi', 'Athletics', 'Tug of War'];
 
-  const filteredFixtures = SCHEDULE_DATA.filter((item) => {
-    const matchesQuery = item.event.toLowerCase().includes(query.toLowerCase()) ||
-      item.team1.toLowerCase().includes(query.toLowerCase()) ||
-      item.team2.toLowerCase().includes(query.toLowerCase());
+  const combinedList = [...dynamicSchedules, ...SCHEDULE_DATA];
+
+  const filteredFixtures = combinedList.filter((item) => {
+    const matchesQuery =
+      (item.event || '').toLowerCase().includes(query.toLowerCase()) ||
+      (item.team1 || '').toLowerCase().includes(query.toLowerCase()) ||
+      (item.team2 || '').toLowerCase().includes(query.toLowerCase());
     const matchesSport = selectedSport === 'All' || item.sport === selectedSport;
     return matchesQuery && matchesSport;
   });
+
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white py-12 transition-colors">

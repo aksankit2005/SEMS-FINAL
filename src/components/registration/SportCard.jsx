@@ -5,9 +5,14 @@ export const SportCard = ({ sport, onRegisterSelect }) => {
   const [timeLeft, setTimeLeft] = useState('');
   const [status, setStatus] = useState({ code: '', label: '', color: '' });
 
-  // Calculate status and format dates
-  const startDate = new Date(sport.startDate + 'T00:00:00');
-  const endDate = new Date(sport.endDate + 'T23:59:59');
+  const getSafeDate = (dStr, defaultStr) => {
+    if (!dStr) return new Date(defaultStr);
+    const parsed = new Date(dStr.includes('T') ? dStr : dStr + 'T00:00:00');
+    return isNaN(parsed.getTime()) ? new Date(defaultStr) : parsed;
+  };
+
+  const startDate = getSafeDate(sport.startDate, '2026-08-01T00:00:00');
+  const endDate = getSafeDate(sport.endDate, '2026-08-30T23:59:59');
 
   useEffect(() => {
     const updateTimer = () => {
@@ -50,8 +55,9 @@ export const SportCard = ({ sport, onRegisterSelect }) => {
     return `${pad(hours)}:${pad(mins)}:${pad(secs)}`;
   };
 
-  const formatDateString = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
+  const formatDateString = (dateStr, fallbackStr = '2026-08-01') => {
+    const d = getSafeDate(dateStr, fallbackStr);
+    return d.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
@@ -101,14 +107,14 @@ export const SportCard = ({ sport, onRegisterSelect }) => {
             <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Starts</span>
             <div className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-blue-500" />
-              <span>{formatDateString(sport.startDate)}</span>
+              <span>{formatDateString(sport.startDate, '2026-08-01')}</span>
             </div>
           </div>
           <div className="space-y-0.5">
             <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Ends</span>
             <div className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-orange-500" />
-              <span>{formatDateString(sport.endDate)}</span>
+              <span>{formatDateString(sport.endDate, '2026-08-30')}</span>
             </div>
           </div>
         </div>
@@ -121,7 +127,9 @@ export const SportCard = ({ sport, onRegisterSelect }) => {
           </div>
           <div className="text-right">
             <span className="text-slate-400 block text-[9px] uppercase">Entry Fee</span>
-            <span className="font-extrabold text-sm text-emerald-600 dark:text-emerald-400">₹{sport.entryFee}</span>
+            <span className="font-extrabold text-[11px] text-emerald-600 dark:text-emerald-400">
+              {sport.singlesFee ? `Singles ₹${sport.singlesFee} | Doubles ₹${sport.doublesFee}` : `₹${sport.entryFee || 400}`}
+            </span>
           </div>
         </div>
       </div>

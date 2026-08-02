@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { coordinatorApi } from '../../services/coordinatorApi';
 import { CoordinatorHeader } from '../../components/coordinator/CoordinatorHeader';
+import { EventsTab } from '../../components/coordinator/tabs/EventsTab';
 import { MatchScheduleTab } from '../../components/coordinator/tabs/MatchScheduleTab';
 import { LiveMatchControlTab } from '../../components/coordinator/tabs/LiveMatchControlTab';
 import { ResultManagementTab } from '../../components/coordinator/tabs/ResultManagementTab';
@@ -13,7 +14,8 @@ export const CoordinatorDashboardPage = () => {
   const { addToast } = useToast();
 
   const [user, setUser] = useState(() => coordinatorApi.getCurrentUser());
-  const [activeTab, setActiveTab] = useState('schedule');
+  const [activeTab, setActiveTab] = useState('events');
+
   const [globalSearch, setGlobalSearch] = useState('');
 
   // Dynamic Data States
@@ -60,9 +62,13 @@ export const CoordinatorDashboardPage = () => {
   };
 
   const handleUpdateLiveScore = (matchId, scoreData) => {
-    coordinatorApi.updateMatchScoring(matchId, scoreData);
-    setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, ...scoreData } : m)));
+    if (scoreData?.status === 'COMPLETED' || scoreData?.status === 'FINISHED') {
+      setMatches((prev) => prev.filter((m) => m.id !== matchId));
+    } else {
+      setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, ...scoreData } : m)));
+    }
   };
+
 
   return (
     <div className="min-h-screen bg-[#090D16] text-white flex flex-col font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-150">
@@ -87,6 +93,10 @@ export const CoordinatorDashboardPage = () => {
           </div>
         ) : (
           <>
+            {activeTab === 'events' && (
+              <EventsTab user={user} />
+            )}
+
             {activeTab === 'schedule' && (
               <MatchScheduleTab
                 matches={matches}
@@ -98,6 +108,7 @@ export const CoordinatorDashboardPage = () => {
                 globalSearch={globalSearch}
               />
             )}
+
 
             {activeTab === 'live-control' && (
               <LiveMatchControlTab

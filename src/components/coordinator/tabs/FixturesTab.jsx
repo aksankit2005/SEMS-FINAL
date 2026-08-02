@@ -88,31 +88,48 @@ export const FixturesTab = ({ matches, user }) => {
 
         <div className="min-w-[800px] grid grid-cols-3 gap-8 items-center py-4">
           
-          {/* Column 1: Quarter Finals */}
+          {/* Column 1: Preliminary / Round 1 */}
           <div className="space-y-6">
             <span className="text-xs font-black text-orange-500 uppercase tracking-widest block text-center pb-2 border-b border-slate-100 dark:border-slate-800">
-              Quarter Finals
+              Round 1 / Prelims
             </span>
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
-              <div className="flex justify-between text-xs font-bold text-slate-900 dark:text-white">
-                <span>MPEC Tigers</span>
-                <span className="text-orange-500 font-black">3</span>
-              </div>
-              <div className="flex justify-between text-xs font-bold text-slate-400">
-                <span>MPDC Champions</span>
-                <span>1</span>
-              </div>
-            </div>
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
-              <div className="flex justify-between text-xs font-bold text-slate-900 dark:text-white">
-                <span>MIPS Warriors</span>
-                <span className="text-orange-500 font-black">2</span>
-              </div>
-              <div className="flex justify-between text-xs font-bold text-slate-400">
-                <span>MPCPS Knights</span>
-                <span>0</span>
-              </div>
-            </div>
+            {matches && matches.length > 0 ? (
+              matches.slice(0, 2).map((m, idx) => (
+                <div key={m.id || idx} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+                  <div className="flex justify-between text-xs font-bold text-slate-900 dark:text-white">
+                    <span>{m.team1 || 'Team 1'}</span>
+                    <span className="text-orange-500 font-black">{m.score1 || 0}</span>
+                  </div>
+                  <div className="flex justify-between text-xs font-bold text-slate-400">
+                    <span>{m.team2 || 'Team 2'}</span>
+                    <span>{m.score2 || 0}</span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <>
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+                  <div className="flex justify-between text-xs font-bold text-slate-900 dark:text-white">
+                    <span>Player / Team 1</span>
+                    <span className="text-slate-400 font-black">-</span>
+                  </div>
+                  <div className="flex justify-between text-xs font-bold text-slate-400">
+                    <span>Player / Team 2</span>
+                    <span>-</span>
+                  </div>
+                </div>
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+                  <div className="flex justify-between text-xs font-bold text-slate-900 dark:text-white">
+                    <span>Player / Team 3</span>
+                    <span className="text-slate-400 font-black">-</span>
+                  </div>
+                  <div className="flex justify-between text-xs font-bold text-slate-400">
+                    <span>Player / Team 4</span>
+                    <span>-</span>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Column 2: Semi Finals */}
@@ -122,12 +139,12 @@ export const FixturesTab = ({ matches, user }) => {
             </span>
             <div className="p-5 rounded-2xl bg-gradient-to-r from-orange-500/10 to-amber-500/10 border border-orange-500/30 space-y-3">
               <div className="flex justify-between text-xs font-black text-slate-900 dark:text-white">
-                <span>MPEC Tigers</span>
-                <span className="text-orange-500">LIVE</span>
+                <span>{matches?.[0]?.winner || matches?.[0]?.team1 || 'Winner Match 1'}</span>
+                <span className="text-orange-500">NEXT</span>
               </div>
               <div className="flex justify-between text-xs font-black text-slate-900 dark:text-white">
-                <span>MIPS Warriors</span>
-                <span className="text-orange-500">LIVE</span>
+                <span>{matches?.[1]?.winner || matches?.[1]?.team1 || 'Winner Match 2'}</span>
+                <span className="text-orange-500">NEXT</span>
               </div>
               <span className="text-[10px] text-slate-400 block text-center">Winner Advances to Championship</span>
             </div>
@@ -143,7 +160,7 @@ export const FixturesTab = ({ matches, user }) => {
               <h5 className="text-sm font-black uppercase text-yellow-400">{user?.sportName} Gold Medal Match</h5>
               <p className="text-xs text-slate-300">Winner TBD vs Winner TBD</p>
               <span className="px-3 py-1 rounded-full bg-yellow-500/20 text-yellow-300 text-[10px] font-bold inline-block">
-                Scheduled for Aug 05
+                Finals Match
               </span>
             </div>
           </div>

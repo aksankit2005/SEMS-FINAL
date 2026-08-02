@@ -52,18 +52,46 @@ export const LiveMatchPortalPage = () => {
 
       setLiveMatches(Object.values(uniqueMap));
 
-      setUpcomingMatches([
-        {
-          id: 'M843913',
-          sportId: 'table-tennis',
-          matchTitle: 'Kapil verma vs Anubhav Sachan',
-          team1: 'Kapil verma (MPCPS KN142)',
-          team2: 'Anubhav Sachan (MPCPS KN142)',
-          venue: 'Table 4',
-          time: '05:40 PM',
-          date: '2026-08-02',
+      // Dynamic upcoming scheduled matches fetching (purging mock names)
+      const upcomingList = [];
+      const mockNames = [
+        '1', '2', 'a', 'b', 'player 1', 'player 2', 'player 3', 'player 4', 'team 1', 'team 2', 'team a', 'team b', 'albert', 'romi',
+        'aarav sharma (mpec)', 'rohan gupta (mips)', 'ankur dixit (mpcps)', 'aditya singh (mpec)',
+        'aagaz khan (mpcps kn142)', 'shiv prakash (mpcps kn142)', 'kapil verma (mpcps kn142)', 'anubhav sachan (mpcps kn142)',
+        'kapil verma', 'anubhav sachan', 'team a', 'team b', 'team 1', 'team 2', 'player / team a', 'player / team b'
+      ];
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sems_coord_matches_')) {
+          try {
+            const list = JSON.parse(localStorage.getItem(key));
+            if (Array.isArray(list)) {
+              const sportId = key.replace('sems_coord_matches_', '');
+              list.forEach((m) => {
+                if (m && m.status !== 'COMPLETED' && m.status !== 'FINISHED' && m.status !== 'running' && m.status !== 'live') {
+                  const t1 = (m.team1 || '').trim().toLowerCase();
+                  const t2 = (m.team2 || '').trim().toLowerCase();
+                  if (mockNames.includes(t1) || mockNames.includes(t2)) return;
+                  if (!upcomingList.some((u) => u.id === m.id)) {
+                    upcomingList.push({
+                      id: m.id || `M-${Math.random()}`,
+                      sportId,
+                      matchTitle: m.matchTitle || `${m.team1} vs ${m.team2}`,
+                      team1: m.team1,
+                      team2: m.team2,
+                      venue: m.tableNumber || m.venue || 'Court 1',
+                      time: m.time || '05:30 PM',
+                      date: m.date || 'Today'
+                    });
+                  }
+                }
+              });
+            }
+          } catch (e) {}
         }
-      ]);
+      }
+      setUpcomingMatches(upcomingList);
     } catch (err) {
       console.error('Error fetching live matches:', err);
     } finally {
@@ -74,7 +102,14 @@ export const LiveMatchPortalPage = () => {
   useEffect(() => {
     fetchScores();
     const interval = setInterval(() => fetchScores(), 1500);
-    return () => clearInterval(interval);
+    const handleRefresh = () => fetchScores();
+    window.addEventListener('sems_matches_updated', handleRefresh);
+    window.addEventListener('storage', handleRefresh);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('sems_matches_updated', handleRefresh);
+      window.removeEventListener('storage', handleRefresh);
+    };
   }, []);
 
   const filteredLiveMatches = liveMatches.filter((m) =>
@@ -244,18 +279,24 @@ export const LiveMatchPortalPage = () => {
             <Clock className="w-4 h-4 text-indigo-400" /> Upcoming Tournament Schedule
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {upcomingMatches.map((up) => (
-              <div key={up.id} className="p-4 rounded-2xl bg-[#0F172A] border border-[#1E293B] space-y-2">
-                <div className="flex items-center justify-between text-[11px] text-slate-400">
-                  <span className="font-bold text-indigo-400">{up.time}</span>
-                  <span className="font-mono">{up.venue}</span>
+          {upcomingMatches.length === 0 ? (
+            <div className="p-6 text-center rounded-2xl bg-[#0F172A] border border-[#1E293B]">
+              <p className="text-xs text-slate-400 font-semibold">No upcoming matches scheduled currently.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {upcomingMatches.map((up) => (
+                <div key={up.id} className="p-4 rounded-2xl bg-[#0F172A] border border-[#1E293B] space-y-2">
+                  <div className="flex items-center justify-between text-[11px] text-slate-400">
+                    <span className="font-bold text-indigo-400">{up.time}</span>
+                    <span className="font-mono">{up.venue}</span>
+                  </div>
+                  <h4 className="text-xs font-bold text-white">{up.matchTitle}</h4>
+                  <p className="text-xs text-slate-400">{up.team1} vs {up.team2}</p>
                 </div>
-                <h4 className="text-xs font-bold text-white">{up.matchTitle}</h4>
-                <p className="text-xs text-slate-400">{up.team1} vs {up.team2}</p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
       </main>

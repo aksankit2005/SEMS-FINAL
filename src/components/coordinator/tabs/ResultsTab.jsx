@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Award, Upload, Lock, Unlock, Download, FileText, CheckCircle2, Trophy, Sparkles } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import jsPDF from 'jspdf';
@@ -9,12 +9,31 @@ export const ResultsTab = ({ user }) => {
   const [isPublished, setIsPublished] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
 
-  const [resultsData, setResultsData] = useState([
-    { rank: 1, team: 'MPEC Tigers', college: 'MPEC', medal: 'Gold', score: '3-2', status: 'Verified' },
-    { rank: 2, team: 'MIPS Warriors', college: 'MIPS', medal: 'Silver', score: '2-3', status: 'Verified' },
-    { rank: 3, team: 'MPCPS Knights', college: 'MPCPS (KN142)', medal: 'Bronze', score: '3-1', status: 'Verified' },
-    { rank: 4, team: 'MPCP Eagles', college: 'MPCP', medal: '4th Place', score: '1-3', status: 'Verified' },
-  ]);
+  const [resultsData, setResultsData] = useState([]);
+
+  useEffect(() => {
+    const sportId = user?.assignedSport || 'badminton';
+    const key = `sems_completed_results_${sportId}`;
+    const saved = localStorage.getItem(key);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const mapped = parsed.map((item, idx) => ({
+            rank: idx + 1,
+            team: item.winner || item.team1 || 'Team A',
+            college: item.college || 'MPEC',
+            medal: idx === 0 ? 'Gold' : idx === 1 ? 'Silver' : idx === 2 ? 'Bronze' : `${idx + 1}th Place`,
+            score: `${item.score1 || 0}-${item.score2 || 0}`,
+            status: 'Verified'
+          }));
+          setResultsData(mapped);
+          return;
+        }
+      } catch (e) {}
+    }
+    setResultsData([]);
+  }, [user]);
 
   const handleTogglePublish = () => {
     if (isLocked) {
@@ -149,25 +168,33 @@ export const ResultsTab = ({ user }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-              {resultsData.map((r) => (
-                <tr key={r.rank} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                  <td className="p-3 font-black text-slate-900 dark:text-white">#{r.rank}</td>
-                  <td className="p-3 font-bold text-slate-900 dark:text-white">{r.team}</td>
-                  <td className="p-3 font-semibold text-orange-500">{r.college}</td>
-                  <td className="p-3 font-bold">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] uppercase ${
-                      r.medal === 'Gold' ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/30 font-black' :
-                      r.medal === 'Silver' ? 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-black' :
-                      r.medal === 'Bronze' ? 'bg-amber-700/20 text-amber-700 dark:text-amber-400 font-black' :
-                      'bg-slate-100 dark:bg-slate-800 text-slate-500'
-                    }`}>
-                      {r.medal}
-                    </span>
+              {resultsData.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-slate-500 font-mono">
+                    No official final results declared yet. Complete matches in 'Declare Results' to publish medal standings.
                   </td>
-                  <td className="p-3 font-mono font-bold text-slate-700 dark:text-slate-300">{r.score}</td>
-                  <td className="p-3 text-right font-bold text-emerald-500">{r.status}</td>
                 </tr>
-              ))}
+              ) : (
+                resultsData.map((r) => (
+                  <tr key={r.rank} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="p-3 font-black text-slate-900 dark:text-white">#{r.rank}</td>
+                    <td className="p-3 font-bold text-slate-900 dark:text-white">{r.team}</td>
+                    <td className="p-3 font-semibold text-orange-500">{r.college}</td>
+                    <td className="p-3 font-bold">
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] uppercase ${
+                        r.medal === 'Gold' ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/30 font-black' :
+                        r.medal === 'Silver' ? 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-black' :
+                        r.medal === 'Bronze' ? 'bg-amber-700/20 text-amber-700 dark:text-amber-400 font-black' :
+                        'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                      }`}>
+                        {r.medal}
+                      </span>
+                    </td>
+                    <td className="p-3 font-mono font-bold text-slate-700 dark:text-slate-300">{r.score}</td>
+                    <td className="p-3 text-right font-bold text-emerald-500">{r.status}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

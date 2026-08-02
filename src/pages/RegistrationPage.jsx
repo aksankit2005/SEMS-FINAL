@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Trophy, ArrowLeft, User, Users, Info, ShieldCheck } from 'lucide-react';
+import { Trophy, ArrowLeft, User, Users, Info, ShieldCheck, Sparkles, Calendar, MapPin } from 'lucide-react';
 import { SPORTS_DATA } from '../data/sportsData';
 import { SPORTS_CONFIG } from '../data/sportsConfig';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { coordinatorApi } from '../services/coordinatorApi';
+import { RazorpayModal } from '../components/registration/RazorpayModal';
 
 // Import newly created modular components
 import { SportCard } from '../components/registration/SportCard';
@@ -14,6 +16,7 @@ import { TeamDetailsForm, validateTeamForm } from '../components/registration/Te
 import { PaymentForm } from '../components/registration/PaymentForm';
 import { RegistrationReceipt } from '../components/registration/RegistrationReceipt';
 import { generateCollegePassCode } from '../utils/pdfExporter';
+
 
 const MOCK_RECEIPT_IMAGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'><rect width='100%25' height='100%25' fill='%230f172a'/><text x='50%25' y='35%25' fill='%2310b981' font-family='sans-serif' font-size='22' font-weight='black' text-anchor='middle'>APEX 2026</text><text x='50%25' y='50%25' fill='%23ffffff' font-family='sans-serif' font-size='14' font-weight='bold' text-anchor='middle'>MOCK PAYMENT SUCCESSFUL</text><text x='50%25' y='65%25' fill='%2364748b' font-family='sans-serif' font-size='10' font-weight='medium' text-anchor='middle'>UTR: TXN-APEX-MOCK-998</text><rect x='20' y='220' width='260' height='50' fill='%231e293b' rx='10'/><text x='50%25' y='250%25' fill='%2338bdf8' font-family='sans-serif' font-size='12' font-weight='bold' text-anchor='middle'>VERIFIED DEMO RECEIPT</text></svg>";
 
@@ -98,6 +101,33 @@ export const RegistrationPage = () => {
   const [errors, setErrors] = useState({});
   const [completedReceipt, setCompletedReceipt] = useState(null);
 
+  // Coordinator Published Events state & Razorpay Modal state
+  const [coordinatorEvents, setCoordinatorEvents] = useState([]);
+  const [showRazorpayModal, setShowRazorpayModal] = useState(false);
+
+  useEffect(() => {
+    const fetchCoordinatorEvents = async () => {
+      try {
+        const events = await coordinatorApi.getPublicEvents();
+        setCoordinatorEvents(events || []);
+      } catch (err) {
+        console.warn('Error fetching public coordinator events', err);
+      }
+    };
+
+    fetchCoordinatorEvents();
+
+    const handleRefresh = () => fetchCoordinatorEvents();
+    window.addEventListener('storage', handleRefresh);
+    window.addEventListener('focus', handleRefresh);
+
+    return () => {
+      window.removeEventListener('storage', handleRefresh);
+      window.removeEventListener('focus', handleRefresh);
+    };
+  }, []);
+
+
   // Set pre-selected sport if search param exists and matches an open sport
   useEffect(() => {
     if (preselectedSportId) {
@@ -143,9 +173,20 @@ export const RegistrationPage = () => {
   }, [activeSport]);
 
   const handleSportSelect = (sport) => {
-    setActiveSport(sport);
+    const isRacket = sport.id === 'table-tennis' || sport.id === 'badminton';
+    const sFee = sport.singlesFee !== undefined ? sport.singlesFee : 300;
+    const dFee = sport.doublesFee !== undefined ? sport.doublesFee : 600;
+    const initialFee = isRacket ? sFee : sport.entryFee;
+
+    setActiveSport({
+      ...sport,
+      entryFee: initialFee,
+      singlesFee: sFee,
+      doublesFee: dFee
+    });
     setStep(1);
   };
+
 
   const handleBackToSports = () => {
     setActiveSport(null);
@@ -185,58 +226,36 @@ export const RegistrationPage = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Step 2 Submission (Payment Gateway & Declaration)
-  const handlePaymentSubmit = (e) => {
-    if (e) e.preventDefault();
-
-    if (!formData.declarationAccepted) {
-      setErrors((prev) => ({ ...prev, declarationAccepted: 'Please accept the declaration and verification policy' }));
-      addToast('Please accept the declaration and verification policy.', 'error');
-      return;
-    }
-
-    const paymentErrors = {};
-    const method = formData.paymentMethod || 'upi';
-
-    if (method === 'upi') {
-      if (!formData.upiId?.trim()) {
-        paymentErrors.upiId = 'UPI ID is required';
-      } else if (!formData.upiId.includes('@')) {
-        paymentErrors.upiId = 'Invalid UPI ID format (must contain @)';
-      }
-    } else if (method === 'card') {
-      if (!formData.cardHolder?.trim()) {
-        paymentErrors.cardHolder = 'Cardholder name is required';
-      }
-      if (!formData.cardNumber?.trim() || formData.cardNumber.replace(/\s/g, '').length < 16) {
-        paymentErrors.cardNumber = 'Valid 16-digit card number is required';
-      }
-      if (!formData.cardExpiry?.trim() || !/^\d{2}\/\d{2}$/.test(formData.cardExpiry)) {
-        paymentErrors.cardExpiry = 'Expiry date must be MM/YY';
-      }
-      if (!formData.cardCvv?.trim() || formData.cardCvv.length < 3) {
-        paymentErrors.cardCvv = 'CVV is required (3 digits)';
-      }
-    } else if (method === 'netbanking') {
-      if (!formData.selectedBank) {
-        paymentErrors.selectedBank = 'Please select a bank';
-      }
-    }
-
-    if (Object.keys(paymentErrors).length > 0) {
-      setErrors(paymentErrors);
-      addToast('Please correct the payment errors before proceeding.', 'error');
-      return;
-    }
-
-    // Simulate gateway processing (1.5s delay)
+  // Razorpay Payment Success Handler
+  const handleRazorpaySuccess = async (paymentRes) => {
+    setShowRazorpayModal(false);
     setIsProcessingPayment(true);
 
-    setTimeout(() => {
-      setIsProcessingPayment(false);
+    try {
+      // Register event with coordinator backend API
+      const result = await coordinatorApi.registerForEvent(
+        activeSport.id,
+        activeSport.sportId || activeSport.id,
+        {
+          fullName: formData.captainName || (formData.roster[0] && formData.roster[0].name) || 'Lead Athlete',
+          captainName: formData.captainName,
+          email: formData.captainEmail,
+          phone: formData.captainPhone,
+          gender: formData.roster[0]?.gender || 'Male',
+          collegeName: formData.collegeName || 'MPEC',
+          department: formData.roster[0]?.department || 'Engineering',
+          enrollmentNo: formData.roster[0]?.rollNumber || 'ENR2026-001',
+          teamName: formData.teamName,
+          emergencyContact: formData.captainPhone,
+          entryFee: activeSport.entryFee
+        },
+        paymentRes
+      );
 
-      // Auto-generate details & passcode starting with College Name
-      const receiptId = `REC-APEX-${Math.floor(10000 + Math.random() * 90000)}`;
+      // Re-fetch public coordinator events to update slot counts in real-time
+      const updatedEvents = await coordinatorApi.getPublicEvents();
+      setCoordinatorEvents(updatedEvents);
+
       const firstRosterPlayer = formData.roster && formData.roster[0];
       const selectedCollegeName = formData.collegeName || (firstRosterPlayer && firstRosterPlayer.college) || 'ST XAVIERS COLLEGE';
       const passCode = generateCollegePassCode(selectedCollegeName, activeSport.name);
@@ -248,10 +267,8 @@ export const RegistrationPage = () => {
         eventCategory = `Athletics (${formData.selectedEvents.join(', ')})`;
       }
 
-      const utrNumber = `TXN-GW-${Math.floor(100000000000 + Math.random() * 900000000000)}`;
-
       const receipt = {
-        receiptId,
+        receiptId: result.receipt?.id || `REC-APEX-${Math.floor(10000 + Math.random() * 90000)}`,
         sportName: activeSport.name,
         category: eventCategory,
         participantName: formData.captainName || (firstRosterPlayer && firstRosterPlayer.name) || 'Lead Athlete',
@@ -266,8 +283,8 @@ export const RegistrationPage = () => {
         feePaid: activeSport.entryFee,
         rosterCount: formData.roster.length,
         roster: formData.roster,
-        utrNumber,
-        screenshotName: 'gateway_processed.png',
+        utrNumber: paymentRes.razorpayPaymentId,
+        screenshotName: 'razorpay_verified.png',
         screenshot: MOCK_RECEIPT_IMAGE,
         declarationAccepted: formData.declarationAccepted,
         declarationTimestamp: formData.declarationTimestamp,
@@ -278,13 +295,42 @@ export const RegistrationPage = () => {
 
       setCompletedReceipt(receipt);
       addRegistration(receipt);
-      addToast('Registration & Payment Successful!', 'success');
+      addToast('Registration & Razorpay Payment Successful!', 'success');
       setStep(3);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 1500);
+    } catch (err) {
+      addToast('Error processing event registration', 'error');
+    } finally {
+      setIsProcessingPayment(false);
+    }
   };
 
-  // Handle Event Type Singles/Doubles toggle inside Details Step
+  // Step 2 Submission (Payment Gateway & Declaration)
+  const handlePaymentSubmit = (e) => {
+    if (e) e.preventDefault();
+
+    if (!formData.declarationAccepted) {
+      setErrors((prev) => ({ ...prev, declarationAccepted: 'Please accept the declaration and verification policy' }));
+      addToast('Please accept the declaration and verification policy.', 'error');
+      return;
+    }
+
+    if (activeSport.entryFee > 0) {
+      // Open Razorpay Payment Gateway Modal for paid events
+      setShowRazorpayModal(true);
+    } else {
+      // Free events (Entry Fee = 0): Skip payment and confirm instantly
+      handleRazorpaySuccess({
+        razorpayPaymentId: `FREE_PASS_${Math.floor(100000 + Math.random() * 900000)}`,
+        orderId: `order_free_${Date.now()}`,
+        amount: 0,
+        status: 'FREE_CONFIRMED'
+      });
+    }
+  };
+
+
+  // Handle Event Type Singles/Doubles toggle inside Details Step with dynamic fee recalculation
   const handleEventTypeToggle = (type) => {
     setFormData((prev) => ({
       ...prev,
@@ -292,6 +338,17 @@ export const RegistrationPage = () => {
       teamName: type === 'Singles' ? '' : prev.teamName,
       roster: [] // reset roster size to reinitialize correctly
     }));
+
+    if (activeSport) {
+      const sFee = activeSport.singlesFee !== undefined ? activeSport.singlesFee : 300;
+      const dFee = activeSport.doublesFee !== undefined ? activeSport.doublesFee : 600;
+      const updatedFee = type === 'Singles' ? sFee : dFee;
+      setActiveSport((prev) => ({
+        ...prev,
+        entryFee: updatedFee
+      }));
+    }
+
     setErrors({});
   };
 
@@ -305,32 +362,43 @@ export const RegistrationPage = () => {
         {isRacketSport && (
           <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3">
             <label className="block text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
-              Select Event Mode <span className="text-rose-500">*</span>
+              Select Event Mode & Fee <span className="text-rose-500">*</span>
             </label>
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
                 onClick={() => handleEventTypeToggle('Singles')}
-                className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 font-bold text-xs transition ${formData.eventType === 'Singles'
+                className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-1 font-bold text-xs transition ${formData.eventType === 'Singles'
                     ? 'border-blue-600 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-extrabold'
                     : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400'
                   }`}
               >
-                <User className="w-4 h-4" /> Singles (1 Player)
+                <div className="flex items-center gap-1.5">
+                  <User className="w-4 h-4" /> Singles (1 Player)
+                </div>
+                <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400">
+                  Singles Fee: ₹{activeSport.singlesFee !== undefined ? activeSport.singlesFee : 300}
+                </span>
               </button>
               <button
                 type="button"
                 onClick={() => handleEventTypeToggle('Doubles')}
-                className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 font-bold text-xs transition ${formData.eventType === 'Doubles'
+                className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-1 font-bold text-xs transition ${formData.eventType === 'Doubles'
                     ? 'border-blue-600 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-extrabold'
                     : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400'
                   }`}
               >
-                <Users className="w-4 h-4" /> Doubles (2 Players)
+                <div className="flex items-center gap-1.5">
+                  <Users className="w-4 h-4" /> Doubles (2 Players)
+                </div>
+                <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400">
+                  Doubles Fee: ₹{activeSport.doublesFee !== undefined ? activeSport.doublesFee : 600}
+                </span>
               </button>
             </div>
           </div>
         )}
+
 
         {/* Dynamic sub-forms */}
         {isRacketSport ? (
@@ -386,26 +454,168 @@ export const RegistrationPage = () => {
           </h1>
         </div>
 
-        {/* SPORTS LIST STATE */}
+        {/* SPORTS LIST & COORDINATOR EVENTS STATE */}
         {!activeSport ? (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase flex items-center gap-2">
-                🟢 Sports Status Dashboard
-              </h2>
+          <div className="space-y-8">
+            
+            {/* DYNAMIC COORDINATOR PUBLISHED EVENTS SECTION */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-indigo-500 animate-pulse" />
+                  Official Coordinator Events
+                </h2>
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-mono text-xs font-bold border border-indigo-500/20">
+                  Live Events ({
+                    (coordinatorEvents || []).filter((evt) => {
+                      return evt && evt.id !== 'EVT-BADMINTON-001' && evt.id !== 'EVT-CRICKET-001' && evt.id !== 'EVT-FOOTBALL-001';
+                    }).length
+                  })
+                </span>
+              </div>
+
+              {(coordinatorEvents || []).filter((evt) => {
+                return evt && evt.id !== 'EVT-BADMINTON-001' && evt.id !== 'EVT-CRICKET-001' && evt.id !== 'EVT-FOOTBALL-001';
+              }).length === 0 ? (
+                <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-soft p-8 space-y-3">
+                  <Sparkles className="w-12 h-12 text-indigo-500 mx-auto" />
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">No Coordinator Events Currently Available</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Published events created by Sport Coordinators will appear here dynamically for registration.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+                  {(coordinatorEvents || []).filter((evt) => {
+                    return evt && evt.id !== 'EVT-BADMINTON-001' && evt.id !== 'EVT-CRICKET-001' && evt.id !== 'EVT-FOOTBALL-001';
+                  }).map((evt) => {
+                    const registered = evt.registeredCount || 0;
+                    const limit = evt.maxRegistrations || 64;
+                    const slotsLeft = Math.max(0, limit - registered);
+                    const isClosed = evt.status === 'Closed' || slotsLeft === 0;
+
+                    return (
+                      <div
+                        key={evt.id}
+                        className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-lg hover:shadow-2xl transition duration-300 flex flex-col justify-between group"
+                      >
+                        <div className="relative h-48 w-full overflow-hidden bg-slate-950">
+                          <img
+                            src={evt.coverImage}
+                            alt={evt.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
+
+                          <div className="absolute top-3 left-3 flex items-center gap-2">
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase shadow-md ${
+                              isClosed
+                                ? 'bg-rose-500 text-white'
+                                : 'bg-emerald-500 text-white'
+                            }`}>
+                              {isClosed ? '● Registration Closed' : '● Registration Open'}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full bg-slate-950/70 text-white text-[10px] font-bold border border-white/20">
+                              {evt.category}
+                            </span>
+                          </div>
+
+                          <div className="absolute top-3 right-3 bg-slate-950/80 backdrop-blur-xs px-3 py-1 rounded-full text-xs font-black text-amber-400 border border-slate-700">
+                            Fee: {evt.singlesFee ? `Singles ₹${evt.singlesFee} | Doubles ₹${evt.doublesFee}` : evt.entryFee > 0 ? `₹${evt.entryFee}` : 'FREE'}
+                          </div>
+
+                          <div className="absolute bottom-3 left-4 right-4">
+                            <span className="text-[10px] font-mono font-bold text-indigo-400 uppercase tracking-wider block">
+                              {evt.sportName} Coordinator Event
+                            </span>
+                            <h3 className="text-xl font-black text-white leading-tight drop-shadow-md">
+                              {evt.title}
+                            </h3>
+                          </div>
+                        </div>
+
+                        <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
+                          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-2">
+                            {evt.description}
+                          </p>
+
+                          <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 dark:bg-slate-950 p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
+                            <div>
+                              <span className="text-[10px] text-slate-400 uppercase font-mono block">Reg Dates</span>
+                              <span className="font-bold text-slate-800 dark:text-slate-200 text-[11px]">{evt.regStartDate} to {evt.regEndDate}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 uppercase font-mono block">Tournament</span>
+                              <span className="font-bold text-slate-800 dark:text-slate-200 text-[11px]">{evt.tournStartDate} to {evt.tournEndDate}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 uppercase font-mono block">Venue</span>
+                              <span className="font-bold text-blue-600 dark:text-blue-400 text-[11px] truncate block">{evt.venue}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 uppercase font-mono block">Team Size</span>
+                              <span className="font-bold text-slate-800 dark:text-slate-200 text-[11px]">{evt.teamSize}</span>
+                            </div>
+                          </div>
+
+                          {/* Total Registered Display */}
+                          <div className="flex justify-between text-xs pt-1">
+                            <span className="font-bold text-slate-500 dark:text-slate-400">Total Registered</span>
+                            <span className="font-mono font-black text-blue-600 dark:text-blue-400">
+                              {registered} Participants
+                            </span>
+                          </div>
+
+                          <div className="pt-2">
+                            <button
+                              disabled={isClosed}
+                              onClick={() => {
+                                const adaptedSport = {
+                                  id: evt.sportId || 'badminton',
+                                  name: evt.title,
+                                  sportName: evt.sportName,
+                                  category: evt.category,
+                                  type: evt.teamSize,
+                                  tagline: evt.title,
+                                  description: evt.description,
+                                  image: evt.coverImage,
+                                  status: isClosed ? 'Closed' : 'Open',
+                                  participantsCount: registered,
+                                  maxParticipants: limit,
+                                  entryFee: evt.singlesFee !== undefined ? evt.singlesFee : (evt.entryFee || 300),
+                                  singlesFee: evt.singlesFee !== undefined ? evt.singlesFee : 300,
+                                  doublesFee: evt.doublesFee !== undefined ? evt.doublesFee : 600,
+                                  teamSize: evt.teamSize,
+                                  venue: evt.venue,
+                                  rules: evt.rules || ['Standard rules apply.'],
+                                  startDate: evt.regStartDate,
+                                  endDate: evt.regEndDate,
+                                  isCoordinatorEvent: true,
+                                  eventId: evt.id
+                                };
+                                setActiveSport(adaptedSport);
+                                setStep(1);
+                              }}
+                              className={`w-full py-3 rounded-2xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 ${
+                                isClosed
+                                  ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-300 dark:border-slate-700'
+                                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white shadow-blue-500/20 active:scale-[0.98]'
+                              }`}
+                            >
+                              <span>{isClosed ? (slotsLeft === 0 ? 'Event Full' : 'Registration Closed') : 'Register Now'}</span>
+                              <Trophy className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sportsList.map((sport) => (
-                <SportCard
-                  key={sport.id}
-                  sport={sport}
-                  onRegisterSelect={handleSportSelect}
-                />
-              ))}
-            </div>
           </div>
         ) : (
+
           /* ACTIVE STEPS WIZARD */
           <div className="space-y-6">
 
@@ -568,7 +778,21 @@ export const RegistrationPage = () => {
           </div>
         )}
 
+        {/* RAZORPAY PAYMENT GATEWAY MODAL */}
+        {showRazorpayModal && activeSport && (
+          <RazorpayModal
+            event={{ title: activeSport.name, entryFee: activeSport.entryFee }}
+            amount={activeSport.entryFee}
+            participantName={formData.captainName || (formData.roster[0] && formData.roster[0].name) || 'Lead Athlete'}
+            onClose={() => setShowRazorpayModal(false)}
+            onSuccess={handleRazorpaySuccess}
+          />
+        )}
+
       </div>
     </div>
   );
 };
+
+export default RegistrationPage;
+
