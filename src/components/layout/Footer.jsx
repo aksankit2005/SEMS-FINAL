@@ -1,7 +1,49 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Phone, ShieldCheck } from 'lucide-react';
 
+const FooterContactItem = ({ icon: Icon, bgClass, textClass, value, href, label }) => {
+  const [show, setShow] = useState(false);
+  const itemRef = useRef(null);
+
+  useEffect(() => {
+    if (!show) return;
+    const handleClickOutside = (e) => {
+      if (itemRef.current && !itemRef.current.contains(e.target)) {
+        setShow(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [show]);
+
+  return (
+    <div ref={itemRef} className="flex items-center gap-2.5">
+      <button
+        onClick={() => setShow(!show)}
+        title={show ? "Click to hide" : `Click to view ${label}`}
+        className={`p-2 rounded-xl ${bgClass} ${textClass} hover:scale-110 hover:bg-blue-500/20 active:scale-95 transition-all cursor-pointer flex items-center justify-center shrink-0`}
+      >
+        <Icon className="w-4 h-4" />
+      </button>
+      {show ? (
+        <a
+          href={href}
+          className="font-semibold text-slate-800 dark:text-slate-200 hover:text-cyan-500 transition select-all text-xs"
+        >
+          {value}
+        </a>
+      ) : (
+        <button
+          onClick={() => setShow(true)}
+          className="text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-cyan-500 dark:hover:text-cyan-400 transition cursor-pointer"
+        >
+          {label}
+        </button>
+      )}
+    </div>
+  );
+};
 
 export const Footer = () => {
   return (
@@ -53,14 +95,15 @@ export const Footer = () => {
           {/* Support & Organizers */}
           <div>
             <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-200 mb-4">
-              Support & Desk
+              Support & Legal
             </h4>
             <ul className="space-y-2.5 text-sm text-slate-500 dark:text-slate-400">
+              <li><Link to="/faq" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Frequently Asked Questions (FAQ)</Link></li>
+              <li><Link to="/terms" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Terms & Conditions</Link></li>
+              <li><Link to="/privacy" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Privacy Policy</Link></li>
               <li><Link to="/coordinators" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Coordinators Directory</Link></li>
               <li><Link to="/announcements" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">News & Announcements</Link></li>
-              <li><Link to="/gallery" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Event Gallery</Link></li>
               <li><Link to="/about" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">About APEX & Committee</Link></li>
-              <li><Link to="/dashboard" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Athlete Portal</Link></li>
             </ul>
           </div>
 
@@ -78,7 +121,6 @@ export const Footer = () => {
                   className="flex items-center gap-2.5 hover:text-cyan-500 transition group"
                 >
                   <div className="p-2 rounded-xl bg-pink-500/10 text-pink-600 dark:text-pink-400 group-hover:scale-105 transition-transform">
-                    {/* Instagram SVG icon */}
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
                       <circle cx="12" cy="12" r="4" />
@@ -90,27 +132,25 @@ export const Footer = () => {
               </li>
 
               <li>
-                <a
+                <FooterContactItem
+                  icon={Mail}
+                  bgClass="bg-blue-500/10"
+                  textClass="text-blue-600 dark:text-blue-400"
+                  value="sports@mpgi.edu.in"
                   href="mailto:sports@mpgi.edu.in"
-                  className="flex items-center gap-2.5 hover:text-cyan-500 transition group"
-                >
-                  <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:scale-105 transition-transform">
-                    <Mail className="w-4 h-4" />
-                  </div>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200 select-all">sports@mpgi.edu.in</span>
-                </a>
+                  label="Email"
+                />
               </li>
 
               <li>
-                <a
+                <FooterContactItem
+                  icon={Phone}
+                  bgClass="bg-emerald-500/10"
+                  textClass="text-emerald-600 dark:text-emerald-400"
+                  value="+91 91197 05860"
                   href="tel:+919119705860"
-                  className="flex items-center gap-2.5 hover:text-cyan-500 transition group"
-                >
-                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform">
-                    <Phone className="w-4 h-4" />
-                  </div>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200 select-all">+91 91197 05860</span>
-                </a>
+                  label="Contact Us"
+                />
               </li>
             </ul>
           </div>
@@ -118,8 +158,17 @@ export const Footer = () => {
         </div>
 
         {/* Bottom bar */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+        <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <p>© 2026 APEX - Spirit of Sporting Excellence. All rights reserved.</p>
+
+          <div className="flex flex-wrap items-center gap-4 text-slate-500 dark:text-slate-400 font-medium">
+            <Link to="/faq" className="hover:text-cyan-500 transition">FAQ</Link>
+            <span>•</span>
+            <Link to="/terms" className="hover:text-cyan-500 transition">Terms & Conditions</Link>
+            <span>•</span>
+            <Link to="/privacy" className="hover:text-cyan-500 transition">Privacy Policy</Link>
+          </div>
+
           <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
             <span>Engineered for Modern Sports Management.</span>
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
