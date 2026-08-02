@@ -79,7 +79,7 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
               onClick={() => { setIsAuthModalOpen(true); onClose(); }}
               className="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-orange-500 text-white font-bold text-xs shadow-md"
             >
-              Sign In / Student Portal
+              Official Portals Sign In
             </button>
           )}
         </div>
