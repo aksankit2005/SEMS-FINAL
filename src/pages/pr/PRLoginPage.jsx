@@ -36,8 +36,8 @@ export const PRLoginPage = () => {
   };
 
   const handleDemoFill = () => {
-    setUsername('pr_admin');
-    setPassword('password123');
+    setUsername(import.meta.env.VITE_PR_ADMIN_USERNAME || 'pr_admin');
+    setPassword(import.meta.env.VITE_PR_ADMIN_PASSWORD || 'password123');
     setError('');
   };
 
