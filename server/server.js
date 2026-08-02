@@ -1142,6 +1142,8 @@ app.post('/api/coordinator/events', verifyCoordinatorToken, (req, res) => {
     tournStartDate: req.body.tournStartDate || '2026-09-01',
     tournEndDate: req.body.tournEndDate || '2026-09-05',
     entryFee: Number(req.body.entryFee || 0),
+    singlesFee: req.body.singlesFee !== undefined ? Number(req.body.singlesFee) : Number(req.body.entryFee || 300),
+    doublesFee: req.body.doublesFee !== undefined ? Number(req.body.doublesFee) : (req.body.singlesFee !== undefined ? Number(req.body.singlesFee) * 2 : 600),
     teamSize: req.body.teamSize || '1 Player',
     maxRegistrations: Number(req.body.maxRegistrations || 64),
     registeredCount: Number(req.body.registeredCount || 0),
@@ -1239,7 +1241,7 @@ app.get('/api/public/events', (req, res) => {
         currentStatus = 'Closed';
       }
 
-      if (currentStatus === 'Published' || currentStatus === 'Closed') {
+      if (currentStatus === 'Published' || currentStatus === 'Closed' || currentStatus === 'Coming Soon') {
         publishedEvents.push({
           ...e,
           status: currentStatus,

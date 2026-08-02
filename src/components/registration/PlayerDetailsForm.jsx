@@ -112,6 +112,7 @@ export const PlayerDetailsForm = ({
       if (field === 'name') syncUpdates.captainName = value;
       if (field === 'phone') syncUpdates.captainPhone = value;
       if (field === 'email') syncUpdates.captainEmail = value;
+      if (field === 'gender') syncUpdates.gender = value;
     }
 
     setFormData((prev) => ({
