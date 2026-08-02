@@ -214,23 +214,11 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
                   </button>
                   <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex flex-col overflow-hidden p-1.5 space-y-1">
                     <div className="px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                      Select Access Portal
+                      Official Access Portals
                     </div>
-                    <button
-                      onClick={() => setIsAuthModalOpen(true)}
-                      className="w-full px-3 py-2.5 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-xl transition flex items-center gap-3 group/item"
-                    >
-                      <span className="p-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover/item:bg-blue-600 group-hover/item:text-white transition">
-                        <User className="w-3.5 h-3.5" />
-                      </span>
-                      <div>
-                        <p className="font-extrabold text-slate-900 dark:text-white">Student Portal</p>
-                        <p className="text-[10px] text-slate-400 font-medium">Athlete registration & results</p>
-                      </div>
-                    </button>
                     <Link
                       to="/college-head/login"
-                      className="px-3 py-2.5 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 rounded-xl transition flex items-center gap-3 group/item border-t border-slate-100 dark:border-slate-800/60"
+                      className="px-3 py-2.5 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 rounded-xl transition flex items-center gap-3 group/item"
                     >
                       <span className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover/item:bg-emerald-600 group-hover/item:text-white transition">
                         <Building2 className="w-3.5 h-3.5" />

@@ -40,13 +40,13 @@ export const DashboardPage = () => {
               className="block dark:hidden h-14 w-auto object-contain"
             />
           </div>
-          <h2 className="text-2xl font-black text-slate-900 dark:text-white">Portal Access Required</h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Sign in as a Student Athlete or Admin Director to view your personalized APEX dashboard.</p>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white">Official Access Required</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Please sign in via an authorized official portal (College Head, Sport Coordinator, or PR Media) to access dashboard management tools.</p>
           <button
             onClick={() => setIsAuthModalOpen(true)}
-            className="w-full py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs shadow-md"
+            className="w-full py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs shadow-md cursor-pointer"
           >
-            Sign In Now
+            Select Official Portal
           </button>
         </div>
       </div>
