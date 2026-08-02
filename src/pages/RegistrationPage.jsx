@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Trophy, ArrowLeft, User, Users, Info, ShieldCheck, Sparkles, Calendar, MapPin } from 'lucide-react';
+import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
+import { Trophy, ArrowLeft, User, Users, Info, ShieldCheck, Sparkles, Calendar, MapPin, CheckCircle } from 'lucide-react';
 import { SPORTS_DATA } from '../data/sportsData';
 import { SPORTS_CONFIG } from '../data/sportsConfig';
 import { useAuth } from '../context/AuthContext';
@@ -23,10 +23,30 @@ const MOCK_RECEIPT_IMAGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.or
 export const RegistrationPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { eventId } = useParams();
   const { addRegistration } = useAuth();
   const { addToast } = useToast();
 
   const preselectedSportId = searchParams.get('sport');
+
+  const formatDateDDMMYYYY = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      const cleanStr = String(dateStr).split('T')[0];
+      const parts = cleanStr.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}-${month}-${year}`;
+    } catch (e) {
+      return dateStr;
+    }
+  };
 
   // Load configuration and merge with existing sports data
   const [sportsList] = useState(() => {
@@ -126,6 +146,66 @@ export const RegistrationPage = () => {
       window.removeEventListener('focus', handleRefresh);
     };
   }, []);
+
+  useEffect(() => {
+    if (eventId && coordinatorEvents.length > 0) {
+      let foundEvent = coordinatorEvents.find((e) => String(e.id) === String(eventId));
+
+      if (!foundEvent) {
+        const sportMatches = coordinatorEvents.filter((e) => {
+          const sId = (e.sportId || '').toLowerCase();
+          const sName = (e.sportName || '').toLowerCase();
+          const title = (e.title || '').toLowerCase();
+          const target = eventId.toLowerCase();
+          return (sId === target || sName === target || title.includes(target)) && (e.status === 'Published' || e.status === 'Open');
+        });
+        if (sportMatches.length > 0) {
+          foundEvent = sportMatches[0];
+        }
+      }
+
+      if (foundEvent) {
+        const matchedSport = sportsList.find((s) => s.id === (foundEvent.sportId || '').toLowerCase()) || {
+          id: foundEvent.sportId || 'sport',
+          name: foundEvent.sportName || foundEvent.title || 'Sport Event',
+          category: foundEvent.category || 'Outdoor',
+          type: foundEvent.teamSize || 'Team / Individual',
+          tagline: foundEvent.description || 'Championship Event',
+          description: foundEvent.description || '',
+          image: foundEvent.coverImage || 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=800&q=80',
+          entryFee: Number(foundEvent.entryFee || 300),
+          teamSize: foundEvent.teamSize || '1 Player',
+          venue: foundEvent.venue || 'Central Arena',
+          rules: foundEvent.rules || ['Official rules apply.'],
+          startDate: foundEvent.regStartDate || '2026-08-01',
+          endDate: foundEvent.regEndDate || '2026-08-30'
+        };
+
+        setActiveSport({
+          ...matchedSport,
+          activeEventId: foundEvent.id,
+          eventName: foundEvent.title || foundEvent.event_name,
+          entryFee: foundEvent.entryFee !== undefined ? Number(foundEvent.entryFee) : matchedSport.entryFee,
+          startDate: foundEvent.regStartDate || matchedSport.startDate,
+          endDate: foundEvent.regEndDate || matchedSport.endDate,
+          tournStartDate: foundEvent.tournStartDate || foundEvent.event_date || matchedSport.startDate,
+          tournEndDate: foundEvent.tournEndDate || foundEvent.tournStartDate || matchedSport.endDate,
+          venue: foundEvent.venue || matchedSport.venue,
+          rules: foundEvent.rules || matchedSport.rules,
+          requiredDocuments: foundEvent.requiredDocuments || ['College ID Card']
+        });
+        setStep(1);
+      } else {
+        const staticSport = sportsList.find((s) => s.id === eventId.toLowerCase());
+        if (staticSport) {
+          setActiveSport(staticSport);
+          setStep(1);
+        } else {
+          addToast('Registration is not available for this sport or event.', 'error');
+        }
+      }
+    }
+  }, [eventId, coordinatorEvents, sportsList]);
 
 
   // Set pre-selected sport if search param exists and matches an open sport
@@ -358,6 +438,58 @@ export const RegistrationPage = () => {
 
     return (
       <div className="space-y-6">
+        {/* Selected Event Dynamic Info Card */}
+        {activeSport && (
+          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-soft space-y-4 mb-6">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">Sport: {activeSport.name}</span>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white">Event: {activeSport.eventName || activeSport.name}</h3>
+              </div>
+              <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                Fee: ₹{activeSport.entryFee}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs text-slate-600 dark:text-slate-300">
+              <div>
+                <span className="block text-[10px] uppercase font-bold text-slate-400">Registration Start Date</span>
+                <span className="font-bold">{formatDateDDMMYYYY(activeSport.startDate)}</span>
+              </div>
+              <div>
+                <span className="block text-[10px] uppercase font-bold text-slate-400">Registration Last Date</span>
+                <span className="font-bold">{formatDateDDMMYYYY(activeSport.endDate)}</span>
+              </div>
+              <div>
+                <span className="block text-[10px] uppercase font-bold text-slate-400">Event Start Date</span>
+                <span className="font-bold">{formatDateDDMMYYYY(activeSport.tournStartDate || activeSport.startDate)}</span>
+              </div>
+              <div>
+                <span className="block text-[10px] uppercase font-bold text-slate-400">Event End Date</span>
+                <span className="font-bold">{formatDateDDMMYYYY(activeSport.tournEndDate || activeSport.tournStartDate || activeSport.endDate)}</span>
+              </div>
+              <div>
+                <span className="block text-[10px] uppercase font-bold text-slate-400">Venue</span>
+                <span className="font-bold truncate">{activeSport.venue || 'Central Arena'}</span>
+              </div>
+            </div>
+
+            {activeSport.rules && activeSport.rules.length > 0 && (
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Official Rules:</span>
+                <ul className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                  {activeSport.rules.map((rule, idx) => (
+                    <li key={idx} className="flex items-start gap-1.5">
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                      <span>{rule}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Racket Sport Singles/Doubles Selection */}
         {isRacketSport && (
           <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3">
