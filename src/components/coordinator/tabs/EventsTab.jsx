@@ -350,9 +350,11 @@ export const EventsTab = ({ user }) => {
                       <span className={`px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase border shadow-md ${
                         event.status === 'Published'
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                          : event.status === 'Coming Soon'
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                           : event.status === 'Closed'
                           ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                          : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                          : 'bg-slate-500/20 text-slate-300 border-slate-500/40'
                       }`}>
                         ● {event.status}
                       </span>
@@ -681,6 +683,7 @@ export const EventsTab = ({ user }) => {
                   >
                     <option value="Draft">Draft (Hidden)</option>
                     <option value="Published">Published (Open)</option>
+                    <option value="Coming Soon">Coming Soon</option>
                     <option value="Closed">Closed</option>
                   </select>
                 </div>

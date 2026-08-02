@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Calendar, Clock } from 'lucide-react';
+import { BadmintonRulesDisplay, BadmintonRulesModal } from './BadmintonRulesDisplay';
 
 export const SportCard = ({ sport, onRegisterSelect }) => {
   const [timeLeft, setTimeLeft] = useState('');
   const [status, setStatus] = useState({ code: '', label: '', color: '' });
+  const [showRulesModal, setShowRulesModal] = useState(false);
 
   const getSafeDate = (dStr, defaultStr) => {
     if (!dStr) return new Date(defaultStr);
@@ -128,9 +130,39 @@ export const SportCard = ({ sport, onRegisterSelect }) => {
           <div className="text-right">
             <span className="text-slate-400 block text-[9px] uppercase">Entry Fee</span>
             <span className="font-extrabold text-[11px] text-emerald-600 dark:text-emerald-400">
-              {sport.singlesFee ? `Singles ₹${sport.singlesFee} | Doubles ₹${sport.doublesFee}` : `₹${sport.entryFee || 400}`}
+              {sport.id === 'badminton' || sport.id === 'table-tennis' || sport.singlesFee !== undefined
+                ? `Singles: ₹${sport.singlesFee !== undefined ? sport.singlesFee : (sport.entryFee || 300)} | Doubles: ₹${sport.doublesFee !== undefined ? sport.doublesFee : (sport.singlesFee !== undefined ? sport.singlesFee * 2 : 600)}`
+                : `Fee: ₹${sport.entryFee || 400}`}
             </span>
           </div>
+        </div>
+
+        {/* Registration Countdown Timer */}
+        {timeLeft && (
+          <div className="flex items-center justify-between text-[11px] bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 p-2 rounded-xl border border-amber-500/30 font-bold">
+            <span className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+              <Clock className="w-3 h-3 text-amber-500 animate-pulse" /> Reg Deadline:
+            </span>
+            <span className="font-mono font-black text-amber-600 dark:text-amber-400 text-[11px]">{timeLeft}</span>
+          </div>
+        )}
+
+        {/* View Sport Rules Button */}
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
+          <button
+            type="button"
+            onClick={() => setShowRulesModal(true)}
+            className="w-full py-2 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-98"
+          >
+            <span>📜 View {sport.name} Rules</span>
+            <span className="text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded-full font-extrabold text-emerald-700 dark:text-emerald-300">Full Screen</span>
+          </button>
+
+          <BadmintonRulesModal
+            isOpen={showRulesModal}
+            onClose={() => setShowRulesModal(false)}
+            sportName={sport.name}
+          />
         </div>
       </div>
 
