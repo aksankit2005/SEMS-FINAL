@@ -1,6 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Mail, Phone, MapPin, Send, HelpCircle, ChevronDown } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+
+const ContactCardItem = ({ icon: Icon, title, iconBg, iconColor, hoverColor, label, values }) => {
+  const [show, setShow] = useState(false);
+  const cardRef = useRef(null);
+
+  useEffect(() => {
+    if (!show) return;
+    const handleClickOutside = (e) => {
+      if (cardRef.current && !cardRef.current.contains(e.target)) {
+        setShow(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [show]);
+
+  return (
+    <div ref={cardRef} className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-soft flex items-center gap-4">
+      <button 
+        onClick={() => setShow(!show)}
+        title={show ? "Click to hide" : `Click to view ${label}`}
+        className={`p-3.5 rounded-2xl ${iconBg} ${iconColor} hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0`}
+      >
+        <Icon className="w-6 h-6" />
+      </button>
+      <div>
+        <h3 className="font-extrabold text-base">{title}</h3>
+        {show ? (
+          <div className="space-y-0.5 mt-0.5">
+            {values.map((v, i) => (
+              <a key={i} href={v.href} className={`block text-xs text-slate-600 dark:text-slate-400 ${hoverColor}`}>{v.text}</a>
+            ))}
+          </div>
+        ) : (
+          <button 
+            onClick={() => setShow(true)} 
+            className={`text-xs font-semibold text-slate-500 dark:text-slate-400 ${hoverColor} transition cursor-pointer mt-0.5`}
+          >
+            {label}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export const ContactPage = () => {
   const { addToast } = useToast();
@@ -50,27 +95,31 @@ export const ContactPage = () => {
           
           {/* Contact Cards */}
           <div className="space-y-6">
-            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-soft flex items-start gap-4">
-              <div className="p-3 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                <Mail className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-extrabold text-base">Email Support</h3>
-                <p className="text-xs text-slate-500">support.apex2026@university.edu</p>
-                <p className="text-xs text-slate-500">desk.sports@apex.edu</p>
-              </div>
-            </div>
+            <ContactCardItem
+              icon={Mail}
+              title="Email Support"
+              iconBg="bg-blue-500/10"
+              iconColor="text-blue-600 dark:text-blue-400"
+              hoverColor="hover:text-blue-500"
+              label="Email"
+              values={[
+                { text: "support.apex2026@university.edu", href: "mailto:support.apex2026@university.edu" },
+                { text: "desk.sports@apex.edu", href: "mailto:desk.sports@apex.edu" }
+              ]}
+            />
 
-            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-soft flex items-start gap-4">
-              <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <Phone className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-extrabold text-base">Helpline Desk</h3>
-                <p className="text-xs text-slate-500">+91 98765 43210 (General)</p>
-                <p className="text-xs text-slate-500">+91 98765 00911 (Emergency First Aid)</p>
-              </div>
-            </div>
+            <ContactCardItem
+              icon={Phone}
+              title="Helpline Desk"
+              iconBg="bg-emerald-500/10"
+              iconColor="text-emerald-600 dark:text-emerald-400"
+              hoverColor="hover:text-emerald-500"
+              label="Contact Us"
+              values={[
+                { text: "+91 98765 43210 (General)", href: "tel:+919876543210" },
+                { text: "+91 98765 00911 (Emergency)", href: "tel:+919876500911" }
+              ]}
+            />
 
             <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-soft flex items-start gap-4">
               <div className="p-3 rounded-2xl bg-orange-500/10 text-orange-500">
