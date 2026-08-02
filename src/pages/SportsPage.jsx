@@ -5,6 +5,7 @@ import { SPORTS_DATA } from '../data/sportsData';
 import { coordinatorApi } from '../services/coordinatorApi';
 import { galleryApi } from '../services/galleryApi';
 import { useToast } from '../context/ToastContext';
+import { BadmintonRulesDisplay } from '../components/registration/BadmintonRulesDisplay';
 
 export const SportsPage = () => {
   const [searchParams] = useSearchParams();
@@ -351,17 +352,21 @@ export const SportsPage = () => {
                 <p>{activeModalSport.venue} • {activeModalSport.schedule}</p>
               </div>
 
-              <div>
-                <h4 className="font-bold text-slate-900 dark:text-white mb-2 uppercase text-xs">Official Rulebook:</h4>
-                <ul className="space-y-2">
-                  {activeModalSport.rules.map((rule, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                      <span>{rule}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {activeModalSport.id === 'badminton' || (activeModalSport.name || '').toLowerCase().includes('badminton') ? (
+                <BadmintonRulesDisplay />
+              ) : (
+                <div>
+                  <h4 className="font-bold text-slate-900 dark:text-white mb-2 uppercase text-xs">Official Rulebook:</h4>
+                  <ul className="space-y-2">
+                    {activeModalSport.rules.map((rule, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                        <span>{rule}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
