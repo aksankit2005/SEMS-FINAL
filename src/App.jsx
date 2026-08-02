@@ -20,9 +20,6 @@ import { AnnouncementsPage } from './pages/AnnouncementsPage';
 import { GalleryPage } from './pages/GalleryPage';
 import { AboutPage } from './pages/AboutPage';
 import { DashboardPage } from './pages/DashboardPage';
-import { FAQPage } from './pages/FAQPage';
-import { TermsPage } from './pages/TermsPage';
-import { PrivacyPage } from './pages/PrivacyPage';
 import { PRLoginPage } from './pages/pr/PRLoginPage';
 import { PRDashboardPage } from './pages/pr/PRDashboardPage';
 import { PREventsPage } from './pages/pr/PREventsPage';
@@ -49,6 +46,8 @@ function App() {
                   <Route path="/" element={<HomePage />} />
                   <Route path="/sports" element={<SportsPage />} />
                   <Route path="/registration" element={<RegistrationPage />} />
+                  <Route path="/registration/:eventId" element={<RegistrationPage />} />
+                  <Route path="/register/:eventId" element={<RegistrationPage />} />
                   <Route path="/live" element={<LiveMatchPortalPage />} />
                   <Route path="/schedule" element={<SchedulePage />} />
                   <Route path="/results" element={<ResultsPage />} />
@@ -59,9 +58,6 @@ function App() {
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/contact" element={<AboutPage />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
-                  <Route path="/faq" element={<FAQPage />} />
-                  <Route path="/terms" element={<TermsPage />} />
-                  <Route path="/privacy" element={<PrivacyPage />} />
 
                   {/* Public PR Login Routes */}
                   <Route path="/pr/login" element={<PRLoginPage />} />

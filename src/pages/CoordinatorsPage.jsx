@@ -1,50 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Users, Mail, Phone, MapPin, Send, MessageSquare, X } from 'lucide-react';
 import { COORDINATORS_DATA } from '../data/coordinatorsData';
 import { useToast } from '../context/ToastContext';
-
-const RevealItem = ({ icon: Icon, color, value, href, defaultLabel }) => {
-  const [show, setShow] = useState(false);
-  const itemRef = useRef(null);
-  const label = defaultLabel || (href?.startsWith('mailto') ? 'Email' : 'Contact Us');
-
-  useEffect(() => {
-    if (!show) return;
-    const handleClickOutside = (e) => {
-      if (itemRef.current && !itemRef.current.contains(e.target)) {
-        setShow(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [show]);
-
-  return (
-    <div ref={itemRef} className="flex items-center gap-2">
-      <button 
-        onClick={() => setShow(!show)}
-        title={show ? "Click to hide" : `Click to view ${label}`}
-        className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:scale-105 transition cursor-pointer shrink-0"
-      >
-        <Icon className={`w-4 h-4 ${color}`} />
-      </button>
-      {show ? (
-        href ? (
-          <a href={href} className="truncate text-slate-800 dark:text-slate-200 hover:text-blue-500 font-semibold">{value}</a>
-        ) : (
-          <span className="truncate text-slate-800 dark:text-slate-200 font-semibold">{value}</span>
-        )
-      ) : (
-        <button 
-          onClick={() => setShow(true)} 
-          className="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-blue-500 transition cursor-pointer"
-        >
-          {label}
-        </button>
-      )}
-    </div>
-  );
-};
 
 export const CoordinatorsPage = () => {
   const { addToast } = useToast();
@@ -125,12 +82,16 @@ export const CoordinatorsPage = () => {
                   </div>
 
                   <div className="space-y-2 text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <RevealItem icon={Mail} color="text-blue-500" value={coord.email} href={`mailto:${coord.email}`} />
-                    <RevealItem icon={Phone} color="text-emerald-500" value={coord.phone} href={`tel:${coord.phone}`} />
                     <div className="flex items-center gap-2">
-                      <div className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 shrink-0">
-                        <MapPin className="w-4 h-4 text-orange-500" />
-                      </div>
+                      <Mail className="w-4 h-4 text-blue-500 shrink-0" />
+                      <span className="truncate">{coord.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <span>{coord.phone}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-orange-500 shrink-0" />
                       <span>{coord.location}</span>
                     </div>
                   </div>
