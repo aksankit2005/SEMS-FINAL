@@ -26,7 +26,7 @@ export const TeamDetailsForm = ({
   const minPlayers = sport.minPlayers || 2;
   const maxPlayers = sport.maxPlayers || 2;
 
-  // Initialize roster with the correct size if empty or incorrect
+  // Initialize & enforce roster size strictly between minPlayers and maxPlayers
   useEffect(() => {
     const currentRoster = formData.roster || [];
     if (currentRoster.length < minPlayers) {
@@ -45,10 +45,15 @@ export const TeamDetailsForm = ({
       }));
       setFormData((prev) => ({
         ...prev,
-        roster: [...currentRoster, ...newPlayers]
+        roster: [...(prev.roster || []), ...newPlayers]
+      }));
+    } else if (currentRoster.length > maxPlayers) {
+      setFormData((prev) => ({
+        ...prev,
+        roster: (prev.roster || []).slice(0, maxPlayers)
       }));
     }
-  }, [minPlayers, formData.roster, formData.collegeName, formData.gender, setFormData]);
+  }, [minPlayers, maxPlayers, setFormData]);
 
   // Keep captain details in roster player #1 updated
   useEffect(() => {

@@ -115,7 +115,10 @@ export const collegeHeadApi = {
         (u) => u.username.toLowerCase() === userKey
       );
 
-      if (memoryUser && (password === expectedPassword || password === 'sems#2026' || password === 'password123')) {
+      const commonPass = import.meta.env.VITE_COMMON_PASSWORD || 'sems#2026';
+      const prAdminPass = import.meta.env.VITE_PR_ADMIN_PASSWORD || 'password123';
+
+      if (memoryUser && (password === expectedPassword || password === commonPass || password === prAdminPass)) {
         const user = {
           username: memoryUser.username,
           college: memoryUser.college,

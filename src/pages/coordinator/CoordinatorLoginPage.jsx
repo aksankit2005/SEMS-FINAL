@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, Lock, User, ShieldCheck, ArrowRight, CheckCircle2, Eye, EyeOff } from 'lucide-react';
-import { coordinatorApi, COORDINATOR_ACCOUNTS } from '../../services/coordinatorApi';
+import { Trophy, Lock, User, ShieldCheck, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { coordinatorApi } from '../../services/coordinatorApi';
 import { useToast } from '../../context/ToastContext';
 import { ThemeToggle } from '../../components/common/ThemeToggle';
 
@@ -13,12 +13,6 @@ export const CoordinatorLoginPage = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  const handleSelectPreset = (acc) => {
-    setUsername(acc.username);
-    setPassword(acc.password); // Use the correct `password` field
-    addToast(`Selected ${acc.sportName} Coordinator — credentials auto-filled`, 'info');
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -81,33 +75,6 @@ export const CoordinatorLoginPage = () => {
             <p className="mt-3 text-sm text-slate-400">
               Each sport has its own dedicated coordinator. Every coordinator can strictly manage only their assigned sport.
             </p>
-          </div>
-
-          {/* Preset Buttons for all 12 Sports */}
-          <div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">
-              Quick Preset — Click to auto-fill credentials:
-            </span>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {COORDINATOR_ACCOUNTS.map((acc) => {
-                const isSelected = username.toLowerCase() === acc.username.toLowerCase();
-                return (
-                  <button
-                    key={acc.assignedSport}
-                    type="button"
-                    onClick={() => handleSelectPreset(acc)}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold transition text-left flex items-center justify-between ${
-                      isSelected
-                        ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20 border border-orange-400'
-                        : 'bg-slate-900/90 text-slate-300 hover:bg-slate-800 border border-slate-800'
-                    }`}
-                  >
-                    <span className="truncate">{acc.sportName}</span>
-                    {isSelected && <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
           </div>
         </div>
 

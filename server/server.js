@@ -9,6 +9,10 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'sems_pr_coordinator_secret_key_2026';
 
+// PR Admin credentials configurable via environment variables
+const PR_ADMIN_USERNAME = process.env.PR_ADMIN_USERNAME || 'pr_admin';
+const PR_ADMIN_PASSWORD = process.env.PASS_PR_ADMIN || process.env.PR_ADMIN_PASSWORD || 'password123';
+
 // Common default password configurable via environment variable
 const COMMON_PASSWORD = process.env.COMMON_PASSWORD || 'sems#2026';
 
@@ -135,17 +139,17 @@ app.post('/api/pr/login', async (req, res) => {
   const dbResult = await queryDb('SELECT * FROM pr_users WHERE username = $1', [username]);
   if (dbResult && dbResult.rows.length > 0) {
     const user = dbResult.rows[0];
-    // In production bcrypt password comparison
-    if (password === 'password123' || user.password_hash) {
+    // DB password verification / environment password verification
+    if (password === PR_ADMIN_PASSWORD || user.password_hash) {
       const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
       return res.json({ success: true, token, user: { username: user.username, role: user.role } });
     }
   }
 
-  // Default hardcoded credential check (pr_admin / password123)
-  if (username === 'pr_admin' && password === 'password123') {
-    const token = jwt.sign({ username: 'pr_admin', role: 'pr_coordinator' }, JWT_SECRET, { expiresIn: '24h' });
-    return res.json({ success: true, token, user: { username: 'pr_admin', role: 'pr_coordinator' } });
+  // Environment-configured credential check
+  if (username === PR_ADMIN_USERNAME && password === PR_ADMIN_PASSWORD) {
+    const token = jwt.sign({ username: PR_ADMIN_USERNAME, role: 'pr_coordinator' }, JWT_SECRET, { expiresIn: '24h' });
+    return res.json({ success: true, token, user: { username: PR_ADMIN_USERNAME, role: 'pr_coordinator' } });
   }
 
   return res.status(401).json({ message: 'Invalid credentials. Access denied.' });
@@ -398,7 +402,7 @@ app.post('/api/college-head/login', async (req, res) => {
   const isValidPassword =
     password === COMMON_PASSWORD ||
     (expectedPassword && password === expectedPassword) ||
-    password === 'password123';
+    password === PR_ADMIN_PASSWORD;
 
   // Attempt DB Authentication
   const dbResult = await queryDb('SELECT * FROM college_head_users WHERE username = $1', [username]);
@@ -785,7 +789,7 @@ app.post('/api/coordinator/login', async (req, res) => {
   const isValidPassword =
     password === COMMON_PASSWORD ||
     (expectedPassword && password === expectedPassword) ||
-    password === 'password123';
+    password === PR_ADMIN_PASSWORD;
 
   // Attempt DB Login
   const dbResult = await queryDb('SELECT * FROM sport_coordinators WHERE username = $1', [username]);
@@ -1138,6 +1142,8 @@ app.post('/api/coordinator/events', verifyCoordinatorToken, (req, res) => {
     tournStartDate: req.body.tournStartDate || '2026-09-01',
     tournEndDate: req.body.tournEndDate || '2026-09-05',
     entryFee: Number(req.body.entryFee || 0),
+    singlesFee: req.body.singlesFee !== undefined ? Number(req.body.singlesFee) : Number(req.body.entryFee || 300),
+    doublesFee: req.body.doublesFee !== undefined ? Number(req.body.doublesFee) : (req.body.singlesFee !== undefined ? Number(req.body.singlesFee) * 2 : 600),
     teamSize: req.body.teamSize || '1 Player',
     maxRegistrations: Number(req.body.maxRegistrations || 64),
     registeredCount: Number(req.body.registeredCount || 0),
@@ -1235,7 +1241,7 @@ app.get('/api/public/events', (req, res) => {
         currentStatus = 'Closed';
       }
 
-      if (currentStatus === 'Published' || currentStatus === 'Closed') {
+      if (currentStatus === 'Published' || currentStatus === 'Closed' || currentStatus === 'Coming Soon') {
         publishedEvents.push({
           ...e,
           status: currentStatus,

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { Search, Menu, Trophy, User, ShieldCheck, Sparkles, LayoutDashboard, LogOut } from 'lucide-react';
+import { Search, Menu, Trophy, User, ShieldCheck, Sparkles, LayoutDashboard, LogOut, ChevronDown, Building2, Shield, Camera } from 'lucide-react';
 import { ThemeToggle } from '../common/ThemeToggle';
 import { QuickSearchModal } from '../common/QuickSearchModal';
 import { MobileDrawer } from './MobileDrawer';
@@ -112,23 +112,51 @@ export const Navbar = () => {
                 </div>
               ) : (
                 <div className="relative group">
-                  <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-semibold text-xs shadow-lg shadow-cyan-600/20 transition-all">
+                  <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-semibold text-xs shadow-lg shadow-cyan-600/20 transition-all cursor-pointer">
                     <User className="w-3.5 h-3.5" />
                     <span>Login</span>
+                    <ChevronDown className="w-3.5 h-3.5 text-cyan-200 group-hover:rotate-180 transition-transform duration-200" />
                   </button>
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex flex-col overflow-hidden">
-                    <button 
-                      onClick={() => setIsAuthModalOpen(true)}
-                      className="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                  <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex flex-col overflow-hidden p-1.5 space-y-1">
+                    <div className="px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                      Official Access Portals
+                    </div>
+                    <Link
+                      to="/college-head/login"
+                      className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 rounded-xl transition flex items-center gap-2.5 group/item"
                     >
-                      Student Login
-                    </button>
-                    <button 
-                      onClick={() => setIsAuthModalOpen(true)}
-                      className="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition border-t border-slate-100 dark:border-slate-800"
+                      <span className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover/item:bg-emerald-600 group-hover/item:text-white transition">
+                        <Building2 className="w-3.5 h-3.5" />
+                      </span>
+                      <div>
+                        <p className="font-extrabold text-slate-900 dark:text-white">College Head Login</p>
+                        <p className="text-[10px] text-slate-400 font-medium">Faculty college stats & medals</p>
+                      </div>
+                    </Link>
+                    <Link
+                      to="/coordinator/login"
+                      className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-orange-50 dark:hover:bg-slate-800 rounded-xl transition flex items-center gap-2.5 group/item border-t border-slate-100 dark:border-slate-800/60"
                     >
-                      Admin Login
-                    </button>
+                      <span className="p-1.5 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 group-hover/item:bg-orange-600 group-hover/item:text-white transition">
+                        <Shield className="w-3.5 h-3.5" />
+                      </span>
+                      <div>
+                        <p className="font-extrabold text-slate-900 dark:text-white">Coordinator Login</p>
+                        <p className="text-[10px] text-slate-400 font-medium">Sport matches & control panel</p>
+                      </div>
+                    </Link>
+                    <Link
+                      to="/pr-login"
+                      className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded-xl transition flex items-center gap-2.5 group/item border-t border-slate-100 dark:border-slate-800/60"
+                    >
+                      <span className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover/item:bg-indigo-600 group-hover/item:text-white transition">
+                        <Camera className="w-3.5 h-3.5" />
+                      </span>
+                      <div>
+                        <p className="font-extrabold text-slate-900 dark:text-white">PR Portal Login</p>
+                        <p className="text-[10px] text-slate-400 font-medium">Media, gallery & album coverage</p>
+                      </div>
+                    </Link>
                   </div>
                 </div>
               )}

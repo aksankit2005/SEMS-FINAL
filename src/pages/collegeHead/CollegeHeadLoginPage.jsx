@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Lock, User, Building2, AlertCircle, ArrowRight, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { ShieldCheck, Lock, User, Building2, AlertCircle, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { collegeHeadApi } from '../../services/collegeHeadApi';
 import { useToast } from '../../context/ToastContext';
 
@@ -13,17 +13,6 @@ export const CollegeHeadLoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-
-  const PRESET_ACCOUNTS = [
-    { username: 'head_mpec', college: 'MPEC', label: 'MPEC - Dr. Rajesh Sharma' },
-    { username: 'head_mips', college: 'MIPS', label: 'MIPS - Prof. Anita Verma' },
-    { username: 'head_mpcps', college: 'MPCPS (KN142)', label: 'MPCPS - Dr. Vikram Singh' },
-    { username: 'head_mpcp', college: 'MPCP', label: 'MPCP - Prof. Sunita Gupta' },
-    { username: 'head_mpdc', college: 'MPDC', label: 'MPDC - Dr. Rakesh Trivedi' },
-    { username: 'head_mpcnps', college: 'MPCN&PS', label: 'MPCN&PS - Prof. Meenakshi Joshi' },
-    { username: 'head_mpamc', college: 'MPAMC', label: 'MPAMC - Dr. Alok Pandey' },
-    { username: 'head_mpcams', college: 'MPCAMS', label: 'MPCAMS - Prof. Sanjay Saxena' },
-  ];
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -46,12 +35,6 @@ export const CollegeHeadLoginPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSelectPreset = (presetUsername) => {
-    setUsername(presetUsername);
-    setPassword('');
-    setErrorMessage('');
   };
 
   return (
@@ -162,31 +145,6 @@ export const CollegeHeadLoginPage = () => {
               )}
             </button>
           </form>
-
-          {/* Quick Preset Selector for Testing */}
-          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-              Quick Select College Faculty Demo Credentials:
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              {PRESET_ACCOUNTS.map((preset) => (
-                <button
-                  key={preset.username}
-                  type="button"
-                  onClick={() => handleSelectPreset(preset.username)}
-                  className={`px-3 py-2 rounded-xl text-[11px] font-bold text-left border transition truncate flex items-center justify-between ${
-                    username === preset.username
-                      ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300'
-                  }`}
-                >
-                  <span className="truncate">{preset.college}</span>
-                  {username === preset.username && <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />}
-                </button>
-              ))}
-            </div>
-          </div>
-
         </div>
       </div>
     </div>
