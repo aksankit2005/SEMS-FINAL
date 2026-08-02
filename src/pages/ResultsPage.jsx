@@ -1,14 +1,68 @@
-import React, { useState } from 'react';
-import { Trophy, Star, Search } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Trophy, Star, Search, Download } from 'lucide-react';
 import { RESULTS_DATA } from '../data/resultsData';
+import { generateMatchResultPDF } from '../utils/pdfExporter';
+
 
 export const ResultsPage = () => {
   const [query, setQuery] = useState('');
+  const [dynamicResults, setDynamicResults] = useState([]);
 
-  const filteredResults = RESULTS_DATA.filter((r) =>
-    r.sport.toLowerCase().includes(query.toLowerCase()) ||
-    r.winner.toLowerCase().includes(query.toLowerCase()) ||
-    r.event.toLowerCase().includes(query.toLowerCase())
+  useEffect(() => {
+    const list = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sems_completed_results_')) {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key));
+          if (Array.isArray(parsed)) {
+            const sportId = key.replace('sems_completed_results_', '');
+            const sportName = sportId.charAt(0).toUpperCase() + sportId.slice(1).replace('-', ' ');
+            const mockIds = ['M540746', 'M635812', 'M741299', 'M882104', 'M645537'];
+            const mockNames = [
+              '1', '2', 'a', 'b', 'player 1', 'player 2', 'player 3', 'player 4', 'team 1', 'team 2', 'team a', 'team b', 'albert', 'romi',
+              'aarav sharma (mpec)', 'rohan gupta (mips)', 'ankur dixit (mpcps)', 'aditya singh (mpec)',
+              'aagaz khan (mpcps kn142)', 'shiv prakash (mpcps kn142)', 'kapil verma (mpcps kn142)', 'anubhav sachan (mpcps kn142)',
+              'kapil verma', 'anubhav sachan', 'team a', 'team b', 'team 1', 'team 2', 'player / team a', 'player / team b'
+            ];
+            parsed.forEach((item) => {
+              if (!item) return;
+              if (mockIds.includes(item.id)) return;
+              const t1 = (item.team1 || '').trim().toLowerCase();
+              const t2 = (item.team2 || '').trim().toLowerCase();
+              const w = (item.winner || '').trim().toLowerCase();
+              if (mockNames.includes(t1) || mockNames.includes(t2) || mockNames.includes(w)) return;
+
+              if (!list.some((r) => r.id === item.id)) {
+                list.push({
+                  id: item.id || `RES-${Math.random()}`,
+                  sport: item.sportName || sportName,
+                  event: item.eventTitle || item.title || `${sportName} Final`,
+                  winner: item.winner || item.team1 || 'Declared Winner',
+                  scoreSummary: item.scoreSummary || (item.score1 !== undefined ? `${item.team1}: ${item.score1} | ${item.team2}: ${item.score2}` : 'Match Completed'),
+                  date: item.completedAt ? item.completedAt.split('T')[0] : 'Recent',
+                  mvp: item.mvp || item.winner || item.team1 || 'Top Performer',
+                  medals: item.medals || {
+                    gold: item.winner || item.team1 || 'Gold Winner',
+                    silver: item.winner === item.team1 ? item.team2 : item.team1 || 'Runner Up',
+                    bronze: 'Semi-Finalist'
+                  }
+                });
+              }
+            });
+          }
+        } catch (e) {}
+      }
+    }
+    setDynamicResults(list);
+  }, []);
+
+  const combinedResults = [...dynamicResults, ...RESULTS_DATA];
+
+  const filteredResults = combinedResults.filter((r) =>
+    (r.sport || '').toLowerCase().includes(query.toLowerCase()) ||
+    (r.winner || '').toLowerCase().includes(query.toLowerCase()) ||
+    (r.event || '').toLowerCase().includes(query.toLowerCase())
   );
 
   return (
@@ -54,17 +108,40 @@ export const ResultsPage = () => {
                 key={res.id}
                 className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-soft hover:shadow-xl transition relative space-y-6"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 gap-3">
                   <div>
                     <span className="px-3 py-1 rounded-full text-xs font-black bg-orange-500/10 text-orange-500 border border-orange-500/20">
                       {res.sport}
                     </span>
                     <h3 className="text-xl font-black text-slate-900 dark:text-white mt-2">{res.event}</h3>
                   </div>
-                  <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-black self-start sm:self-auto">
-                    ✓ {res.date}
-                  </span>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        generateMatchResultPDF({
+                          id: res.id,
+                          matchTitle: res.event,
+                          winner: res.winner || res.medals?.gold || 'Gold Medalist',
+                          team1: res.medals?.gold || 'Gold Medalist',
+                          team2: res.medals?.silver || 'Silver Medalist',
+                          scoreSummary: res.scoreSummary,
+                          sportName: res.sport,
+                          completedAt: res.date
+                        }, res.sport);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30 text-xs font-bold transition flex items-center gap-1.5 active:scale-95"
+                    >
+
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download PDF Result</span>
+                    </button>
+                    <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-black self-start sm:self-auto">
+                      ✓ {res.date}
+                    </span>
+                  </div>
                 </div>
+
 
                 {/* Scoreboard summary */}
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">

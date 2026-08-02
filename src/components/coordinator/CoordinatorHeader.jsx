@@ -1,13 +1,15 @@
 import React from 'react';
-import { RefreshCw, LogOut, Calendar, Radio, Award, Users } from 'lucide-react';
+import { RefreshCw, LogOut, Calendar, Radio, Award, Users, Layers } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 
 export const OPERATIONAL_TABS = [
+  { id: 'events', label: 'Registration Events', icon: Layers },
   { id: 'schedule', label: 'Match Schedule', icon: Calendar },
   { id: 'live-control', label: 'Live Match Control', icon: Radio, badge: 'LIVE' },
   { id: 'results', label: 'Results Management', icon: Award },
   { id: 'participants', label: 'Participants List', icon: Users },
 ];
+
 
 export const CoordinatorHeader = ({ user, activeTab, setActiveTab, onLogout }) => {
   const { addToast } = useToast();

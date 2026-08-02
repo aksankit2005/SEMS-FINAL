@@ -6,26 +6,43 @@ import { getSportConfig } from '../../../data/sportsConfig';
 import { extractYouTubeVideoId, getYouTubeEmbedUrl } from '../../../utils/youtube';
 import { LiveMatchScoreControllerModal } from '../modal/LiveMatchScoreControllerModal';
 
+import { generateMatchResultPDF } from '../../../utils/pdfExporter';
+
 export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
+
   const { addToast } = useToast();
   const sportConfig = getSportConfig(user?.assignedSport);
 
-  const venueCards = ['Table 1', 'Table 2', 'Table 3', 'Table 4'];
+  const assignedSport = (user?.assignedSport || 'badminton').toLowerCase();
+  const venueType = ['table-tennis'].includes(assignedSport)
+    ? 'Table'
+    : ['cricket', 'football'].includes(assignedSport)
+    ? 'Ground'
+    : 'Court';
+
+  const venueCards = [
+    `${venueType} 1`,
+    `${venueType} 2`,
+    `${venueType} 3`,
+    `${venueType} 4`,
+  ];
 
   // Initial state loads active live assignments from storage or database
   const [liveAssignments, setLiveAssignments] = useState(() => {
-    const saved = localStorage.getItem('sems_active_live_matches');
+    const cacheKey = `sems_active_live_matches_${assignedSport}`;
+    const saved = localStorage.getItem(cacheKey) || localStorage.getItem('sems_active_live_matches');
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
     }
+    const firstVenue = `${venueType} 1`;
     return {
-      'Table 1': {
+      [firstVenue]: {
         id: 'M595473',
-        matchTitle: 'gg vs mn',
-        team1: 'gg',
-        team2: 'mn',
+        matchTitle: 'Semifinal 1',
+        team1: 'Player / Team A',
+        team2: 'Player / Team B',
         format: 'SINGLES',
-        tableNumber: 'Table 1',
+        tableNumber: firstVenue,
         score1: 0,
         score2: 0,
         status: 'running',
@@ -35,6 +52,7 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
       }
     };
   });
+
 
   const [activeControllerVenue, setActiveControllerVenue] = useState(null);
   const [streamInputMap, setStreamInputMap] = useState({});
@@ -167,14 +185,19 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
     const active = liveAssignments[venue];
     if (!active) return;
 
-    await coordinatorApi.completeMatch(active.id, {
-      winner: active.score1 >= active.score2 ? active.team1 : active.team2,
+    const winnerName = active.winner || (active.score1 >= active.score2 ? active.team1 : active.team2);
+    const completedObj = {
+      ...active,
+      winner: winnerName,
       score1: active.score1,
       score2: active.score2,
       status: 'COMPLETED',
       tableNumber: null,
       isLiveStreaming: false,
-    });
+      completedAt: new Date().toISOString(),
+    };
+
+    await coordinatorApi.completeMatch(active.id, completedObj);
 
     onUpdateMatchScore(active.id, { status: 'COMPLETED', score1: active.score1, score2: active.score2 });
     setLiveAssignments((prev) => {
@@ -182,8 +205,13 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
       delete copy[venue];
       return copy;
     });
-    addToast(`Match on ${venue} completed and results finalized in database!`, 'success');
+
+    // Automatically generate and download match result PDF
+    generateMatchResultPDF(completedObj, user?.sportName || user?.assignedSport);
+
+    addToast(`Match on ${venue} completed! Result PDF generated & downloaded.`, 'success');
   };
+
 
   const handleDemoteMatch = async (venue) => {
     const active = liveAssignments[venue];
@@ -365,37 +393,56 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
       </div>
 
       {/* Promote Match to Live Section */}
-      <div className="space-y-4 pt-4 border-t border-slate-800">
-        <h3 className="text-base font-black text-white uppercase tracking-wider">
-          Promote Match to Live
-        </h3>
+      {(() => {
+        const upcomingMatchesToPromote = matches.filter(
+          (m) => m && m.status !== 'COMPLETED' && m.status !== 'FINISHED' && m.status !== 'running'
+        );
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {matches.map((m) => (
-            <div
-              key={m.id}
-              className="p-5 rounded-2xl bg-[#111827] border border-slate-800/90 shadow-xl flex items-center justify-between gap-4"
-            >
-              <div className="space-y-1">
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase">
-                  {m.format || 'SINGLES'}
-                </span>
-                <h4 className="text-sm font-black text-white">{m.team1} vs {m.team2}</h4>
-                <p className="text-[11px] font-mono text-slate-400">
-                  {m.tableNumber || 'Table 1'} | Slot: {m.time || '05:40 PM'}
-                </p>
+        return (
+          <div className="space-y-4 pt-4 border-t border-slate-800">
+            <h3 className="text-base font-black text-white uppercase tracking-wider">
+              Promote Match to Live
+            </h3>
+
+            {upcomingMatchesToPromote.length === 0 ? (
+              <div className="p-8 text-center bg-[#111827] rounded-3xl border border-slate-800 text-slate-500 text-xs font-medium">
+                No upcoming scheduled matches available to promote. All completed matches have been moved to Results.
               </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {upcomingMatchesToPromote.map((m) => {
+                  const displayVenue = (m.tableNumber || `${venueType} 1`).replace(/Table/gi, venueType);
 
-              <button
-                onClick={() => handlePromoteGoLive(m, m.tableNumber || 'Table 1')}
-                className="px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shadow-lg shadow-rose-600/30 transition flex items-center gap-1.5 shrink-0"
-              >
-                <span>📡 GO LIVE</span>
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
+                  return (
+                    <div
+                      key={m.id}
+                      className="p-5 rounded-2xl bg-[#111827] border border-slate-800/90 shadow-xl flex items-center justify-between gap-4"
+                    >
+                      <div className="space-y-1">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase">
+                          {m.format || 'SINGLES'}
+                        </span>
+                        <h4 className="text-sm font-black text-white">{m.team1} vs {m.team2}</h4>
+                        <p className="text-[11px] font-mono text-slate-400">
+                          📍 {displayVenue} | Slot: {m.time || '05:40 PM'}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => handlePromoteGoLive(m, displayVenue)}
+                        className="px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shadow-lg shadow-rose-600/30 transition flex items-center gap-1.5 shrink-0"
+                      >
+                        <span>📡 GO LIVE</span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
 
       {/* Stream Preview Modal */}
       {previewVideoId && (

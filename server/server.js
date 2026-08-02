@@ -615,6 +615,110 @@ let inMemoryCoordinatorMatches = {};
 let inMemoryCoordinatorDocuments = {};
 let inMemoryCoordinatorAnnouncements = {};
 let inMemoryRegistrationSettings = {};
+let inMemoryCoordinatorEvents = {
+  'badminton': [],
+  'cricket': [
+    {
+      id: 'EVT-CRICKET-001',
+      title: 'Inter-College T20 Cricket Trophy 2026',
+      sportId: 'cricket',
+      sportName: 'Cricket',
+      coverImage: 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=800&q=80',
+      description: 'High-octane T20 cricket tournament on varsity ground 1 with leather balls and floodlight evening matches.',
+      regStartDate: '2026-08-01',
+      regEndDate: '2026-08-28',
+      tournStartDate: '2026-09-05',
+      tournEndDate: '2026-09-10',
+      entryFee: 2500,
+      teamSize: '11 + 4 Subs',
+      maxRegistrations: 16,
+      registeredCount: 12,
+      venue: 'Main Stadium Ground 1',
+      category: 'Boys',
+      status: 'Published',
+      rules: ['15 overs prelims, T20 finals.', 'White leather balls used.', 'Full kit mandatory.'],
+      requiredDocuments: ['College Student ID Card'],
+      contactInfo: { name: 'Vikramaditya Sharma', email: 'cricket.coord@sems.edu', phone: '+91 98765 43211' },
+      createdAt: new Date().toISOString()
+    }
+  ],
+  'football': [
+    {
+      id: 'EVT-FOOTBALL-001',
+      title: 'Varsity Football League 2026',
+      sportId: 'football',
+      sportName: 'Football',
+      coverImage: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&auto=format&fit=crop&q=60',
+      description: 'Knockout football tournament under floodlights. High pressing, tactical masterclasses, and penalty shootouts.',
+      regStartDate: '2026-08-01',
+      regEndDate: '2026-08-25',
+      tournStartDate: '2026-09-02',
+      tournEndDate: '2026-09-06',
+      entryFee: 2200,
+      teamSize: '11 + 5 Subs',
+      maxRegistrations: 16,
+      registeredCount: 10,
+      venue: 'Turf Football Arena A',
+      category: 'Open',
+      status: 'Published',
+      rules: ['FIFA standard rules.', 'Studded boots & shin guards mandatory.'],
+      requiredDocuments: ['College Student ID Card'],
+      contactInfo: { name: 'Carlos Rodriguez', email: 'football.coord@sems.edu', phone: '+91 98765 43212' },
+      createdAt: new Date().toISOString()
+    }
+  ],
+  'table-tennis': [
+    {
+      id: 'EVT-TT-001',
+      title: 'Table Tennis Open Masters 2026',
+      sportId: 'table-tennis',
+      sportName: 'Table Tennis',
+      coverImage: 'https://images.unsplash.com/photo-1534158914592-062992fbe900?auto=format&fit=crop&w=800&q=80',
+      description: 'Indoor table tennis tournament testing lightning speed, spin control, and tactical shot placement.',
+      regStartDate: '2026-08-01',
+      regEndDate: '2026-08-27',
+      tournStartDate: '2026-09-01',
+      tournEndDate: '2026-09-02',
+      entryFee: 300,
+      teamSize: '1 - 2 Players',
+      maxRegistrations: 64,
+      registeredCount: 42,
+      venue: 'Indoor Sports Complex Hall A',
+      category: 'Open',
+      status: 'Published',
+      rules: ['ITTF rules apply.', 'Best of 5 sets (11 points per set).'],
+      requiredDocuments: ['College Student ID Card'],
+      contactInfo: { name: 'Rohan Mehta', email: 'tt.coord@sems.edu', phone: '+91 98765 43213' },
+      createdAt: new Date().toISOString()
+    }
+  ],
+  'chess': [
+    {
+      id: 'EVT-CHESS-001',
+      title: 'Collegiate Blitz & Rapid Chess Championship 2026',
+      sportId: 'chess',
+      sportName: 'Chess',
+      coverImage: 'https://images.unsplash.com/photo-1529699211952-734e80c4d42b?auto=format&fit=crop&w=800&q=80',
+      description: 'FIDE Rapid and Blitz tournament featuring Swiss system rounds and digital chess clocks.',
+      regStartDate: '2026-08-01',
+      regEndDate: '2026-08-29',
+      tournStartDate: '2026-09-04',
+      tournEndDate: '2026-09-04',
+      entryFee: 250,
+      teamSize: '1 Player',
+      maxRegistrations: 128,
+      registeredCount: 86,
+      venue: 'Central Auditorium Hall B',
+      category: 'Open',
+      status: 'Published',
+      rules: ['FIDE Rapid rules: 15 mins + 10s increment.', 'Swiss system 7 rounds.'],
+      requiredDocuments: ['College Student ID Card'],
+      contactInfo: { name: 'Grandmaster Anand Verma', email: 'chess.coord@sems.edu', phone: '+91 98765 43214' },
+      createdAt: new Date().toISOString()
+    }
+  ]
+};
+
 
 const verifyCoordinatorToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -819,12 +923,31 @@ app.delete('/api/coordinator/matches/:id', verifyCoordinatorToken, (req, res) =>
 app.post('/api/coordinator/matches/generate', verifyCoordinatorToken, (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
   const formatType = (req.body.type || 'Singles').toUpperCase();
+  const list = inMemoryRegistrations[sportId] || [];
 
-  const generated = [
-    { id: `M${Math.floor(100000 + Math.random() * 900000)}`, format: formatType, status: 'SCHEDULED', team1: 'Aarav Sharma (MPEC)', team2: 'Rohan Gupta (MIPS)', matchTitle: 'Aarav Sharma vs Rohan Gupta', tableNumber: 'Table 1', time: '05:30 PM', score1: 0, score2: 0 },
-    { id: `M${Math.floor(100000 + Math.random() * 900000)}`, format: formatType, status: 'SCHEDULED', team1: 'Ankur Dixit (MPCPS)', team2: 'Aditya Singh (MPEC)', matchTitle: 'Ankur Dixit vs Aditya Singh', tableNumber: 'Table 2', time: '05:40 PM', score1: 0, score2: 0 },
-    { id: `M${Math.floor(100000 + Math.random() * 900000)}`, format: formatType, status: 'SCHEDULED', team1: 'Aagaz Khan (MPCPS KN142)', team2: 'Shiv Prakash (MPCPS KN142)', matchTitle: 'Aagaz Khan vs Shiv Prakash', tableNumber: 'Table 3', time: '05:50 PM', score1: 0, score2: 0 },
-  ];
+  if (!list || list.length < 2) {
+    return res.json({ success: false, message: 'No registered participants found for this sport. Please add registrations first.' });
+  }
+
+  const generated = [];
+  for (let i = 0; i < list.length - 1; i += 2) {
+    const p1 = list[i];
+    const p2 = list[i + 1];
+    const t1 = p1.teamName || p1.studentName || `Participant ${i + 1}`;
+    const t2 = p2.teamName || p2.studentName || `Participant ${i + 2}`;
+    generated.push({
+      id: `M${Math.floor(100000 + Math.random() * 900000)}`,
+      format: formatType,
+      status: 'SCHEDULED',
+      team1: `${t1} (${p1.college || 'MPEC'})`,
+      team2: `${t2} (${p2.college || 'MPEC'})`,
+      matchTitle: `${t1} vs ${t2}`,
+      tableNumber: `Table ${generated.length + 1}`,
+      time: `05:${30 + (generated.length % 2) * 10} PM`,
+      score1: 0,
+      score2: 0,
+    });
+  }
 
   if (!inMemoryCoordinatorMatches[sportId]) {
     inMemoryCoordinatorMatches[sportId] = [];
@@ -989,10 +1112,208 @@ app.get('/api/live-matches', (req, res) => {
   return res.json(allLive);
 });
 
+// ----------------------------------------------------
+// Coordinator Events Management Endpoints
+// ----------------------------------------------------
+
+// GET /api/coordinator/events - Get events for logged in coordinator's sport ONLY
+app.get('/api/coordinator/events', verifyCoordinatorToken, (req, res) => {
+  const sportId = req.user.assignedSport.toLowerCase();
+  const events = inMemoryCoordinatorEvents[sportId] || [];
+  return res.json(events);
+});
+
+// POST /api/coordinator/events - Create new event for assigned sport
+app.post('/api/coordinator/events', verifyCoordinatorToken, (req, res) => {
+  const sportId = req.user.assignedSport.toLowerCase();
+  const newEvent = {
+    id: req.body.id || `EVT-${sportId.toUpperCase()}-${Date.now()}`,
+    title: req.body.title || req.body.eventName || `${req.user.sportName} Championship 2026`,
+    sportId: sportId,
+    sportName: req.user.sportName,
+    coverImage: req.body.coverImage || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80',
+    description: req.body.description || '',
+    regStartDate: req.body.regStartDate || new Date().toISOString().split('T')[0],
+    regEndDate: req.body.regEndDate || '2026-08-30',
+    tournStartDate: req.body.tournStartDate || '2026-09-01',
+    tournEndDate: req.body.tournEndDate || '2026-09-05',
+    entryFee: Number(req.body.entryFee || 0),
+    teamSize: req.body.teamSize || '1 Player',
+    maxRegistrations: Number(req.body.maxRegistrations || 64),
+    registeredCount: Number(req.body.registeredCount || 0),
+    venue: req.body.venue || 'Central Sports Arena',
+    category: req.body.category || 'Open',
+    status: req.body.status || 'Draft', // Draft, Published, Closed
+    rules: req.body.rules || [],
+    requiredDocuments: req.body.requiredDocuments || ['College ID Card', 'Student Aadhaar/Govt ID'],
+    contactInfo: req.body.contactInfo || {
+      name: req.user.coordinatorName,
+      email: req.user.email || `${sportId}.coord@sems.edu`,
+      phone: '+91 98765 43210'
+    },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  if (!inMemoryCoordinatorEvents[sportId]) {
+    inMemoryCoordinatorEvents[sportId] = [];
+  }
+  inMemoryCoordinatorEvents[sportId].unshift(newEvent);
+
+  return res.status(201).json({ success: true, event: newEvent });
+});
+
+// PUT /api/coordinator/events/:id - Edit existing event
+app.put('/api/coordinator/events/:id', verifyCoordinatorToken, (req, res) => {
+  const sportId = req.user.assignedSport.toLowerCase();
+  const { id } = req.params;
+  const list = inMemoryCoordinatorEvents[sportId] || [];
+
+  const index = list.findIndex((e) => e.id === id);
+  if (index === -1) {
+    return res.status(404).json({ message: 'Event not found' });
+  }
+
+  // Auto-close if status changed to Closed or max count reached
+  let newStatus = req.body.status !== undefined ? req.body.status : list[index].status;
+  if (req.body.registeredCount !== undefined && req.body.registeredCount >= (req.body.maxRegistrations || list[index].maxRegistrations)) {
+    newStatus = 'Closed';
+  }
+
+  list[index] = {
+    ...list[index],
+    ...req.body,
+    status: newStatus,
+    updatedAt: new Date().toISOString()
+  };
+
+  return res.json({ success: true, event: list[index] });
+});
+
+// DELETE /api/coordinator/events/:id - Delete event
+app.delete('/api/coordinator/events/:id', verifyCoordinatorToken, (req, res) => {
+  const sportId = req.user.assignedSport.toLowerCase();
+  const { id } = req.params;
+
+  if (inMemoryCoordinatorEvents[sportId]) {
+    inMemoryCoordinatorEvents[sportId] = inMemoryCoordinatorEvents[sportId].filter((e) => e.id !== id);
+  }
+  return res.json({ success: true, message: 'Event deleted successfully' });
+});
+
+// GET /api/coordinator/events/:id/participants - Get participants for an event
+app.get('/api/coordinator/events/:id/participants', verifyCoordinatorToken, (req, res) => {
+  const sportId = req.user.assignedSport.toLowerCase();
+  const { id } = req.params;
+  const event = (inMemoryCoordinatorEvents[sportId] || []).find((e) => e.id === id);
+
+  const participants = inMemoryCollegeRegistrations.filter(
+    (r) => (r.eventId === id || (r.sportId && r.sportId.toLowerCase() === sportId))
+  );
+
+  return res.json({
+    event,
+    count: participants.length,
+    participants
+  });
+});
+
+// GET /api/public/events - Public list of Published coordinator events
+app.get('/api/public/events', (req, res) => {
+  const publishedEvents = [];
+  const currentDate = new Date();
+
+  Object.keys(inMemoryCoordinatorEvents).forEach((sport) => {
+    const list = inMemoryCoordinatorEvents[sport] || [];
+    list.forEach((e) => {
+      // Check if registration end date passed
+      let currentStatus = e.status;
+      if (e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) {
+        currentStatus = 'Closed';
+      }
+      if (e.registeredCount >= e.maxRegistrations) {
+        currentStatus = 'Closed';
+      }
+
+      if (currentStatus === 'Published' || currentStatus === 'Closed') {
+        publishedEvents.push({
+          ...e,
+          status: currentStatus,
+          availableSlots: Math.max(0, e.maxRegistrations - e.registeredCount)
+        });
+      }
+    });
+  });
+
+  return res.json(publishedEvents);
+});
+
+// POST /api/public/register-event - Register user for an event & update roster count
+app.post('/api/public/register-event', (req, res) => {
+  const { eventId, sportId, participantData, paymentData } = req.body;
+
+  let event = null;
+  let targetSportId = (sportId || '').toLowerCase();
+
+  // Find event
+  Object.keys(inMemoryCoordinatorEvents).forEach((sp) => {
+    const list = inMemoryCoordinatorEvents[sp] || [];
+    const found = list.find((e) => e.id === eventId);
+    if (found) {
+      event = found;
+      targetSportId = sp;
+    }
+  });
+
+  if (event) {
+    if (event.registeredCount >= event.maxRegistrations) {
+      return res.status(400).json({ message: 'Registration limit reached. All slots filled.' });
+    }
+
+    event.registeredCount += 1;
+    if (event.registeredCount >= event.maxRegistrations) {
+      event.status = 'Closed';
+    }
+  }
+
+  const receiptId = `REC-APEX-${Math.floor(10000 + Math.random() * 90000)}`;
+  const utrNumber = paymentData?.razorpayPaymentId || `TXN-RP-${Math.floor(100000000000 + Math.random() * 900000000000)}`;
+
+  const newRegRecord = {
+    id: receiptId,
+    eventId: eventId || 'DEFAULT',
+    sportId: targetSportId || 'general',
+    studentName: participantData.fullName || participantData.captainName || 'Athlete',
+    teamName: participantData.teamName || '',
+    college: participantData.collegeName || 'MPEC',
+    department: participantData.department || 'Engineering',
+    enrollmentNo: participantData.enrollmentNo || 'ENR2026-001',
+    email: participantData.email || 'athlete@sems.edu',
+    phone: participantData.phone || '+91 98765 43210',
+    gender: participantData.gender || 'Male',
+    emergencyContact: participantData.emergencyContact || '+91 98765 43211',
+    status: 'Approved',
+    registeredDate: new Date().toLocaleDateString(),
+    feePaid: event ? event.entryFee : (participantData.entryFee || 0),
+    paymentId: utrNumber,
+    paymentStatus: (event ? event.entryFee : 0) > 0 ? 'PAID' : 'FREE_CONFIRMED'
+  };
+
+  inMemoryCollegeRegistrations.unshift(newRegRecord);
+
+  return res.status(201).json({
+    success: true,
+    message: 'Event registration successful!',
+    receipt: newRegRecord,
+    updatedEvent: event
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'SEMS API Server' });
 });
+
 
 // Start Server
 app.listen(PORT, () => {

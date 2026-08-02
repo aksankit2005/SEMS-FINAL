@@ -3,7 +3,10 @@ import { X, RotateCcw, Pause, Play, Trophy, ShieldAlert, CheckCircle2, Lock, Unl
 import { useToast } from '../../../context/ToastContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 
+
+
 export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMatchUpdated }) => {
+
   const { addToast } = useToast();
 
   const [format, setFormat] = useState(match?.format || 'Best of 5 Sets');
@@ -70,14 +73,6 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
     ]);
   };
 
-  // Check Table Tennis 11-point & 2-lead rule
-  const checkSetWinCondition = (s1, s2) => {
-    if ((s1 >= 11 || s2 >= 11) && Math.abs(s1 - s2) >= 2) {
-      const winnerName = s1 > s2 ? match.team1 : match.team2;
-      setShowLockDialog({ winner: winnerName, setNum: currentSetIndex, s1, s2 });
-    }
-  };
-
   // Handle + Point / - Point
   const handlePointChange = (player, delta) => {
     if (matchWinner) return;
@@ -87,21 +82,14 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
     if (player === 1) {
       const newScore = Math.max(0, score1 + delta);
       setScore1(newScore);
-      checkSetWinCondition(newScore, score2);
     } else {
       const newScore = Math.max(0, score2 + delta);
       setScore2(newScore);
-      checkSetWinCondition(score1, newScore);
-    }
-
-    // Auto-switch serve turn every 2 points (or 1 point in deuce >= 10-10)
-    const totalPoints = (player === 1 ? score1 + delta : score1) + (player === 2 ? score2 + delta : score2);
-    if (totalPoints > 0 && totalPoints % 2 === 0) {
-      setActiveTurn((prev) => (prev === 1 ? 2 : 1));
     }
 
     syncToServer();
   };
+
 
   // Lock Set Action
   const handleLockSetConfirm = () => {
@@ -183,17 +171,23 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
   const handleFinishMatch = async () => {
     const finalWinner = matchWinner || (setsWon1 >= setsWon2 ? match.team1 : match.team2);
 
-    await coordinatorApi.completeMatch(match.id, {
+    const completedData = {
+      ...match,
       winner: finalWinner,
       score1: setsWon1,
       score2: setsWon2,
       setsHistory,
       format,
-    });
+      completedAt: new Date().toISOString()
+    };
+
+    await coordinatorApi.completeMatch(match.id, completedData);
 
     addToast(`Match finished! Result saved to database. Winner: ${finalWinner}`, 'success');
     onClose();
   };
+
+
 
   // Declare Walkover
   const handleWalkover = async (winnerPlayer) => {
@@ -248,12 +242,6 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
           
           {/* Player 1 Card (Left) */}
           <div className="md:col-span-5 p-6 rounded-3xl bg-[#111827] border border-slate-800/90 shadow-2xl flex flex-col items-center text-center space-y-4 relative">
-            {activeTurn === 1 && (
-              <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black tracking-wider uppercase shadow-sm flex items-center gap-1.5 animate-pulse">
-                🏓 ACTIVE TURN
-              </span>
-            )}
-
             <div>
               <h2 className="text-2xl font-black text-white tracking-tight">{match.team1}</h2>
               <p className="text-xs text-slate-400 font-mono">Roll: N/A</p>
@@ -281,34 +269,18 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
             </div>
           </div>
 
-          {/* Center Column: VS & Change Turn Button */}
+          {/* Center Column: VS */}
           <div className="md:col-span-2 flex flex-col items-center justify-center space-y-3 py-2">
             <span className="text-sm font-black text-slate-500 tracking-widest">VS</span>
-
-            <button
-              onClick={() => {
-                saveStateToUndo();
-                setActiveTurn((prev) => (prev === 1 ? 2 : 1));
-                addToast('Serve turn changed', 'info');
-              }}
-              className="px-3.5 py-2 rounded-xl bg-[#1E293B] hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold transition flex items-center gap-1.5 shadow-md"
-            >
-              <RotateCcw className="w-3.5 h-3.5" /> Change Turn
-            </button>
           </div>
 
           {/* Player 2 Card (Right) */}
           <div className="md:col-span-5 p-6 rounded-3xl bg-[#111827] border border-slate-800/90 shadow-2xl flex flex-col items-center text-center space-y-4 relative">
-            {activeTurn === 2 && (
-              <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black tracking-wider uppercase shadow-sm flex items-center gap-1.5 animate-pulse">
-                🏓 ACTIVE TURN
-              </span>
-            )}
-
             <div>
               <h2 className="text-2xl font-black text-white tracking-tight">{match.team2}</h2>
               <p className="text-xs text-slate-400 font-mono">Roll: N/A</p>
             </div>
+
 
             {/* Large Point Counter */}
             <div className="text-7xl font-black text-white font-mono my-2 tracking-tighter">
