@@ -319,13 +319,13 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
                 >
 
                   <div className="space-y-0.5">
-                    <span className="font-bold text-slate-300 font-mono">Set {s.set} score:</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-300 font-mono">Set {s.set} score:</span>
                     {s.isLocked ? (
-                      <p className="text-indigo-400 font-mono font-bold text-sm">
-                        {s.score1} - {s.score2} <span className="text-slate-400 text-xs font-normal">({s.winner} won)</span>
+                      <p className="text-blue-600 dark:text-indigo-400 font-mono font-bold text-sm">
+                        {s.score1} - {s.score2} <span className="text-slate-500 dark:text-slate-400 text-xs font-normal">({s.winner} won)</span>
                       </p>
                     ) : (
-                      <p className="text-slate-500 font-mono">
+                      <p className="text-slate-500 dark:text-slate-400 font-mono">
                         {s.set === currentSetIndex ? `${score1} - ${score2} (In Progress)` : '0-0'}
                       </p>
                     )}
@@ -335,9 +335,9 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
                     {s.isLocked ? (
                       <button
                         onClick={() => handleUnlockSet(s.set)}
-                        className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold text-xs transition flex items-center gap-1.5"
+                        className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
                       >
-                        <Unlock className="w-3.5 h-3.5 text-amber-400" /> Unlock Set
+                        <Unlock className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> Unlock Set
                       </button>
                     ) : (
                       <button
@@ -345,7 +345,7 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
                           setCurrentSetIndex(s.set);
                           handleLockSetConfirm();
                         }}
-                        className="px-3.5 py-1.5 rounded-xl bg-[#1E293B] hover:bg-indigo-600 text-indigo-300 hover:text-white font-bold text-xs transition border border-slate-700"
+                        className="px-3.5 py-1.5 rounded-xl bg-blue-50 dark:bg-[#1E293B] hover:bg-indigo-600 dark:hover:bg-indigo-600 text-blue-700 dark:text-indigo-300 hover:text-white font-bold text-xs transition border border-blue-200 dark:border-slate-700 cursor-pointer"
                       >
                         Lock Set {s.set} Score ({score1}-{score2})
                       </button>

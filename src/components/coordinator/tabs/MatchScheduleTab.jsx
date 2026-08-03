@@ -172,7 +172,7 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches }) => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-slate-200 animate-fade-in">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-slate-900 dark:text-slate-200 animate-fade-in">
       
       {/* Left Column: Generator Actions & Form */}
       <div className="lg:col-span-4 space-y-4">
