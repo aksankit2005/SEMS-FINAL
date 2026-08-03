@@ -3,7 +3,7 @@ import { NavLink, Link } from 'react-router-dom';
 import { 
   X, Trophy, Calendar, Award, Newspaper, Image, Info, 
   UserCheck, Flame, Radio, BarChart3, LayoutDashboard, Camera,
-  Building2, Shield, Users
+  Building2, Shield
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -23,7 +23,6 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
     { name: 'Schedule', path: '/schedule', icon: Calendar },
     { name: 'Results', path: '/results', icon: BarChart3 },
     { name: 'Leaderboard', path: '/leaderboard', icon: Award },
-    { name: 'Coordinators', path: '/coordinators', icon: Users },
     { name: 'Announcements', path: '/announcements', icon: Newspaper },
     { name: 'Gallery', path: '/gallery', icon: Image },
     ...(isPRAuth ? [{ name: 'PR Portal', path: '/pr-dashboard', icon: Camera }] : []),

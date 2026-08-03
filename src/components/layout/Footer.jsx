@@ -100,9 +100,8 @@ export const Footer = () => {
             <ul className="space-y-2.5 text-sm text-slate-500 dark:text-slate-400">
               <li><Link to="/faq" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Frequently Asked Questions (FAQ)</Link></li>
               <li><Link to="/terms" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Terms & Conditions</Link></li>
-              <li><Link to="/privacy" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Privacy Policy</Link></li>
-              <li><Link to="/coordinators" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Coordinators Directory</Link></li>
-              <li><Link to="/announcements" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">News & Announcements</Link></li>
+               <li><Link to="/privacy" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Privacy Policy</Link></li>
+               <li><Link to="/announcements" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">News & Announcements</Link></li>
               <li><Link to="/about" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">About APEX & Committee</Link></li>
             </ul>
           </div>
