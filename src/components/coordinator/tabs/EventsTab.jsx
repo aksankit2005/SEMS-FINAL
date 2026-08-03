@@ -246,50 +246,50 @@ export const EventsTab = ({ user }) => {
 
       {/* TOP DASHBOARD STATS BAR */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="bg-[#0B1120] border border-slate-800 p-4 rounded-2xl space-y-1">
-          <span className="text-[10px] font-mono font-bold uppercase text-slate-400">Total Events</span>
-          <div className="text-xl font-black text-white">{totalEvents}</div>
+        <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Total Events</span>
+          <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{totalEvents}</p>
         </div>
 
-        <div className="bg-[#0B1120] border border-slate-800 p-4 rounded-2xl space-y-1">
-          <span className="text-[10px] font-mono font-bold uppercase text-emerald-400">Active Events</span>
-          <div className="text-xl font-black text-emerald-400">{activeEvents}</div>
+        <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
+          <span className="text-[10px] font-mono font-bold uppercase text-emerald-600 dark:text-emerald-400">Active Events</span>
+          <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">{activeEvents}</p>
         </div>
 
-        <div className="bg-[#0B1120] border border-slate-800 p-4 rounded-2xl space-y-1">
-          <span className="text-[10px] font-mono font-bold uppercase text-rose-400">Closed Events</span>
-          <div className="text-xl font-black text-rose-400">{closedEvents}</div>
+        <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
+          <span className="text-[10px] font-mono font-bold uppercase text-rose-600 dark:text-rose-400">Closed Events</span>
+          <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">{closedEvents}</p>
         </div>
 
-        <div className="bg-[#0B1120] border border-slate-800 p-4 rounded-2xl space-y-1">
-          <span className="text-[10px] font-mono font-bold uppercase text-indigo-400">Total Registrations</span>
-          <div className="text-xl font-black text-white">{totalRegCount}</div>
+        <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
+          <span className="text-[10px] font-mono font-bold uppercase text-blue-600 dark:text-blue-400">Total Registrations</span>
+          <p className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight">{totalRegCount}</p>
         </div>
 
-        <div className="bg-[#0B1120] border border-slate-800 p-4 rounded-2xl space-y-1">
-          <span className="text-[10px] font-mono font-bold uppercase text-amber-400">Revenue Collected</span>
-          <div className="text-xl font-black text-amber-400">₹{totalRevenue.toLocaleString()}</div>
+        <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
+          <span className="text-[10px] font-mono font-bold uppercase text-amber-600 dark:text-amber-400">Revenue Collected</span>
+          <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight">₹{totalRevenue.toLocaleString()}</p>
         </div>
 
-        <div className="bg-[#0B1120] border border-slate-800 p-4 rounded-2xl col-span-2 sm:col-span-1 space-y-1">
-          <span className="text-[10px] font-mono font-bold uppercase text-slate-400">Assigned Sport</span>
-          <div className="text-sm font-black text-indigo-400 truncate">{user?.sportName || 'Badminton'}</div>
+        <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl col-span-2 sm:col-span-1 space-y-1 shadow-sm">
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Assigned Sport</span>
+          <p className="text-sm font-black text-slate-900 dark:text-white truncate">{user?.sportName || 'Badminton'}</p>
         </div>
       </div>
 
-      {/* SECTION HEADER & ACTION BUTTON */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#0B1120] p-6 rounded-3xl border border-slate-800 shadow-md">
+      {/* SECTION HEADER BAR */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#0B1120] p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-md">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-[10px] font-mono font-bold uppercase">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-indigo-400 border border-blue-500/20 text-[10px] font-mono font-bold uppercase">
               COORDINATOR REGISTRATION PORTAL
             </span>
-            <span className="text-xs font-bold text-slate-400">• {user?.sportName}</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 font-mono">• {user?.sportName || 'Badminton'}</span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-white mt-1">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
             Sport Event Creation & Registration Management
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
             Create sport events, upload cover banners, and track real-time participant registrations.
           </p>
         </div>
@@ -334,7 +334,7 @@ export const EventsTab = ({ user }) => {
               return (
                 <div
                   key={event.id}
-                  className="bg-[#0B1120] rounded-3xl border border-slate-800 overflow-hidden shadow-lg hover:border-slate-700 transition flex flex-col justify-between"
+                  className="bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-soft dark:shadow-lg hover:border-blue-500/50 dark:hover:border-slate-700 transition flex flex-col justify-between"
                 >
                   {/* Cover Banner */}
                   <div className="relative h-44 w-full bg-slate-900 overflow-hidden">
@@ -379,74 +379,74 @@ export const EventsTab = ({ user }) => {
 
                   {/* Details Body */}
                   <div className="p-5 space-y-4 flex-1 flex flex-col justify-between">
-                    <p className="text-xs text-slate-300 line-clamp-2">
+                    <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2">
                       {event.description}
                     </p>
 
-                    <div className="grid grid-cols-2 gap-3 text-xs text-slate-300 bg-slate-900/60 p-3 rounded-2xl border border-slate-800/80">
+                    <div className="grid grid-cols-2 gap-3 text-xs text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-800/80">
                       <div>
-                        <span className="text-[10px] text-slate-400 block uppercase font-mono">Registration Dates</span>
-                        <span className="font-bold text-white text-[11px]">{event.regStartDate} to {event.regEndDate}</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono">Registration Dates</span>
+                        <span className="font-bold text-slate-900 dark:text-white text-[11px]">{event.regStartDate} to {event.regEndDate}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-400 block uppercase font-mono">Tournament Dates</span>
-                        <span className="font-bold text-white text-[11px]">{event.tournStartDate} to {event.tournEndDate}</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono">Tournament Dates</span>
+                        <span className="font-bold text-slate-900 dark:text-white text-[11px]">{event.tournStartDate} to {event.tournEndDate}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-400 block uppercase font-mono">Venue / Location</span>
-                        <span className="font-bold text-indigo-300 text-[11px] truncate block">{event.venue}</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono">Venue / Location</span>
+                        <span className="font-bold text-blue-600 dark:text-indigo-300 text-[11px] truncate block">{event.venue}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-400 block uppercase font-mono">Team Size</span>
-                        <span className="font-bold text-white text-[11px]">{event.teamSize}</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono">Team Size</span>
+                        <span className="font-bold text-slate-900 dark:text-white text-[11px]">{event.teamSize}</span>
                       </div>
                     </div>
 
                     {/* Total Registrations Display */}
                     <div className="flex items-center justify-between text-xs pt-1">
-                      <span className="font-bold text-slate-400 font-mono text-[11px]">Total Registrations</span>
-                      <span className="font-mono font-black text-indigo-400">{registered} Registered</span>
+                      <span className="font-bold text-slate-500 dark:text-slate-400 font-mono text-[11px]">Total Registrations</span>
+                      <span className="font-mono font-black text-blue-600 dark:text-indigo-400">{registered} Registered</span>
                     </div>
 
                     {/* Actions Bar */}
-                    <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                    <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => handleToggleStatus(event)}
-                          className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[11px] transition flex items-center gap-1"
+                          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
                           title="Toggle Status (Draft -> Published -> Closed)"
                         >
-                          {event.status === 'Published' ? <ToggleRight className="w-4 h-4 text-emerald-400" /> : <ToggleLeft className="w-4 h-4 text-amber-400" />}
+                          {event.status === 'Published' ? <ToggleRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <ToggleLeft className="w-4 h-4 text-amber-600 dark:text-amber-400" />}
                           <span>Toggle Status</span>
                         </button>
 
                         <button
                           onClick={() => handleViewParticipants(event)}
-                          className="px-3 py-1.5 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 font-bold text-[11px] transition flex items-center gap-1"
+                          className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 text-blue-600 dark:text-indigo-400 border border-blue-200 dark:border-indigo-500/30 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
                         >
                           <Users className="w-3.5 h-3.5" />
                           <span>Roster ({registered})</span>
                         </button>
                       </div>
 
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => handleOpenEdit(event)}
-                          className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
+                          className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer"
                           title="Edit Event"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
+
                         <button
                           onClick={() => handleDeleteEvent(event.id, event.title)}
-                          className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition"
+                          className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/20 dark:hover:bg-rose-500/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 transition cursor-pointer"
                           title="Delete Event"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
-
                   </div>
                 </div>
               );
@@ -457,22 +457,22 @@ export const EventsTab = ({ user }) => {
 
       {/* CREATE / EDIT EVENT MODAL */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto">
-          <div className="w-full max-w-3xl bg-[#0B1120] rounded-3xl border border-slate-800 p-6 sm:p-8 shadow-2xl space-y-6 my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto font-sans">
+          <div className="w-full max-w-3xl bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-2xl space-y-6 my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
             
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
               <div>
-                <span className="text-[10px] font-mono font-bold uppercase text-indigo-400">
+                <span className="text-[10px] font-mono font-bold uppercase text-blue-600 dark:text-indigo-400">
                   {user?.sportName} Event Configurator
                 </span>
-                <h3 className="text-xl font-black text-white">
+                <h3 className="text-xl font-black text-slate-900 dark:text-white">
                   {editingEvent ? 'Edit Registration Event' : 'Create New Registration Event'}
                 </h3>
               </div>
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -483,7 +483,7 @@ export const EventsTab = ({ user }) => {
               {/* Event Title & Sport Name */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="sm:col-span-2 space-y-1.5">
-                  <label className="block text-xs font-bold uppercase text-slate-400">
+                  <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
                     Event Title <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -492,31 +492,31 @@ export const EventsTab = ({ user }) => {
                     value={formData.title}
                     onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
                     placeholder="e.g. Badminton Championship 2026"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-800 bg-slate-900 text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-indigo-500"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-bold uppercase text-slate-400">
+                  <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
                     Assigned Sport (Auto-filled)
                   </label>
                   <input
                     type="text"
                     readOnly
                     value={formData.sportName}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-800 bg-slate-950 text-indigo-400 text-xs font-mono font-bold cursor-not-allowed"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 text-blue-600 dark:text-indigo-400 text-xs font-mono font-bold cursor-not-allowed"
                   />
                 </div>
               </div>
 
               {/* Cover Banner Upload & Management */}
-              <div className="space-y-2 p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
-                <label className="block text-xs font-bold uppercase text-slate-400">
+              <div className="space-y-2 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
                   Cover Banner Image Upload & Cropper
                 </label>
 
                 <div className="flex flex-col sm:flex-row items-center gap-4">
-                  <div className="relative w-full sm:w-48 h-28 rounded-xl bg-slate-950 overflow-hidden border border-slate-800 shrink-0">
+                  <div className="relative w-full sm:w-48 h-28 rounded-xl bg-slate-200 dark:bg-slate-950 overflow-hidden border border-slate-300 dark:border-slate-800 shrink-0">
                     <img
                       src={formData.coverImage}
                       alt="Banner Preview"
@@ -525,12 +525,12 @@ export const EventsTab = ({ user }) => {
                   </div>
 
                   <div className="flex-1 space-y-2 w-full">
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400">
                       Upload a high-resolution cover image. Click "Crop & Resize" to trim to standard 16:9 banner format before publishing.
                     </p>
                     <div className="flex flex-wrap items-center gap-2">
-                      <label className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold cursor-pointer transition flex items-center gap-1.5">
-                        <Upload className="w-3.5 h-3.5 text-indigo-400" />
+                      <label className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white text-xs font-bold cursor-pointer transition flex items-center gap-1.5">
+                        <Upload className="w-3.5 h-3.5 text-blue-600 dark:text-indigo-400" />
                         <span>Upload Image</span>
                         <input
                           type="file"
@@ -546,7 +546,7 @@ export const EventsTab = ({ user }) => {
                           setCropperRawSrc(formData.coverImage);
                           setShowCropper(true);
                         }}
-                        className="px-4 py-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition flex items-center gap-1.5"
+                        className="px-4 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 text-blue-600 dark:text-indigo-300 border border-blue-200 dark:border-indigo-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                       >
                         <Crop className="w-3.5 h-3.5" />
                         <span>Crop & Resize</span>
@@ -556,7 +556,7 @@ export const EventsTab = ({ user }) => {
                         <button
                           type="button"
                           onClick={handleRemoveCover}
-                          className="px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold transition"
+                          className="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold transition cursor-pointer"
                         >
                           Reset
                         </button>
@@ -568,7 +568,7 @@ export const EventsTab = ({ user }) => {
 
               {/* Event Description */}
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold uppercase text-slate-400">
+                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
                   Event Description
                 </label>
                 <textarea
@@ -576,46 +576,46 @@ export const EventsTab = ({ user }) => {
                   value={formData.description}
                   onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                   placeholder="Enter detailed description of tournament highlights, eligibility, format..."
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-800 bg-slate-900 text-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-indigo-500"
                 />
               </div>
 
               {/* Date Ranges */}
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold uppercase text-slate-400">Reg Start Date</label>
+                  <label className="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">Reg Start Date</label>
                   <input
                     type="date"
                     value={formData.regStartDate}
                     onChange={(e) => setFormData((prev) => ({ ...prev, regStartDate: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-800 bg-slate-900 text-xs text-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold uppercase text-slate-400">Reg End Date</label>
+                  <label className="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">Reg End Date</label>
                   <input
                     type="date"
                     value={formData.regEndDate}
                     onChange={(e) => setFormData((prev) => ({ ...prev, regEndDate: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-800 bg-slate-900 text-xs text-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold uppercase text-slate-400">Tournament Start</label>
+                  <label className="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">Tournament Start</label>
                   <input
                     type="date"
                     value={formData.tournStartDate}
                     onChange={(e) => setFormData((prev) => ({ ...prev, tournStartDate: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-800 bg-slate-900 text-xs text-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold uppercase text-slate-400">Tournament End</label>
+                  <label className="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">Tournament End</label>
                   <input
                     type="date"
                     value={formData.tournEndDate}
                     onChange={(e) => setFormData((prev) => ({ ...prev, tournEndDate: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-800 bg-slate-900 text-xs text-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white"
                   />
                 </div>
               </div>
@@ -623,7 +623,7 @@ export const EventsTab = ({ user }) => {
               {/* Singles Fee, Doubles Fee, Team Size, Max Registrations, Venue, Category */}
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold uppercase text-slate-400">Singles Fee (₹)</label>
+                  <label className="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">Singles Fee (₹)</label>
                   <input
                     type="number"
                     min="0"
@@ -632,40 +632,38 @@ export const EventsTab = ({ user }) => {
                       const val = parseFloat(e.target.value) || 0;
                       setFormData((prev) => ({ ...prev, singlesFee: val, entryFee: val }));
                     }}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-800 bg-slate-900 text-xs font-bold text-emerald-400"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-emerald-600 dark:text-emerald-400"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold uppercase text-slate-400">Doubles Fee (₹)</label>
+                  <label className="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">Doubles Fee (₹)</label>
                   <input
                     type="number"
                     min="0"
                     value={formData.doublesFee}
                     onChange={(e) => setFormData((prev) => ({ ...prev, doublesFee: parseFloat(e.target.value) || 0 }))}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-800 bg-slate-900 text-xs font-bold text-cyan-400"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-blue-600 dark:text-cyan-400"
                   />
                 </div>
 
-
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold uppercase text-slate-400">Team Size</label>
+                  <label className="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">Team Size</label>
                   <input
                     type="text"
                     value={formData.teamSize}
                     onChange={(e) => setFormData((prev) => ({ ...prev, teamSize: e.target.value }))}
                     placeholder="e.g. 1 - 2 Players"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-800 bg-slate-900 text-xs font-semibold text-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-semibold text-slate-900 dark:text-white"
                   />
                 </div>
 
-
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold uppercase text-slate-400">Category</label>
+                  <label className="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">Category</label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-800 bg-slate-900 text-xs font-bold text-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-slate-900 dark:text-white"
                   >
                     <option value="Boys">Boys</option>
                     <option value="Girls">Girls</option>
@@ -675,11 +673,11 @@ export const EventsTab = ({ user }) => {
                 </div>
 
                 <div className="space-y-1 col-span-2 sm:col-span-1">
-                  <label className="block text-[10px] font-bold uppercase text-slate-400">Status</label>
+                  <label className="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">Status</label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-800 bg-slate-900 text-xs font-bold text-emerald-400"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-emerald-600 dark:text-emerald-400"
                   >
                     <option value="Draft">Draft (Hidden)</option>
                     <option value="Published">Published (Open)</option>
@@ -691,19 +689,19 @@ export const EventsTab = ({ user }) => {
 
               {/* Venue */}
               <div className="space-y-1">
-                <label className="block text-xs font-bold uppercase text-slate-400">Venue / Location</label>
+                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Venue / Location</label>
                 <input
                   type="text"
                   value={formData.venue}
                   onChange={(e) => setFormData((prev) => ({ ...prev, venue: e.target.value }))}
                   placeholder="e.g. Indoor Sports Complex Hall A"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-800 bg-slate-900 text-white text-xs font-semibold"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold"
                 />
               </div>
 
               {/* Rules & Regulations multiline */}
               <div className="space-y-1">
-                <label className="block text-xs font-bold uppercase text-slate-400">
+                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
                   Rules & Regulations (One per line)
                 </label>
                 <textarea
@@ -711,13 +709,13 @@ export const EventsTab = ({ user }) => {
                   value={rulesInput}
                   onChange={(e) => setRulesInput(e.target.value)}
                   placeholder="Official BWF rules apply&#10;Non-marking shoes mandatory&#10;College ID card required"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-800 bg-slate-900 text-white text-xs font-mono"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-mono"
                 />
               </div>
 
               {/* Required Documents multiline */}
               <div className="space-y-1">
-                <label className="block text-xs font-bold uppercase text-slate-400">
+                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
                   Required Documents (One per line)
                 </label>
                 <textarea
@@ -725,50 +723,50 @@ export const EventsTab = ({ user }) => {
                   value={docInput}
                   onChange={(e) => setDocInput(e.target.value)}
                   placeholder="College ID Card&#10;Student Aadhaar / Govt ID"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-800 bg-slate-900 text-white text-xs font-mono"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-mono"
                 />
               </div>
 
               {/* Contact Information */}
-              <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
-                <span className="text-xs font-bold uppercase text-indigo-400 block">Coordinator Contact Information</span>
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3">
+                <span className="text-xs font-bold uppercase text-blue-600 dark:text-indigo-400 block">Coordinator Contact Information</span>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <input
                     type="text"
                     placeholder="Contact Name"
                     value={formData.contactName}
                     onChange={(e) => setFormData((prev) => ({ ...prev, contactName: e.target.value }))}
-                    className="px-3.5 py-2 rounded-xl border border-slate-800 bg-slate-950 text-xs text-white"
+                    className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs text-slate-900 dark:text-white"
                   />
                   <input
                     type="email"
                     placeholder="Contact Email"
                     value={formData.contactEmail}
                     onChange={(e) => setFormData((prev) => ({ ...prev, contactEmail: e.target.value }))}
-                    className="px-3.5 py-2 rounded-xl border border-slate-800 bg-slate-950 text-xs text-white"
+                    className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs text-slate-900 dark:text-white"
                   />
                   <input
                     type="text"
                     placeholder="Contact Phone"
                     value={formData.contactPhone}
                     onChange={(e) => setFormData((prev) => ({ ...prev, contactPhone: e.target.value }))}
-                    className="px-3.5 py-2 rounded-xl border border-slate-800 bg-slate-950 text-xs text-white"
+                    className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs text-slate-900 dark:text-white"
                   />
                 </div>
               </div>
 
               {/* Modal Buttons */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition"
+                  className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-bold text-xs transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition"
+                  className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
                 >
                   {editingEvent ? 'Save Event Changes' : 'Publish Registration Event'}
                 </button>
@@ -779,17 +777,18 @@ export const EventsTab = ({ user }) => {
         </div>
       )}
 
+
       {/* PARTICIPANTS ROSTER MODAL & EXPORT */}
       {selectedEventForParticipants && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xs">
-          <div className="w-full max-w-4xl bg-[#0B1120] rounded-3xl border border-slate-800 p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xs font-sans">
+          <div className="w-full max-w-4xl bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
             
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
               <div>
-                <span className="text-[10px] font-mono text-indigo-400 font-bold uppercase">
+                <span className="text-[10px] font-mono text-blue-600 dark:text-indigo-400 font-bold uppercase">
                   {selectedEventForParticipants.sportName} Participant Roster
                 </span>
-                <h3 className="text-lg font-black text-white">{selectedEventForParticipants.title}</h3>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">{selectedEventForParticipants.title}</h3>
               </div>
 
               <div className="flex items-center gap-2">
@@ -809,14 +808,14 @@ export const EventsTab = ({ user }) => {
                     exportToCSV(csvData, `${selectedEventForParticipants.sportName}_Participants`);
                     addToast('Exported Participant Roster as CSV/Excel', 'success');
                   }}
-                  className="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/20 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" /> CSV/Excel
                 </button>
 
                 <button
                   onClick={() => setSelectedEventForParticipants(null)}
-                  className="p-1 text-slate-400 hover:text-white"
+                  className="p-1 text-slate-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -825,21 +824,21 @@ export const EventsTab = ({ user }) => {
 
             {/* Search */}
             <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+              <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400 dark:text-slate-500" />
               <input
                 type="text"
                 placeholder="Search registered teams, captain name, college..."
                 value={participantSearch}
                 onChange={(e) => setParticipantSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-800 bg-slate-900 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-indigo-500"
               />
             </div>
 
             {/* Table */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar border border-slate-800 rounded-2xl">
+            <div className="flex-1 overflow-y-auto custom-scrollbar border border-slate-200 dark:border-slate-800 rounded-2xl">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-800 bg-slate-900/80 text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider">
                     <th className="p-3">Reg ID / Team</th>
                     <th className="p-3">Captain Name</th>
                     <th className="p-3">College</th>
@@ -848,7 +847,7 @@ export const EventsTab = ({ user }) => {
                     <th className="p-3">Date</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 text-xs">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-xs">
                   {participants
                     .filter((p) => 
                       !participantSearch ||
@@ -857,31 +856,31 @@ export const EventsTab = ({ user }) => {
                       p.college?.toLowerCase().includes(participantSearch.toLowerCase())
                     )
                     .map((p) => (
-                      <tr key={p.id} className="hover:bg-slate-900/40">
-                        <td className="p-3 font-bold text-white">
+                      <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/40">
+                        <td className="p-3 font-bold text-slate-900 dark:text-white">
                           {p.teamName || p.studentName}
-                          <span className="block text-[10px] font-mono text-slate-400">{p.id}</span>
+                          <span className="block text-[10px] font-mono text-slate-500 dark:text-slate-400">{p.id}</span>
                         </td>
-                        <td className="p-3 text-slate-300 font-semibold">{p.studentName}</td>
-                        <td className="p-3 font-bold text-amber-400">{p.college}</td>
-                        <td className="p-3 text-slate-300">{p.gender}</td>
+                        <td className="p-3 text-slate-700 dark:text-slate-300 font-semibold">{p.studentName}</td>
+                        <td className="p-3 font-bold text-amber-600 dark:text-amber-400">{p.college}</td>
+                        <td className="p-3 text-slate-600 dark:text-slate-300">{p.gender}</td>
                         <td className="p-3">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/20">
                             {p.feePaid ? `PAID ₹${p.feePaid}` : 'CONFIRMED'}
                           </span>
                         </td>
-                        <td className="p-3 text-slate-400 font-mono text-[11px]">{p.registeredDate}</td>
+                        <td className="p-3 text-slate-500 dark:text-slate-400 font-mono text-[11px]">{p.registeredDate}</td>
                       </tr>
                     ))}
                 </tbody>
               </table>
             </div>
 
-            <div className="pt-2 flex justify-between items-center text-xs text-slate-400">
-              <span>Total Registered: <strong className="text-white">{participants.length} Entries</strong></span>
+            <div className="pt-2 flex justify-between items-center text-xs text-slate-500 dark:text-slate-400">
+              <span>Total Registered: <strong className="text-slate-900 dark:text-white">{participants.length} Entries</strong></span>
               <button
                 onClick={() => setSelectedEventForParticipants(null)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-white font-bold text-xs"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-bold text-xs cursor-pointer"
               >
                 Close Roster
               </button>
@@ -890,6 +889,7 @@ export const EventsTab = ({ user }) => {
           </div>
         </div>
       )}
+
 
       {/* Image Cropper Modal */}
       {showCropper && cropperRawSrc && (

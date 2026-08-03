@@ -153,19 +153,19 @@ export const ResultManagementTab = ({ user }) => {
   };
 
   return (
-    <div className="space-y-6 text-slate-200 animate-fade-in">
+    <div className="space-y-6 text-slate-900 dark:text-slate-200 animate-fade-in">
       
       {/* Table Container */}
-      <div className="p-6 rounded-3xl bg-[#111827] border border-slate-800 shadow-2xl space-y-5">
+      <div className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-2xl space-y-5">
         
         {/* Top Title & Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
           <div>
-            <h3 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-amber-400" />
+            <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-amber-500 dark:text-amber-400" />
               <span>Declare Results & Winner Management</span>
             </h3>
-            <p className="text-xs text-slate-400 font-mono mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">
               Showing {filteredResults.length} of {resultsList.length} completed matches
             </p>
           </div>
@@ -174,7 +174,7 @@ export const ResultManagementTab = ({ user }) => {
             {filteredResults.length > 0 && (
               <button
                 onClick={handleExportExcel}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
               >
                 <FileSpreadsheet className="w-4 h-4" />
                 <span>Export Excel / CSV</span>
@@ -184,7 +184,7 @@ export const ResultManagementTab = ({ user }) => {
             {resultsList.length > 0 && (
               <button
                 onClick={handleClearResults}
-                className="px-3.5 py-2 rounded-xl bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 text-xs font-bold transition flex items-center gap-1.5"
+                className="px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-600/20 hover:bg-rose-100 dark:hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-white border border-rose-200 dark:border-rose-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Clear Results</span>
@@ -194,20 +194,20 @@ export const ResultManagementTab = ({ user }) => {
         </div>
 
         {/* Filter Controls Bar */}
-        <div className="p-4 rounded-2xl bg-[#0B1120] border border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
-            <Filter className="w-4 h-4 text-indigo-400" />
+        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+            <Filter className="w-4 h-4 text-blue-600 dark:text-indigo-400" />
             <span>Filter Results:</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:flex items-center gap-3 flex-1 max-w-2xl">
             {/* Event Filter */}
             <div className="flex-1">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filter by Event</label>
+              <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Filter by Event</label>
               <select
                 value={selectedEvent}
                 onChange={(e) => setSelectedEvent(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-[#111827] border border-slate-700 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
               >
                 <option value="ALL">All Events</option>
                 {availableEvents.map((evtTitle, idx) => (
@@ -218,11 +218,11 @@ export const ResultManagementTab = ({ user }) => {
 
             {/* Gender Filter */}
             <div className="flex-1">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filter by Gender / Category</label>
+              <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Filter by Gender / Category</label>
               <select
                 value={selectedGender}
                 onChange={(e) => setSelectedGender(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-[#111827] border border-slate-700 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
               >
                 <option value="ALL">All</option>
                 <option value="Male">Male</option>
@@ -230,14 +230,13 @@ export const ResultManagementTab = ({ user }) => {
               </select>
             </div>
 
-
             {/* Reset Filters Button */}
             {(selectedEvent !== 'ALL' || selectedGender !== 'ALL') && (
               <button
                 onClick={handleResetFilters}
-                className="mt-4 md:mt-0 self-end px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition flex items-center justify-center gap-1.5 border border-slate-700"
+                className="mt-4 md:mt-0 self-end px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-bold text-xs transition flex items-center justify-center gap-1.5 border border-slate-300 dark:border-slate-700 cursor-pointer"
               >
-                <RefreshCw className="w-3.5 h-3.5 text-indigo-400" />
+                <RefreshCw className="w-3.5 h-3.5 text-blue-600 dark:text-indigo-400" />
                 <span>Reset</span>
               </button>
             )}
@@ -248,7 +247,7 @@ export const ResultManagementTab = ({ user }) => {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-800 text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+              <tr className="border-b border-slate-200 dark:border-slate-800 text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">
                 <th className="p-4">MATCH DETAILS & EVENT</th>
                 <th className="p-4">CATEGORY</th>
                 <th className="p-4">VENUE / TIME</th>
@@ -256,7 +255,7 @@ export const ResultManagementTab = ({ user }) => {
                 <th className="p-4 text-right">ACTIONS</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/80 text-xs">
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800/80 text-xs">
               {filteredResults.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="p-8 text-center text-slate-500 font-mono">
@@ -265,39 +264,39 @@ export const ResultManagementTab = ({ user }) => {
                 </tr>
               ) : (
                 filteredResults.map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-800/40 transition">
+                  <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                     
                     {/* MATCH DETAILS */}
                     <td className="p-4 space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[10px] font-mono text-slate-400">#{r.id}</span>
-                        <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase">
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">#{r.id}</span>
+                        <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-blue-500/10 text-blue-600 dark:text-indigo-300 border border-blue-500/20 uppercase">
                           {r.format || 'SINGLES'}
                         </span>
-                        <span className="text-[10px] font-mono font-semibold text-slate-400">
+                        <span className="text-[10px] font-mono font-semibold text-slate-500 dark:text-slate-400">
                           {r.eventTitle || `${sportName} Championship`}
                         </span>
                       </div>
-                      <p className="font-bold text-white text-sm">{r.team1} vs {r.team2}</p>
+                      <p className="font-bold text-slate-900 dark:text-white text-sm">{r.team1} vs {r.team2}</p>
                     </td>
 
                     {/* CATEGORY / GENDER */}
                     <td className="p-4 font-bold">
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/20">
                         {r.category || r.gender || 'Open'}
                       </span>
                     </td>
 
                     {/* VENUE / TIME */}
-                    <td className="p-4 font-mono text-slate-400">
+                    <td className="p-4 font-mono text-slate-600 dark:text-slate-400">
                       📍 {r.tableNumber || r.venue || 'Court 1'} • {r.time || 'Completed'}
                     </td>
 
                     {/* SCORE & WINNER */}
                     <td className="p-4 font-bold">
                       <div className="flex flex-col gap-1">
-                        <span className="font-mono text-white text-sm">{r.score1 || 0} - {r.score2 || 0}</span>
-                        <span className="text-emerald-400 flex items-center gap-1 text-xs">
+                        <span className="font-mono text-slate-900 dark:text-white text-sm">{r.score1 || 0} - {r.score2 || 0}</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-xs">
                           <Trophy className="w-3.5 h-3.5" /> Winner: {r.winner || r.team1}
                         </span>
                       </div>
@@ -308,27 +307,26 @@ export const ResultManagementTab = ({ user }) => {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => generateMatchResultPDF(r, user?.sportName || user?.assignedSport || 'badminton')}
-                          className="px-3 py-1.5 rounded-xl bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 border border-orange-500/30 font-bold text-xs transition flex items-center gap-1"
+                          className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-orange-500/20 dark:hover:bg-orange-500/30 text-blue-600 dark:text-orange-300 border border-blue-200 dark:border-orange-500/30 font-bold text-xs transition flex items-center gap-1 cursor-pointer"
                         >
                           <Download className="w-3.5 h-3.5" />
                           <span>PDF</span>
                         </button>
                         <button
                           onClick={() => handleSetWinner(r.id, r.winner || r.team1)}
-                          className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition"
+                          className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
                         >
                           Set Winner
                         </button>
                         <button
                           onClick={() => handleDeleteResult(r.id)}
-                          className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white transition"
+                          className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-white border border-rose-200 dark:border-rose-500/30 transition cursor-pointer"
                           title="Delete Result"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
-
                   </tr>
                 ))
               )}
@@ -337,8 +335,8 @@ export const ResultManagementTab = ({ user }) => {
         </div>
 
       </div>
-
     </div>
   );
 };
+
 
