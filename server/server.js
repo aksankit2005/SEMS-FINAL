@@ -1450,18 +1450,31 @@ app.post('/api/public/register-event', async (req, res) => {
       });
     }
 
-    const sportQueryName = targetSportId || sportId || 'badminton';
+    const sportQueryName = (targetSportId || sportId || 'badminton').replace(/-/g, ' ');
     let sportRecord = await prisma.sport.findFirst({
-      where: { name: { equals: sportQueryName.replace(/-/g, ' '), mode: 'insensitive' } }
+      where: { name: { equals: sportQueryName, mode: 'insensitive' } }
     });
     if (!sportRecord) {
-      sportRecord = await prisma.sport.findFirst();
+      sportRecord = await prisma.sport.create({
+        data: {
+          name: sportQueryName.charAt(0).toUpperCase() + sportQueryName.slice(1),
+          isTeamSport: !!newRegRecord.teamName
+        }
+      });
     }
 
     const collegeCode = newRegRecord.college || 'MPEC';
     let collegeRecord = await prisma.college.findFirst({
       where: { code: { equals: collegeCode, mode: 'insensitive' } }
     });
+    if (!collegeRecord) {
+      collegeRecord = await prisma.college.create({
+        data: {
+          code: collegeCode.toUpperCase(),
+          name: `${collegeCode.toUpperCase()} Institute`
+        }
+      });
+    }
 
     // 2. Execute Prisma transaction populating registrations, registration_members, payments, receipts, teams, and college_registrations
     await prisma.$transaction(async (tx) => {
