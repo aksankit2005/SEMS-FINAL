@@ -36,6 +36,7 @@ import { CollegeHeadProtectedRoute } from './components/collegeHead/CollegeHeadP
 import { CoordinatorLoginPage } from './pages/coordinator/CoordinatorLoginPage';
 import { CoordinatorDashboardPage } from './pages/coordinator/CoordinatorDashboardPage';
 import { CoordinatorProtectedRoute } from './components/coordinator/CoordinatorProtectedRoute';
+import { NotFoundPage } from './pages/NotFoundPage';
 
 function App() {
   return (
@@ -89,6 +90,9 @@ function App() {
                   {/* Protected Sport Coordinator Portal Routes */}
                   <Route path="/coordinator/dashboard" element={<CoordinatorProtectedRoute><CoordinatorDashboardPage /></CoordinatorProtectedRoute>} />
                 </Route>
+
+                {/* Full-Screen Standalone Global 404 Route */}
+                <Route path="*" element={<NotFoundPage />} />
               </Routes>
 
               <AuthModal />
@@ -101,3 +105,5 @@ function App() {
 }
 
 export default App;
+
+

@@ -71,7 +71,7 @@ export const CoordinatorDashboardPage = () => {
 
 
   return (
-    <div className="min-h-screen bg-[#090D16] text-white flex flex-col font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-150">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#090D16] text-slate-900 dark:text-white flex flex-col font-sans selection:bg-blue-600 selection:text-white transition-colors duration-150">
       
       {/* Top Header & Horizontal Tabs Navigation Bar */}
       <CoordinatorHeader
@@ -88,8 +88,8 @@ export const CoordinatorDashboardPage = () => {
         
         {loading ? (
           <div className="py-20 text-center space-y-2">
-            <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-xs font-mono text-slate-400">Loading {user?.sportName || 'Sports'} operations console...</p>
+            <div className="w-8 h-8 border-2 border-blue-600 dark:border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-xs font-mono text-slate-500 dark:text-slate-400">Loading {user?.sportName || 'Sports'} operations console...</p>
           </div>
         ) : (
           <>
@@ -142,3 +142,4 @@ export const CoordinatorDashboardPage = () => {
     </div>
   );
 };
+
