@@ -171,7 +171,7 @@ export const RegistrationTab = ({ registrations, user, onUpdateRegistrations }) 
                 <th className="p-4">Reg ID / Team</th>
                 <th className="p-4">Captain / Student</th>
                 <th className="p-4">College</th>
-                <th className="p-4">Department</th>
+                <th className="p-4">Razorpay Payment ID</th>
                 <th className="p-4">Gender</th>
                 <th className="p-4">Status</th>
                 <th className="p-4 text-right">Actions</th>
@@ -185,8 +185,19 @@ export const RegistrationTab = ({ registrations, user, onUpdateRegistrations }) 
                     <span className="text-[10px] font-mono text-slate-400">{r.id}</span>
                   </td>
                   <td className="p-4 font-semibold text-slate-700 dark:text-slate-300">{r.studentName}</td>
-                  <td className="p-4 font-bold text-orange-600 dark:text-orange-400">{r.college}</td>
-                  <td className="p-4 text-slate-500 dark:text-slate-400">{r.department}</td>
+                  <td className="p-4 font-bold text-blue-600 dark:text-indigo-400">{r.college}</td>
+                  <td className="p-4 font-mono text-xs">
+                    <div className="font-bold text-slate-900 dark:text-white text-[11px]">
+                      {r.utrNumber || r.paymentId || 'pay_FREE_PASS'}
+                    </div>
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold ${
+                      (r.paymentStatus || r.status || '').toLowerCase().includes('paid') || r.feePaid > 0
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                    }`}>
+                      {r.feePaid > 0 ? `PAID (₹${r.feePaid})` : 'FREE PASS'}
+                    </span>
+                  </td>
                   <td className="p-4 font-semibold text-slate-700 dark:text-slate-300">{r.gender}</td>
                   <td className="p-4">
                     <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
@@ -197,6 +208,7 @@ export const RegistrationTab = ({ registrations, user, onUpdateRegistrations }) 
                       {r.status}
                     </span>
                   </td>
+
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-1.5">
                       <button
