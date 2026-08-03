@@ -481,8 +481,6 @@ export const coordinatorApi = {
       tournStartDate: eventData.tournStartDate || '2026-09-01',
       tournEndDate: eventData.tournEndDate || '2026-09-05',
       entryFee: Number(eventData.entryFee || 0),
-      singlesFee: eventData.singlesFee !== undefined ? Number(eventData.singlesFee) : Number(eventData.entryFee || 300),
-      doublesFee: eventData.doublesFee !== undefined ? Number(eventData.doublesFee) : (eventData.singlesFee !== undefined ? Number(eventData.singlesFee) * 2 : 600),
       teamSize: eventData.teamSize || '1 Player',
       maxRegistrations: Number(eventData.maxRegistrations || 64),
       registeredCount: Number(eventData.registeredCount || 0),
@@ -578,14 +576,14 @@ export const coordinatorApi = {
           const list = JSON.parse(localStorage.getItem(key));
           if (Array.isArray(list)) {
             list.forEach((e) => {
-              if (e && (e.status === 'Published' || e.status === 'Closed' || e.status === 'Coming Soon')) {
+              if (e && (e.status === 'Published' || e.status === 'Closed')) {
                 const sId = (e.sportId || '').toLowerCase();
                 const sName = (e.sportName || '').toLowerCase();
                 const title = (e.title || '').toLowerCase();
                 if (e.id === 'EVT-BADMINTON-001' || e.id === 'EVT-CRICKET-001' || e.id === 'EVT-FOOTBALL-001') return;
 
                 let status = e.status;
-                if (e.status !== 'Coming Soon' && e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) {
+                if (e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) {
                   status = 'Closed';
                 }
                 publicList.push({
