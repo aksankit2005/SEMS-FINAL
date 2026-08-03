@@ -1142,7 +1142,7 @@ app.get('/api/coordinator/registrations', verifyCoordinatorToken, async (req, re
               }
             }
           });
-        } catch (e) {}
+        } catch (e) { }
 
         return {
           id: r.id,
@@ -1456,18 +1456,18 @@ app.post('/api/public/register-event', async (req, res) => {
       const rosterList = (Array.isArray(participantData.roster) && participantData.roster.length > 0)
         ? participantData.roster
         : [{
-            name: newRegRecord.studentName,
-            fatherName: participantData.fatherName || 'N/A',
-            rollNo: newRegRecord.enrollmentNo,
-            dob: participantData.dob ? new Date(participantData.dob) : new Date('2004-05-15'),
-            phone: newRegRecord.phone,
-            email: newRegRecord.email,
-            aadhaarNumber: participantData.aadhaarNumber || null,
-            course: participantData.course || newRegRecord.department || 'B.Tech',
-            yearSemester: participantData.yearSemester || participantData.year || '3rd Year',
-            gender: (newRegRecord.gender || 'Male').toUpperCase() === 'FEMALE' ? 'FEMALE' : 'MALE',
-            isCaptain: true
-          }];
+          name: newRegRecord.studentName,
+          fatherName: participantData.fatherName || 'N/A',
+          rollNo: newRegRecord.enrollmentNo,
+          dob: participantData.dob ? new Date(participantData.dob) : new Date('2004-05-15'),
+          phone: newRegRecord.phone,
+          email: newRegRecord.email,
+          aadhaarNumber: participantData.aadhaarNumber || null,
+          course: participantData.course || newRegRecord.department || 'B.Tech',
+          yearSemester: participantData.yearSemester || participantData.year || '3rd Year',
+          gender: (newRegRecord.gender || 'Male').toUpperCase() === 'FEMALE' ? 'FEMALE' : 'MALE',
+          isCaptain: true
+        }];
 
       for (const m of rosterList) {
         await tx.registrationMember.create({
@@ -1642,8 +1642,4 @@ app.listen(PORT, () => {
   console.log(`🚀 SEMS API Server running on port ${PORT}`);
   console.log(`🔒 NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
 });
-<<<<<<< HEAD
-=======
 
-
->>>>>>> main
