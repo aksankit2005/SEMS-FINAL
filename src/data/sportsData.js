@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 export const SPORTS_DATA = [
   {
     id: "table-tennis",
