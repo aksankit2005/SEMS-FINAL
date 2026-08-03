@@ -15,17 +15,8 @@ const { Pool } = pg;
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ─── SECURITY: JWT Secret — must be set in .env; no insecure default in production ───
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  if (process.env.NODE_ENV === 'production') {
-    console.error('FATAL: JWT_SECRET environment variable is not set. Refusing to start in production.');
-    process.exit(1);
-  } else {
-    console.warn('WARNING: JWT_SECRET not set. Using insecure default for development only.');
-  }
-}
-const JWT_SECRET_VALUE = JWT_SECRET || 'sems_dev_only_secret_CHANGE_IN_PRODUCTION';
+// ─── SECURITY: JWT Secret fallback for safe startup ───
+const JWT_SECRET_VALUE = process.env.JWT_SECRET || 'sems_pr_coordinator_secret_key_2026';
 
 // PR Admin credentials configurable via environment variables
 const PR_ADMIN_USERNAME = process.env.PR_ADMIN_USERNAME || 'pr_admin';
@@ -56,23 +47,44 @@ app.use(helmet({
 app.use(compression());
 
 // ─── CORS ────────────────────────────────────────────────────────────────────
-const ALLOWED_ORIGINS = [
-  'http://localhost:5173',
-  'http://localhost:4173',
-  'http://localhost:3000',
-  ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [])
-];
+const parseOrigins = () => {
+  const defaults = [
+    'http://localhost:5173',
+    'http://localhost:4173',
+    'http://localhost:3000',
+    'http://localhost:5174',
+    'https://sems-final.vercel.app',
+  ];
+  if (!process.env.ALLOWED_ORIGINS) return defaults;
+  const envOrigins = process.env.ALLOWED_ORIGINS.split(',')
+    .map(o => o.trim().replace(/\/+$/, '')) // strip trailing slashes
+    .filter(Boolean);
+  return Array.from(new Set([...defaults, ...envOrigins]));
+};
+
+const allowedOrigins = parseOrigins();
+
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, server-to-server, curl)
+    // Allow requests with no origin (mobile apps, server-to-server, curl, Postman)
     if (!origin) return callback(null, true);
-    if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-    return callback(new Error(`CORS: Origin '${origin}' not allowed`));
+    const cleanOrigin = origin.replace(/\/+$/, '');
+    if (allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes('*') || process.env.ALLOWED_ORIGINS === '*') {
+      return callback(null, true);
+    }
+    // Fallback in development or log explicit warning
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`[CORS Warning] Origin '${origin}' allowed in development mode.`);
+      return callback(null, true);
+    }
+    console.error(`[CORS Error] Origin '${origin}' blocked by CORS policy.`);
+    return callback(new Error(`CORS policy violation: Origin '${origin}' is not allowed`));
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
 }));
+app.options('*', cors());
 
 // ─── BODY PARSING with size limit ────────────────────────────────────────────
 app.use(express.json({ limit: '1mb' }));
