@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import { Trophy, ArrowLeft, User, Users, Info, ShieldCheck, Sparkles, Calendar, MapPin, Clock } from 'lucide-react';
 import { SPORTS_DATA } from '../data/sportsData';
 import { SPORTS_CONFIG } from '../data/sportsConfig';
@@ -213,6 +213,57 @@ export const RegistrationPage = () => {
       }
     }
   }, [preselectedSportId, sportsList]);
+
+  const { eventId } = useParams();
+
+  // Load specific event by eventId or sportId from route params
+  useEffect(() => {
+    const fetchEventById = async () => {
+      if (!eventId) return;
+      try {
+        const pubEvents = await coordinatorApi.getPublicEvents();
+        const foundEv = (pubEvents || []).find((ev) => String(ev.id) === String(eventId) || String(ev.sportId) === String(eventId));
+        if (foundEv) {
+          setActiveSport({
+            id: foundEv.sportId || foundEv.id,
+            eventId: foundEv.id,
+            name: foundEv.sportName || foundEv.title || 'Sport Event',
+            eventName: foundEv.title || foundEv.eventName,
+            category: foundEv.category || 'Open',
+            type: foundEv.teamSize || 'Team / Individual',
+            tagline: foundEv.description || 'Championship Tournament',
+            description: foundEv.description || '',
+            image: foundEv.coverImage || foundEv.cover_image || 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=800&q=80',
+            entryFee: foundEv.entryFee !== undefined ? foundEv.entryFee : 300,
+            singlesFee: foundEv.singlesFee !== undefined ? foundEv.singlesFee : 300,
+            doublesFee: foundEv.doublesFee !== undefined ? foundEv.doublesFee : 600,
+            teamSize: foundEv.teamSize || '1 Player',
+            venue: foundEv.venue || 'Central Arena',
+            startDate: foundEv.regStartDate || foundEv.tournStartDate || '2026-07-20',
+            endDate: foundEv.regEndDate || foundEv.tournEndDate || '2026-08-30',
+            regStartDate: foundEv.regStartDate,
+            regEndDate: foundEv.regEndDate,
+            tournStartDate: foundEv.tournStartDate,
+            tournEndDate: foundEv.tournEndDate,
+            rules: foundEv.rules || ['Official tournament rules apply.'],
+            requiredDocuments: foundEv.requiredDocuments || ['College ID Card']
+          });
+          setStep(1);
+          return;
+        }
+
+        const foundSport = sportsList.find((s) => s.id === eventId);
+        if (foundSport) {
+          setActiveSport(foundSport);
+          setStep(1);
+        }
+      } catch (err) {
+        console.warn('Error loading event by ID', err);
+      }
+    };
+
+    fetchEventById();
+  }, [eventId, sportsList]);
 
   // Track current sport ID to prevent form resets when only updating fees
   const currentSportIdRef = React.useRef(null);
@@ -639,10 +690,6 @@ export const RegistrationPage = () => {
                           </div>
 
                           <div className="p-5 space-y-3.5 flex-1 flex flex-col justify-between">
-                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-2">
-                              {evt.description}
-                            </p>
-
                             <div className="grid grid-cols-2 gap-2.5 text-xs bg-slate-50 dark:bg-slate-950 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800">
                               <div>
                                 <span className="text-[9px] text-slate-400 uppercase font-mono block">Reg Deadline</span>

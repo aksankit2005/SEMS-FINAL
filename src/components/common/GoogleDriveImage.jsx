@@ -9,6 +9,9 @@ import { ImageIcon } from 'lucide-react';
 export const GoogleDriveImage = ({ src, alt, className = '', loading = 'lazy', ...props }) => {
   const driveId = extractGoogleDriveId(src);
 
+  const [attemptIndex, setAttemptIndex] = useState(0);
+  const [hasFailedAll, setHasFailedAll] = useState(false);
+
   // If it's not a Google Drive link, render normal img tag
   if (!driveId) {
     return (
@@ -29,9 +32,6 @@ export const GoogleDriveImage = ({ src, alt, className = '', loading = 'lazy', .
     `https://drive.google.com/uc?export=view&id=${driveId}`,
     `https://wsrv.nl/?url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fid%3D${driveId}`,
   ];
-
-  const [attemptIndex, setAttemptIndex] = useState(0);
-  const [hasFailedAll, setHasFailedAll] = useState(false);
 
   const handleError = () => {
     if (attemptIndex < fallbackUrls.length - 1) {
