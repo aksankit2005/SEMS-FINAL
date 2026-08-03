@@ -86,7 +86,7 @@ export const CoordinatorDashboardPage = () => {
 
 
   return (
-    <div className="min-h-screen bg-[#090D16] text-white flex flex-col font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-150">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#090D16] text-slate-900 dark:text-white flex flex-col font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-150">
 
       {/* Top Header & Horizontal Tabs Navigation Bar */}
       <CoordinatorHeader

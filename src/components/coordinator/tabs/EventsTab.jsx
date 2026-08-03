@@ -306,20 +306,20 @@ export const EventsTab = ({ user }) => {
       {/* EVENTS MANAGEMENT TABLE & CARDS */}
       <div className="space-y-4">
         {loading ? (
-          <div className="py-16 text-center space-y-2 bg-[#0B1120] rounded-3xl border border-slate-800">
+          <div className="py-16 text-center space-y-2 bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800">
             <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-xs text-slate-400">Loading {user?.sportName} registration events...</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Loading {user?.sportName} registration events...</p>
           </div>
         ) : events.length === 0 ? (
-          <div className="py-16 text-center space-y-3 bg-[#0B1120] rounded-3xl border border-slate-800 p-8">
-            <Layers className="w-12 h-12 text-slate-600 mx-auto" />
-            <h3 className="text-base font-black text-white">No Registration Events Created Yet</h3>
-            <p className="text-xs text-slate-400 max-w-md mx-auto">
+          <div className="py-16 text-center space-y-3 bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-soft dark:shadow-md">
+            <Layers className="w-12 h-12 text-slate-400 dark:text-slate-600 mx-auto" />
+            <h3 className="text-base font-black text-slate-900 dark:text-white">No Registration Events Created Yet</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
               Click the "Create Registration Event" button above to publish your first tournament registration event for {user?.sportName}.
             </p>
             <button
               onClick={handleOpenCreate}
-              className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow-md"
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
             >
               + Create First Event
             </button>
