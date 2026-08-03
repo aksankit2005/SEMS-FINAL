@@ -575,4 +575,53 @@ model CollegeRegistration {
   @@map("college_registrations")
 }
 
+model LiveMatch {
+  id          String   @id @db.VarChar(100)
+  sportId     String   @map("sport_id") @db.VarChar(50)
+  format      String?  @db.VarChar(50)
+  status      String?  @db.VarChar(50)
+  team1       String?  @db.VarChar(255)
+  team2       String?  @db.VarChar(255)
+  matchTitle  String?  @map("match_title") @db.VarChar(255)
+  tableNumber String?  @map("table_number") @db.VarChar(100)
+  time        String?  @db.VarChar(100)
+  score1      Int?     @default(0)
+  score2      Int?     @default(0)
+  winner      String?  @db.VarChar(255)
+  details     Json?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("live_matches")
+}
+
+model CoordinatorEventItem {
+  id               String   @id @db.VarChar(100)
+  sportId          String   @map("sport_id") @db.VarChar(50)
+  sportName        String?  @map("sport_name") @db.VarChar(100)
+  title            String   @db.VarChar(255)
+  coverImage       String?  @map("cover_image") @db.Text
+  description      String?  @db.Text
+  regStartDate     String?  @map("reg_start_date") @db.VarChar(50)
+  regEndDate       String?  @map("reg_end_date") @db.VarChar(50)
+  tournStartDate   String?  @map("tourn_start_date") @db.VarChar(50)
+  tournEndDate     String?  @map("tourn_end_date") @db.VarChar(50)
+  entryFee         Decimal? @default(0) @map("entry_fee") @db.Decimal(10, 2)
+  singlesFee       Decimal? @default(0) @map("singles_fee") @db.Decimal(10, 2)
+  doublesFee       Decimal? @default(0) @map("doubles_fee") @db.Decimal(10, 2)
+  teamSize         String?  @map("team_size") @db.VarChar(100)
+  maxRegistrations Int?     @default(64) @map("max_registrations")
+  registeredCount  Int?     @default(0) @map("registered_count")
+  venue            String?  @db.VarChar(255)
+  category         String?  @db.VarChar(100)
+  status           String?  @default("Draft") @db.VarChar(50)
+  rules            Json?
+  requiredDocuments Json?   @map("required_documents")
+  contactInfo      Json?    @map("contact_info")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("coordinator_event_items")
+}
+
 

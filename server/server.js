@@ -896,18 +896,32 @@ app.get('/api/coordinator/profile', verifyCoordinatorToken, (req, res) => {
   return res.json(req.user);
 });
 
-// GET /api/coordinator/matches - Get matches for assigned sport ONLY
-app.get('/api/coordinator/matches', verifyCoordinatorToken, (req, res) => {
+// GET /api/coordinator/matches - Get matches for assigned sport ONLY from PostgreSQL
+app.get('/api/coordinator/matches', verifyCoordinatorToken, async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
+  try {
+    const dbMatches = await prisma.liveMatch.findMany({
+      where: { sportId: { equals: sportId, mode: 'insensitive' } },
+      orderBy: { createdAt: 'desc' }
+    });
+    if (dbMatches && dbMatches.length > 0) {
+      inMemoryCoordinatorMatches[sportId] = dbMatches;
+      return res.json(dbMatches);
+    }
+  } catch (err) {
+    console.error('Error fetching coordinator matches from DB:', err.message);
+  }
   const matches = inMemoryCoordinatorMatches[sportId] || [];
   return res.json(matches);
 });
 
-// POST /api/coordinator/matches - Create new match fixture
-app.post('/api/coordinator/matches', verifyCoordinatorToken, (req, res) => {
+// POST /api/coordinator/matches - Create new match fixture in PostgreSQL
+app.post('/api/coordinator/matches', verifyCoordinatorToken, async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
+  const matchId = req.body.id || `M${Math.floor(100000 + Math.random() * 900000)}`;
   const newMatch = {
-    id: req.body.id || `M${Math.floor(100000 + Math.random() * 900000)}`,
+    id: matchId,
+    sportId: sportId,
     format: (req.body.format || 'SINGLES').toUpperCase(),
     status: req.body.status || 'SCHEDULED',
     team1: req.body.team1,
@@ -915,42 +929,92 @@ app.post('/api/coordinator/matches', verifyCoordinatorToken, (req, res) => {
     matchTitle: req.body.matchTitle || `${req.body.team1} vs ${req.body.team2}`,
     tableNumber: req.body.tableNumber || 'Table 1',
     time: req.body.time || '05:30 PM',
-    score1: 0,
-    score2: 0,
-    winner: null,
-    createdAt: new Date().toISOString(),
+    score1: Number(req.body.score1 || 0),
+    score2: Number(req.body.score2 || 0),
+    winner: req.body.winner || null,
   };
 
   if (!inMemoryCoordinatorMatches[sportId]) {
     inMemoryCoordinatorMatches[sportId] = [];
   }
   inMemoryCoordinatorMatches[sportId].unshift(newMatch);
+
+  try {
+    await prisma.liveMatch.upsert({
+      where: { id: matchId },
+      update: newMatch,
+      create: newMatch
+    });
+  } catch (err) {
+    console.error('Error persisting match to DB:', err.message);
+  }
+
   return res.status(201).json({ success: true, match: newMatch });
 });
 
-// PUT /api/coordinator/matches/:id - Update match schedule
-app.put('/api/coordinator/matches/:id', verifyCoordinatorToken, (req, res) => {
+// PUT /api/coordinator/matches/:id - Update match schedule in PostgreSQL
+app.put('/api/coordinator/matches/:id', verifyCoordinatorToken, async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
   const { id } = req.params;
   const list = inMemoryCoordinatorMatches[sportId] || [];
 
   const index = list.findIndex((m) => m.id === id);
-  if (index === -1) {
-    return res.status(404).json({ message: 'Match not found' });
+  if (index !== -1) {
+    list[index] = { ...list[index], ...req.body };
   }
 
-  list[index] = { ...list[index], ...req.body };
-  return res.json({ success: true, match: list[index] });
+  try {
+    const updated = await prisma.liveMatch.upsert({
+      where: { id },
+      update: {
+        status: req.body.status,
+        team1: req.body.team1,
+        team2: req.body.team2,
+        matchTitle: req.body.matchTitle,
+        tableNumber: req.body.tableNumber,
+        time: req.body.time,
+        score1: req.body.score1 !== undefined ? Number(req.body.score1) : undefined,
+        score2: req.body.score2 !== undefined ? Number(req.body.score2) : undefined,
+        winner: req.body.winner,
+      },
+      create: {
+        id,
+        sportId,
+        format: (req.body.format || 'SINGLES').toUpperCase(),
+        status: req.body.status || 'SCHEDULED',
+        team1: req.body.team1,
+        team2: req.body.team2,
+        matchTitle: req.body.matchTitle || `${req.body.team1} vs ${req.body.team2}`,
+        tableNumber: req.body.tableNumber || 'Table 1',
+        time: req.body.time || '05:30 PM',
+        score1: Number(req.body.score1 || 0),
+        score2: Number(req.body.score2 || 0),
+        winner: req.body.winner || null,
+      }
+    });
+    return res.json({ success: true, match: updated });
+  } catch (err) {
+    console.error('Error updating match in DB:', err.message);
+  }
+
+  return res.json({ success: true, match: index !== -1 ? list[index] : req.body });
 });
 
-// DELETE /api/coordinator/matches/:id - Delete match fixture
-app.delete('/api/coordinator/matches/:id', verifyCoordinatorToken, (req, res) => {
+// DELETE /api/coordinator/matches/:id - Delete match fixture in PostgreSQL
+app.delete('/api/coordinator/matches/:id', verifyCoordinatorToken, async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
   const { id } = req.params;
 
   if (inMemoryCoordinatorMatches[sportId]) {
     inMemoryCoordinatorMatches[sportId] = inMemoryCoordinatorMatches[sportId].filter((m) => m.id !== id);
   }
+
+  try {
+    await prisma.liveMatch.deleteMany({ where: { id } });
+  } catch (err) {
+    console.error('Error deleting match from DB:', err.message);
+  }
+
   return res.json({ success: true, message: 'Match fixture deleted' });
 });
 
@@ -1220,13 +1284,34 @@ app.post('/api/coordinator/registrations/toggle-status', verifyCoordinatorToken,
   });
 });
 
-// GET /api/live-matches - Public endpoint returning active live matches for spectators
-app.get('/api/live-matches', (req, res) => {
+// GET /api/live-matches - Public endpoint returning active live matches for spectators from PostgreSQL
+app.get('/api/live-matches', async (req, res) => {
+  try {
+    const dbMatches = await prisma.liveMatch.findMany({
+      where: {
+        status: { in: ['running', 'live', 'LIVE', 'RUNNING'] }
+      },
+      orderBy: { updatedAt: 'desc' }
+    });
+
+    if (dbMatches && dbMatches.length > 0) {
+      const formatted = dbMatches.map((m) => ({
+        ...m,
+        sportId: m.sportId,
+        sportName: (m.sportId || '').replace(/-/g, ' ').toUpperCase(),
+        liveTimer: m.time || '14:32',
+      }));
+      return res.json(formatted);
+    }
+  } catch (err) {
+    console.error('Error fetching live matches from PostgreSQL:', err.message);
+  }
+
   const allLive = [];
   Object.keys(inMemoryCoordinatorMatches).forEach((sport) => {
     const list = inMemoryCoordinatorMatches[sport] || [];
     list.forEach((m) => {
-      if (m.status === 'running' || m.status === 'live') {
+      if (m.status === 'running' || m.status === 'live' || m.status === 'LIVE' || m.status === 'RUNNING') {
         allLive.push({
           ...m,
           sportId: sport,
@@ -1243,18 +1328,31 @@ app.get('/api/live-matches', (req, res) => {
 // Coordinator Events Management Endpoints
 // ----------------------------------------------------
 
-// GET /api/coordinator/events - Get events for logged in coordinator's sport ONLY
-app.get('/api/coordinator/events', verifyCoordinatorToken, (req, res) => {
+// GET /api/coordinator/events - Get events for logged in coordinator's sport ONLY from PostgreSQL
+app.get('/api/coordinator/events', verifyCoordinatorToken, async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
+  try {
+    const dbEvents = await prisma.coordinatorEventItem.findMany({
+      where: { sportId: { equals: sportId, mode: 'insensitive' } },
+      orderBy: { createdAt: 'desc' }
+    });
+    if (dbEvents && dbEvents.length > 0) {
+      inMemoryCoordinatorEvents[sportId] = dbEvents;
+      return res.json(dbEvents);
+    }
+  } catch (err) {
+    console.error('Error fetching coordinator events from DB:', err.message);
+  }
   const events = inMemoryCoordinatorEvents[sportId] || [];
   return res.json(events);
 });
 
-// POST /api/coordinator/events - Create new event for assigned sport
-app.post('/api/coordinator/events', verifyCoordinatorToken, (req, res) => {
+// POST /api/coordinator/events - Create new event for assigned sport in PostgreSQL
+app.post('/api/coordinator/events', verifyCoordinatorToken, async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
+  const eventId = req.body.id || `EVT-${sportId.toUpperCase()}-${Date.now()}`;
   const newEvent = {
-    id: req.body.id || `EVT-${sportId.toUpperCase()}-${Date.now()}`,
+    id: eventId,
     title: req.body.title || req.body.eventName || `${req.user.sportName} Championship 2026`,
     sportId: sportId,
     sportName: req.user.sportName,
@@ -1272,7 +1370,7 @@ app.post('/api/coordinator/events', verifyCoordinatorToken, (req, res) => {
     registeredCount: Number(req.body.registeredCount || 0),
     venue: req.body.venue || 'Central Sports Arena',
     category: req.body.category || 'Open',
-    status: req.body.status || 'Draft', // Draft, Published, Closed
+    status: req.body.status || 'Draft',
     rules: req.body.rules || [],
     requiredDocuments: req.body.requiredDocuments || ['College ID Card', 'Student Aadhaar/Govt ID'],
     contactInfo: req.body.contactInfo || {
@@ -1280,8 +1378,6 @@ app.post('/api/coordinator/events', verifyCoordinatorToken, (req, res) => {
       email: req.user.email || `${sportId}.coord@sems.edu`,
       phone: '+91 98765 43210'
     },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
   };
 
   if (!inMemoryCoordinatorEvents[sportId]) {
@@ -1289,73 +1385,120 @@ app.post('/api/coordinator/events', verifyCoordinatorToken, (req, res) => {
   }
   inMemoryCoordinatorEvents[sportId].unshift(newEvent);
 
+  try {
+    await prisma.coordinatorEventItem.upsert({
+      where: { id: eventId },
+      update: newEvent,
+      create: newEvent
+    });
+    console.log(`✅ Event ${eventId} persisted to PostgreSQL!`);
+  } catch (err) {
+    console.error('Error persisting coordinator event to DB:', err.message);
+  }
+
   return res.status(201).json({ success: true, event: newEvent });
 });
 
-// PUT /api/coordinator/events/:id - Edit existing event
-app.put('/api/coordinator/events/:id', verifyCoordinatorToken, (req, res) => {
+// PUT /api/coordinator/events/:id - Edit existing event in PostgreSQL
+app.put('/api/coordinator/events/:id', verifyCoordinatorToken, async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
   const { id } = req.params;
   const list = inMemoryCoordinatorEvents[sportId] || [];
 
   const index = list.findIndex((e) => e.id === id);
-  if (index === -1) {
-    return res.status(404).json({ message: 'Event not found' });
-  }
-
-  // Auto-close if status changed to Closed or max count reached
-  let newStatus = req.body.status !== undefined ? req.body.status : list[index].status;
-  if (req.body.registeredCount !== undefined && req.body.registeredCount >= (req.body.maxRegistrations || list[index].maxRegistrations)) {
+  let newStatus = req.body.status !== undefined ? req.body.status : (index !== -1 ? list[index].status : 'Draft');
+  if (req.body.registeredCount !== undefined && req.body.registeredCount >= (req.body.maxRegistrations || (index !== -1 ? list[index].maxRegistrations : 64))) {
     newStatus = 'Closed';
   }
 
-  list[index] = {
-    ...list[index],
-    ...req.body,
-    status: newStatus,
-    updatedAt: new Date().toISOString()
-  };
+  if (index !== -1) {
+    list[index] = {
+      ...list[index],
+      ...req.body,
+      status: newStatus,
+      updatedAt: new Date().toISOString()
+    };
+  }
 
-  return res.json({ success: true, event: list[index] });
+  try {
+    const updated = await prisma.coordinatorEventItem.upsert({
+      where: { id },
+      update: {
+        ...req.body,
+        status: newStatus,
+      },
+      create: {
+        id,
+        sportId,
+        sportName: req.user.sportName,
+        title: req.body.title || req.body.eventName || 'Event',
+        status: newStatus,
+        ...req.body
+      }
+    });
+    return res.json({ success: true, event: updated });
+  } catch (err) {
+    console.error('Error updating event in DB:', err.message);
+  }
+
+  return res.json({ success: true, event: index !== -1 ? list[index] : req.body });
 });
 
-// DELETE /api/coordinator/events/:id - Delete event
-app.delete('/api/coordinator/events/:id', verifyCoordinatorToken, (req, res) => {
+// DELETE /api/coordinator/events/:id - Delete event in PostgreSQL
+app.delete('/api/coordinator/events/:id', verifyCoordinatorToken, async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
   const { id } = req.params;
 
   if (inMemoryCoordinatorEvents[sportId]) {
     inMemoryCoordinatorEvents[sportId] = inMemoryCoordinatorEvents[sportId].filter((e) => e.id !== id);
   }
+
+  try {
+    await prisma.coordinatorEventItem.deleteMany({ where: { id } });
+  } catch (err) {
+    console.error('Error deleting event from DB:', err.message);
+  }
+
   return res.json({ success: true, message: 'Event deleted successfully' });
 });
 
-// GET /api/coordinator/events/:id/participants - Get participants for an event
-app.get('/api/coordinator/events/:id/participants', verifyCoordinatorToken, (req, res) => {
-  const sportId = req.user.assignedSport.toLowerCase();
-  const { id } = req.params;
-  const event = (inMemoryCoordinatorEvents[sportId] || []).find((e) => e.id === id);
-
-  const participants = inMemoryCollegeRegistrations.filter(
-    (r) => (r.eventId === id || (r.sportId && r.sportId.toLowerCase() === sportId))
-  );
-
-  return res.json({
-    event,
-    count: participants.length,
-    participants
-  });
-});
-
-// GET /api/public/events - Public list of Published coordinator events
-app.get('/api/public/events', (req, res) => {
+// GET /api/public/events - Public list of Published coordinator events from PostgreSQL
+app.get('/api/public/events', async (req, res) => {
   const publishedEvents = [];
   const currentDate = new Date();
+
+  try {
+    const dbEvents = await prisma.coordinatorEventItem.findMany({
+      where: {
+        status: { in: ['Published', 'Closed', 'Coming Soon'] }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    if (dbEvents && dbEvents.length > 0) {
+      dbEvents.forEach((e) => {
+        let currentStatus = e.status;
+        if (e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) {
+          currentStatus = 'Closed';
+        }
+        if ((e.registeredCount || 0) >= (e.maxRegistrations || 64)) {
+          currentStatus = 'Closed';
+        }
+        publishedEvents.push({
+          ...e,
+          status: currentStatus,
+          availableSlots: Math.max(0, (e.maxRegistrations || 64) - (e.registeredCount || 0))
+        });
+      });
+      return res.json(publishedEvents);
+    }
+  } catch (err) {
+    console.error('Error fetching public events from DB:', err.message);
+  }
 
   Object.keys(inMemoryCoordinatorEvents).forEach((sport) => {
     const list = inMemoryCoordinatorEvents[sport] || [];
     list.forEach((e) => {
-      // Check if registration end date passed
       let currentStatus = e.status;
       if (e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) {
         currentStatus = 'Closed';
