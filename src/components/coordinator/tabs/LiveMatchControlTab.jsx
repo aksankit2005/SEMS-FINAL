@@ -32,27 +32,21 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
     const cacheKey = `sems_active_live_matches_${assignedSport}`;
     const saved = localStorage.getItem(cacheKey) || localStorage.getItem('sems_active_live_matches');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          const cleaned = {};
+          Object.keys(parsed).forEach((k) => {
+            if (parsed[k] && parsed[k].id !== 'M595473') {
+              cleaned[k] = parsed[k];
+            }
+          });
+          return cleaned;
+        }
+      } catch (e) {}
     }
-    const firstVenue = `${venueType} 1`;
-    return {
-      [firstVenue]: {
-        id: 'M595473',
-        matchTitle: 'Semifinal 1',
-        team1: 'Player / Team A',
-        team2: 'Player / Team B',
-        format: 'SINGLES',
-        tableNumber: firstVenue,
-        score1: 0,
-        score2: 0,
-        status: 'running',
-        liveStreamUrl: '',
-        youtubeVideoId: '',
-        isLiveStreaming: false,
-      }
-    };
+    return {};
   });
-
 
   const [activeControllerVenue, setActiveControllerVenue] = useState(null);
   const [streamInputMap, setStreamInputMap] = useState({});
@@ -60,10 +54,27 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
 
   // Sync liveAssignments to localStorage and backend API server whenever liveAssignments changes
   useEffect(() => {
-    localStorage.setItem('sems_active_live_matches', JSON.stringify(liveAssignments));
-    
+    const cacheKey = `sems_active_live_matches_${assignedSport}`;
+    localStorage.setItem(cacheKey, JSON.stringify(liveAssignments));
+
+    const globalSaved = localStorage.getItem('sems_active_live_matches');
+    let globalActiveMap = {};
+    if (globalSaved) {
+      try { globalActiveMap = JSON.parse(globalSaved); } catch (e) {}
+    }
+    Object.keys(globalActiveMap).forEach((k) => {
+      if (globalActiveMap[k]?.id === 'M595473') delete globalActiveMap[k];
+    });
+
+    const mergedMap = { ...globalActiveMap, ...liveAssignments };
+    Object.keys(mergedMap).forEach((k) => {
+      if (mergedMap[k]?.id === 'M595473') delete mergedMap[k];
+    });
+
+    localStorage.setItem('sems_active_live_matches', JSON.stringify(mergedMap));
+
     Object.values(liveAssignments).forEach(async (match) => {
-      if (match && match.id && match.status === 'running') {
+      if (match && match.id && match.id !== 'M595473' && match.status === 'running') {
         try {
           await coordinatorApi.updateMatchScoring(match.id, {
             ...match,
@@ -75,7 +86,7 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
         }
       }
     });
-  }, [liveAssignments]);
+  }, [liveAssignments, assignedSport]);
 
   const handlePromoteGoLive = async (match, targetVenue) => {
     const liveObj = {

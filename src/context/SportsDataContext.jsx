@@ -16,24 +16,7 @@ export const SportsDataProvider = ({ children }) => {
   const [leaderboard] = useState(LEADERBOARD_DATA);
   const [announcements, setAnnouncements] = useState(ANNOUNCEMENTS_DATA);
 
-  // Live match score simulation pulse effect
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLiveMatches((prevMatches) =>
-        prevMatches.map((match) => {
-          if (match.id === 'live-cricket-1') {
-            const randomRun = Math.floor(Math.random() * 4);
-            return {
-              ...match,
-              currentInfo: `Live T20 Quarter Final - High excitement! (+${randomRun} runs last ball)`
-            };
-          }
-          return match;
-        })
-      );
-    }, 8000);
-    return () => clearInterval(interval);
-  }, []);
+
 
   const updateLiveMatchScore = (matchId, team1Score, team2Score, statusInfo) => {
     setLiveMatches((prev) =>

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Clock, Play, Tv, RefreshCw, Video } from 'lucide-react';
-import { Navbar } from '../../components/layout/Navbar';
 import { Footer } from '../../components/layout/Footer';
 import { LiveMatchViewerModal } from '../../components/live/LiveMatchViewerModal';
 import { coordinatorApi } from '../../services/coordinatorApi';
@@ -29,7 +28,7 @@ export const LiveMatchPortalPage = () => {
         try {
           const parsed = JSON.parse(localActiveStr);
           localActiveList = Object.values(parsed).filter(
-            (m) => m && (m.status === 'running' || m.status === 'live')
+            (m) => m && m.id !== 'M595473' && (m.status === 'running' || m.status === 'live')
           );
         } catch (e) {}
       }
@@ -38,7 +37,7 @@ export const LiveMatchPortalPage = () => {
       const combined = [...(publicLive || []), ...localActiveList];
       const uniqueMap = {};
       combined.forEach((m) => {
-        if (m && m.id && (m.status === 'running' || m.status === 'live')) {
+        if (m && m.id && m.id !== 'M595473' && (m.status === 'running' || m.status === 'live')) {
           uniqueMap[m.id] = {
             ...m,
             sportId: m.sportId || 'table-tennis',
@@ -123,9 +122,6 @@ export const LiveMatchPortalPage = () => {
   return (
     <div className="min-h-screen bg-[#090D16] text-white flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
       
-      {/* Top Main Navbar */}
-      <Navbar />
-
       {/* Live Spectator Secondary Header */}
       <div className="bg-[#0F172A] border-b border-[#1E293B] sticky top-16 z-20 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">

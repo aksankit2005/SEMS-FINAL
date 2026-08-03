@@ -12,7 +12,7 @@ import { Navigate } from 'react-router-dom';
 
 export const DashboardPage = () => {
   const { user, logout, userRegistrations, setIsAuthModalOpen } = useAuth();
-  const { liveMatches, updateLiveMatchScore, addAnnouncement } = useSportsData();
+  const { sports, liveMatches, updateLiveMatchScore, addAnnouncement } = useSportsData();
   const { addToast } = useToast();
 
   const [selectedMatchId, setSelectedMatchId] = useState(liveMatches[0]?.id || '');
@@ -203,7 +203,7 @@ export const DashboardPage = () => {
                   <Activity className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="text-2xl font-black text-slate-900 dark:text-white">4 Active</div>
+                  <div className="text-2xl font-black text-slate-900 dark:text-white">{liveMatches.length} Active</div>
                   <div className="text-xs text-slate-500 dark:text-slate-400 font-bold">Live Arenas</div>
                 </div>
               </div>
@@ -213,7 +213,9 @@ export const DashboardPage = () => {
                   <DollarSign className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="text-2xl font-black text-slate-900 dark:text-white">₹1,45,000</div>
+                  <div className="text-2xl font-black text-slate-900 dark:text-white">
+                    ₹{userRegistrations.reduce((sum, r) => sum + (Number(r.feePaid) || 0), 0).toLocaleString()}
+                  </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400 font-bold">Entry Fees Collected</div>
                 </div>
               </div>
@@ -223,7 +225,7 @@ export const DashboardPage = () => {
                   <Trophy className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="text-2xl font-black text-slate-900 dark:text-white">11 Sports</div>
+                  <div className="text-2xl font-black text-slate-900 dark:text-white">{(sports || []).length} Sports</div>
                   <div className="text-xs text-slate-500 dark:text-slate-400 font-bold">Categories Configured</div>
                 </div>
               </div>

@@ -1,13 +1,31 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import compression from 'compression';
 import jwt from 'jsonwebtoken';
 import pg from 'pg';
+import bcrypt from 'bcryptjs';
+import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 
 const { Pool } = pg;
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET || 'sems_pr_coordinator_secret_key_2026';
+
+// ─── SECURITY: JWT Secret — must be set in .env; no insecure default in production ───
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('FATAL: JWT_SECRET environment variable is not set. Refusing to start in production.');
+    process.exit(1);
+  } else {
+    console.warn('WARNING: JWT_SECRET not set. Using insecure default for development only.');
+  }
+}
+const JWT_SECRET_VALUE = JWT_SECRET || 'sems_dev_only_secret_CHANGE_IN_PRODUCTION';
 
 // PR Admin credentials configurable via environment variables
 const PR_ADMIN_USERNAME = process.env.PR_ADMIN_USERNAME || 'pr_admin';
@@ -18,34 +36,87 @@ const COMMON_PASSWORD = process.env.COMMON_PASSWORD || 'sems#2026';
 
 // Unique Passwords mapping for each College Head (Loaded from Environment Variables)
 const HEAD_PASSWORDS = {
-  head_mpec: process.env.PASS_HEAD_MPEC || 'mpec#2026',
-  head_mips: process.env.PASS_HEAD_MIPS || 'mips#2026',
-  head_mpcps: process.env.PASS_HEAD_MPCPS || 'mpcps#2026',
-  head_mpcp: process.env.PASS_HEAD_MPCP || 'mpcp#2026',
-  head_mpdc: process.env.PASS_HEAD_MPDC || 'mpdc#2026',
-  head_mpcnps: process.env.PASS_HEAD_MPCNPS || 'mpcnps#2026',
-  head_mpamc: process.env.PASS_HEAD_MPAMC || 'mpamc#2026',
-  head_mpcams: process.env.PASS_HEAD_MPCAMS || 'mpcams#2026',
+  head_mpec: process.env.PASS_HEAD_MPEC,
+  head_mips: process.env.PASS_HEAD_MIPS,
+  head_mpcps: process.env.PASS_HEAD_MPCPS,
+  head_mpcp: process.env.PASS_HEAD_MPCP,
+  head_mpdc: process.env.PASS_HEAD_MPDC,
+  head_mpcnps: process.env.PASS_HEAD_MPCNPS,
+  head_mpamc: process.env.PASS_HEAD_MPAMC,
+  head_mpcams: process.env.PASS_HEAD_MPCAMS,
 };
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// ─── SECURITY HEADERS (Helmet.js) ───────────────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: false, // Managed at CDN/proxy level for SPA
+  crossOriginEmbedderPolicy: false,
+}));
+
+// ─── COMPRESSION ─────────────────────────────────────────────────────────────
+app.use(compression());
+
+// ─── CORS ────────────────────────────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:4173',
+  'http://localhost:3000',
+  ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [])
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, server-to-server, curl)
+    if (!origin) return callback(null, true);
+    if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    return callback(new Error(`CORS: Origin '${origin}' not allowed`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+// ─── BODY PARSING with size limit ────────────────────────────────────────────
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: false, limit: '1mb' }));
+
+// ─── RATE LIMITING ───────────────────────────────────────────────────────────
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // max 20 login attempts per 15 min per IP
+  message: { message: 'Too many login attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 200, // 200 requests/min per IP
+  message: { message: 'Too many requests. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply API-wide limiter
+app.use('/api/', apiLimiter);
+// Apply strict limiter on all auth endpoints
+app.use('/api/pr/login', authLimiter);
+app.use('/api/college-head/login', authLimiter);
+app.use('/api/coordinator/login', authLimiter);
 
 // PostgreSQL Connection Pool Setup
 const dbConfig = {
   host: process.env.PGHOST || 'localhost',
   user: process.env.PGUSER || 'postgres',
-  password: process.env.PGPASSWORD || 'postgres',
-  database: process.env.PGDATABASE || 'sems_db',
+  password: process.env.PGPASSWORD,
+  database: process.env.PGDATABASE || 'mydb',
   port: parseInt(process.env.PGPORT || '5432', 10),
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
 };
 
-const pool = new Pool(
-  process.env.DATABASE_URL
-    ? { connectionString: process.env.DATABASE_URL }
-    : dbConfig
-);
+const pool = new Pool(dbConfig);
+const prismaAdapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter: prismaAdapter });
 
 // Fallback in-memory dataset when PostgreSQL database connection is unavailable
 let inMemoryEvents = [];
@@ -84,11 +155,12 @@ const queryDb = async (text, params) => {
     const res = await pool.query(text, params);
     return res;
   } catch (err) {
-    return null; // DB fallback trigger
+    console.error('Database Query Error:', err.message);
+    return null;
   }
 };
 
-// Authentication Middleware for PR Coordinator Routes
+// ─── Authentication Middleware for PR Coordinator Routes ──────────────────────
 const verifyPRToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -97,7 +169,7 @@ const verifyPRToken = (req, res, next) => {
 
   const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET_VALUE);
     req.user = decoded;
     next();
   } catch (err) {
@@ -105,7 +177,7 @@ const verifyPRToken = (req, res, next) => {
   }
 };
 
-// Authentication Middleware for College Head Routes
+// ─── Authentication & Authorization Middleware for College Head Routes ─────────
 const verifyCollegeHeadToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -114,14 +186,14 @@ const verifyCollegeHeadToken = (req, res, next) => {
 
   const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET_VALUE);
     if (decoded.role !== 'college_head') {
       return res.status(403).json({ message: 'Access denied. College Head role required.' });
     }
     req.user = decoded;
     next();
   } catch (err) {
-    return res.status(403).json({ message: 'Invalid or expired token.' });
+    return res.status(403).json({ message: 'Invalid or expired College Head token.' });
   }
 };
 
@@ -139,16 +211,26 @@ app.post('/api/pr/login', async (req, res) => {
   const dbResult = await queryDb('SELECT * FROM pr_users WHERE username = $1', [username]);
   if (dbResult && dbResult.rows.length > 0) {
     const user = dbResult.rows[0];
-    // DB password verification / environment password verification
-    if (password === PR_ADMIN_PASSWORD || user.password_hash) {
-      const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+    // Verify via bcrypt hash first
+    let isValid = false;
+    if (user.password_hash) {
+      isValid = await bcrypt.compare(password, user.password_hash);
+    }
+    // Fallback plain-text check (env-configured password)
+    if (!isValid) {
+      isValid = (password === PR_ADMIN_PASSWORD);
+    }
+    if (isValid) {
+      const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET_VALUE, { expiresIn: '24h' });
       return res.json({ success: true, token, user: { username: user.username, role: user.role } });
+    } else {
+      return res.status(401).json({ message: 'Invalid credentials. Access denied.' });
     }
   }
 
-  // Environment-configured credential check
+  // Environment-configured credential check (no DB record)
   if (username === PR_ADMIN_USERNAME && password === PR_ADMIN_PASSWORD) {
-    const token = jwt.sign({ username: PR_ADMIN_USERNAME, role: 'pr_coordinator' }, JWT_SECRET, { expiresIn: '24h' });
+    const token = jwt.sign({ username: PR_ADMIN_USERNAME, role: 'pr_coordinator' }, JWT_SECRET_VALUE, { expiresIn: '24h' });
     return res.json({ success: true, token, user: { username: PR_ADMIN_USERNAME, role: 'pr_coordinator' } });
   }
 
@@ -399,19 +481,30 @@ app.post('/api/college-head/login', async (req, res) => {
 
   const userKey = username.toLowerCase();
   const expectedPassword = HEAD_PASSWORDS[userKey];
-  const isValidPassword =
-    password === COMMON_PASSWORD ||
-    (expectedPassword && password === expectedPassword) ||
-    password === PR_ADMIN_PASSWORD;
 
-  // Attempt DB Authentication
-  const dbResult = await queryDb('SELECT * FROM college_head_users WHERE username = $1', [username]);
+  // Attempt DB Authentication (passwords stored as bcrypt hash)
+  const dbResult = await queryDb('SELECT * FROM college_head_users WHERE LOWER(username) = $1', [userKey]);
   if (dbResult && dbResult.rows.length > 0) {
     const user = dbResult.rows[0];
-    if (isValidPassword) {
+
+    // Try bcrypt hash compare first (DB stored hash)
+    let isValid = false;
+    if (user.password_hash) {
+      isValid = await bcrypt.compare(password, user.password_hash);
+    }
+
+    // Fallback: plain-text comparison with env passwords
+    if (!isValid) {
+      isValid =
+        password === COMMON_PASSWORD ||
+        (expectedPassword && password === expectedPassword) ||
+        password === PR_ADMIN_PASSWORD;
+    }
+
+    if (isValid) {
       const token = jwt.sign(
         { id: user.id, username: user.username, college: user.college, faculty_name: user.faculty_name, role: 'college_head' },
-        JWT_SECRET,
+        JWT_SECRET_VALUE,
         { expiresIn: '24h' }
       );
       return res.json({
@@ -424,16 +517,21 @@ app.post('/api/college-head/login', async (req, res) => {
     }
   }
 
-  // Fallback in-memory check
+  // Fallback in-memory check (plain-text env passwords)
   const memoryUser = inMemoryCollegeHeadUsers.find(
     (u) => u.username.toLowerCase() === userKey
   );
 
   if (memoryUser) {
-    if (isValidPassword) {
+    const isValid =
+      password === COMMON_PASSWORD ||
+      (expectedPassword && password === expectedPassword) ||
+      password === PR_ADMIN_PASSWORD;
+
+    if (isValid) {
       const token = jwt.sign(
         { id: memoryUser.id, username: memoryUser.username, college: memoryUser.college, faculty_name: memoryUser.faculty_name, role: 'college_head' },
-        JWT_SECRET,
+        JWT_SECRET_VALUE,
         { expiresIn: '24h' }
       );
       return res.json({
@@ -449,134 +547,160 @@ app.post('/api/college-head/login', async (req, res) => {
   return res.status(401).json({ message: 'Invalid College Head credentials. Access denied.' });
 });
 
-// GET /api/college-head/dashboard-stats - Read-Only Stats for Assigned College
-app.get('/api/college-head/dashboard-stats', verifyCollegeHeadToken, (req, res) => {
-  const college = req.user.college;
-  const collegeStudents = inMemoryCollegeRegistrations.filter(
-    (s) => s.college.toLowerCase() === college.toLowerCase()
-  );
+// GET /api/college-head/dashboard-stats - Read-Only Stats for Assigned College from PostgreSQL
+app.get('/api/college-head/dashboard-stats', verifyCollegeHeadToken, async (req, res) => {
+  try {
+    const college = req.user.college || 'MPEC';
 
-  const totalStudents = collegeStudents.length;
-  const totalRegistrations = collegeStudents.length;
+    const totalRegistrations = await prisma.collegeRegistration.count({
+      where: { college: { equals: college, mode: 'insensitive' } }
+    });
 
-  const sportsSet = new Set(collegeStudents.map((s) => s.sportId));
-  const sportsCount = sportsSet.size;
+    const sportsGroup = await prisma.collegeRegistration.groupBy({
+      by: ['sportId'],
+      where: { college: { equals: college, mode: 'insensitive' } }
+    });
 
-  const medals = inMemoryCollegeMedals[college] || { gold: 0, silver: 0, bronze: 0, totalPoints: 0, topSport: 'N/A' };
+    const medals = inMemoryCollegeMedals[college] || { gold: 0, silver: 0, bronze: 0, totalPoints: 0, topSport: 'N/A' };
 
-  return res.json({
-    college,
-    facultyName: req.user.faculty_name || 'College Head Faculty',
-    totalStudents,
-    totalRegistrations,
-    sportsCount,
-    medals,
-  });
+    return res.json({
+      college,
+      facultyName: req.user.faculty_name || req.user.facultyName || 'College Head Faculty',
+      totalStudents: totalRegistrations,
+      totalRegistrations,
+      sportsCount: sportsGroup.length,
+      medals,
+    });
+  } catch (err) {
+    console.error('Error fetching college head stats:', err);
+    return res.status(500).json({ message: 'Error loading college stats' });
+  }
 });
 
-// GET /api/college-head/students - Read-Only Student List for Assigned College ONLY
-app.get('/api/college-head/students', verifyCollegeHeadToken, (req, res) => {
-  const college = req.user.college; // Derived strictly from backend JWT
-  const { search, sport, status, year } = req.query;
+// GET /api/college-head/students - Read-Only Student List for Assigned College ONLY from PostgreSQL
+app.get('/api/college-head/students', verifyCollegeHeadToken, async (req, res) => {
+  try {
+    const college = req.user.college || 'MPEC';
+    const { search, sport, status, year } = req.query;
 
-  // Enforce college scope strictly
-  let students = inMemoryCollegeRegistrations.filter(
-    (s) => s.college.toLowerCase() === college.toLowerCase()
-  );
+    const whereCondition = {
+      college: { equals: college, mode: 'insensitive' }
+    };
 
-  // Apply filters
-  if (search) {
-    const q = search.toLowerCase();
-    students = students.filter(
-      (s) =>
-        s.studentName.toLowerCase().includes(q) ||
-        s.rollNumber.toLowerCase().includes(q) ||
-        (s.course && s.course.toLowerCase().includes(q)) ||
-        (s.branch && s.branch.toLowerCase().includes(q)) ||
-        (s.sportName && s.sportName.toLowerCase().includes(q)) ||
-        (s.passCode && s.passCode.toLowerCase().includes(q))
-    );
+    if (sport && sport !== 'all') {
+      whereCondition.sportId = { contains: sport.toLowerCase(), mode: 'insensitive' };
+    }
+
+    if (status && status !== 'all') {
+      whereCondition.status = { equals: status, mode: 'insensitive' };
+    }
+
+    let students = await prisma.collegeRegistration.findMany({
+      where: whereCondition,
+      orderBy: { createdAt: 'desc' }
+    });
+
+    if (search) {
+      const q = search.toLowerCase();
+      students = students.filter(
+        (s) =>
+          (s.studentName && s.studentName.toLowerCase().includes(q)) ||
+          (s.enrollmentNo && s.enrollmentNo.toLowerCase().includes(q)) ||
+          (s.department && s.department.toLowerCase().includes(q)) ||
+          (s.sportId && s.sportId.toLowerCase().includes(q))
+      );
+    }
+
+    const sanitizedStudents = students.map(sanitizeStudentForCollegeHead);
+
+    return res.json({
+      college,
+      count: sanitizedStudents.length,
+      students: sanitizedStudents,
+    });
+  } catch (err) {
+    console.error('Error fetching college head students:', err);
+    return res.status(500).json({ message: 'Error loading student list' });
   }
-
-  if (sport && sport !== 'all') {
-    students = students.filter((s) => s.sportId.toLowerCase() === sport.toLowerCase());
-  }
-
-  if (status && status !== 'all') {
-    students = students.filter((s) => s.status.toLowerCase() === status.toLowerCase());
-  }
-
-  if (year && year !== 'all') {
-    students = students.filter((s) => s.year && s.year.toLowerCase().includes(year.toLowerCase()));
-  }
-
-  // Sanitize every record to ensure ZERO financial/payment data leak
-  const sanitizedStudents = students.map(sanitizeStudentForCollegeHead);
-
-  return res.json({
-    college,
-    count: sanitizedStudents.length,
-    students: sanitizedStudents,
-  });
 });
 
-// GET /api/college-head/registrations - Read-Only Registrations for Assigned College ONLY
-app.get('/api/college-head/registrations', verifyCollegeHeadToken, (req, res) => {
-  const college = req.user.college;
+// GET /api/college-head/registrations - Read-Only Registrations for Assigned College ONLY from PostgreSQL
+app.get('/api/college-head/registrations', verifyCollegeHeadToken, async (req, res) => {
+  try {
+    const college = req.user.college || 'MPEC';
 
-  const registrations = inMemoryCollegeRegistrations.filter(
-    (s) => s.college.toLowerCase() === college.toLowerCase()
-  );
+    const registrations = await prisma.collegeRegistration.findMany({
+      where: { college: { equals: college, mode: 'insensitive' } },
+      orderBy: { createdAt: 'desc' }
+    });
 
-  const sanitized = registrations.map(sanitizeStudentForCollegeHead);
-  return res.json(sanitized);
+    const sanitized = registrations.map(sanitizeStudentForCollegeHead);
+    return res.json(sanitized);
+  } catch (err) {
+    console.error('Error fetching college head registrations:', err);
+    return res.status(500).json({ message: 'Error loading college registrations' });
+  }
 });
 
 // GET /api/college-head/sports-participation - Sports Breakdown for Assigned College
-app.get('/api/college-head/sports-participation', verifyCollegeHeadToken, (req, res) => {
-  const college = req.user.college;
-  const collegeStudents = inMemoryCollegeRegistrations.filter(
-    (s) => s.college.toLowerCase() === college.toLowerCase()
-  );
+app.get('/api/college-head/sports-participation', verifyCollegeHeadToken, async (req, res) => {
+  try {
+    const college = req.user.college || 'MPEC';
 
-  const breakdownMap = {};
-  collegeStudents.forEach((s) => {
-    if (!breakdownMap[s.sportName]) {
-      breakdownMap[s.sportName] = { sportName: s.sportName, sportId: s.sportId, total: 0, male: 0, female: 0 };
-    }
-    breakdownMap[s.sportName].total += 1;
-    if (s.gender === 'Female') breakdownMap[s.sportName].female += 1;
-    else breakdownMap[s.sportName].male += 1;
-  });
+    const registrations = await prisma.collegeRegistration.findMany({
+      where: { college: { equals: college, mode: 'insensitive' } }
+    });
 
-  return res.json(Object.values(breakdownMap));
+    const breakdownMap = {};
+    registrations.forEach((s) => {
+      const sportName = s.sportId ? s.sportId.replace(/-/g, ' ').toUpperCase() : 'GENERAL';
+      if (!breakdownMap[sportName]) {
+        breakdownMap[sportName] = { sportName, sportId: s.sportId, total: 0, male: 0, female: 0 };
+      }
+      breakdownMap[sportName].total += 1;
+      if ((s.gender || '').toLowerCase() === 'female') breakdownMap[sportName].female += 1;
+      else breakdownMap[sportName].male += 1;
+    });
+
+    return res.json(Object.values(breakdownMap));
+  } catch (err) {
+    console.error('Error fetching sports participation:', err);
+    return res.status(500).json({ message: 'Error loading sports breakdown' });
+  }
 });
 
 // GET /api/college-head/medal-summary - Read-Only Medal Tally for Assigned College
 app.get('/api/college-head/medal-summary', verifyCollegeHeadToken, (req, res) => {
-  const college = req.user.college;
+  const college = req.user.college || 'MPEC';
   const medals = inMemoryCollegeMedals[college] || { gold: 0, silver: 0, bronze: 0, totalPoints: 0, topSport: 'N/A' };
   return res.json({ college, ...medals });
 });
 
 // GET /api/college-head/export-report - Export Summary Data for Assigned College ONLY
-app.get('/api/college-head/export-report', verifyCollegeHeadToken, (req, res) => {
-  const college = req.user.college;
-  const collegeStudents = inMemoryCollegeRegistrations.filter(
-    (s) => s.college.toLowerCase() === college.toLowerCase()
-  );
-  const medals = inMemoryCollegeMedals[college] || { gold: 0, silver: 0, bronze: 0, totalPoints: 0 };
+app.get('/api/college-head/export-report', verifyCollegeHeadToken, async (req, res) => {
+  try {
+    const college = req.user.college || 'MPEC';
 
-  const sanitizedStudents = collegeStudents.map(sanitizeStudentForCollegeHead);
+    const collegeStudents = await prisma.collegeRegistration.findMany({
+      where: { college: { equals: college, mode: 'insensitive' } },
+      orderBy: { createdAt: 'desc' }
+    });
 
-  return res.json({
-    college,
-    generatedAt: new Date().toISOString(),
-    facultyHead: req.user.faculty_name || 'Sports Coordinator',
-    totalStudentsCount: sanitizedStudents.length,
-    medalTally: medals,
-    students: sanitizedStudents,
-  });
+    const medals = inMemoryCollegeMedals[college] || { gold: 0, silver: 0, bronze: 0, totalPoints: 0 };
+    const sanitizedStudents = collegeStudents.map(sanitizeStudentForCollegeHead);
+
+    return res.json({
+      college,
+      generatedAt: new Date().toISOString(),
+      facultyHead: req.user.faculty_name || 'Sports Coordinator',
+      totalStudentsCount: sanitizedStudents.length,
+      medalTally: medals,
+      students: sanitizedStudents,
+    });
+  } catch (err) {
+    console.error('Error exporting report:', err);
+    return res.status(500).json({ message: 'Error exporting report' });
+  }
 });
 
 // ----------------------------------------------------
@@ -619,160 +743,25 @@ let inMemoryCoordinatorMatches = {};
 let inMemoryCoordinatorDocuments = {};
 let inMemoryCoordinatorAnnouncements = {};
 let inMemoryRegistrationSettings = {};
-let inMemoryCoordinatorEvents = {
-  'badminton': [],
-  'cricket': [
-    {
-      id: 'EVT-CRICKET-001',
-      title: 'Inter-College T20 Cricket Trophy 2026',
-      sportId: 'cricket',
-      sportName: 'Cricket',
-      coverImage: 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=800&q=80',
-      description: 'High-octane T20 cricket tournament on varsity ground 1 with leather balls and floodlight evening matches.',
-      regStartDate: '2026-08-01',
-      regEndDate: '2026-08-28',
-      tournStartDate: '2026-09-05',
-      tournEndDate: '2026-09-10',
-      entryFee: 2500,
-      teamSize: '11 + 4 Subs',
-      maxRegistrations: 16,
-      registeredCount: 12,
-      venue: 'Main Stadium Ground 1',
-      category: 'Boys',
-      status: 'Published',
-      rules: ['15 overs prelims, T20 finals.', 'White leather balls used.', 'Full kit mandatory.'],
-      requiredDocuments: ['College Student ID Card'],
-      contactInfo: { name: 'Vikramaditya Sharma', email: 'cricket.coord@sems.edu', phone: '+91 98765 43211' },
-      createdAt: new Date().toISOString()
-    }
-  ],
-  'football': [
-    {
-      id: 'EVT-FOOTBALL-001',
-      title: 'Varsity Football League 2026',
-      sportId: 'football',
-      sportName: 'Football',
-      coverImage: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&auto=format&fit=crop&q=60',
-      description: 'Knockout football tournament under floodlights. High pressing, tactical masterclasses, and penalty shootouts.',
-      regStartDate: '2026-08-01',
-      regEndDate: '2026-08-25',
-      tournStartDate: '2026-09-02',
-      tournEndDate: '2026-09-06',
-      entryFee: 2200,
-      teamSize: '11 + 5 Subs',
-      maxRegistrations: 16,
-      registeredCount: 10,
-      venue: 'Turf Football Arena A',
-      category: 'Open',
-      status: 'Published',
-      rules: ['FIFA standard rules.', 'Studded boots & shin guards mandatory.'],
-      requiredDocuments: ['College Student ID Card'],
-      contactInfo: { name: 'Carlos Rodriguez', email: 'football.coord@sems.edu', phone: '+91 98765 43212' },
-      createdAt: new Date().toISOString()
-    }
-  ],
-  'table-tennis': [
-    {
-      id: 'EVT-TT-001',
-      title: 'Table Tennis Open Masters 2026',
-      sportId: 'table-tennis',
-      sportName: 'Table Tennis',
-      coverImage: 'https://images.unsplash.com/photo-1534158914592-062992fbe900?auto=format&fit=crop&w=800&q=80',
-      description: 'Indoor table tennis tournament testing lightning speed, spin control, and tactical shot placement.',
-      regStartDate: '2026-08-01',
-      regEndDate: '2026-08-27',
-      tournStartDate: '2026-09-01',
-      tournEndDate: '2026-09-02',
-      entryFee: 300,
-      teamSize: '1 - 2 Players',
-      maxRegistrations: 64,
-      registeredCount: 42,
-      venue: 'Indoor Sports Complex Hall A',
-      category: 'Open',
-      status: 'Published',
-      rules: ['ITTF rules apply.', 'Best of 5 sets (11 points per set).'],
-      requiredDocuments: ['College Student ID Card'],
-      contactInfo: { name: 'Rohan Mehta', email: 'tt.coord@sems.edu', phone: '+91 98765 43213' },
-      createdAt: new Date().toISOString()
-    }
-  ],
-  'chess': [
-    {
-      id: 'EVT-CHESS-001',
-      title: 'Collegiate Blitz & Rapid Chess Championship 2026',
-      sportId: 'chess',
-      sportName: 'Chess',
-      coverImage: 'https://images.unsplash.com/photo-1529699211952-734e80c4d42b?auto=format&fit=crop&w=800&q=80',
-      description: 'FIDE Rapid and Blitz tournament featuring Swiss system rounds and digital chess clocks.',
-      regStartDate: '2026-08-01',
-      regEndDate: '2026-08-29',
-      tournStartDate: '2026-09-04',
-      tournEndDate: '2026-09-04',
-      entryFee: 250,
-      teamSize: '1 Player',
-      maxRegistrations: 128,
-      registeredCount: 86,
-      venue: 'Central Auditorium Hall B',
-      category: 'Open',
-      status: 'Published',
-      rules: ['FIDE Rapid rules: 15 mins + 10s increment.', 'Swiss system 7 rounds.'],
-      requiredDocuments: ['College Student ID Card'],
-      contactInfo: { name: 'Grandmaster Anand Verma', email: 'chess.coord@sems.edu', phone: '+91 98765 43214' },
-      createdAt: new Date().toISOString()
-    }
-  ]
-};
+let inMemoryCoordinatorEvents = {};
 
-
+// ─── Authentication & Authorization Middleware for Sport Coordinator Routes ────
 const verifyCoordinatorToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    req.user = {
-      username: 'coord_table_tennis',
-      assignedSport: 'table-tennis',
-      sportName: 'Table Tennis',
-      coordinatorName: 'Rohan Mehta',
-      role: 'sport_coordinator',
-    };
-    return next();
+    return res.status(401).json({ message: 'Unauthorized. Sport Coordinator token required.' });
   }
 
   const token = authHeader.split(' ')[1];
-
-  if (token.startsWith('token-') || token.startsWith('mock-token-')) {
-    const parts = token.split('-');
-    let assignedSport = 'table-tennis';
-    if (parts.length >= 3) {
-      assignedSport = parts.slice(1, parts.length - 1).join('-');
-    } else if (parts.length === 2) {
-      assignedSport = parts[1];
-    }
-    req.user = {
-      username: `coord_${assignedSport.replace(/-/g, '_')}`,
-      assignedSport: assignedSport || 'table-tennis',
-      sportName: assignedSport.replace(/-/g, ' ').toUpperCase(),
-      coordinatorName: 'Sport Coordinator',
-      role: 'sport_coordinator',
-    };
-    return next();
-  }
-
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET_VALUE);
     if (decoded.role !== 'sport_coordinator') {
       return res.status(403).json({ message: 'Access denied. Sport Coordinator role required.' });
     }
     req.user = decoded;
     next();
   } catch (err) {
-    req.user = {
-      username: 'coord_table_tennis',
-      assignedSport: 'table-tennis',
-      sportName: 'Table Tennis',
-      coordinatorName: 'Rohan Mehta',
-      role: 'sport_coordinator',
-    };
-    next();
+    return res.status(403).json({ message: 'Invalid or expired Sport Coordinator token.' });
   }
 };
 
@@ -785,17 +774,27 @@ app.post('/api/coordinator/login', async (req, res) => {
   }
 
   const userKey = username.toLowerCase().replace(/-/g, '_');
-  const expectedPassword = COORDINATOR_PASSWORDS[userKey];
-  const isValidPassword =
-    password === COMMON_PASSWORD ||
-    (expectedPassword && password === expectedPassword) ||
-    password === PR_ADMIN_PASSWORD;
 
-  // Attempt DB Login
-  const dbResult = await queryDb('SELECT * FROM sport_coordinators WHERE username = $1', [username]);
+  // Attempt DB Login — verify bcrypt hash
+  const dbResult = await queryDb('SELECT * FROM sport_coordinators WHERE LOWER(username) = $1', [userKey]);
   if (dbResult && dbResult.rows.length > 0) {
     const user = dbResult.rows[0];
-    if (isValidPassword) {
+
+    // Try bcrypt hash compare first
+    let isValid = false;
+    if (user.password_hash) {
+      isValid = await bcrypt.compare(password, user.password_hash);
+    }
+    // Fallback: plain-text env password comparison
+    if (!isValid) {
+      const expectedPassword = COORDINATOR_PASSWORDS[userKey];
+      isValid =
+        password === COMMON_PASSWORD ||
+        (expectedPassword && password === expectedPassword) ||
+        password === PR_ADMIN_PASSWORD;
+    }
+
+    if (isValid) {
       const token = jwt.sign(
         {
           id: user.id,
@@ -806,7 +805,7 @@ app.post('/api/coordinator/login', async (req, res) => {
           email: user.email,
           role: 'sport_coordinator',
         },
-        JWT_SECRET,
+        JWT_SECRET_VALUE,
         { expiresIn: '24h' }
       );
       return res.json({
@@ -821,10 +820,18 @@ app.post('/api/coordinator/login', async (req, res) => {
           role: 'sport_coordinator',
         },
       });
+    } else {
+      return res.status(401).json({ message: 'Invalid Sport Coordinator credentials. Access denied.' });
     }
   }
 
   // In-memory fallback authentication
+  const expectedPassword = COORDINATOR_PASSWORDS[userKey];
+  const isValidPassword =
+    password === COMMON_PASSWORD ||
+    (expectedPassword && password === expectedPassword) ||
+    password === PR_ADMIN_PASSWORD;
+
   const coord = inMemorySportCoordinators.find(
     (c) => c.username.toLowerCase() === userKey || c.assignedSport.toLowerCase() === userKey
   );
@@ -840,7 +847,7 @@ app.post('/api/coordinator/login', async (req, res) => {
         email: coord.email,
         role: 'sport_coordinator',
       },
-      JWT_SECRET,
+      JWT_SECRET_VALUE,
       { expiresIn: '24h' }
     );
     return res.json({
@@ -1045,38 +1052,130 @@ app.post('/api/coordinator/matches/:id/complete', verifyCoordinatorToken, (req, 
   return res.json({ success: true, match });
 });
 
-// GET /api/coordinator/dashboard-stats
-app.get('/api/coordinator/dashboard-stats', verifyCoordinatorToken, (req, res) => {
-  const sportId = req.user.assignedSport.toLowerCase();
-  
-  // Filter registered students strictly for assigned sport
-  const sportRegistrations = inMemoryCollegeRegistrations.filter(
-    (r) => r.sportId && r.sportId.toLowerCase() === sportId
-  );
+// GET /api/coordinator/dashboard-stats - Live counts from PostgreSQL via Prisma Client
+app.get('/api/coordinator/dashboard-stats', verifyCoordinatorToken, async (req, res) => {
+  try {
+    const sportId = (req.user.assignedSport || '').toLowerCase();
 
-  return res.json({
-    assignedSport: req.user.assignedSport,
-    sportName: req.user.sportName,
-    coordinatorName: req.user.coordinatorName,
-    todayMatches: 3,
-    upcomingMatches: 6,
-    runningMatches: 1,
-    completedMatches: 5,
-    registeredTeams: 12,
-    approvedTeams: 10,
-    pendingRegistrations: 2,
-    playersRegistered: sportRegistrations.length || 54,
-    totalMatches: 12,
-  });
+    // Query live count from PostgreSQL via Prisma
+    const registeredTeams = await prisma.collegeRegistration.count({
+      where: {
+        sportId: {
+          contains: sportId,
+          mode: 'insensitive'
+        }
+      }
+    });
+
+    const approvedTeams = await prisma.collegeRegistration.count({
+      where: {
+        sportId: {
+          contains: sportId,
+          mode: 'insensitive'
+        },
+        status: { in: ['Approved', 'Confirmed', 'VERIFIED'] }
+      }
+    });
+
+    const pendingRegistrations = await prisma.collegeRegistration.count({
+      where: {
+        sportId: {
+          contains: sportId,
+          mode: 'insensitive'
+        },
+        status: 'Pending'
+      }
+    });
+
+    const sportMatches = inMemoryCoordinatorMatches[sportId] || [];
+    const runningMatches = sportMatches.filter((m) => m.status === 'running' || m.status === 'live').length;
+    const completedMatches = sportMatches.filter((m) => m.status === 'COMPLETED' || m.status === 'FINISHED').length;
+    const upcomingMatches = sportMatches.filter((m) => m.status === 'SCHEDULED').length;
+
+    return res.json({
+      assignedSport: req.user.assignedSport,
+      sportName: req.user.sportName,
+      coordinatorName: req.user.coordinatorName,
+      todayMatches: runningMatches + upcomingMatches,
+      upcomingMatches,
+      runningMatches,
+      completedMatches,
+      registeredTeams,
+      approvedTeams,
+      pendingRegistrations,
+      playersRegistered: registeredTeams,
+      totalMatches: sportMatches.length,
+    });
+  } catch (err) {
+    console.error('Error fetching coordinator dashboard stats from PostgreSQL:', err);
+    return res.status(500).json({ message: 'Error loading stats' });
+  }
 });
 
-// GET /api/coordinator/registrations - Strictly assigned sport
-app.get('/api/coordinator/registrations', verifyCoordinatorToken, (req, res) => {
-  const sportId = req.user.assignedSport.toLowerCase();
-  const registrations = inMemoryCollegeRegistrations.filter(
-    (r) => r.sportId && r.sportId.toLowerCase() === sportId
-  );
-  return res.json(registrations);
+// GET /api/coordinator/registrations - Strictly assigned sport from PostgreSQL via Prisma
+app.get('/api/coordinator/registrations', verifyCoordinatorToken, async (req, res) => {
+  try {
+    const sportId = (req.user.assignedSport || '').toLowerCase();
+
+    // Query live registrations from PostgreSQL via Prisma
+    const registrations = await prisma.collegeRegistration.findMany({
+      where: {
+        sportId: {
+          contains: sportId,
+          mode: 'insensitive'
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    // Also enrich with registration_members if available
+    const detailedRegistrations = await Promise.all(
+      registrations.map(async (r) => {
+        let members = [];
+        try {
+          members = await prisma.registrationMember.findMany({
+            where: {
+              registration: {
+                id: r.id
+              }
+            }
+          });
+        } catch (e) {}
+
+        return {
+          id: r.id,
+          receiptId: r.id,
+          eventId: r.eventId,
+          sportId: r.sportId,
+          studentName: r.studentName,
+          name: r.studentName,
+          teamName: r.teamName || '',
+          college: r.college,
+          department: r.department,
+          enrollmentNo: r.enrollmentNo,
+          roll: r.enrollmentNo,
+          email: r.email,
+          phone: r.phone,
+          gender: r.gender,
+          emergencyContact: r.emergencyContact,
+          status: r.status || 'Approved',
+          feePaid: r.feePaid,
+          paymentId: r.paymentId,
+          paymentStatus: r.paymentStatus,
+          createdAt: r.createdAt,
+          registeredDate: r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          members: members || []
+        };
+      })
+    );
+
+    return res.json(detailedRegistrations);
+  } catch (err) {
+    console.error('Error fetching coordinator registrations from PostgreSQL:', err);
+    return res.status(500).json({ message: 'Error loading registrations from database' });
+  }
 });
 
 // POST /api/coordinator/registrations/toggle-status
@@ -1255,7 +1354,7 @@ app.get('/api/public/events', (req, res) => {
 });
 
 // POST /api/public/register-event - Register user for an event & update roster count
-app.post('/api/public/register-event', (req, res) => {
+app.post('/api/public/register-event', async (req, res) => {
   const { eventId, sportId, participantData, paymentData } = req.body;
 
   let event = null;
@@ -1307,6 +1406,158 @@ app.post('/api/public/register-event', (req, res) => {
 
   inMemoryCollegeRegistrations.unshift(newRegRecord);
 
+  // Save registration record directly to PostgreSQL database using Prisma Client transaction
+  try {
+    console.log(`📡 Processing registration for ${newRegRecord.studentName} (${newRegRecord.email})...`);
+
+    // 1. Resolve or create primary Event & Sport UUIDs
+    let primaryEvent = await prisma.event.findFirst({
+      where: { name: 'APEX', year: 2026 }
+    });
+    if (!primaryEvent) {
+      primaryEvent = await prisma.event.create({
+        data: {
+          name: 'APEX',
+          year: 2026,
+          status: 'LIVE',
+          startDate: new Date('2026-08-10'),
+          endDate: new Date('2026-08-20')
+        }
+      });
+    }
+
+    const sportQueryName = targetSportId || sportId || 'badminton';
+    let sportRecord = await prisma.sport.findFirst({
+      where: { name: { equals: sportQueryName.replace(/-/g, ' '), mode: 'insensitive' } }
+    });
+    if (!sportRecord) {
+      sportRecord = await prisma.sport.findFirst();
+    }
+
+    const collegeCode = newRegRecord.college || 'MPEC';
+    let collegeRecord = await prisma.college.findFirst({
+      where: { code: { equals: collegeCode, mode: 'insensitive' } }
+    });
+
+    // 2. Execute Prisma transaction populating registrations, registration_members, payments, receipts, teams, and college_registrations
+    await prisma.$transaction(async (tx) => {
+      // Create Prisma Registration
+      const registration = await tx.registration.create({
+        data: {
+          eventId: primaryEvent.id,
+          sportId: sportRecord.id,
+          registrationType: newRegRecord.teamName ? 'TEAM' : 'INDIVIDUAL',
+          status: 'VERIFIED',
+          amount: newRegRecord.feePaid || 0
+        }
+      });
+
+      // Create Registration Member(s)
+      const rosterList = (Array.isArray(participantData.roster) && participantData.roster.length > 0)
+        ? participantData.roster
+        : [{
+            name: newRegRecord.studentName,
+            fatherName: participantData.fatherName || 'N/A',
+            rollNo: newRegRecord.enrollmentNo,
+            dob: participantData.dob ? new Date(participantData.dob) : new Date('2004-05-15'),
+            phone: newRegRecord.phone,
+            email: newRegRecord.email,
+            aadhaarNumber: participantData.aadhaarNumber || null,
+            course: participantData.course || newRegRecord.department || 'B.Tech',
+            yearSemester: participantData.yearSemester || participantData.year || '3rd Year',
+            gender: (newRegRecord.gender || 'Male').toUpperCase() === 'FEMALE' ? 'FEMALE' : 'MALE',
+            isCaptain: true
+          }];
+
+      for (const m of rosterList) {
+        await tx.registrationMember.create({
+          data: {
+            registrationId: registration.id,
+            fullName: m.name || newRegRecord.studentName,
+            fatherMotherName: m.fatherName || m.fatherMotherName || participantData.fatherName || 'N/A',
+            rollNo: m.rollNo || m.rollNumber || newRegRecord.enrollmentNo || 'ENR2026-001',
+            dateOfBirth: m.dob ? new Date(m.dob) : new Date('2004-05-15'),
+            mobile: m.phone || newRegRecord.phone || '+91 98765 43210',
+            alternateMobile: m.alternateMobile || null,
+            email: m.email || newRegRecord.email || 'athlete@sems.edu',
+            aadhaarNumber: m.aadhaarNumber || null,
+            course: m.course || participantData.course || newRegRecord.department || 'B.Tech',
+            yearSemester: m.yearSemester || m.year || m.semester || '3rd Year',
+            gender: (m.gender || newRegRecord.gender || 'Male').toUpperCase() === 'FEMALE' ? 'FEMALE' : 'MALE',
+            isCaptain: m.isCaptain !== undefined ? m.isCaptain : true
+          }
+        });
+      }
+
+      // Create Payment
+      const payment = await tx.payment.create({
+        data: {
+          registrationId: registration.id,
+          amount: newRegRecord.feePaid || 0,
+          method: 'ONLINE',
+          status: 'SUCCESS',
+          transactionId: utrNumber,
+          gatewayPaymentId: utrNumber,
+          paidAt: new Date()
+        }
+      });
+
+      // Create Receipt
+      await tx.receipt.create({
+        data: {
+          paymentId: payment.id,
+          receiptNumber: receiptId
+        }
+      });
+
+      // Create Team & TeamMember if team event
+      if (newRegRecord.teamName && collegeRecord) {
+        const team = await tx.team.create({
+          data: {
+            eventId: primaryEvent.id,
+            sportId: sportRecord.id,
+            collegeId: collegeRecord.id,
+            name: newRegRecord.teamName,
+            captainRegistrationId: registration.id
+          }
+        });
+
+        await tx.teamMember.create({
+          data: {
+            teamId: team.id,
+            registrationId: registration.id
+          }
+        });
+      }
+
+      // Create CollegeRegistration
+      await tx.collegeRegistration.create({
+        data: {
+          id: receiptId,
+          eventId: newRegRecord.eventId,
+          sportId: newRegRecord.sportId,
+          studentName: newRegRecord.studentName,
+          teamName: newRegRecord.teamName || null,
+          college: newRegRecord.college,
+          department: newRegRecord.department,
+          enrollmentNo: newRegRecord.enrollmentNo,
+          email: newRegRecord.email,
+          phone: newRegRecord.phone,
+          gender: newRegRecord.gender,
+          emergencyContact: newRegRecord.emergencyContact,
+          status: newRegRecord.status,
+          feePaid: newRegRecord.feePaid,
+          paymentId: newRegRecord.paymentId,
+          paymentStatus: newRegRecord.paymentStatus
+        }
+      });
+    });
+
+    console.log(`✅ Registration ${receiptId} saved across ALL Prisma ORM tables in PostgreSQL!`);
+  } catch (dbErr) {
+    console.error('PostgreSQL Prisma Registration Insert Error:', dbErr);
+  }
+
   return res.status(201).json({
     success: true,
     message: 'Event registration successful!',
@@ -1316,13 +1567,57 @@ app.post('/api/public/register-event', (req, res) => {
 });
 
 // Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: 'SEMS API Server' });
+app.get('/api/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ status: 'ok', service: 'SEMS API Server', db: 'connected' });
+  } catch {
+    res.status(503).json({ status: 'degraded', service: 'SEMS API Server', db: 'disconnected' });
+  }
 });
 
+// ─── 404 catch-all for unknown API routes ────────────────────────────────────
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ message: `Route not found: ${req.method} ${req.originalUrl}` });
+});
 
-// Start Server
+// ─── Global Error Handler ─────────────────────────────────────────────────────
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  // CORS errors
+  if (err.message && err.message.startsWith('CORS:')) {
+    return res.status(403).json({ message: err.message });
+  }
+  // JSON parse errors
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ message: 'Invalid JSON in request body.' });
+  }
+  // Payload too large
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ message: 'Request payload too large (max 1MB).' });
+  }
+  console.error('[Server Error]', err.message);
+  // Never expose stack traces in production
+  const isDev = process.env.NODE_ENV !== 'production';
+  res.status(500).json({
+    message: 'Internal server error.',
+    ...(isDev && { error: err.message }),
+  });
+});
+
+// ─── Process-level crash guards ───────────────────────────────────────────────
+process.on('unhandledRejection', (reason) => {
+  console.error('[UnhandledRejection]', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[UncaughtException]', err.message);
+  // Graceful shutdown
+  process.exit(1);
+});
+
+// ─── Start Server ─────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`🚀 SEMS API Server running on port ${PORT}`);
+  console.log(`🔒 NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
 });
-

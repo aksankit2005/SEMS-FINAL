@@ -24,26 +24,40 @@ export const CoordinatorDashboardPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchAllData = async () => {
+    let isMounted = true;
+
+    const fetchAllData = async (showLoading = false) => {
       try {
-        setLoading(true);
+        if (showLoading) setLoading(true);
         const [mList, rList] = await Promise.all([
           coordinatorApi.getMatches(),
           coordinatorApi.getRegistrations(),
         ]);
-        setMatches(mList);
-        setRegistrations(rList);
+        if (isMounted) {
+          setMatches(mList);
+          setRegistrations(rList);
+        }
       } catch (err) {
-        addToast('Error loading operations console', 'error');
+        if (showLoading) addToast('Error loading operations console', 'error');
       } finally {
-        setLoading(false);
+        if (showLoading && isMounted) setLoading(false);
       }
     };
 
     if (user) {
-      fetchAllData();
+      fetchAllData(true);
+
+      // Real-time synchronization polling every 5 seconds
+      const pollInterval = setInterval(() => {
+        fetchAllData(false);
+      }, 5000);
+
+      return () => {
+        isMounted = false;
+        clearInterval(pollInterval);
+      };
     }
-  }, []);
+  }, [user]);
 
   const handleLogout = () => {
     coordinatorApi.logout();

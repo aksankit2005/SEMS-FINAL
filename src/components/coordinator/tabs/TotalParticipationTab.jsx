@@ -1,41 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Trash2 } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
+import { coordinatorApi } from '../../../services/coordinatorApi';
 
 export const TotalParticipationTab = ({ user }) => {
   const { addToast } = useToast();
   const [search, setSearch] = useState('');
   const [participants, setParticipants] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const sportId = user?.assignedSport || 'table-tennis';
   const participantsKey = `sems_participants_${sportId}`;
-
   const sportName = user?.sportName || 'Badminton';
 
-  // Load participants from localStorage on mount & purge legacy mock entries
-  useEffect(() => {
-    const mockIds = ['REG-101', 'REG-102', 'REG-103', 'REG-104'];
-    const saved = localStorage.getItem(participantsKey);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        const cleaned = Array.isArray(parsed) ? parsed.filter((p) => !mockIds.includes(p.id)) : [];
-        setParticipants(cleaned);
-        localStorage.setItem(participantsKey, JSON.stringify(cleaned));
-      } catch (e) {
-        setParticipants([]);
-      }
-    } else {
-      setParticipants([]);
+  const loadData = async () => {
+    try {
+      const data = await coordinatorApi.getRegistrations();
+      setParticipants(data);
+    } catch (e) {
+      console.error('Error loading participants from database:', e);
     }
-  }, [participantsKey, sportName]);
+  };
 
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(loadData, 5000);
+    return () => clearInterval(interval);
+  }, [user]);
 
-  const handleClearParticipants = () => {
+  const handleClearParticipants = async () => {
     if (window.confirm('Clear all participant data from storage?')) {
       setParticipants([]);
       localStorage.removeItem(participantsKey);
+      if (sportId) {
+        localStorage.removeItem(`sems_participants_${sportId}`);
+        localStorage.removeItem(`sems_participants_${sportId.toLowerCase()}`);
+      }
       addToast('All participant data cleared', 'warning');
+      await loadData();
     }
   };
 
@@ -108,12 +110,13 @@ export const TotalParticipationTab = ({ user }) => {
                   const isDoubles = p.format === 'DOUBLES' || p.player2 || p.partnerName || (p.name && p.name.includes('&'));
 
                   const p1Name = p.player1?.name || p.studentName || p.name?.split('&')[0]?.trim() || p.name;
-                  const p1Roll = p.player1?.roll || p.roll?.split('/')[0]?.trim() || p.roll;
-                  const p1Phone = p.player1?.phone || p.contactPhone || p.contact?.split('|')[0]?.replace('P1:', '')?.trim() || p.contact;
+                  const p1Roll = p.player1?.roll || p.enrollmentNo || p.roll?.split('/')[0]?.trim() || p.roll;
+                  const p1Phone = p.phone || p.mobile || p.contactPhone || p.player1?.phone || (p.contact && p.contact.split('|')[0]?.replace('P1:', '')?.trim()) || p.contact || 'N/A';
+                  const p1Email = p.email || p.player1?.email || '';
 
                   const p2Name = p.player2?.name || p.partnerName || p.name?.split('&')[1]?.trim() || 'Partner (Player 2)';
                   const p2Roll = p.player2?.roll || p.partnerRoll || p.roll?.split('/')[1]?.trim() || 'N/A';
-                  const p2Phone = p.player2?.phone || p.partnerPhone || p.contact?.split('|')[1]?.replace('P2:', '')?.trim() || 'N/A';
+                  const p2Phone = p.player2?.phone || p.partnerPhone || (p.contact && p.contact.split('|')[1]?.replace('P2:', '')?.trim()) || 'N/A';
 
                   return (
                     <tr key={idx} className="hover:bg-slate-800/40 transition">
@@ -162,7 +165,10 @@ export const TotalParticipationTab = ({ user }) => {
                       <td className="p-4 text-slate-300 font-sans text-xs">{sportName}</td>
 
                       {/* COLLEGE & COURSE */}
-                      <td className="p-4 text-slate-400 font-sans text-xs">{p.college}</td>
+                      <td className="p-4 text-slate-400 font-sans text-xs">
+                        <span className="font-bold text-slate-200">{p.college}</span>
+                        {p.department && <span className="text-slate-400 font-normal"> | {p.department}</span>}
+                      </td>
 
                       {/* FORMAT */}
                       <td className="p-4">
@@ -189,7 +195,11 @@ export const TotalParticipationTab = ({ user }) => {
                             </div>
                           </div>
                         ) : (
-                          <span className="text-indigo-400 text-[11px]">{p1Phone}</span>
+                          <div className="space-y-0.5">
+                            <div className="text-cyan-400 font-bold text-xs">{p1Phone}</div>
+                            {p1Email && <div className="text-slate-400 text-[11px] font-mono">{p1Email}</div>}
+                            {p.emergencyContact && <div className="text-slate-500 text-[10px]">Alt: {p.emergencyContact}</div>}
+                          </div>
                         )}
                       </td>
 
