@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 export const SPORTS_DATA = [
   {
     id: "table-tennis",
@@ -261,3 +262,268 @@ export const SPORTS_DATA = [
     schedule: "Day 4 - 02:00 PM onwards"
   }
 ];
+=======
+export const SPORTS_DATA = [
+  {
+    id: "table-tennis",
+    name: "Table Tennis",
+    category: "Indoor",
+    type: "Singles & Doubles",
+    tagline: "Speed, Spin & Lightning Reflexes",
+    description: "Fast-paced indoor sport testing quick reflexes, spin control, and tactical shot placement across singles and doubles events.",
+    image: "https://images.unsplash.com/photo-1534158914592-062992fbe900?auto=format&fit=crop&w=800&q=80",
+    icon: "Activity",
+    status: "Open",
+    participantsCount: 48,
+    maxParticipants: 64,
+    entryFee: 300,
+    singlesFee: 300,
+    doublesFee: 600,
+    startDate: "2026-08-01",
+    endDate: "2026-08-30",
+    teamSize: "1 - 2 Players",
+    venue: "Indoor Sports Complex Hall A",
+    rules: [
+      "Standard ITTF rules apply.",
+      "Matches will be best of 5 sets (11 points per set).",
+      "Valid non-marking shoes are mandatory in the indoor arena.",
+      "Players must bring their own paddles; standard balls provided."
+    ],
+    schedule: "Day 1 & Day 2 - 09:00 AM onwards"
+  },
+  {
+    id: "badminton",
+    name: "Badminton",
+    category: "Indoor",
+    type: "Singles & Doubles",
+    tagline: "Soar, Smash & Dominate the Court",
+    description: "High-energy racket sport demanding speed, agility, and precision footwork. Features Mens Singles, Womens Singles, and Mixed Doubles.",
+    image: "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80",
+    icon: "Zap",
+    status: "Open",
+    participantsCount: 64,
+    maxParticipants: 80,
+    entryFee: 400,
+    singlesFee: 300,
+    doublesFee: 600,
+    startDate: "2026-08-01",
+    endDate: "2026-08-30",
+    teamSize: "1 - 2 Players",
+    venue: "Badminton Arena Courts 1-4",
+    rules: [
+      "BWF standard scoring (21 points per game, best of 3).",
+      "Yonex AS-30 feather shuttles will be used.",
+      "Strict dress code: Sports jersey & non-marking indoor shoes.",
+      "Walkover given if player is late by more than 15 minutes."
+    ],
+    schedule: "Day 1 to Day 3 - 08:30 AM onwards"
+  },
+  {
+    id: "chess",
+    name: "Chess",
+    category: "Mind Sport",
+    type: "Individual",
+    tagline: "Master the Board, Outsmart the Mind",
+    description: "The ultimate battle of intellect and strategic depth. FIDE Blitz and Rapid rounds featuring top collegiate grandmasters.",
+    image: "https://images.unsplash.com/photo-1529699211952-734e80c4d42b?auto=format&fit=crop&w=800&q=80",
+    icon: "Crown",
+    status: "Open",
+    participantsCount: 92,
+    maxParticipants: 128,
+    entryFee: 250,
+    teamSize: "1 Player",
+    venue: "Central Auditorium Hall B",
+    rules: [
+      "FIDE Rapid format: 15 mins + 10s increment per move.",
+      "Swiss-system tournament over 7 rounds.",
+      "Electronic devices strictly prohibited during matches.",
+      "Tie-breaks resolved via Buchholz system & Armageddon if needed."
+    ],
+    schedule: "Day 2 - 10:00 AM onwards"
+  },
+  {
+    id: "cricket",
+    name: "Cricket",
+    category: "Outdoor",
+    type: "Team (11 Players)",
+    tagline: "Glory, Boundaries & High Voltage Drama",
+    description: "T20 Knockout tournament featuring electrifying boundaries, clinical bowling spells, and intense inter-college rivalries.",
+    image: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=800&q=80",
+    icon: "Trophy",
+    status: "Closing Soon",
+    participantsCount: 14,
+    maxParticipants: 16,
+    entryFee: 2500,
+    teamSize: "11 + 4 Subs",
+    venue: "Main University Stadium Ground 1",
+    rules: [
+      "15 overs per side for prelims; T20 format for Finals.",
+      "White leather balls; full cricket kit mandatory.",
+      "Powerplay rules: 4 overs restricted fielding.",
+      "Super Over in case of a tie."
+    ],
+    schedule: "Day 1 to Day 4 - 07:30 AM onwards"
+  },
+  {
+    id: "football",
+    name: "Football",
+    category: "Outdoor",
+    type: "Team (11 Players)",
+    tagline: "Passion, Skill & 90 Minutes of Pure Adrenaline",
+    description: "High-octane 11-a-side football tournament under floodlights. High pressing, tactical masterclasses, and penalty shootouts.",
+    image: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Zm9vdGJhbGx8ZW58MHx8MHx8fDA%3D",
+    icon: "CircleDot",
+    status: "Open",
+    participantsCount: 12,
+    maxParticipants: 16,
+    entryFee: 2200,
+    teamSize: "5 + 3 Subs",
+    venue: "Turf Football Ground A",
+    rules: [
+      "Standard FIFA rules. Match duration 30 mins each half.",
+      "Studded football boots & shin guards mandatory.",
+      "Direct red card results in a minimum 1-match suspension.",
+      "Extra time & Penalty Shootout for knockout draws."
+    ],
+    schedule: "Day 1 to Day 4 - 03:00 PM onwards"
+  },
+  {
+    id: "basketball",
+    name: "Basketball",
+    category: "Outdoor",
+    type: "Team (5 Players)",
+    tagline: "Fast Breaks, High Flies & Rim Shakers",
+    description: "Full-court 5v5 basketball with fast-paced transitions, three-pointers, and electric atmosphere under stadium floodlights.",
+    image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=800&q=80",
+    icon: "Target",
+    status: "Open",
+    participantsCount: 16,
+    maxParticipants: 24,
+    entryFee: 1500,
+    teamSize: "5 + 5 Subs",
+    venue: "Outdoor Synthetic Basketball Court",
+    rules: [
+      "FIBA official rules apply.",
+      "4 quarters of 8 minutes each (stop-clock in last 2 mins).",
+      "5 team fouls per quarter result in free throws.",
+      "Overtime duration 3 minutes if tied at full-time."
+    ],
+    schedule: "Day 2 & Day 3 - 04:00 PM onwards"
+  },
+  {
+    id: "volleyball",
+    name: "Volleyball",
+    category: "Outdoor",
+    type: "Team (6 Players)",
+    tagline: "Set, Spike & Block Your Way to Victory",
+    description: "Dynamic 6v6 volleyball featuring powerful spikes, tactical sets, and dramatic rallies on the outdoor clay court.",
+    image: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?auto=format&fit=crop&w=800&q=80",
+    icon: "Award",
+    status: "Open",
+    participantsCount: 10,
+    maxParticipants: 16,
+    entryFee: 1200,
+    teamSize: "6 + 4 Subs",
+    venue: "Volleyball Arena Court 1",
+    rules: [
+      "FIVB rules (Best of 3 sets, 25 pts first 2 sets, 15 pts 3rd set).",
+      "Rotation rule mandatory on service gains.",
+      "Libero player must wear contrasting jersey color.",
+      "Net touch results in immediate point award to opponent."
+    ],
+    schedule: "Day 1 & Day 2 - 09:30 AM onwards"
+  },
+  {
+    id: "kabaddi",
+    name: "Kabaddi",
+    category: "Traditional & Combat",
+    type: "Team (7 Players)",
+    tagline: "Power, Strategy & Raw Athleticism",
+    description: "Pro-style Kabaddi on synthetic matting with high-impact tackles, super raids, and intense adrenaline-fueled momentum.",
+    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTQqesWubtAef_EAWSlKVx-w8_8Z2hA81YIblRCLOn_Qg&s=10",
+    icon: "ShieldAlert",
+    status: "Closing Soon",
+    participantsCount: 12,
+    maxParticipants: 12,
+    entryFee: 1500,
+    teamSize: "7 + 5 Subs",
+    venue: "Indoor Kabaddi Arena Mat 1",
+    rules: [
+      "Pro Kabaddi League rules on approved mats.",
+      "20 minutes each half with a 5-minute break.",
+      "Do-or-Die raid active on every 3rd empty raid.",
+      "Super Tackle awards 2 points when 3 or fewer defenders."
+    ],
+    schedule: "Day 3 - 10:00 AM onwards"
+  },
+  {
+    id: "kho-kho",
+    name: "Kho-Kho",
+    category: "Traditional",
+    type: "Team (9 Players)",
+    tagline: "Speed, Endurance & Tactical Chasing",
+    description: "Traditional Indian tag sport featuring rapid zig-zag chasing, dodges, and exhilarating squad coordination.",
+    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ0GMISVdPI6bHFtxzRhwOhSoPALFuQICV8ZgEdNOx06Q&s=10",
+    icon: "Wind",
+    status: "Open",
+    participantsCount: 8,
+    maxParticipants: 16,
+    entryFee: 1000,
+    teamSize: "9 + 3 Subs",
+    venue: "Outdoor Sports Ground 2",
+    rules: [
+      "KKFI official guidelines.",
+      "2 innings per match, each inning consists of 9-minute turns.",
+      "Chasers can change direction only at poles.",
+      "Proper chest number bibs mandatory."
+    ],
+    schedule: "Day 2 - 01:30 PM onwards"
+  },
+  {
+    id: "athletics",
+    name: "Athletics",
+    category: "Track & Field",
+    type: "Individual & Relay",
+    tagline: "Faster, Higher, Stronger",
+    description: "Track and field spectacle including 100m, 200m, 400m, 4x100m Relay, Shot Put, and Long Jump events.",
+    image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80",
+    icon: "Flame",
+    status: "Open",
+    participantsCount: 110,
+    maxParticipants: 150,
+    entryFee: 200,
+    teamSize: "1 Player / Relay Team",
+    venue: "Olympic Synthetic Track & Field Arena",
+    rules: [
+      "IAAF timing rules with electronic sensors.",
+      "False start rule: 1st false start disqualifies the runner.",
+      "Spikes allowed (max 6mm length).",
+      "Medals awarded for Top 3 in each track & field event."
+    ],
+    schedule: "Day 1 & Day 4 - All Day"
+  },
+  {
+    id: "tug-of-war",
+    name: "Tug of War",
+    category: "Strength",
+    type: "Team (8 Players)",
+    tagline: "Unbreakable Grip, Ultimate Strength",
+    description: "Raw test of collective power, grip endurance, and teamwork in a best-of-3 pulls showdown.",
+    image: "https://ichef.bbci.co.uk/ace/standard/799/cpsprodpb/61bf/live/ae15cb30-6170-11ef-9ad8-5bacd187043d.jpg",
+    icon: "Dumbbell",
+    status: "Open",
+    participantsCount: 14,
+    maxParticipants: 16,
+    entryFee: 800,
+    teamSize: "8 Players (Combined weight < 680kg)",
+    venue: "Main Central Grass Field",
+    rules: [
+      "TWIF official rules & weight class limits.",
+      "Best of 3 pulls; 4-meter mark to cross centerline.",
+      "No boots with metal studs or cleats allowed.",
+      "Anchor position must wrap rope safely."
+    ],
+    schedule: "Day 4 - 02:00 PM onwards"
+  }
+];
+>>>>>>> main

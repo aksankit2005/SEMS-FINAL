@@ -199,3 +199,37 @@ export const getSportConfig = (sportId) => {
   const normalized = (sportId || 'table-tennis').toLowerCase().trim();
   return SPORTS_CONFIG[normalized] || SPORTS_CONFIG['table-tennis'];
 };
+
+export const resolveSportConfig = (sportOrMatch) => {
+  if (!sportOrMatch) return SPORTS_CONFIG['table-tennis'];
+  
+  let targetStr = '';
+  if (typeof sportOrMatch === 'string') {
+    targetStr = sportOrMatch;
+  } else if (typeof sportOrMatch === 'object') {
+    targetStr = [
+      sportOrMatch.sportId,
+      sportOrMatch.sportName,
+      sportOrMatch.sport,
+      sportOrMatch.eventTitle,
+      sportOrMatch.matchTitle
+    ].filter(Boolean).join(' ');
+  }
+
+  const str = targetStr.toLowerCase();
+  if (str.includes('badminton')) return SPORTS_CONFIG['badminton'];
+  if (str.includes('cricket') && !str.includes('gully')) return SPORTS_CONFIG['cricket'];
+  if (str.includes('gully')) return SPORTS_CONFIG['gully-cricket'];
+  if (str.includes('football') || str.includes('soccer')) return SPORTS_CONFIG['football'];
+  if (str.includes('basketball')) return SPORTS_CONFIG['basketball'];
+  if (str.includes('volleyball')) return SPORTS_CONFIG['volleyball'];
+  if (str.includes('chess')) return SPORTS_CONFIG['chess'];
+  if (str.includes('kabaddi')) return SPORTS_CONFIG['kabaddi'];
+  if (str.includes('kho')) return SPORTS_CONFIG['kho-kho'];
+  if (str.includes('athletic')) return SPORTS_CONFIG['athletics'];
+  if (str.includes('table') || str.includes('tt') || str.includes('ping')) return SPORTS_CONFIG['table-tennis'];
+
+  const normalized = targetStr.toLowerCase().trim();
+  return SPORTS_CONFIG[normalized] || SPORTS_CONFIG['table-tennis'];
+};
+

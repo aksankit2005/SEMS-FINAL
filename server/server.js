@@ -1576,9 +1576,30 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+<<<<<<< HEAD
 // ─── 404 catch-all for unknown API routes ────────────────────────────────────
 app.use('/api/*', (req, res) => {
   res.status(404).json({ message: `Route not found: ${req.method} ${req.originalUrl}` });
+=======
+// Serve static built frontend files from 'dist' folder
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+app.use(express.static(path.join(__dirname, '../dist')));
+
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  const indexPath = path.join(__dirname, '../dist/index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      next();
+    }
+  });
+>>>>>>> main
 });
 
 // ─── Global Error Handler ─────────────────────────────────────────────────────
@@ -1621,3 +1642,8 @@ app.listen(PORT, () => {
   console.log(`🚀 SEMS API Server running on port ${PORT}`);
   console.log(`🔒 NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
 });
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> main
