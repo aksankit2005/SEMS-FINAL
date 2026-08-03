@@ -18,19 +18,20 @@ api.interceptors.request.use((config) => {
 });
 
 // Password pattern: {sport_key}#2026  (e.g. cricket#2026, table_tennis#2026)
+// NOTE: Passwords are NOT stored here — authentication is handled by the backend.
 export const COORDINATOR_ACCOUNTS = [
-  { assignedSport: 'cricket',       sportName: 'Cricket',       username: 'coord_cricket',       password: 'cricket#2026',       coordinatorName: 'Vikramaditya Sharma',    email: 'cricket.coord@sems.edu' },
-  { assignedSport: 'table-tennis',  sportName: 'Table Tennis',  username: 'coord_table_tennis',  password: 'table_tennis#2026',  coordinatorName: 'Rohan Mehta',            email: 'tt.coord@sems.edu' },
-  { assignedSport: 'badminton',     sportName: 'Badminton',     username: 'coord_badminton',     password: 'badminton#2026',     coordinatorName: 'Pooja Deshmukh',         email: 'badminton.coord@sems.edu' },
-  { assignedSport: 'chess',         sportName: 'Chess',         username: 'coord_chess',         password: 'chess#2026',         coordinatorName: 'Grandmaster Anand Verma',email: 'chess.coord@sems.edu' },
-  { assignedSport: 'football',      sportName: 'Football',      username: 'coord_football',      password: 'football#2026',      coordinatorName: 'Carlos Rodriguez',       email: 'football.coord@sems.edu' },
-  { assignedSport: 'basketball',    sportName: 'Basketball',    username: 'coord_basketball',    password: 'basketball#2026',    coordinatorName: 'Michael Jordan Singh',   email: 'basketball.coord@sems.edu' },
-  { assignedSport: 'volleyball',    sportName: 'Volleyball',    username: 'coord_volleyball',    password: 'volleyball#2026',    coordinatorName: 'Siddharth Rao',          email: 'volleyball.coord@sems.edu' },
-  { assignedSport: 'kabaddi',       sportName: 'Kabaddi',       username: 'coord_kabaddi',       password: 'kabaddi#2026',       coordinatorName: 'Pradeep Narwal Kumar',   email: 'kabaddi.coord@sems.edu' },
-  { assignedSport: 'kho-kho',       sportName: 'Kho-Kho',       username: 'coord_kho_kho',       password: 'kho_kho#2026',       coordinatorName: 'Sunita Jadhav',          email: 'khokho.coord@sems.edu' },
-  { assignedSport: 'athletics',     sportName: 'Athletics',     username: 'coord_athletics',     password: 'athletics#2026',     coordinatorName: 'PT Usha Pillai',         email: 'athletics.coord@sems.edu' },
-  { assignedSport: 'tug-of-war',    sportName: 'Tug of War',    username: 'coord_tug_of_war',    password: 'tug_of_war#2026',    coordinatorName: 'Bheem Singh Power',      email: 'tugofwar.coord@sems.edu' },
-  { assignedSport: 'gully-cricket', sportName: 'Gully Cricket', username: 'coord_gully_cricket', password: 'gully_cricket#2026', coordinatorName: 'Chiku Bhai',             email: 'gullycricket.coord@sems.edu' },
+  { assignedSport: 'cricket',       sportName: 'Cricket',       username: 'coord_cricket',       coordinatorName: 'Vikramaditya Sharma',    email: 'cricket.coord@sems.edu' },
+  { assignedSport: 'table-tennis',  sportName: 'Table Tennis',  username: 'coord_table_tennis',  coordinatorName: 'Rohan Mehta',            email: 'tt.coord@sems.edu' },
+  { assignedSport: 'badminton',     sportName: 'Badminton',     username: 'coord_badminton',     coordinatorName: 'Pooja Deshmukh',         email: 'badminton.coord@sems.edu' },
+  { assignedSport: 'chess',         sportName: 'Chess',         username: 'coord_chess',         coordinatorName: 'Grandmaster Anand Verma',email: 'chess.coord@sems.edu' },
+  { assignedSport: 'football',      sportName: 'Football',      username: 'coord_football',      coordinatorName: 'Carlos Rodriguez',       email: 'football.coord@sems.edu' },
+  { assignedSport: 'basketball',    sportName: 'Basketball',    username: 'coord_basketball',    coordinatorName: 'Michael Jordan Singh',   email: 'basketball.coord@sems.edu' },
+  { assignedSport: 'volleyball',    sportName: 'Volleyball',    username: 'coord_volleyball',    coordinatorName: 'Siddharth Rao',          email: 'volleyball.coord@sems.edu' },
+  { assignedSport: 'kabaddi',       sportName: 'Kabaddi',       username: 'coord_kabaddi',       coordinatorName: 'Pradeep Narwal Kumar',   email: 'kabaddi.coord@sems.edu' },
+  { assignedSport: 'kho-kho',       sportName: 'Kho-Kho',       username: 'coord_kho_kho',       coordinatorName: 'Sunita Jadhav',          email: 'khokho.coord@sems.edu' },
+  { assignedSport: 'athletics',     sportName: 'Athletics',     username: 'coord_athletics',     coordinatorName: 'PT Usha Pillai',         email: 'athletics.coord@sems.edu' },
+  { assignedSport: 'tug-of-war',    sportName: 'Tug of War',    username: 'coord_tug_of_war',    coordinatorName: 'Bheem Singh Power',      email: 'tugofwar.coord@sems.edu' },
+  { assignedSport: 'gully-cricket', sportName: 'Gully Cricket', username: 'coord_gully_cricket', coordinatorName: 'Chiku Bhai',             email: 'gullycricket.coord@sems.edu' },
 ];
 
 export const coordinatorApi = {
@@ -50,36 +51,15 @@ export const coordinatorApi = {
         localStorage.setItem('sems_coordinator_user', JSON.stringify(res.data.user));
         return { success: true, user: res.data.user };
       }
+      throw new Error('Invalid response from server. Please try again.');
     } catch (err) {
-      console.warn('Backend login fallback used', err);
+      // Re-throw backend errors (401, 403) with their proper message
+      if (err.response) {
+        throw new Error(err.response.data?.message || 'Invalid credentials. Access denied.');
+      }
+      // Network errors
+      throw new Error('Cannot connect to server. Please check your connection.');
     }
-
-    const preset = COORDINATOR_ACCOUNTS.find(
-      (a) =>
-        a.username.toLowerCase() === username.toLowerCase().replace(/-/g, '_') ||
-        a.assignedSport.toLowerCase() === username.toLowerCase()
-    );
-
-    // Must have a matching account AND the correct password
-    if (!preset) {
-      throw new Error('Invalid Sport Coordinator credentials. Unknown username.');
-    }
-
-    if (password !== preset.password) {
-      throw new Error('Incorrect password. Please check your credentials.');
-    }
-
-    const user = {
-      username: preset.username,
-      assignedSport: preset.assignedSport,
-      sportName: preset.sportName,
-      coordinatorName: preset.coordinatorName,
-      email: preset.email,
-      role: 'sport_coordinator',
-    };
-    localStorage.setItem('sems_coordinator_token', `token-${preset.assignedSport}-${Date.now()}`);
-    localStorage.setItem('sems_coordinator_user', JSON.stringify(user));
-    return { success: true, user };
   },
 
   logout() {
@@ -373,10 +353,20 @@ export const coordinatorApi = {
   },
 
 
-  // Get Registrations from localStorage
+  // Get Registrations directly from PostgreSQL database via Backend API
   async getRegistrations() {
     const user = this.getCurrentUser();
     if (!user) return [];
+
+    try {
+      const res = await api.get('/coordinator/registrations');
+      if (res.data && Array.isArray(res.data)) {
+        return res.data;
+      }
+    } catch (e) {
+      console.warn('Backend registrations API fallback to localStorage:', e);
+    }
+
     const key = `sems_participants_${user.assignedSport}`;
     const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : [];
