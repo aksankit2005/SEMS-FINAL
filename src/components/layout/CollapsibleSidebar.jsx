@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   Flame, Trophy, Radio, UserCheck, Calendar, BarChart3, 
-  Award, Users, Newspaper, Image, Info, ChevronLeft, ChevronRight, LayoutDashboard, Camera,
+  Award, Newspaper, Image, Info, ChevronLeft, ChevronRight, LayoutDashboard, Camera,
   Building2, Shield
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -21,7 +21,6 @@ export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
     { name: 'Schedule', path: '/schedule', icon: Calendar },
     { name: 'Results', path: '/results', icon: BarChart3 },
     { name: 'Leaderboard', path: '/leaderboard', icon: Award },
-    { name: 'Coordinators', path: '/coordinators', icon: Users },
     { name: 'Announcements', path: '/announcements', icon: Newspaper },
     { name: 'Gallery', path: '/gallery', icon: Image },
     ...(isPRAuth ? [{ name: 'PR Portal', path: '/pr-dashboard', icon: Camera }] : []),

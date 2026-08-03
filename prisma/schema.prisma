@@ -1,0 +1,597 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum CoordinatorRole {
+  SUPER_ADMIN
+  COLLEGE_COORDINATOR
+  SPORTS_COORDINATOR
+}
+
+enum EventStatus {
+  DRAFT
+  REGISTRATION_OPEN
+  REGISTRATION_CLOSED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum CompetitionStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  LIVE
+  COMPLETED
+}
+
+enum MatchType {
+  SINGLES
+  DOUBLES
+  TEAM
+}
+
+enum GenderCategory {
+  MALE
+  FEMALE
+  MIXED
+}
+enum RegistrationType {
+  INDIVIDUAL
+  TEAM
+}
+
+enum RegistrationStatus {
+  PENDING
+  VERIFIED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  ONLINE
+  OFFLINE
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+enum RankingType {
+  INDIVIDUAL
+  TEAM
+}
+
+model College {
+  id        String   @id @default(uuid()) @db.Uuid
+  code      String   @unique
+  name      String   @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  coordinators Coordinator[]
+  teams Team[]
+  collegeRankings CollegeRanking[]
+
+  @@map("colleges")
+}
+
+model Sport {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @unique
+  isTeamSport  Boolean  @default(false)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  competitions Competition[]
+  registrations Registration[]
+  teams Team[]
+
+  @@map("sports")
+}
+
+model Venue {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  location    String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  matches Match[]
+
+  @@map("venues")
+}
+
+model Event {
+  id          String      @id @default(uuid()) @db.Uuid
+  name        String
+  year        Int
+  status      EventStatus @default(DRAFT)
+
+  startDate   DateTime
+  endDate     DateTime
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  competitions Competition[]
+  registrations Registration[]
+  teams Team[]
+  announcements Announcement[]
+
+  gallery Gallery[]
+
+  @@unique([name, year])
+  @@map("events")
+}
+
+model Competition {
+  id                  String            @id @default(uuid()) @db.Uuid
+
+  title               String
+
+  registrationFee     Decimal           @db.Decimal(10,2)
+
+  registrationStart   DateTime
+
+  registrationEnd     DateTime
+
+  status              CompetitionStatus @default(DRAFT)
+
+  gender              GenderCategory
+
+  matchType           MatchType
+
+  maxParticipants     Int?
+
+  eventId             String            @db.Uuid
+
+  sportId             String            @db.Uuid
+
+  event               Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  sport               Sport             @relation(fields: [sportId], references: [id], onDelete: Restrict)
+
+  coordinatorAssignments CoordinatorAssignment[]
+  matches Match[]
+  individualRankings IndividualRanking[]
+
+  collegeRankings CollegeRanking[]
+  gallery Gallery[]
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+
+  @@index([sportId])
+  
+  @@unique([eventId, sportId, title])
+
+  @@map("competitions")
+}
+
+model Coordinator {
+  id          String @id @default(uuid()) @db.Uuid
+
+  name        String
+
+  email       String @unique
+
+  phone       String @unique
+
+  password    String
+
+  role        CoordinatorRole
+
+  collegeId   String? @db.Uuid
+
+  college     College? @relation(fields: [collegeId], references: [id], onDelete: SetNull)
+
+  assignments CoordinatorAssignment[]
+  auditLogs AuditLog[]
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@index([collegeId])
+
+  @@map("coordinators")
+}
+
+model CoordinatorAssignment {
+
+  id String @id @default(uuid()) @db.Uuid
+
+  coordinatorId String @db.Uuid
+
+  competitionId String @db.Uuid
+
+  coordinator Coordinator @relation(fields: [coordinatorId], references: [id], onDelete: Cascade)
+
+  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  assignedAt DateTime @default(now())
+
+  @@unique([coordinatorId, competitionId])
+
+  @@index([competitionId])
+
+  @@map("coordinator_assignments")
+}
+model Registration {
+  id String @id @default(uuid()) @db.Uuid
+
+  members RegistrationMember[]
+
+  eventId String @db.Uuid
+  event Event @relation(fields: [eventId], references: [id])
+
+  sportId String @db.Uuid
+  sport Sport @relation(fields: [sportId], references: [id])
+
+  registrationType RegistrationType
+
+  status RegistrationStatus @default(PENDING)
+
+  amount Decimal @db.Decimal(10,2)
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  payment Payment?
+  teamMember TeamMember?
+  individualRanking IndividualRanking?
+
+  captainOf Team? @relation("TeamCaptain")
+
+  @@unique([eventId, sportId, createdAt])
+
+  @@index([eventId])
+
+  @@index([sportId])
+
+  @@map("registrations")
+}
+model Payment {
+  id String @id @default(uuid()) @db.Uuid
+
+  registrationId String @unique @db.Uuid
+  registration Registration @relation(fields: [registrationId], references: [id])
+
+  amount Decimal @db.Decimal(10,2)
+
+  method PaymentMethod
+
+  status PaymentStatus @default(PENDING)
+
+  transactionId String?
+
+  gatewayOrderId String?
+
+  gatewayPaymentId String?
+
+  paidAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  receipt Receipt?
+
+  @@index([registrationId])
+
+  @@index([status])
+
+  @@index([transactionId])
+
+  @@map("payments")
+}
+model Receipt {
+  id String @id @default(uuid()) @db.Uuid
+
+  paymentId String @unique @db.Uuid
+  payment Payment @relation(fields: [paymentId], references: [id])
+
+  receiptNumber String @unique
+
+  receiptUrl String?
+
+  generatedAt DateTime @default(now())
+
+  @@map("receipts")
+}
+model Team {
+  id String @id @default(uuid()) @db.Uuid
+
+  eventId String @db.Uuid
+  event Event @relation(fields: [eventId], references: [id])
+
+  sportId String @db.Uuid
+  sport Sport @relation(fields: [sportId], references: [id])
+
+  collegeId String @db.Uuid
+  college College @relation(fields: [collegeId], references: [id])
+
+  name String
+
+  captainRegistrationId String? @unique @db.Uuid
+  captainRegistration Registration? @relation("TeamCaptain", fields: [captainRegistrationId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  members TeamMember[]
+  matches MatchParticipant[]
+
+  wonMatches Match[] @relation("WinnerTeam")
+
+  @@unique([eventId, sportId, collegeId, name])
+
+  @@index([eventId, collegeId])
+
+  @@index([sportId])
+
+  @@index([collegeId])
+
+  @@map("teams")
+}
+model TeamMember {
+  id String @id @default(uuid()) @db.Uuid
+
+  teamId String @db.Uuid
+  team Team @relation(fields: [teamId], references: [id])
+
+  registrationId String @unique @db.Uuid
+  registration Registration @relation(fields: [registrationId], references: [id])
+
+  joinedAt DateTime @default(now())
+
+  @@index([teamId])
+
+  @@map("team_members")
+}
+model Match {
+  id String @id @default(uuid()) @db.Uuid
+
+  competitionId String @db.Uuid
+  competition Competition @relation(fields: [competitionId], references: [id])
+
+  venueId String @db.Uuid
+  venue Venue @relation(fields: [venueId], references: [id])
+
+  scheduledAt DateTime
+
+  round String
+
+  status MatchStatus @default(SCHEDULED)
+
+  winnerTeamId String? @db.Uuid
+  winnerTeam Team? @relation("WinnerTeam", fields: [winnerTeamId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  participants MatchParticipant[]
+
+  score MatchScore?
+
+  @@index([competitionId])
+
+  @@index([venueId])
+
+  @@index([scheduledAt])
+  @@index([status])
+
+  @@map("matches")
+}
+model MatchParticipant {
+  id String @id @default(uuid()) @db.Uuid
+
+  matchId String @db.Uuid
+  match Match @relation(fields: [matchId], references: [id])
+
+  teamId String @db.Uuid
+  team Team @relation(fields: [teamId], references: [id])
+
+  side Int
+
+  @@unique([matchId, side])
+
+  @@index([teamId])
+
+  @@map("match_participants")
+}
+model MatchScore {
+  id String @id @default(uuid()) @db.Uuid
+
+  matchId String @unique @db.Uuid
+  match Match @relation(fields: [matchId], references: [id])
+
+  team1Score Int
+
+  team2Score Int
+
+  remarks String?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@map("match_scores")
+}
+model IndividualRanking {
+  id String @id @default(uuid()) @db.Uuid
+
+  competitionId String @db.Uuid
+  competition Competition @relation(fields: [competitionId], references: [id])
+
+  registrationId String @unique @db.Uuid
+  registration Registration @relation(fields: [registrationId], references: [id])
+
+  rank Int
+
+  points Int
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([competitionId, rank])
+
+  @@index([competitionId])
+
+  @@map("individual_rankings")
+}
+model CollegeRanking {
+  id String @id @default(uuid()) @db.Uuid
+
+  competitionId String @db.Uuid
+  competition Competition @relation(fields: [competitionId], references: [id])
+
+  collegeId String @db.Uuid
+  college College @relation(fields: [collegeId], references: [id])
+
+  rank Int
+
+  points Int
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([competitionId, collegeId])
+
+  @@unique([competitionId, rank])
+
+  @@index([competitionId])
+
+  @@index([collegeId])
+
+  @@map("college_rankings")
+}
+model Announcement {
+  id String @id @default(uuid()) @db.Uuid
+
+  eventId String @db.Uuid
+  event Event @relation(fields: [eventId], references: [id])
+
+  title String
+
+  description String @db.Text
+
+  isPublished Boolean @default(false)
+
+  publishedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+  @@index([publishedAt])
+
+  @@map("announcements")
+}
+model Gallery {
+  id String @id @default(uuid()) @db.Uuid
+
+  eventId String @db.Uuid
+  event Event @relation(fields: [eventId], references: [id])
+
+  competitionId String? @db.Uuid
+  competition Competition? @relation(fields: [competitionId], references: [id])
+
+  title String?
+
+  imageUrl String
+
+  uploadedBy String?
+
+  createdAt DateTime @default(now())
+
+  @@index([eventId])
+
+  @@index([competitionId])
+
+  @@map("gallery")
+}
+model AuditLog {
+  id String @id @default(uuid()) @db.Uuid
+
+  coordinatorId String? @db.Uuid
+  coordinator Coordinator? @relation(fields: [coordinatorId], references: [id])
+
+  action String
+
+  entity String
+
+  entityId String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([coordinatorId])
+
+  @@index([entity])
+  @@index([createdAt])
+
+  @@map("audit_logs")
+}
+model RegistrationMember {
+  id String @id @default(uuid()) @db.Uuid
+
+  registrationId String @db.Uuid
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  fullName String
+  fatherMotherName String
+  rollNo String
+
+  dateOfBirth DateTime?
+
+  mobile String
+
+  alternateMobile String?
+
+  email String
+
+  aadhaarNumber String?
+
+  course String
+
+  yearSemester String
+
+  gender GenderCategory
+
+  isCaptain Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@index([registrationId])
+
+  @@index([rollNo])
+
+  @@map("registration_members")
+}

@@ -449,6 +449,7 @@ export const coordinatorApi = {
     if (!user) return;
     const key = `sems_coord_events_${user.assignedSport}`;
     localStorage.setItem(key, JSON.stringify(events));
+    window.dispatchEvent(new Event('sems_events_updated'));
   },
 
   // Create new event

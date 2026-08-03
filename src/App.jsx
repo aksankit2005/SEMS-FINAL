@@ -36,6 +36,7 @@ import { CollegeHeadProtectedRoute } from './components/collegeHead/CollegeHeadP
 import { CoordinatorLoginPage } from './pages/coordinator/CoordinatorLoginPage';
 import { CoordinatorDashboardPage } from './pages/coordinator/CoordinatorDashboardPage';
 import { CoordinatorProtectedRoute } from './components/coordinator/CoordinatorProtectedRoute';
+import { NotFoundPage } from './pages/NotFoundPage';
 
 function App() {
   return (
@@ -47,10 +48,10 @@ function App() {
               <Routes>
                 <Route element={<DashboardLayout />}>
                   <Route path="/" element={<HomePage />} />
-                  <Route path="/sports" element={<SportsPage />} />
-                  <Route path="/registration" element={<RegistrationPage />} />
-                  <Route path="/registration/:eventId" element={<RegistrationPage />} />
-                  <Route path="/register/:eventId" element={<RegistrationPage />} />
+                   <Route path="/sports" element={<SportsPage />} />
+                   <Route path="/registration" element={<RegistrationPage />} />
+                   <Route path="/registration/:eventId" element={<RegistrationPage />} />
+                   <Route path="/register/:eventId" element={<RegistrationPage />} />
                   <Route path="/live" element={<LiveMatchPortalPage />} />
                   <Route path="/schedule" element={<SchedulePage />} />
                   <Route path="/results" element={<ResultsPage />} />
@@ -91,6 +92,9 @@ function App() {
                   {/* Protected Sport Coordinator Portal Routes */}
                   <Route path="/coordinator/dashboard" element={<CoordinatorProtectedRoute><CoordinatorDashboardPage /></CoordinatorProtectedRoute>} />
                 </Route>
+
+                {/* Full-Screen Standalone Global 404 Route */}
+                <Route path="*" element={<NotFoundPage />} />
               </Routes>
 
               <AuthModal />
@@ -103,3 +107,5 @@ function App() {
 }
 
 export default App;
+
+

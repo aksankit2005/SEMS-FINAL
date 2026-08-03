@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
-import { Trophy, ArrowLeft, User, Users, Info, ShieldCheck, Sparkles, Calendar, MapPin, CheckCircle } from 'lucide-react';
+import { Trophy, ArrowLeft, User, Users, Info, ShieldCheck, Sparkles, Calendar, MapPin, Clock } from 'lucide-react';
 import { SPORTS_DATA } from '../data/sportsData';
 import { SPORTS_CONFIG } from '../data/sportsConfig';
 import { useAuth } from '../context/AuthContext';
@@ -16,37 +16,85 @@ import { TeamDetailsForm, validateTeamForm } from '../components/registration/Te
 import { PaymentForm } from '../components/registration/PaymentForm';
 import { RegistrationReceipt } from '../components/registration/RegistrationReceipt';
 import { generateCollegePassCode } from '../utils/pdfExporter';
+import { BadmintonRulesDisplay, BadmintonRulesModal } from '../components/registration/BadmintonRulesDisplay';
 
 
 const MOCK_RECEIPT_IMAGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'><rect width='100%25' height='100%25' fill='%230f172a'/><text x='50%25' y='35%25' fill='%2310b981' font-family='sans-serif' font-size='22' font-weight='black' text-anchor='middle'>APEX 2026</text><text x='50%25' y='50%25' fill='%23ffffff' font-family='sans-serif' font-size='14' font-weight='bold' text-anchor='middle'>MOCK PAYMENT SUCCESSFUL</text><text x='50%25' y='65%25' fill='%2364748b' font-family='sans-serif' font-size='10' font-weight='medium' text-anchor='middle'>UTR: TXN-APEX-MOCK-998</text><rect x='20' y='220' width='260' height='50' fill='%231e293b' rx='10'/><text x='50%25' y='250%25' fill='%2338bdf8' font-family='sans-serif' font-size='12' font-weight='bold' text-anchor='middle'>VERIFIED DEMO RECEIPT</text></svg>";
 
+const isRacketSportCheck = (sport) => {
+  if (!sport) return false;
+  const sId = (sport.id || '').toLowerCase();
+  const sSportId = (sport.sportId || '').toLowerCase();
+  const sName = (sport.name || '').toLowerCase();
+  const sSportName = (sport.sportName || '').toLowerCase();
+
+  return (
+    sId === 'badminton' || sId === 'table-tennis' ||
+    sSportId === 'badminton' || sSportId === 'table-tennis' ||
+    sName.includes('badminton') || sName.includes('table tennis') ||
+    sSportName.includes('badminton') || sSportName.includes('table tennis')
+  );
+};
+
+const RegistrationCountdownTimer = ({ endDateStr }) => {
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      if (!endDateStr || typeof endDateStr !== 'string') {
+        setTimeLeft('Closed');
+        return;
+      }
+      try {
+        const datePart = endDateStr.includes('T') ? endDateStr : `${endDateStr}T23:59:59`;
+        const end = new Date(datePart);
+        if (isNaN(end.getTime())) {
+          setTimeLeft('Closed');
+          return;
+        }
+        const now = new Date();
+        const diff = end - now;
+
+        if (diff <= 0) {
+          setTimeLeft('Closed');
+          return;
+        }
+
+        const totalSecs = Math.floor(diff / 1000);
+        const secs = totalSecs % 60;
+        const totalMins = Math.floor(totalSecs / 60);
+        const mins = totalMins % 60;
+        const totalHours = Math.floor(totalMins / 60);
+        const hours = totalHours % 24;
+        const days = Math.floor(totalHours / 24);
+
+        const pad = (n) => String(n).padStart(2, '0');
+
+        if (days > 0) {
+          setTimeLeft(`${days}d ${pad(hours)}h ${pad(mins)}m ${pad(secs)}s`);
+        } else {
+          setTimeLeft(`${pad(hours)}:${pad(mins)}:${pad(secs)}`);
+        }
+      } catch (err) {
+        setTimeLeft('Closed');
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [endDateStr]);
+
+  return <span className="font-mono font-black text-amber-600 dark:text-amber-400 text-xs">{timeLeft}</span>;
+};
+
 export const RegistrationPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { eventId } = useParams();
   const { addRegistration } = useAuth();
   const { addToast } = useToast();
 
   const preselectedSportId = searchParams.get('sport');
-
-  const formatDateDDMMYYYY = (dateStr) => {
-    if (!dateStr) return '';
-    try {
-      const cleanStr = String(dateStr).split('T')[0];
-      const parts = cleanStr.split('-');
-      if (parts.length === 3) {
-        return `${parts[2]}-${parts[1]}-${parts[0]}`;
-      }
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
-      const day = String(d.getDate()).padStart(2, '0');
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const year = d.getFullYear();
-      return `${day}-${month}-${year}`;
-    } catch (e) {
-      return dateStr;
-    }
-  };
 
   // Load configuration and merge with existing sports data
   const [sportsList] = useState(() => {
@@ -124,6 +172,7 @@ export const RegistrationPage = () => {
   // Coordinator Published Events state & Razorpay Modal state
   const [coordinatorEvents, setCoordinatorEvents] = useState([]);
   const [showRazorpayModal, setShowRazorpayModal] = useState(false);
+  const [rulesModalSport, setRulesModalSport] = useState(null);
 
   useEffect(() => {
     const fetchCoordinatorEvents = async () => {
@@ -147,66 +196,6 @@ export const RegistrationPage = () => {
     };
   }, []);
 
-  useEffect(() => {
-    if (eventId && coordinatorEvents.length > 0) {
-      let foundEvent = coordinatorEvents.find((e) => String(e.id) === String(eventId));
-
-      if (!foundEvent) {
-        const sportMatches = coordinatorEvents.filter((e) => {
-          const sId = (e.sportId || '').toLowerCase();
-          const sName = (e.sportName || '').toLowerCase();
-          const title = (e.title || '').toLowerCase();
-          const target = eventId.toLowerCase();
-          return (sId === target || sName === target || title.includes(target)) && (e.status === 'Published' || e.status === 'Open');
-        });
-        if (sportMatches.length > 0) {
-          foundEvent = sportMatches[0];
-        }
-      }
-
-      if (foundEvent) {
-        const matchedSport = sportsList.find((s) => s.id === (foundEvent.sportId || '').toLowerCase()) || {
-          id: foundEvent.sportId || 'sport',
-          name: foundEvent.sportName || foundEvent.title || 'Sport Event',
-          category: foundEvent.category || 'Outdoor',
-          type: foundEvent.teamSize || 'Team / Individual',
-          tagline: foundEvent.description || 'Championship Event',
-          description: foundEvent.description || '',
-          image: foundEvent.coverImage || 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=800&q=80',
-          entryFee: Number(foundEvent.entryFee || 300),
-          teamSize: foundEvent.teamSize || '1 Player',
-          venue: foundEvent.venue || 'Central Arena',
-          rules: foundEvent.rules || ['Official rules apply.'],
-          startDate: foundEvent.regStartDate || '2026-08-01',
-          endDate: foundEvent.regEndDate || '2026-08-30'
-        };
-
-        setActiveSport({
-          ...matchedSport,
-          activeEventId: foundEvent.id,
-          eventName: foundEvent.title || foundEvent.event_name,
-          entryFee: foundEvent.entryFee !== undefined ? Number(foundEvent.entryFee) : matchedSport.entryFee,
-          startDate: foundEvent.regStartDate || matchedSport.startDate,
-          endDate: foundEvent.regEndDate || matchedSport.endDate,
-          tournStartDate: foundEvent.tournStartDate || foundEvent.event_date || matchedSport.startDate,
-          tournEndDate: foundEvent.tournEndDate || foundEvent.tournStartDate || matchedSport.endDate,
-          venue: foundEvent.venue || matchedSport.venue,
-          rules: foundEvent.rules || matchedSport.rules,
-          requiredDocuments: foundEvent.requiredDocuments || ['College ID Card']
-        });
-        setStep(1);
-      } else {
-        const staticSport = sportsList.find((s) => s.id === eventId.toLowerCase());
-        if (staticSport) {
-          setActiveSport(staticSport);
-          setStep(1);
-        } else {
-          addToast('Registration is not available for this sport or event.', 'error');
-        }
-      }
-    }
-  }, [eventId, coordinatorEvents, sportsList]);
-
 
   // Set pre-selected sport if search param exists and matches an open sport
   useEffect(() => {
@@ -225,38 +214,97 @@ export const RegistrationPage = () => {
     }
   }, [preselectedSportId, sportsList]);
 
+  const { eventId } = useParams();
+
+  // Load specific event by eventId or sportId from route params
+  useEffect(() => {
+    const fetchEventById = async () => {
+      if (!eventId) return;
+      try {
+        const pubEvents = await coordinatorApi.getPublicEvents();
+        const foundEv = (pubEvents || []).find((ev) => String(ev.id) === String(eventId) || String(ev.sportId) === String(eventId));
+        if (foundEv) {
+          setActiveSport({
+            id: foundEv.sportId || foundEv.id,
+            eventId: foundEv.id,
+            name: foundEv.sportName || foundEv.title || 'Sport Event',
+            eventName: foundEv.title || foundEv.eventName,
+            category: foundEv.category || 'Open',
+            type: foundEv.teamSize || 'Team / Individual',
+            tagline: foundEv.description || 'Championship Tournament',
+            description: foundEv.description || '',
+            image: foundEv.coverImage || foundEv.cover_image || 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=800&q=80',
+            entryFee: foundEv.entryFee !== undefined ? foundEv.entryFee : 300,
+            singlesFee: foundEv.singlesFee !== undefined ? foundEv.singlesFee : 300,
+            doublesFee: foundEv.doublesFee !== undefined ? foundEv.doublesFee : 600,
+            teamSize: foundEv.teamSize || '1 Player',
+            venue: foundEv.venue || 'Central Arena',
+            startDate: foundEv.regStartDate || foundEv.tournStartDate || '2026-07-20',
+            endDate: foundEv.regEndDate || foundEv.tournEndDate || '2026-08-30',
+            regStartDate: foundEv.regStartDate,
+            regEndDate: foundEv.regEndDate,
+            tournStartDate: foundEv.tournStartDate,
+            tournEndDate: foundEv.tournEndDate,
+            rules: foundEv.rules || ['Official tournament rules apply.'],
+            requiredDocuments: foundEv.requiredDocuments || ['College ID Card']
+          });
+          setStep(1);
+          return;
+        }
+
+        const foundSport = sportsList.find((s) => s.id === eventId);
+        if (foundSport) {
+          setActiveSport(foundSport);
+          setStep(1);
+        }
+      } catch (err) {
+        console.warn('Error loading event by ID', err);
+      }
+    };
+
+    fetchEventById();
+  }, [eventId, sportsList]);
+
+  // Track current sport ID to prevent form resets when only updating fees
+  const currentSportIdRef = React.useRef(null);
+
   // Reset form state on sport change
   useEffect(() => {
     if (activeSport) {
-      setFormData({
-        collegeName: '',
-        teamName: '',
-        captainName: '',
-        captainPhone: '',
-        captainEmail: '',
-        eventType: activeSport.id === 'table-tennis' || activeSport.id === 'badminton' ? 'Singles' : 'Individual',
-        selectedEvents: [],
-        roster: [],
-        paymentMethod: 'upi',
-        upiId: '',
-        cardNumber: '',
-        cardHolder: '',
-        cardExpiry: '',
-        cardCvv: '',
-        selectedBank: '',
-        declarationAccepted: false,
-        declarationTimestamp: null
-      });
-      setErrors({});
-      setCompletedReceipt(null);
+      const sportKey = `${activeSport.id || activeSport.eventId || activeSport.name}`;
+      if (currentSportIdRef.current !== sportKey) {
+        currentSportIdRef.current = sportKey;
+        const isRacket = isRacketSportCheck(activeSport);
+        setFormData({
+          collegeName: '',
+          teamName: '',
+          captainName: '',
+          captainPhone: '',
+          captainEmail: '',
+          eventType: isRacket ? 'Singles' : 'Individual',
+          selectedEvents: [],
+          roster: [],
+          paymentMethod: 'upi',
+          upiId: '',
+          cardNumber: '',
+          cardHolder: '',
+          cardExpiry: '',
+          cardCvv: '',
+          selectedBank: '',
+          declarationAccepted: false,
+          declarationTimestamp: null
+        });
+        setErrors({});
+        setCompletedReceipt(null);
+      }
     }
   }, [activeSport]);
 
   const handleSportSelect = (sport) => {
-    const isRacket = sport.id === 'table-tennis' || sport.id === 'badminton';
+    const isRacket = isRacketSportCheck(sport);
     const sFee = sport.singlesFee !== undefined ? sport.singlesFee : 300;
     const dFee = sport.doublesFee !== undefined ? sport.doublesFee : 600;
-    const initialFee = isRacket ? sFee : sport.entryFee;
+    const initialFee = isRacket ? (formData.eventType === 'Doubles' ? dFee : sFee) : sport.entryFee;
 
     setActiveSport({
       ...sport,
@@ -284,9 +332,10 @@ export const RegistrationPage = () => {
   // Step 1 Validation
   const handleDetailsSubmit = () => {
     let formErrors = {};
+    const isRacket = isRacketSportCheck(activeSport);
     const isTeamLayout =
-      ['football', 'basketball', 'volleyball', 'cricket', 'kabaddi', 'tug-of-war', 'kho-kho', 'gully-cricket'].includes(activeSport.id) ||
-      ((activeSport.id === 'table-tennis' || activeSport.id === 'badminton') && formData.eventType === 'Doubles');
+      ['football', 'basketball', 'volleyball', 'cricket', 'kabaddi', 'tug-of-war', 'kho-kho', 'gully-cricket'].includes((activeSport.id || '').toLowerCase()) ||
+      (isRacket && formData.eventType === 'Doubles');
 
     if (isTeamLayout) {
       formErrors = validateTeamForm(activeSport, formData);
@@ -341,9 +390,9 @@ export const RegistrationPage = () => {
       const passCode = generateCollegePassCode(selectedCollegeName, activeSport.name);
 
       let eventCategory = activeSport.category;
-      if (activeSport.id === 'table-tennis' || activeSport.id === 'badminton') {
+      if (isRacketSportCheck(activeSport)) {
         eventCategory = `${activeSport.category} (${formData.eventType})`;
-      } else if (activeSport.id === 'athletics') {
+      } else if ((activeSport.id || '').toLowerCase() === 'athletics') {
         eventCategory = `Athletics (${formData.selectedEvents.join(', ')})`;
       }
 
@@ -412,11 +461,28 @@ export const RegistrationPage = () => {
 
   // Handle Event Type Singles/Doubles toggle inside Details Step with dynamic fee recalculation
   const handleEventTypeToggle = (type) => {
+    const isDoubles = type === 'Doubles';
+    const targetSize = isDoubles ? 2 : 1;
+
+    // Create initial roster strictly bounded to targetSize (1 for Singles, 2 for Doubles)
+    const initialRoster = Array.from({ length: targetSize }, (_, i) => ({
+      name: i === 0 ? (formData.captainName || '') : '',
+      rollNo: '',
+      branch: '',
+      semester: '',
+      phone: i === 0 ? (formData.captainPhone || '') : '',
+      email: i === 0 ? (formData.captainEmail || '') : '',
+      fatherName: '',
+      dob: '',
+      college: formData.collegeName || '',
+      gender: formData.gender || ''
+    }));
+
     setFormData((prev) => ({
       ...prev,
       eventType: type,
-      teamName: type === 'Singles' ? '' : prev.teamName,
-      roster: [] // reset roster size to reinitialize correctly
+      teamName: type === 'Singles' ? '' : (prev.teamName || `${prev.captainName || 'Badminton'} Duo`),
+      roster: initialRoster
     }));
 
     if (activeSport) {
@@ -434,62 +500,10 @@ export const RegistrationPage = () => {
 
   // Determine layout and render Step 1
   const renderDetailsStep = () => {
-    const isRacketSport = activeSport.id === 'table-tennis' || activeSport.id === 'badminton';
+    const isRacketSport = isRacketSportCheck(activeSport);
 
     return (
       <div className="space-y-6">
-        {/* Selected Event Dynamic Info Card */}
-        {activeSport && (
-          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-soft space-y-4 mb-6">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">Sport: {activeSport.name}</span>
-                <h3 className="text-xl font-black text-slate-900 dark:text-white">Event: {activeSport.eventName || activeSport.name}</h3>
-              </div>
-              <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                Fee: ₹{activeSport.entryFee}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs text-slate-600 dark:text-slate-300">
-              <div>
-                <span className="block text-[10px] uppercase font-bold text-slate-400">Registration Start Date</span>
-                <span className="font-bold">{formatDateDDMMYYYY(activeSport.startDate)}</span>
-              </div>
-              <div>
-                <span className="block text-[10px] uppercase font-bold text-slate-400">Registration Last Date</span>
-                <span className="font-bold">{formatDateDDMMYYYY(activeSport.endDate)}</span>
-              </div>
-              <div>
-                <span className="block text-[10px] uppercase font-bold text-slate-400">Event Start Date</span>
-                <span className="font-bold">{formatDateDDMMYYYY(activeSport.tournStartDate || activeSport.startDate)}</span>
-              </div>
-              <div>
-                <span className="block text-[10px] uppercase font-bold text-slate-400">Event End Date</span>
-                <span className="font-bold">{formatDateDDMMYYYY(activeSport.tournEndDate || activeSport.tournStartDate || activeSport.endDate)}</span>
-              </div>
-              <div>
-                <span className="block text-[10px] uppercase font-bold text-slate-400">Venue</span>
-                <span className="font-bold truncate">{activeSport.venue || 'Central Arena'}</span>
-              </div>
-            </div>
-
-            {activeSport.rules && activeSport.rules.length > 0 && (
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Official Rules:</span>
-                <ul className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
-                  {activeSport.rules.map((rule, idx) => (
-                    <li key={idx} className="flex items-start gap-1.5">
-                      <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                      <span>{rule}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Racket Sport Singles/Doubles Selection */}
         {isRacketSport && (
           <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3">
@@ -501,8 +515,8 @@ export const RegistrationPage = () => {
                 type="button"
                 onClick={() => handleEventTypeToggle('Singles')}
                 className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-1 font-bold text-xs transition ${formData.eventType === 'Singles'
-                    ? 'border-blue-600 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-extrabold'
-                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400'
+                    ? 'border-blue-600 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-extrabold shadow-sm'
+                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-300'
                   }`}
               >
                 <div className="flex items-center gap-1.5">
@@ -516,8 +530,8 @@ export const RegistrationPage = () => {
                 type="button"
                 onClick={() => handleEventTypeToggle('Doubles')}
                 className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-1 font-bold text-xs transition ${formData.eventType === 'Doubles'
-                    ? 'border-blue-600 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-extrabold'
-                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400'
+                    ? 'border-blue-600 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-extrabold shadow-sm'
+                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-300'
                   }`}
               >
                 <div className="flex items-center gap-1.5">
@@ -544,14 +558,20 @@ export const RegistrationPage = () => {
             />
           ) : (
             <TeamDetailsForm
-              sport={{ ...activeSport, minPlayers: 2, maxPlayers: 2 }}
+              sport={{
+                ...activeSport,
+                teamSize: '2 Players (Doubles)',
+                minPlayers: 2,
+                maxPlayers: 2,
+                entryFee: activeSport.doublesFee || 600
+              }}
               formData={formData}
               setFormData={setFormData}
               errors={errors}
               setErrors={setErrors}
             />
           )
-        ) : ['chess', 'athletics'].includes(activeSport.id) ? (
+        ) : ['chess', 'athletics'].includes((activeSport.id || '').toLowerCase()) ? (
           <PlayerDetailsForm
             sport={activeSport}
             formData={formData}
@@ -615,132 +635,157 @@ export const RegistrationPage = () => {
                   <p className="text-xs text-slate-500 dark:text-slate-400">Published events created by Sport Coordinators will appear here dynamically for registration.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
-                  {(coordinatorEvents || []).filter((evt) => {
-                    return evt && evt.id !== 'EVT-BADMINTON-001' && evt.id !== 'EVT-CRICKET-001' && evt.id !== 'EVT-FOOTBALL-001';
-                  }).map((evt) => {
-                    const registered = evt.registeredCount || 0;
-                    const limit = evt.maxRegistrations || 64;
-                    const slotsLeft = Math.max(0, limit - registered);
-                    const isClosed = evt.status === 'Closed' || slotsLeft === 0;
+                <div className="flex justify-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-3xl w-full">
+                    {(coordinatorEvents || []).filter((evt) => {
+                      return evt && evt.id !== 'EVT-BADMINTON-001' && evt.id !== 'EVT-CRICKET-001' && evt.id !== 'EVT-FOOTBALL-001';
+                    }).map((evt) => {
+                      const registered = evt.registeredCount || 0;
+                      const limit = evt.maxRegistrations || 64;
+                      const slotsLeft = Math.max(0, limit - registered);
+                      const isClosed = evt.status === 'Closed' || slotsLeft === 0;
 
-                    return (
-                      <div
-                        key={evt.id}
-                        className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-lg hover:shadow-2xl transition duration-300 flex flex-col justify-between group"
-                      >
-                        <div className="relative h-48 w-full overflow-hidden bg-slate-950">
-                          <img
-                            src={evt.coverImage}
-                            alt={evt.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
+                      const isRacket = isRacketSportCheck(evt);
+                      const sFee = evt.singlesFee !== undefined ? Number(evt.singlesFee) : Number(evt.entryFee || 300);
+                      const dFee = evt.doublesFee !== undefined ? Number(evt.doublesFee) : (evt.singlesFee !== undefined ? Number(evt.singlesFee) * 2 : 600);
 
-                          <div className="absolute top-3 left-3 flex items-center gap-2">
-                            <span className={`px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase shadow-md ${
-                              isClosed
-                                ? 'bg-rose-500 text-white'
-                                : 'bg-emerald-500 text-white'
-                            }`}>
-                              {isClosed ? '● Registration Closed' : '● Registration Open'}
-                            </span>
-                            <span className="px-2 py-0.5 rounded-full bg-slate-950/70 text-white text-[10px] font-bold border border-white/20">
-                              {evt.category}
-                            </span>
+                      return (
+                        <div
+                          key={evt.id}
+                          className="max-w-md mx-auto w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-md hover:shadow-xl transition duration-300 flex flex-col justify-between group"
+                        >
+                          <div className="relative h-44 w-full overflow-hidden bg-slate-950">
+                            <img
+                              src={evt.coverImage}
+                              alt={evt.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
+
+                            <div className="absolute top-3 left-3 flex items-center gap-2">
+                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase shadow-md ${
+                                evt.status === 'Coming Soon'
+                                  ? 'bg-amber-500 text-slate-950 font-black'
+                                  : isClosed
+                                  ? 'bg-rose-500 text-white'
+                                  : 'bg-emerald-500 text-white'
+                              }`}>
+                                {evt.status === 'Coming Soon' ? '🟡 Coming Soon' : isClosed ? '● Closed' : '● Open'}
+                              </span>
+                            </div>
+
+                            {/* Dynamic Fee Badge showing both Singles & Doubles for Racket sports */}
+                            <div className="absolute top-3 right-3 bg-slate-950/85 backdrop-blur-xs px-3 py-1 rounded-full text-[11px] font-black text-amber-400 border border-slate-700 shadow-md">
+                              {isRacket ? `Singles: ₹${sFee} | Doubles: ₹${dFee}` : (evt.entryFee > 0 ? `Fee: ₹${evt.entryFee}` : 'FREE')}
+                            </div>
+
+                            <div className="absolute bottom-3 left-4 right-4">
+                              <span className="text-[10px] font-mono font-bold text-indigo-400 uppercase tracking-wider block">
+                                {evt.sportName} Coordinator Event
+                              </span>
+                              <h3 className="text-lg sm:text-xl font-black text-white leading-tight drop-shadow-md">
+                                {evt.title}
+                              </h3>
+                            </div>
                           </div>
 
-                          <div className="absolute top-3 right-3 bg-slate-950/80 backdrop-blur-xs px-3 py-1 rounded-full text-xs font-black text-amber-400 border border-slate-700">
-                            Fee: {evt.singlesFee ? `Singles ₹${evt.singlesFee} | Doubles ₹${evt.doublesFee}` : evt.entryFee > 0 ? `₹${evt.entryFee}` : 'FREE'}
-                          </div>
+                          <div className="p-5 space-y-3.5 flex-1 flex flex-col justify-between">
+                            <div className="grid grid-cols-2 gap-2.5 text-xs bg-slate-50 dark:bg-slate-950 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800">
+                              <div>
+                                <span className="text-[9px] text-slate-400 uppercase font-mono block">Reg Deadline</span>
+                                <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px]">{evt.regEndDate}</span>
+                              </div>
+                              <div>
+                                <span className="text-[9px] text-slate-400 uppercase font-mono block">Tournament Start</span>
+                                <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px]">{evt.tournStartDate}</span>
+                              </div>
+                              <div>
+                                <span className="text-[9px] text-slate-400 uppercase font-mono block">Venue</span>
+                                <span className="font-bold text-blue-600 dark:text-blue-400 text-[10px] truncate block">{evt.venue}</span>
+                              </div>
+                              <div>
+                                <span className="text-[9px] text-slate-400 uppercase font-mono block">Team Size</span>
+                                <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px]">{evt.teamSize}</span>
+                              </div>
+                            </div>
 
-                          <div className="absolute bottom-3 left-4 right-4">
-                            <span className="text-[10px] font-mono font-bold text-indigo-400 uppercase tracking-wider block">
-                              {evt.sportName} Coordinator Event
-                            </span>
-                            <h3 className="text-xl font-black text-white leading-tight drop-shadow-md">
-                              {evt.title}
-                            </h3>
+                            {/* Registration Countdown Timer */}
+                            <div className="flex items-center justify-between text-xs bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 p-2.5 rounded-xl border border-amber-500/30">
+                              <span className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5 text-amber-500 animate-pulse" /> Reg Ends In:
+                              </span>
+                              <RegistrationCountdownTimer endDateStr={evt.regEndDate} />
+                            </div>
+
+                            {/* View Tournament Rules Button */}
+                            <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800">
+                              <button
+                                type="button"
+                                onClick={() => setRulesModalSport(evt.title || evt.sportName || 'Badminton')}
+                                className="w-full py-2 px-3.5 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-2 transition active:scale-[0.98] shadow-xs"
+                              >
+                                <span>📜 View Official Tournament Rules</span>
+                                <span className="text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded-full font-extrabold text-emerald-700 dark:text-emerald-300">Full Screen</span>
+                              </button>
+                            </div>
+
+                            <div className="pt-1">
+                              <button
+                                disabled={isClosed || evt.status === 'Coming Soon'}
+                                onClick={() => {
+                                  const sFee = evt.singlesFee !== undefined ? Number(evt.singlesFee) : 300;
+                                  const dFee = evt.doublesFee !== undefined ? Number(evt.doublesFee) : 600;
+
+                                  const adaptedSport = {
+                                    id: evt.sportId || 'badminton',
+                                    name: evt.title,
+                                    sportName: evt.sportName,
+                                    category: evt.category,
+                                    type: evt.teamSize,
+                                    tagline: evt.title,
+                                    description: evt.description,
+                                    image: evt.coverImage,
+                                    status: isClosed ? 'Closed' : evt.status === 'Coming Soon' ? 'Coming Soon' : 'Open',
+                                    participantsCount: registered,
+                                    maxParticipants: limit,
+                                    entryFee: sFee,
+                                    singlesFee: sFee,
+                                    doublesFee: dFee,
+                                    teamSize: evt.teamSize,
+                                    venue: evt.venue,
+                                    rules: evt.rules || ['Standard rules apply.'],
+                                    startDate: evt.regStartDate,
+                                    endDate: evt.regEndDate,
+                                    isCoordinatorEvent: true,
+                                    eventId: evt.id
+                                  };
+                                  handleSportSelect(adaptedSport);
+                                }}
+                                className={`w-full py-2.5 rounded-2xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 ${
+                                  evt.status === 'Coming Soon'
+                                    ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 cursor-not-allowed font-extrabold'
+                                    : isClosed
+                                    ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-300 dark:border-slate-700'
+                                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white shadow-blue-500/20 active:scale-[0.98]'
+                                }`}
+                              >
+                                <span>
+                                  {evt.status === 'Coming Soon'
+                                    ? '⏳ Coming Soon'
+                                    : isClosed
+                                    ? (slotsLeft === 0 ? 'Event Full' : 'Registration Closed')
+                                    : 'Register Now'
+                                  }
+                                </span>
+                                {evt.status !== 'Coming Soon' && <Trophy className="w-4 h-4" />}
+                              </button>
+                            </div>
+
                           </div>
                         </div>
-
-                        <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
-                          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-2">
-                            {evt.description}
-                          </p>
-
-                          <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 dark:bg-slate-950 p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
-                            <div>
-                              <span className="text-[10px] text-slate-400 uppercase font-mono block">Reg Dates</span>
-                              <span className="font-bold text-slate-800 dark:text-slate-200 text-[11px]">{evt.regStartDate} to {evt.regEndDate}</span>
-                            </div>
-                            <div>
-                              <span className="text-[10px] text-slate-400 uppercase font-mono block">Tournament</span>
-                              <span className="font-bold text-slate-800 dark:text-slate-200 text-[11px]">{evt.tournStartDate} to {evt.tournEndDate}</span>
-                            </div>
-                            <div>
-                              <span className="text-[10px] text-slate-400 uppercase font-mono block">Venue</span>
-                              <span className="font-bold text-blue-600 dark:text-blue-400 text-[11px] truncate block">{evt.venue}</span>
-                            </div>
-                            <div>
-                              <span className="text-[10px] text-slate-400 uppercase font-mono block">Team Size</span>
-                              <span className="font-bold text-slate-800 dark:text-slate-200 text-[11px]">{evt.teamSize}</span>
-                            </div>
-                          </div>
-
-                          {/* Total Registered Display */}
-                          <div className="flex justify-between text-xs pt-1">
-                            <span className="font-bold text-slate-500 dark:text-slate-400">Total Registered</span>
-                            <span className="font-mono font-black text-blue-600 dark:text-blue-400">
-                              {registered} Participants
-                            </span>
-                          </div>
-
-                          <div className="pt-2">
-                            <button
-                              disabled={isClosed}
-                              onClick={() => {
-                                const adaptedSport = {
-                                  id: evt.sportId || 'badminton',
-                                  name: evt.title,
-                                  sportName: evt.sportName,
-                                  category: evt.category,
-                                  type: evt.teamSize,
-                                  tagline: evt.title,
-                                  description: evt.description,
-                                  image: evt.coverImage,
-                                  status: isClosed ? 'Closed' : 'Open',
-                                  participantsCount: registered,
-                                  maxParticipants: limit,
-                                  entryFee: evt.singlesFee !== undefined ? evt.singlesFee : (evt.entryFee || 300),
-                                  singlesFee: evt.singlesFee !== undefined ? evt.singlesFee : 300,
-                                  doublesFee: evt.doublesFee !== undefined ? evt.doublesFee : 600,
-                                  teamSize: evt.teamSize,
-                                  venue: evt.venue,
-                                  rules: evt.rules || ['Standard rules apply.'],
-                                  startDate: evt.regStartDate,
-                                  endDate: evt.regEndDate,
-                                  isCoordinatorEvent: true,
-                                  eventId: evt.id
-                                };
-                                setActiveSport(adaptedSport);
-                                setStep(1);
-                              }}
-                              className={`w-full py-3 rounded-2xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 ${
-                                isClosed
-                                  ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-300 dark:border-slate-700'
-                                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white shadow-blue-500/20 active:scale-[0.98]'
-                              }`}
-                            >
-                              <span>{isClosed ? (slotsLeft === 0 ? 'Event Full' : 'Registration Closed') : 'Register Now'}</span>
-                              <Trophy className="w-4 h-4" />
-                            </button>
-                          </div>
-
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -814,28 +859,38 @@ export const RegistrationPage = () => {
                       </p>
                     </div>
 
-                    {/* Mandatory Checkbox */}
-                    <label className="flex items-start gap-3 cursor-pointer select-none p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-amber-500 transition">
-                      <input
-                        type="checkbox"
-                        checked={formData.declarationAccepted || false}
-                        onChange={(e) => {
-                          const val = e.target.checked;
-                          setFormData((prev) => ({
-                            ...prev,
-                            declarationAccepted: val,
-                            declarationTimestamp: val ? new Date().toISOString() : null
-                          }));
-                          if (errors.declarationAccepted) {
-                            setErrors((prev) => ({ ...prev, declarationAccepted: null }));
-                          }
-                        }}
-                        className="w-5 h-5 mt-0.5 rounded border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-blue-600 focus:ring-blue-500 shrink-0"
-                      />
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-snug">
-                        I have read, understood, and agree to the above mandatory declaration, discipline rules, and university verification policy.
-                      </span>
-                    </label>
+                    {/* Mandatory Checkbox & Read Rulebook Button */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-amber-500 transition">
+                      <label className="flex items-start gap-3 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={formData.declarationAccepted || false}
+                          onChange={(e) => {
+                            const val = e.target.checked;
+                            setFormData((prev) => ({
+                              ...prev,
+                              declarationAccepted: val,
+                              declarationTimestamp: val ? new Date().toISOString() : null
+                            }));
+                            if (errors.declarationAccepted) {
+                              setErrors((prev) => ({ ...prev, declarationAccepted: null }));
+                            }
+                          }}
+                          className="w-5 h-5 mt-0.5 rounded border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-blue-600 focus:ring-blue-500 shrink-0"
+                        />
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-snug">
+                          I have read, understood, and agree to the above mandatory declaration, discipline rules, and university verification policy.
+                        </span>
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => setRulesModalSport(activeSport?.name || 'Badminton')}
+                        className="px-3.5 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold shrink-0 flex items-center gap-1.5 transition active:scale-95"
+                      >
+                        <span>📖 Read Official Rulebook</span>
+                      </button>
+                    </div>
                     {errors.declarationAccepted && (
                       <p className="text-xs text-rose-500 font-black flex items-center gap-1">
                         ⚠️ {errors.declarationAccepted}
@@ -920,6 +975,13 @@ export const RegistrationPage = () => {
             onSuccess={handleRazorpaySuccess}
           />
         )}
+
+        {/* FULL SCREEN TOURNAMENT RULES MODAL */}
+        <BadmintonRulesModal
+          isOpen={!!rulesModalSport}
+          onClose={() => setRulesModalSport(null)}
+          sportName={rulesModalSport || 'Badminton'}
+        />
 
       </div>
     </div>
