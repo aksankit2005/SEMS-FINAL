@@ -77,15 +77,15 @@ export const HeroSection = () => {
         {/* Highlight Stats Bar */}
         <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
           <div className="p-4 rounded-2xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 backdrop-blur-md">
-            <div className="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400">11 Sports</div>
+            <div className="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400">12 Sports</div>
             <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Indoor & Outdoor</div>
           </div>
           <div className="p-4 rounded-2xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 backdrop-blur-md">
-            <div className="text-2xl sm:text-3xl font-black text-emerald-650 dark:text-emerald-400">₹2.5 Lakhs</div>
+            <div className="text-2xl sm:text-3xl font-black text-emerald-650 dark:text-emerald-400">Gift/Cash Price</div>
             <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Cash Prizes</div>
           </div>
           <div className="p-4 rounded-2xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 backdrop-blur-md">
-            <div className="text-2xl sm:text-3xl font-black text-orange-500">60+ Colleges</div>
+            <div className="text-2xl sm:text-3xl font-black text-orange-500">Mpgi All Colleges</div>
             <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Participating Squads</div>
           </div>
           <div className="p-4 rounded-2xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 backdrop-blur-md">

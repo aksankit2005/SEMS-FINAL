@@ -48,8 +48,10 @@ function App() {
               <Routes>
                 <Route element={<DashboardLayout />}>
                   <Route path="/" element={<HomePage />} />
-                  <Route path="/sports" element={<SportsPage />} />
-                  <Route path="/registration" element={<RegistrationPage />} />
+                   <Route path="/sports" element={<SportsPage />} />
+                   <Route path="/registration" element={<RegistrationPage />} />
+                   <Route path="/registration/:eventId" element={<RegistrationPage />} />
+                   <Route path="/register/:eventId" element={<RegistrationPage />} />
                   <Route path="/live" element={<LiveMatchPortalPage />} />
                   <Route path="/schedule" element={<SchedulePage />} />
                   <Route path="/results" element={<ResultsPage />} />
