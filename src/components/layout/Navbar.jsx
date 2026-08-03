@@ -19,6 +19,7 @@ export const Navbar = () => {
     { name: 'Schedule', path: '/schedule' },
     { name: 'Results', path: '/results' },
     { name: 'Leaderboard', path: '/leaderboard' },
+    { name: 'Coordinators', path: '/coordinators' },
     { name: 'Announcements', path: '/announcements' },
     { name: 'Gallery', path: '/gallery' },
     { name: 'About Us', path: '/about' },
