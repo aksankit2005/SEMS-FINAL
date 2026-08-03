@@ -500,7 +500,7 @@ model RegistrationMember {
   mobile String
   alternateMobile String?
   email String
-  aadhaarNumber String?
+  aadhaarNumber String? 
   course String
   yearSemester String
 
