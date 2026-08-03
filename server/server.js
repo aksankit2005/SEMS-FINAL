@@ -1320,9 +1320,29 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'SEMS API Server' });
 });
 
+// Serve static built frontend files from 'dist' folder
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+app.use(express.static(path.join(__dirname, '../dist')));
+
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  const indexPath = path.join(__dirname, '../dist/index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      next();
+    }
+  });
+});
 
 // Start Server
 app.listen(PORT, () => {
   console.log(`🚀 SEMS API Server running on port ${PORT}`);
 });
+
 

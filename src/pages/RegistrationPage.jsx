@@ -190,11 +190,21 @@ export const RegistrationPage = () => {
     window.addEventListener('storage', handleRefresh);
     window.addEventListener('focus', handleRefresh);
 
+    // Dynamically load Razorpay Checkout SDK Script
+    const rzpScript = document.createElement('script');
+    rzpScript.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    rzpScript.async = true;
+    document.body.appendChild(rzpScript);
+
     return () => {
       window.removeEventListener('storage', handleRefresh);
       window.removeEventListener('focus', handleRefresh);
+      if (document.body.contains(rzpScript)) {
+        document.body.removeChild(rzpScript);
+      }
     };
   }, []);
+
 
 
   // Set pre-selected sport if search param exists and matches an open sport
@@ -445,7 +455,46 @@ export const RegistrationPage = () => {
     }
 
     if (activeSport.entryFee > 0) {
-      // Open Razorpay Payment Gateway Modal for paid events
+      const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+      
+      // If official Razorpay SDK script is loaded and a live/test key is present, open Razorpay popup
+      if (window.Razorpay && razorpayKey && !razorpayKey.includes('SEMS2026PaymentKey')) {
+        try {
+          const options = {
+            key: razorpayKey,
+            amount: activeSport.entryFee * 100, // Amount in paise
+            currency: 'INR',
+            name: import.meta.env.VITE_RAZORPAY_MERCHANT_NAME || 'SEMS APEX Championship 2026',
+            description: `Entry Registration Fee for ${activeSport.name}`,
+            handler: function (response) {
+              handleRazorpaySuccess({
+                razorpayPaymentId: response.razorpay_payment_id || `pay_${Math.random().toString(36).substring(2, 12).toUpperCase()}`,
+                orderId: response.razorpay_order_id || `order_${Math.random().toString(36).substring(2, 10).toLowerCase()}`,
+                amount: activeSport.entryFee,
+                status: 'PAID',
+                method: 'Razorpay SDK',
+                timestamp: new Date().toISOString()
+              });
+            },
+            prefill: {
+              name: formData.captainName || (formData.roster && formData.roster[0]?.name) || '',
+              email: formData.captainEmail || '',
+              contact: formData.captainPhone || ''
+            },
+            theme: {
+              color: '#2563eb'
+            }
+          };
+
+          const rzp = new window.Razorpay(options);
+          rzp.open();
+          return;
+        } catch (err) {
+          console.warn('Razorpay SDK failed, opening checkout modal', err);
+        }
+      }
+
+      // Fallback / Demo Mode: Open interactive Razorpay checkout modal
       setShowRazorpayModal(true);
     } else {
       // Free events (Entry Fee = 0): Skip payment and confirm instantly
@@ -457,6 +506,7 @@ export const RegistrationPage = () => {
       });
     }
   };
+
 
 
   // Handle Event Type Singles/Doubles toggle inside Details Step with dynamic fee recalculation
