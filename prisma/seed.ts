@@ -3,13 +3,24 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 
-const pool = new pg.Pool({
-  host: process.env.PGHOST || "localhost",
-  user: process.env.PGUSER || "postgres",
-  password: process.env.PGPASSWORD || "ritik@123",
-  database: process.env.PGDATABASE || "mydb",
-  port: parseInt(process.env.PGPORT || "5432", 10),
-});
+const databaseUrl = process.env.DATABASE_URL;
+const isLocal = !databaseUrl || databaseUrl.includes("localhost") || databaseUrl.includes("127.0.0.1");
+
+const pool = new pg.Pool(
+  databaseUrl
+    ? {
+        connectionString: databaseUrl,
+        ssl: isLocal ? false : { rejectUnauthorized: false },
+      }
+    : {
+        host: process.env.PGHOST,
+        user: process.env.PGUSER,
+        password: process.env.PGPASSWORD,
+        database: process.env.PGDATABASE,
+        port: parseInt(process.env.PGPORT || "5432", 10),
+        ssl: process.env.PGSSL === "true" ? { rejectUnauthorized: false } : false,
+      }
+);
 
 const adapter = new PrismaPg(pool);
 
@@ -50,83 +61,23 @@ async function main() {
   // 3. Seed Sport Coordinators
   await prisma.sportCoordinator.createMany({
     data: [
-      { username: "coord_cricket", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "cricket", sportName: "Cricket", coordinatorName: "Vikramaditya Sharma", email: "cricket.coord@sems.edu" },
-      { username: "coord_table_tennis", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "table-tennis", sportName: "Table Tennis", coordinatorName: "Rohan Mehta", email: "tt.coord@sems.edu" },
-      { username: "coord_badminton", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "badminton", sportName: "Badminton", coordinatorName: "Pooja Deshmukh", email: "badminton.coord@sems.edu" },
-      { username: "coord_chess", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "chess", sportName: "Chess", coordinatorName: "Grandmaster Anand Verma", email: "chess.coord@sems.edu" },
-      { username: "coord_football", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "football", sportName: "Football", coordinatorName: "Carlos Rodriguez", email: "football.coord@sems.edu" },
-      { username: "coord_basketball", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "basketball", sportName: "Basketball", coordinatorName: "Michael Jordan Singh", email: "basketball.coord@sems.edu" },
-      { username: "coord_volleyball", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "volleyball", sportName: "Volleyball", coordinatorName: "Siddharth Rao", email: "volleyball.coord@sems.edu" },
-      { username: "coord_kabaddi", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "kabaddi", sportName: "Kabaddi", coordinatorName: "Pradeep Narwal Kumar", email: "kabaddi.coord@sems.edu" },
-      { username: "coord_kho_kho", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "kho-kho", sportName: "Kho-Kho", coordinatorName: "Sunita Jadhav", email: "khokho.coord@sems.edu" },
-      { username: "coord_athletics", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "athletics", sportName: "Athletics", coordinatorName: "PT Usha Pillai", email: "athletics.coord@sems.edu" },
-      { username: "coord_tug_of_war", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "tug-of-war", sportName: "Tug of War", coordinatorName: "Bheem Singh Power", email: "tugofwar.coord@sems.edu" },
-      { username: "coord_gully_cricket", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "gully-cricket", sportName: "Gully Cricket", coordinatorName: "Chiku Bhai", email: "gullycricket.coord@sems.edu" },
+      { username: "coord_cricket", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "cricket", sportName: "Cricket", coordinatorName: "Cricket Coordinator", email: "cricket@sems.com" },
+      { username: "coord_table_tennis", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "table_tennis", sportName: "Table Tennis", coordinatorName: "Table Tennis Coordinator", email: "table_tennis@sems.com" },
+      { username: "coord_badminton", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "badminton", sportName: "Badminton", coordinatorName: "Badminton Coordinator", email: "badminton@sems.com" },
+      { username: "coord_chess", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "chess", sportName: "Chess", coordinatorName: "Chess Coordinator", email: "chess@sems.com" },
+      { username: "coord_football", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "football", sportName: "Football", coordinatorName: "Football Coordinator", email: "football@sems.com" },
+      { username: "coord_basketball", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "basketball", sportName: "Basketball", coordinatorName: "Basketball Coordinator", email: "basketball@sems.com" },
+      { username: "coord_volleyball", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "volleyball", sportName: "Volleyball", coordinatorName: "Volleyball Coordinator", email: "volleyball@sems.com" },
+      { username: "coord_kabaddi", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "kabaddi", sportName: "Kabaddi", coordinatorName: "Kabaddi Coordinator", email: "kabaddi@sems.com" },
+      { username: "coord_kho_kho", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "kho_kho", sportName: "Kho Kho", coordinatorName: "Kho Kho Coordinator", email: "kho_kho@sems.com" },
+      { username: "coord_athletics", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "athletics", sportName: "Athletics", coordinatorName: "Athletics Coordinator", email: "athletics@sems.com" },
+      { username: "coord_tug_of_war", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "tug_of_war", sportName: "Tug of War", coordinatorName: "Tug of War Coordinator", email: "tug_of_war@sems.com" },
+      { username: "coord_gully_cricket", passwordHash: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga3.K6", assignedSport: "gully_cricket", sportName: "Gully Cricket", coordinatorName: "Gully Cricket Coordinator", email: "gully_cricket@sems.com" },
     ],
     skipDuplicates: true,
   });
 
-  // 4. Seed Colleges
-  await prisma.college.createMany({
-    data: [
-      { code: "MPEC", name: "Maharana Pratap Engineering College" },
-      { code: "MIPS", name: "Maharana Institute of Professional Studies" },
-      { code: "MPCPS", name: "Maharana Pratap College of Professional Studies" },
-      { code: "MPCP", name: "Maharana Pratap College of Pharmacy" },
-      { code: "MPCPS-BPH", name: "Maharana Pratap College of Pharmaceutical Sciences" },
-      { code: "MPDC", name: "Maharana Pratap Dental College" },
-      { code: "MPCNPS", name: "Maharana Pratap College of Nursing & Paramedical Science" },
-      { code: "MPAMC", name: "Maharana Pratap Ayurvedic Medical College" },
-    ],
-    skipDuplicates: true,
-  });
-
-  // 5. Seed Sports
-  await prisma.sport.createMany({
-    data: [
-      { name: "Badminton", isTeamSport: false },
-      { name: "Table Tennis", isTeamSport: false },
-      { name: "Chess", isTeamSport: false },
-      { name: "Football", isTeamSport: true },
-      { name: "Basketball", isTeamSport: true },
-      { name: "Volleyball", isTeamSport: true },
-      { name: "Kabaddi", isTeamSport: true },
-      { name: "Cricket", isTeamSport: true },
-      { name: "Athletics", isTeamSport: false },
-    ],
-    skipDuplicates: true,
-  });
-
-  // 6. Seed Venues
-  await prisma.venue.createMany({
-    data: [
-      { name: "Main Sports Ground", location: "Central Campus Field A" },
-      { name: "Indoor Basketball Arena", location: "Indoor Stadium Complex" },
-      { name: "Badminton Court 1 & 2", location: "Sports Complex Floor 1" },
-      { name: "Chess Hall", location: "Student Activity Center" },
-    ],
-    skipDuplicates: true,
-  });
-
-  // 7. Seed Primary Event
-  const event = await prisma.event.upsert({
-    where: {
-      name_year: {
-        name: "APEX",
-        year: 2026,
-      },
-    },
-    update: {},
-    create: {
-      name: "APEX",
-      year: 2026,
-      status: "LIVE",
-      startDate: new Date("2026-08-10"),
-      endDate: new Date("2026-08-20"),
-    },
-  });
-
-  console.log("✅ Seed Complete: PR Users, College Heads, Sport Coordinators, Colleges, Sports, Venues & Primary Event configured.");
+  console.log("🌱 Database seed completed successfully!");
 }
 
 main()
@@ -136,4 +87,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end();
   });
