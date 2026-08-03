@@ -87,10 +87,20 @@ export const coordinatorApi = {
   },
 
 
-  // Read matches for assigned sport from localStorage with default initial state
+  // Read matches for assigned sport from Backend API with localStorage fallback
   async getMatches() {
     const user = this.getCurrentUser();
     if (!user) throw new Error('Unauthenticated');
+
+    try {
+      const res = await api.get('/coordinator/matches');
+      if (res.data && Array.isArray(res.data)) {
+        this.saveMatches(res.data);
+        return res.data;
+      }
+    } catch (e) {
+      console.warn('Backend matches API fallback to localStorage:', e);
+    }
 
     const cacheKey = `sems_coord_matches_${user.assignedSport}`;
     const saved = localStorage.getItem(cacheKey);
@@ -98,31 +108,12 @@ export const coordinatorApi = {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const mockNames = [
-            '1', '2', 'a', 'b', 'player 1', 'player 2', 'player 3', 'player 4', 'team 1', 'team 2', 'team a', 'team b', 'albert', 'romi',
-            'aarav sharma (mpec)', 'rohan gupta (mips)', 'ankur dixit (mpcps)', 'aditya singh (mpec)',
-            'aagaz khan (mpcps kn142)', 'shiv prakash (mpcps kn142)', 'kapil verma (mpcps kn142)', 'anubhav sachan (mpcps kn142)',
-            'kapil verma', 'anubhav sachan', 'team a', 'team b', 'team 1', 'team 2', 'player / team a', 'player / team b'
-          ];
-          const cleaned = parsed.filter((m) => {
-            if (!m) return false;
-            const t1 = (m.team1 || '').trim().toLowerCase();
-            const t2 = (m.team2 || '').trim().toLowerCase();
-            return !mockNames.includes(t1) && !mockNames.includes(t2);
-          });
-          if (cleaned.length !== parsed.length) {
-            localStorage.setItem(cacheKey, JSON.stringify(cleaned));
-          }
-          return cleaned;
+          return parsed;
         }
       } catch (e) {}
     }
 
-    // Default initial fixtures if empty
-    const defaults = [];
-
-    localStorage.setItem(cacheKey, JSON.stringify(defaults));
-    return defaults;
+    return [];
   },
 
   // Save matches array to localStorage
@@ -138,7 +129,7 @@ export const coordinatorApi = {
   // Get all public match schedules across all sports
   async getPublicMatches() {
     try {
-      const res = await api.get('/public/matches');
+      const res = await api.get('/coordinator/matches');
       if (res.data && Array.isArray(res.data)) {
         return res.data;
       }
@@ -147,13 +138,6 @@ export const coordinatorApi = {
     }
 
     const publicMatches = [];
-    const mockNames = [
-      '1', '2', 'a', 'b', 'player 1', 'player 2', 'player 3', 'player 4', 'team 1', 'team 2', 'team a', 'team b', 'albert', 'romi',
-      'aarav sharma (mpec)', 'rohan gupta (mips)', 'ankur dixit (mpcps)', 'aditya singh (mpec)',
-      'aagaz khan (mpcps kn142)', 'shiv prakash (mpcps kn142)', 'kapil verma (mpcps kn142)', 'anubhav sachan (mpcps kn142)',
-      'kapil verma', 'anubhav sachan', 'team a', 'team b', 'team 1', 'team 2', 'player / team a', 'player / team b'
-    ];
-
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.startsWith('sems_coord_matches_')) {
@@ -163,9 +147,6 @@ export const coordinatorApi = {
             const sportId = key.replace('sems_coord_matches_', '');
             list.forEach((m) => {
               if (m) {
-                const t1 = (m.team1 || '').trim().toLowerCase();
-                const t2 = (m.team2 || '').trim().toLowerCase();
-                if (mockNames.includes(t1) || mockNames.includes(t2)) return;
                 publicMatches.push({
                   ...m,
                   sportId,
@@ -177,12 +158,23 @@ export const coordinatorApi = {
         } catch (err) {}
       }
     }
-
     return publicMatches;
   },
 
-  // Create match & persist to localStorage
+  // Create match & persist to Backend API & localStorage
   async createMatch(matchData) {
+    try {
+      const res = await api.post('/coordinator/matches', matchData);
+      if (res.data && res.data.match) {
+        const matches = await this.getMatches();
+        const updated = [res.data.match, ...matches.filter(m => m.id !== res.data.match.id)];
+        this.saveMatches(updated);
+        return res.data.match;
+      }
+    } catch (e) {
+      console.warn('Backend create match fallback:', e);
+    }
+
     const matches = await this.getMatches();
     const newMatch = {
       ...matchData,
@@ -194,16 +186,34 @@ export const coordinatorApi = {
     return newMatch;
   },
 
-  // Update match & persist to localStorage
+  // Update match & persist to Backend API & localStorage
   async updateMatch(id, matchData) {
+    try {
+      const res = await api.put(`/coordinator/matches/${id}`, matchData);
+      if (res.data && res.data.match) {
+        const matches = await this.getMatches();
+        const updated = matches.map((m) => (m.id === id ? res.data.match : m));
+        this.saveMatches(updated);
+        return res.data.match;
+      }
+    } catch (e) {
+      console.warn('Backend update match fallback:', e);
+    }
+
     const matches = await this.getMatches();
     const updated = matches.map((m) => (m.id === id ? { ...m, ...matchData } : m));
     this.saveMatches(updated);
     return updated.find((m) => m.id === id);
   },
 
-  // Delete match & persist to localStorage
+  // Delete match & persist to Backend API & localStorage
   async deleteMatch(id) {
+    try {
+      await api.delete(`/coordinator/matches/${id}`);
+    } catch (e) {
+      console.warn('Backend delete match fallback:', e);
+    }
+
     const matches = await this.getMatches();
     const updated = matches.filter((m) => m.id !== id);
     this.saveMatches(updated);
@@ -254,8 +264,20 @@ export const coordinatorApi = {
     this.saveMatches([]);
   },
 
-  // Update live match score & persist active live matches
+  // Update live match score & persist active live matches to Backend API & localStorage
   async updateMatchScoring(matchId, scoreData) {
+    try {
+      const res = await api.put(`/coordinator/matches/${matchId}`, scoreData);
+      if (res.data && res.data.match) {
+        const matches = await this.getMatches();
+        const updatedList = matches.map((m) => (m.id === matchId ? res.data.match : m));
+        this.saveMatches(updatedList);
+        return res.data.match;
+      }
+    } catch (e) {
+      console.warn('Backend updateMatchScoring fallback:', e);
+    }
+
     const matches = await this.getMatches();
     let target = matches.find((m) => m.id === matchId);
 
@@ -312,6 +334,12 @@ export const coordinatorApi = {
       completedAt: new Date().toISOString(),
       winner: winnerData.winner || (target.score1 >= target.score2 ? target.team1 : target.team2),
     };
+
+    try {
+      await api.put(`/coordinator/matches/${matchId}`, { ...winnerData, status: 'COMPLETED' });
+    } catch (e) {
+      console.warn('Backend completeMatch API fallback:', e);
+    }
 
     // Save updated match in match list & purge completed match from active schedule list
     const updatedList = matches.filter((m) => m.id !== matchId && m.status !== 'COMPLETED' && m.status !== 'FINISHED');
@@ -372,15 +400,24 @@ export const coordinatorApi = {
     return saved ? JSON.parse(saved) : [];
   },
 
-  // Get Public Live Matches from localStorage
+  // Get Public Live Matches from Backend API with localStorage fallback
   async getPublicLiveMatches() {
+    try {
+      const res = await api.get('/live-matches');
+      if (res.data && Array.isArray(res.data)) {
+        return res.data;
+      }
+    } catch (e) {
+      console.warn('Backend live matches API fallback:', e);
+    }
+
     const savedActiveStr = localStorage.getItem('sems_active_live_matches');
     let activeList = [];
 
     if (savedActiveStr) {
       try {
         const activeMap = JSON.parse(savedActiveStr);
-        activeList = Object.values(activeMap).filter((m) => m && (m.status === 'running' || m.status === 'live'));
+        activeList = Object.values(activeMap).filter((m) => m && (m.status === 'running' || m.status === 'live' || m.status === 'LIVE'));
       } catch (e) {}
     }
 
@@ -392,7 +429,7 @@ export const coordinatorApi = {
           const list = JSON.parse(localStorage.getItem(key));
           if (Array.isArray(list)) {
             list.forEach((m) => {
-              if (m && (m.status === 'running' || m.status === 'live')) {
+              if (m && (m.status === 'running' || m.status === 'live' || m.status === 'LIVE')) {
                 if (!activeList.some((a) => a.id === m.id)) {
                   activeList.push(m);
                 }
