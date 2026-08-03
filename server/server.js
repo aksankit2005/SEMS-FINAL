@@ -103,16 +103,28 @@ app.use('/api/college-head/login', authLimiter);
 app.use('/api/coordinator/login', authLimiter);
 
 // PostgreSQL Connection Pool Setup
-const dbConfig = {
-  host: process.env.PGHOST || 'localhost',
-  user: process.env.PGUSER || 'postgres',
-  password: process.env.PGPASSWORD,
-  database: process.env.PGDATABASE || 'mydb',
-  port: parseInt(process.env.PGPORT || '5432', 10),
-  max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
-};
+const databaseUrl = process.env.DATABASE_URL;
+const isLocal = !databaseUrl || databaseUrl.includes('localhost') || databaseUrl.includes('127.0.0.1');
+
+const dbConfig = databaseUrl
+  ? {
+      connectionString: databaseUrl,
+      ssl: isLocal ? false : { rejectUnauthorized: false },
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
+    }
+  : {
+      host: process.env.PGHOST,
+      user: process.env.PGUSER,
+      password: process.env.PGPASSWORD,
+      database: process.env.PGDATABASE,
+      port: parseInt(process.env.PGPORT || '5432', 10),
+      ssl: process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : false,
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
+    };
 
 const pool = new Pool(dbConfig);
 const prismaAdapter = new PrismaPg(pool);

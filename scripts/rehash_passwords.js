@@ -4,13 +4,24 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const { Pool } = pg;
-const pool = new Pool({
-  host: process.env.PGHOST || 'localhost',
-  user: process.env.PGUSER || 'postgres',
-  password: process.env.PGPASSWORD || 'ritik@123',
-  database: process.env.PGDATABASE || 'mydb',
-  port: parseInt(process.env.PGPORT || '5432', 10),
-});
+const databaseUrl = process.env.DATABASE_URL;
+const isLocal = !databaseUrl || databaseUrl.includes('localhost') || databaseUrl.includes('127.0.0.1');
+
+const pool = new Pool(
+  databaseUrl
+    ? {
+        connectionString: databaseUrl,
+        ssl: isLocal ? false : { rejectUnauthorized: false },
+      }
+    : {
+        host: process.env.PGHOST,
+        user: process.env.PGUSER,
+        password: process.env.PGPASSWORD,
+        database: process.env.PGDATABASE,
+        port: parseInt(process.env.PGPORT || '5432', 10),
+        ssl: process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : false,
+      }
+);
 
 // Passwords from .env
 const HEAD_PASSWORDS = {

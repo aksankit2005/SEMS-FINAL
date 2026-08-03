@@ -3,13 +3,24 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 
-const pool = new pg.Pool({
-  host: process.env.PGHOST || "localhost",
-  user: process.env.PGUSER || "postgres",
-  password: process.env.PGPASSWORD || "ritik@123",
-  database: process.env.PGDATABASE || "mydb",
-  port: parseInt(process.env.PGPORT || "5432", 10),
-});
+const databaseUrl = process.env.DATABASE_URL;
+const isLocal = !databaseUrl || databaseUrl.includes("localhost") || databaseUrl.includes("127.0.0.1");
+
+const pool = new pg.Pool(
+  databaseUrl
+    ? {
+        connectionString: databaseUrl,
+        ssl: isLocal ? false : { rejectUnauthorized: false },
+      }
+    : {
+        host: process.env.PGHOST,
+        user: process.env.PGUSER,
+        password: process.env.PGPASSWORD,
+        database: process.env.PGDATABASE,
+        port: parseInt(process.env.PGPORT || "5432", 10),
+        ssl: process.env.PGSSL === "true" ? { rejectUnauthorized: false } : false,
+      }
+);
 
 const adapter = new PrismaPg(pool);
 
