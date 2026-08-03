@@ -378,15 +378,16 @@ export const RegistrationPage = () => {
         {
           fullName: formData.captainName || (formData.roster[0] && formData.roster[0].name) || 'Lead Athlete',
           captainName: formData.captainName,
-          email: formData.captainEmail,
-          phone: formData.captainPhone,
+          email: formData.captainEmail || (formData.roster[0] && formData.roster[0].email) || 'athlete@sems.edu',
+          phone: formData.captainPhone || (formData.roster[0] && formData.roster[0].phone) || '+91 98765 43210',
           gender: formData.roster[0]?.gender || 'Male',
           collegeName: formData.collegeName || 'MPEC',
-          department: formData.roster[0]?.department || 'Engineering',
-          enrollmentNo: formData.roster[0]?.rollNumber || 'ENR2026-001',
+          department: formData.roster[0]?.branch || formData.roster[0]?.department || 'Engineering',
+          enrollmentNo: formData.roster[0]?.rollNo || formData.roster[0]?.rollNumber || formData.captainRoll || 'ENR2026-001',
           teamName: formData.teamName,
-          emergencyContact: formData.captainPhone,
-          entryFee: activeSport.entryFee
+          emergencyContact: formData.captainPhone || (formData.roster[0] && formData.roster[0].phone) || '+91 98765 43210',
+          entryFee: activeSport.entryFee,
+          roster: formData.roster || []
         },
         paymentRes
       );
