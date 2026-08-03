@@ -203,66 +203,67 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-[#070B14]/90 backdrop-blur-md overflow-y-auto animate-fade-in font-sans">
-      <div className="w-full max-w-4xl bg-[#0B1120] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden my-auto space-y-0 text-slate-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 dark:bg-[#070B14]/90 backdrop-blur-md overflow-y-auto animate-fade-in font-sans">
+      <div className="w-full max-w-4xl bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden my-auto space-y-0 text-slate-900 dark:text-slate-200">
         
         {/* Top Header Bar Matching User Screenshot */}
-        <div className="p-6 bg-[#111827] border-b border-slate-800 flex items-center justify-between gap-4">
+        <div className="p-6 bg-slate-50 dark:bg-[#111827] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4">
           
           {/* Left Player Sets Won */}
           <div className="flex flex-col items-center">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">SETS WON</span>
-            <span className="text-2xl font-black text-indigo-400 font-mono">{setsWon1}</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">SETS WON</span>
+            <span className="text-2xl font-black text-blue-600 dark:text-indigo-400 font-mono">{setsWon1}</span>
           </div>
 
           {/* Center Badge: Set X in Progress / Best of 5 Sets */}
           <div className="text-center space-y-1">
-            <div className="px-4 py-1.5 rounded-full bg-[#1E293B] border border-slate-700 text-xs font-black text-white tracking-wide">
+            <div className="px-4 py-1.5 rounded-full bg-slate-100 dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 text-xs font-black text-slate-900 dark:text-white tracking-wide">
               Set {currentSetIndex} in Progress
             </div>
-            <p className="text-[11px] font-mono text-slate-400">{format}</p>
+            <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400">{format}</p>
           </div>
 
           {/* Right Player Sets Won */}
           <div className="flex flex-col items-center">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">SETS WON</span>
-            <span className="text-2xl font-black text-indigo-400 font-mono">{setsWon2}</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">SETS WON</span>
+            <span className="text-2xl font-black text-blue-600 dark:text-indigo-400 font-mono">{setsWon2}</span>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition ml-2"
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition ml-2 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Player Cards Grid (Matching User Screenshot 1:1) */}
-        <div className="p-6 bg-[#0B1120] grid grid-cols-1 md:grid-cols-12 gap-6 items-center border-b border-slate-800">
+        <div className="p-6 bg-white dark:bg-[#0B1120] grid grid-cols-1 md:grid-cols-12 gap-6 items-center border-b border-slate-200 dark:border-slate-800">
           
           {/* Player 1 Card (Left) */}
-          <div className="md:col-span-5 p-6 rounded-3xl bg-[#111827] border border-slate-800/90 shadow-2xl flex flex-col items-center text-center space-y-4 relative">
+          <div className="md:col-span-5 p-6 rounded-3xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-slate-800/90 shadow-soft dark:shadow-2xl flex flex-col items-center text-center space-y-4 relative">
             <div>
-              <h2 className="text-2xl font-black text-white tracking-tight">{match.team1}</h2>
-              <p className="text-xs text-slate-400 font-mono">Roll: N/A</p>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{match.team1}</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">Roll: N/A</p>
             </div>
 
             {/* Large Point Counter */}
-            <div className="text-7xl font-black text-white font-mono my-2 tracking-tighter">
+            <div className="text-7xl font-black text-slate-900 dark:text-white font-mono my-2 tracking-tighter">
               {score1}
             </div>
+
 
             {/* Point Action Buttons */}
             <div className="grid grid-cols-2 gap-3 w-full pt-2">
               <button
                 onClick={() => handlePointChange(1, -1)}
-                className="py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-black text-sm transition shadow-inner"
+                className="py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-black text-sm transition shadow-inner cursor-pointer"
               >
                 - Point
               </button>
               <button
                 onClick={() => handlePointChange(1, 1)}
-                className="py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm shadow-lg shadow-indigo-600/30 transition"
+                className="py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-black text-sm shadow-lg shadow-blue-600/30 dark:shadow-indigo-600/30 transition cursor-pointer"
               >
                 + Point
               </button>
@@ -271,19 +272,18 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
 
           {/* Center Column: VS */}
           <div className="md:col-span-2 flex flex-col items-center justify-center space-y-3 py-2">
-            <span className="text-sm font-black text-slate-500 tracking-widest">VS</span>
+            <span className="text-sm font-black text-slate-400 dark:text-slate-500 tracking-widest">VS</span>
           </div>
 
           {/* Player 2 Card (Right) */}
-          <div className="md:col-span-5 p-6 rounded-3xl bg-[#111827] border border-slate-800/90 shadow-2xl flex flex-col items-center text-center space-y-4 relative">
+          <div className="md:col-span-5 p-6 rounded-3xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-slate-800/90 shadow-soft dark:shadow-2xl flex flex-col items-center text-center space-y-4 relative">
             <div>
-              <h2 className="text-2xl font-black text-white tracking-tight">{match.team2}</h2>
-              <p className="text-xs text-slate-400 font-mono">Roll: N/A</p>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{match.team2}</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">Roll: N/A</p>
             </div>
 
-
             {/* Large Point Counter */}
-            <div className="text-7xl font-black text-white font-mono my-2 tracking-tighter">
+            <div className="text-7xl font-black text-slate-900 dark:text-white font-mono my-2 tracking-tighter">
               {score2}
             </div>
 
@@ -291,13 +291,13 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
             <div className="grid grid-cols-2 gap-3 w-full pt-2">
               <button
                 onClick={() => handlePointChange(2, -1)}
-                className="py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-black text-sm transition shadow-inner"
+                className="py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-black text-sm transition shadow-inner cursor-pointer"
               >
                 - Point
               </button>
               <button
                 onClick={() => handlePointChange(2, 1)}
-                className="py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm shadow-lg shadow-indigo-600/30 transition"
+                className="py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-black text-sm shadow-lg shadow-blue-600/30 dark:shadow-indigo-600/30 transition cursor-pointer"
               >
                 + Point
               </button>
@@ -306,17 +306,18 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
 
         </div>
 
-        {/* SET SCORES LOG Section (Matching User Screenshot 1:1) */}
-        <div className="p-6 bg-[#0B1120] border-b border-slate-800 space-y-4">
-          <div className="p-5 rounded-3xl bg-[#111827] border border-slate-800 space-y-4">
-            <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider">SET SCORES LOG</h4>
+        {/* SET SCORES LOG Section */}
+        <div className="p-6 bg-white dark:bg-[#0B1120] border-b border-slate-200 dark:border-slate-800 space-y-4">
+          <div className="p-5 rounded-3xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-slate-800 space-y-4">
+            <h4 className="text-xs font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider">SET SCORES LOG</h4>
 
             <div className="space-y-2.5">
               {setsHistory.slice(0, maxSets).map((s) => (
                 <div
                   key={s.set}
-                  className="flex items-center justify-between p-3.5 rounded-2xl bg-[#090D16] border border-slate-800 text-xs"
+                  className="flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 text-xs"
                 >
+
                   <div className="space-y-0.5">
                     <span className="font-bold text-slate-300 font-mono">Set {s.set} score:</span>
                     {s.isLocked ? (
