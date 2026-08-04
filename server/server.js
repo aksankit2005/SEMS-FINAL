@@ -27,14 +27,14 @@ const COMMON_PASSWORD = process.env.COMMON_PASSWORD || 'sems#2026';
 
 // Unique Passwords mapping for each College Head (Loaded from Environment Variables)
 const HEAD_PASSWORDS = {
-  head_mpec: process.env.PASS_HEAD_MPEC,
-  head_mips: process.env.PASS_HEAD_MIPS,
-  head_mpcps: process.env.PASS_HEAD_MPCPS,
-  head_mpcp: process.env.PASS_HEAD_MPCP,
-  head_mpdc: process.env.PASS_HEAD_MPDC,
-  head_mpcnps: process.env.PASS_HEAD_MPCNPS,
-  head_mpamc: process.env.PASS_HEAD_MPAMC,
-  head_mpcams: process.env.PASS_HEAD_MPCAMS,
+  head_mpec: process.env.PASS_HEAD_MPEC || 'mpec#2026',
+  head_mips: process.env.PASS_HEAD_MIPS || 'mips#2026',
+  head_mpcps: process.env.PASS_HEAD_MPCPS || 'mpcps#2026',
+  head_mpcp: process.env.PASS_HEAD_MPCP || 'mpcp#2026',
+  head_mpdc: process.env.PASS_HEAD_MPDC || 'mpdc#2026',
+  head_mpcnps: process.env.PASS_HEAD_MPCNPS || 'mpcnps#2026',
+  head_mpamc: process.env.PASS_HEAD_MPAMC || 'mpamc#2026',
+  head_mpcams: process.env.PASS_HEAD_MPCAMS || 'mpcams#2026',
 };
 
 // ─── SECURITY HEADERS (Helmet.js) ───────────────────────────────────────────
@@ -120,23 +120,23 @@ const isLocal = !databaseUrl || databaseUrl.includes('localhost') || databaseUrl
 
 const dbConfig = databaseUrl
   ? {
-      connectionString: databaseUrl,
-      ssl: isLocal ? false : { rejectUnauthorized: false },
-      max: 10,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
-    }
+    connectionString: databaseUrl,
+    ssl: isLocal ? false : { rejectUnauthorized: false },
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+  }
   : {
-      host: process.env.PGHOST,
-      user: process.env.PGUSER,
-      password: process.env.PGPASSWORD,
-      database: process.env.PGDATABASE,
-      port: parseInt(process.env.PGPORT || '5432', 10),
-      ssl: process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : false,
-      max: 10,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
-    };
+    host: process.env.PGHOST || 'localhost',
+    user: process.env.PGUSER || 'postgres',
+    password: process.env.PGPASSWORD || 'ritik@123',
+    database: process.env.PGDATABASE || 'mydb',
+    port: parseInt(process.env.PGPORT || '5432', 10),
+    ssl: process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : false,
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+  };
 
 const pool = new Pool(dbConfig);
 const prismaAdapter = new PrismaPg(pool);
