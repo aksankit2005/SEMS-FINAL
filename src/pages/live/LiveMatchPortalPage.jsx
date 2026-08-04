@@ -28,9 +28,10 @@ export const LiveMatchPortalPage = () => {
       if (localActiveStr) {
         try {
           const parsed = JSON.parse(localActiveStr);
-          localActiveList = Object.values(parsed).filter(
-            (m) => m && m.id !== 'M595473' && (m.status === 'running' || m.status === 'live')
-          );
+          localActiveList = Object.values(parsed).filter((m) => {
+            const s = (m?.status || '').toLowerCase();
+            return m && m.id !== 'M595473' && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active' || s === 'scheduled');
+          });
         } catch (e) { }
       }
 
@@ -38,7 +39,8 @@ export const LiveMatchPortalPage = () => {
       const combined = [...(publicLive || []), ...localActiveList];
       const uniqueMap = {};
       combined.forEach((m) => {
-        if (m && m.id && m.id !== 'M595473' && (m.status === 'running' || m.status === 'live')) {
+        const s = (m?.status || '').toLowerCase();
+        if (m && m.id && m.id !== 'M595473' && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active' || s === 'scheduled' || s === '')) {
           uniqueMap[m.id] = {
             ...m,
             sportId: m.sportId || 'table-tennis',

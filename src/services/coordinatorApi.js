@@ -402,22 +402,30 @@ export const coordinatorApi = {
 
   // Get Public Live Matches from Backend API with localStorage fallback
   async getPublicLiveMatches() {
+    let serverLive = [];
     try {
       const res = await api.get('/live-matches');
-      if (res.data && Array.isArray(res.data)) {
-        return res.data;
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        serverLive = res.data;
       }
     } catch (e) {
       console.warn('Backend live matches API fallback:', e);
     }
 
-    const savedActiveStr = localStorage.getItem('sems_active_live_matches');
-    let activeList = [];
+    const activeList = [...serverLive];
 
+    const savedActiveStr = localStorage.getItem('sems_active_live_matches');
     if (savedActiveStr) {
       try {
         const activeMap = JSON.parse(savedActiveStr);
-        activeList = Object.values(activeMap).filter((m) => m && (m.status === 'running' || m.status === 'live' || m.status === 'LIVE'));
+        Object.values(activeMap).forEach((m) => {
+          const s = (m?.status || '').toLowerCase();
+          if (m && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active' || s === 'scheduled')) {
+            if (!activeList.some((a) => a.id === m.id)) {
+              activeList.push(m);
+            }
+          }
+        });
       } catch (e) {}
     }
 
@@ -429,7 +437,8 @@ export const coordinatorApi = {
           const list = JSON.parse(localStorage.getItem(key));
           if (Array.isArray(list)) {
             list.forEach((m) => {
-              if (m && (m.status === 'running' || m.status === 'live' || m.status === 'LIVE')) {
+              const s = (m?.status || '').toLowerCase();
+              if (m && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active' || s === 'scheduled')) {
                 if (!activeList.some((a) => a.id === m.id)) {
                   activeList.push(m);
                 }
