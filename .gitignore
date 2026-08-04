@@ -29,10 +29,13 @@ dist-ssr
 /src/generated/prisma
 
 # ─── SECURITY: Never commit secrets ──────────────────────────────────────────
-.env
-.env.local
+
 .env.production
 .env.*.local
+.env
+.env.local
+.env.*
+!.env.example
 *.pem
 *.key
 *.p12

@@ -52,21 +52,21 @@ export const TotalParticipationTab = ({ user }) => {
   });
 
   return (
-    <div className="space-y-6 text-slate-200 animate-fade-in">
+    <div className="space-y-6 text-slate-900 dark:text-slate-200 animate-fade-in">
 
       {/* Table Container */}
-      <div className="p-6 rounded-3xl bg-[#111827] border border-slate-800 shadow-2xl space-y-5">
+      <div className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-2xl space-y-5">
 
         {/* Header Title & Search Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <h3 className="text-lg font-black text-white tracking-tight">
+            <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
               Participant Database (Read Only)
             </h3>
             {participants.length > 0 && (
               <button
                 onClick={handleClearParticipants}
-                className="px-3.5 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 text-xs font-bold transition flex items-center gap-1.5"
+                className="px-3.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-600/20 hover:bg-rose-100 dark:hover:bg-rose-600 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Clear All Participation Data</span>
@@ -75,13 +75,13 @@ export const TotalParticipationTab = ({ user }) => {
           </div>
 
           <div className="relative max-w-xs w-full">
-            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-500" />
+            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400 dark:text-slate-500" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search name, roll..."
-              className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#0B1120] border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
         </div>
@@ -90,7 +90,7 @@ export const TotalParticipationTab = ({ user }) => {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-800 text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+              <tr className="border-b border-slate-200 dark:border-slate-800 text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">
                 <th className="p-4">PLAYERS / PARTICIPANTS</th>
                 <th className="p-4">ROLL NUMBERS</th>
                 <th className="p-4">SPORT</th>
@@ -99,10 +99,10 @@ export const TotalParticipationTab = ({ user }) => {
                 <th className="p-4">CONTACT INFO</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/80 text-xs">
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800/80 text-xs">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-500 font-mono">
+                  <td colSpan={6} className="p-8 text-center text-slate-500 dark:text-slate-400 font-mono">
                     No participant registrations found. Registered participants will appear here automatically.
                   </td>
                 </tr>
@@ -127,20 +127,20 @@ export const TotalParticipationTab = ({ user }) => {
                         {isDoubles ? (
                           <div className="space-y-1.5">
                             <div className="flex items-center gap-2">
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">
                                 P1
                               </span>
-                              <span className="font-bold text-white text-xs">{p1Name}</span>
+                              <span className="font-bold text-slate-900 dark:text-white text-xs">{p1Name}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-blue-50 dark:bg-indigo-500/20 text-blue-700 dark:text-indigo-300 border border-blue-200 dark:border-indigo-500/30">
                                 P2
                               </span>
-                              <span className="font-bold text-cyan-300 text-xs">{p2Name}</span>
+                              <span className="font-bold text-blue-600 dark:text-cyan-300 text-xs">{p2Name}</span>
                             </div>
                           </div>
                         ) : (
-                          <span className="font-bold text-white text-xs">{p1Name}</span>
+                          <span className="font-bold text-slate-900 dark:text-white text-xs">{p1Name}</span>
                         )}
                       </td>
 
@@ -148,34 +148,34 @@ export const TotalParticipationTab = ({ user }) => {
                       <td className="p-4 font-mono">
                         {isDoubles ? (
                           <div className="space-y-1.5 text-xs">
-                            <div className="text-slate-200">
-                              <span className="text-slate-500 text-[10px] mr-1">P1:</span>
+                            <div className="text-slate-800 dark:text-slate-200">
+                              <span className="text-slate-400 dark:text-slate-500 text-[10px] mr-1">P1:</span>
                               <span className="font-bold">{p1Roll}</span>
                             </div>
-                            <div className="text-cyan-300">
-                              <span className="text-slate-500 text-[10px] mr-1">P2:</span>
+                            <div className="text-blue-600 dark:text-cyan-300">
+                              <span className="text-slate-400 dark:text-slate-500 text-[10px] mr-1">P2:</span>
                               <span className="font-bold">{p2Roll}</span>
                             </div>
                           </div>
                         ) : (
-                          <span className="text-slate-300 font-bold text-xs">{p1Roll}</span>
+                          <span className="text-slate-700 dark:text-slate-300 font-bold text-xs">{p1Roll}</span>
                         )}
                       </td>
 
                       {/* SPORT */}
-                      <td className="p-4 text-slate-300 font-sans text-xs">{sportName}</td>
+                      <td className="p-4 text-slate-700 dark:text-slate-300 font-sans text-xs">{sportName}</td>
 
                       {/* COLLEGE & COURSE */}
-                      <td className="p-4 text-slate-400 font-sans text-xs">
-                        <span className="font-bold text-slate-200">{p.college}</span>
-                        {p.department && <span className="text-slate-400 font-normal"> | {p.department}</span>}
+                      <td className="p-4 text-slate-500 dark:text-slate-400 font-sans text-xs">
+                        <span className="font-bold text-slate-900 dark:text-slate-200">{p.college}</span>
+                        {p.department && <span className="text-slate-500 dark:text-slate-400 font-normal"> | {p.department}</span>}
                       </td>
 
                       {/* FORMAT */}
                       <td className="p-4">
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase border ${isDoubles
-                            ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
-                            : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                            ? 'bg-blue-50 dark:bg-indigo-500/20 text-blue-700 dark:text-indigo-300 border-blue-200 dark:border-indigo-500/30'
+                            : 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30'
                           }`}>
                           {isDoubles ? 'DOUBLES (2v2)' : 'SINGLES (1v1)'}
                         </span>
@@ -185,20 +185,20 @@ export const TotalParticipationTab = ({ user }) => {
                       <td className="p-4 font-mono">
                         {isDoubles ? (
                           <div className="space-y-1.5 text-[11px]">
-                            <div className="text-emerald-400">
-                              <span className="text-slate-500 text-[10px] mr-1">P1:</span>
+                            <div className="text-emerald-600 dark:text-emerald-400 font-bold">
+                              <span className="text-slate-400 dark:text-slate-500 text-[10px] mr-1">P1:</span>
                               {p1Phone}
                             </div>
-                            <div className="text-cyan-400">
-                              <span className="text-slate-500 text-[10px] mr-1">P2:</span>
+                            <div className="text-blue-600 dark:text-cyan-400 font-bold">
+                              <span className="text-slate-400 dark:text-slate-500 text-[10px] mr-1">P2:</span>
                               {p2Phone}
                             </div>
                           </div>
                         ) : (
                           <div className="space-y-0.5">
-                            <div className="text-cyan-400 font-bold text-xs">{p1Phone}</div>
-                            {p1Email && <div className="text-slate-400 text-[11px] font-mono">{p1Email}</div>}
-                            {p.emergencyContact && <div className="text-slate-500 text-[10px]">Alt: {p.emergencyContact}</div>}
+                            <div className="text-blue-600 dark:text-cyan-400 font-bold text-xs">{p1Phone}</div>
+                            {p1Email && <div className="text-slate-500 dark:text-slate-400 text-[11px] font-mono">{p1Email}</div>}
+                            {p.emergencyContact && <div className="text-slate-400 dark:text-slate-500 text-[10px]">Alt: {p.emergencyContact}</div>}
                           </div>
                         )}
                       </td>

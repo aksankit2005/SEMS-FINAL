@@ -77,6 +77,40 @@ async function main() {
     skipDuplicates: true,
   });
 
+  // 4. Seed Colleges
+  await prisma.college.createMany({
+    data: [
+      { code: "MPEC", name: "Maharana Pratap Engineering College" },
+      { code: "MIPS", name: "Maharana Institute of Professional Studies" },
+      { code: "MPCPS (KN142)", name: "Maharana Pratap College of Pharmacy & Studies" },
+      { code: "MPCP", name: "Maharana Pratap College of Pharmacy" },
+      { code: "MPDC", name: "Maharana Pratap Dental College" },
+      { code: "MPCN&PS", name: "Maharana Pratap College of Nursing & Paramedical Sciences" },
+      { code: "MPAMC", name: "Maharana Pratap Ayurvedic Medical College" },
+      { code: "MPCAMS", name: "Maharana Pratap College of Applied Material Sciences" },
+    ],
+    skipDuplicates: true,
+  });
+
+  // 5. Seed Sports
+  await prisma.sport.createMany({
+    data: [
+      { name: "Cricket", isTeamSport: true },
+      { name: "Table Tennis", isTeamSport: false },
+      { name: "Badminton", isTeamSport: false },
+      { name: "Chess", isTeamSport: false },
+      { name: "Football", isTeamSport: true },
+      { name: "Basketball", isTeamSport: true },
+      { name: "Volleyball", isTeamSport: true },
+      { name: "Kabaddi", isTeamSport: true },
+      { name: "Kho Kho", isTeamSport: true },
+      { name: "Athletics", isTeamSport: false },
+      { name: "Tug of War", isTeamSport: true },
+      { name: "Gully Cricket", isTeamSport: true },
+    ],
+    skipDuplicates: true,
+  });
+
   console.log("🌱 Database seed completed successfully!");
 }
 
