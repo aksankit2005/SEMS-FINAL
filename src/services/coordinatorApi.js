@@ -92,28 +92,39 @@ export const coordinatorApi = {
     const user = this.getCurrentUser();
     if (!user) throw new Error('Unauthenticated');
 
-    try {
-      const res = await api.get('/coordinator/matches');
-      if (res.data && Array.isArray(res.data)) {
-        this.saveMatches(res.data);
-        return res.data;
-      }
-    } catch (e) {
-      console.warn('Backend matches API fallback to localStorage:', e);
-    }
-
     const cacheKey = `sems_coord_matches_${user.assignedSport}`;
+    let savedMatches = [];
     const saved = localStorage.getItem(cacheKey);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          return parsed;
+          savedMatches = parsed;
         }
       } catch (e) {}
     }
 
-    return [];
+    try {
+      const res = await api.get('/coordinator/matches');
+      if (res.data && Array.isArray(res.data)) {
+        if (res.data.length > 0) {
+          const serverIds = new Set(res.data.map((m) => m.id));
+          const localOnly = savedMatches.filter((m) => m && m.id && !serverIds.has(m.id));
+          const merged = [...res.data, ...localOnly];
+          this.saveMatches(merged);
+          return merged;
+        } else if (savedMatches.length > 0) {
+          return savedMatches;
+        } else {
+          this.saveMatches([]);
+          return [];
+        }
+      }
+    } catch (e) {
+      console.warn('Backend matches API fallback to localStorage:', e);
+    }
+
+    return savedMatches;
   },
 
   // Save matches array to localStorage
@@ -130,7 +141,7 @@ export const coordinatorApi = {
   async getPublicMatches() {
     try {
       const res = await api.get('/coordinator/matches');
-      if (res.data && Array.isArray(res.data)) {
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
         return res.data;
       }
     } catch (e) {
@@ -163,26 +174,27 @@ export const coordinatorApi = {
 
   // Create match & persist to Backend API & localStorage
   async createMatch(matchData) {
-    try {
-      const res = await api.post('/coordinator/matches', matchData);
-      if (res.data && res.data.match) {
-        const matches = await this.getMatches();
-        const updated = [res.data.match, ...matches.filter(m => m.id !== res.data.match.id)];
-        this.saveMatches(updated);
-        return res.data.match;
-      }
-    } catch (e) {
-      console.warn('Backend create match fallback:', e);
-    }
-
     const matches = await this.getMatches();
     const newMatch = {
       ...matchData,
       id: matchData.id || `M${Math.floor(100000 + Math.random() * 900000)}`,
       status: matchData.status || 'SCHEDULED',
     };
-    const updated = [newMatch, ...matches];
+    const updated = [newMatch, ...matches.filter((m) => m.id !== newMatch.id)];
     this.saveMatches(updated);
+
+    try {
+      const res = await api.post('/coordinator/matches', newMatch);
+      if (res.data && res.data.match) {
+        const currentMatches = await this.getMatches();
+        const mergedWithServer = [res.data.match, ...currentMatches.filter((m) => m.id !== res.data.match.id)];
+        this.saveMatches(mergedWithServer);
+        return res.data.match;
+      }
+    } catch (e) {
+      console.warn('Backend create match fallback:', e);
+    }
+
     return newMatch;
   },
 

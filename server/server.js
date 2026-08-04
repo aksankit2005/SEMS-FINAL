@@ -896,23 +896,26 @@ app.get('/api/coordinator/profile', verifyCoordinatorToken, (req, res) => {
   return res.json(req.user);
 });
 
-// GET /api/coordinator/matches - Get matches for assigned sport ONLY from PostgreSQL
+// GET /api/coordinator/matches - Get matches for assigned sport ONLY from PostgreSQL with memory fallback
 app.get('/api/coordinator/matches', verifyCoordinatorToken, async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
+  const memoryList = inMemoryCoordinatorMatches[sportId] || [];
   try {
     const dbMatches = await prisma.liveMatch.findMany({
       where: { sportId: { equals: sportId, mode: 'insensitive' } },
       orderBy: { createdAt: 'desc' }
     });
     if (dbMatches && dbMatches.length > 0) {
-      inMemoryCoordinatorMatches[sportId] = dbMatches;
-      return res.json(dbMatches);
+      const dbIds = new Set(dbMatches.map((m) => m.id));
+      const memOnly = memoryList.filter((m) => m && m.id && !dbIds.has(m.id));
+      const merged = [...dbMatches, ...memOnly];
+      inMemoryCoordinatorMatches[sportId] = merged;
+      return res.json(merged);
     }
   } catch (err) {
     console.error('Error fetching coordinator matches from DB:', err.message);
   }
-  const matches = inMemoryCoordinatorMatches[sportId] || [];
-  return res.json(matches);
+  return res.json(memoryList);
 });
 
 // POST /api/coordinator/matches - Create new match fixture in PostgreSQL
@@ -939,15 +942,28 @@ app.post('/api/coordinator/matches', verifyCoordinatorToken, async (req, res) =>
   }
   inMemoryCoordinatorMatches[sportId].unshift(newMatch);
 
-  try {
-    await prisma.liveMatch.upsert({
-      where: { id: matchId },
-      update: newMatch,
-      create: newMatch
-    });
-  } catch (err) {
-    console.error('Error persisting match to DB:', err.message);
-  }
+  await queryDb(
+    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+     ON CONFLICT (id) DO UPDATE SET
+       format = EXCLUDED.format, status = EXCLUDED.status, team1 = EXCLUDED.team1, team2 = EXCLUDED.team2,
+       match_title = EXCLUDED.match_title, table_number = EXCLUDED.table_number, time = EXCLUDED.time,
+       score1 = EXCLUDED.score1, score2 = EXCLUDED.score2, winner = EXCLUDED.winner`,
+    [
+      newMatch.id,
+      newMatch.sportId,
+      newMatch.format,
+      newMatch.status,
+      newMatch.team1,
+      newMatch.team2,
+      newMatch.matchTitle,
+      newMatch.tableNumber,
+      newMatch.time,
+      newMatch.score1,
+      newMatch.score2,
+      newMatch.winner
+    ]
+  );
 
   return res.status(201).json({ success: true, match: newMatch });
 });
@@ -963,41 +979,38 @@ app.put('/api/coordinator/matches/:id', verifyCoordinatorToken, async (req, res)
     list[index] = { ...list[index], ...req.body };
   }
 
-  try {
-    const updated = await prisma.liveMatch.upsert({
-      where: { id },
-      update: {
-        status: req.body.status,
-        team1: req.body.team1,
-        team2: req.body.team2,
-        matchTitle: req.body.matchTitle,
-        tableNumber: req.body.tableNumber,
-        time: req.body.time,
-        score1: req.body.score1 !== undefined ? Number(req.body.score1) : undefined,
-        score2: req.body.score2 !== undefined ? Number(req.body.score2) : undefined,
-        winner: req.body.winner,
-      },
-      create: {
-        id,
-        sportId,
-        format: (req.body.format || 'SINGLES').toUpperCase(),
-        status: req.body.status || 'SCHEDULED',
-        team1: req.body.team1,
-        team2: req.body.team2,
-        matchTitle: req.body.matchTitle || `${req.body.team1} vs ${req.body.team2}`,
-        tableNumber: req.body.tableNumber || 'Table 1',
-        time: req.body.time || '05:30 PM',
-        score1: Number(req.body.score1 || 0),
-        score2: Number(req.body.score2 || 0),
-        winner: req.body.winner || null,
-      }
-    });
-    return res.json({ success: true, match: updated });
-  } catch (err) {
-    console.error('Error updating match in DB:', err.message);
-  }
+  const updatedMatch = index !== -1 ? list[index] : { id, sportId, ...req.body };
 
-  return res.json({ success: true, match: index !== -1 ? list[index] : req.body });
+  await queryDb(
+    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+     ON CONFLICT (id) DO UPDATE SET
+       status = COALESCE(EXCLUDED.status, live_matches.status),
+       team1 = COALESCE(EXCLUDED.team1, live_matches.team1),
+       team2 = COALESCE(EXCLUDED.team2, live_matches.team2),
+       match_title = COALESCE(EXCLUDED.match_title, live_matches.match_title),
+       table_number = COALESCE(EXCLUDED.table_number, live_matches.table_number),
+       time = COALESCE(EXCLUDED.time, live_matches.time),
+       score1 = COALESCE(EXCLUDED.score1, live_matches.score1),
+       score2 = COALESCE(EXCLUDED.score2, live_matches.score2),
+       winner = COALESCE(EXCLUDED.winner, live_matches.winner)`,
+    [
+      id,
+      sportId,
+      (req.body.format || updatedMatch.format || 'SINGLES').toUpperCase(),
+      req.body.status || updatedMatch.status || 'SCHEDULED',
+      req.body.team1 || updatedMatch.team1,
+      req.body.team2 || updatedMatch.team2,
+      req.body.matchTitle || updatedMatch.matchTitle || `${req.body.team1} vs ${req.body.team2}`,
+      req.body.tableNumber || updatedMatch.tableNumber || 'Table 1',
+      req.body.time || updatedMatch.time || '05:30 PM',
+      req.body.score1 !== undefined ? Number(req.body.score1) : (updatedMatch.score1 || 0),
+      req.body.score2 !== undefined ? Number(req.body.score2) : (updatedMatch.score2 || 0),
+      req.body.winner || updatedMatch.winner || null
+    ]
+  );
+
+  return res.json({ success: true, match: updatedMatch });
 });
 
 // DELETE /api/coordinator/matches/:id - Delete match fixture in PostgreSQL
@@ -1009,13 +1022,8 @@ app.delete('/api/coordinator/matches/:id', verifyCoordinatorToken, async (req, r
     inMemoryCoordinatorMatches[sportId] = inMemoryCoordinatorMatches[sportId].filter((m) => m.id !== id);
   }
 
-  try {
-    await prisma.liveMatch.deleteMany({ where: { id } });
-  } catch (err) {
-    console.error('Error deleting match from DB:', err.message);
-  }
-
-  return res.json({ success: true, message: 'Match fixture deleted' });
+  await queryDb('DELETE FROM live_matches WHERE id = $1', [id]);
+  return res.json({ success: true, message: 'Match deleted successfully' });
 });
 
 // POST /api/coordinator/matches/generate - Auto-generate tournament fixtures
@@ -1286,42 +1294,41 @@ app.post('/api/coordinator/registrations/toggle-status', verifyCoordinatorToken,
 
 // GET /api/live-matches - Public endpoint returning active live matches for spectators from PostgreSQL
 app.get('/api/live-matches', async (req, res) => {
-  try {
-    const dbMatches = await prisma.liveMatch.findMany({
-      where: {
-        status: { in: ['running', 'live', 'LIVE', 'RUNNING'] }
-      },
-      orderBy: { updatedAt: 'desc' }
-    });
+  const dbRes = await queryDb(
+    `SELECT id, sport_id AS "sportId", format, status, team1, team2, 
+            match_title AS "matchTitle", table_number AS "tableNumber", 
+            time, score1, score2, winner 
+     FROM live_matches 
+     WHERE LOWER(status) IN ('running', 'live') 
+     ORDER BY updated_at DESC`
+  );
 
-    if (dbMatches && dbMatches.length > 0) {
-      const formatted = dbMatches.map((m) => ({
-        ...m,
-        sportId: m.sportId,
-        sportName: (m.sportId || '').replace(/-/g, ' ').toUpperCase(),
-        liveTimer: m.time || '14:32',
-      }));
-      return res.json(formatted);
-    }
-  } catch (err) {
-    console.error('Error fetching live matches from PostgreSQL:', err.message);
+  if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+    const formatted = dbRes.rows.map((m) => ({
+      ...m,
+      sportId: m.sportId,
+      sportName: (m.sportId || '').replace(/-/g, ' ').toUpperCase(),
+      liveTimer: m.time || '14:32',
+    }));
+    return res.json(formatted);
   }
 
-  const allLive = [];
-  Object.keys(inMemoryCoordinatorMatches).forEach((sport) => {
-    const list = inMemoryCoordinatorMatches[sport] || [];
-    list.forEach((m) => {
-      if (m.status === 'running' || m.status === 'live' || m.status === 'LIVE' || m.status === 'RUNNING') {
-        allLive.push({
+  // Fallback scan across in-memory matches
+  const memoryLive = [];
+  Object.entries(inMemoryCoordinatorMatches).forEach(([sId, mList]) => {
+    (mList || []).forEach((m) => {
+      if (m && ['running', 'live'].includes((m.status || '').toLowerCase())) {
+        memoryLive.push({
           ...m,
-          sportId: sport,
-          sportName: sport.replace(/-/g, ' ').toUpperCase(),
-          liveTimer: '14:32',
+          sportId: sId,
+          sportName: sId.replace(/-/g, ' ').toUpperCase(),
+          liveTimer: m.time || '14:32',
         });
       }
     });
   });
-  return res.json(allLive);
+
+  return res.json(memoryLive);
 });
 
 // ----------------------------------------------------
