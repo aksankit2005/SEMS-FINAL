@@ -72,6 +72,7 @@ export const Navbar = () => {
 
             {/* Actions: Search, Theme Toggle, Auth / Dashboard */}
             <div className="flex items-center gap-2.5">
+
               {/* Quick Search Command Trigger */}
               <button
                 onClick={() => setIsSearchOpen(true)}

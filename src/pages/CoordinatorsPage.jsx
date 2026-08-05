@@ -21,7 +21,7 @@ const RevealItem = ({ icon: Icon, color, value, href, defaultLabel }) => {
 
   return (
     <div ref={itemRef} className="flex items-center gap-2">
-      <button 
+      <button
         onClick={() => setShow(!show)}
         title={show ? "Click to hide" : `Click to view ${label}`}
         className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:scale-105 transition cursor-pointer shrink-0"
@@ -35,8 +35,8 @@ const RevealItem = ({ icon: Icon, color, value, href, defaultLabel }) => {
           <span className="truncate text-slate-800 dark:text-slate-200 font-semibold">{value}</span>
         )
       ) : (
-        <button 
-          onClick={() => setShow(true)} 
+        <button
+          onClick={() => setShow(true)}
           className="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-blue-500 transition cursor-pointer"
         >
           {label}
@@ -65,7 +65,7 @@ export const CoordinatorsPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white py-12 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-12">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wider mb-3">
@@ -100,7 +100,7 @@ export const CoordinatorsPage = () => {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
-                  
+
                   <div className="absolute bottom-4 left-4 right-4 text-white">
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-600 text-white uppercase tracking-wide">
                       {coord.role}
