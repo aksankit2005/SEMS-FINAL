@@ -22,7 +22,7 @@ api.interceptors.request.use((config) => {
 export const COORDINATOR_ACCOUNTS = [
   { assignedSport: 'cricket',       sportName: 'Cricket',       username: 'coord_cricket',       coordinatorName: 'Vikramaditya Sharma',    email: 'cricket.coord@sems.edu' },
   { assignedSport: 'table-tennis',  sportName: 'Table Tennis',  username: 'coord_table_tennis',  coordinatorName: 'Rohan Mehta',            email: 'tt.coord@sems.edu' },
-  { assignedSport: 'badminton',     sportName: 'Badminton',     username: 'coord_badminton',     coordinatorName: 'Pooja Deshmukh',         email: 'badminton.coord@sems.edu' },
+  { assignedSport: 'badminton',     sportName: 'Badminton',     username: 'coord_badminton',     coordinatorName: 'Badminton Coordinator',  email: '' },
   { assignedSport: 'chess',         sportName: 'Chess',         username: 'coord_chess',         coordinatorName: 'Grandmaster Anand Verma',email: 'chess.coord@sems.edu' },
   { assignedSport: 'football',      sportName: 'Football',      username: 'coord_football',      coordinatorName: 'Carlos Rodriguez',       email: 'football.coord@sems.edu' },
   { assignedSport: 'basketball',    sportName: 'Basketball',    username: 'coord_basketball',    coordinatorName: 'Michael Jordan Singh',   email: 'basketball.coord@sems.edu' },
@@ -32,6 +32,133 @@ export const COORDINATOR_ACCOUNTS = [
   { assignedSport: 'athletics',     sportName: 'Athletics',     username: 'coord_athletics',     coordinatorName: 'PT Usha Pillai',         email: 'athletics.coord@sems.edu' },
   { assignedSport: 'tug-of-war',    sportName: 'Tug of War',    username: 'coord_tug_of_war',    coordinatorName: 'Bheem Singh Power',      email: 'tugofwar.coord@sems.edu' },
   { assignedSport: 'gully-cricket', sportName: 'Gully Cricket', username: 'coord_gully_cricket', coordinatorName: 'Chiku Bhai',             email: 'gullycricket.coord@sems.edu' },
+];
+
+export const MOCK_BADMINTON_PARTICIPANTS = [
+  {
+    id: "REG-BAD-101",
+    timestamp: "16 Jul, 10:32 am",
+    sport: "Badminton",
+    category: "SINGLES",
+    format: "SINGLES",
+    player1: {
+      name: "Aditya Singh",
+      roll: "25261101308",
+      college: "MPCPS (KN142)",
+      year: "2nd Year",
+      phone: "9336938985",
+      email: "adityasinghmlzs01@gmail.com"
+    },
+    feePaid: "₹100",
+    transactionStatus: "Captured",
+    verificationStatus: "Razorpay Auto-Verified"
+  },
+  {
+    id: "REG-BAD-102",
+    timestamp: "19 Jul, 01:11 pm",
+    sport: "Badminton",
+    category: "SINGLES",
+    format: "SINGLES",
+    player1: {
+      name: "Kavyansh Sonwani",
+      roll: "2300461540052",
+      college: "MPEC",
+      year: "4th Year",
+      phone: "8112425951",
+      email: "kavyanshsonwani@gmail.com"
+    },
+    feePaid: "₹100",
+    transactionStatus: "Captured",
+    verificationStatus: "Razorpay Auto-Verified"
+  },
+  {
+    id: "REG-BAD-103",
+    timestamp: "19 Jul, 02:12 pm",
+    sport: "Badminton",
+    category: "DOUBLES",
+    format: "DOUBLES",
+    player1: {
+      name: "Kavyansh Sonwani",
+      roll: "2300461540052",
+      college: "MPEC",
+      year: "4th Year",
+      phone: "8112425951",
+      email: "kavyanshsonwani@gmail.com"
+    },
+    player2: {
+      name: "Prabal Agrahari",
+      roll: "2300460100084",
+      college: "MPEC",
+      year: "4th Year",
+      phone: "9305828388",
+      email: "prabalagrahari2006@gmail.com"
+    },
+    feePaid: "₹200",
+    transactionStatus: "Captured",
+    verificationStatus: "Razorpay Auto-Verified"
+  },
+  {
+    id: "REG-BAD-104",
+    timestamp: "21 Jul, 11:45 am",
+    sport: "Badminton",
+    category: "SINGLES",
+    format: "SINGLES",
+    player1: {
+      name: "Rohan Verma",
+      roll: "2400460100112",
+      college: "MIPS Kanpur",
+      year: "3rd Year",
+      phone: "9839120492",
+      email: "rohanverma2026@gmail.com"
+    },
+    feePaid: "₹100",
+    transactionStatus: "Captured",
+    verificationStatus: "Razorpay Auto-Verified"
+  },
+  {
+    id: "REG-BAD-105",
+    timestamp: "23 Jul, 04:20 pm",
+    sport: "Badminton",
+    category: "DOUBLES",
+    format: "DOUBLES",
+    player1: {
+      name: "Aman Sharma",
+      roll: "2300460200045",
+      college: "MPEC",
+      year: "3rd Year",
+      phone: "9876543210",
+      email: "amansharma@mpec.edu"
+    },
+    player2: {
+      name: "Rahul Verma",
+      roll: "2300460200048",
+      college: "MPEC",
+      year: "3rd Year",
+      phone: "9876543211",
+      email: "rahulverma@mpec.edu"
+    },
+    feePaid: "₹200",
+    transactionStatus: "Captured",
+    verificationStatus: "Razorpay Auto-Verified"
+  },
+  {
+    id: "REG-BAD-106",
+    timestamp: "25 Jul, 09:15 am",
+    sport: "Badminton",
+    category: "SINGLES",
+    format: "SINGLES",
+    player1: {
+      name: "Sanya Malhotra",
+      roll: "25261102901",
+      college: "MPCP Kanpur",
+      year: "2nd Year",
+      phone: "9834567890",
+      email: "sanyamalhotra@mpcp.edu"
+    },
+    feePaid: "₹100",
+    transactionStatus: "Captured",
+    verificationStatus: "Razorpay Auto-Verified"
+  }
 ];
 
 export const coordinatorApi = {
@@ -108,11 +235,25 @@ export const coordinatorApi = {
       const res = await api.get('/coordinator/matches');
       if (res.data && Array.isArray(res.data)) {
         if (res.data.length > 0) {
+          const completedMap = new Map();
+          savedMatches.forEach((m) => {
+            if (m && m.id && (m.status === 'COMPLETED' || m.status === 'FINISHED')) {
+              completedMap.set(m.id, m);
+            }
+          });
+
+          const merged = res.data.map((m) => {
+            if (completedMap.has(m.id)) {
+              return completedMap.get(m.id);
+            }
+            return m;
+          });
+
           const serverIds = new Set(res.data.map((m) => m.id));
           const localOnly = savedMatches.filter((m) => m && m.id && !serverIds.has(m.id));
-          const merged = [...res.data, ...localOnly];
-          this.saveMatches(merged);
-          return merged;
+          const finalMatches = [...merged, ...localOnly];
+          this.saveMatches(finalMatches);
+          return finalMatches;
         } else if (savedMatches.length > 0) {
           return savedMatches;
         } else {
@@ -353,8 +494,18 @@ export const coordinatorApi = {
       console.warn('Backend completeMatch API fallback:', e);
     }
 
-    // Save updated match in match list & purge completed match from active schedule list
-    const updatedList = matches.filter((m) => m.id !== matchId && m.status !== 'COMPLETED' && m.status !== 'FINISHED');
+    // Save updated match in match list with COMPLETED status
+    let foundInList = false;
+    const updatedList = matches.map((m) => {
+      if (m.id === matchId) {
+        foundInList = true;
+        return completedObj;
+      }
+      return m;
+    });
+    if (!foundInList) {
+      updatedList.unshift(completedObj);
+    }
     this.saveMatches(updatedList);
 
 
@@ -400,7 +551,7 @@ export const coordinatorApi = {
 
     try {
       const res = await api.get('/coordinator/registrations');
-      if (res.data && Array.isArray(res.data)) {
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
         return res.data;
       }
     } catch (e) {
@@ -409,7 +560,18 @@ export const coordinatorApi = {
 
     const key = `sems_participants_${user.assignedSport}`;
     const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+
+    // Default mock data seed for Badminton or any sport when empty
+    if (user.assignedSport === 'badminton' || !saved) {
+      localStorage.setItem(key, JSON.stringify(MOCK_BADMINTON_PARTICIPANTS));
+      return MOCK_BADMINTON_PARTICIPANTS;
+    }
+
+    return [];
   },
 
   // Get Public Live Matches from Backend API with localStorage fallback

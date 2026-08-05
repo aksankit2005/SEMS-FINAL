@@ -5,6 +5,8 @@ import { coordinatorApi } from '../../services/coordinatorApi';
 import { getSportConfig, SPORTS_CONFIG } from '../../data/sportsConfig';
 import { SPORTS_DATA } from '../../data/sportsData';
 
+import { LIVE_MATCHES_DATA } from '../../data/liveMatchesData';
+
 export const LiveMatchPortalPage = () => {
   const [selectedSportFilter, setSelectedSportFilter] = useState('All');
   const [liveMatches, setLiveMatches] = useState([]);
@@ -28,18 +30,21 @@ export const LiveMatchPortalPage = () => {
         } catch (e) { }
       }
 
-      // Merge backend matches & local active matches (removing duplicate IDs)
-      const combined = [...(publicLive || []), ...localActiveList];
+      // Merge backend matches, local active matches & fallback 12 live matches (removing duplicate IDs)
+      const combined = [...(publicLive || []), ...localActiveList, ...LIVE_MATCHES_DATA];
       const uniqueMap = {};
       combined.forEach((m) => {
         const s = (m?.status || '').toLowerCase();
         if (m && m.id && m.id !== 'M595473' && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active' || s === 'scheduled' || s === '')) {
+          const inferredSportId = (m.sportId || m.sport || (m.sportName ? m.sportName.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'badminton')).toLowerCase();
+          const inferredSportName = m.sportName || m.sport || (inferredSportId.charAt(0).toUpperCase() + inferredSportId.slice(1).replace('-', ' '));
+
           uniqueMap[m.id] = {
             ...m,
-            sportId: m.sportId || 'table-tennis',
-            sportName: m.sportName || 'TABLE TENNIS',
-            tableNumber: m.tableNumber || m.venue || 'Table 1',
-            matchTitle: m.matchTitle || `${m.team1} vs ${m.team2}`,
+            sportId: inferredSportId,
+            sportName: inferredSportName,
+            tableNumber: m.tableNumber || m.venue || 'Court 1',
+            matchTitle: m.matchTitle || `${typeof m.team1 === 'object' ? (m.team1?.name || 'Team 1') : (m.team1 || 'Team 1')} vs ${typeof m.team2 === 'object' ? (m.team2?.name || 'Team 2') : (m.team2 || 'Team 2')}`,
             liveTimer: m.liveTimer || '14:32',
           };
         }
@@ -220,63 +225,91 @@ export const LiveMatchPortalPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {filteredLiveMatches.map((m) => {
                 const sportConfig = getSportConfig(m.sportId || 'table-tennis');
+                const t1Name = typeof m.team1 === 'object' ? (m.team1?.name || 'Team 1') : String(m.team1 || 'Team 1');
+                const t2Name = typeof m.team2 === 'object' ? (m.team2?.name || 'Team 2') : String(m.team2 || 'Team 2');
+                const score1Display = typeof m.team1 === 'object' ? (m.team1?.score ?? '0') : (m.score1 ?? '0');
+                const score2Display = typeof m.team2 === 'object' ? (m.team2?.score ?? '0') : (m.score2 ?? '0');
+
+                const statusLower = (m.status || '').toLowerCase();
+                const isFinished = statusLower === 'completed' || statusLower === 'finished' || statusLower === 'ended';
 
                 return (
                   <div
                     key={m.id}
-                    className="p-5 rounded-3xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-[#1E293B] hover:border-indigo-500/50 shadow-xs dark:shadow-xl transition space-y-4 group"
+                    className="p-5 rounded-3xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-[#1E293B] hover:border-indigo-500/50 shadow-md dark:shadow-xl transition-all duration-300 space-y-4 group"
                   >
-                    <div className="flex items-center justify-between">
+                    {/* Status & Venue Top Bar */}
+                    <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-[10px] font-mono font-bold flex items-center gap-1.5 animate-pulse">
-                          🔴 LIVE
-                        </span>
+                        {isFinished ? (
+                          <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 text-[10px] font-mono font-extrabold uppercase">
+                            🏁 Finished
+                          </span>
+                        ) : (
+                          <span className="px-3 py-1 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-[10px] font-mono font-extrabold flex items-center gap-1.5 animate-pulse uppercase">
+                            🔴 LIVE
+                          </span>
+                        )}
                         {m.youtubeVideoId && (
-                          <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-600 text-white flex items-center gap-1">
+                          <span className="px-2.5 py-1 rounded-full text-[9px] font-mono font-black bg-rose-600 text-white flex items-center gap-1 shadow-xs">
                             <Video className="w-2.5 h-2.5" /> STREAM
                           </span>
                         )}
                       </div>
-                      <span className="text-xs font-bold text-amber-600 dark:text-amber-400 font-mono">
+                      <span className="text-xs font-bold text-amber-600 dark:text-amber-400 font-mono truncate max-w-[150px]">
                         {m.tableNumber || m.venue || sportConfig.venueOptions[0]}
                       </span>
                     </div>
 
-                    <div className="space-y-1">
-                      <span className="text-[11px] font-bold text-blue-600 dark:text-indigo-400 uppercase tracking-wider">
-                        {sportConfig.icon} {sportConfig.name} • #{m.id}
-                      </span>
-                      <h3 className="text-base font-black text-slate-900 dark:text-white">{m.matchTitle || `${m.team1} vs ${m.team2}`}</h3>
-                    </div>
-
-                    {/* Spectator Score Box */}
-                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-[#1E293B] flex items-center justify-between transition-colors">
-                      <div className="space-y-0.5">
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase">{m.college1 || 'MPEC'}</span>
-                        <p className="text-sm font-bold text-slate-900 dark:text-white">{m.team1}</p>
+                    {/* Prominent Sport Icon & Sport Name Header */}
+                    <div className="flex items-center gap-3 py-2 border-b border-slate-100 dark:border-slate-800/80">
+                      <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/20 dark:from-indigo-600/30 dark:to-blue-600/20 text-blue-600 dark:text-indigo-400 flex items-center justify-center text-2xl font-black shadow-xs shrink-0">
+                        {sportConfig.icon}
                       </div>
-
-                      <div className="text-center font-mono font-black text-2xl text-blue-600 dark:text-indigo-400">
-                        {m.score1} : {m.score2}
-                      </div>
-
-                      <div className="text-right space-y-0.5">
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase">{m.college2 || 'MIPS'}</span>
-                        <p className="text-sm font-bold text-slate-900 dark:text-white">{m.team2}</p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-black uppercase text-blue-600 dark:text-indigo-400 tracking-wide truncate">
+                            {sportConfig.name}
+                          </span>
+                          <span className="text-[10px] font-mono font-bold text-slate-400 shrink-0">#{m.id}</span>
+                        </div>
+                        <h3 className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-slate-200 truncate">
+                          {m.matchTitle || `${t1Name} vs ${t2Name}`}
+                        </h3>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-1 text-xs">
-                      <span className="font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> {m.liveTimer || '14:32'}
+                    {/* Clean Spectator Score Box (No College Name, No Time Display) */}
+                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-[#1E293B] flex items-center justify-between gap-3 shadow-xs">
+                      <div className="flex-1 min-w-0 text-left">
+                        <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white truncate" title={t1Name}>
+                          {t1Name}
+                        </p>
+                      </div>
+
+                      <div className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center font-mono font-black text-2xl sm:text-3xl text-blue-600 dark:text-indigo-400 shadow-xs shrink-0">
+                        {score1Display} : {score2Display}
+                      </div>
+
+                      <div className="flex-1 min-w-0 text-right">
+                        <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white truncate" title={t2Name}>
+                          {t2Name}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Footer Action Row (No Time Display) */}
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 font-mono truncate max-w-[180px]">
+                        {m.currentInfo || (isFinished ? 'Match Ended' : 'Match In Progress')}
                       </span>
 
                       <button
                         onClick={() => setSelectedMatch(m)}
-                        className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                        className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0"
                       >
                         {m.youtubeVideoId ? <Tv className="w-3.5 h-3.5 text-rose-300" /> : <Play className="w-3.5 h-3.5" />}
-                        <span>{m.youtubeVideoId ? 'Watch Live Stream' : 'View Live Scoreboard'}</span>
+                        <span>{m.youtubeVideoId ? 'Watch Stream' : 'View Scoreboard'}</span>
                       </button>
                     </div>
                   </div>

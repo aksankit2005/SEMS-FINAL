@@ -135,18 +135,26 @@ export const ResultManagementTab = ({ user }) => {
       return;
     }
 
-    const excelData = filteredResults.map((r) => ({
-      'Match ID': r.id,
-      'Event Title': r.eventTitle || `${sportName} Tournament`,
-      'Format': r.format || 'SINGLES',
-      'Category': r.category || r.gender || 'Open',
-      'Player / Team 1': r.team1 || 'TBD',
-      'Player / Team 2': r.team2 || 'TBD',
-      'Final Score': `${r.score1 || 0} - ${r.score2 || 0}`,
-      'Declared Winner': r.winner || r.team1,
-      'Venue / Court': r.tableNumber || r.venue || 'Court 1',
-      'Time / Slot': r.time || 'Completed',
-    }));
+    const excelData = filteredResults.map((r) => {
+      const setsBreakdown = r.setsHistory && Array.isArray(r.setsHistory) && r.setsHistory.some((s) => s.score1 > 0 || s.score2 > 0)
+        ? r.setsHistory.filter((s) => s.score1 > 0 || s.score2 > 0).map((s) => `S${s.set}: ${s.score1}-${s.score2}`).join(' | ')
+        : (r.scoreSummary || 'N/A');
+
+      return {
+        'Match ID': r.id || 'N/A',
+        'Event Title': r.eventTitle || `${sportName} Tournament`,
+        'Format': r.format || 'SINGLES',
+        'Category / Gender': r.category || r.gender || 'Open',
+        'Player / Team 1': r.team1 || 'TBD',
+        'Player / Team 2': r.team2 || 'TBD',
+        'Sets Won': r.setsWon1 !== undefined && r.setsWon2 !== undefined ? `${r.setsWon1} - ${r.setsWon2} Sets` : 'N/A',
+        'Set-by-Set Points': setsBreakdown,
+        'Declared Winner': r.winner || r.team1 || 'TBD',
+        'Venue / Court': r.tableNumber || r.venue || 'Court 1',
+        'Time / Slot': r.time || 'Completed',
+        'Completed Date': r.completedAt ? new Date(r.completedAt).toLocaleString() : 'N/A'
+      };
+    });
 
     exportToCSV(excelData, `${sportName}_Match_Results_${new Date().toISOString().split('T')[0]}`);
     addToast(`Exported ${filteredResults.length} match results to Excel/CSV!`, 'success');
@@ -295,8 +303,31 @@ export const ResultManagementTab = ({ user }) => {
                     {/* SCORE & WINNER */}
                     <td className="p-4 font-bold">
                       <div className="flex flex-col gap-1">
-                        <span className="font-mono text-slate-900 dark:text-white text-sm">{r.score1 || 0} - {r.score2 || 0}</span>
-                        <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-black text-slate-900 dark:text-white text-sm">
+                            {r.setsWon1 !== undefined && r.setsWon2 !== undefined
+                              ? `${r.setsWon1} - ${r.setsWon2} Sets`
+                              : `${r.score1 || 0} - ${r.score2 || 0} Pts`}
+                          </span>
+                        </div>
+
+                        {/* Set by Set Breakdown Points */}
+                        {r.setsHistory && Array.isArray(r.setsHistory) && r.setsHistory.some((s) => s.score1 > 0 || s.score2 > 0) && (
+                          <div className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-semibold">
+                            {r.setsHistory
+                              .filter((s) => s.score1 > 0 || s.score2 > 0)
+                              .map((s) => `S${s.set}: ${s.score1}-${s.score2}`)
+                              .join(' | ')}
+                          </div>
+                        )}
+
+                        {r.scoreSummary && (!r.setsHistory || !r.setsHistory.some((s) => s.score1 > 0 || s.score2 > 0)) && (
+                          <div className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-semibold">
+                            {r.scoreSummary}
+                          </div>
+                        )}
+
+                        <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-xs font-black pt-0.5">
                           <Trophy className="w-3.5 h-3.5" /> Winner: {r.winner || r.team1}
                         </span>
                       </div>

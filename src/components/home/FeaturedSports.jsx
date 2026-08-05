@@ -95,13 +95,13 @@ export const FeaturedSports = () => {
     return {
       eventName: sport.name,
       entryFee: sport.entryFee,
-      regStartDate: '-',
-      regEndDate: '-',
+      regStartDate: '01-08-2026',
+      regEndDate: '30-08-2026',
       eventDate: formatDateToDDMMYYYY(sport.startDate),
       tournStartDate: null,
       tournEndDate: null,
       venue: sport.venue,
-      isOpen: false,
+      isOpen: true,
       raw: null
     };
   };

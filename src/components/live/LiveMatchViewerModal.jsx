@@ -85,13 +85,21 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
 
   const sportConfig = resolveSportConfig(match);
 
+  const team1Name = typeof match.team1 === 'object' ? (match.team1?.name || 'Team 1') : String(match.team1 || 'Team 1');
+  const team2Name = typeof match.team2 === 'object' ? (match.team2?.name || 'Team 2') : String(match.team2 || 'Team 2');
+  const score1Val = typeof match.team1 === 'object' ? (match.team1?.score ?? '0') : (match.score1 ?? '0');
+  const score2Val = typeof match.team2 === 'object' ? (match.team2?.score ?? '0') : (match.score2 ?? '0');
+
+  const statusLower = (match.status || '').toLowerCase();
+  const isFinished = statusLower === 'completed' || statusLower === 'finished' || statusLower === 'ended';
+
   const setsHistory = match.setsHistory || [];
 
   const calcSetsWon1 = () => {
     if (typeof match.setsWon1 === 'number') return match.setsWon1;
     if (typeof match.setsWonA === 'number') return match.setsWonA;
     return setsHistory.filter(
-      (s) => s.isLocked && (s.winner === 1 || s.winner === '1' || s.winner === match.team1 || s.score1 > s.score2)
+      (s) => s.isLocked && (s.winner === 1 || s.winner === '1' || s.winner === team1Name || s.score1 > s.score2)
     ).length;
   };
 
@@ -99,7 +107,7 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
     if (typeof match.setsWon2 === 'number') return match.setsWon2;
     if (typeof match.setsWonB === 'number') return match.setsWonB;
     return setsHistory.filter(
-      (s) => s.isLocked && (s.winner === 2 || s.winner === '2' || s.winner === match.team2 || s.score2 > s.score1)
+      (s) => s.isLocked && (s.winner === 2 || s.winner === '2' || s.winner === team2Name || s.score2 > s.score1)
     ).length;
   };
 
@@ -113,17 +121,23 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
         {/* Modal Header */}
         <div className="p-4 sm:p-6 bg-white dark:bg-[#0F172A] border-b border-slate-200 dark:border-[#1E293B] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600/10 dark:bg-indigo-600/20 text-blue-600 dark:text-indigo-400 flex items-center justify-center text-xl font-bold">
+            <div className="w-11 h-11 rounded-2xl bg-blue-600/10 dark:bg-indigo-600/20 text-blue-600 dark:text-indigo-400 flex items-center justify-center text-2xl font-black shrink-0">
               {sportConfig.icon}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-[10px] font-mono font-bold flex items-center gap-1 animate-pulse">
-                  🔴 LIVE SPECTATOR SCOREBOARD
-                </span>
+                {isFinished ? (
+                  <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 text-[10px] font-mono font-bold uppercase">
+                    🏁 Finished
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-[10px] font-mono font-bold flex items-center gap-1 animate-pulse uppercase">
+                    🔴 LIVE SPECTATOR SCOREBOARD
+                  </span>
+                )}
                 <span className="text-xs font-mono text-slate-400 dark:text-slate-500">#{match.id}</span>
               </div>
-              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">{match.matchTitle || `${match.team1} vs ${match.team2}`}</h3>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">{match.matchTitle || `${team1Name} vs ${team2Name}`}</h3>
             </div>
           </div>
 
@@ -144,24 +158,19 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
               <VideoOff className="w-6 h-6 text-slate-500" />
             </div>
             <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Live video is not available</h4>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">Showing real-time live score updates from official tournament umpires.</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">Showing real-time live score updates from official tournament scoring table.</p>
           </div>
         )}
 
 
-        {/* Large Spectator Scoreboard Section */}
+        {/* Large Spectator Scoreboard Section (No College Name) */}
         <div className="p-6 bg-slate-50 dark:bg-gradient-to-b dark:from-[#0B1120] dark:to-[#0F172A] border-b border-slate-200 dark:border-[#1E293B] space-y-6">
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
             
             {/* Player / Team A */}
             <div className="text-center md:text-left space-y-2">
-              {getShortCollege(match.college1) && (
-                <span className="text-xs font-bold uppercase text-blue-600 dark:text-indigo-400 tracking-wider block">
-                  {getShortCollege(match.college1)}
-                </span>
-              )}
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{match.team1}</h2>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{team1Name}</h2>
               <div className="flex items-center justify-center md:justify-start gap-2 text-xs text-slate-500 dark:text-slate-400">
                 <span>Sets Won:</span>
                 <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-indigo-600/20 text-blue-700 dark:text-indigo-300 font-mono font-bold">
@@ -173,29 +182,24 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
             {/* Middle Live Score */}
             <div className="text-center bg-white dark:bg-[#090D16] p-5 rounded-2xl border border-slate-200 dark:border-[#1E293B] shadow-sm dark:shadow-inner space-y-2">
               <span className="text-[10px] font-mono uppercase font-bold text-slate-500 dark:text-slate-400 tracking-widest block">
-                {sportConfig.name} Live Points
+                {sportConfig.name} {isFinished ? 'Final Score' : 'Live Points'}
               </span>
               
               <div className="flex items-center justify-center gap-4 text-5xl font-black font-mono text-slate-900 dark:text-white">
-                <span className="text-blue-600 dark:text-indigo-400">{match.score1}</span>
+                <span className="text-blue-600 dark:text-indigo-400">{score1Val}</span>
                 <span className="text-slate-400 dark:text-slate-600 text-3xl">:</span>
-                <span className="text-blue-600 dark:text-indigo-400">{match.score2}</span>
+                <span className="text-blue-600 dark:text-indigo-400">{score2Val}</span>
               </div>
 
               <div className="pt-2 flex items-center justify-center gap-2 text-xs font-mono text-emerald-600 dark:text-emerald-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                <span className="font-bold">REAL-TIME LIVE SCORE</span>
+                {!isFinished && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />}
+                <span className="font-bold">{isFinished ? 'MATCH FINISHED' : 'REAL-TIME LIVE SCORE'}</span>
               </div>
             </div>
 
             {/* Player / Team B */}
             <div className="text-center md:text-right space-y-2">
-              {getShortCollege(match.college2) && (
-                <span className="text-xs font-bold uppercase text-blue-600 dark:text-indigo-400 tracking-wider block">
-                  {getShortCollege(match.college2)}
-                </span>
-              )}
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{match.team2}</h2>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{team2Name}</h2>
               <div className="flex items-center justify-center md:justify-end gap-2 text-xs text-slate-500 dark:text-slate-400">
                 <span>Sets Won:</span>
                 <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-indigo-600/20 text-blue-700 dark:text-indigo-300 font-mono font-bold">
@@ -206,23 +210,21 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
 
           </div>
 
-          {/* Match Metadata Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center bg-white dark:bg-[#090D16]/60 p-3 rounded-xl border border-slate-200 dark:border-[#1E293B] text-xs shadow-xs">
+          {/* Match Metadata Bar (No Umpire/Referee section) */}
+          <div className="grid grid-cols-3 gap-3 text-center bg-white dark:bg-[#090D16]/60 p-3.5 rounded-2xl border border-slate-200 dark:border-[#1E293B] text-xs shadow-xs">
             <div>
               <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Sport</span>
-              <span className="font-bold text-slate-900 dark:text-white">{sportConfig.name}</span>
+              <span className="font-extrabold text-slate-900 dark:text-white flex items-center justify-center gap-1.5">
+                <span>{sportConfig.icon}</span> <span>{sportConfig.name}</span>
+              </span>
             </div>
             <div>
-              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Venue</span>
-              <span className="font-bold text-amber-600 dark:text-amber-400">{match.venue || match.tableNumber || sportConfig.venueOptions[0]}</span>
-            </div>
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Umpire / Referee</span>
-              <span className="font-bold text-slate-700 dark:text-slate-300">{match.referee || 'Official Ref A'}</span>
+              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Venue / Court</span>
+              <span className="font-extrabold text-amber-600 dark:text-amber-400 truncate block">{match.venue || match.tableNumber || sportConfig.venueOptions[0]}</span>
             </div>
             <div>
               <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Category Format</span>
-              <span className="font-bold text-blue-600 dark:text-indigo-400">{match.format || 'Singles'}</span>
+              <span className="font-extrabold text-blue-600 dark:text-indigo-400">{match.format || 'Standard'}</span>
             </div>
           </div>
 

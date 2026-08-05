@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { coordinatorApi } from '../../services/coordinatorApi';
 import { CoordinatorHeader } from '../../components/coordinator/CoordinatorHeader';
+import { ProfileTab } from '../../components/coordinator/tabs/ProfileTab';
 import { EventsTab } from '../../components/coordinator/tabs/EventsTab';
 import { MatchScheduleTab } from '../../components/coordinator/tabs/MatchScheduleTab';
 import { LiveMatchControlTab } from '../../components/coordinator/tabs/LiveMatchControlTab';
@@ -86,7 +87,7 @@ export const CoordinatorDashboardPage = () => {
 
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#090D16] text-slate-900 dark:text-white flex flex-col font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-150">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#090D16] text-slate-900 dark:white flex flex-col font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-150">
 
       {/* Top Header & Horizontal Tabs Navigation Bar */}
       <CoordinatorHeader
@@ -108,6 +109,15 @@ export const CoordinatorDashboardPage = () => {
           </div>
         ) : (
           <>
+            {activeTab === 'profile' && (
+              <ProfileTab
+                user={user}
+                matches={matches}
+                registrations={registrations}
+                onLogout={handleLogout}
+              />
+            )}
+
             {activeTab === 'events' && (
               <EventsTab user={user} />
             )}
