@@ -52,9 +52,9 @@ export const EventsTab = ({ user }) => {
       'Sports jersey and proper shoes required.'
     ],
     requiredDocuments: ['College Student ID', 'Aadhaar Card / Govt ID'],
-    contactName: user?.coordinatorName || 'Sport Coordinator',
-    contactEmail: user?.email || `${user?.assignedSport || 'badminton'}.coord@sems.edu`,
-    contactPhone: '+91 98765 43210'
+    contactName: user?.coordinatorName || '',
+    contactEmail: user?.email || '',
+    contactPhone: ''
   });
 
   const [rulesInput, setRulesInput] = useState('');
@@ -131,9 +131,9 @@ export const EventsTab = ({ user }) => {
       status: 'Published',
       rules: ['Official ITTF/BWF rules apply.', 'College ID mandatory.'],
       requiredDocuments: ['College Student ID Card', 'Aadhaar Card'],
-      contactName: user?.coordinatorName || 'Sport Coordinator',
-      contactEmail: user?.email || `${user?.assignedSport}.coord@sems.edu`,
-      contactPhone: '+91 98765 43210'
+      contactName: user?.coordinatorName || '',
+      contactEmail: user?.email || '',
+      contactPhone: ''
     });
     setRulesInput('Official tournament rules apply.\nCollege Student ID & Pass mandatory.');
     setDocInput('College Student ID Card\nAadhaar Card / Govt ID');
@@ -306,20 +306,20 @@ export const EventsTab = ({ user }) => {
       {/* EVENTS MANAGEMENT TABLE & CARDS */}
       <div className="space-y-4">
         {loading ? (
-          <div className="py-16 text-center space-y-2 bg-[#0B1120] rounded-3xl border border-slate-800">
+          <div className="py-16 text-center space-y-2 bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800">
             <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-xs text-slate-400">Loading {user?.sportName} registration events...</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Loading {user?.sportName} registration events...</p>
           </div>
         ) : events.length === 0 ? (
-          <div className="py-16 text-center space-y-3 bg-[#0B1120] rounded-3xl border border-slate-800 p-8">
-            <Layers className="w-12 h-12 text-slate-600 mx-auto" />
-            <h3 className="text-base font-black text-white">No Registration Events Created Yet</h3>
-            <p className="text-xs text-slate-400 max-w-md mx-auto">
+          <div className="py-16 text-center space-y-3 bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-soft dark:shadow-md">
+            <Layers className="w-12 h-12 text-slate-400 dark:text-slate-600 mx-auto" />
+            <h3 className="text-base font-black text-slate-900 dark:text-white">No Registration Events Created Yet</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
               Click the "Create Registration Event" button above to publish your first tournament registration event for {user?.sportName}.
             </p>
             <button
               onClick={handleOpenCreate}
-              className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow-md"
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
             >
               + Create First Event
             </button>
@@ -350,11 +350,9 @@ export const EventsTab = ({ user }) => {
                       <span className={`px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase border shadow-md ${
                         event.status === 'Published'
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                          : event.status === 'Coming Soon'
-                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                           : event.status === 'Closed'
                           ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                          : 'bg-slate-500/20 text-slate-300 border-slate-500/40'
+                          : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                       }`}>
                         ● {event.status}
                       </span>
@@ -681,7 +679,6 @@ export const EventsTab = ({ user }) => {
                   >
                     <option value="Draft">Draft (Hidden)</option>
                     <option value="Published">Published (Open)</option>
-                    <option value="Coming Soon">Coming Soon</option>
                     <option value="Closed">Closed</option>
                   </select>
                 </div>
@@ -727,33 +724,7 @@ export const EventsTab = ({ user }) => {
                 />
               </div>
 
-              {/* Contact Information */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3">
-                <span className="text-xs font-bold uppercase text-blue-600 dark:text-indigo-400 block">Coordinator Contact Information</span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <input
-                    type="text"
-                    placeholder="Contact Name"
-                    value={formData.contactName}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, contactName: e.target.value }))}
-                    className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs text-slate-900 dark:text-white"
-                  />
-                  <input
-                    type="email"
-                    placeholder="Contact Email"
-                    value={formData.contactEmail}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, contactEmail: e.target.value }))}
-                    className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs text-slate-900 dark:text-white"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Contact Phone"
-                    value={formData.contactPhone}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, contactPhone: e.target.value }))}
-                    className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs text-slate-900 dark:text-white"
-                  />
-                </div>
-              </div>
+
 
               {/* Modal Buttons */}
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">

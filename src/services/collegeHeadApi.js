@@ -30,72 +30,57 @@ const MOCK_COLLEGE_HEAD_USERS = [
 ];
 
 const MOCK_REGISTRATIONS = [
-  // MPEC
-  { id: 'REG-MPEC-01', studentName: 'Aarav Sharma', rollNumber: '22MPEC045', college: 'MPEC', course: 'B.Tech', branch: 'CSE', year: '3rd Year', sportId: 'cricket', sportName: 'Cricket', category: 'Outdoor', eventType: 'Team (11 Players)', status: 'Confirmed', passCode: 'MPEC-CRIC-045', registeredDate: '2026-07-15', gender: 'Male' },
-  { id: 'REG-MPEC-02', studentName: 'Ananya Verma', rollNumber: '23MPEC112', college: 'MPEC', course: 'B.Tech', branch: 'ECE', year: '2nd Year', sportId: 'badminton', sportName: 'Badminton', category: 'Indoor', eventType: 'Singles', status: 'Confirmed', passCode: 'MPEC-BADM-112', registeredDate: '2026-07-16', gender: 'Female' },
-  { id: 'REG-MPEC-03', studentName: 'Rohan Gupta', rollNumber: '21MPEC089', college: 'MPEC', course: 'B.Tech', branch: 'ME', year: '4th Year', sportId: 'football', sportName: 'Football', category: 'Outdoor', eventType: 'Team (11 Players)', status: 'Confirmed', passCode: 'MPEC-FOOT-089', registeredDate: '2026-07-18', gender: 'Male' },
-  { id: 'REG-MPEC-04', studentName: 'Isha Patel', rollNumber: '24MPEC012', college: 'MPEC', course: 'BBA', branch: 'Management', year: '1st Year', sportId: 'chess', sportName: 'Chess', category: 'Mind Sport', eventType: 'Individual', status: 'Confirmed', passCode: 'MPEC-CHES-012', registeredDate: '2026-07-20', gender: 'Female' },
-  { id: 'REG-MPEC-05', studentName: 'Devansh Singh', rollNumber: '22MPEC078', college: 'MPEC', course: 'B.Tech', branch: 'IT', year: '3rd Year', sportId: 'table-tennis', sportName: 'Table Tennis', category: 'Indoor', eventType: 'Singles', status: 'Confirmed', passCode: 'MPEC-TT-078', registeredDate: '2026-07-22', gender: 'Male' },
-  { id: 'REG-MPEC-06', studentName: 'Priya Mishra', rollNumber: '23MPEC034', college: 'MPEC', course: 'BCA', branch: 'Computers', year: '2nd Year', sportId: 'athletics', sportName: 'Athletics', category: 'Track & Field', eventType: '100m Sprint', status: 'Confirmed', passCode: 'MPEC-ATHL-034', registeredDate: '2026-07-24', gender: 'Female' },
-  { id: 'REG-MPEC-07', studentName: 'Siddharth Saxena', rollNumber: '22MPEC091', college: 'MPEC', course: 'B.Tech', branch: 'CSE', year: '3rd Year', sportId: 'gully-cricket', sportName: 'Gully Cricket', category: 'Outdoor', eventType: 'Team (5-8 Players)', status: 'Confirmed', passCode: 'MPEC-GULL-091', registeredDate: '2026-07-25', gender: 'Male' },
+  // MPEC Kanpur Students
+  { id: 'REG-1001', studentName: 'Aarav Sharma', rollNumber: '210016010001', college: 'MPEC', course: 'B.Tech', branch: 'Computer Science', year: '3rd Year', gender: 'Male', sportId: 'table-tennis', sportName: 'Table Tennis', category: 'Singles', status: 'VERIFIED' },
+  { id: 'REG-1002', studentName: 'Aditya Singh', rollNumber: '210016010015', college: 'MPEC', course: 'B.Tech', branch: 'Information Technology', year: '4th Year', gender: 'Male', sportId: 'cricket', sportName: 'Cricket', category: 'Mens Team', status: 'VERIFIED' },
+  { id: 'REG-1003', studentName: 'Kabir Singh', rollNumber: '210016010042', college: 'MPEC', course: 'B.Tech', branch: 'Mechanical Engineering', year: '3rd Year', gender: 'Male', sportId: 'chess', sportName: 'Chess', category: 'Individual Rapid', status: 'VERIFIED' },
+  { id: 'REG-1004', studentName: 'Riya Tiwari', rollNumber: '220016010088', college: 'MPEC', course: 'B.Tech', branch: 'Computer Science', year: '2nd Year', gender: 'Female', sportId: 'badminton', sportName: 'Badminton', category: 'Womens Singles', status: 'VERIFIED' },
+  { id: 'REG-1005', studentName: 'Siddharth Mishra', rollNumber: '210016010110', college: 'MPEC', course: 'B.Tech', branch: 'Civil Engineering', year: '4th Year', gender: 'Male', sportId: 'football', sportName: 'Football', category: 'Mens Team', status: 'VERIFIED' },
+  { id: 'REG-1006', studentName: 'Ananya Gupta', rollNumber: '230016010023', college: 'MPEC', course: 'BCA', branch: 'Computer Applications', year: '1st Year', gender: 'Female', sportId: 'athletics', sportName: 'Athletics', category: '100m Sprint', status: 'PENDING' },
+  { id: 'REG-1007', studentName: 'Manish Rawat', rollNumber: '210016010144', college: 'MPEC', course: 'B.Tech', branch: 'Electrical Engineering', year: '4th Year', gender: 'Male', sportId: 'basketball', sportName: 'Basketball', category: 'Mens 5v5', status: 'VERIFIED' },
+  { id: 'REG-1008', studentName: 'Harsh Vardhan', rollNumber: '220016010190', college: 'MPEC', course: 'B.Tech', branch: 'Computer Science', year: '2nd Year', gender: 'Male', sportId: 'tug-of-war', sportName: 'Tug of War', category: 'Heavyweight', status: 'VERIFIED' },
 
-  // MIPS
-  { id: 'REG-MIPS-01', studentName: 'Karan Malhotra', rollNumber: '22MIPS014', college: 'MIPS', course: 'B.Tech', branch: 'CSE', year: '3rd Year', sportId: 'cricket', sportName: 'Cricket', category: 'Outdoor', eventType: 'Team (11 Players)', status: 'Confirmed', passCode: 'MIPS-CRIC-014', registeredDate: '2026-07-16', gender: 'Male' },
-  { id: 'REG-MIPS-02', studentName: 'Sneha Pandey', rollNumber: '23MIPS056', college: 'MIPS', course: 'MBA', branch: 'Marketing', year: '1st Year', sportId: 'badminton', sportName: 'Badminton', category: 'Indoor', eventType: 'Doubles', status: 'Confirmed', passCode: 'MIPS-BADM-056', registeredDate: '2026-07-17', gender: 'Female' },
-  { id: 'REG-MIPS-03', studentName: 'Aditya Tiwari', rollNumber: '21MIPS033', college: 'MIPS', course: 'MCA', branch: 'Computer Apps', year: '2nd Year', sportId: 'chess', sportName: 'Chess', category: 'Mind Sport', eventType: 'Individual', status: 'Confirmed', passCode: 'MIPS-CHES-033', registeredDate: '2026-07-19', gender: 'Male' },
-  { id: 'REG-MIPS-04', studentName: 'Divya Rastogi', rollNumber: '22MIPS088', college: 'MIPS', course: 'B.Tech', branch: 'ECE', year: '3rd Year', sportId: 'athletics', sportName: 'Athletics', category: 'Track & Field', eventType: 'Long Jump', status: 'Confirmed', passCode: 'MIPS-ATHL-088', registeredDate: '2026-07-21', gender: 'Female' },
+  // MIPS Kanpur Students
+  { id: 'REG-2001', studentName: 'Rohan Gupta', rollNumber: '210025010005', college: 'MIPS', course: 'B.Tech', branch: 'Computer Science', year: '3rd Year', gender: 'Male', sportId: 'badminton', sportName: 'Badminton', category: 'Mens Singles', status: 'VERIFIED' },
+  { id: 'REG-2002', studentName: 'Varun Teja', rollNumber: '210025010034', college: 'MIPS', course: 'B.Tech', branch: 'Electronics Engineering', year: '4th Year', gender: 'Male', sportId: 'athletics', sportName: 'Athletics', category: '100m & 200m Sprint', status: 'VERIFIED' },
+  { id: 'REG-2003', studentName: 'Kavya Sen', rollNumber: '220025010055', college: 'MIPS', course: 'MBA', branch: 'Marketing', year: '1st Year', gender: 'Female', sportId: 'volleyball', sportName: 'Volleyball', category: 'Womens Team', status: 'VERIFIED' },
+  { id: 'REG-2004', studentName: 'Aakash Verma', rollNumber: '210025010078', college: 'MIPS', course: 'B.Tech', branch: 'Information Technology', year: '3rd Year', gender: 'Male', sportId: 'football', sportName: 'Football', category: 'Mens Team', status: 'VERIFIED' },
+  { id: 'REG-2005', studentName: 'Saurabh Srivastava', rollNumber: '210025010092', college: 'MIPS', course: 'MCA', branch: 'Computer Applications', year: '2nd Year', gender: 'Male', sportId: 'kho-kho', sportName: 'Kho-Kho', category: 'Mens Team', status: 'VERIFIED' },
 
-  // MPCPS (KN142)
-  { id: 'REG-MPCPS-01', studentName: 'Vikram Rajput', rollNumber: '23MPCPS009', college: 'MPCPS (KN142)', course: 'BCA', branch: 'IT', year: '2nd Year', sportId: 'football', sportName: 'Football', category: 'Outdoor', eventType: 'Team (11 Players)', status: 'Confirmed', passCode: 'MPCPS-FOOT-009', registeredDate: '2026-07-17', gender: 'Male' },
-  { id: 'REG-MPCPS-02', studentName: 'Riya Sen', rollNumber: '24MPCPS041', college: 'MPCPS (KN142)', course: 'BBA', branch: 'Finance', year: '1st Year', sportId: 'table-tennis', sportName: 'Table Tennis', category: 'Indoor', eventType: 'Singles', status: 'Confirmed', passCode: 'MPCPS-TT-041', registeredDate: '2026-07-19', gender: 'Female' },
+  // MPCPS (KN142) Students
+  { id: 'REG-3001', studentName: 'Priya Verma', rollNumber: '210038010012', college: 'MPCPS (KN142)', course: 'B.Pharm', branch: 'Pharmacy', year: '3rd Year', gender: 'Female', sportId: 'badminton', sportName: 'Badminton', category: 'Womens Singles', status: 'VERIFIED' },
+  { id: 'REG-3002', studentName: 'Devendra Rao', rollNumber: '210038010045', college: 'MPCPS (KN142)', course: 'B.Pharm', branch: 'Pharmacy', year: '4th Year', gender: 'Male', sportId: 'chess', sportName: 'Chess', category: 'Rapid Chess', status: 'VERIFIED' },
+  { id: 'REG-3003', studentName: 'Kunal Dixith', rollNumber: '220038010089', college: 'MPCPS (KN142)', course: 'D.Pharm', branch: 'Pharmacy', year: '2nd Year', gender: 'Male', sportId: 'table-tennis', sportName: 'Table Tennis', category: 'Singles & Doubles', status: 'VERIFIED' },
 
-  // MPCP
-  { id: 'REG-MPCP-01', studentName: 'Nikhil Kashyap', rollNumber: '22MPCP022', college: 'MPCP', course: 'B.Pharma', branch: 'Pharmacy', year: '3rd Year', sportId: 'cricket', sportName: 'Cricket', category: 'Outdoor', eventType: 'Team (11 Players)', status: 'Confirmed', passCode: 'MPCP-CRIC-022', registeredDate: '2026-07-18', gender: 'Male' },
-  { id: 'REG-MPCP-02', studentName: 'Pooja Nair', rollNumber: '23MPCP067', college: 'MPCP', course: 'M.Pharma', branch: 'Pharmaceutics', year: '1st Year', sportId: 'badminton', sportName: 'Badminton', category: 'Indoor', eventType: 'Singles', status: 'Confirmed', passCode: 'MPCP-BADM-067', registeredDate: '2026-07-20', gender: 'Female' },
+  // MPCP Students
+  { id: 'REG-4001', studentName: 'Shivangi Pandey', rollNumber: '210042010008', college: 'MPCP', course: 'B.Pharm', branch: 'Pharmacy', year: '3rd Year', gender: 'Female', sportId: 'kho-kho', sportName: 'Kho-Kho', category: 'Womens Team', status: 'VERIFIED' },
+  { id: 'REG-4002', studentName: 'Deepak Yadav', rollNumber: '210042010030', college: 'MPCP', course: 'M.Pharm', branch: 'Pharmaceutics', year: '1st Year', gender: 'Male', sportId: 'kabaddi', sportName: 'Kabaddi', category: 'Mens Team', status: 'VERIFIED' },
+  { id: 'REG-4003', studentName: 'Vikas Dubey', rollNumber: '220042010060', college: 'MPCP', course: 'B.Pharm', branch: 'Pharmacy', year: '2nd Year', gender: 'Male', sportId: 'volleyball', sportName: 'Volleyball', category: 'Mens Team', status: 'VERIFIED' },
 
-  // MPDC
-  { id: 'REG-MPDC-01', studentName: 'Dr. Sameer Khan', rollNumber: '21MPDC005', college: 'MPDC', course: 'BDS', branch: 'Dental', year: '4th Year', sportId: 'chess', sportName: 'Chess', category: 'Mind Sport', eventType: 'Individual', status: 'Confirmed', passCode: 'MPDC-CHES-005', registeredDate: '2026-07-19', gender: 'Male' },
+  // MPDC Students (Dental College)
+  { id: 'REG-5001', studentName: 'Dr. Nikhil Arora', rollNumber: '210055010014', college: 'MPDC', course: 'BDS', branch: 'Dental Surgery', year: '4th Year', gender: 'Male', sportId: 'gully-cricket', sportName: 'Gully Cricket', category: '6-Overs Fast Box', status: 'VERIFIED' },
+  { id: 'REG-5002', studentName: 'Simran Jolly', rollNumber: '220055010033', college: 'MPDC', course: 'BDS', branch: 'Dental Surgery', year: '3rd Year', gender: 'Female', sportId: 'table-tennis', sportName: 'Table Tennis', category: 'Womens Singles', status: 'VERIFIED' },
 
-  // MPCN&PS
-  { id: 'REG-MPCNPS-01', studentName: 'Tanya Dsouza', rollNumber: '23MPCNPS019', college: 'MPCN&PS', course: 'B.Sc Nursing', branch: 'Nursing', year: '2nd Year', sportId: 'athletics', sportName: 'Athletics', category: 'Track & Field', eventType: 'Shotput', status: 'Confirmed', passCode: 'MPCNPS-ATHL-019', registeredDate: '2026-07-21', gender: 'Female' },
-
-  // MPAMC
-  { id: 'REG-MPAMC-01', studentName: 'Ayush Kulkarni', rollNumber: '22MPAMC011', college: 'MPAMC', course: 'BAMS', branch: 'Ayurveda', year: '3rd Year', sportId: 'table-tennis', sportName: 'Table Tennis', category: 'Indoor', eventType: 'Singles', status: 'Confirmed', passCode: 'MPAMC-TT-011', registeredDate: '2026-07-22', gender: 'Male' },
-
-  // MPCAMS
-  { id: 'REG-MPCAMS-01', studentName: 'Harsh Vardhan', rollNumber: '23MPCAMS003', college: 'MPCAMS', course: 'BAMS', branch: 'Ayurveda', year: '2nd Year', sportId: 'badminton', sportName: 'Badminton', category: 'Indoor', eventType: 'Doubles', status: 'Confirmed', passCode: 'MPCAMS-BADM-003', registeredDate: '2026-07-23', gender: 'Male' },
+  // MPCAMS Students
+  { id: 'REG-6001', studentName: 'Tushar Saxena', rollNumber: '210066010019', college: 'MPCAMS', course: 'B.Sc', branch: 'Nursing & Paramedical', year: '3rd Year', gender: 'Male', sportId: 'gully-cricket', sportName: 'Gully Cricket', category: '6-Overs Fast Box', status: 'VERIFIED' },
+  { id: 'REG-6002', studentName: 'Pankaj Tripathi', rollNumber: '210066010050', college: 'MPCAMS', course: 'B.Sc', branch: 'Biotechnology', year: '4th Year', gender: 'Male', sportId: 'tug-of-war', sportName: 'Tug of War', category: 'Open Weight', status: 'VERIFIED' }
 ];
 
 const MOCK_MEDAL_TALLY = {
-  'MPEC': { gold: 5, silver: 3, bronze: 2, totalPoints: 145, topSport: 'Cricket & Football' },
-  'MIPS': { gold: 3, silver: 4, bronze: 3, totalPoints: 110, topSport: 'Badminton' },
-  'MPCPS (KN142)': { gold: 2, silver: 2, bronze: 4, totalPoints: 85, topSport: 'Table Tennis' },
-  'MPCP': { gold: 2, silver: 1, bronze: 2, totalPoints: 65, topSport: 'Cricket' },
-  'MPDC': { gold: 1, silver: 2, bronze: 1, totalPoints: 45, topSport: 'Chess' },
-  'MPCN&PS': { gold: 1, silver: 1, bronze: 2, totalPoints: 40, topSport: 'Athletics' },
-  'MPAMC': { gold: 0, silver: 2, bronze: 1, totalPoints: 25, topSport: 'Table Tennis' },
-  'MPCAMS': { gold: 0, silver: 1, bronze: 1, totalPoints: 15, topSport: 'Badminton' }
+  'MPEC': { gold: 12, silver: 8, bronze: 5, totalPoints: 170, topSport: 'Cricket & Football' },
+  'MIPS': { gold: 9, silver: 11, bronze: 6, totalPoints: 157, topSport: 'Badminton & Athletics' },
+  'MPCPS (KN142)': { gold: 7, silver: 9, bronze: 10, totalPoints: 135, topSport: 'Table Tennis & Chess' },
+  'MPCP': { gold: 3, silver: 4, bronze: 6, totalPoints: 62, topSport: 'Kho-Kho' },
+  'MPDC': { gold: 2, silver: 4, bronze: 5, totalPoints: 50, topSport: 'Gully Cricket' },
+  'MPCN&PS': { gold: 1, silver: 3, bronze: 4, totalPoints: 35, topSport: 'Volleyball' },
+  'MPAMC': { gold: 1, silver: 2, bronze: 3, totalPoints: 26, topSport: 'Track & Field' },
+  'MPCAMS': { gold: 2, silver: 3, bronze: 4, totalPoints: 43, topSport: 'Tug of War' }
 };
 
-const HEAD_PASSWORDS_CLIENT = {
-  head_mpec: 'mpec#2026',
-  head_mips: 'mips#2026',
-  head_mpcps: 'mpcps#2026',
-  head_mpcp: 'mpcp#2026',
-  head_mpdc: 'mpdc#2026',
-  head_mpcnps: 'mpcnps#2026',
-  head_mpamc: 'mpamc#2026',
-  head_mpcams: 'mpcams#2026',
-};
+// NOTE: Passwords are NOT stored in the frontend.
+// Authentication is handled exclusively by the backend.
 
 export const collegeHeadApi = {
-  // Get unique password for helper UI preset filling
-  getPresetPassword(username) {
-    const key = username?.toLowerCase();
-    return HEAD_PASSWORDS_CLIENT[key] || `${key}#2026`;
-  },
-
-  // Login
   async login(username, password) {
     try {
       const res = await api.post('/college-head/login', { username, password });
@@ -105,31 +90,12 @@ export const collegeHeadApi = {
       }
       return res.data;
     } catch (err) {
-      if (err.response && err.response.status === 401) {
-        throw new Error(err.response?.data?.message || 'Invalid username or password.');
+      // Re-throw backend error message (401, 403)
+      if (err.response) {
+        throw new Error(err.response.data?.message || 'Invalid username or password.');
       }
-      // Local fallback mode when API server is offline
-      const userKey = username.toLowerCase();
-      const expectedPassword = HEAD_PASSWORDS_CLIENT[userKey] || `${userKey}#2026`;
-      const memoryUser = MOCK_COLLEGE_HEAD_USERS.find(
-        (u) => u.username.toLowerCase() === userKey
-      );
-
-      const commonPass = import.meta.env.VITE_COMMON_PASSWORD || 'sems#2026';
-      const prAdminPass = import.meta.env.VITE_PR_ADMIN_PASSWORD || 'password123';
-
-      if (memoryUser && (password === expectedPassword || password === commonPass || password === prAdminPass)) {
-        const user = {
-          username: memoryUser.username,
-          college: memoryUser.college,
-          faculty_name: memoryUser.faculty_name,
-          role: 'college_head',
-        };
-        localStorage.setItem('sems_college_head_token', `token-head-${memoryUser.username}-${Date.now()}`);
-        localStorage.setItem('sems_college_head_user', JSON.stringify(user));
-        return { success: true, user };
-      }
-      throw new Error('Invalid username or password for this college head.');
+      // Network/server offline errors
+      throw new Error('Cannot connect to server. Please check your connection.');
     }
   },
 

@@ -265,6 +265,7 @@ export const CollegeHeadDashboardPage = () => {
         <div className="flex overflow-x-auto gap-2 p-1.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-soft mb-8 no-scrollbar">
           {[
             { id: 'overview', label: 'Overview & Stats', icon: Activity },
+            { id: 'profile', label: 'Faculty Head Profile', icon: ShieldCheck },
             { id: 'students', label: `College Students (${studentsData.count})`, icon: Users },
             { id: 'sports', label: 'Sports Participation', icon: Trophy },
             { id: 'medals', label: 'Medal Tally', icon: Award },
@@ -288,6 +289,83 @@ export const CollegeHeadDashboardPage = () => {
             );
           })}
         </div>
+
+        {/* ---------------------------------------------------- */}
+        {/* TAB PROFILE: FACULTY HEAD PROFILE & EXCEL EXPORT */}
+        {/* ---------------------------------------------------- */}
+        {activeTab === 'profile' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-black text-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <Building2 className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+                      {user.faculty_name || 'College Sports Head'}
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Assigned Domain: <strong className="text-blue-600 dark:text-indigo-400">{user.college}</strong>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleExportCSV}
+                    className="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <FileDown className="w-4 h-4" />
+                    <span>Export Excel / CSV</span>
+                  </button>
+                  <button
+                    onClick={handleExportPDF}
+                    className="px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <FileDown className="w-4 h-4" />
+                    <span>Print PDF Report</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Profile Fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Faculty Representative</span>
+                  <span className="font-extrabold text-sm text-slate-900 dark:text-white">{user.faculty_name || 'Sports Incharge'}</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Assigned College Campus</span>
+                  <span className="font-extrabold text-sm text-blue-600 dark:text-indigo-400">{user.college}</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Contact Email</span>
+                  <span className="font-extrabold text-sm text-slate-900 dark:text-white">{user.email || `head@${user.college.toLowerCase().replace(/[^a-z0-9]/g, '')}.edu`}</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Portal Access Level</span>
+                  <span className="font-extrabold text-sm text-emerald-600 dark:text-emerald-400">College Head (Read-Only)</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Registered Athletes</span>
+                  <span className="font-extrabold text-sm text-slate-900 dark:text-white">{studentsData.count} Athletes</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Account Status</span>
+                  <span className="font-extrabold text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5" /> Verified Official
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ---------------------------------------------------- */}
         {/* TAB 1: OVERVIEW & STATS */}

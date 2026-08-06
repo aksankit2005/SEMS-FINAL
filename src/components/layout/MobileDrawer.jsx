@@ -1,19 +1,77 @@
 import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { 
-  X, Trophy, Calendar, Award, Users, Newspaper, Image, Info, 
+  X, Trophy, Calendar, Award, Newspaper, Image, Info, 
   UserCheck, Flame, Radio, BarChart3, LayoutDashboard, Camera,
-  Building2, Shield
+  Building2, Shield, LogOut
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-
 import { galleryApi } from '../../services/galleryApi';
+import { collegeHeadApi } from '../../services/collegeHeadApi';
+import { coordinatorApi } from '../../services/coordinatorApi';
 
 export const MobileDrawer = ({ isOpen, onClose }) => {
-  const { user, setIsAuthModalOpen, logout } = useAuth();
-  const isPRAuth = galleryApi.isPRAuthenticated() || (user && (user.role === 'PR' || user.role === 'pr_coordinator'));
+  const { user, logout } = useAuth();
+
+  const getActiveSession = () => {
+    if (user) {
+      return {
+        name: user.name || 'User Profile',
+        roleLabel: user.role === 'admin' ? 'Admin' : 'Student',
+        dashboardPath: '/dashboard',
+        logoutHandler: () => {
+          logout();
+          onClose();
+        }
+      };
+    }
+    if (collegeHeadApi.isAuthenticated()) {
+      const chUser = collegeHeadApi.getUser();
+      return {
+        name: chUser?.faculty_name || chUser?.college || 'College Head',
+        roleLabel: 'College Head',
+        dashboardPath: '/college-head/dashboard',
+        logoutHandler: () => {
+          collegeHeadApi.logout();
+          onClose();
+          window.location.href = '/';
+        }
+      };
+    }
+    if (Boolean(localStorage.getItem('sems_coordinator_token'))) {
+      const coordUser = coordinatorApi.getCurrentUser();
+      return {
+        name: coordUser?.coordinatorName || coordUser?.sportName || 'Coordinator',
+        roleLabel: 'Sport Coordinator',
+        dashboardPath: '/coordinator/dashboard',
+        logoutHandler: () => {
+          coordinatorApi.logout();
+          onClose();
+          window.location.href = '/';
+        }
+      };
+    }
+    if (galleryApi.isPRAuthenticated()) {
+      const prUser = JSON.parse(localStorage.getItem('pr_user') || '{}');
+      return {
+        name: prUser?.username || 'PR Media',
+        roleLabel: 'PR Coordinator',
+        dashboardPath: '/pr-dashboard',
+        logoutHandler: () => {
+          galleryApi.logoutPR();
+          onClose();
+          window.location.href = '/';
+        }
+      };
+    }
+    return null;
+  };
+
+  const activeSession = getActiveSession();
 
   if (!isOpen) return null;
+
+  const isPRAuth = galleryApi.isPRAuthenticated() || (user && (user.role === 'PR' || user.role === 'pr_coordinator'));
 
   const navItems = [
     { name: 'Home', path: '/', icon: Flame },
@@ -23,7 +81,6 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
     { name: 'Schedule', path: '/schedule', icon: Calendar },
     { name: 'Results', path: '/results', icon: BarChart3 },
     { name: 'Leaderboard', path: '/leaderboard', icon: Award },
-    { name: 'Coordinators', path: '/coordinators', icon: Users },
     { name: 'Announcements', path: '/announcements', icon: Newspaper },
     { name: 'Gallery', path: '/gallery', icon: Image },
     ...(isPRAuth ? [{ name: 'PR Portal', path: '/pr-dashboard', icon: Camera }] : []),
@@ -63,24 +120,34 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
 
         {/* User Card */}
         <div className="my-6 p-4 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60">
-          {user ? (
+          {activeSession ? (
             <div>
               <div className="text-[10px] uppercase font-bold text-slate-400">Logged in as</div>
-              <div className="font-bold text-blue-600 dark:text-blue-400 text-sm mt-0.5">{user.name} ({user.role.toUpperCase()})</div>
-              <button
-                onClick={() => { logout(); onClose(); }}
-                className="mt-3 text-xs font-bold text-rose-500 hover:underline"
-              >
-                Sign Out
-              </button>
+              <div className="font-bold text-blue-600 dark:text-blue-400 text-sm mt-0.5">{activeSession.name} ({activeSession.roleLabel})</div>
+              
+              <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                <Link
+                  to={activeSession.dashboardPath}
+                  onClick={onClose}
+                  className="flex-1 py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold text-center flex items-center justify-center gap-1.5"
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  <span>Dashboard</span>
+                </Link>
+                <button
+                  onClick={activeSession.logoutHandler}
+                  className="py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-500/30 text-xs font-bold transition"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           ) : (
-            <button
-              onClick={() => { setIsAuthModalOpen(true); onClose(); }}
-              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-orange-500 text-white font-bold text-xs shadow-md"
-            >
-              Official Portals Sign In
-            </button>
+            <div className="text-center">
+              <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-2">Portal Access</p>
+              <p className="text-[11px] text-slate-400">Select an official portal below to sign in.</p>
+            </div>
           )}
         </div>
 
@@ -116,7 +183,7 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
         </div>
 
         {/* Staff Portals Quick Navigation */}
-        {!user && (
+        {!activeSession && (
           <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
             <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2 mb-2">Staff Portals</p>
             <Link

@@ -11,7 +11,10 @@ node_modules
 dist
 dist-ssr
 *.local
-
+#Enviornment 
+.env
+.env.*
+.env.example
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -24,3 +27,30 @@ dist-ssr
 *.sw?
 
 /src/generated/prisma
+
+# ─── SECURITY: Never commit secrets ──────────────────────────────────────────
+
+.env.production
+.env.*.local
+.env
+.env.local
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+secrets/
+
+# Temporary and debug files
+scripts/test_*.js
+scripts/check_*.js
+scripts/verify_*.js
+scripts/wipe_*.js
+scripts/truncate_*.js
+scripts/cleanup_*.js
+scripts/clear_*.js
+scripts/sync_*.js
+scripts/populate_*.js
+scripts/generate_*.py

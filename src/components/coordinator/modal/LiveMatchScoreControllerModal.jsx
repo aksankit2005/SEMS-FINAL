@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { X, RotateCcw, Pause, Play, Trophy, ShieldAlert, CheckCircle2, Lock, Unlock, AlertCircle } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
-
-
+import { generateMatchResultPDF } from '../../../utils/pdfExporter';
 
 export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMatchUpdated }) => {
-
   const { addToast } = useToast();
 
   const [format, setFormat] = useState(match?.format || 'Best of 5 Sets');
@@ -90,7 +88,6 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
     syncToServer();
   };
 
-
   // Lock Set Action
   const handleLockSetConfirm = () => {
     if (!showLockDialog && !window.confirm(`Lock Set ${currentSetIndex} score (${score1}-${score2})?`)) return;
@@ -149,56 +146,120 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
     syncToServer({ setsHistory: updatedSets });
   };
 
+  // Reset Match Action
+  const handleResetMatch = () => {
+    if (window.confirm('Reset current match scores and sets history?')) {
+      saveStateToUndo();
+      setScore1(0);
+      setScore2(0);
+      setMatchWinner(null);
+      setCurrentSetIndex(1);
+      const resetSets = [
+        { set: 1, score1: 0, score2: 0, isLocked: false, winner: null },
+        { set: 2, score1: 0, score2: 0, isLocked: false, winner: null },
+        { set: 3, score1: 0, score2: 0, isLocked: false, winner: null },
+        { set: 4, score1: 0, score2: 0, isLocked: false, winner: null },
+        { set: 5, score1: 0, score2: 0, isLocked: false, winner: null },
+      ];
+      setSetsHistory(resetSets);
+      addToast('Match scorecard reset to 0-0', 'info');
+      syncToServer({ score1: 0, score2: 0, currentSet: 1, setsHistory: resetSets, setsWon1: 0, setsWon2: 0 });
+    }
+  };
+
+  // Toggle Pause Match
+  const handleTogglePause = () => {
+    const nextState = !isPaused;
+    setIsPaused(nextState);
+    addToast(nextState ? 'Match timer paused' : 'Match resumed', 'info');
+    syncToServer({ isPaused: nextState });
+  };
+
   // Undo Last Action
   const handleUndo = () => {
     if (historyStack.length === 0) {
-      addToast('No point actions to undo', 'info');
+      addToast('Nothing to undo', 'info');
       return;
     }
 
-    const previous = historyStack[historyStack.length - 1];
-    setScore1(previous.score1);
-    setScore2(previous.score2);
-    setActiveTurn(previous.activeTurn);
-    setCurrentSetIndex(previous.currentSetIndex);
-    setSetsHistory(previous.setsHistory);
+    const previousState = historyStack[historyStack.length - 1];
     setHistoryStack((prev) => prev.slice(0, -1));
-    addToast('Reverted last point action', 'info');
-    syncToServer();
+
+    setScore1(previousState.score1);
+    setScore2(previousState.score2);
+    setActiveTurn(previousState.activeTurn);
+    setCurrentSetIndex(previousState.currentSetIndex);
+    setSetsHistory(previousState.setsHistory);
+    setMatchWinner(null);
+
+    addToast('Undo last scoring action', 'info');
+    syncToServer(previousState);
   };
 
-  // Finish Match & Save Result
-  const handleFinishMatch = async () => {
-    const finalWinner = matchWinner || (setsWon1 >= setsWon2 ? match.team1 : match.team2);
-
-    const completedData = {
-      ...match,
-      winner: finalWinner,
-      score1: setsWon1,
-      score2: setsWon2,
-      setsHistory,
-      format,
-      completedAt: new Date().toISOString()
-    };
-
-    await coordinatorApi.completeMatch(match.id, completedData);
-
-    addToast(`Match finished! Result saved to database. Winner: ${finalWinner}`, 'success');
-    onClose();
-  };
-
-
-
-  // Declare Walkover
-  const handleWalkover = async (winnerPlayer) => {
-    if (window.confirm(`Declare walkover victory for ${winnerPlayer}?`)) {
+  // Declare Walkover / Disqualification Action
+  const handleDeclareWalkover = () => {
+    const winnerPlayer = window.prompt(
+      `Declare Walkover / Disqualification winner:\n1: ${match.team1}\n2: ${match.team2}`,
+      match.team1
+    );
+    if (winnerPlayer) {
       setMatchWinner(winnerPlayer);
-      await coordinatorApi.completeMatch(match.id, {
-        winner: winnerPlayer,
-        isWalkover: true,
-      });
+      syncToServer({ winner: winnerPlayer, status: 'WALKOVER' });
       addToast(`Walkover declared! Winner: ${winnerPlayer}`, 'warning');
       onClose();
+    }
+  };
+
+  // Finish Match Action directly from Controller
+  const handleFinishMatch = async () => {
+    const defaultTeam1 = match?.team1 || 'Player 1';
+    const defaultTeam2 = match?.team2 || 'Player 2';
+
+    // Calculate sets won from setsHistory
+    const calculatedSetsWon1 = setsHistory.filter((s) => s.winner === match?.team1 || (s.score1 > 0 && s.score1 > s.score2)).length;
+    const calculatedSetsWon2 = setsHistory.filter((s) => s.winner === match?.team2 || (s.score2 > 0 && s.score2 > s.score1)).length;
+
+    const winnerName = matchWinner || (calculatedSetsWon1 >= calculatedSetsWon2 ? (score1 >= score2 ? defaultTeam1 : defaultTeam2) : defaultTeam2);
+    if (!window.confirm(`Finish match and declare winner as "${winnerName}"?`)) return;
+
+    const matchId = match?.id || `M${Math.floor(100000 + Math.random() * 900000)}`;
+
+    const setsBreakdownStr = setsHistory
+      .filter((s) => s.score1 > 0 || s.score2 > 0)
+      .map((s) => `S${s.set}: ${s.score1}-${s.score2}`)
+      .join(', ');
+
+    const scoreSummary = `${calculatedSetsWon1} - ${calculatedSetsWon2} Sets${setsBreakdownStr ? ` (${setsBreakdownStr})` : ` (${score1}-${score2} Pts)`}`;
+
+    const completedObj = {
+      ...match,
+      id: matchId,
+      winner: winnerName,
+      score1,
+      score2,
+      setsWon1: calculatedSetsWon1,
+      setsWon2: calculatedSetsWon2,
+      setsHistory,
+      scoreSummary,
+      status: 'COMPLETED',
+      tableNumber: null,
+      isLiveStreaming: false,
+      completedAt: new Date().toISOString(),
+    };
+
+    try {
+      await coordinatorApi.completeMatch(matchId, completedObj);
+      try {
+        generateMatchResultPDF(completedObj, match?.sportName || 'Badminton');
+      } catch (pdfErr) {
+        console.warn('PDF export fallback:', pdfErr);
+      }
+      if (onMatchUpdated) onMatchUpdated(matchId, { status: 'COMPLETED', scoreSummary, setsWon1: calculatedSetsWon1, setsWon2: calculatedSetsWon2, winner: winnerName });
+      addToast(`🏆 Match Finished! Winner: ${winnerName}. Saved to Results section.`, 'success');
+      onClose();
+    } catch (err) {
+      console.error('Error finishing match:', err);
+      addToast('Error finishing match. Please try again.', 'error');
     }
   };
 
@@ -243,7 +304,9 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
           {/* Player 1 Card (Left) */}
           <div className="md:col-span-5 p-6 rounded-3xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-slate-800/90 shadow-soft dark:shadow-2xl flex flex-col items-center text-center space-y-4 relative">
             <div>
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{match.team1}</h2>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                {(match.team1 || '').replace(/\s*\(.*?\)/, '')}
+              </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">Roll: N/A</p>
             </div>
 
@@ -251,7 +314,6 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
             <div className="text-7xl font-black text-slate-900 dark:text-white font-mono my-2 tracking-tighter">
               {score1}
             </div>
-
 
             {/* Point Action Buttons */}
             <div className="grid grid-cols-2 gap-3 w-full pt-2">
@@ -278,7 +340,9 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
           {/* Player 2 Card (Right) */}
           <div className="md:col-span-5 p-6 rounded-3xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-slate-800/90 shadow-soft dark:shadow-2xl flex flex-col items-center text-center space-y-4 relative">
             <div>
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{match.team2}</h2>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                {(match.team2 || '').replace(/\s*\(.*?\)/, '')}
+              </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">Roll: N/A</p>
             </div>
 
@@ -319,13 +383,13 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
                 >
 
                   <div className="space-y-0.5">
-                    <span className="font-bold text-slate-300 font-mono">Set {s.set} score:</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-300 font-mono">Set {s.set} score:</span>
                     {s.isLocked ? (
-                      <p className="text-indigo-400 font-mono font-bold text-sm">
-                        {s.score1} - {s.score2} <span className="text-slate-400 text-xs font-normal">({s.winner} won)</span>
+                      <p className="text-blue-600 dark:text-indigo-400 font-mono font-bold text-sm">
+                        {s.score1} - {s.score2} <span className="text-slate-500 dark:text-slate-400 text-xs font-normal">({s.winner} won)</span>
                       </p>
                     ) : (
-                      <p className="text-slate-500 font-mono">
+                      <p className="text-slate-500 dark:text-slate-400 font-mono">
                         {s.set === currentSetIndex ? `${score1} - ${score2} (In Progress)` : '0-0'}
                       </p>
                     )}
@@ -335,9 +399,9 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
                     {s.isLocked ? (
                       <button
                         onClick={() => handleUnlockSet(s.set)}
-                        className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold text-xs transition flex items-center gap-1.5"
+                        className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
                       >
-                        <Unlock className="w-3.5 h-3.5 text-amber-400" /> Unlock Set
+                        <Unlock className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> Unlock Set
                       </button>
                     ) : (
                       <button
@@ -345,7 +409,7 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
                           setCurrentSetIndex(s.set);
                           handleLockSetConfirm();
                         }}
-                        className="px-3.5 py-1.5 rounded-xl bg-[#1E293B] hover:bg-indigo-600 text-indigo-300 hover:text-white font-bold text-xs transition border border-slate-700"
+                        className="px-3.5 py-1.5 rounded-xl bg-blue-50 dark:bg-[#1E293B] hover:bg-indigo-600 dark:hover:bg-indigo-600 text-blue-700 dark:text-indigo-300 hover:text-white font-bold text-xs transition border border-blue-200 dark:border-slate-700 cursor-pointer"
                       >
                         Lock Set {s.set} Score ({score1}-{score2})
                       </button>
@@ -357,63 +421,72 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
           </div>
         </div>
 
-        {/* Bottom Action Toolbar */}
-        <div className="p-6 bg-[#111827] flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 flex-wrap">
+        {/* Bottom Control Actions (Undo, Reset, Pause, Finish Match) */}
+        <div className="p-6 bg-slate-50 dark:bg-[#111827] flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={handleUndo}
-              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition flex items-center gap-1.5"
+              disabled={historyStack.length === 0}
+              className="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-bold text-xs transition flex items-center gap-1.5 disabled:opacity-40 cursor-pointer"
             >
-              <RotateCcw className="w-3.5 h-3.5" /> Undo Last Action
+              <RotateCcw className="w-3.5 h-3.5 text-blue-600 dark:text-indigo-400" /> Undo Point
             </button>
 
             <button
-              onClick={() => {
-                setIsPaused(!isPaused);
-                addToast(isPaused ? 'Match Resumed' : 'Match Paused', 'info');
-              }}
-              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition flex items-center gap-1.5"
+              onClick={handleTogglePause}
+              className="px-4 py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
             >
-              {isPaused ? <Play className="w-3.5 h-3.5 text-emerald-400" /> : <Pause className="w-3.5 h-3.5 text-amber-400" />}
+              {isPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
               <span>{isPaused ? 'Resume Match' : 'Pause Match'}</span>
-            </button>
-
-            <button
-              onClick={() => handleWalkover(match.team1)}
-              className="px-4 py-2.5 rounded-xl bg-amber-600/20 hover:bg-amber-600 text-amber-300 hover:text-white border border-amber-500/30 font-bold text-xs transition"
-            >
-              🏳 Declare Walkover
             </button>
           </div>
 
-          <button
-            onClick={handleFinishMatch}
-            className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-lg shadow-emerald-600/30 transition flex items-center gap-1.5"
-          >
-            <Trophy className="w-4 h-4" /> Finish Match & Save Result
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleFinishMatch}
+              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md shadow-emerald-600/30 transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>🏁 Finish Match</span>
+            </button>
+
+            <button
+              onClick={handleDeclareWalkover}
+              className="px-3.5 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <ShieldAlert className="w-3.5 h-3.5" /> W.O.
+            </button>
+
+            <button
+              onClick={handleResetMatch}
+              className="px-3.5 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-rose-600 hover:text-white text-slate-700 dark:text-slate-300 font-bold text-xs transition cursor-pointer"
+            >
+              Reset 0-0
+            </button>
+          </div>
         </div>
 
-        {/* Set Win Dialog Confirmation */}
+        {/* Lock Set Confirmation Dialog Popup */}
         {showLockDialog && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs">
-            <div className="w-full max-w-sm bg-[#111827] border border-slate-800 rounded-3xl p-6 shadow-2xl text-center space-y-4">
-              <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto text-xl">
-                🏆
+          <div className="fixed inset-0 z-50 bg-slate-950/80 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-sm w-full space-y-4 text-center">
+              <div className="w-12 h-12 rounded-full bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto text-xl">
+                🔒
               </div>
-              <h4 className="text-base font-black text-white">{showLockDialog.winner} Won Set {showLockDialog.setNum}</h4>
-              <p className="text-xs font-mono text-slate-400">Final Set Score: {showLockDialog.s1} - {showLockDialog.s2}</p>
-              
+              <h4 className="text-base font-black text-slate-900 dark:text-white">Confirm Set Winner</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Lock Set {showLockDialog.setNum} with winner <span className="font-bold text-slate-900 dark:text-white">{showLockDialog.winner}</span>?
+              </p>
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <button
                   onClick={() => setShowLockDialog(null)}
-                  className="py-2.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs"
+                  className="py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleLockSetConfirm}
-                  className="py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs"
+                  className="py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs cursor-pointer"
                 >
                   Lock Set
                 </button>

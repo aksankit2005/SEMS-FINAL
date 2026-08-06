@@ -278,6 +278,7 @@ export const BaseTeamRegistration = ({
               <Plus className="w-4 h-4" /> Add Sub Player (Max {maxPlayers})
             </button>
           </div>
+        )}
       </div>
     );
   }
