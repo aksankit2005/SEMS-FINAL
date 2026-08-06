@@ -7,7 +7,7 @@ import { coordinatorApi } from '../../../services/coordinatorApi';
 export const MatchScheduleTab = ({ matches, user, onUpdateMatches }) => {
   const { addToast } = useToast();
 
-  const assignedSport = (user?.assignedSport || 'badminton').toLowerCase();
+  const assignedSport = (user?.assignedSport || 'sports').toLowerCase();
   const venueLabel = ['table-tennis'].includes(assignedSport)
     ? 'Table'
     : ['cricket', 'football'].includes(assignedSport)

@@ -14,7 +14,7 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
   const { addToast } = useToast();
   const sportConfig = getSportConfig(user?.assignedSport);
 
-  const assignedSport = (user?.assignedSport || 'badminton').toLowerCase();
+  const assignedSport = (user?.assignedSport || 'sports').toLowerCase();
   const venueType = ['table-tennis'].includes(assignedSport)
     ? 'Table'
     : ['cricket', 'football'].includes(assignedSport)

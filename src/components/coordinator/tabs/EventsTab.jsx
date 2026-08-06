@@ -34,8 +34,8 @@ export const EventsTab = ({ user }) => {
   // Form State
   const [formData, setFormData] = useState({
     title: '',
-    sportName: user?.sportName || 'Badminton',
-    coverImage: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80',
+    sportName: user?.sportName || 'Sports',
+    coverImage: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80',
     description: '',
     regStartDate: new Date().toISOString().split('T')[0],
     regEndDate: '2026-08-25',
@@ -129,8 +129,8 @@ export const EventsTab = ({ user }) => {
 
     setFormData({
       title: `${user?.sportName || 'Sports'} Championship 2026`,
-      sportName: user?.sportName || 'Badminton',
-      coverImage: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80',
+      sportName: user?.sportName || 'Sports',
+      coverImage: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80',
       description: `Official inter-college ${user?.sportName} tournament. Register your entries today!`,
       regStartDate: new Date().toISOString().split('T')[0],
       regEndDate: '2026-08-25',
