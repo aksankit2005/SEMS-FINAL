@@ -7,6 +7,7 @@ import { SportsDataProvider } from './context/SportsDataContext';
 
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { AuthModal } from './components/common/AuthModal';
+import { ScrollToTop } from './components/common/ScrollToTop';
 
 import { HomePage } from './pages/HomePage';
 import { SportsPage } from './pages/SportsPage';
@@ -59,6 +60,7 @@ function App() {
         <ToastProvider>
           <SportsDataProvider>
             <Router>
+              <ScrollToTop />
               <Routes>
                 <Route element={<DashboardLayout />}>
                   <Route path="/" element={<HomePage />} />

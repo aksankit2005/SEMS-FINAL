@@ -20,7 +20,7 @@ export const CoordinatorsPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white py-12 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wider mb-3">
@@ -42,11 +42,10 @@ export const CoordinatorsPage = () => {
               <button
                 key={sport}
                 onClick={() => setSelectedSport(sport)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
-                  selectedSport === sport
+                className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${selectedSport === sport
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-                }`}
+                  }`}
               >
                 {sport}
               </button>

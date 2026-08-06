@@ -82,17 +82,17 @@ export const Navbar = () => {
       <header className="sticky top-0 z-40 w-full glass-panel border-b border-slate-200/50 dark:border-slate-800/80 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
-            
+
             {/* Logo */}
             <Link to="/" className="flex items-center group">
-              <img 
-                src="/logo-dark.png" 
-                alt="APEX Logo" 
+              <img
+                src="/logo-dark.png"
+                alt="APEX Logo"
                 className="hidden dark:block h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
               />
-              <img 
-                src="/logo-light.png" 
-                alt="APEX Logo" 
+              <img
+                src="/logo-light.png"
+                alt="APEX Logo"
                 className="block dark:hidden h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
               />
             </Link>
@@ -104,10 +104,9 @@ export const Navbar = () => {
                   key={link.path}
                   to={link.path}
                   className={({ isActive }) =>
-                    `relative px-3 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all duration-200 flex items-center gap-1.5 ${
-                      isActive
-                        ? 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 font-bold'
-                        : 'text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                    `relative px-3 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all duration-200 flex items-center gap-1.5 ${isActive
+                      ? 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 font-bold'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
                     }`
                   }
                 >
