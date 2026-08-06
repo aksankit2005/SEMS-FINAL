@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Trophy, Bell, Clock, User, ShieldCheck, 
   Menu, X, Sparkles, CheckCircle2, ChevronRight, LogOut, Camera,
@@ -10,14 +10,28 @@ import { useAuth } from '../../context/AuthContext';
 import { useSportsData } from '../../context/SportsDataContext';
 import { galleryApi } from '../../services/galleryApi';
 import { collegeHeadApi } from '../../services/collegeHeadApi';
-import { coordinatorApi } from '../../services/coordinatorApi';
+import { coordinatorApi, getSportRoute } from '../../services/coordinatorApi';
+
 
 export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [, setAuthTick] = useState(0);
 
   const { user, logout } = useAuth();
   const { announcements } = useSportsData();
+
+  useEffect(() => {
+    const handleAuthChange = () => setAuthTick((t) => t + 1);
+    window.addEventListener('sems-auth-change', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+    return () => {
+      window.removeEventListener('sems-auth-change', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
+  }, []);
 
   // Clock tick interval
   useEffect(() => {
@@ -46,6 +60,7 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
         dashboardPath: '/dashboard',
         logoutHandler: () => {
           logout();
+          navigate('/');
         }
       };
     }
@@ -57,19 +72,19 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
         dashboardPath: '/college-head/dashboard',
         logoutHandler: () => {
           collegeHeadApi.logout();
-          window.location.href = '/';
+          navigate('/');
         }
       };
     }
-    if (Boolean(localStorage.getItem('sems_coordinator_token'))) {
+    if (coordinatorApi.isAuthenticated()) {
       const coordUser = coordinatorApi.getCurrentUser();
       return {
         name: coordUser?.coordinatorName || coordUser?.sportName || 'Coordinator',
         roleLabel: 'Sport Coord',
-        dashboardPath: '/coordinator/dashboard',
+        dashboardPath: getSportRoute(coordUser?.assignedSport),
         logoutHandler: () => {
           coordinatorApi.logout();
-          window.location.href = '/';
+          navigate('/');
         }
       };
     }
@@ -81,7 +96,7 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
         dashboardPath: '/pr-dashboard',
         logoutHandler: () => {
           galleryApi.logoutPR();
-          window.location.href = '/';
+          navigate('/');
         }
       };
     }

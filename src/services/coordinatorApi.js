@@ -35,6 +35,26 @@ export const COORDINATOR_ACCOUNTS = [
   { assignedSport: 'gully-cricket', sportName: 'Gully Cricket', username: 'coord_gully_cricket', coordinatorName: 'Chiku Bhai',             email: 'gullycricket.coord@sems.edu' },
 ];
 
+export const getSportRoute = (assignedSport) => {
+  const normalized = (assignedSport || '').toLowerCase().trim().replace(/_/g, '-');
+  const routes = {
+    'badminton':     '/coordinator/badminton',
+    'cricket':       '/coordinator/cricket',
+    'football':      '/coordinator/football',
+    'basketball':    '/coordinator/basketball',
+    'volleyball':    '/coordinator/volleyball',
+    'table-tennis':  '/coordinator/table-tennis',
+    'chess':         '/coordinator/chess',
+    'kabaddi':       '/coordinator/kabaddi',
+    'kho-kho':       '/coordinator/kho-kho',
+    'athletics':     '/coordinator/athletics',
+    'tug-of-war':    '/coordinator/tug-of-war',
+    'gully-cricket': '/coordinator/gully-cricket',
+  };
+  return routes[normalized] || (normalized ? `/coordinator/${normalized}` : '/coordinator/badminton');
+};
+
+
 export const MOCK_BADMINTON_PARTICIPANTS = [
   {
     id: "REG-BAD-101",
@@ -177,6 +197,7 @@ export const coordinatorApi = {
       if (res.data && res.data.token) {
         localStorage.setItem('sems_coordinator_token', res.data.token);
         localStorage.setItem('sems_coordinator_user', JSON.stringify(res.data.user));
+        window.dispatchEvent(new Event('sems-auth-change'));
         return { success: true, user: res.data.user };
       }
       throw new Error('Invalid response from server. Please try again.');
@@ -193,6 +214,13 @@ export const coordinatorApi = {
   logout() {
     localStorage.removeItem('sems_coordinator_token');
     localStorage.removeItem('sems_coordinator_user');
+    window.dispatchEvent(new Event('sems-auth-change'));
+  },
+
+  isAuthenticated() {
+    const token = localStorage.getItem('sems_coordinator_token');
+    const user = localStorage.getItem('sems_coordinator_user');
+    return Boolean(token && user);
   },
 
   getCurrentUser() {
@@ -202,16 +230,19 @@ export const coordinatorApi = {
         return JSON.parse(saved);
       } catch (e) {}
     }
-    const defaultUser = {
-      username: 'coord_badminton',
-      assignedSport: 'badminton',
-      sportName: 'Badminton',
-      coordinatorName: 'Pooja Deshmukh',
-      email: 'badminton.coord@sems.edu',
-      role: 'sport_coordinator',
-    };
-    localStorage.setItem('sems_coordinator_user', JSON.stringify(defaultUser));
-    return defaultUser;
+    if (localStorage.getItem('sems_coordinator_token')) {
+      const defaultUser = {
+        username: 'coord_badminton',
+        assignedSport: 'badminton',
+        sportName: 'Badminton',
+        coordinatorName: 'Pooja Deshmukh',
+        email: 'badminton.coord@sems.edu',
+        role: 'sport_coordinator',
+      };
+      localStorage.setItem('sems_coordinator_user', JSON.stringify(defaultUser));
+      return defaultUser;
+    }
+    return null;
   },
 
 

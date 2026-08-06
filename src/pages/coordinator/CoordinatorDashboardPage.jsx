@@ -1,6 +1,11 @@
 import React from 'react';
-import { BadmintonCoordinatorPage } from './sports/badminton/BadmintonCoordinatorPage';
+import { Navigate } from 'react-router-dom';
+import { coordinatorApi, getSportRoute } from '../../services/coordinatorApi';
 
 export const CoordinatorDashboardPage = () => {
-  return <BadmintonCoordinatorPage />;
+  const user = coordinatorApi.getCurrentUser();
+  const targetRoute = getSportRoute(user?.assignedSport);
+
+  return <Navigate to={targetRoute} replace />;
 };
+

@@ -1,27 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trophy, Lock, User, ShieldCheck, ArrowRight, Eye, EyeOff, Activity } from 'lucide-react';
-import { coordinatorApi } from '../../services/coordinatorApi';
+import { coordinatorApi, getSportRoute } from '../../services/coordinatorApi';
 import { useToast } from '../../context/ToastContext';
 
-// ── Route each sport coordinator to their own independent dashboard ──────────
-const getSportRoute = (assignedSport) => {
-  const routes = {
-    'badminton':     '/coordinator/badminton',
-    'cricket':       '/coordinator/cricket',
-    'football':      '/coordinator/football',
-    'basketball':    '/coordinator/basketball',
-    'volleyball':    '/coordinator/volleyball',
-    'table-tennis':  '/coordinator/table-tennis',
-    'chess':         '/coordinator/chess',
-    'kabaddi':       '/coordinator/kabaddi',
-    'kho-kho':       '/coordinator/kho-kho',
-    'athletics':     '/coordinator/athletics',
-    'tug-of-war':    '/coordinator/tug-of-war',
-    'gully-cricket': '/coordinator/gully-cricket',
-  };
-  return routes[(assignedSport || '').toLowerCase()] || '/coordinator/badminton';
-};
 
 export const CoordinatorLoginPage = () => {
   const navigate = useNavigate();
