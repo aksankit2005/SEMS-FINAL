@@ -28,13 +28,17 @@ export const LiveTicker = () => {
                 to="/live"
                 className="flex items-center gap-3 bg-white dark:bg-slate-950/90 px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-blue-500/50 transition shrink-0 group shadow-sm"
               >
-                <span className="font-bold text-blue-600 dark:text-blue-400">{match.sport}</span>
+                <span className="font-bold text-blue-600 dark:text-blue-400">{match.sportName || match.sport || 'Match'}</span>
                 <span className="text-slate-300 dark:text-slate-600">|</span>
-                <span className="font-semibold text-slate-950 dark:text-white">{match.team1.name} ({match.team1.score})</span>
+                <span className="font-semibold text-slate-950 dark:text-white">
+                  {typeof match.team1 === 'object' ? match.team1?.name : match.team1} {match.team1?.score !== undefined ? `(${match.team1.score})` : ''}
+                </span>
                 <span className="text-slate-400">vs</span>
-                <span className="font-semibold text-slate-950 dark:text-white">{match.team2.name} ({match.team2.score})</span>
+                <span className="font-semibold text-slate-950 dark:text-white">
+                  {typeof match.team2 === 'object' ? match.team2?.name : match.team2} {match.team2?.score !== undefined ? `(${match.team2.score})` : ''}
+                </span>
                 <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
-                  {match.currentInfo}
+                  {match.currentInfo || match.status}
                 </span>
               </Link>
             ))
@@ -44,7 +48,7 @@ export const LiveTicker = () => {
         {/* View All Matches */}
         <Link
           to="/live"
-          className="hidden md:flex items-center gap-1 text-xs font-bold text-blue-650 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition shrink-0"
+          className="flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition shrink-0"
         >
           <span>All Matches</span>
           <ArrowRight className="w-3.5 h-3.5" />

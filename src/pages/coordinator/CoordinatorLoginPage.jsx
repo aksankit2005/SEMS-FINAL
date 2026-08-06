@@ -4,6 +4,25 @@ import { Trophy, Lock, User, ShieldCheck, ArrowRight, Eye, EyeOff, Activity } fr
 import { coordinatorApi } from '../../services/coordinatorApi';
 import { useToast } from '../../context/ToastContext';
 
+// ── Route each sport coordinator to their own independent dashboard ──────────
+const getSportRoute = (assignedSport) => {
+  const routes = {
+    'badminton':     '/coordinator/badminton',
+    'cricket':       '/coordinator/cricket',
+    'football':      '/coordinator/football',
+    'basketball':    '/coordinator/basketball',
+    'volleyball':    '/coordinator/volleyball',
+    'table-tennis':  '/coordinator/table-tennis',
+    'chess':         '/coordinator/chess',
+    'kabaddi':       '/coordinator/kabaddi',
+    'kho-kho':       '/coordinator/kho-kho',
+    'athletics':     '/coordinator/athletics',
+    'tug-of-war':    '/coordinator/tug-of-war',
+    'gully-cricket': '/coordinator/gully-cricket',
+  };
+  return routes[(assignedSport || '').toLowerCase()] || '/coordinator/badminton';
+};
+
 export const CoordinatorLoginPage = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
@@ -24,8 +43,9 @@ export const CoordinatorLoginPage = () => {
     try {
       const res = await coordinatorApi.login(username, password);
       if (res.success) {
+        const route = getSportRoute(res.user.assignedSport);
         addToast(`Welcome, ${res.user.coordinatorName}! Managing ${res.user.sportName}.`, 'success');
-        navigate('/coordinator/dashboard');
+        navigate(route);
       }
     } catch (err) {
       addToast(err.message || 'Invalid Sport Coordinator credentials', 'error');

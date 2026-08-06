@@ -9,6 +9,8 @@ import { ImageCropperModal } from '../../common/ImageCropperModal';
 import { useToast } from '../../../context/ToastContext';
 import { exportToPDF, exportToCSV } from '../../../utils/pdfExporter';
 
+import { SPORT_PLAYER_BOUNDS, resolveSportKey } from '../../../data/sportsConfig';
+
 export const EventsTab = ({ user }) => {
   const { addToast } = useToast();
 
@@ -26,6 +28,9 @@ export const EventsTab = ({ user }) => {
   const [showCropper, setShowCropper] = useState(false);
   const [cropperRawSrc, setCropperRawSrc] = useState(null);
 
+  const defaultSportKey = resolveSportKey(user?.assignedSport || user?.sportName);
+  const defaultBounds = SPORT_PLAYER_BOUNDS[defaultSportKey] || { min: 1, max: 10 };
+
   // Form State
   const [formData, setFormData] = useState({
     title: '',
@@ -39,7 +44,9 @@ export const EventsTab = ({ user }) => {
     entryFee: 400,
     singlesFee: 300,
     doublesFee: 600,
-    teamSize: '1 - 2 Players',
+    minPlayers: defaultBounds.min,
+    maxPlayers: defaultBounds.max,
+    teamSize: `${defaultBounds.min} - ${defaultBounds.max} Players`,
     maxRegistrations: 64,
 
     registeredCount: 0,
@@ -52,9 +59,9 @@ export const EventsTab = ({ user }) => {
       'Sports jersey and proper shoes required.'
     ],
     requiredDocuments: ['College Student ID', 'Aadhaar Card / Govt ID'],
-    contactName: user?.coordinatorName || 'Sport Coordinator',
-    contactEmail: user?.email || `${user?.assignedSport || 'badminton'}.coord@sems.edu`,
-    contactPhone: '+91 98765 43210'
+    contactName: user?.coordinatorName || '',
+    contactEmail: user?.email || '',
+    contactPhone: ''
   });
 
   const [rulesInput, setRulesInput] = useState('');
@@ -79,6 +86,11 @@ export const EventsTab = ({ user }) => {
   // Preset form on edit
   const handleOpenEdit = (eventObj) => {
     setEditingEvent(eventObj);
+    const sKey = resolveSportKey(user?.assignedSport || eventObj.sportName || eventObj.title);
+    const bounds = SPORT_PLAYER_BOUNDS[sKey] || { min: 1, max: 10 };
+    const minP = eventObj.minPlayers !== undefined ? Number(eventObj.minPlayers) : bounds.min;
+    const maxP = eventObj.maxPlayers !== undefined ? Number(eventObj.maxPlayers) : bounds.max;
+
     setFormData({
       title: eventObj.title || '',
       sportName: user?.sportName || eventObj.sportName,
@@ -91,7 +103,9 @@ export const EventsTab = ({ user }) => {
       entryFee: eventObj.entryFee !== undefined ? eventObj.entryFee : 400,
       singlesFee: eventObj.singlesFee !== undefined ? eventObj.singlesFee : 300,
       doublesFee: eventObj.doublesFee !== undefined ? eventObj.doublesFee : 600,
-      teamSize: eventObj.teamSize || '1 - 2 Players',
+      minPlayers: minP,
+      maxPlayers: maxP,
+      teamSize: eventObj.teamSize || `${minP} - ${maxP} Players`,
       maxRegistrations: eventObj.maxRegistrations || 64,
       registeredCount: eventObj.registeredCount || 0,
       venue: eventObj.venue || 'Indoor Sports Complex',
@@ -110,6 +124,9 @@ export const EventsTab = ({ user }) => {
 
   const handleOpenCreate = () => {
     setEditingEvent(null);
+    const sKey = resolveSportKey(user?.assignedSport || user?.sportName);
+    const bounds = SPORT_PLAYER_BOUNDS[sKey] || { min: 1, max: 10 };
+
     setFormData({
       title: `${user?.sportName || 'Sports'} Championship 2026`,
       sportName: user?.sportName || 'Badminton',
@@ -122,7 +139,9 @@ export const EventsTab = ({ user }) => {
       entryFee: 400,
       singlesFee: 300,
       doublesFee: 600,
-      teamSize: '1 - 2 Players',
+      minPlayers: bounds.min,
+      maxPlayers: bounds.max,
+      teamSize: `${bounds.min} - ${bounds.max} Players`,
       maxRegistrations: 64,
 
       registeredCount: 0,
@@ -131,9 +150,9 @@ export const EventsTab = ({ user }) => {
       status: 'Published',
       rules: ['Official ITTF/BWF rules apply.', 'College ID mandatory.'],
       requiredDocuments: ['College Student ID Card', 'Aadhaar Card'],
-      contactName: user?.coordinatorName || 'Sport Coordinator',
-      contactEmail: user?.email || `${user?.assignedSport}.coord@sems.edu`,
-      contactPhone: '+91 98765 43210'
+      contactName: user?.coordinatorName || '',
+      contactEmail: user?.email || '',
+      contactPhone: ''
     });
     setRulesInput('Official tournament rules apply.\nCollege Student ID & Pass mandatory.');
     setDocInput('College Student ID Card\nAadhaar Card / Govt ID');
@@ -175,8 +194,16 @@ export const EventsTab = ({ user }) => {
     const rulesArr = rulesInput.split('\n').map((r) => r.trim()).filter(Boolean);
     const docsArr = docInput.split('\n').map((d) => d.trim()).filter(Boolean);
 
+    const sKey = resolveSportKey(user?.assignedSport || formData.sportName);
+    const bounds = SPORT_PLAYER_BOUNDS[sKey] || { min: 1, max: 10 };
+    const minP = formData.minPlayers !== undefined ? Number(formData.minPlayers) : bounds.min;
+    const maxP = formData.maxPlayers !== undefined ? Number(formData.maxPlayers) : bounds.max;
+
     const eventPayload = {
       ...formData,
+      minPlayers: minP,
+      maxPlayers: maxP,
+      teamSize: formData.teamSize || `${minP} - ${maxP} Players`,
       rules: rulesArr,
       requiredDocuments: docsArr,
       contactInfo: {
@@ -724,33 +751,7 @@ export const EventsTab = ({ user }) => {
                 />
               </div>
 
-              {/* Contact Information */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3">
-                <span className="text-xs font-bold uppercase text-blue-600 dark:text-indigo-400 block">Coordinator Contact Information</span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <input
-                    type="text"
-                    placeholder="Contact Name"
-                    value={formData.contactName}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, contactName: e.target.value }))}
-                    className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs text-slate-900 dark:text-white"
-                  />
-                  <input
-                    type="email"
-                    placeholder="Contact Email"
-                    value={formData.contactEmail}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, contactEmail: e.target.value }))}
-                    className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs text-slate-900 dark:text-white"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Contact Phone"
-                    value={formData.contactPhone}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, contactPhone: e.target.value }))}
-                    className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs text-slate-900 dark:text-white"
-                  />
-                </div>
-              </div>
+
 
               {/* Modal Buttons */}
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">

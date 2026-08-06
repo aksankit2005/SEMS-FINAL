@@ -6,11 +6,49 @@ import {
   Building2, Shield
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-
 import { galleryApi } from '../../services/galleryApi';
+import { collegeHeadApi } from '../../services/collegeHeadApi';
+import { coordinatorApi } from '../../services/coordinatorApi';
 
 export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
   const { user } = useAuth();
+
+  const getActiveSession = () => {
+    if (user) {
+      return {
+        name: user.name || 'User Profile',
+        roleLabel: user.role === 'admin' ? 'Admin Portal' : 'Athlete Portal',
+        dashboardPath: '/dashboard'
+      };
+    }
+    if (collegeHeadApi.isAuthenticated()) {
+      const chUser = collegeHeadApi.getUser();
+      return {
+        name: chUser?.faculty_name || chUser?.college || 'College Head',
+        roleLabel: 'College Head Portal',
+        dashboardPath: '/college-head/dashboard'
+      };
+    }
+    if (Boolean(localStorage.getItem('sems_coordinator_token'))) {
+      const coordUser = coordinatorApi.getCurrentUser();
+      return {
+        name: coordUser?.coordinatorName || coordUser?.sportName || 'Coordinator',
+        roleLabel: 'Coordinator Portal',
+        dashboardPath: '/coordinator/dashboard'
+      };
+    }
+    if (galleryApi.isPRAuthenticated()) {
+      const prUser = JSON.parse(localStorage.getItem('pr_user') || '{}');
+      return {
+        name: prUser?.username || 'PR Media',
+        roleLabel: 'PR Media Portal',
+        dashboardPath: '/pr-dashboard'
+      };
+    }
+    return null;
+  };
+
+  const activeSession = getActiveSession();
   const isPRAuth = galleryApi.isPRAuthenticated() || (user && (user.role === 'PR' || user.role === 'pr_coordinator'));
 
   const navItems = [
@@ -86,7 +124,7 @@ export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
       </div>
 
       {/* Staff Portals Links when not logged in */}
-      {!user && (
+      {!activeSession && (
         <div className="p-3 border-t border-slate-200/80 dark:border-slate-800/80 space-y-1">
           {!isCollapsed && (
             <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-2 mb-1">
@@ -138,11 +176,11 @@ export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
         </div>
       )}
 
-      {/* Dashboard Shortcut Footer */}
-      {user && (
+      {/* Dashboard Shortcut Footer when logged in */}
+      {activeSession && (
         <div className="p-3 border-t border-slate-200/80 dark:border-slate-800/80">
           <NavLink
-            to="/dashboard"
+            to={activeSession.dashboardPath}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition-all ${
                 isActive
@@ -150,12 +188,12 @@ export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
                   : 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
               } ${isCollapsed ? 'justify-center px-0' : ''}`
             }
-            title={isCollapsed ? 'My Dashboard' : undefined}
+            title={isCollapsed ? activeSession.roleLabel : undefined}
           >
-            <LayoutDashboard className="w-4 h-4 text-orange-400" />
+            <LayoutDashboard className="w-4 h-4 text-orange-400 shrink-0" />
             {!isCollapsed && (
               <span className="truncate">
-                {user.role === 'admin' ? 'Admin Portal' : user.role === 'coordinator' ? 'Coord Portal' : 'Athlete Portal'}
+                {activeSession.roleLabel}
               </span>
             )}
           </NavLink>

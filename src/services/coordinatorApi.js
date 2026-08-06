@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { SPORT_PLAYER_BOUNDS, resolveSportKey } from '../data/sportsConfig';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -22,7 +23,7 @@ api.interceptors.request.use((config) => {
 export const COORDINATOR_ACCOUNTS = [
   { assignedSport: 'cricket',       sportName: 'Cricket',       username: 'coord_cricket',       coordinatorName: 'Vikramaditya Sharma',    email: 'cricket.coord@sems.edu' },
   { assignedSport: 'table-tennis',  sportName: 'Table Tennis',  username: 'coord_table_tennis',  coordinatorName: 'Rohan Mehta',            email: 'tt.coord@sems.edu' },
-  { assignedSport: 'badminton',     sportName: 'Badminton',     username: 'coord_badminton',     coordinatorName: 'Pooja Deshmukh',         email: 'badminton.coord@sems.edu' },
+  { assignedSport: 'badminton',     sportName: 'Badminton',     username: 'coord_badminton',     coordinatorName: 'Badminton Coordinator',  email: '' },
   { assignedSport: 'chess',         sportName: 'Chess',         username: 'coord_chess',         coordinatorName: 'Grandmaster Anand Verma',email: 'chess.coord@sems.edu' },
   { assignedSport: 'football',      sportName: 'Football',      username: 'coord_football',      coordinatorName: 'Carlos Rodriguez',       email: 'football.coord@sems.edu' },
   { assignedSport: 'basketball',    sportName: 'Basketball',    username: 'coord_basketball',    coordinatorName: 'Michael Jordan Singh',   email: 'basketball.coord@sems.edu' },
@@ -32,6 +33,133 @@ export const COORDINATOR_ACCOUNTS = [
   { assignedSport: 'athletics',     sportName: 'Athletics',     username: 'coord_athletics',     coordinatorName: 'PT Usha Pillai',         email: 'athletics.coord@sems.edu' },
   { assignedSport: 'tug-of-war',    sportName: 'Tug of War',    username: 'coord_tug_of_war',    coordinatorName: 'Bheem Singh Power',      email: 'tugofwar.coord@sems.edu' },
   { assignedSport: 'gully-cricket', sportName: 'Gully Cricket', username: 'coord_gully_cricket', coordinatorName: 'Chiku Bhai',             email: 'gullycricket.coord@sems.edu' },
+];
+
+export const MOCK_BADMINTON_PARTICIPANTS = [
+  {
+    id: "REG-BAD-101",
+    timestamp: "16 Jul, 10:32 am",
+    sport: "Badminton",
+    category: "SINGLES",
+    format: "SINGLES",
+    player1: {
+      name: "Aditya Singh",
+      roll: "25261101308",
+      college: "MPCPS (KN142)",
+      year: "2nd Year",
+      phone: "9336938985",
+      email: "adityasinghmlzs01@gmail.com"
+    },
+    feePaid: "₹100",
+    transactionStatus: "Captured",
+    verificationStatus: "Razorpay Auto-Verified"
+  },
+  {
+    id: "REG-BAD-102",
+    timestamp: "19 Jul, 01:11 pm",
+    sport: "Badminton",
+    category: "SINGLES",
+    format: "SINGLES",
+    player1: {
+      name: "Kavyansh Sonwani",
+      roll: "2300461540052",
+      college: "MPEC",
+      year: "4th Year",
+      phone: "8112425951",
+      email: "kavyanshsonwani@gmail.com"
+    },
+    feePaid: "₹100",
+    transactionStatus: "Captured",
+    verificationStatus: "Razorpay Auto-Verified"
+  },
+  {
+    id: "REG-BAD-103",
+    timestamp: "19 Jul, 02:12 pm",
+    sport: "Badminton",
+    category: "DOUBLES",
+    format: "DOUBLES",
+    player1: {
+      name: "Kavyansh Sonwani",
+      roll: "2300461540052",
+      college: "MPEC",
+      year: "4th Year",
+      phone: "8112425951",
+      email: "kavyanshsonwani@gmail.com"
+    },
+    player2: {
+      name: "Prabal Agrahari",
+      roll: "2300460100084",
+      college: "MPEC",
+      year: "4th Year",
+      phone: "9305828388",
+      email: "prabalagrahari2006@gmail.com"
+    },
+    feePaid: "₹200",
+    transactionStatus: "Captured",
+    verificationStatus: "Razorpay Auto-Verified"
+  },
+  {
+    id: "REG-BAD-104",
+    timestamp: "21 Jul, 11:45 am",
+    sport: "Badminton",
+    category: "SINGLES",
+    format: "SINGLES",
+    player1: {
+      name: "Rohan Verma",
+      roll: "2400460100112",
+      college: "MIPS Kanpur",
+      year: "3rd Year",
+      phone: "9839120492",
+      email: "rohanverma2026@gmail.com"
+    },
+    feePaid: "₹100",
+    transactionStatus: "Captured",
+    verificationStatus: "Razorpay Auto-Verified"
+  },
+  {
+    id: "REG-BAD-105",
+    timestamp: "23 Jul, 04:20 pm",
+    sport: "Badminton",
+    category: "DOUBLES",
+    format: "DOUBLES",
+    player1: {
+      name: "Aman Sharma",
+      roll: "2300460200045",
+      college: "MPEC",
+      year: "3rd Year",
+      phone: "9876543210",
+      email: "amansharma@mpec.edu"
+    },
+    player2: {
+      name: "Rahul Verma",
+      roll: "2300460200048",
+      college: "MPEC",
+      year: "3rd Year",
+      phone: "9876543211",
+      email: "rahulverma@mpec.edu"
+    },
+    feePaid: "₹200",
+    transactionStatus: "Captured",
+    verificationStatus: "Razorpay Auto-Verified"
+  },
+  {
+    id: "REG-BAD-106",
+    timestamp: "25 Jul, 09:15 am",
+    sport: "Badminton",
+    category: "SINGLES",
+    format: "SINGLES",
+    player1: {
+      name: "Sanya Malhotra",
+      roll: "25261102901",
+      college: "MPCP Kanpur",
+      year: "2nd Year",
+      phone: "9834567890",
+      email: "sanyamalhotra@mpcp.edu"
+    },
+    feePaid: "₹100",
+    transactionStatus: "Captured",
+    verificationStatus: "Razorpay Auto-Verified"
+  }
 ];
 
 export const coordinatorApi = {
@@ -108,11 +236,25 @@ export const coordinatorApi = {
       const res = await api.get('/coordinator/matches');
       if (res.data && Array.isArray(res.data)) {
         if (res.data.length > 0) {
+          const completedMap = new Map();
+          savedMatches.forEach((m) => {
+            if (m && m.id && (m.status === 'COMPLETED' || m.status === 'FINISHED')) {
+              completedMap.set(m.id, m);
+            }
+          });
+
+          const merged = res.data.map((m) => {
+            if (completedMap.has(m.id)) {
+              return completedMap.get(m.id);
+            }
+            return m;
+          });
+
           const serverIds = new Set(res.data.map((m) => m.id));
           const localOnly = savedMatches.filter((m) => m && m.id && !serverIds.has(m.id));
-          const merged = [...res.data, ...localOnly];
-          this.saveMatches(merged);
-          return merged;
+          const finalMatches = [...merged, ...localOnly];
+          this.saveMatches(finalMatches);
+          return finalMatches;
         } else if (savedMatches.length > 0) {
           return savedMatches;
         } else {
@@ -353,8 +495,18 @@ export const coordinatorApi = {
       console.warn('Backend completeMatch API fallback:', e);
     }
 
-    // Save updated match in match list & purge completed match from active schedule list
-    const updatedList = matches.filter((m) => m.id !== matchId && m.status !== 'COMPLETED' && m.status !== 'FINISHED');
+    // Save updated match in match list with COMPLETED status
+    let foundInList = false;
+    const updatedList = matches.map((m) => {
+      if (m.id === matchId) {
+        foundInList = true;
+        return completedObj;
+      }
+      return m;
+    });
+    if (!foundInList) {
+      updatedList.unshift(completedObj);
+    }
     this.saveMatches(updatedList);
 
 
@@ -400,7 +552,7 @@ export const coordinatorApi = {
 
     try {
       const res = await api.get('/coordinator/registrations');
-      if (res.data && Array.isArray(res.data)) {
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
         return res.data;
       }
     } catch (e) {
@@ -409,27 +561,46 @@ export const coordinatorApi = {
 
     const key = `sems_participants_${user.assignedSport}`;
     const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+
+    // Default mock data seed for Badminton or any sport when empty
+    if (user.assignedSport === 'badminton' || !saved) {
+      localStorage.setItem(key, JSON.stringify(MOCK_BADMINTON_PARTICIPANTS));
+      return MOCK_BADMINTON_PARTICIPANTS;
+    }
+
+    return [];
   },
 
   // Get Public Live Matches from Backend API with localStorage fallback
   async getPublicLiveMatches() {
+    let serverLive = [];
     try {
       const res = await api.get('/live-matches');
-      if (res.data && Array.isArray(res.data)) {
-        return res.data;
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        serverLive = res.data;
       }
     } catch (e) {
       console.warn('Backend live matches API fallback:', e);
     }
 
-    const savedActiveStr = localStorage.getItem('sems_active_live_matches');
-    let activeList = [];
+    const activeList = [...serverLive];
 
+    const savedActiveStr = localStorage.getItem('sems_active_live_matches');
     if (savedActiveStr) {
       try {
         const activeMap = JSON.parse(savedActiveStr);
-        activeList = Object.values(activeMap).filter((m) => m && (m.status === 'running' || m.status === 'live' || m.status === 'LIVE'));
+        Object.values(activeMap).forEach((m) => {
+          const s = (m?.status || '').toLowerCase();
+          if (m && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active' || s === 'scheduled')) {
+            if (!activeList.some((a) => a.id === m.id)) {
+              activeList.push(m);
+            }
+          }
+        });
       } catch (e) {}
     }
 
@@ -441,7 +612,8 @@ export const coordinatorApi = {
           const list = JSON.parse(localStorage.getItem(key));
           if (Array.isArray(list)) {
             list.forEach((m) => {
-              if (m && (m.status === 'running' || m.status === 'live' || m.status === 'LIVE')) {
+              const s = (m?.status || '').toLowerCase();
+              if (m && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active' || s === 'scheduled')) {
                 if (!activeList.some((a) => a.id === m.id)) {
                   activeList.push(m);
                 }
@@ -486,9 +658,11 @@ export const coordinatorApi = {
   saveEvents(events) {
     const user = this.getCurrentUser();
     if (!user) return;
-    const key = `sems_coord_events_${user.assignedSport}`;
+    const sportKey = (user.assignedSport || 'badminton').toLowerCase();
+    const key = `sems_coord_events_${sportKey}`;
     localStorage.setItem(key, JSON.stringify(events));
     window.dispatchEvent(new Event('sems_events_updated'));
+    window.dispatchEvent(new Event('storage'));
   },
 
   // Create new event
@@ -508,11 +682,14 @@ export const coordinatorApi = {
       console.warn('Backend create event fallback', e);
     }
 
+    const sportKey = resolveSportKey(user?.assignedSport || eventData.sportId || eventData.sportName);
+    const bounds = SPORT_PLAYER_BOUNDS[sportKey] || { min: 1, max: 10 };
+
     const newEvent = {
-      id: eventData.id || `EVT-${user.assignedSport.toUpperCase()}-${Date.now()}`,
-      title: eventData.title || `${user.sportName} Championship 2026`,
-      sportId: user.assignedSport,
-      sportName: user.sportName,
+      id: eventData.id || `EVT-${(user.assignedSport || 'SPORT').toUpperCase()}-${Date.now()}`,
+      title: eventData.title || `${user.sportName || 'Sports'} Championship 2026`,
+      sportId: user.assignedSport || sportKey,
+      sportName: user.sportName || eventData.sportName || 'Sports',
       coverImage: eventData.coverImage || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80',
       description: eventData.description || '',
       regStartDate: eventData.regStartDate || new Date().toISOString().split('T')[0],
@@ -520,12 +697,16 @@ export const coordinatorApi = {
       tournStartDate: eventData.tournStartDate || '2026-09-01',
       tournEndDate: eventData.tournEndDate || '2026-09-05',
       entryFee: Number(eventData.entryFee || 0),
-      teamSize: eventData.teamSize || '1 Player',
+      singlesFee: eventData.singlesFee,
+      doublesFee: eventData.doublesFee,
+      minPlayers: eventData.minPlayers !== undefined ? Number(eventData.minPlayers) : bounds.min,
+      maxPlayers: eventData.maxPlayers !== undefined ? Number(eventData.maxPlayers) : bounds.max,
+      teamSize: eventData.teamSize || `${eventData.minPlayers || bounds.min} - ${eventData.maxPlayers || bounds.max} Players`,
       maxRegistrations: Number(eventData.maxRegistrations || 64),
       registeredCount: Number(eventData.registeredCount || 0),
       venue: eventData.venue || 'Central Arena',
       category: eventData.category || 'Open',
-      status: eventData.status || 'Draft',
+      status: eventData.status || 'Published',
       rules: eventData.rules || [],
       requiredDocuments: eventData.requiredDocuments || ['College ID Card'],
       contactInfo: eventData.contactInfo || {
@@ -596,39 +777,39 @@ export const coordinatorApi = {
 
   // Get all Published & Closed coordinator events across all sports
   async getPublicEvents() {
+    let serverEvents = [];
     try {
       const res = await api.get('/public/events');
-      if (res.data && Array.isArray(res.data)) {
-        return res.data;
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        serverEvents = res.data;
       }
     } catch (e) {
       console.warn('Public events endpoint fallback to scanning localStorage keys', e);
     }
 
-    const publicList = [];
+    const publicList = [...serverEvents];
     const currentDate = new Date();
+    const existingIds = new Set(serverEvents.map((e) => e.id));
 
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith('sems_coord_events_')) {
+      if (key && key.toLowerCase().startsWith('sems_coord_events_')) {
         try {
           const list = JSON.parse(localStorage.getItem(key));
           if (Array.isArray(list)) {
             list.forEach((e) => {
-              if (e && (e.status === 'Published' || e.status === 'Closed')) {
-                const sId = (e.sportId || '').toLowerCase();
-                const sName = (e.sportName || '').toLowerCase();
-                const title = (e.title || '').toLowerCase();
+              if (e && (e.status === 'Published' || e.status === 'Open' || e.status === 'Active' || e.status === 'Closed' || !e.status)) {
                 if (e.id === 'EVT-BADMINTON-001' || e.id === 'EVT-CRICKET-001' || e.id === 'EVT-FOOTBALL-001') return;
+                if (existingIds.has(e.id)) return;
 
-                let status = e.status;
+                let status = e.status === 'Closed' ? 'Closed' : 'Published';
                 if (e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) {
                   status = 'Closed';
                 }
                 publicList.push({
                   ...e,
                   status,
-                  availableSlots: Math.max(0, (e.maxRegistrations || 64) - e.registeredCount)
+                  availableSlots: Math.max(0, (e.maxRegistrations || 64) - (e.registeredCount || 0))
                 });
               }
             });

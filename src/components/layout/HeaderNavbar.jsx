@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  Trophy, Search, Bell, Clock, User, ShieldCheck, 
+  Trophy, Bell, Clock, User, ShieldCheck, 
   Menu, X, Sparkles, CheckCircle2, ChevronRight, LogOut, Camera,
-  ChevronDown, Building2, Shield
+  ChevronDown, Building2, Shield, LayoutDashboard
 } from 'lucide-react';
 import { ThemeToggle } from '../common/ThemeToggle';
-import { QuickSearchModal } from '../common/QuickSearchModal';
 import { useAuth } from '../../context/AuthContext';
 import { useSportsData } from '../../context/SportsDataContext';
 import { galleryApi } from '../../services/galleryApi';
+import { collegeHeadApi } from '../../services/collegeHeadApi';
+import { coordinatorApi } from '../../services/coordinatorApi';
 
 export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  const { user, setIsAuthModalOpen, logout } = useAuth();
+  const { user, logout } = useAuth();
   const { announcements } = useSportsData();
 
   // Clock tick interval
@@ -36,6 +36,59 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
     minute: '2-digit',
     hour12: true
   });
+
+  // Check active session across all user roles (Student, College Head, Sport Coordinator, PR Coordinator)
+  const getActiveSession = () => {
+    if (user) {
+      return {
+        name: user.name || 'User Profile',
+        roleLabel: user.role === 'admin' ? 'Admin' : 'Profile / Dashboard',
+        dashboardPath: '/dashboard',
+        logoutHandler: () => {
+          logout();
+        }
+      };
+    }
+    if (collegeHeadApi.isAuthenticated()) {
+      const chUser = collegeHeadApi.getUser();
+      return {
+        name: chUser?.faculty_name || chUser?.college || 'College Head',
+        roleLabel: 'College Head',
+        dashboardPath: '/college-head/dashboard',
+        logoutHandler: () => {
+          collegeHeadApi.logout();
+          window.location.href = '/';
+        }
+      };
+    }
+    if (Boolean(localStorage.getItem('sems_coordinator_token'))) {
+      const coordUser = coordinatorApi.getCurrentUser();
+      return {
+        name: coordUser?.coordinatorName || coordUser?.sportName || 'Coordinator',
+        roleLabel: 'Sport Coord',
+        dashboardPath: '/coordinator/dashboard',
+        logoutHandler: () => {
+          coordinatorApi.logout();
+          window.location.href = '/';
+        }
+      };
+    }
+    if (galleryApi.isPRAuthenticated()) {
+      const prUser = JSON.parse(localStorage.getItem('pr_user') || '{}');
+      return {
+        name: prUser?.username || 'PR Media',
+        roleLabel: 'PR Coordinator',
+        dashboardPath: '/pr-dashboard',
+        logoutHandler: () => {
+          galleryApi.logoutPR();
+          window.location.href = '/';
+        }
+      };
+    }
+    return null;
+  };
+
+  const activeSession = getActiveSession();
 
   return (
     <>
@@ -68,22 +121,6 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
               </Link>
             </div>
 
-            {/* Middle Search Bar Shortcut (Desktop) */}
-            <div className="hidden md:flex items-center flex-1 max-w-md mx-4">
-              <button
-                onClick={() => setIsSearchOpen(true)}
-                className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-900/90 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800 text-xs font-medium transition shadow-sm group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Search className="w-4 h-4 text-slate-400 group-hover:text-blue-500 transition" />
-                  <span>Search sports, fixtures, leaderboards...</span>
-                </div>
-                <kbd className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shadow-xs">
-                  Ctrl K
-                </kbd>
-              </button>
-            </div>
-
             {/* Right Quick Actions Bar */}
             <div className="flex items-center gap-2 sm:gap-3">
 
@@ -94,15 +131,6 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
                 <span className="text-slate-300 dark:text-slate-700">•</span>
                 <span className="font-bold text-slate-900 dark:text-white">{formattedTime}</span>
               </div>
-
-              {/* Search Trigger for Mobile */}
-              <button
-                onClick={() => setIsSearchOpen(true)}
-                className="md:hidden p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300"
-                title="Search"
-              >
-                <Search className="w-4 h-4" />
-              </button>
 
               {/* Notifications Dropdown Toggle */}
               <div className="relative">
@@ -166,39 +194,26 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
                 )}
               </div>
 
-              {/* PR Portal Link - Only visible when PR user is logged in */}
-              {galleryApi.isPRAuthenticated() && (
-                <Link
-                  to="/pr-dashboard"
-                  className="p-2.5 rounded-2xl bg-blue-600/10 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white transition flex items-center gap-1.5"
-                  title="PR Coordinator Portal"
-                >
-                  <Camera className="w-4 h-4 text-orange-500" />
-                  <span className="hidden xl:inline text-xs font-bold">PR Dashboard</span>
-                </Link>
-              )}
-
               {/* Theme Toggle */}
               <ThemeToggle />
 
-              {/* User Profile / Log Out / Portal Sign In */}
-              {user ? (
+              {/* User Profile / Dashboard OR Portal Sign In */}
+              {activeSession ? (
                 <div className="flex items-center gap-2">
                   <Link
-                    to="/dashboard"
+                    to={activeSession.dashboardPath}
                     className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition"
                   >
-                    {user.role === 'admin' ? (
-                      <ShieldCheck className="w-4 h-4 text-orange-300" />
-                    ) : (
-                      <User className="w-4 h-4" />
-                    )}
-                    <span className="hidden sm:inline max-w-[100px] truncate">{user.name}</span>
+                    <LayoutDashboard className="w-4 h-4 text-orange-300" />
+                    <span className="max-w-[110px] truncate">{activeSession.name}</span>
+                    <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-white/20 text-white">
+                      {activeSession.roleLabel}
+                    </span>
                   </Link>
 
                   <button
-                    onClick={logout}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-rose-500/10 hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-500/30 font-bold text-xs transition"
+                    onClick={activeSession.logoutHandler}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-rose-500/10 hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-500/30 font-bold text-xs transition cursor-pointer"
                     title="Log Out"
                   >
                     <LogOut className="w-4 h-4" />
@@ -261,9 +276,6 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
           </div>
         </div>
       </header>
-
-      {/* Global Quick Search Dialog */}
-      <QuickSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </>
   );
 };

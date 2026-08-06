@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import { Trophy, ArrowLeft, User, Users, Info, ShieldCheck, Sparkles, Calendar, MapPin, Clock } from 'lucide-react';
 import { SPORTS_DATA } from '../data/sportsData';
-import { SPORTS_CONFIG } from '../data/sportsConfig';
+import { SPORTS_CONFIG, SPORT_PLAYER_BOUNDS, resolveSportKey } from '../data/sportsConfig';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { coordinatorApi } from '../services/coordinatorApi';
@@ -23,17 +23,8 @@ const MOCK_RECEIPT_IMAGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.or
 
 const isRacketSportCheck = (sport) => {
   if (!sport) return false;
-  const sId = (sport.id || '').toLowerCase();
-  const sSportId = (sport.sportId || '').toLowerCase();
-  const sName = (sport.name || '').toLowerCase();
-  const sSportName = (sport.sportName || '').toLowerCase();
-
-  return (
-    sId === 'badminton' || sId === 'table-tennis' ||
-    sSportId === 'badminton' || sSportId === 'table-tennis' ||
-    sName.includes('badminton') || sName.includes('table tennis') ||
-    sSportName.includes('badminton') || sSportName.includes('table tennis')
-  );
+  const key = resolveSportKey(sport);
+  return key === 'badminton' || key === 'table-tennis';
 };
 
 const RegistrationCountdownTimer = ({ endDateStr }) => {
@@ -99,15 +90,17 @@ export const RegistrationPage = () => {
   // Load configuration and merge with existing sports data
   const [sportsList] = useState(() => {
     const list = SPORTS_DATA.map((sport) => {
-      const config = SPORTS_CONFIG[sport.id] || {
+      const key = resolveSportKey(sport);
+      const config = SPORTS_CONFIG[key] || {
         startDate: "2026-07-20",
-        endDate: "2026-08-15",
-        minPlayers: 1,
-        maxPlayers: 1
+        endDate: "2026-08-15"
       };
+      const bounds = SPORT_PLAYER_BOUNDS[key] || { min: 1, max: 10 };
       return {
         ...sport,
-        ...config
+        ...config,
+        minPlayers: sport.minPlayers !== undefined ? sport.minPlayers : (config.minPlayers !== undefined ? config.minPlayers : bounds.min),
+        maxPlayers: sport.maxPlayers !== undefined ? sport.maxPlayers : (config.maxPlayers !== undefined ? config.maxPlayers : bounds.max)
       };
     });
 
@@ -189,6 +182,9 @@ export const RegistrationPage = () => {
     const handleRefresh = () => fetchCoordinatorEvents();
     window.addEventListener('storage', handleRefresh);
     window.addEventListener('focus', handleRefresh);
+    window.addEventListener('sems_events_updated', handleRefresh);
+
+    const interval = setInterval(fetchCoordinatorEvents, 3000);
 
     // Dynamically load Razorpay Checkout SDK Script
     const rzpScript = document.createElement('script');
@@ -199,6 +195,8 @@ export const RegistrationPage = () => {
     return () => {
       window.removeEventListener('storage', handleRefresh);
       window.removeEventListener('focus', handleRefresh);
+      window.removeEventListener('sems_events_updated', handleRefresh);
+      clearInterval(interval);
       if (document.body.contains(rzpScript)) {
         document.body.removeChild(rzpScript);
       }
@@ -234,6 +232,9 @@ export const RegistrationPage = () => {
         const pubEvents = await coordinatorApi.getPublicEvents();
         const foundEv = (pubEvents || []).find((ev) => String(ev.id) === String(eventId) || String(ev.sportId) === String(eventId));
         if (foundEv) {
+          const key = resolveSportKey(foundEv);
+          const bounds = SPORT_PLAYER_BOUNDS[key] || { min: 1, max: 10 };
+
           setActiveSport({
             id: foundEv.sportId || foundEv.id,
             eventId: foundEv.id,
@@ -247,6 +248,8 @@ export const RegistrationPage = () => {
             entryFee: foundEv.entryFee !== undefined ? foundEv.entryFee : 300,
             singlesFee: foundEv.singlesFee !== undefined ? foundEv.singlesFee : 300,
             doublesFee: foundEv.doublesFee !== undefined ? foundEv.doublesFee : 600,
+            minPlayers: foundEv.minPlayers !== undefined ? Number(foundEv.minPlayers) : bounds.min,
+            maxPlayers: foundEv.maxPlayers !== undefined ? Number(foundEv.maxPlayers) : bounds.max,
             teamSize: foundEv.teamSize || '1 Player',
             venue: foundEv.venue || 'Central Arena',
             startDate: foundEv.regStartDate || foundEv.tournStartDate || '2026-07-20',
@@ -342,9 +345,10 @@ export const RegistrationPage = () => {
   // Step 1 Validation
   const handleDetailsSubmit = () => {
     let formErrors = {};
+    const key = resolveSportKey(activeSport);
     const isRacket = isRacketSportCheck(activeSport);
     const isTeamLayout =
-      ['football', 'basketball', 'volleyball', 'cricket', 'kabaddi', 'tug-of-war', 'kho-kho', 'gully-cricket'].includes((activeSport.id || '').toLowerCase()) ||
+      ['football', 'basketball', 'volleyball', 'cricket', 'kabaddi', 'tug-of-war', 'kho-kho', 'gully-cricket'].includes(key) ||
       (isRacket && formData.eventType === 'Doubles');
 
     if (isTeamLayout) {
@@ -622,7 +626,7 @@ export const RegistrationPage = () => {
               setErrors={setErrors}
             />
           )
-        ) : ['chess', 'athletics'].includes((activeSport.id || '').toLowerCase()) ? (
+        ) : ['chess', 'athletics'].includes(resolveSportKey(activeSport)) ? (
           <PlayerDetailsForm
             sport={activeSport}
             formData={formData}
@@ -700,6 +704,11 @@ export const RegistrationPage = () => {
                       const sFee = evt.singlesFee !== undefined ? Number(evt.singlesFee) : Number(evt.entryFee || 300);
                       const dFee = evt.doublesFee !== undefined ? Number(evt.doublesFee) : (evt.singlesFee !== undefined ? Number(evt.singlesFee) * 2 : 600);
 
+                      const key = resolveSportKey(evt);
+                      const bounds = SPORT_PLAYER_BOUNDS[key] || { min: 1, max: 10 };
+                      const minP = evt.minPlayers !== undefined ? Number(evt.minPlayers) : bounds.min;
+                      const maxP = evt.maxPlayers !== undefined ? Number(evt.maxPlayers) : bounds.max;
+
                       return (
                         <div
                           key={evt.id}
@@ -756,7 +765,7 @@ export const RegistrationPage = () => {
                               </div>
                               <div>
                                 <span className="text-[9px] text-slate-400 uppercase font-mono block">Team Size</span>
-                                <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px]">{evt.teamSize}</span>
+                                <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px]">{evt.teamSize || `${minP} - ${maxP} Players`}</span>
                               </div>
                             </div>
 
@@ -784,15 +793,12 @@ export const RegistrationPage = () => {
                               <button
                                 disabled={isClosed || evt.status === 'Coming Soon'}
                                 onClick={() => {
-                                  const sFee = evt.singlesFee !== undefined ? Number(evt.singlesFee) : 300;
-                                  const dFee = evt.doublesFee !== undefined ? Number(evt.doublesFee) : 600;
-
                                   const adaptedSport = {
-                                    id: evt.sportId || 'badminton',
+                                    id: evt.sportId || evt.id,
                                     name: evt.title,
                                     sportName: evt.sportName,
                                     category: evt.category,
-                                    type: evt.teamSize,
+                                    type: evt.teamSize || `${minP} - ${maxP} Players`,
                                     tagline: evt.title,
                                     description: evt.description,
                                     image: evt.coverImage,
@@ -802,7 +808,9 @@ export const RegistrationPage = () => {
                                     entryFee: sFee,
                                     singlesFee: sFee,
                                     doublesFee: dFee,
-                                    teamSize: evt.teamSize,
+                                    minPlayers: minP,
+                                    maxPlayers: maxP,
+                                    teamSize: evt.teamSize || `${minP} - ${maxP} Players`,
                                     venue: evt.venue,
                                     rules: evt.rules || ['Standard rules apply.'],
                                     startDate: evt.regStartDate,
@@ -839,6 +847,29 @@ export const RegistrationPage = () => {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* OFFICIAL CHAMPIONSHIP DISCIPLINES (ALL 12 GAMES GRID) */}
+            <div className="space-y-4 pt-6 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-amber-500" />
+                  Official Championship Disciplines ({sportsList.length})
+                </h2>
+                <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono text-xs font-bold border border-blue-500/20">
+                  Select Game to Register
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {sportsList.map((sport) => (
+                  <SportCard
+                    key={sport.id}
+                    sport={sport}
+                    onSelect={() => handleSportSelect(sport)}
+                  />
+                ))}
+              </div>
             </div>
 
           </div>
