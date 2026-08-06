@@ -59,6 +59,7 @@ export const galleryApi = {
       if (res.data && res.data.token) {
         localStorage.setItem('pr_auth_token', res.data.token);
         localStorage.setItem('pr_user', JSON.stringify(res.data.user || { username, role: 'pr_coordinator' }));
+        window.dispatchEvent(new Event('sems-auth-change'));
       }
       return res.data;
     } catch (err) {
@@ -68,6 +69,7 @@ export const galleryApi = {
         const mockUser = { username: PR_ADMIN_USER, role: 'pr_coordinator' };
         localStorage.setItem('pr_auth_token', mockToken);
         localStorage.setItem('pr_user', JSON.stringify(mockUser));
+        window.dispatchEvent(new Event('sems-auth-change'));
         return { success: true, token: mockToken, user: mockUser };
       }
       throw new Error(err.response?.data?.message || 'Invalid PR Coordinator Credentials');
@@ -78,6 +80,7 @@ export const galleryApi = {
   logoutPR() {
     localStorage.removeItem('pr_auth_token');
     localStorage.removeItem('pr_user');
+    window.dispatchEvent(new Event('sems-auth-change'));
   },
 
   // Check PR Auth status

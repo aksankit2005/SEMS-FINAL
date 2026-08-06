@@ -87,6 +87,7 @@ export const collegeHeadApi = {
       if (res.data && res.data.token) {
         localStorage.setItem('sems_college_head_token', res.data.token);
         localStorage.setItem('sems_college_head_user', JSON.stringify(res.data.user));
+        window.dispatchEvent(new Event('sems-auth-change'));
       }
       return res.data;
     } catch (err) {
@@ -103,6 +104,7 @@ export const collegeHeadApi = {
   logout() {
     localStorage.removeItem('sems_college_head_token');
     localStorage.removeItem('sems_college_head_user');
+    window.dispatchEvent(new Event('sems-auth-change'));
   },
 
   // Get current session user
