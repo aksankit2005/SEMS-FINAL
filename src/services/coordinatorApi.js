@@ -220,14 +220,24 @@ export const coordinatorApi = {
     const user = this.getCurrentUser();
     if (!user) throw new Error('Unauthenticated');
 
-    const cacheKey = `sems_coord_matches_${user.assignedSport}`;
+    const sportKey = (user.assignedSport || '').toLowerCase();
+    const cacheKey = sportKey === 'basketball'
+      ? 'basketballMatchSchedules'
+      : sportKey === 'volleyball'
+        ? 'volleyballMatchSchedules'
+        : `sems_coord_matches_${sportKey}`;
+
     let savedMatches = [];
-    const saved = localStorage.getItem(cacheKey);
+    const saved = localStorage.getItem(cacheKey) || localStorage.getItem(`sems_coord_matches_${sportKey}`);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          savedMatches = parsed;
+          savedMatches = parsed.filter(m => {
+            if (!m) return false;
+            const mSport = (m.sport || m.sportId || '').toLowerCase();
+            return !mSport || mSport === sportKey;
+          });
         }
       } catch (e) {}
     }
@@ -235,7 +245,12 @@ export const coordinatorApi = {
     try {
       const res = await api.get('/coordinator/matches');
       if (res.data && Array.isArray(res.data)) {
-        if (res.data.length > 0) {
+        const serverData = res.data.filter(m => {
+          if (!m) return false;
+          const mSport = (m.sport || m.sportId || '').toLowerCase();
+          return !mSport || mSport === sportKey;
+        });
+        if (serverData.length > 0) {
           const completedMap = new Map();
           savedMatches.forEach((m) => {
             if (m && m.id && (m.status === 'COMPLETED' || m.status === 'FINISHED')) {
@@ -243,20 +258,36 @@ export const coordinatorApi = {
             }
           });
 
-          const merged = res.data.map((m) => {
+          const merged = serverData.map((m) => {
+            const tagged = {
+              ...m,
+              sport: sportKey,
+              sportId: sportKey,
+              sportName: user.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1))
+            };
             if (completedMap.has(m.id)) {
               return completedMap.get(m.id);
             }
-            return m;
+            return tagged;
           });
 
-          const serverIds = new Set(res.data.map((m) => m.id));
+          const serverIds = new Set(serverData.map((m) => m.id));
           const localOnly = savedMatches.filter((m) => m && m.id && !serverIds.has(m.id));
-          const finalMatches = [...merged, ...localOnly];
+          const finalMatches = [...merged, ...localOnly].map(m => ({
+            ...m,
+            sport: sportKey,
+            sportId: sportKey,
+            sportName: user.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1))
+          }));
           this.saveMatches(finalMatches);
           return finalMatches;
         } else if (savedMatches.length > 0) {
-          return savedMatches;
+          return savedMatches.map(m => ({
+            ...m,
+            sport: sportKey,
+            sportId: sportKey,
+            sportName: user.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1))
+          }));
         } else {
           this.saveMatches([]);
           return [];
@@ -266,17 +297,39 @@ export const coordinatorApi = {
       console.warn('Backend matches API fallback to localStorage:', e);
     }
 
-    return savedMatches;
+    return savedMatches.map(m => ({
+      ...m,
+      sport: sportKey,
+      sportId: sportKey,
+      sportName: user.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1))
+    }));
   },
 
   // Save matches array to localStorage
   saveMatches(matches) {
     const user = this.getCurrentUser();
     if (!user) return;
-    const cacheKey = `sems_coord_matches_${user.assignedSport}`;
-    localStorage.setItem(cacheKey, JSON.stringify(matches));
+    const sportKey = (user.assignedSport || '').toLowerCase();
+    const cacheKey = sportKey === 'basketball'
+      ? 'basketballMatchSchedules'
+      : sportKey === 'volleyball'
+        ? 'volleyballMatchSchedules'
+        : `sems_coord_matches_${sportKey}`;
+
+    const filtered = (matches || []).filter(m => {
+      if (!m) return false;
+      const mSport = (m.sport || m.sportId || '').toLowerCase();
+      return !mSport || mSport === sportKey;
+    }).map(m => ({
+      ...m,
+      sport: sportKey,
+      sportId: sportKey,
+      sportName: user.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1))
+    }));
+
+    localStorage.setItem(cacheKey, JSON.stringify(filtered));
     window.dispatchEvent(new Event('storage'));
-    window.dispatchEvent(new CustomEvent('sems_matches_updated', { detail: { sportId: user.assignedSport } }));
+    window.dispatchEvent(new CustomEvent('sems_matches_updated', { detail: { sportId: sportKey } }));
   },
 
   // Get all public match schedules across all sports
@@ -291,35 +344,52 @@ export const coordinatorApi = {
     }
 
     const publicMatches = [];
+    const keysToCheck = ['basketballMatchSchedules', 'volleyballMatchSchedules'];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith('sems_coord_matches_')) {
-        try {
-          const list = JSON.parse(localStorage.getItem(key));
+      if (key && (key.startsWith('sems_coord_matches_') || key.endsWith('MatchSchedules'))) {
+        keysToCheck.push(key);
+      }
+    }
+
+    const uniqueKeys = Array.from(new Set(keysToCheck));
+    uniqueKeys.forEach((key) => {
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const list = JSON.parse(raw);
           if (Array.isArray(list)) {
-            const sportId = key.replace('sems_coord_matches_', '');
+            const sportId = key.replace('sems_coord_matches_', '').replace('MatchSchedules', '').toLowerCase();
             list.forEach((m) => {
               if (m) {
+                const mSport = m.sport || m.sportId || sportId;
                 publicMatches.push({
                   ...m,
-                  sportId,
-                  sportName: m.sportName || (sportId.charAt(0).toUpperCase() + sportId.slice(1).replace('-', ' '))
+                  sport: mSport,
+                  sportId: mSport,
+                  sportName: m.sportName || (mSport.charAt(0).toUpperCase() + mSport.slice(1).replace('-', ' '))
                 });
               }
             });
           }
-        } catch (err) {}
-      }
-    }
+        }
+      } catch (err) {}
+    });
     return publicMatches;
   },
 
   // Create match & persist to Backend API & localStorage
   async createMatch(matchData) {
+    const user = this.getCurrentUser();
+    const sportKey = (user?.assignedSport || matchData?.sport || matchData?.sportId || 'badminton').toLowerCase();
     const matches = await this.getMatches();
+    const prefix = sportKey === 'basketball' ? 'M-BSK-' : sportKey === 'volleyball' ? 'M-VOL-' : 'M-';
     const newMatch = {
       ...matchData,
-      id: matchData.id || `M${Math.floor(100000 + Math.random() * 900000)}`,
+      id: matchData.id || `${prefix}${Math.floor(100000 + Math.random() * 900000)}`,
+      sport: sportKey,
+      sportId: sportKey,
+      sportName: user?.sportName || matchData.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1)),
       status: matchData.status || 'SCHEDULED',
     };
     const updated = [newMatch, ...matches.filter((m) => m.id !== newMatch.id)];
@@ -552,8 +622,8 @@ export const coordinatorApi = {
 
     try {
       const res = await api.get('/coordinator/registrations');
-      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-        return res.data;
+      if (res.data && Array.isArray(res.data)) {
+        return res.data.filter(r => !r.sportId || (r.sportId && r.sportId.toLowerCase() === user.assignedSport.toLowerCase()));
       }
     } catch (e) {
       console.warn('Backend registrations API fallback to localStorage:', e);
@@ -562,8 +632,12 @@ export const coordinatorApi = {
     const key = `sems_participants_${user.assignedSport}`;
     const saved = localStorage.getItem(key);
     if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(r => !r.sportId || (r.sportId && r.sportId.toLowerCase() === user.assignedSport.toLowerCase()));
+        }
+      } catch (e) {}
     }
 
     // Default mock data seed for Badminton or any sport when empty
@@ -637,7 +711,7 @@ export const coordinatorApi = {
     try {
       const res = await api.get('/coordinator/events');
       if (res.data && Array.isArray(res.data)) {
-        return res.data;
+        return res.data.filter(e => !e.sportId || (e.sportId && e.sportId.toLowerCase() === user.assignedSport.toLowerCase())).map(e => ({ ...e, sportId: user.assignedSport, sportName: user.sportName }));
       }
     } catch (e) {
       console.warn('Backend events API fallback to localStorage', e);
@@ -647,7 +721,10 @@ export const coordinatorApi = {
     const saved = localStorage.getItem(key);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(e => !e.sportId || (e.sportId && e.sportId.toLowerCase() === user.assignedSport.toLowerCase())).map(e => ({ ...e, sportId: user.assignedSport, sportName: user.sportName }));
+        }
       } catch (err) {}
     }
 
