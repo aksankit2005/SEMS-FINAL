@@ -11,8 +11,8 @@ export const VolleyballLiveMatchControlTab = ({ matches, user, onUpdateMatchScor
   const { addToast } = useToast();
   const assignedSport = 'volleyball';
 
-  // Strictly 2 Volleyball Courts
-  const venueCards = ['Volleyball Court 1', 'Volleyball Court 2'];
+  // 4 Volleyball Courts
+  const venueCards = ['Volleyball Court 1', 'Volleyball Court 2', 'Volleyball Court 3', 'Volleyball Court 4'];
 
   const [liveAssignments, setLiveAssignments] = useState(() => {
     const cacheKey = `sems_active_live_matches_${assignedSport}`;
@@ -59,7 +59,18 @@ export const VolleyballLiveMatchControlTab = ({ matches, user, onUpdateMatchScor
     });
   }, [liveAssignments, assignedSport]);
 
-  const handleInitiateGoLive = (matchItem, targetVenue) => {
+  const handleInitiateGoLive = (matchItem, requestedVenue) => {
+    const availableCourts = venueCards.filter((court) => !liveAssignments[court]);
+
+    if (availableCourts.length === 0) {
+      addToast('All Live Match Controllers are currently in use.', 'error');
+      return;
+    }
+
+    const targetVenue = (requestedVenue && !liveAssignments[requestedVenue])
+      ? requestedVenue
+      : availableCourts[0];
+
     if (!matchItem.roster1 || matchItem.roster1.length < 6) {
       setActiveRosterSetupMatch({ match: matchItem, targetVenue });
     } else {
@@ -206,7 +217,7 @@ export const VolleyballLiveMatchControlTab = ({ matches, user, onUpdateMatchScor
   return (
     <div className="space-y-8 text-slate-900 dark:text-slate-200 animate-fade-in font-sans">
 
-      {/* 2 VOLLEYBALL COURTS GRID */}
+      {/* 4 VOLLEYBALL COURTS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {venueCards.map((venueName) => {
           const activeLive = liveAssignments[venueName];
@@ -252,7 +263,7 @@ export const VolleyballLiveMatchControlTab = ({ matches, user, onUpdateMatchScor
                   {/* Teams & Score Display */}
                   <div className="text-center space-y-1">
                     <div className="text-xs font-mono font-bold text-orange-500 uppercase">
-                      {activeLive.quarter || 'Quarter 1'} · Points Continue
+                      {activeLive.quarter || 'Set 1 In Progress'} · Points Continue
                     </div>
                     <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
                       {activeLive.team1} <span className="text-orange-500 font-mono font-black">{activeLive.score1 || 0}</span>
@@ -371,7 +382,7 @@ export const VolleyballLiveMatchControlTab = ({ matches, user, onUpdateMatchScor
               <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-wider">
                 Promote Scheduled Match to Live
               </h3>
-              <span className="text-xs font-mono text-slate-400">Target Courts: Court 1 or Court 2</span>
+              <span className="text-xs font-mono text-slate-400">Available Courts: Court 1, 2, 3, 4</span>
             </div>
 
             {upcomingMatchesToPromote.length === 0 ? (

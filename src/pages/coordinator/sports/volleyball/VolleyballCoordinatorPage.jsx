@@ -6,8 +6,8 @@ import { ProfileTab } from '../../../../components/coordinator/tabs/ProfileTab';
 import { VolleyballEventsTab } from '../../../../components/coordinator/tabs/VolleyballEventsTab';
 import { VolleyballMatchScheduleTab } from '../../../../components/coordinator/tabs/VolleyballMatchScheduleTab';
 import { VolleyballLiveMatchControlTab } from '../../../../components/coordinator/tabs/VolleyballLiveMatchControlTab';
-import { ResultManagementTab } from '../../../../components/coordinator/tabs/ResultManagementTab';
-import { TotalParticipationTab } from '../../../../components/coordinator/tabs/TotalParticipationTab';
+import { VolleyballResultManagementTab } from '../../../../components/coordinator/tabs/VolleyballResultManagementTab';
+import { VolleyballTotalParticipationTab } from '../../../../components/coordinator/tabs/VolleyballTotalParticipationTab';
 import { useToast } from '../../../../context/ToastContext';
 
 export const VolleyballCoordinatorPage = () => {
@@ -150,14 +150,14 @@ export const VolleyballCoordinatorPage = () => {
             )}
 
             {activeTab === 'results' && (
-              <ResultManagementTab
+              <VolleyballResultManagementTab
                 user={user}
                 globalSearch={globalSearch}
               />
             )}
 
             {activeTab === 'participants' && (
-              <TotalParticipationTab
+              <VolleyballTotalParticipationTab
                 registrations={registrations}
                 user={user}
                 onUpdateRegistrations={handleUpdateRegistrations}
