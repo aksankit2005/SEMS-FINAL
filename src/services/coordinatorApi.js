@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { SPORT_PLAYER_BOUNDS, resolveSportKey } from '../data/sportsConfig';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -657,9 +658,11 @@ export const coordinatorApi = {
   saveEvents(events) {
     const user = this.getCurrentUser();
     if (!user) return;
-    const key = `sems_coord_events_${user.assignedSport}`;
+    const sportKey = (user.assignedSport || 'badminton').toLowerCase();
+    const key = `sems_coord_events_${sportKey}`;
     localStorage.setItem(key, JSON.stringify(events));
     window.dispatchEvent(new Event('sems_events_updated'));
+    window.dispatchEvent(new Event('storage'));
   },
 
   // Create new event
@@ -679,11 +682,14 @@ export const coordinatorApi = {
       console.warn('Backend create event fallback', e);
     }
 
+    const sportKey = resolveSportKey(user?.assignedSport || eventData.sportId || eventData.sportName);
+    const bounds = SPORT_PLAYER_BOUNDS[sportKey] || { min: 1, max: 10 };
+
     const newEvent = {
-      id: eventData.id || `EVT-${user.assignedSport.toUpperCase()}-${Date.now()}`,
-      title: eventData.title || `${user.sportName} Championship 2026`,
-      sportId: user.assignedSport,
-      sportName: user.sportName,
+      id: eventData.id || `EVT-${(user.assignedSport || 'SPORT').toUpperCase()}-${Date.now()}`,
+      title: eventData.title || `${user.sportName || 'Sports'} Championship 2026`,
+      sportId: user.assignedSport || sportKey,
+      sportName: user.sportName || eventData.sportName || 'Sports',
       coverImage: eventData.coverImage || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80',
       description: eventData.description || '',
       regStartDate: eventData.regStartDate || new Date().toISOString().split('T')[0],
@@ -691,12 +697,16 @@ export const coordinatorApi = {
       tournStartDate: eventData.tournStartDate || '2026-09-01',
       tournEndDate: eventData.tournEndDate || '2026-09-05',
       entryFee: Number(eventData.entryFee || 0),
-      teamSize: eventData.teamSize || '1 Player',
+      singlesFee: eventData.singlesFee,
+      doublesFee: eventData.doublesFee,
+      minPlayers: eventData.minPlayers !== undefined ? Number(eventData.minPlayers) : bounds.min,
+      maxPlayers: eventData.maxPlayers !== undefined ? Number(eventData.maxPlayers) : bounds.max,
+      teamSize: eventData.teamSize || `${eventData.minPlayers || bounds.min} - ${eventData.maxPlayers || bounds.max} Players`,
       maxRegistrations: Number(eventData.maxRegistrations || 64),
       registeredCount: Number(eventData.registeredCount || 0),
       venue: eventData.venue || 'Central Arena',
       category: eventData.category || 'Open',
-      status: eventData.status || 'Draft',
+      status: eventData.status || 'Published',
       rules: eventData.rules || [],
       requiredDocuments: eventData.requiredDocuments || ['College ID Card'],
       contactInfo: eventData.contactInfo || {
@@ -767,39 +777,39 @@ export const coordinatorApi = {
 
   // Get all Published & Closed coordinator events across all sports
   async getPublicEvents() {
+    let serverEvents = [];
     try {
       const res = await api.get('/public/events');
-      if (res.data && Array.isArray(res.data)) {
-        return res.data;
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        serverEvents = res.data;
       }
     } catch (e) {
       console.warn('Public events endpoint fallback to scanning localStorage keys', e);
     }
 
-    const publicList = [];
+    const publicList = [...serverEvents];
     const currentDate = new Date();
+    const existingIds = new Set(serverEvents.map((e) => e.id));
 
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith('sems_coord_events_')) {
+      if (key && key.toLowerCase().startsWith('sems_coord_events_')) {
         try {
           const list = JSON.parse(localStorage.getItem(key));
           if (Array.isArray(list)) {
             list.forEach((e) => {
-              if (e && (e.status === 'Published' || e.status === 'Closed')) {
-                const sId = (e.sportId || '').toLowerCase();
-                const sName = (e.sportName || '').toLowerCase();
-                const title = (e.title || '').toLowerCase();
+              if (e && (e.status === 'Published' || e.status === 'Open' || e.status === 'Active' || e.status === 'Closed' || !e.status)) {
                 if (e.id === 'EVT-BADMINTON-001' || e.id === 'EVT-CRICKET-001' || e.id === 'EVT-FOOTBALL-001') return;
+                if (existingIds.has(e.id)) return;
 
-                let status = e.status;
+                let status = e.status === 'Closed' ? 'Closed' : 'Published';
                 if (e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) {
                   status = 'Closed';
                 }
                 publicList.push({
                   ...e,
                   status,
-                  availableSlots: Math.max(0, (e.maxRegistrations || 64) - e.registeredCount)
+                  availableSlots: Math.max(0, (e.maxRegistrations || 64) - (e.registeredCount || 0))
                 });
               }
             });

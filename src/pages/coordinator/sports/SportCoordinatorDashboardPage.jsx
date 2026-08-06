@@ -6,6 +6,11 @@ import {
 } from 'lucide-react';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { ProfileTab } from '../../../components/coordinator/tabs/ProfileTab';
+import { EventsTab } from '../../../components/coordinator/tabs/EventsTab';
+import { MatchScheduleTab } from '../../../components/coordinator/tabs/MatchScheduleTab';
+import { LiveMatchControlTab } from '../../../components/coordinator/tabs/LiveMatchControlTab';
+import { ResultManagementTab } from '../../../components/coordinator/tabs/ResultManagementTab';
+import { TotalParticipationTab } from '../../../components/coordinator/tabs/TotalParticipationTab';
 import { useToast } from '../../../context/ToastContext';
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
@@ -58,7 +63,9 @@ const Header = ({ sportName, activeTab, setActiveTab }) => (
       </div>
       <div className="flex items-center gap-2.5">
         <button
-          onClick={() => {}}
+          onClick={() => {
+            window.location.reload();
+          }}
           className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-slate-700 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
         >
           <RefreshCw className="w-3.5 h-3.5 text-blue-600 dark:text-indigo-400" />
@@ -133,17 +140,31 @@ export const SportCoordinatorDashboardPage = ({ sportName, sportSlug }) => {
         setActiveTab={setActiveTab}
       />
       <main className="flex-1 p-3 sm:p-4 max-w-[1600px] w-full mx-auto">
-        {activeTab === 'profile' ? (
+        {activeTab === 'events' && (
+          <EventsTab user={user} />
+        )}
+        {activeTab === 'schedule' && (
+          <MatchScheduleTab user={user} matches={[]} onUpdateMatches={() => {}} />
+        )}
+        {activeTab === 'live-control' && (
+          <LiveMatchControlTab user={user} matches={[]} />
+        )}
+        {activeTab === 'results' && (
+          <ResultManagementTab user={user} />
+        )}
+        {activeTab === 'participants' && (
+          <TotalParticipationTab user={user} registrations={[]} />
+        )}
+        {activeTab === 'profile' && (
           <ProfileTab
             user={user}
             matches={[]}
             registrations={[]}
             onLogout={handleLogout}
           />
-        ) : (
-          <PlaceholderTab sportName={sportName} tabLabel={currentTab?.label || ''} />
         )}
       </main>
     </div>
   );
 };
+

@@ -14,6 +14,8 @@ export const SPORTS_DATA = [
     entryFee: 300,
     singlesFee: 300,
     doublesFee: 600,
+    minPlayers: 1,
+    maxPlayers: 2,
     startDate: "2026-08-01",
     endDate: "2026-08-30",
     teamSize: "1 - 2 Players",
@@ -41,6 +43,8 @@ export const SPORTS_DATA = [
     entryFee: 400,
     singlesFee: 300,
     doublesFee: 600,
+    minPlayers: 1,
+    maxPlayers: 2,
     startDate: "2026-08-01",
     endDate: "2026-08-30",
     teamSize: "1 - 2 Players",
@@ -66,6 +70,8 @@ export const SPORTS_DATA = [
     participantsCount: 96,
     maxParticipants: 128,
     entryFee: 250,
+    minPlayers: 1,
+    maxPlayers: 1,
     teamSize: "1 Player",
     venue: "Central Auditorium Hall B",
     rules: [
@@ -89,6 +95,8 @@ export const SPORTS_DATA = [
     participantsCount: 14,
     maxParticipants: 16,
     entryFee: 2500,
+    minPlayers: 11,
+    maxPlayers: 15,
     teamSize: "11 + 4 Subs",
     venue: "Main University Stadium Ground 1",
     rules: [
@@ -112,6 +120,8 @@ export const SPORTS_DATA = [
     participantsCount: 12,
     maxParticipants: 16,
     entryFee: 2200,
+    minPlayers: 5,
+    maxPlayers: 11,
     teamSize: "5 + 3 Subs",
     venue: "Turf Football Ground A",
     rules: [
@@ -135,6 +145,8 @@ export const SPORTS_DATA = [
     participantsCount: 18,
     maxParticipants: 24,
     entryFee: 1500,
+    minPlayers: 5,
+    maxPlayers: 10,
     teamSize: "5 + 5 Subs",
     venue: "Outdoor Synthetic Basketball Court",
     rules: [
@@ -158,6 +170,8 @@ export const SPORTS_DATA = [
     participantsCount: 14,
     maxParticipants: 16,
     entryFee: 1200,
+    minPlayers: 6,
+    maxPlayers: 10,
     teamSize: "6 + 4 Subs",
     venue: "Volleyball Arena Court 1",
     rules: [
@@ -181,6 +195,8 @@ export const SPORTS_DATA = [
     participantsCount: 10,
     maxParticipants: 12,
     entryFee: 1500,
+    minPlayers: 7,
+    maxPlayers: 12,
     teamSize: "7 + 5 Subs",
     venue: "Indoor Kabaddi Arena Mat 1",
     rules: [
@@ -204,6 +220,8 @@ export const SPORTS_DATA = [
     participantsCount: 12,
     maxParticipants: 16,
     entryFee: 1000,
+    minPlayers: 9,
+    maxPlayers: 12,
     teamSize: "9 + 3 Subs",
     venue: "Outdoor Sports Ground 2",
     rules: [
@@ -227,6 +245,8 @@ export const SPORTS_DATA = [
     participantsCount: 118,
     maxParticipants: 150,
     entryFee: 200,
+    minPlayers: 1,
+    maxPlayers: 4,
     teamSize: "1 Player / Relay Team",
     venue: "Olympic Synthetic Track & Field Arena",
     rules: [
@@ -250,6 +270,8 @@ export const SPORTS_DATA = [
     participantsCount: 12,
     maxParticipants: 16,
     entryFee: 800,
+    minPlayers: 8,
+    maxPlayers: 10,
     teamSize: "8 Players (Combined weight < 680kg)",
     venue: "Main Central Grass Field",
     rules: [
@@ -273,6 +295,8 @@ export const SPORTS_DATA = [
     participantsCount: 16,
     maxParticipants: 20,
     entryFee: 600,
+    minPlayers: 5,
+    maxPlayers: 8,
     teamSize: "6 Players",
     venue: "Street Pitch Ground 1",
     rules: [
@@ -284,3 +308,4 @@ export const SPORTS_DATA = [
     schedule: "Day 3 - 01:00 PM onwards"
   }
 ];
+

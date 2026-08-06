@@ -230,16 +230,27 @@ export const ResultsPage = () => {
                   <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80">
                     <button
                       onClick={() => {
-                        generateMatchResultPDF({
-                          id: res.id,
-                          matchTitle: res.event,
-                          winner: res.winner,
-                          team1: res.winner,
-                          team2: 'Runner Up',
-                          scoreSummary: res.scoreSummary,
-                          sportName: res.sport,
-                          completedAt: res.date
-                        }, res.sport);
+                        let matchObj = res.rawMatch;
+                        if (!matchObj) {
+                          const t1 = res.medals?.gold || res.winner || 'Team A';
+                          const t2 = res.medals?.silver || 'Team B';
+                          matchObj = {
+                            id: res.id,
+                            matchTitle: res.event || `${res.sport} Championship Final`,
+                            winner: res.winner,
+                            team1: t1,
+                            team2: t2,
+                            scoreSummary: res.scoreSummary,
+                            sportName: res.sport,
+                            completedAt: res.date,
+                            format: 'Official Championship Match',
+                            venue: 'Main Arena',
+                            roster1: res.roster1,
+                            roster2: res.roster2,
+                            setsHistory: res.setsHistory
+                          };
+                        }
+                        generateMatchResultPDF(matchObj, res.sport || matchObj.sportName);
                       }}
                       className="w-full py-2.5 px-3 rounded-2xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30 text-xs font-bold transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
                     >
