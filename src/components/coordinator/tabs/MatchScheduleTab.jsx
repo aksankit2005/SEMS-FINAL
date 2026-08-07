@@ -7,12 +7,17 @@ import { coordinatorApi } from '../../../services/coordinatorApi';
 export const MatchScheduleTab = ({ matches, user, onUpdateMatches }) => {
   const { addToast } = useToast();
 
-  const assignedSport = (user?.assignedSport || 'badminton').toLowerCase();
-  const venueLabel = ['table-tennis'].includes(assignedSport)
+  const assignedSport = (user?.assignedSport || 'sports').toLowerCase();
+  const isChess = assignedSport === 'chess';
+  const venueLabel = ['table-tennis', 'chess'].includes(assignedSport)
     ? 'Table'
     : ['cricket', 'football'].includes(assignedSport)
     ? 'Ground'
     : 'Court';
+
+  const venueOptions = isChess
+    ? Array.from({ length: 10 }, (_, i) => `Table ${i + 1}`)
+    : [`${venueLabel} 1`, `${venueLabel} 2`, `${venueLabel} 3`, `${venueLabel} 4`];
 
   // Active scheduled matches (completed matches are removed from active schedule view)
   const scheduledMatches = (matches || []).filter((m) => m && m.status !== 'COMPLETED' && m.status !== 'FINISHED');
@@ -59,7 +64,7 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches }) => {
   const sportName = user?.sportName || 'Badminton';
 
   const [form, setForm] = useState({
-    format: 'Singles',
+    format: isChess ? 'Standard' : 'Singles',
     category: 'Male',
     eventTitle: `${sportName} Championship 2026`,
     team1: '',
@@ -70,7 +75,7 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches }) => {
     team2Name: '',
     team2Player1: '',
     team2Player2: '',
-    tableNumber: `${venueLabel} 1`,
+    tableNumber: isChess ? 'Table 1' : `${venueLabel} 1`,
     date: '2026-08-05',
     time: '05:34 PM',
   });
@@ -175,7 +180,7 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches }) => {
     }
 
     setForm({
-      format: 'Singles',
+      format: isChess ? 'Standard' : 'Singles',
       category: 'Male',
       eventTitle: createdEvents[0]?.title || `${sportName} Championship 2026`,
       team1: '',
@@ -186,7 +191,7 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches }) => {
       team2Name: '',
       team2Player1: '',
       team2Player2: '',
-      tableNumber: `${venueLabel} 1`,
+      tableNumber: isChess ? 'Table 1' : `${venueLabel} 1`,
       date: '2026-08-05',
       time: '05:34 PM',
     });
@@ -246,18 +251,20 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches }) => {
             </div>
 
             {/* Format & Category Grid */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Format</label>
-                <select
-                  value={form.format}
-                  onChange={(e) => setForm({ ...form, format: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
-                >
-                  <option value="Singles">Singles</option>
-                  <option value="Doubles">Doubles</option>
-                </select>
-              </div>
+            <div className={`grid ${isChess ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
+              {!isChess && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Format</label>
+                  <select
+                    value={form.format}
+                    onChange={(e) => setForm({ ...form, format: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                  >
+                    <option value="Singles">Singles</option>
+                    <option value="Doubles">Doubles</option>
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Category</label>
@@ -268,12 +275,13 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches }) => {
                 >
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
+                  <option value="Open">Open</option>
                 </select>
               </div>
             </div>
 
             {/* Conditional Player / Team Name Inputs */}
-            {form.format === 'Doubles' ? (
+            {!isChess && form.format === 'Doubles' ? (
               <div className="space-y-4 pt-1">
                 {/* Side A / Team 1 Box */}
                 <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 space-y-2.5">
@@ -369,28 +377,28 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches }) => {
               <>
                 <div>
                   <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                    {form.format === 'Team' ? 'Team 1 Name' : 'Player 1 Name'} <span className="text-rose-500">*</span>
+                    {isChess ? 'Player 1 Name (White)' : form.format === 'Team' ? 'Team 1 Name' : 'Player 1 Name'} <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={form.team1}
                     onChange={(e) => setForm({ ...form, team1: e.target.value })}
-                    placeholder={form.format === 'Team' ? 'e.g. MPEC College Team' : 'e.g. Aman Sharma'}
+                    placeholder={isChess ? 'e.g. Magnus Carlsen (White)' : form.format === 'Team' ? 'e.g. MPEC College Team' : 'e.g. Aman Sharma'}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                    {form.format === 'Team' ? 'Team 2 Name' : 'Player 2 Name'} <span className="text-rose-500">*</span>
+                    {isChess ? 'Player 2 Name (Black)' : form.format === 'Team' ? 'Team 2 Name' : 'Player 2 Name'} <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={form.team2}
                     onChange={(e) => setForm({ ...form, team2: e.target.value })}
-                    placeholder={form.format === 'Team' ? 'e.g. MIPS College Team' : 'e.g. Vikas Gupta'}
+                    placeholder={isChess ? 'e.g. Hikaru Nakamura (Black)' : form.format === 'Team' ? 'e.g. MIPS College Team' : 'e.g. Vikas Gupta'}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
                   />
                 </div>
@@ -399,16 +407,17 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches }) => {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">{venueLabel} No.</label>
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                  {isChess ? 'Table No.' : `${venueLabel} No.`}
+                </label>
                 <select
                   value={form.tableNumber}
                   onChange={(e) => setForm({ ...form, tableNumber: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
                 >
-                  <option value={`${venueLabel} 1`}>{venueLabel} 1</option>
-                  <option value={`${venueLabel} 2`}>{venueLabel} 2</option>
-                  <option value={`${venueLabel} 3`}>{venueLabel} 3</option>
-                  <option value={`${venueLabel} 4`}>{venueLabel} 4</option>
+                  {venueOptions.map((vOpt) => (
+                    <option key={vOpt} value={vOpt}>{vOpt}</option>
+                  ))}
                 </select>
               </div>
 
@@ -436,7 +445,7 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches }) => {
 
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-1.5 cursor-pointer"
+              className={`w-full py-3 rounded-xl ${isChess ? 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/30' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30'} text-white font-black text-xs shadow-lg transition flex items-center justify-center gap-1.5 cursor-pointer`}
             >
               <Plus className="w-4 h-4" />
               <span>{editingId ? 'Save Changes' : '+ Add Match Fixture'}</span>
@@ -469,9 +478,11 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches }) => {
               >
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-indigo-400 border border-blue-200 dark:border-blue-500/20 uppercase">
-                      {m.format || 'SINGLES'}
-                    </span>
+                    {!isChess && (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-indigo-400 border border-blue-200 dark:border-blue-500/20 uppercase">
+                        {m.format || 'SINGLES'}
+                      </span>
+                    )}
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 uppercase">
                       {m.category || 'MALE'}
                     </span>

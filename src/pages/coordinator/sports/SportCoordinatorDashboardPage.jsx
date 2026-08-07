@@ -141,19 +141,19 @@ export const SportCoordinatorDashboardPage = ({ sportName, sportSlug }) => {
       />
       <main className="flex-1 p-3 sm:p-4 max-w-[1600px] w-full mx-auto">
         {activeTab === 'events' && (
-          <EventsTab user={user} />
+          <PlaceholderTab sportName={sportName} tabLabel="Registration Events" />
         )}
         {activeTab === 'schedule' && (
-          <MatchScheduleTab user={user} matches={[]} onUpdateMatches={() => {}} />
+          <PlaceholderTab sportName={sportName} tabLabel="Match Schedule" />
         )}
         {activeTab === 'live-control' && (
-          <LiveMatchControlTab user={user} matches={[]} />
+          <PlaceholderTab sportName={sportName} tabLabel="Live Match Control" />
         )}
         {activeTab === 'results' && (
-          <ResultManagementTab user={user} />
+          <PlaceholderTab sportName={sportName} tabLabel="Results Management" />
         )}
         {activeTab === 'participants' && (
-          <TotalParticipationTab user={user} registrations={[]} />
+          <PlaceholderTab sportName={sportName} tabLabel="Participants List" />
         )}
         {activeTab === 'profile' && (
           <ProfileTab
