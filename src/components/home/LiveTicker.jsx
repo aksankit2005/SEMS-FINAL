@@ -44,7 +44,7 @@ export const LiveTicker = () => {
         {/* View All Matches */}
         <Link
           to="/live"
-          className="hidden md:flex items-center gap-1 text-xs font-bold text-blue-650 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition shrink-0"
+          className="flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition shrink-0"
         >
           <span>All Matches</span>
           <ArrowRight className="w-3.5 h-3.5" />

@@ -109,7 +109,7 @@ export const PlayerDetailsCard = ({
   errors = {},
   availableCourses = [],
   teamCollege = '',
-  teamGender = null,
+  teamGender = '',
   isFirstPlayer = false,
   sameAsCaptain = false,
   onToggleSameAsCaptain = null
@@ -290,7 +290,7 @@ export const PlayerDetailsCard = ({
               Gender <span className="text-rose-500">*</span>
             </label>
             <div className="px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/40 text-slate-900 dark:text-white text-xs font-semibold flex items-center justify-between">
-              <span>{teamGender}</span>
+              <span>{teamGender || 'Not Selected'}</span>
               <span className="text-slate-400 flex items-center gap-1 text-[11px] shrink-0">
                 🔒 <span className="text-[10px] italic font-normal hidden sm:inline">Inherited from Team Captain</span>
               </span>

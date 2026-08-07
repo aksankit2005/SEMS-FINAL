@@ -51,8 +51,8 @@ export const RegistrationReceipt = ({ receipt, onGoToDashboard }) => {
         className="p-6 sm:p-8 rounded-3xl bg-slate-900 border border-slate-800 text-white space-y-6 shadow-2xl relative overflow-hidden"
       >
         {/* Decorative corner glows */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-cyan-500/20 via-blue-500/10 to-transparent blur-2xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-orange-500/20 to-transparent blur-2xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-bl from-cyan-500/20 via-blue-500/10 to-transparent blur-2xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-linear-to-tr from-orange-500/20 to-transparent blur-2xl pointer-events-none" />
 
         {/* Header Branding */}
         <div className="flex justify-between items-center border-b border-slate-800 pb-5">

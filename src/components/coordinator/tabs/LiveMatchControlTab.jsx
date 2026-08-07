@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { CheckCircle2, Tv, Video, Eye, Trash2, Save, Square } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
@@ -17,8 +18,8 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
   const venueType = ['table-tennis'].includes(assignedSport)
     ? 'Table'
     : ['cricket', 'football'].includes(assignedSport)
-    ? 'Ground'
-    : 'Court';
+      ? 'Ground'
+      : 'Court';
 
   const venueCards = [
     `${venueType} 1`,
@@ -32,27 +33,21 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
     const cacheKey = `sems_active_live_matches_${assignedSport}`;
     const saved = localStorage.getItem(cacheKey) || localStorage.getItem('sems_active_live_matches');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          const cleaned = {};
+          Object.keys(parsed).forEach((k) => {
+            if (parsed[k] && parsed[k].id !== 'M595473') {
+              cleaned[k] = parsed[k];
+            }
+          });
+          return cleaned;
+        }
+      } catch (e) { }
     }
-    const firstVenue = `${venueType} 1`;
-    return {
-      [firstVenue]: {
-        id: 'M595473',
-        matchTitle: 'Semifinal 1',
-        team1: 'Player / Team A',
-        team2: 'Player / Team B',
-        format: 'SINGLES',
-        tableNumber: firstVenue,
-        score1: 0,
-        score2: 0,
-        status: 'running',
-        liveStreamUrl: '',
-        youtubeVideoId: '',
-        isLiveStreaming: false,
-      }
-    };
+    return {};
   });
-
 
   const [activeControllerVenue, setActiveControllerVenue] = useState(null);
   const [streamInputMap, setStreamInputMap] = useState({});
@@ -60,10 +55,27 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
 
   // Sync liveAssignments to localStorage and backend API server whenever liveAssignments changes
   useEffect(() => {
-    localStorage.setItem('sems_active_live_matches', JSON.stringify(liveAssignments));
-    
+    const cacheKey = `sems_active_live_matches_${assignedSport}`;
+    localStorage.setItem(cacheKey, JSON.stringify(liveAssignments));
+
+    const globalSaved = localStorage.getItem('sems_active_live_matches');
+    let globalActiveMap = {};
+    if (globalSaved) {
+      try { globalActiveMap = JSON.parse(globalSaved); } catch (e) { }
+    }
+    Object.keys(globalActiveMap).forEach((k) => {
+      if (globalActiveMap[k]?.id === 'M595473') delete globalActiveMap[k];
+    });
+
+    const mergedMap = { ...globalActiveMap, ...liveAssignments };
+    Object.keys(mergedMap).forEach((k) => {
+      if (mergedMap[k]?.id === 'M595473') delete mergedMap[k];
+    });
+
+    localStorage.setItem('sems_active_live_matches', JSON.stringify(mergedMap));
+
     Object.values(liveAssignments).forEach(async (match) => {
-      if (match && match.id && match.status === 'running') {
+      if (match && match.id && match.id !== 'M595473' && match.status === 'running') {
         try {
           await coordinatorApi.updateMatchScoring(match.id, {
             ...match,
@@ -75,7 +87,7 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
         }
       }
     });
-  }, [liveAssignments]);
+  }, [liveAssignments, assignedSport]);
 
   const handlePromoteGoLive = async (match, targetVenue) => {
     const liveObj = {
@@ -232,7 +244,7 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
 
   return (
     <div className="space-y-8 text-slate-900 dark:text-slate-200 animate-fade-in">
-      
+
       {/* 2x2 Venue/Table Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {venueCards.map((venueName) => {
@@ -241,21 +253,21 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
           return (
             <div
               key={venueName}
-              className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-2xl flex flex-col justify-between min-h-[340px]"
+              className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-2xl flex flex-col justify-between min-h-[340px] transition-colors"
             >
               {!activeLive ? (
-                
+
                 /* Empty State Card */
                 <div className="my-auto text-center space-y-3 py-6">
-                  <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-500 flex items-center justify-center mx-auto text-2xl shadow-inner">
+                  <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center mx-auto text-2xl shadow-inner">
                     {sportConfig.icon}
                   </div>
-                  
+
                   <h3 className="text-base font-black text-slate-900 dark:text-white tracking-tight">
                     {venueName}: No Live Match
                   </h3>
-                  
-                  <p className="text-xs text-slate-600 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
+
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
                     Select a match from the schedule below and click "Go Live" to stream score updates.
                   </p>
                 </div>
@@ -264,7 +276,7 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
 
                 /* Active Live Match & Stream Control Card */
                 <div className="space-y-4">
-                  
+
                   {/* Top Bar */}
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-indigo-400">
@@ -281,7 +293,7 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
                     <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
                       {activeLive.team1} <span className="text-slate-400 text-sm font-normal">vs</span> {activeLive.team2}
                     </h2>
-                    <p className="text-xs font-mono text-slate-600 dark:text-slate-400">
+                    <p className="text-xs font-mono text-slate-500 dark:text-slate-400">
                       #{activeLive.id} · {activeLive.format || 'singles'} · {venueName}
                     </p>
                   </div>
@@ -305,12 +317,12 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
                         value={streamInputMap[venueName] !== undefined ? streamInputMap[venueName] : (activeLive.liveStreamUrl || '')}
                         onChange={(e) => setStreamInputMap({ ...streamInputMap, [venueName]: e.target.value })}
                         placeholder="https://www.youtube.com/watch?v=VIDEO_ID"
-                        className="flex-1 px-3 py-1.5 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-600 dark:focus:border-indigo-500 font-mono"
+                        className="flex-1 px-3 py-1.5 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
                       />
 
                       <button
                         onClick={() => handleSaveStreamUrl(venueName)}
-                        className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-bold text-xs shadow-sm transition flex items-center gap-1 shrink-0 cursor-pointer"
+                        className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-sm transition flex items-center gap-1 shrink-0"
                       >
                         <Save className="w-3.5 h-3.5" /> Save
                       </button>
@@ -322,16 +334,16 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
                         {activeLive.youtubeVideoId && (
                           <button
                             onClick={() => setPreviewVideoId(activeLive.youtubeVideoId)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
+                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[11px] transition flex items-center gap-1"
                           >
-                            <Eye className="w-3 h-3 text-blue-600 dark:text-indigo-400" /> Preview
+                            <Eye className="w-3 h-3 text-indigo-400" /> Preview
                           </button>
                         )}
 
                         {activeLive.liveStreamUrl && (
                           <button
                             onClick={() => handleRemoveStream(venueName)}
-                            className="p-1 rounded-lg text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+                            className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
                             title="Remove Stream"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -343,14 +355,14 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
                         {activeLive.isLiveStreaming ? (
                           <button
                             onClick={() => handleToggleStreamLive(venueName, false)}
-                            className="px-3 py-1 rounded-lg bg-amber-50 dark:bg-amber-600/20 hover:bg-amber-100 dark:hover:bg-amber-600 text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-white font-bold text-[11px] border border-amber-200 dark:border-amber-500/30 transition flex items-center gap-1 cursor-pointer"
+                            className="px-3 py-1 rounded-lg bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white font-bold text-[11px] border border-amber-500/30 transition flex items-center gap-1"
                           >
                             <Square className="w-3 h-3" /> Stop Live Stream
                           </button>
                         ) : (
                           <button
                             onClick={() => handleToggleStreamLive(venueName, true)}
-                            className="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-[11px] shadow-sm transition flex items-center gap-1 cursor-pointer"
+                            className="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-[11px] shadow-sm transition flex items-center gap-1"
                           >
                             <Video className="w-3 h-3" /> Start Live Stream
                           </button>
@@ -362,7 +374,7 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
                   {/* Open Match Score Controller Button */}
                   <button
                     onClick={() => setActiveControllerVenue(venueName)}
-                    className="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-black text-xs shadow-xl shadow-blue-600/30 dark:shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs shadow-xl shadow-indigo-600/30 transition flex items-center justify-center gap-2"
                   >
                     <span>🎮 Open Match Score Controller</span>
                   </button>
@@ -371,7 +383,7 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
                   <div className="flex items-center justify-center gap-3 pt-1">
                     <button
                       onClick={() => handleCompleteMatch(venueName)}
-                      className="px-4 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                      className="px-4 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>Complete</span>
@@ -379,7 +391,7 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
 
                     <button
                       onClick={() => handleDemoteMatch(venueName)}
-                      className="px-4 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-bold text-xs border border-slate-300 dark:border-slate-700 transition cursor-pointer"
+                      className="px-4 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs border border-slate-700 transition"
                     >
                       Demote
                     </button>
@@ -405,7 +417,7 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
             </h3>
 
             {upcomingMatchesToPromote.length === 0 ? (
-              <div className="p-8 text-center bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-500 text-xs font-medium shadow-soft dark:shadow-md">
+              <div className="p-8 text-center bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-medium shadow-soft dark:shadow-md">
                 No upcoming scheduled matches available to promote. All completed matches have been moved to Results.
               </div>
             ) : (
@@ -419,11 +431,11 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
                       className="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800/90 shadow-soft dark:shadow-xl flex items-center justify-between gap-4"
                     >
                       <div className="space-y-1">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/10 text-blue-600 dark:text-indigo-300 border border-blue-500/20 uppercase">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-50 dark:bg-indigo-500/20 text-blue-600 dark:text-indigo-300 border border-blue-200 dark:border-indigo-500/30 uppercase">
                           {m.format || 'SINGLES'}
                         </span>
                         <h4 className="text-sm font-black text-slate-900 dark:text-white">{m.team1} vs {m.team2}</h4>
-                        <p className="text-[11px] font-mono text-slate-600 dark:text-slate-400">
+                        <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
                           📍 {displayVenue} | Slot: {m.time || '05:40 PM'}
                         </p>
                       </div>
@@ -444,21 +456,20 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
       })()}
 
 
-
       {/* Stream Preview Modal */}
       {previewVideoId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xs">
-          <div className="w-full max-w-3xl bg-[#111827] border border-slate-800 rounded-3xl p-5 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs">
+          <div className="w-full max-w-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Tv className="w-4 h-4 text-rose-500" /> YouTube Live Stream Preview
               </h4>
-              <button onClick={() => setPreviewVideoId(null)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setPreviewVideoId(null)} className="text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer">
                 <Eye className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="aspect-video w-full rounded-2xl overflow-hidden bg-black border border-slate-800 shadow-inner">
+            <div className="aspect-video w-full rounded-2xl overflow-hidden bg-black border border-slate-200 dark:border-slate-800 shadow-inner">
               <iframe
                 src={getYouTubeEmbedUrl(previewVideoId)}
                 title="YouTube Live Stream Preview"

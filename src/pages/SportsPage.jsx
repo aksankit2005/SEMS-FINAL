@@ -1,14 +1,154 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Search, Trophy, Users, MapPin, CheckCircle, Info, ArrowRight, ShieldCheck, Flame, X } from 'lucide-react';
 import { SPORTS_DATA } from '../data/sportsData';
 import { BadmintonRulesDisplay } from '../components/registration/BadmintonRulesDisplay';
+import { galleryApi } from '../services/galleryApi';
+import { coordinatorApi } from '../services/coordinatorApi';
+import { UnifiedSportCard } from '../components/common/UnifiedSportCard';
 
 export const SportsPage = () => {
   const [searchParams] = useSearchParams();
   const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [activeModalSport, setActiveModalSport] = useState(null);
+
+  const [prEvents, setPrEvents] = useState([]);
+  const [coordEvents, setCoordEvents] = useState([]);
+
+  useEffect(() => {
+    const loadEvents = async () => {
+      try {
+        const [pr, coord] = await Promise.all([
+          galleryApi.getEvents().catch(() => []),
+          coordinatorApi.getPublicEvents().catch(() => [])
+        ]);
+        setPrEvents(pr || []);
+        setCoordEvents(coord || []);
+      } catch (err) {
+        console.warn('Error fetching events for Sports Hub', err);
+      }
+    };
+
+    loadEvents();
+
+    const handleUpdate = () => loadEvents();
+    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('focus', handleUpdate);
+    window.addEventListener('sems_events_updated', handleUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('focus', handleUpdate);
+      window.removeEventListener('sems_events_updated', handleUpdate);
+    };
+  }, []);
+
+  const isSportOpen = (sport) => {
+    // 1. Check coordinator events
+    const hasCoord = coordEvents.some((ev) => {
+      const sId = (ev.sportId || '').toLowerCase();
+      const sName = (ev.sportName || '').toLowerCase();
+      const matches = sId === sport.id.toLowerCase() || sName === sport.name.toLowerCase();
+      const active = ev.status && ev.status !== 'Closed' && ev.status !== 'Draft' && ev.status !== 'Inactive';
+      return matches && active;
+    });
+
+    if (hasCoord) return true;
+
+    // 2. Check PR / Admin events
+    const hasPr = prEvents.some((ev) => {
+      const name = (ev.event_name || '').toLowerCase();
+      const sName = sport.name.toLowerCase();
+      const sId = sport.id.toLowerCase();
+      return name.includes(sName) || name.includes(sId) || sName.includes(name);
+    });
+
+    if (hasPr) return true;
+
+    return false;
+  };
+
+  const formatDateToDDMMYYYY = (dateStr) => {
+    if (!dateStr || dateStr === '-') return '-';
+    const parts = dateStr.split('T')[0].split('-');
+    if (parts.length === 3) {
+      const [year, month, day] = parts;
+      if (year.length === 4) {
+        return `${day}-${month}-${year}`;
+      }
+    }
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}-${month}-${year}`;
+    }
+    return dateStr;
+  };
+
+  const getActiveEventForSport = (sport) => {
+    // 1. Check coordinator events
+    const coordEv = coordEvents.find((ev) => {
+      const sId = (ev.sportId || '').toLowerCase();
+      const sName = (ev.sportName || '').toLowerCase();
+      const matches = sId === sport.id.toLowerCase() || sName === sport.name.toLowerCase();
+      const active = ev.status && ev.status !== 'Closed' && ev.status !== 'Draft' && ev.status !== 'Inactive';
+      return matches && active;
+    });
+
+    if (coordEv) {
+      return {
+        eventName: coordEv.title || coordEv.eventName || sport.name,
+        entryFee: coordEv.entryFee !== undefined ? coordEv.entryFee : sport.entryFee,
+        regStartDate: formatDateToDDMMYYYY(coordEv.regStartDate),
+        regEndDate: formatDateToDDMMYYYY(coordEv.regEndDate || coordEv.reg_end_date),
+        eventDate: formatDateToDDMMYYYY(coordEv.tournStartDate || coordEv.event_date || sport.startDate),
+        tournStartDate: formatDateToDDMMYYYY(coordEv.tournStartDate),
+        tournEndDate: formatDateToDDMMYYYY(coordEv.tournEndDate),
+        venue: coordEv.venue || sport.venue,
+        isOpen: true,
+        raw: coordEv
+      };
+    }
+
+    // 2. Check PR / Admin events
+    const prEv = prEvents.find((ev) => {
+      const name = (ev.event_name || '').toLowerCase();
+      const sName = sport.name.toLowerCase();
+      const sId = sport.id.toLowerCase();
+      return name.includes(sName) || name.includes(sId) || sName.includes(name);
+    });
+
+    if (prEv) {
+      return {
+        eventName: prEv.event_name || sport.name,
+        entryFee: prEv.entryFee !== undefined ? prEv.entryFee : sport.entryFee,
+        regStartDate: formatDateToDDMMYYYY(prEv.regStartDate || prEv.created_at?.split('T')[0]),
+        regEndDate: formatDateToDDMMYYYY(prEv.regEndDate || '2026-08-30'),
+        eventDate: formatDateToDDMMYYYY(prEv.event_date || sport.startDate),
+        tournStartDate: formatDateToDDMMYYYY(prEv.tournStartDate || prEv.event_date),
+        tournEndDate: formatDateToDDMMYYYY(prEv.tournEndDate),
+        venue: prEv.venue || sport.venue,
+        isOpen: true,
+        raw: prEv
+      };
+    }
+
+    return {
+      eventName: sport.name,
+      entryFee: sport.entryFee,
+      regStartDate: '-',
+      regEndDate: '-',
+      eventDate: formatDateToDDMMYYYY(sport.startDate),
+      tournStartDate: null,
+      tournEndDate: null,
+      venue: sport.venue,
+      isOpen: false,
+      raw: null
+    };
+  };
 
   const categories = ['All', 'Indoor', 'Outdoor', 'Mind Sport', 'Traditional & Combat', 'Track & Field', 'Strength'];
 
@@ -17,6 +157,48 @@ export const SportsPage = () => {
       sport.description.toLowerCase().includes(query.toLowerCase());
     const matchesCat = selectedCategory === 'All' || sport.category.includes(selectedCategory);
     return matchesQuery && matchesCat;
+  });
+
+  const getLatestEventDate = (sport) => {
+    let latest = 0;
+    coordEvents.forEach((ev) => {
+      const sId = (ev.sportId || '').toLowerCase();
+      const sName = (ev.sportName || '').toLowerCase();
+      const matches = sId === sport.id.toLowerCase() || sName === sport.name.toLowerCase();
+      const active = ev.status && ev.status !== 'Closed' && ev.status !== 'Draft' && ev.status !== 'Inactive';
+      if (matches && active) {
+        const d = new Date(ev.createdAt || ev.regStartDate || 0).getTime();
+        if (d > latest) latest = d;
+      }
+    });
+
+    prEvents.forEach((ev) => {
+      const name = (ev.event_name || '').toLowerCase();
+      const sName = sport.name.toLowerCase();
+      const sId = sport.id.toLowerCase();
+      if (name.includes(sName) || name.includes(sId) || sName.includes(name)) {
+        const d = new Date(ev.created_at || ev.event_date || 0).getTime();
+        if (d > latest) latest = d;
+      }
+    });
+
+    return latest;
+  };
+
+  const sortedSports = [...filteredSports].sort((a, b) => {
+    const aOpen = isSportOpen(a);
+    const bOpen = isSportOpen(b);
+
+    if (aOpen && !bOpen) return -1;
+    if (!aOpen && bOpen) return 1;
+
+    if (aOpen && bOpen) {
+      const aDate = getLatestEventDate(a);
+      const bDate = getLatestEventDate(b);
+      return bDate - aDate; // newest first
+    }
+
+    return 0;
   });
 
   return (
@@ -69,87 +251,20 @@ export const SportsPage = () => {
 
         {/* Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredSports.map((sport) => (
-            <div
-              key={sport.id}
-              className="group bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-soft hover:shadow-xl hover:border-blue-500/50 transition-all duration-300 flex flex-col justify-between"
-            >
-              {/* Image & Status Tag */}
-              <div className="relative h-60 overflow-hidden">
-                <img
-                  src={sport.image}
-                  alt={sport.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
-                
-                <div className="absolute top-4 left-4 flex gap-2">
-                  <span className="px-3 py-1 rounded-full text-xs font-black bg-slate-900/90 backdrop-blur-md text-blue-400 border border-slate-700">
-                    {sport.category}
-                  </span>
-                  <span className={`px-3 py-1 rounded-full text-xs font-black backdrop-blur-md border ${
-                    sport.status === 'Closing Soon'
-                      ? 'bg-orange-500 text-white border-orange-400'
-                      : 'bg-emerald-600 text-white border-emerald-500'
-                  }`}>
-                    {sport.status}
-                  </span>
-                </div>
-
-                <div className="absolute bottom-4 left-4 right-4">
-                  <h2 className="text-2xl font-black text-white tracking-tight">{sport.name}</h2>
-                  <p className="text-xs text-slate-300 line-clamp-1">{sport.tagline}</p>
-                </div>
-              </div>
-
-              {/* Body */}
-              <div className="p-6 flex-1 flex flex-col justify-between space-y-6">
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                  {sport.description}
-                </p>
-
-                {/* Specs */}
-                <div className="grid grid-cols-3 gap-2 py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-xs">
-                  <div>
-                    <span className="text-slate-500 dark:text-slate-500 block text-[10px] uppercase font-bold">Format</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">{sport.type}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold">Roster</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">{sport.teamSize}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold">Fee</span>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400">₹{sport.entryFee}</span>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="space-y-3 pt-2">
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                    <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                    <span className="truncate">{sport.venue}</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => setActiveModalSport(sport)}
-                      className="py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition flex items-center justify-center gap-1"
-                    >
-                      <Info className="w-3.5 h-3.5" /> Rules & Specs
-                    </button>
-                    
-                    <Link
-                      to={`/registration?sport=${sport.id}`}
-                      className="py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-blue-500/20 text-center transition flex items-center justify-center gap-1"
-                    >
-                      Register <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+          {sortedSports.map((sport) => {
+            const activeEvent = getActiveEventForSport(sport);
+            const isOpen = activeEvent.isOpen;
+            return (
+              <UnifiedSportCard
+                key={sport.id}
+                sport={sport}
+                activeEvent={activeEvent}
+                isOpen={isOpen}
+                onRulesClick={() => setActiveModalSport(sport)}
+                registerLink={`/register/${activeEvent.raw?.id || sport.id}`}
+              />
+            );
+          })}
         </div>
 
       </div>
@@ -195,13 +310,22 @@ export const SportsPage = () => {
             </div>
 
             <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
-              <Link
-                to={`/registration?sport=${activeModalSport.id}`}
-                onClick={() => setActiveModalSport(null)}
-                className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs shadow-md"
-              >
-                Proceed to Register for {activeModalSport.name}
-              </Link>
+              {isSportOpen(activeModalSport) ? (
+                <Link
+                  to={`/register/${getActiveEventForSport(activeModalSport).raw?.id || activeModalSport.id}`}
+                  onClick={() => setActiveModalSport(null)}
+                  className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs shadow-md"
+                >
+                  Proceed to Register for {activeModalSport.name}
+                </Link>
+              ) : (
+                <button
+                  disabled
+                  className="px-6 py-2.5 rounded-2xl bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold text-xs cursor-not-allowed"
+                >
+                  Registration Not Available
+                </button>
+              )}
             </div>
           </div>
         </div>

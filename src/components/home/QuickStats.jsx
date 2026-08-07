@@ -3,10 +3,10 @@ import { Trophy, Users, Calendar, Award } from 'lucide-react';
 
 export const QuickStats = () => {
   const stats = [
-    { icon: Trophy, count: "11", label: "Sports Categories", sub: "Indoor & Outdoor" },
-    { icon: Users, count: "1,200+", label: "Registered Athletes", sub: "60+ Colleges" },
+    { icon: Trophy, count: "12", label: "Sports Categories", sub: "Indoor & Outdoor" },
+    { icon: Users, count: "1,200+", label: "Registered Athletes", sub: "Mpgi All Colleges" },
     { icon: Calendar, count: "140+", label: "Tournament Fixtures", sub: "5 Championship Days" },
-    { icon: Award, count: "₹2.5L", label: "Prize Money Pool", sub: "Trophies & Medals" }
+    { icon: Award, count: "Gift/Cash", label: "Price Pool", sub: "Trophies & Medals" }
   ];
 
   return (

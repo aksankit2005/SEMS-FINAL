@@ -18,19 +18,20 @@ api.interceptors.request.use((config) => {
 });
 
 // Password pattern: {sport_key}#2026  (e.g. cricket#2026, table_tennis#2026)
+// NOTE: Passwords are NOT stored here — authentication is handled by the backend.
 export const COORDINATOR_ACCOUNTS = [
-  { assignedSport: 'cricket',       sportName: 'Cricket',       username: 'coord_cricket',       password: 'cricket#2026',       coordinatorName: 'Vikramaditya Sharma',    email: 'cricket.coord@sems.edu' },
-  { assignedSport: 'table-tennis',  sportName: 'Table Tennis',  username: 'coord_table_tennis',  password: 'table_tennis#2026',  coordinatorName: 'Rohan Mehta',            email: 'tt.coord@sems.edu' },
-  { assignedSport: 'badminton',     sportName: 'Badminton',     username: 'coord_badminton',     password: 'badminton#2026',     coordinatorName: 'Pooja Deshmukh',         email: 'badminton.coord@sems.edu' },
-  { assignedSport: 'chess',         sportName: 'Chess',         username: 'coord_chess',         password: 'chess#2026',         coordinatorName: 'Grandmaster Anand Verma',email: 'chess.coord@sems.edu' },
-  { assignedSport: 'football',      sportName: 'Football',      username: 'coord_football',      password: 'football#2026',      coordinatorName: 'Carlos Rodriguez',       email: 'football.coord@sems.edu' },
-  { assignedSport: 'basketball',    sportName: 'Basketball',    username: 'coord_basketball',    password: 'basketball#2026',    coordinatorName: 'Michael Jordan Singh',   email: 'basketball.coord@sems.edu' },
-  { assignedSport: 'volleyball',    sportName: 'Volleyball',    username: 'coord_volleyball',    password: 'volleyball#2026',    coordinatorName: 'Siddharth Rao',          email: 'volleyball.coord@sems.edu' },
-  { assignedSport: 'kabaddi',       sportName: 'Kabaddi',       username: 'coord_kabaddi',       password: 'kabaddi#2026',       coordinatorName: 'Pradeep Narwal Kumar',   email: 'kabaddi.coord@sems.edu' },
-  { assignedSport: 'kho-kho',       sportName: 'Kho-Kho',       username: 'coord_kho_kho',       password: 'kho_kho#2026',       coordinatorName: 'Sunita Jadhav',          email: 'khokho.coord@sems.edu' },
-  { assignedSport: 'athletics',     sportName: 'Athletics',     username: 'coord_athletics',     password: 'athletics#2026',     coordinatorName: 'PT Usha Pillai',         email: 'athletics.coord@sems.edu' },
-  { assignedSport: 'tug-of-war',    sportName: 'Tug of War',    username: 'coord_tug_of_war',    password: 'tug_of_war#2026',    coordinatorName: 'Bheem Singh Power',      email: 'tugofwar.coord@sems.edu' },
-  { assignedSport: 'gully-cricket', sportName: 'Gully Cricket', username: 'coord_gully_cricket', password: 'gully_cricket#2026', coordinatorName: 'Chiku Bhai',             email: 'gullycricket.coord@sems.edu' },
+  { assignedSport: 'cricket',       sportName: 'Cricket',       username: 'coord_cricket',       coordinatorName: 'Vikramaditya Sharma',    email: 'cricket.coord@sems.edu' },
+  { assignedSport: 'table-tennis',  sportName: 'Table Tennis',  username: 'coord_table_tennis',  coordinatorName: 'Rohan Mehta',            email: 'tt.coord@sems.edu' },
+  { assignedSport: 'badminton',     sportName: 'Badminton',     username: 'coord_badminton',     coordinatorName: 'Pooja Deshmukh',         email: 'badminton.coord@sems.edu' },
+  { assignedSport: 'chess',         sportName: 'Chess',         username: 'coord_chess',         coordinatorName: 'Grandmaster Anand Verma',email: 'chess.coord@sems.edu' },
+  { assignedSport: 'football',      sportName: 'Football',      username: 'coord_football',      coordinatorName: 'Carlos Rodriguez',       email: 'football.coord@sems.edu' },
+  { assignedSport: 'basketball',    sportName: 'Basketball',    username: 'coord_basketball',    coordinatorName: 'Michael Jordan Singh',   email: 'basketball.coord@sems.edu' },
+  { assignedSport: 'volleyball',    sportName: 'Volleyball',    username: 'coord_volleyball',    coordinatorName: 'Siddharth Rao',          email: 'volleyball.coord@sems.edu' },
+  { assignedSport: 'kabaddi',       sportName: 'Kabaddi',       username: 'coord_kabaddi',       coordinatorName: 'Pradeep Narwal Kumar',   email: 'kabaddi.coord@sems.edu' },
+  { assignedSport: 'kho-kho',       sportName: 'Kho-Kho',       username: 'coord_kho_kho',       coordinatorName: 'Sunita Jadhav',          email: 'khokho.coord@sems.edu' },
+  { assignedSport: 'athletics',     sportName: 'Athletics',     username: 'coord_athletics',     coordinatorName: 'PT Usha Pillai',         email: 'athletics.coord@sems.edu' },
+  { assignedSport: 'tug-of-war',    sportName: 'Tug of War',    username: 'coord_tug_of_war',    coordinatorName: 'Bheem Singh Power',      email: 'tugofwar.coord@sems.edu' },
+  { assignedSport: 'gully-cricket', sportName: 'Gully Cricket', username: 'coord_gully_cricket', coordinatorName: 'Chiku Bhai',             email: 'gullycricket.coord@sems.edu' },
 ];
 
 export const coordinatorApi = {
@@ -50,36 +51,15 @@ export const coordinatorApi = {
         localStorage.setItem('sems_coordinator_user', JSON.stringify(res.data.user));
         return { success: true, user: res.data.user };
       }
+      throw new Error('Invalid response from server. Please try again.');
     } catch (err) {
-      console.warn('Backend login fallback used', err);
+      // Re-throw backend errors (401, 403) with their proper message
+      if (err.response) {
+        throw new Error(err.response.data?.message || 'Invalid credentials. Access denied.');
+      }
+      // Network errors
+      throw new Error('Cannot connect to server. Please check your connection.');
     }
-
-    const preset = COORDINATOR_ACCOUNTS.find(
-      (a) =>
-        a.username.toLowerCase() === username.toLowerCase().replace(/-/g, '_') ||
-        a.assignedSport.toLowerCase() === username.toLowerCase()
-    );
-
-    // Must have a matching account AND the correct password
-    if (!preset) {
-      throw new Error('Invalid Sport Coordinator credentials. Unknown username.');
-    }
-
-    if (password !== preset.password) {
-      throw new Error('Incorrect password. Please check your credentials.');
-    }
-
-    const user = {
-      username: preset.username,
-      assignedSport: preset.assignedSport,
-      sportName: preset.sportName,
-      coordinatorName: preset.coordinatorName,
-      email: preset.email,
-      role: 'sport_coordinator',
-    };
-    localStorage.setItem('sems_coordinator_token', `token-${preset.assignedSport}-${Date.now()}`);
-    localStorage.setItem('sems_coordinator_user', JSON.stringify(user));
-    return { success: true, user };
   },
 
   logout() {
@@ -107,42 +87,44 @@ export const coordinatorApi = {
   },
 
 
-  // Read matches for assigned sport from localStorage with default initial state
+  // Read matches for assigned sport from Backend API with localStorage fallback
   async getMatches() {
     const user = this.getCurrentUser();
     if (!user) throw new Error('Unauthenticated');
 
     const cacheKey = `sems_coord_matches_${user.assignedSport}`;
+    let savedMatches = [];
     const saved = localStorage.getItem(cacheKey);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const mockNames = [
-            '1', '2', 'a', 'b', 'player 1', 'player 2', 'player 3', 'player 4', 'team 1', 'team 2', 'team a', 'team b', 'albert', 'romi',
-            'aarav sharma (mpec)', 'rohan gupta (mips)', 'ankur dixit (mpcps)', 'aditya singh (mpec)',
-            'aagaz khan (mpcps kn142)', 'shiv prakash (mpcps kn142)', 'kapil verma (mpcps kn142)', 'anubhav sachan (mpcps kn142)',
-            'kapil verma', 'anubhav sachan', 'team a', 'team b', 'team 1', 'team 2', 'player / team a', 'player / team b'
-          ];
-          const cleaned = parsed.filter((m) => {
-            if (!m) return false;
-            const t1 = (m.team1 || '').trim().toLowerCase();
-            const t2 = (m.team2 || '').trim().toLowerCase();
-            return !mockNames.includes(t1) && !mockNames.includes(t2);
-          });
-          if (cleaned.length !== parsed.length) {
-            localStorage.setItem(cacheKey, JSON.stringify(cleaned));
-          }
-          return cleaned;
+          savedMatches = parsed;
         }
       } catch (e) {}
     }
 
-    // Default initial fixtures if empty
-    const defaults = [];
+    try {
+      const res = await api.get('/coordinator/matches');
+      if (res.data && Array.isArray(res.data)) {
+        if (res.data.length > 0) {
+          const serverIds = new Set(res.data.map((m) => m.id));
+          const localOnly = savedMatches.filter((m) => m && m.id && !serverIds.has(m.id));
+          const merged = [...res.data, ...localOnly];
+          this.saveMatches(merged);
+          return merged;
+        } else if (savedMatches.length > 0) {
+          return savedMatches;
+        } else {
+          this.saveMatches([]);
+          return [];
+        }
+      }
+    } catch (e) {
+      console.warn('Backend matches API fallback to localStorage:', e);
+    }
 
-    localStorage.setItem(cacheKey, JSON.stringify(defaults));
-    return defaults;
+    return savedMatches;
   },
 
   // Save matches array to localStorage
@@ -158,8 +140,8 @@ export const coordinatorApi = {
   // Get all public match schedules across all sports
   async getPublicMatches() {
     try {
-      const res = await api.get('/public/matches');
-      if (res.data && Array.isArray(res.data)) {
+      const res = await api.get('/coordinator/matches');
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
         return res.data;
       }
     } catch (e) {
@@ -167,13 +149,6 @@ export const coordinatorApi = {
     }
 
     const publicMatches = [];
-    const mockNames = [
-      '1', '2', 'a', 'b', 'player 1', 'player 2', 'player 3', 'player 4', 'team 1', 'team 2', 'team a', 'team b', 'albert', 'romi',
-      'aarav sharma (mpec)', 'rohan gupta (mips)', 'ankur dixit (mpcps)', 'aditya singh (mpec)',
-      'aagaz khan (mpcps kn142)', 'shiv prakash (mpcps kn142)', 'kapil verma (mpcps kn142)', 'anubhav sachan (mpcps kn142)',
-      'kapil verma', 'anubhav sachan', 'team a', 'team b', 'team 1', 'team 2', 'player / team a', 'player / team b'
-    ];
-
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.startsWith('sems_coord_matches_')) {
@@ -183,9 +158,6 @@ export const coordinatorApi = {
             const sportId = key.replace('sems_coord_matches_', '');
             list.forEach((m) => {
               if (m) {
-                const t1 = (m.team1 || '').trim().toLowerCase();
-                const t2 = (m.team2 || '').trim().toLowerCase();
-                if (mockNames.includes(t1) || mockNames.includes(t2)) return;
                 publicMatches.push({
                   ...m,
                   sportId,
@@ -197,11 +169,10 @@ export const coordinatorApi = {
         } catch (err) {}
       }
     }
-
     return publicMatches;
   },
 
-  // Create match & persist to localStorage
+  // Create match & persist to Backend API & localStorage
   async createMatch(matchData) {
     const matches = await this.getMatches();
     const newMatch = {
@@ -209,21 +180,52 @@ export const coordinatorApi = {
       id: matchData.id || `M${Math.floor(100000 + Math.random() * 900000)}`,
       status: matchData.status || 'SCHEDULED',
     };
-    const updated = [newMatch, ...matches];
+    const updated = [newMatch, ...matches.filter((m) => m.id !== newMatch.id)];
     this.saveMatches(updated);
+
+    try {
+      const res = await api.post('/coordinator/matches', newMatch);
+      if (res.data && res.data.match) {
+        const currentMatches = await this.getMatches();
+        const mergedWithServer = [res.data.match, ...currentMatches.filter((m) => m.id !== res.data.match.id)];
+        this.saveMatches(mergedWithServer);
+        return res.data.match;
+      }
+    } catch (e) {
+      console.warn('Backend create match fallback:', e);
+    }
+
     return newMatch;
   },
 
-  // Update match & persist to localStorage
+  // Update match & persist to Backend API & localStorage
   async updateMatch(id, matchData) {
+    try {
+      const res = await api.put(`/coordinator/matches/${id}`, matchData);
+      if (res.data && res.data.match) {
+        const matches = await this.getMatches();
+        const updated = matches.map((m) => (m.id === id ? res.data.match : m));
+        this.saveMatches(updated);
+        return res.data.match;
+      }
+    } catch (e) {
+      console.warn('Backend update match fallback:', e);
+    }
+
     const matches = await this.getMatches();
     const updated = matches.map((m) => (m.id === id ? { ...m, ...matchData } : m));
     this.saveMatches(updated);
     return updated.find((m) => m.id === id);
   },
 
-  // Delete match & persist to localStorage
+  // Delete match & persist to Backend API & localStorage
   async deleteMatch(id) {
+    try {
+      await api.delete(`/coordinator/matches/${id}`);
+    } catch (e) {
+      console.warn('Backend delete match fallback:', e);
+    }
+
     const matches = await this.getMatches();
     const updated = matches.filter((m) => m.id !== id);
     this.saveMatches(updated);
@@ -274,8 +276,20 @@ export const coordinatorApi = {
     this.saveMatches([]);
   },
 
-  // Update live match score & persist active live matches
+  // Update live match score & persist active live matches to Backend API & localStorage
   async updateMatchScoring(matchId, scoreData) {
+    try {
+      const res = await api.put(`/coordinator/matches/${matchId}`, scoreData);
+      if (res.data && res.data.match) {
+        const matches = await this.getMatches();
+        const updatedList = matches.map((m) => (m.id === matchId ? res.data.match : m));
+        this.saveMatches(updatedList);
+        return res.data.match;
+      }
+    } catch (e) {
+      console.warn('Backend updateMatchScoring fallback:', e);
+    }
+
     const matches = await this.getMatches();
     let target = matches.find((m) => m.id === matchId);
 
@@ -333,6 +347,12 @@ export const coordinatorApi = {
       winner: winnerData.winner || (target.score1 >= target.score2 ? target.team1 : target.team2),
     };
 
+    try {
+      await api.put(`/coordinator/matches/${matchId}`, { ...winnerData, status: 'COMPLETED' });
+    } catch (e) {
+      console.warn('Backend completeMatch API fallback:', e);
+    }
+
     // Save updated match in match list & purge completed match from active schedule list
     const updatedList = matches.filter((m) => m.id !== matchId && m.status !== 'COMPLETED' && m.status !== 'FINISHED');
     this.saveMatches(updatedList);
@@ -373,24 +393,51 @@ export const coordinatorApi = {
   },
 
 
-  // Get Registrations from localStorage
+  // Get Registrations directly from PostgreSQL database via Backend API
   async getRegistrations() {
     const user = this.getCurrentUser();
     if (!user) return [];
+
+    try {
+      const res = await api.get('/coordinator/registrations');
+      if (res.data && Array.isArray(res.data)) {
+        return res.data;
+      }
+    } catch (e) {
+      console.warn('Backend registrations API fallback to localStorage:', e);
+    }
+
     const key = `sems_participants_${user.assignedSport}`;
     const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : [];
   },
 
-  // Get Public Live Matches from localStorage
+  // Get Public Live Matches from Backend API with localStorage fallback
   async getPublicLiveMatches() {
-    const savedActiveStr = localStorage.getItem('sems_active_live_matches');
-    let activeList = [];
+    let serverLive = [];
+    try {
+      const res = await api.get('/live-matches');
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        serverLive = res.data;
+      }
+    } catch (e) {
+      console.warn('Backend live matches API fallback:', e);
+    }
 
+    const activeList = [...serverLive];
+
+    const savedActiveStr = localStorage.getItem('sems_active_live_matches');
     if (savedActiveStr) {
       try {
         const activeMap = JSON.parse(savedActiveStr);
-        activeList = Object.values(activeMap).filter((m) => m && (m.status === 'running' || m.status === 'live'));
+        Object.values(activeMap).forEach((m) => {
+          const s = (m?.status || '').toLowerCase();
+          if (m && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active' || s === 'scheduled')) {
+            if (!activeList.some((a) => a.id === m.id)) {
+              activeList.push(m);
+            }
+          }
+        });
       } catch (e) {}
     }
 
@@ -402,7 +449,8 @@ export const coordinatorApi = {
           const list = JSON.parse(localStorage.getItem(key));
           if (Array.isArray(list)) {
             list.forEach((m) => {
-              if (m && (m.status === 'running' || m.status === 'live')) {
+              const s = (m?.status || '').toLowerCase();
+              if (m && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active' || s === 'scheduled')) {
                 if (!activeList.some((a) => a.id === m.id)) {
                   activeList.push(m);
                 }
@@ -449,6 +497,7 @@ export const coordinatorApi = {
     if (!user) return;
     const key = `sems_coord_events_${user.assignedSport}`;
     localStorage.setItem(key, JSON.stringify(events));
+    window.dispatchEvent(new Event('sems_events_updated'));
   },
 
   // Create new event
@@ -480,8 +529,6 @@ export const coordinatorApi = {
       tournStartDate: eventData.tournStartDate || '2026-09-01',
       tournEndDate: eventData.tournEndDate || '2026-09-05',
       entryFee: Number(eventData.entryFee || 0),
-      singlesFee: eventData.singlesFee !== undefined ? Number(eventData.singlesFee) : Number(eventData.entryFee || 300),
-      doublesFee: eventData.doublesFee !== undefined ? Number(eventData.doublesFee) : (eventData.singlesFee !== undefined ? Number(eventData.singlesFee) * 2 : 600),
       teamSize: eventData.teamSize || '1 Player',
       maxRegistrations: Number(eventData.maxRegistrations || 64),
       registeredCount: Number(eventData.registeredCount || 0),
@@ -577,14 +624,14 @@ export const coordinatorApi = {
           const list = JSON.parse(localStorage.getItem(key));
           if (Array.isArray(list)) {
             list.forEach((e) => {
-              if (e && (e.status === 'Published' || e.status === 'Closed' || e.status === 'Coming Soon')) {
+              if (e && (e.status === 'Published' || e.status === 'Closed')) {
                 const sId = (e.sportId || '').toLowerCase();
                 const sName = (e.sportName || '').toLowerCase();
                 const title = (e.title || '').toLowerCase();
                 if (e.id === 'EVT-BADMINTON-001' || e.id === 'EVT-CRICKET-001' || e.id === 'EVT-FOOTBALL-001') return;
 
                 let status = e.status;
-                if (e.status !== 'Coming Soon' && e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) {
+                if (e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) {
                   status = 'Closed';
                 }
                 publicList.push({

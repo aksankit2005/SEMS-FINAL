@@ -125,9 +125,10 @@ export const galleryApi = {
 
   // POST /api/events - Create new event
   async createEvent(eventData) {
+    let resData;
     try {
       const res = await api.post('/events', eventData);
-      return res.data;
+      resData = res.data;
     } catch (err) {
       const events = getLocalEvents();
       const newEvent = {
@@ -142,37 +143,45 @@ export const galleryApi = {
       };
       const updated = [newEvent, ...events];
       saveLocalEvents(updated);
-      return newEvent;
+      resData = newEvent;
     }
+    window.dispatchEvent(new Event('sems_events_updated'));
+    return resData;
   },
 
   // PUT /api/events/:id - Edit existing event
   async updateEvent(id, eventData) {
+    let resData;
     try {
       const res = await api.put(`/events/${id}`, eventData);
-      return res.data;
+      resData = res.data;
     } catch (err) {
       const events = getLocalEvents();
       const updated = events.map((e) =>
         Number(e.id) === Number(id) ? { ...e, ...eventData } : e
       );
       saveLocalEvents(updated);
-      return updated.find((e) => Number(e.id) === Number(id));
+      resData = updated.find((e) => Number(e.id) === Number(id));
     }
+    window.dispatchEvent(new Event('sems_events_updated'));
+    return resData;
   },
 
   // DELETE /api/events/:id - Delete event and cascade delete media
   async deleteEvent(id) {
+    let resData;
     try {
       const res = await api.delete(`/events/${id}`);
-      return res.data;
+      resData = res.data;
     } catch (err) {
       const events = getLocalEvents();
       const media = getLocalMedia();
       saveLocalEvents(events.filter((e) => Number(e.id) !== Number(id)));
       saveLocalMedia(media.filter((m) => Number(m.event_id) !== Number(id)));
-      return { success: true, message: 'Event deleted successfully' };
+      resData = { success: true, message: 'Event deleted successfully' };
     }
+    window.dispatchEvent(new Event('sems_events_updated'));
+    return resData;
   },
 
   // POST /api/media/upload - Upload media item
