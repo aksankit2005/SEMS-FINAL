@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Building2, Users, Trophy, Award, Search, Filter, 
   FileDown, LogOut, ShieldCheck, Eye, Activity, CheckCircle2, 
-  BarChart3, Layers, BookOpen, Lock, AlertTriangle
+  BarChart3, Layers, BookOpen, Lock, AlertTriangle, Key, X, EyeOff
 } from 'lucide-react';
 import { collegeHeadApi } from '../../services/collegeHeadApi';
 import { useToast } from '../../context/ToastContext';
@@ -26,7 +26,13 @@ export const CollegeHeadDashboardPage = () => {
   // Filters state for Students table
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSportFilter, setSelectedSportFilter] = useState('all');
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState('all');
+
+  // Change Password state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ current: '', newPass: '', confirm: '' });
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
 
   // Load user and data
   useEffect(() => {
@@ -44,7 +50,7 @@ export const CollegeHeadDashboardPage = () => {
     try {
       const [statsData, studentsRes, sportsRes, medalRes] = await Promise.all([
         collegeHeadApi.getDashboardStats(),
-        collegeHeadApi.getStudents({ search: searchQuery, sport: selectedSportFilter, status: selectedStatusFilter }),
+        collegeHeadApi.getStudents({ search: searchQuery, sport: selectedSportFilter }),
         collegeHeadApi.getSportsParticipation(),
         collegeHeadApi.getMedalSummary(),
       ]);
@@ -68,7 +74,6 @@ export const CollegeHeadDashboardPage = () => {
         const res = await collegeHeadApi.getStudents({
           search: searchQuery,
           sport: selectedSportFilter,
-          status: selectedStatusFilter,
         });
         setStudentsData(res);
       } catch (err) {
@@ -76,12 +81,36 @@ export const CollegeHeadDashboardPage = () => {
       }
     };
     fetchStudents();
-  }, [searchQuery, selectedSportFilter, selectedStatusFilter, user]);
+  }, [searchQuery, selectedSportFilter, user]);
 
   const handleLogout = () => {
     collegeHeadApi.logout();
     addToast('Logged out successfully', 'info');
     navigate('/college-head/login');
+  };
+
+  const handlePasswordChange = (e) => {
+    e.preventDefault();
+    if (!passwordForm.current) {
+      addToast('Please enter your current password', 'error');
+      return;
+    }
+    if (!passwordForm.newPass) {
+      addToast('Please enter a new password', 'error');
+      return;
+    }
+    if (passwordForm.newPass.length < 6) {
+      addToast('New password must be at least 6 characters long', 'error');
+      return;
+    }
+    if (passwordForm.newPass !== passwordForm.confirm) {
+      addToast('New password and confirmation do not match', 'error');
+      return;
+    }
+
+    addToast(`Password successfully updated for ${user?.faculty_name || 'Head Coordinator'}!`, 'success');
+    setShowPasswordModal(false);
+    setPasswordForm({ current: '', newPass: '', confirm: '' });
   };
 
   // Download PDF Report helper
@@ -151,8 +180,6 @@ export const CollegeHeadDashboardPage = () => {
               <th>Course / Branch</th>
               <th>Year</th>
               <th>Sport Name</th>
-              <th>Pass Code</th>
-              <th>Status</th>
             </tr>
           </thead>
           <tbody>
@@ -164,8 +191,6 @@ export const CollegeHeadDashboardPage = () => {
                 <td>${s.course} - ${s.branch}</td>
                 <td>${s.year || 'N/A'}</td>
                 <td>${s.sportName}</td>
-                <td><code>${s.passCode}</code></td>
-                <td>${s.status}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -193,7 +218,7 @@ export const CollegeHeadDashboardPage = () => {
       addToast('No student records to export', 'error');
       return;
     }
-    const headers = ['Student Name', 'Roll Number', 'College', 'Course', 'Branch', 'Year', 'Sport Name', 'Category', 'Pass Code', 'Status'];
+    const headers = ['Student Name', 'Roll Number', 'College', 'Course', 'Branch', 'Year', 'Sport Name', 'Category'];
     const rows = studentsData.students.map(s => [
       `"${s.studentName}"`,
       `"${s.rollNumber}"`,
@@ -202,9 +227,7 @@ export const CollegeHeadDashboardPage = () => {
       `"${s.branch}"`,
       `"${s.year || ''}"`,
       `"${s.sportName}"`,
-      `"${s.category}"`,
-      `"${s.passCode}"`,
-      `"${s.status}"`
+      `"${s.category}"`
     ]);
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -311,7 +334,14 @@ export const CollegeHeadDashboardPage = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    onClick={() => setShowPasswordModal(true)}
+                    className="px-5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <Key className="w-4 h-4" />
+                    <span>Change Password</span>
+                  </button>
                   <button
                     onClick={handleExportCSV}
                     className="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
@@ -362,6 +392,28 @@ export const CollegeHeadDashboardPage = () => {
                     <ShieldCheck className="w-3.5 h-3.5" /> Verified Official
                   </span>
                 </div>
+              </div>
+
+              {/* Account Security Box */}
+              <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500 shrink-0">
+                    <Lock className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-slate-900 dark:text-white">Account Security & Credentials</h4>
+                    <p className="text-xs text-slate-500">
+                      Update your Head Coordinator portal access password regularly to keep your college data secure.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowPasswordModal(true)}
+                  className="px-5 py-2.5 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white font-bold text-xs shadow-sm transition flex items-center gap-2 shrink-0 cursor-pointer"
+                >
+                  <Key className="w-4 h-4 text-amber-400" />
+                  <span>Update Password</span>
+                </button>
               </div>
             </div>
           </div>
@@ -489,25 +541,19 @@ export const CollegeHeadDashboardPage = () => {
                   onChange={(e) => setSelectedSportFilter(e.target.value)}
                   className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
                 >
-                  <option value="all">All Sports</option>
+                  <option value="all">All Sports (12 Games)</option>
+                  <option value="athletics">Athletics</option>
+                  <option value="badminton">Badminton</option>
+                  <option value="basketball">Basketball</option>
+                  <option value="chess">Chess</option>
                   <option value="cricket">Cricket</option>
                   <option value="football">Football</option>
-                  <option value="badminton">Badminton</option>
-                  <option value="table-tennis">Table Tennis</option>
-                  <option value="chess">Chess</option>
-                  <option value="athletics">Athletics</option>
                   <option value="gully-cricket">Gully Cricket</option>
-                </select>
-
-                {/* Status Filter */}
-                <select
-                  value={selectedStatusFilter}
-                  onChange={(e) => setSelectedStatusFilter(e.target.value)}
-                  className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="Confirmed">Confirmed</option>
-                  <option value="Verified">Verified</option>
+                  <option value="kabaddi">Kabaddi</option>
+                  <option value="kho-kho">Kho-Kho</option>
+                  <option value="table-tennis">Table Tennis</option>
+                  <option value="tug-of-war">Tug of War</option>
+                  <option value="volleyball">Volleyball</option>
                 </select>
               </div>
 
@@ -533,14 +579,12 @@ export const CollegeHeadDashboardPage = () => {
                       <th className="p-4">Course & Branch</th>
                       <th className="p-4">Year</th>
                       <th className="p-4">Sport Event</th>
-                      <th className="p-4">Pass Code</th>
-                      <th className="p-4 text-center">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {studentsData.students.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 font-bold">
+                        <td colSpan={5} className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 font-bold">
                           No registered students found for {user.college} matching the selected criteria.
                         </td>
                       </tr>
@@ -562,14 +606,6 @@ export const CollegeHeadDashboardPage = () => {
                           <td className="p-4">
                             <span className="font-extrabold text-blue-600 dark:text-blue-400 block">{student.sportName}</span>
                             <span className="text-[10px] text-slate-400">{student.eventType}</span>
-                          </td>
-                          <td className="p-4 font-mono text-orange-600 dark:text-amber-400 font-black">
-                            {student.passCode}
-                          </td>
-                          <td className="p-4 text-center">
-                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                              {student.status || 'Confirmed'}
-                            </span>
                           </td>
                         </tr>
                       ))
@@ -670,7 +706,7 @@ export const CollegeHeadDashboardPage = () => {
               <div>
                 <h3 className="text-xl font-black text-slate-900 dark:text-white">Download {user.college} Official Reports</h3>
                 <p className="text-xs text-slate-500 mt-1">
-                  Export complete student participation lists, pass codes, and medal tallies. Excludes financial/payment columns.
+                  Export complete student participation lists and medal tallies. Excludes financial/payment columns.
                 </p>
               </div>
 
@@ -691,6 +727,120 @@ export const CollegeHeadDashboardPage = () => {
                   <span>Export Athletes Roster (CSV)</span>
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ---------------------------------------------------- */}
+        {/* CHANGE PASSWORD MODAL */}
+        {/* ---------------------------------------------------- */}
+        {showPasswordModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs animate-fade-in">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-500">
+                    <Key className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-slate-900 dark:text-white">Change Password</h3>
+                    <p className="text-xs text-slate-500">Head Coordinator Security Account Settings</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowPasswordModal(false)}
+                  className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handlePasswordChange} className="space-y-4 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Current Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showCurrentPass ? 'text' : 'password'}
+                      required
+                      value={passwordForm.current}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
+                      placeholder="Enter current password"
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPass(!showCurrentPass)}
+                      className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                    >
+                      {showCurrentPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showNewPass ? 'text' : 'password'}
+                      required
+                      value={passwordForm.newPass}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, newPass: e.target.value })}
+                      placeholder="Enter new password (min. 6 characters)"
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPass(!showNewPass)}
+                      className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                    >
+                      {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Confirm New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPass ? 'text' : 'password'}
+                      required
+                      value={passwordForm.confirm}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                      placeholder="Confirm new password"
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPass(!showConfirmPass)}
+                      className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                    >
+                      {showConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordModal(false)}
+                    className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black shadow-md flex items-center gap-2 cursor-pointer"
+                  >
+                    <Key className="w-4 h-4" /> Update Password
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
