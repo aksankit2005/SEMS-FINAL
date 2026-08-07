@@ -35,7 +35,6 @@ import { CollegeHeadDashboardPage } from './pages/collegeHead/CollegeHeadDashboa
 import { CollegeHeadProtectedRoute } from './components/collegeHead/CollegeHeadProtectedRoute';
 
 import { CoordinatorLoginPage } from './pages/coordinator/CoordinatorLoginPage';
-import { CoordinatorDashboardPage } from './pages/coordinator/CoordinatorDashboardPage';
 import { CoordinatorProtectedRoute } from './components/coordinator/CoordinatorProtectedRoute';
 import { NotFoundPage } from './pages/NotFoundPage';
 
@@ -105,8 +104,7 @@ function App() {
                   <Route path="/coordinator/login" element={<CoordinatorLoginPage />} />
                   <Route path="/coordinator-login" element={<CoordinatorLoginPage />} />
 
-                  {/* Protected Sport Coordinator Portal Routes — Badminton (existing & new) */}
-                  <Route path="/coordinator/dashboard" element={<CoordinatorProtectedRoute><CoordinatorDashboardPage /></CoordinatorProtectedRoute>} />
+                  {/* Protected Sport Coordinator Portal Routes */}
                   <Route path="/coordinator/badminton" element={<CoordinatorProtectedRoute><BadmintonCoordinatorPage /></CoordinatorProtectedRoute>} />
 
                   {/* Protected Sport Coordinator Portals — Other Sports (independent modules) */}

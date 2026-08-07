@@ -1,16 +1,30 @@
-import React, { useState } from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, Trophy, User, ShieldCheck, Sparkles, LayoutDashboard, LogOut, ChevronDown, Building2, Shield, Camera } from 'lucide-react';
 import { ThemeToggle } from '../common/ThemeToggle';
 import { MobileDrawer } from './MobileDrawer';
 import { useAuth } from '../../context/AuthContext';
 import { collegeHeadApi } from '../../services/collegeHeadApi';
-import { coordinatorApi } from '../../services/coordinatorApi';
+import { coordinatorApi, getSportRoute } from '../../services/coordinatorApi';
+
 import { galleryApi } from '../../services/galleryApi';
 
 export const Navbar = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { user, logout } = useAuth();
+  const [, setAuthTick] = useState(0);
+
+  useEffect(() => {
+    const handleAuthChange = () => setAuthTick((t) => t + 1);
+    window.addEventListener('sems-auth-change', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+    return () => {
+      window.removeEventListener('sems-auth-change', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
+  }, []);
 
   const getActiveSession = () => {
     if (user) {
@@ -20,6 +34,7 @@ export const Navbar = () => {
         dashboardPath: '/dashboard',
         logoutHandler: () => {
           logout();
+          navigate('/');
         }
       };
     }
@@ -31,19 +46,19 @@ export const Navbar = () => {
         dashboardPath: '/college-head/dashboard',
         logoutHandler: () => {
           collegeHeadApi.logout();
-          window.location.href = '/';
+          navigate('/');
         }
       };
     }
-    if (Boolean(localStorage.getItem('sems_coordinator_token'))) {
+    if (coordinatorApi.isAuthenticated()) {
       const coordUser = coordinatorApi.getCurrentUser();
       return {
         name: coordUser?.coordinatorName || coordUser?.sportName || 'Coordinator',
         roleLabel: 'Sport Coord',
-        dashboardPath: '/coordinator/dashboard',
+        dashboardPath: getSportRoute(coordUser?.assignedSport),
         logoutHandler: () => {
           coordinatorApi.logout();
-          window.location.href = '/';
+          navigate('/');
         }
       };
     }
@@ -55,7 +70,7 @@ export const Navbar = () => {
         dashboardPath: '/pr-dashboard',
         logoutHandler: () => {
           galleryApi.logoutPR();
-          window.location.href = '/';
+          navigate('/');
         }
       };
     }

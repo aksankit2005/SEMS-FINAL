@@ -1,55 +1,28 @@
-
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Tv, Video, Eye, Trash2, Save, Square } from 'lucide-react';
+import { CheckCircle2, Tv, Video, Eye, Save, Square } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
-import { getSportConfig } from '../../../data/sportsConfig';
 import { extractYouTubeVideoId, getYouTubeEmbedUrl } from '../../../utils/youtube';
-import { LiveMatchScoreControllerModal } from '../modal/LiveMatchScoreControllerModal';
-
 import { generateMatchResultPDF } from '../../../utils/pdfExporter';
+import { VolleyballLiveScoreControllerModal } from '../modal/VolleyballLiveScoreControllerModal';
 
-export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
-
+export const VolleyballLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
   const { addToast } = useToast();
-  const sportConfig = getSportConfig(user?.assignedSport);
+  const assignedSport = 'volleyball';
 
-  const assignedSport = (user?.assignedSport || 'sports').toLowerCase();
-  const isChess = assignedSport === 'chess';
-  const venueType = ['table-tennis', 'chess'].includes(assignedSport)
-    ? 'Table'
-    : ['cricket', 'football'].includes(assignedSport)
-      ? 'Ground'
-      : 'Court';
+  // 4 Volleyball Courts
+  const venueCards = ['Volleyball Court 1', 'Volleyball Court 2', 'Volleyball Court 3', 'Volleyball Court 4'];
 
-  const venueCards = isChess
-    ? Array.from({ length: 10 }, (_, i) => `Table ${i + 1}`)
-    : assignedSport === 'basketball'
-    ? ['Basketball Court 1', 'Basketball Court 2']
-    : [
-        `${venueType} 1`,
-        `${venueType} 2`,
-        `${venueType} 3`,
-        `${venueType} 4`,
-      ];
-
-  // Initial state loads active live assignments from storage or database
   const [liveAssignments, setLiveAssignments] = useState(() => {
     const cacheKey = `sems_active_live_matches_${assignedSport}`;
-    const saved = localStorage.getItem(cacheKey) || localStorage.getItem('sems_active_live_matches');
+    const saved = localStorage.getItem(cacheKey);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
-          const cleaned = {};
-          Object.keys(parsed).forEach((k) => {
-            if (parsed[k] && parsed[k].id !== 'M595473') {
-              cleaned[k] = parsed[k];
-            }
-          });
-          return cleaned;
+          return parsed;
         }
-      } catch (e) { }
+      } catch (e) {}
     }
     return {};
   });
@@ -58,7 +31,6 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
   const [streamInputMap, setStreamInputMap] = useState({});
   const [previewVideoId, setPreviewVideoId] = useState(null);
 
-  // Sync liveAssignments to localStorage and backend API server whenever liveAssignments changes
   useEffect(() => {
     const cacheKey = `sems_active_live_matches_${assignedSport}`;
     localStorage.setItem(cacheKey, JSON.stringify(liveAssignments));
@@ -66,43 +38,52 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
     const globalSaved = localStorage.getItem('sems_active_live_matches');
     let globalActiveMap = {};
     if (globalSaved) {
-      try { globalActiveMap = JSON.parse(globalSaved); } catch (e) { }
+      try { globalActiveMap = JSON.parse(globalSaved); } catch (e) {}
     }
-    Object.keys(globalActiveMap).forEach((k) => {
-      if (globalActiveMap[k]?.id === 'M595473') delete globalActiveMap[k];
-    });
 
     const mergedMap = { ...globalActiveMap, ...liveAssignments };
-    Object.keys(mergedMap).forEach((k) => {
-      if (mergedMap[k]?.id === 'M595473') delete mergedMap[k];
-    });
-
     localStorage.setItem('sems_active_live_matches', JSON.stringify(mergedMap));
 
-    Object.values(liveAssignments).forEach(async (match) => {
-      if (match && match.id && match.id !== 'M595473' && match.status === 'running') {
+    Object.values(liveAssignments).forEach(async (matchItem) => {
+      if (matchItem && matchItem.id && matchItem.status === 'running') {
         try {
-          await coordinatorApi.updateMatchScoring(match.id, {
-            ...match,
+          await coordinatorApi.updateMatchScoring(matchItem.id, {
+            ...matchItem,
             status: 'running',
-            venue: match.tableNumber || 'Table 1',
+            venue: matchItem.tableNumber || 'Volleyball Court 1',
           });
-        } catch (err) {
-          console.warn('Syncing live assignment to backend server error:', err);
-        }
+        } catch (err) {}
       }
     });
   }, [liveAssignments, assignedSport]);
 
-  const handlePromoteGoLive = async (match, targetVenue) => {
+  const handleInitiateGoLive = (matchItem, requestedVenue) => {
+    const availableCourts = venueCards.filter((court) => !liveAssignments[court]);
+
+    if (availableCourts.length === 0) {
+      addToast('All Live Match Controllers are currently in use.', 'error');
+      return;
+    }
+
+    const targetVenue = (requestedVenue && !liveAssignments[requestedVenue])
+      ? requestedVenue
+      : availableCourts[0];
+
+    executePromoteGoLive(matchItem, targetVenue, matchItem.roster1, matchItem.roster2);
+  };
+
+  const executePromoteGoLive = async (matchItem, targetVenue, r1, r2) => {
     const liveObj = {
-      ...match,
-      id: match.id || `M${Math.floor(100000 + Math.random() * 900000)}`,
-      sportId: match.sportId || assignedSport || 'badminton',
-      sportName: match.sportName || user?.sportName || 'Badminton',
-      format: match.format || 'Best of 5 Sets',
-      score1: match.score1 || 0,
-      score2: match.score2 || 0,
+      ...matchItem,
+      id: matchItem.id || `M-VOL-${Math.floor(100000 + Math.random() * 900000)}`,
+      sportId: 'volleyball',
+      sportName: 'Volleyball',
+      format: 'Team Match (6v6)',
+      quarter: matchItem.quarter || 'Quarter 1',
+      score1: matchItem.score1 || 0,
+      score2: matchItem.score2 || 0,
+      roster1: r1,
+      roster2: r2,
       status: 'running',
       tableNumber: targetVenue,
       isLiveStreaming: true,
@@ -118,7 +99,8 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
     });
 
     setLiveAssignments((prev) => ({ ...prev, [targetVenue]: liveObj }));
-    addToast(`Match "${match.matchTitle || match.team1 + ' vs ' + match.team2}" is LIVE on ${targetVenue}!`, 'success');
+    setActiveRosterSetupMatch(null);
+    addToast(`🏐 Volleyball Match "${matchItem.team1} vs ${matchItem.team2}" is LIVE on ${targetVenue}!`, 'success');
   };
 
   const handleSaveStreamUrl = async (venue) => {
@@ -177,39 +159,19 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
     );
   };
 
-  const handleRemoveStream = async (venue) => {
-    const active = liveAssignments[venue];
-    if (!active) return;
-
-    const updated = {
-      ...active,
-      liveStreamUrl: '',
-      youtubeVideoId: '',
-      isLiveStreaming: false,
-    };
-
-    setLiveAssignments((prev) => ({ ...prev, [venue]: updated }));
-    setStreamInputMap((prev) => ({ ...prev, [venue]: '' }));
-
-    await coordinatorApi.updateMatchScoring(active.id, {
-      liveStreamUrl: '',
-      youtubeVideoId: '',
-      isLiveStreaming: false,
-    });
-
-    addToast(`YouTube Live stream removed from ${venue}`, 'info');
-  };
-
   const handleCompleteMatch = async (venue) => {
     const active = liveAssignments[venue];
     if (!active) return;
 
-    const winnerName = active.winner || (active.score1 >= active.score2 ? active.team1 : active.team2);
+    const s1 = active.score1 || 0;
+    const s2 = active.score2 || 0;
+    const winnerName = active.winner || (s1 >= s2 ? active.team1 : active.team2);
+
     const completedObj = {
       ...active,
       winner: winnerName,
-      score1: active.score1,
-      score2: active.score2,
+      score1: s1,
+      score2: s2,
       status: 'COMPLETED',
       tableNumber: null,
       isLiveStreaming: false,
@@ -218,30 +180,16 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
 
     await coordinatorApi.completeMatch(active.id, completedObj);
 
-    // Save directly to sems_completed_results key in localStorage
-    const resultsKey = `sems_completed_results_${assignedSport}`;
-    const existingStr = localStorage.getItem(resultsKey);
-    let existingList = [];
-    if (existingStr) {
-      try { existingList = JSON.parse(existingStr); } catch (e) {}
-    }
-    existingList = [completedObj, ...existingList.filter((item) => item.id !== completedObj.id)];
-    localStorage.setItem(resultsKey, JSON.stringify(existingList));
-    window.dispatchEvent(new Event('sems_results_updated'));
-
-    onUpdateMatchScore(active.id, { status: 'COMPLETED', score1: active.score1, score2: active.score2 });
+    onUpdateMatchScore(active.id, { status: 'COMPLETED', score1: s1, score2: s2 });
     setLiveAssignments((prev) => {
       const copy = { ...prev };
       delete copy[venue];
       return copy;
     });
 
-    // Automatically generate and download match result PDF
-    generateMatchResultPDF(completedObj, user?.sportName || user?.assignedSport);
-
-    addToast(`Match on ${venue} completed! Saved to Results section.`, 'success');
+    generateMatchResultPDF(completedObj, 'Volleyball');
+    addToast(`Match on ${venue} completed! Result PDF downloaded.`, 'success');
   };
-
 
   const handleDemoteMatch = async (venue) => {
     const active = liveAssignments[venue];
@@ -261,9 +209,9 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
   };
 
   return (
-    <div className="space-y-8 text-slate-900 dark:text-slate-200 animate-fade-in">
+    <div className="space-y-8 text-slate-900 dark:text-slate-200 animate-fade-in font-sans">
 
-      {/* 2x2 Venue/Table Grid */}
+      {/* 4 VOLLEYBALL COURTS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {venueCards.map((venueName) => {
           const activeLive = liveAssignments[venueName];
@@ -271,14 +219,14 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
           return (
             <div
               key={venueName}
-              className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-2xl flex flex-col justify-between min-h-[340px] transition-colors"
+              className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-2xl flex flex-col justify-between min-h-[360px] transition-colors"
             >
               {!activeLive ? (
 
                 /* Empty State Card */
                 <div className="my-auto text-center space-y-3 py-6">
-                  <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center mx-auto text-2xl shadow-inner">
-                    {sportConfig.icon}
+                  <div className="w-14 h-14 rounded-2xl bg-orange-500/10 text-orange-500 border border-orange-500/20 flex items-center justify-center mx-auto text-2xl shadow-inner">
+                    🏐
                   </div>
 
                   <h3 className="text-base font-black text-slate-900 dark:text-white tracking-tight">
@@ -286,19 +234,19 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
                   </h3>
 
                   <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
-                    Select a match from the schedule below and click "Go Live" to stream score updates.
+                    Select a match from the schedule below and click "GO LIVE" to configure squad roster and control live match scores.
                   </p>
                 </div>
 
               ) : (
 
-                /* Active Live Match & Stream Control Card */
+                /* Active Live Match Card */
                 <div className="space-y-4">
 
                   {/* Top Bar */}
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-indigo-400">
-                      LIVE MATCH CENTER
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400 font-mono">
+                      VOLLEYBALL LIVE CENTER
                     </span>
 
                     <span className="px-3 py-1 rounded-full bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-[10px] font-mono font-black tracking-wider animate-pulse flex items-center gap-1">
@@ -306,13 +254,18 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
                     </span>
                   </div>
 
-                  {/* Teams & Subtext */}
-                  <div className="text-center space-y-0.5">
+                  {/* Teams & Score Display */}
+                  <div className="text-center space-y-1">
+                    <div className="text-xs font-mono font-bold text-orange-500 uppercase">
+                      {activeLive.quarter || 'Set 1 In Progress'} · Points Continue
+                    </div>
                     <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                      {activeLive.team1 ? activeLive.team1.replace(/\s*\(.*?\)/, '') : ''} <span className="text-slate-400 text-sm font-normal">vs</span> {activeLive.team2 ? activeLive.team2.replace(/\s*\(.*?\)/, '') : ''}
+                      {activeLive.team1} <span className="text-orange-500 font-mono font-black">{activeLive.score1 || 0}</span>
+                      <span className="text-slate-400 font-normal text-sm px-2">VS</span>
+                      <span className="text-blue-500 font-mono font-black">{activeLive.score2 || 0}</span> {activeLive.team2}
                     </h2>
-                    <p className="text-xs font-mono text-slate-500 dark:text-slate-400">
-                      #{activeLive.id} · {activeLive.format || 'singles'} · {venueName}
+                    <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                      #{activeLive.id} · {activeLive.eventTitle || 'Volleyball Championship 2026'}
                     </p>
                   </div>
 
@@ -335,36 +288,25 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
                         value={streamInputMap[venueName] !== undefined ? streamInputMap[venueName] : (activeLive.liveStreamUrl || '')}
                         onChange={(e) => setStreamInputMap({ ...streamInputMap, [venueName]: e.target.value })}
                         placeholder="https://www.youtube.com/watch?v=VIDEO_ID"
-                        className="flex-1 px-3 py-1.5 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
+                        className="flex-1 px-3 py-1.5 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-orange-500 font-mono"
                       />
 
                       <button
                         onClick={() => handleSaveStreamUrl(venueName)}
-                        className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-sm transition flex items-center gap-1 shrink-0"
+                        className="px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs shadow-sm transition flex items-center gap-1 shrink-0 cursor-pointer"
                       >
                         <Save className="w-3.5 h-3.5" /> Save
                       </button>
                     </div>
 
-                    {/* Stream Status Action Buttons */}
                     <div className="flex items-center justify-between gap-2 pt-1">
                       <div className="flex items-center gap-1.5">
                         {activeLive.youtubeVideoId && (
                           <button
                             onClick={() => setPreviewVideoId(activeLive.youtubeVideoId)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[11px] transition flex items-center gap-1"
+                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
                           >
-                            <Eye className="w-3 h-3 text-indigo-400" /> Preview
-                          </button>
-                        )}
-
-                        {activeLive.liveStreamUrl && (
-                          <button
-                            onClick={() => handleRemoveStream(venueName)}
-                            className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
-                            title="Remove Stream"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Eye className="w-3 h-3 text-orange-400" /> Preview
                           </button>
                         )}
                       </div>
@@ -373,14 +315,14 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
                         {activeLive.isLiveStreaming ? (
                           <button
                             onClick={() => handleToggleStreamLive(venueName, false)}
-                            className="px-3 py-1 rounded-lg bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white font-bold text-[11px] border border-amber-500/30 transition flex items-center gap-1"
+                            className="px-3 py-1 rounded-lg bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white font-bold text-[11px] border border-amber-500/30 transition flex items-center gap-1 cursor-pointer"
                           >
                             <Square className="w-3 h-3" /> Stop Live Stream
                           </button>
                         ) : (
                           <button
                             onClick={() => handleToggleStreamLive(venueName, true)}
-                            className="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-[11px] shadow-sm transition flex items-center gap-1"
+                            className="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-[11px] shadow-sm transition flex items-center gap-1 cursor-pointer"
                           >
                             <Video className="w-3 h-3" /> Start Live Stream
                           </button>
@@ -392,16 +334,16 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
                   {/* Open Match Score Controller Button */}
                   <button
                     onClick={() => setActiveControllerVenue(venueName)}
-                    className="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs shadow-xl shadow-indigo-600/30 transition flex items-center justify-center gap-2"
+                    className="w-full py-3 rounded-2xl bg-orange-600 hover:bg-orange-500 text-white font-black text-xs shadow-xl shadow-orange-600/30 transition flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <span>🎮 Open Match Score Controller</span>
+                    <span>🎮 Open VOLLEYBALL Score & Sub Controller</span>
                   </button>
 
                   {/* Action Buttons Below (Complete & Demote) */}
                   <div className="flex items-center justify-center gap-3 pt-1">
                     <button
                       onClick={() => handleCompleteMatch(venueName)}
-                      className="px-4 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5"
+                      className="px-4 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>Complete</span>
@@ -409,7 +351,7 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
 
                     <button
                       onClick={() => handleDemoteMatch(venueName)}
-                      className="px-4 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs border border-slate-700 transition"
+                      className="px-4 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs border border-slate-700 transition cursor-pointer"
                     >
                       Demote
                     </button>
@@ -430,20 +372,23 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
 
         return (
           <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-            <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-wider">
-              Promote Match to Live
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                Promote Scheduled Match to Live
+              </h3>
+              <span className="text-xs font-mono text-slate-400">Available Courts: Court 1, 2, 3, 4</span>
+            </div>
 
             {upcomingMatchesToPromote.length === 0 ? (
               <div className="p-8 text-center bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-medium shadow-soft dark:shadow-md">
-                No upcoming scheduled matches available to promote. All completed matches have been moved to Results.
+                No upcoming scheduled volleyball matches available to promote. All completed matches have been moved to Results.
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {upcomingMatchesToPromote.map((m) => {
-                  const displayVenue = assignedSport === 'basketball'
-                    ? (m.tableNumber && m.tableNumber.includes('Court') ? m.tableNumber : `Basketball Court ${m.tableNumber?.replace(/\D/g, '') || '1'}`)
-                    : (m.tableNumber || `${venueType} 1`).replace(/Table/gi, venueType);
+                  const targetCourt = m.tableNumber && m.tableNumber.includes('Court')
+                    ? m.tableNumber
+                    : 'Volleyball Court 1';
 
                   return (
                     <div
@@ -451,22 +396,22 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
                       className="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800/90 shadow-soft dark:shadow-xl flex items-center justify-between gap-4"
                     >
                       <div className="space-y-1">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-50 dark:bg-indigo-500/20 text-blue-600 dark:text-indigo-300 border border-blue-200 dark:border-indigo-500/30 uppercase">
-                          {m.format || 'SINGLES'}
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-orange-50 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-500/30 uppercase">
+                          TEAM MATCH (6v6)
                         </span>
                         <h4 className="text-sm font-black text-slate-900 dark:text-white">
-                          {(m.team1 || '').replace(/\s*\(.*?\)/, '')} vs {(m.team2 || '').replace(/\s*\(.*?\)/, '')}
+                          {m.team1} vs {m.team2}
                         </h4>
                         <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
-                          📍 {displayVenue} | Slot: {m.time || '05:40 PM'}
+                          📍 {targetCourt} | Time: {m.time || '04:00 PM'}
                         </p>
                       </div>
 
                       <button
-                        onClick={() => handlePromoteGoLive(m, displayVenue)}
+                        onClick={() => handleInitiateGoLive(m, targetCourt)}
                         className="px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shadow-lg shadow-rose-600/30 transition flex items-center gap-1.5 shrink-0 cursor-pointer"
                       >
-                        <span>📡 GO LIVE</span>
+                        <span>📡 SETUP & GO LIVE</span>
                       </button>
                     </div>
                   );
@@ -477,6 +422,29 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
         );
       })()}
 
+      {/* Score & Sub Controller Modal */}
+      {activeControllerVenue && (
+        <VolleyballLiveScoreControllerModal
+          match={liveAssignments[activeControllerVenue]}
+          venueName={activeControllerVenue}
+          onClose={() => setActiveControllerVenue(null)}
+          onMatchUpdated={(id, payload) => {
+            if (payload?.status === 'COMPLETED' || payload?.status === 'FINISHED') {
+              setLiveAssignments((prev) => {
+                const copy = { ...prev };
+                delete copy[activeControllerVenue];
+                return copy;
+              });
+              onUpdateMatchScore(id, payload);
+            } else {
+              setLiveAssignments((prev) => ({
+                ...prev,
+                [activeControllerVenue]: { ...prev[activeControllerVenue], ...payload }
+              }));
+            }
+          }}
+        />
+      )}
 
       {/* Stream Preview Modal */}
       {previewVideoId && (
@@ -502,39 +470,6 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Redesigned Match Score Controller Modal */}
-      {activeControllerVenue && (
-        <LiveMatchScoreControllerModal
-          match={liveAssignments[activeControllerVenue]}
-          venueName={activeControllerVenue}
-          onClose={() => setActiveControllerVenue(null)}
-          onMatchUpdated={(id, payload) => {
-            if (payload?.status === 'COMPLETED' || payload?.status === 'FINISHED') {
-              setLiveAssignments((prev) => {
-                const copy = { ...prev };
-                delete copy[activeControllerVenue];
-                return copy;
-              });
-              // Purge from active live matches key in localStorage
-              const savedActiveStr = localStorage.getItem('sems_active_live_matches');
-              if (savedActiveStr) {
-                try {
-                  const activeMap = JSON.parse(savedActiveStr);
-                  delete activeMap[activeControllerVenue];
-                  localStorage.setItem('sems_active_live_matches', JSON.stringify(activeMap));
-                } catch (e) {}
-              }
-              onUpdateMatchScore(id, payload);
-            } else {
-              setLiveAssignments((prev) => ({
-                ...prev,
-                [activeControllerVenue]: { ...prev[activeControllerVenue], ...payload }
-              }));
-            }
-          }}
-        />
       )}
 
     </div>

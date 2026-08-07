@@ -1,5 +1,5 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { 
   Flame, Trophy, Radio, UserCheck, Calendar, BarChart3, 
   Award, Newspaper, Image, Info, ChevronLeft, ChevronRight, LayoutDashboard, Camera,
@@ -8,10 +8,23 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { galleryApi } from '../../services/galleryApi';
 import { collegeHeadApi } from '../../services/collegeHeadApi';
-import { coordinatorApi } from '../../services/coordinatorApi';
+import { coordinatorApi, getSportRoute } from '../../services/coordinatorApi';
+
 
 export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
+  const location = useLocation();
   const { user } = useAuth();
+  const [, setAuthTick] = useState(0);
+
+  useEffect(() => {
+    const handleAuthChange = () => setAuthTick((t) => t + 1);
+    window.addEventListener('sems-auth-change', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+    return () => {
+      window.removeEventListener('sems-auth-change', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
+  }, []);
 
   const getActiveSession = () => {
     if (user) {
@@ -29,12 +42,12 @@ export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
         dashboardPath: '/college-head/dashboard'
       };
     }
-    if (Boolean(localStorage.getItem('sems_coordinator_token'))) {
+    if (coordinatorApi.isAuthenticated()) {
       const coordUser = coordinatorApi.getCurrentUser();
       return {
         name: coordUser?.coordinatorName || coordUser?.sportName || 'Coordinator',
         roleLabel: 'Coordinator Portal',
-        dashboardPath: '/coordinator/dashboard'
+        dashboardPath: getSportRoute(coordUser?.assignedSport)
       };
     }
     if (galleryApi.isPRAuthenticated()) {

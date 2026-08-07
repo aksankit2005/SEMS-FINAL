@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Trash2, Download, Filter, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { Trophy, Trash2, Download, Filter, RefreshCw, FileSpreadsheet, PlusCircle } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { generateMatchResultPDF, exportToCSV } from '../../../utils/pdfExporter';
@@ -13,14 +13,145 @@ export const ResultManagementTab = ({ user }) => {
   const [selectedGender, setSelectedGender] = useState('ALL');
   const [availableEvents, setAvailableEvents] = useState([]);
 
+  const assignedSport = (user?.assignedSport || 'sports').toLowerCase();
+  const isChess = assignedSport === 'chess';
   const sportId = user?.assignedSport || 'badminton';
-  const sportName = user?.sportName || 'Badminton';
+  const sportName = user?.sportName || (isChess ? 'Chess' : 'Badminton');
   const resultsKey = `sems_completed_results_${sportId}`;
+
+  // Helper to generate default mock results
+  const getMockResultsData = () => {
+    if (isChess) {
+      return [
+        {
+          id: 'M-CHESS-101',
+          eventTitle: 'Inter-College Chess Championship 2026',
+          format: 'INDIVIDUAL',
+          category: 'Open',
+          team1: 'Grandmaster Anand Verma (MPEC)',
+          team2: 'Vikramaditya Roy (IIT Kanpur)',
+          score1: 1,
+          score2: 0,
+          scoreText: 'Result: 1 - 0 (White Wins)',
+          scoreSummary: 'Result: 1 - 0 (Checkmate)',
+          resultNote: 'Checkmate (Move 38)',
+          winner: 'Grandmaster Anand Verma (MPEC)',
+          tableNumber: 'Table 1',
+          venue: 'Chess Hall A - Main Board Room',
+          completedAt: new Date(Date.now() - 3600000).toISOString()
+        },
+        {
+          id: 'M-CHESS-102',
+          eventTitle: 'Inter-College Chess Championship 2026',
+          format: 'INDIVIDUAL',
+          category: 'Open',
+          team1: 'Aditya Raj (PSIT Kanpur)',
+          team2: 'Praggnanandhaa K. (HBTI)',
+          score1: 0,
+          score2: 1,
+          scoreText: 'Result: 0 - 1 (Black Wins)',
+          scoreSummary: 'Result: 0 - 1 (Resignation)',
+          resultNote: 'Resignation (Move 45)',
+          winner: 'Praggnanandhaa K. (HBTI)',
+          tableNumber: 'Table 2',
+          venue: 'Chess Hall A - Main Board Room',
+          completedAt: new Date(Date.now() - 7200000).toISOString()
+        },
+        {
+          id: 'M-CHESS-103',
+          eventTitle: 'All India Rapid Chess League 2026',
+          format: 'INDIVIDUAL',
+          category: 'Rapid',
+          team1: 'Rohan Saxena (MIPS)',
+          team2: 'Kavya Sharma (MPEC)',
+          score1: 0.5,
+          score2: 0.5,
+          scoreText: 'Result: ½ - ½ (Draw)',
+          scoreSummary: 'Result: ½ - ½ (Stalemate)',
+          resultNote: 'Stalemate / Mutual Agreement',
+          winner: 'Draw (½ - ½)',
+          tableNumber: 'Table 3',
+          venue: 'Chess Hall B - Board Room 2',
+          completedAt: new Date(Date.now() - 10800000).toISOString()
+        },
+        {
+          id: 'M-CHESS-104',
+          eventTitle: 'Inter-College Blitz Knockout',
+          format: 'INDIVIDUAL',
+          category: 'Blitz',
+          team1: 'Siddharth Mishra (KNIT Sultanpur)',
+          team2: 'Deepesh Trivedi (MPGI)',
+          score1: 1,
+          score2: 0,
+          scoreText: 'Result: 1 - 0 (White Wins)',
+          scoreSummary: 'Result: 1 - 0 (Clock Flag Fall)',
+          resultNote: 'Clock Flag Fall (Time Out)',
+          winner: 'Siddharth Mishra (KNIT Sultanpur)',
+          tableNumber: 'Table 4',
+          venue: 'Chess Hall B - Board Room 2',
+          completedAt: new Date(Date.now() - 14400000).toISOString()
+        },
+        {
+          id: 'M-CHESS-105',
+          eventTitle: "Women's College Chess Masters",
+          format: 'INDIVIDUAL',
+          category: 'Girls',
+          team1: 'Ananya Gupta (MPEC)',
+          team2: 'Riya Srivastava (IET Lucknow)',
+          score1: 0,
+          score2: 1,
+          scoreText: 'Result: 0 - 1 (Black Wins)',
+          scoreSummary: 'Result: 0 - 1 (Checkmate)',
+          resultNote: 'Checkmate (Move 29)',
+          winner: 'Riya Srivastava (IET Lucknow)',
+          tableNumber: 'Table 5',
+          venue: 'Chess Hall A - Main Board Room',
+          completedAt: new Date(Date.now() - 18000000).toISOString()
+        }
+      ];
+    }
+    return [
+      {
+        id: 'M-BADM-101',
+        eventTitle: 'Inter-College Badminton Championship 2026',
+        format: 'SINGLES',
+        category: 'Boys',
+        team1: 'Aarav Sharma (MPEC)',
+        team2: 'Rohan Gupta (MIPS)',
+        score1: 2,
+        score2: 1,
+        setsWon1: 2,
+        setsWon2: 1,
+        scoreSummary: '2 - 1 Sets (S1: 21-19 | S2: 18-21 | S3: 21-16)',
+        winner: 'Aarav Sharma (MPEC)',
+        tableNumber: 'Court 1',
+        venue: 'Indoor Badminton Stadium',
+        completedAt: new Date(Date.now() - 3600000).toISOString()
+      },
+      {
+        id: 'M-BADM-102',
+        eventTitle: 'Inter-College Badminton Championship 2026',
+        format: 'SINGLES',
+        category: 'Girls',
+        team1: 'Priya Verma (PSIT)',
+        team2: 'Sneha Patel (HBTI)',
+        score1: 2,
+        score2: 0,
+        setsWon1: 2,
+        setsWon2: 0,
+        scoreSummary: '2 - 0 Sets (S1: 21-14 | S2: 21-12)',
+        winner: 'Priya Verma (PSIT)',
+        tableNumber: 'Court 2',
+        venue: 'Indoor Badminton Stadium',
+        completedAt: new Date(Date.now() - 7200000).toISOString()
+      }
+    ];
+  };
 
   // Load results & events on mount
   useEffect(() => {
     const loadData = async () => {
-      // Load events list for dropdown (only real created events)
+      // Load events list for dropdown
       try {
         const eventsList = await coordinatorApi.getEvents();
         if (eventsList && eventsList.length > 0) {
@@ -32,51 +163,138 @@ export const ResultManagementTab = ({ user }) => {
         setAvailableEvents([]);
       }
 
+      // Load saved results & sync with backend completed matches
+      let list = [];
+      const saved = localStorage.getItem(resultsKey);
+      if (saved) {
+        try {
+          list = JSON.parse(saved);
+        } catch (e) {
+          list = [];
+        }
+      }
 
-      // Load results list & purge legacy mock entries
-      const mockIds = ['M540746', 'M635812', 'M741299', 'M882104', 'M645537'];
+      try {
+        const apiMatches = await coordinatorApi.getMatches();
+        const completedApiMatches = apiMatches.filter((m) =>
+          m.status === 'COMPLETED' || m.status === 'FINISHED' || m.status === 'WALKOVER'
+        );
+
+        completedApiMatches.forEach((apiMatch) => {
+          if (!list.some((existing) => existing.id === apiMatch.id)) {
+            list.push(apiMatch);
+          }
+        });
+      } catch (e) {}
+
+      // Purge legacy mock test entries
+      const mockIds = ['M540746', 'M635812', 'M741299', 'M882104', 'M645537', 'M-CHESS-101', 'M-CHESS-102', 'M-CHESS-103', 'M-CHESS-104', 'M-CHESS-105'];
       const mockNames = [
         '1', '2', 'a', 'b', 'player 1', 'player 2', 'player 3', 'player 4', 'team 1', 'team 2', 'team a', 'team b', 'albert', 'romi',
         'aarav sharma (mpec)', 'rohan gupta (mips)', 'ankur dixit (mpcps)', 'aditya singh (mpec)',
         'aagaz khan (mpcps kn142)', 'shiv prakash (mpcps kn142)', 'kapil verma (mpcps kn142)', 'anubhav sachan (mpcps kn142)',
         'kapil verma', 'anubhav sachan', 'team a', 'team b', 'team 1', 'team 2', 'player / team a', 'player / team b'
       ];
-      const saved = localStorage.getItem(resultsKey);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          const cleaned = Array.isArray(parsed)
-            ? parsed.filter((r) => {
-                if (!r) return false;
-                if (mockIds.includes(r.id)) return false;
-                const t1 = (r.team1 || '').trim().toLowerCase();
-                const t2 = (r.team2 || '').trim().toLowerCase();
-                const w = (r.winner || '').trim().toLowerCase();
-                return !mockNames.includes(t1) && !mockNames.includes(t2) && !mockNames.includes(w);
-              })
-            : [];
-          setResultsList(cleaned);
-          localStorage.setItem(resultsKey, JSON.stringify(cleaned));
-        } catch (e) {
-          setResultsList([]);
-        }
-      } else {
-        setResultsList([]);
-      }
 
+      let cleaned = Array.isArray(list)
+        ? list.filter((r) => {
+            if (!r) return false;
+            if (mockIds.includes(r.id)) return false;
+            const t1 = (r.team1 || '').trim().toLowerCase();
+            const t2 = (r.team2 || '').trim().toLowerCase();
+            const w = (r.winner || '').trim().toLowerCase();
+            return !mockNames.includes(t1) && !mockNames.includes(t2) && !mockNames.includes(w);
+          })
+        : [];
+
+      setResultsList(cleaned);
+      localStorage.setItem(resultsKey, JSON.stringify(cleaned));
     };
 
     loadData();
+
+    // Real-time synchronization event listener for ended live matches
+    const handleSync = () => loadData();
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('sems_results_updated', handleSync);
+
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('sems_results_updated', handleSync);
+    };
   }, [resultsKey, sportName]);
 
+  const handleSetWinner = async (id, currentWinner) => {
+    const matchObj = resultsList.find((item) => item.id === id);
+    if (!matchObj) return;
 
-  const handleSetWinner = async (id, winnerName) => {
+    const p1 = matchObj.team1 || 'Player 1 (White)';
+    const p2 = matchObj.team2 || 'Player 2 (Black)';
+
+    let newWinner = currentWinner;
+    let newScoreText = matchObj.scoreText || matchObj.scoreSummary || '';
+    let s1 = matchObj.score1 || 0;
+    let s2 = matchObj.score2 || 0;
+
+    if (isChess) {
+      const choice = window.prompt(
+        `Select Official Declared Winner for Chess Match #${id}:\n1: ${p1} (White Wins 1-0)\n2: ${p2} (Black Wins 0-1)\n3: Draw (½ - ½)`,
+        '1'
+      );
+      if (!choice) return;
+
+      if (choice === '1') {
+        newWinner = p1;
+        newScoreText = 'Result: 1 - 0 (White Wins)';
+        s1 = 1;
+        s2 = 0;
+      } else if (choice === '2') {
+        newWinner = p2;
+        newScoreText = 'Result: 0 - 1 (Black Wins)';
+        s1 = 0;
+        s2 = 1;
+      } else if (choice === '3') {
+        newWinner = 'Draw (½ - ½)';
+        newScoreText = 'Result: ½ - ½ (Draw)';
+        s1 = 0.5;
+        s2 = 0.5;
+      } else {
+        newWinner = choice;
+      }
+    } else {
+      const input = window.prompt(
+        `Select Official Declared Winner:\n1: ${p1}\n2: ${p2}`,
+        currentWinner || p1
+      );
+      if (!input) return;
+      if (input === '1') newWinner = p1;
+      else if (input === '2') newWinner = p2;
+      else newWinner = input;
+    }
+
     try {
-      const updated = resultsList.map((r) => (r.id === id ? { ...r, winner: winnerName } : r));
+      const updated = resultsList.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              winner: newWinner,
+              score1: s1,
+              score2: s2,
+              scoreText: newScoreText,
+              scoreSummary: newScoreText,
+            }
+          : r
+      );
       setResultsList(updated);
       localStorage.setItem(resultsKey, JSON.stringify(updated));
-      await coordinatorApi.completeMatch(id, { winner: winnerName });
-      addToast(`Declared official winner: ${winnerName}`, 'success');
+      await coordinatorApi.completeMatch(id, {
+        winner: newWinner,
+        score1: s1,
+        score2: s2,
+        scoreText: newScoreText,
+        scoreSummary: newScoreText,
+      });
+      addToast(`Declared official winner: ${newWinner}`, 'success');
     } catch (err) {
       addToast('Error setting match winner', 'error');
     }
@@ -105,7 +323,6 @@ export const ResultManagementTab = ({ user }) => {
 
   // Filtered Results Logic
   const filteredResults = resultsList.filter((r) => {
-    // Event filter (matches against created event titles)
     if (selectedEvent !== 'ALL') {
       const matchEvent = (r.eventTitle || r.title || r.eventName || '').toLowerCase();
       if (!matchEvent.includes(selectedEvent.toLowerCase())) {
@@ -113,7 +330,6 @@ export const ResultManagementTab = ({ user }) => {
       }
     }
 
-    // Gender filter (All, Male, Female)
     if (selectedGender !== 'ALL') {
       const cat = (r.category || r.gender || 'Open').toLowerCase();
       const filterG = selectedGender.toLowerCase();
@@ -138,20 +354,19 @@ export const ResultManagementTab = ({ user }) => {
     const excelData = filteredResults.map((r) => {
       const setsBreakdown = r.setsHistory && Array.isArray(r.setsHistory) && r.setsHistory.some((s) => s.score1 > 0 || s.score2 > 0)
         ? r.setsHistory.filter((s) => s.score1 > 0 || s.score2 > 0).map((s) => `S${s.set}: ${s.score1}-${s.score2}`).join(' | ')
-        : (r.scoreSummary || 'N/A');
+        : (r.scoreText || r.scoreSummary || 'Completed');
 
       return {
         'Match ID': r.id || 'N/A',
         'Event Title': r.eventTitle || `${sportName} Tournament`,
-        'Format': r.format || 'SINGLES',
+        'Format': isChess ? 'INDIVIDUAL' : (r.format || 'SINGLES'),
         'Category / Gender': r.category || r.gender || 'Open',
-        'Player / Team 1': r.team1 || 'TBD',
-        'Player / Team 2': r.team2 || 'TBD',
-        'Sets Won': r.setsWon1 !== undefined && r.setsWon2 !== undefined ? `${r.setsWon1} - ${r.setsWon2} Sets` : 'N/A',
-        'Set-by-Set Points': setsBreakdown,
+        'Player 1 / White': r.team1 || 'TBD',
+        'Player 2 / Black': r.team2 || 'TBD',
+        'Match Score / Result': isChess ? (r.scoreText || r.scoreSummary || (r.score1 === 1 ? '1 - 0' : r.score2 === 1 ? '0 - 1' : '½ - ½')) : setsBreakdown,
+        'Result Method / Notes': r.resultNote || 'Official Verdict',
         'Declared Winner': r.winner || r.team1 || 'TBD',
-        'Venue / Court': r.tableNumber || r.venue || 'Court 1',
-        'Time / Slot': r.time || 'Completed',
+        'Venue / Table': r.tableNumber || r.venue || (isChess ? 'Table 1' : 'Court 1'),
         'Completed Date': r.completedAt ? new Date(r.completedAt).toLocaleString() : 'N/A'
       };
     });
@@ -161,7 +376,7 @@ export const ResultManagementTab = ({ user }) => {
   };
 
   return (
-    <div className="space-y-6 text-slate-900 dark:text-slate-200 animate-fade-in">
+    <div className="space-y-6 text-slate-900 dark:text-slate-200 animate-fade-in font-sans">
       
       {/* Table Container */}
       <div className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-2xl space-y-5">
@@ -170,11 +385,11 @@ export const ResultManagementTab = ({ user }) => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
           <div>
             <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+              <Trophy className={`w-5 h-5 ${isChess ? 'text-purple-500 dark:text-purple-400' : 'text-amber-500 dark:text-amber-400'}`} />
               <span>Declare Results & Winner Management</span>
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">
-              Showing {filteredResults.length} of {resultsList.length} completed matches
+              Showing {filteredResults.length} of {resultsList.length} completed {isChess ? 'chess board' : 'single'} matches
             </p>
           </div>
 
@@ -204,7 +419,7 @@ export const ResultManagementTab = ({ user }) => {
         {/* Filter Controls Bar */}
         <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-            <Filter className="w-4 h-4 text-blue-600 dark:text-indigo-400" />
+            <Filter className={`w-4 h-4 ${isChess ? 'text-purple-600 dark:text-purple-400' : 'text-blue-600 dark:text-indigo-400'}`} />
             <span>Filter Results:</span>
           </div>
 
@@ -215,7 +430,7 @@ export const ResultManagementTab = ({ user }) => {
               <select
                 value={selectedEvent}
                 onChange={(e) => setSelectedEvent(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+                className={`w-full px-3 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${isChess ? 'focus:ring-purple-500' : 'focus:ring-blue-600'}`}
               >
                 <option value="ALL">All Events</option>
                 {availableEvents.map((evtTitle, idx) => (
@@ -230,11 +445,12 @@ export const ResultManagementTab = ({ user }) => {
               <select
                 value={selectedGender}
                 onChange={(e) => setSelectedGender(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+                className={`w-full px-3 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${isChess ? 'focus:ring-purple-500' : 'focus:ring-blue-600'}`}
               >
                 <option value="ALL">All</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
+                <option value="Open">Open</option>
+                <option value="Male">Male / Boys</option>
+                <option value="Female">Female / Girls</option>
               </select>
             </div>
 
@@ -244,7 +460,7 @@ export const ResultManagementTab = ({ user }) => {
                 onClick={handleResetFilters}
                 className="mt-4 md:mt-0 self-end px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-bold text-xs transition flex items-center justify-center gap-1.5 border border-slate-300 dark:border-slate-700 cursor-pointer"
               >
-                <RefreshCw className="w-3.5 h-3.5 text-blue-600 dark:text-indigo-400" />
+                <RefreshCw className={`w-3.5 h-3.5 ${isChess ? 'text-purple-500' : 'text-blue-600'}`} />
                 <span>Reset</span>
               </button>
             )}
@@ -278,14 +494,20 @@ export const ResultManagementTab = ({ user }) => {
                     <td className="p-4 space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">#{r.id}</span>
-                        <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-blue-500/10 text-blue-600 dark:text-indigo-300 border border-blue-500/20 uppercase">
-                          {r.format || 'SINGLES'}
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase border ${
+                          isChess
+                            ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+                            : 'bg-blue-500/10 text-blue-600 dark:text-indigo-300 border-blue-500/20'
+                        }`}>
+                          {isChess ? 'INDIVIDUAL' : (r.format || 'SINGLES')}
                         </span>
                         <span className="text-[10px] font-mono font-semibold text-slate-500 dark:text-slate-400">
                           {r.eventTitle || `${sportName} Championship`}
                         </span>
                       </div>
-                      <p className="font-bold text-slate-900 dark:text-white text-sm">{r.team1} vs {r.team2}</p>
+                      <p className="font-bold text-slate-900 dark:text-white text-sm">
+                        {r.team1 || 'White Player'} <span className="text-slate-400 text-xs font-normal">vs</span> {r.team2 || 'Black Player'}
+                      </p>
                     </td>
 
                     {/* CATEGORY / GENDER */}
@@ -297,22 +519,24 @@ export const ResultManagementTab = ({ user }) => {
 
                     {/* VENUE / TIME */}
                     <td className="p-4 font-mono text-slate-600 dark:text-slate-400">
-                      📍 {r.tableNumber || r.venue || 'Court 1'} • {r.time || 'Completed'}
+                      📍 {r.tableNumber || r.venue || (isChess ? 'Table 1' : 'Court 1')} • {r.time || 'Completed'}
                     </td>
 
                     {/* SCORE & WINNER */}
                     <td className="p-4 font-bold">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-black text-slate-900 dark:text-white text-sm">
-                            {r.setsWon1 !== undefined && r.setsWon2 !== undefined
-                              ? `${r.setsWon1} - ${r.setsWon2} Sets`
-                              : `${r.score1 || 0} - ${r.score2 || 0} Pts`}
+                          <span className={`font-mono font-black text-sm ${isChess ? 'text-purple-600 dark:text-purple-400' : 'text-slate-900 dark:text-white'}`}>
+                            {isChess
+                              ? (r.scoreText || r.scoreSummary || (r.score1 === 1 ? 'Result: 1 - 0 (White Wins)' : r.score2 === 1 ? 'Result: 0 - 1 (Black Wins)' : 'Result: ½ - ½ (Draw)'))
+                              : (r.setsWon1 !== undefined && r.setsWon2 !== undefined
+                                  ? `${r.setsWon1} - ${r.setsWon2} Sets`
+                                  : `${r.score1 || 0} - ${r.score2 || 0} Pts`)}
                           </span>
                         </div>
 
-                        {/* Set by Set Breakdown Points */}
-                        {r.setsHistory && Array.isArray(r.setsHistory) && r.setsHistory.some((s) => s.score1 > 0 || s.score2 > 0) && (
+                        {/* Set Breakdown for general sports */}
+                        {!isChess && r.setsHistory && Array.isArray(r.setsHistory) && r.setsHistory.some((s) => s.score1 > 0 || s.score2 > 0) && (
                           <div className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-semibold">
                             {r.setsHistory
                               .filter((s) => s.score1 > 0 || s.score2 > 0)
@@ -321,14 +545,8 @@ export const ResultManagementTab = ({ user }) => {
                           </div>
                         )}
 
-                        {r.scoreSummary && (!r.setsHistory || !r.setsHistory.some((s) => s.score1 > 0 || s.score2 > 0)) && (
-                          <div className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-semibold">
-                            {r.scoreSummary}
-                          </div>
-                        )}
-
                         <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-xs font-black pt-0.5">
-                          <Trophy className="w-3.5 h-3.5" /> Winner: {r.winner || r.team1}
+                          <Trophy className="w-3.5 h-3.5 text-amber-500" /> Winner: {r.winner || r.team1 || 'TBD'}
                         </span>
                       </div>
                     </td>
@@ -337,18 +555,24 @@ export const ResultManagementTab = ({ user }) => {
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => generateMatchResultPDF(r, user?.sportName || user?.assignedSport || 'badminton')}
-                          className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-orange-500/20 dark:hover:bg-orange-500/30 text-blue-600 dark:text-orange-300 border border-blue-200 dark:border-orange-500/30 font-bold text-xs transition flex items-center gap-1 cursor-pointer"
+                          onClick={() => generateMatchResultPDF(r, user?.sportName || user?.assignedSport || (isChess ? 'Chess' : 'Badminton'))}
+                          className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-500/20 dark:hover:bg-purple-500/30 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 font-bold text-xs transition flex items-center gap-1 cursor-pointer"
                         >
                           <Download className="w-3.5 h-3.5" />
                           <span>PDF</span>
                         </button>
+
                         <button
                           onClick={() => handleSetWinner(r.id, r.winner || r.team1)}
-                          className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
+                          className={`px-4 py-2 rounded-xl text-white font-bold text-xs shadow-md transition cursor-pointer ${
+                            isChess
+                              ? 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/20'
+                              : 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/20'
+                          }`}
                         >
                           Set Winner
                         </button>
+
                         <button
                           onClick={() => handleDeleteResult(r.id)}
                           className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-white border border-rose-200 dark:border-rose-500/30 transition cursor-pointer"
@@ -369,5 +593,3 @@ export const ResultManagementTab = ({ user }) => {
     </div>
   );
 };
-
-

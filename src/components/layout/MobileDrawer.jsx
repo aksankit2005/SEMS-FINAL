@@ -1,5 +1,5 @@
-import React from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   X, Trophy, Calendar, Award, Newspaper, Image, Info, 
   UserCheck, Flame, Radio, BarChart3, LayoutDashboard, Camera,
@@ -8,10 +8,24 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { galleryApi } from '../../services/galleryApi';
 import { collegeHeadApi } from '../../services/collegeHeadApi';
-import { coordinatorApi } from '../../services/coordinatorApi';
+import { coordinatorApi, getSportRoute } from '../../services/coordinatorApi';
+
 
 export const MobileDrawer = ({ isOpen, onClose }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuth();
+  const [, setAuthTick] = useState(0);
+
+  useEffect(() => {
+    const handleAuthChange = () => setAuthTick((t) => t + 1);
+    window.addEventListener('sems-auth-change', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+    return () => {
+      window.removeEventListener('sems-auth-change', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
+  }, []);
 
   const getActiveSession = () => {
     if (user) {
@@ -22,6 +36,7 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
         logoutHandler: () => {
           logout();
           onClose();
+          navigate('/');
         }
       };
     }
@@ -34,20 +49,20 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
         logoutHandler: () => {
           collegeHeadApi.logout();
           onClose();
-          window.location.href = '/';
+          navigate('/');
         }
       };
     }
-    if (Boolean(localStorage.getItem('sems_coordinator_token'))) {
+    if (coordinatorApi.isAuthenticated()) {
       const coordUser = coordinatorApi.getCurrentUser();
       return {
         name: coordUser?.coordinatorName || coordUser?.sportName || 'Coordinator',
         roleLabel: 'Sport Coordinator',
-        dashboardPath: '/coordinator/dashboard',
+        dashboardPath: getSportRoute(coordUser?.assignedSport),
         logoutHandler: () => {
           coordinatorApi.logout();
           onClose();
-          window.location.href = '/';
+          navigate('/');
         }
       };
     }
@@ -60,7 +75,7 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
         logoutHandler: () => {
           galleryApi.logoutPR();
           onClose();
-          window.location.href = '/';
+          navigate('/');
         }
       };
     }
