@@ -3,13 +3,13 @@ import { Plus, Users, Trash2, Edit2, Clock, Sparkles, CheckCircle2 } from 'lucid
 import { useToast } from '../../../context/ToastContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 
-export const BasketballMatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch }) => {
+export const VolleyballMatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch }) => {
   const { addToast } = useToast();
 
-  const assignedSport = 'basketball';
-  const sportName = 'Basketball';
+  const assignedSport = 'volleyball';
+  const sportName = 'Volleyball';
 
-  // Active scheduled matches for Basketball
+  // Active scheduled matches for Volleyball
   const scheduledMatches = (matches || []).filter(
     (m) => m && m.status !== 'COMPLETED' && m.status !== 'FINISHED' && (!m.sport || m.sport.toLowerCase() === assignedSport || m.sportId === assignedSport)
   );
@@ -31,12 +31,12 @@ export const BasketballMatchScheduleTab = ({ matches, user, onUpdateMatches, glo
   const [editingId, setEditingId] = useState(null);
 
   const [form, setForm] = useState({
-    format: 'Team', // Fixed as Team match for Basketball
+    format: 'Team', // Fixed as Team match for Volleyball
     category: 'Open', // Boys, Girls, Open
-    eventTitle: 'Basketball Championship 2026',
+    eventTitle: 'Volleyball Championship 2026',
     team1: '', // Team 1 Name
     team2: '', // Team 2 Name
-    tableNumber: 'Basketball Court 1', // Only Court 1 & Court 2
+    tableNumber: 'Volleyball Court 1', // Only Court 1 & Court 2
     date: new Date().toISOString().split('T')[0],
     time: '04:00 PM',
   });
@@ -88,10 +88,10 @@ export const BasketballMatchScheduleTab = ({ matches, user, onUpdateMatches, glo
   };
 
   const handleClearAll = async () => {
-    if (window.confirm('Are you sure you want to clear all scheduled basketball matches?')) {
+    if (window.confirm('Are you sure you want to clear all scheduled volleyball matches?')) {
       await coordinatorApi.clearAllSchedules();
       onUpdateMatches([]);
-      addToast('All basketball match schedules cleared', 'warning');
+      addToast('All volleyball match schedules cleared', 'warning');
     }
   };
 
@@ -133,14 +133,14 @@ export const BasketballMatchScheduleTab = ({ matches, user, onUpdateMatches, glo
         category: form.category,
         eventTitle: form.eventTitle,
       });
-      addToast('Basketball match fixture updated!', 'success');
+      addToast('Volleyball match fixture updated!', 'success');
       setEditingId(null);
     } else {
       const newSlot = {
-        id: `M-BSK-${Math.floor(100000 + Math.random() * 900000)}`,
-        sport: 'basketball',
-        sportId: 'basketball',
-        sportName: 'Basketball',
+        id: `M-VOL-${Math.floor(100000 + Math.random() * 900000)}`,
+        sport: 'volleyball',
+        sportId: 'volleyball',
+        sportName: 'Volleyball',
         team1: finalTeam1,
         team2: finalTeam2,
         tableNumber: form.tableNumber,
@@ -156,16 +156,16 @@ export const BasketballMatchScheduleTab = ({ matches, user, onUpdateMatches, glo
       const updated = [...matches, newSlot];
       onUpdateMatches(updated);
       await coordinatorApi.saveMatches(updated);
-      addToast('Basketball match fixture scheduled successfully!', 'success');
+      addToast('Volleyball match fixture scheduled successfully!', 'success');
     }
 
     setForm({
       format: 'Team',
       category: 'Open',
-      eventTitle: createdEvents[0]?.title || 'Basketball Championship 2026',
+      eventTitle: createdEvents[0]?.title || 'Volleyball Championship 2026',
       team1: '',
       team2: '',
-      tableNumber: 'Basketball Court 1',
+      tableNumber: 'Volleyball Court 1',
       date: new Date().toISOString().split('T')[0],
       time: '04:00 PM',
     });
@@ -174,7 +174,7 @@ export const BasketballMatchScheduleTab = ({ matches, user, onUpdateMatches, glo
   const handleDeleteSlot = async (id) => {
     await coordinatorApi.deleteMatch(id);
     onUpdateMatches(matches.filter((m) => m.id !== id));
-    addToast('Basketball match fixture deleted', 'info');
+    addToast('Volleyball match fixture deleted', 'info');
   };
 
   return (
@@ -185,7 +185,7 @@ export const BasketballMatchScheduleTab = ({ matches, user, onUpdateMatches, glo
         
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
-            {editingId ? 'Edit Basketball Fixture' : 'Add Basketball Match Fixture'}
+            {editingId ? 'Edit Volleyball Fixture' : 'Add Volleyball Match Fixture'}
           </h3>
           <button
             onClick={handleClearAll}
@@ -221,7 +221,7 @@ export const BasketballMatchScheduleTab = ({ matches, user, onUpdateMatches, glo
                   required
                   value={form.eventTitle}
                   onChange={(e) => setForm({ ...form, eventTitle: e.target.value })}
-                  placeholder="e.g. Basketball Championship 2026"
+                  placeholder="e.g. Volleyball Championship 2026"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               )}
@@ -253,7 +253,7 @@ export const BasketballMatchScheduleTab = ({ matches, user, onUpdateMatches, glo
                 required
                 value={form.team1}
                 onChange={(e) => setForm({ ...form, team1: e.target.value })}
-                placeholder="e.g. ARC, RCD, TITANS"
+                placeholder="e.g. Spikers, Titans, Eagles"
                 className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
@@ -268,25 +268,27 @@ export const BasketballMatchScheduleTab = ({ matches, user, onUpdateMatches, glo
                 required
                 value={form.team2}
                 onChange={(e) => setForm({ ...form, team2: e.target.value })}
-                placeholder="e.g. RCD, TITANS, ARC"
+                placeholder="e.g. Warriors, Falcons, Panthers"
                 className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
 
-            {/* Basketball Court Dropdown (Strictly 2 Courts) */}
+            {/* Volleyball Court Dropdown (Strictly 2 Courts) */}
             <div>
               <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase">
-                Basketball Court Allocation
+                Volleyball Court Allocation
               </label>
               <select
                 value={form.tableNumber}
                 onChange={(e) => setForm({ ...form, tableNumber: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-bold text-orange-600 dark:text-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
-                <option value="Basketball Court 1">Basketball Court 1</option>
-                <option value="Basketball Court 2">Basketball Court 2</option>
+                <option value="Volleyball Court 1">Volleyball Court 1</option>
+                <option value="Volleyball Court 2">Volleyball Court 2</option>
+                <option value="Volleyball Court 3">Volleyball Court 3</option>
+                <option value="Volleyball Court 4">Volleyball Court 4</option>
               </select>
-              <p className="text-[10px] text-slate-400 mt-1">Select between Court 1 and Court 2</p>
+              <p className="text-[10px] text-slate-400 mt-1">Select between Court 1 and Court 4</p>
             </div>
 
             {/* Date & Time Grid */}
@@ -319,7 +321,7 @@ export const BasketballMatchScheduleTab = ({ matches, user, onUpdateMatches, glo
               className="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-black text-xs shadow-lg shadow-orange-500/20 transition flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>{editingId ? 'Save Fixture Changes' : '+ Add Basketball Match'}</span>
+              <span>{editingId ? 'Save Fixture Changes' : '+ Add Volleyball Match'}</span>
             </button>
             {editingId && (
               <button
@@ -329,10 +331,10 @@ export const BasketballMatchScheduleTab = ({ matches, user, onUpdateMatches, glo
                   setForm({
                     format: 'Team',
                     category: 'Open',
-                    eventTitle: createdEvents[0]?.title || 'Basketball Championship 2026',
+                    eventTitle: createdEvents[0]?.title || 'Volleyball Championship 2026',
                     team1: '',
                     team2: '',
-                    tableNumber: 'Basketball Court 1',
+                    tableNumber: 'Volleyball Court 1',
                     date: new Date().toISOString().split('T')[0],
                     time: '04:00 PM',
                   });
@@ -351,19 +353,19 @@ export const BasketballMatchScheduleTab = ({ matches, user, onUpdateMatches, glo
       <div className="lg:col-span-8 space-y-3">
         <div className="flex items-center justify-between pb-1">
           <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
-            Scheduled Basketball Matches ({filteredMatches.length})
+            Scheduled Volleyball Matches ({filteredMatches.length})
           </h3>
-          <span className="text-xs font-mono text-slate-400">Courts: Court 1 & Court 2</span>
+          <span className="text-xs font-mono text-slate-400">Courts: Court 1 to Court 4</span>
         </div>
 
         {filteredMatches.length === 0 ? (
           <div className="p-12 text-center bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 shadow-soft dark:shadow-md">
-            No scheduled basketball matches found. Add your first match fixture using the form on the left.
+            No scheduled volleyball matches found. Add your first match fixture using the form on the left.
           </div>
         ) : (
           filteredMatches.map((m) => {
-            const rawVenue = m.tableNumber || 'Basketball Court 1';
-            const displayVenue = rawVenue.includes('Court') ? rawVenue : `Basketball ${rawVenue}`;
+            const rawVenue = m.tableNumber || 'Volleyball Court 1';
+            const displayVenue = rawVenue.includes('Court') ? rawVenue : `Volleyball ${rawVenue}`;
 
             return (
               <div
@@ -373,7 +375,7 @@ export const BasketballMatchScheduleTab = ({ matches, user, onUpdateMatches, glo
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2">
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-500/20 uppercase">
-                      TEAM MATCH (5v5)
+                      TEAM MATCH (6v6)
                     </span>
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 uppercase">
                       {m.category || 'OPEN'}
@@ -389,7 +391,7 @@ export const BasketballMatchScheduleTab = ({ matches, user, onUpdateMatches, glo
                   </h4>
 
                   <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                    📍 {displayVenue} | Date: {m.date || '2026-08-05'} | Time: {m.time || '04:00 PM'} | Event: {m.eventTitle || 'Basketball Championship'}
+                    📍 {displayVenue} | Date: {m.date || '2026-08-05'} | Time: {m.time || '04:00 PM'} | Event: {m.eventTitle || 'Volleyball Championship'}
                   </p>
                 </div>
 
@@ -408,10 +410,10 @@ export const BasketballMatchScheduleTab = ({ matches, user, onUpdateMatches, glo
                       setForm({
                         format: 'Team',
                         category: m.category || 'Open',
-                        eventTitle: m.eventTitle || createdEvents[0]?.title || 'Basketball Championship 2026',
+                        eventTitle: m.eventTitle || createdEvents[0]?.title || 'Volleyball Championship 2026',
                         team1: m.team1 || '',
                         team2: m.team2 || '',
-                        tableNumber: m.tableNumber || 'Basketball Court 1',
+                        tableNumber: m.tableNumber || 'Volleyball Court 1',
                         date: m.date || new Date().toISOString().split('T')[0],
                         time: m.time || '04:00 PM',
                       });
