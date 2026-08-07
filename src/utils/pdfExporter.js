@@ -426,16 +426,65 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
     const rawTitle = match.matchTitle || `${match.team1 || 'Team 1'} vs ${match.team2 || 'Team 2'}`;
     const matchTitle = sanitizeText(rawTitle) || 'Official Match Result';
 
-    const rawWinner = match.winner || (match.score1 >= match.score2 ? match.team1 : match.team2) || 'Champion';
+    const cleanSport = sanitizeText(sportName || match.sportName || match.sport || 'Sports');
+    const isTugOfWar = cleanSport.toLowerCase().includes('tug') || 
+      (match.sportId || '').toLowerCase().includes('tug') || 
+      (match.sport || '').toLowerCase().includes('tug');
+    const isVolleyballMatch = cleanSport.toLowerCase().includes('volleyball') || 
+      (match.sportId || '').toLowerCase().includes('volleyball') || 
+      (match.sport || '').toLowerCase().includes('volleyball');
+
+    const roundsHistory = Array.isArray(match.roundsHistory) && match.roundsHistory.length > 0
+      ? match.roundsHistory
+      : [
+          { round: 1, winner: match.winner || match.team1, isLocked: true },
+          { round: 2, winner: null, isLocked: false },
+          { round: 3, winner: null, isLocked: false }
+        ];
+    const playedRounds = roundsHistory.filter(s => s.winner || s.isLocked);
+
+    const roundsWon1 = match.roundsWon1 !== undefined 
+      ? match.roundsWon1 
+      : playedRounds.filter(s => s.winner === match.team1).length;
+
+    const roundsWon2 = match.roundsWon2 !== undefined 
+      ? match.roundsWon2 
+      : playedRounds.filter(s => s.winner === match.team2).length;
+
+    const maxFormatSets = (match.format || '').includes('3') ? 3 : 5;
+    const allSets = Array.isArray(match.setsHistory) && match.setsHistory.length > 0
+      ? match.setsHistory
+      : [
+          { set: 1, score1: match.score1 || 0, score2: match.score2 || 0, isLocked: true, winner: match.winner || match.team1 },
+          { set: 2, score1: 0, score2: 0, isLocked: false, winner: null },
+          { set: 3, score1: 0, score2: 0, isLocked: false, winner: null },
+        ];
+    const playedSets = allSets
+      .slice(0, maxFormatSets)
+      .filter(s => s.isLocked || s.score1 > 0 || s.score2 > 0 || s.winner);
+
+    const setsWon1 = match.setsWon1 !== undefined 
+      ? match.setsWon1 
+      : playedSets.filter(s => s.winner === match.team1 || (s.score1 > s.score2)).length;
+    const setsWon2 = match.setsWon2 !== undefined 
+      ? match.setsWon2 
+      : playedSets.filter(s => s.winner === match.team2 || (s.score2 > s.score1)).length;
+
+    const rawWinner = match.winner || (
+      isTugOfWar
+        ? (roundsWon1 >= roundsWon2 ? match.team1 : match.team2)
+        : isVolleyballMatch
+        ? (setsWon1 >= setsWon2 ? match.team1 : match.team2)
+        : (match.score1 >= match.score2 ? match.team1 : match.team2)
+    ) || 'Champion';
     const winnerName = sanitizeText(rawWinner) || 'CHAMPION';
 
     const team1Name = sanitizeText(match.team1) || 'Team 1';
     const team2Name = sanitizeText(match.team2) || 'Team 2';
 
-    const format = sanitizeText(match.format || 'Standard Match');
+    const format = sanitizeText(match.format || (isTugOfWar ? 'Team Match (8v8)' : 'Standard Match'));
     const matchId = sanitizeText(match.id || `M${Math.floor(100000 + Math.random() * 900000)}`);
     const completedAt = match.completedAt ? sanitizeText(match.completedAt) : new Date().toLocaleString();
-    const cleanSport = sanitizeText(sportName || match.sportName || 'Sports');
 
     // Outer Dark Theme Container
     doc.setFillColor(15, 23, 42);
@@ -507,14 +556,111 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
       doc.text(`Result: ${sanitizeText(match.scoreSummary)}`, margin + 8, y + 22);
     } else if (typeof match.score1 === 'string' && match.score1.includes('-')) {
       doc.text(`Result: ${sanitizeText(match.score1)}`, margin + 8, y + 22);
+    } else if (isTugOfWar) {
+      doc.text(`${team1Name} : ${roundsWon1} Round${roundsWon1 === 1 ? '' : 's'} Won`, margin + 8, y + 22);
+      doc.text(`${team2Name} : ${roundsWon2} Round${roundsWon2 === 1 ? '' : 's'} Won`, margin + (contentW / 2) + 8, y + 22);
+    } else if (isVolleyballMatch) {
+      doc.text(`${team1Name} : ${setsWon1} Sets Won`, margin + 8, y + 22);
+      doc.text(`${team2Name} : ${setsWon2} Sets Won`, margin + (contentW / 2) + 8, y + 22);
     } else {
       doc.text(`${team1Name}: ${match.score1 !== undefined ? match.score1 : 0}`, margin + 8, y + 22);
       doc.text(`${team2Name}: ${match.score2 !== undefined ? match.score2 : 0}`, margin + (contentW / 2) + 8, y + 22);
     }
 
-    // Sets Breakdown Table (if sets history exists)
+    // Rounds / Sets Breakdown Table & Match Statistics
     y += 38;
-    if (match.setsHistory && Array.isArray(match.setsHistory) && match.setsHistory.length > 0) {
+    if (isTugOfWar) {
+      doc.setTextColor(245, 158, 11);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('ROUND BREAKDOWN', margin, y);
+
+      y += 4;
+      doc.setFillColor(51, 65, 85);
+      doc.rect(margin, y, contentW, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
+      doc.text('Round #', margin + 4, y + 5.5);
+      doc.text('Winner', margin + 60, y + 5.5);
+      doc.text('Status', margin + 130, y + 5.5);
+
+      y += 8;
+      playedRounds.forEach((s, idx) => {
+        doc.setFillColor(idx % 2 === 0 ? 30 : 15, 41, 59);
+        doc.rect(margin, y, contentW, 7, 'F');
+        doc.setTextColor(226, 232, 240);
+        doc.setFontSize(8);
+        doc.text(`Round ${s.round || idx + 1}`, margin + 4, y + 5);
+        doc.text(sanitizeText(s.winner || '-'), margin + 60, y + 5);
+        doc.text(s.isLocked ? 'Completed / Locked' : 'Pending', margin + 130, y + 5);
+        y += 7;
+      });
+      y += 6;
+
+      // Match Statistics Section
+      doc.setFillColor(30, 41, 59);
+      doc.setDrawColor(51, 65, 85);
+      doc.roundedRect(margin, y, contentW, 26, 3, 3, 'FD');
+
+      doc.setTextColor(245, 158, 11);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('MATCH STATISTICS', margin + 8, y + 8);
+
+      doc.setTextColor(203, 213, 225);
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`• Total Rounds Played: ${playedRounds.length}   |   • Team A Rounds Won: ${roundsWon1}   |   • Team B Rounds Won: ${roundsWon2}`, margin + 8, y + 15);
+      doc.text(`• Registered Players Per Team: 10   |   • Match Format: ${format}`, margin + 8, y + 21);
+      y += 32;
+    } else if (isVolleyballMatch) {
+      doc.setTextColor(245, 158, 11);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('SET BREAKDOWN', margin, y);
+
+      y += 4;
+      doc.setFillColor(51, 65, 85);
+      doc.rect(margin, y, contentW, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
+      doc.text('Set #', margin + 4, y + 5.5);
+      doc.text(`${team1Name} Score`, margin + 35, y + 5.5);
+      doc.text(`${team2Name} Score`, margin + 100, y + 5.5);
+      doc.text('Winner', margin + 155, y + 5.5);
+
+      y += 8;
+      playedSets.forEach((s, idx) => {
+        doc.setFillColor(idx % 2 === 0 ? 30 : 15, 41, 59);
+        doc.rect(margin, y, contentW, 7, 'F');
+        doc.setTextColor(226, 232, 240);
+        doc.setFontSize(8);
+        doc.text(`Set ${s.set || idx + 1}`, margin + 4, y + 5);
+        doc.text(String(s.score1 !== undefined ? s.score1 : '0'), margin + 35, y + 5);
+        doc.text(String(s.score2 !== undefined ? s.score2 : '0'), margin + 100, y + 5);
+        const setWinner = s.winner || (s.score1 > s.score2 ? team1Name : team2Name);
+        doc.text(sanitizeText(setWinner || '-'), margin + 155, y + 5);
+        y += 7;
+      });
+      y += 6;
+
+      // Match Statistics Section
+      doc.setFillColor(30, 41, 59);
+      doc.setDrawColor(51, 65, 85);
+      doc.roundedRect(margin, y, contentW, 26, 3, 3, 'FD');
+
+      doc.setTextColor(245, 158, 11);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('MATCH STATISTICS', margin + 8, y + 8);
+
+      doc.setTextColor(203, 213, 225);
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`• Total Sets Played: ${playedSets.length}   |   • Team A Sets Won: ${setsWon1}   |   • Team B Sets Won: ${setsWon2}`, margin + 8, y + 15);
+      doc.text(`• Best of: ${format}   |   • Match Duration: ${match.duration || 'N/A'}`, margin + 8, y + 21);
+      y += 32;
+    } else if (match.setsHistory && Array.isArray(match.setsHistory) && match.setsHistory.length > 0) {
       doc.setTextColor(245, 158, 11);
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
