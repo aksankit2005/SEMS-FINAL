@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Award, Tv, VideoOff, Users, ShieldAlert, AlertCircle, Download } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Award, Tv, VideoOff, Users, ShieldAlert, AlertCircle, Download, Maximize, Minimize } from 'lucide-react';
 import { resolveSportConfig } from '../../data/sportsConfig';
 import { getYouTubeEmbedUrl } from '../../utils/youtube';
 import { generateMatchResultPDF } from '../../utils/pdfExporter';
@@ -15,25 +15,123 @@ const getShortCollege = (name) => {
   return s.split(' ').map((w) => w[0]).join('').toUpperCase();
 };
 
-const YouTubePlayer = React.memo(({ youtubeVideoId }) => {
+const YouTubePlayer = React.memo(({ youtubeVideoId, match, isCricket }) => {
   const embedUrl = youtubeVideoId ? getYouTubeEmbedUrl(youtubeVideoId) : null;
+  const containerRef = useRef(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreenOverlay = () => {
+    if (!containerRef.current) return;
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
+
   if (!embedUrl) return null;
 
+  const currentInnings = match?.currentInnings || 1;
+  const currentRuns = currentInnings === 1 ? (match?.score1 ?? 0) : (match?.score2 ?? 0);
+  const currentWickets = currentInnings === 1 ? (match?.wickets1 ?? 0) : (match?.wickets2 ?? 0);
+  const currentOvers = currentInnings === 1 ? (match?.overs1 || '0.0') : (match?.overs2 || '0.0');
+  const team1Name = typeof match?.team1 === 'object' ? (match?.team1?.name || 'Team 1') : String(match?.team1 || 'Team 1');
+  const team2Name = typeof match?.team2 === 'object' ? (match?.team2?.name || 'Team 2') : String(match?.team2 || 'Team 2');
+  const battingTeam = currentInnings === 1 ? team1Name : team2Name;
+
   return (
-    <div className="relative aspect-video w-full bg-black">
+    <div ref={containerRef} className="relative aspect-video w-full bg-black group overflow-hidden">
       <iframe
         src={embedUrl}
         title="Match Live Stream"
-        className="w-full h-full border-0"
+        className="w-full h-full border-0 pointer-events-auto"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
       />
-      <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md px-3 py-1 rounded-full text-xs font-mono text-white flex items-center gap-2 border border-white/10">
+
+      {/* Top Banner Tag */}
+      <div className="absolute top-3 left-3 z-20 bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-2xl text-xs font-mono text-white flex items-center gap-2 border border-slate-700/50 shadow-lg pointer-events-none">
         <span className="flex items-center gap-1 text-rose-400 font-bold">
-          <Tv className="w-3.5 h-3.5 text-rose-500" /> YouTube Live Broadcast Active
+          <Tv className="w-3.5 h-3.5 text-rose-500 animate-pulse" /> Live Stream
         </span>
-        <span className="text-slate-400 font-sans">1080p HD Official Stream</span>
+        <span className="text-slate-400 font-sans hidden sm:inline">1080p HD Broadcast</span>
       </div>
+
+      {/* Fullscreen Overlay Toggle Button */}
+      <button
+        onClick={toggleFullscreenOverlay}
+        className="absolute top-3 right-3 z-30 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs px-3.5 py-1.5 rounded-2xl flex items-center gap-1.5 border border-emerald-400/50 shadow-xl transition cursor-pointer hover:scale-105 active:scale-95"
+        title="Click here to open Fullscreen Video with Floating Live Scorecard Overlay"
+      >
+        {isFullscreen ? <Minimize className="w-3.5 h-3.5 text-amber-300" /> : <Maximize className="w-3.5 h-3.5 text-white" />}
+        <span>{isFullscreen ? 'Exit Fullscreen' : '📺 Fullscreen (with Live Score)'}</span>
+      </button>
+
+      {/* FLOATING BROADCAST SCOREBAR OVERLAY (FOR CRICKET) */}
+      {isCricket && match && (
+        <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4 z-20 pointer-events-none">
+          <div className="bg-slate-950/90 backdrop-blur-md rounded-2xl border border-slate-700/60 p-2.5 sm:p-3 shadow-2xl text-white pointer-events-auto transition-all">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+              
+              {/* Left: Batting Team & Big Score */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="font-black text-sm uppercase text-emerald-400 tracking-wide">{battingTeam}</span>
+                </div>
+                <div className="px-2.5 py-0.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-black text-sm sm:text-base">
+                  {currentRuns}/{currentWickets} <span className="text-xs font-normal text-slate-300">({currentOvers} ov)</span>
+                </div>
+              </div>
+
+              {/* Center: On-Field Striker & Bowler Quick Summary */}
+              <div className="hidden md:flex items-center gap-4 text-[11px]">
+                {/* Striker */}
+                <div className="flex items-center gap-1 bg-slate-900/90 px-2.5 py-1 rounded-xl border border-slate-800">
+                  <span className="text-amber-400 font-bold">🏏 {match.striker?.name || 'Striker'}</span>
+                  <span className="font-black text-white">{match.striker?.runs || 0}</span>
+                  <span className="text-slate-400">({match.striker?.balls || 0}b)</span>
+                </div>
+
+                {/* Bowler */}
+                <div className="flex items-center gap-1 bg-slate-900/90 px-2.5 py-1 rounded-xl border border-slate-800">
+                  <span className="text-cyan-400 font-bold">🎯 {match.bowler?.name || 'Bowler'}</span>
+                  <span className="font-black text-rose-400">{match.bowler?.wickets || 0}/{match.bowler?.runs || 0}</span>
+                  <span className="text-slate-400">({match.bowler?.overs || '0.0'})</span>
+                </div>
+              </div>
+
+              {/* Right: Recent Deliveries Ticker */}
+              {(match.recentBalls || []).length > 0 && (
+                <div className="flex items-center gap-1 overflow-x-auto">
+                  {match.recentBalls.slice(-6).map((b, idx) => (
+                    <span
+                      key={idx}
+                      className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center font-mono font-black text-[10px] sm:text-xs border ${
+                        b === 'W' ? 'bg-rose-600 text-white border-rose-500 animate-pulse' :
+                        b === '4' || b === '6' ? 'bg-emerald-600 text-white border-emerald-500' :
+                        b === 'WD' || b === 'NB' ? 'bg-amber-500/30 text-amber-300 border-amber-500/50' :
+                        'bg-slate-900 text-slate-200 border-slate-700'
+                      }`}
+                    >
+                      {b}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });
@@ -117,7 +215,15 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
   const setsWonA = calcSetsWon1();
   const setsWonB = calcSetsWon2();
 
-  const isBasketball = (match.sportId || match.sport || match.sportName || '').toLowerCase().includes('basketball') || Boolean(match.roster1 || match.roster2);
+  const isCricket = (match.sportId || match.sport || match.sportName || '').toLowerCase().includes('cricket') ||
+                    (match.matchTitle || match.title || '').toLowerCase().includes('cricket') ||
+                    (match.eventTitle || '').toLowerCase().includes('cricket') ||
+                    Boolean(match.striker || match.bowler);
+
+  const isBasketball = !isCricket && ((match.sportId || match.sport || match.sportName || '').toLowerCase().includes('basketball') || (Boolean(match.roster1 || match.roster2) && !(match.sportId || match.sport || match.sportName || '').toLowerCase().includes('chess')));
+  const isChess = !isCricket && ((match.sportId || match.sport || match.sportName || '').toLowerCase().includes('chess') ||
+                  (match.matchTitle || match.title || '').toLowerCase().includes('chess') ||
+                  (match.eventTitle || '').toLowerCase().includes('chess'));
 
   const roster1 = match.roster1 && match.roster1.length > 0
     ? match.roster1
@@ -202,16 +308,18 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
           </div>
         </div>
 
-        {/* Video Player Stream (Memoized to prevent iframe refresh on score updates) */}
+        {/* Video Player Stream */}
         {match.youtubeVideoId ? (
-          <YouTubePlayer youtubeVideoId={match.youtubeVideoId} />
+          <YouTubePlayer youtubeVideoId={match.youtubeVideoId} match={match} isCricket={isCricket} />
         ) : (
           <div className="p-6 bg-slate-50 dark:bg-[#090D16] text-center border-b border-slate-200 dark:border-[#1E293B] space-y-2">
             <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center mx-auto text-xl">
               <VideoOff className="w-6 h-6 text-slate-500" />
             </div>
             <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Live video is not available</h4>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">Showing real-time live score updates from official tournament scoring table.</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              {isChess ? 'Showing real-time chess board status updates from official tournament table.' : 'Showing real-time live score updates from official tournament scoring table.'}
+            </p>
           </div>
         )}
 
@@ -224,41 +332,93 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
             {/* Player / Team A */}
             <div className="text-center md:text-left space-y-2">
               <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{team1Name}</h2>
-              <div className="flex items-center justify-center md:justify-start gap-2 text-xs text-slate-500 dark:text-slate-400">
-                <span>Sets / Quarters Won:</span>
-                <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-indigo-600/20 text-blue-700 dark:text-indigo-300 font-mono font-bold">
-                  {setsWonA}
+              {!isChess && (
+                <div className="flex items-center justify-center md:justify-start gap-2 text-xs text-slate-500 dark:text-slate-400">
+                  <span>Sets / Quarters Won:</span>
+                  <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-indigo-600/20 text-blue-700 dark:text-indigo-300 font-mono font-bold">
+                    {setsWonA}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Middle Box - Custom for Cricket vs Chess vs Point Sports */}
+            {isCricket ? (
+              <div className="text-center bg-white dark:bg-[#090D16] p-4 sm:p-5 rounded-2xl border border-emerald-500/30 shadow-md space-y-2">
+                <span className="text-[10px] font-mono uppercase font-bold text-emerald-500 tracking-widest block">
+                  🏏 {match.currentInnings === 2 ? '2ND INNINGS' : '1ST INNINGS'}
                 </span>
-              </div>
-            </div>
+                
+                <div className="flex items-baseline justify-center gap-1.5 font-mono">
+                  <span className="text-4xl sm:text-5xl font-black text-emerald-500">{match.currentInnings === 2 ? (match.score2 ?? score2Val) : (match.score1 ?? score1Val)}</span>
+                  <span className="text-2xl text-slate-400 font-bold">/</span>
+                  <span className="text-2xl sm:text-3xl font-black text-rose-500">{match.currentInnings === 2 ? (match.wickets2 ?? 0) : (match.wickets1 ?? 0)}</span>
+                </div>
 
-            {/* Middle Live Score */}
-            <div className="text-center bg-white dark:bg-[#090D16] p-5 rounded-2xl border border-slate-200 dark:border-[#1E293B] shadow-sm dark:shadow-inner space-y-2">
-              <span className="text-[10px] font-mono uppercase font-bold text-slate-500 dark:text-slate-400 tracking-widest block">
-                {sportConfig.name} {isFinished ? 'Final Score' : 'Live Points'}
-              </span>
-              
-              <div className="flex items-center justify-center gap-4 text-5xl font-black font-mono text-slate-900 dark:text-white">
-                <span className="text-blue-600 dark:text-indigo-400">{score1Val}</span>
-                <span className="text-slate-400 dark:text-slate-600 text-3xl">:</span>
-                <span className="text-blue-600 dark:text-indigo-400">{score2Val}</span>
+                <div className="text-xs font-mono text-slate-400">
+                  Overs: <strong className="text-white">{match.currentInnings === 2 ? (match.overs2 || '0.0') : (match.overs1 || '0.0')}</strong> / {match.totalOversMax || 20}
+                </div>
               </div>
+            ) : isChess ? (
+              <div className="text-center bg-white dark:bg-[#090D16] p-5 rounded-2xl border border-purple-500/30 shadow-md space-y-3">
+                <span className="text-[10px] font-mono uppercase font-bold text-purple-600 dark:text-purple-400 tracking-widest block">
+                  ♟️ CHESS MATCH {isFinished ? 'VERDICT & WINNER' : 'IN PROGRESS'}
+                </span>
 
-              <div className="pt-2 flex items-center justify-center gap-2 text-xs font-mono text-emerald-600 dark:text-emerald-400">
-                {!isFinished && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />}
-                <span className="font-bold">{isFinished ? 'MATCH FINISHED' : 'REAL-TIME LIVE SCORE'}</span>
+                {isFinished ? (
+                  <div className="space-y-1.5 py-1">
+                    <div className="text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1.5 text-base font-black">
+                      <Award className="w-5 h-5 text-amber-400" />
+                      <span>Winner: {match.winner || (score1Val > score2Val ? team1Name : score2Val > score1Val ? team2Name : 'Draw (½ - ½)')}</span>
+                    </div>
+                    <p className="text-xs font-mono text-purple-600 dark:text-purple-300 font-bold bg-purple-500/10 py-1 px-3 rounded-full inline-block">
+                      {match.scoreText || match.scoreSummary || (score1Val === 1 ? 'Result: 1 - 0 (White Wins)' : score2Val === 1 ? 'Result: 0 - 1 (Black Wins)' : 'Result: ½ - ½ (Draw)')}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 py-1">
+                    <div className="text-base font-black text-slate-900 dark:text-white flex items-center justify-center gap-2">
+                      <span className="text-purple-600 dark:text-purple-400">{team1Name}</span>
+                      <span className="text-xs font-mono text-slate-400 dark:text-slate-500 font-bold">VS</span>
+                      <span className="text-purple-600 dark:text-purple-400">{team2Name}</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 text-xs font-mono text-emerald-600 dark:text-emerald-400">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                      <span className="font-bold">REAL-TIME CHESS MATCH IN PROGRESS</span>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            ) : (
+              <div className="text-center bg-white dark:bg-[#090D16] p-5 rounded-2xl border border-slate-200 dark:border-[#1E293B] shadow-sm dark:shadow-inner space-y-2">
+                <span className="text-[10px] font-mono uppercase font-bold text-slate-500 dark:text-slate-400 tracking-widest block">
+                  {sportConfig.name} {isFinished ? 'Final Score' : 'Live Points'}
+                </span>
+                
+                <div className="flex items-center justify-center gap-4 text-5xl font-black font-mono text-slate-900 dark:text-white">
+                  <span className="text-blue-600 dark:text-indigo-400">{score1Val}</span>
+                  <span className="text-slate-400 dark:text-slate-600 text-3xl">:</span>
+                  <span className="text-blue-600 dark:text-indigo-400">{score2Val}</span>
+                </div>
+
+                <div className="pt-2 flex items-center justify-center gap-2 text-xs font-mono text-emerald-600 dark:text-emerald-400">
+                  {!isFinished && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />}
+                  <span className="font-bold">{isFinished ? 'MATCH FINISHED' : 'REAL-TIME LIVE SCORE'}</span>
+                </div>
+              </div>
+            )}
 
             {/* Player / Team B */}
             <div className="text-center md:text-right space-y-2">
               <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{team2Name}</h2>
-              <div className="flex items-center justify-center md:justify-end gap-2 text-xs text-slate-500 dark:text-slate-400">
-                <span>Sets / Quarters Won:</span>
-                <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-indigo-600/20 text-blue-700 dark:text-indigo-300 font-mono font-bold">
-                  {setsWonB}
-                </span>
-              </div>
+              {!isChess && !isCricket && (
+                <div className="flex items-center justify-center md:justify-end gap-2 text-xs text-slate-500 dark:text-slate-400">
+                  <span>Sets / Quarters Won:</span>
+                  <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-indigo-600/20 text-blue-700 dark:text-indigo-300 font-mono font-bold">
+                    {setsWonB}
+                  </span>
+                </div>
+              )}
             </div>
 
           </div>
@@ -282,6 +442,137 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
           </div>
 
         </div>
+
+        {/* CRICKET LIVE SPECTATOR VIEW */}
+        {isCricket && (
+          <div className="p-6 bg-slate-50 dark:bg-[#0B1120] border-b border-slate-200 dark:border-[#1E293B] space-y-6">
+            
+            {/* Recent Deliveries Ticker */}
+            {(match.recentBalls || []).length > 0 && (
+              <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-[#1E293B] shadow-sm">
+                <span className="text-xs font-mono font-bold text-slate-400 uppercase shrink-0">Recent Deliveries:</span>
+                <div className="flex items-center gap-2 overflow-x-auto">
+                  {match.recentBalls.map((b, idx) => (
+                    <span key={idx} className={`w-8 h-8 rounded-xl flex items-center justify-center font-mono font-black text-xs border ${
+                      b === 'W' ? 'bg-rose-600 text-white border-rose-500 animate-bounce' :
+                      b === '4' || b === '6' ? 'bg-emerald-600 text-white border-emerald-500' :
+                      b === 'WD' || b === 'NB' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
+                      'bg-slate-800 text-slate-300 border-slate-700'
+                    }`}>
+                      {b}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* On-field Active Players: Batsmen & Bowler Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* Active Batsmen Card */}
+              <div className="bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-[#1E293B] p-4 space-y-3 shadow-sm">
+                <h4 className="text-xs font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider flex items-center gap-1.5">
+                  🏏 On-Field Batsmen
+                </h4>
+                <div className="space-y-2">
+                  {/* Striker */}
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs">
+                    <div>
+                      <span className="font-black text-slate-900 dark:text-white text-sm flex items-center gap-1">
+                        {match.striker?.name || 'Striker'} <span className="text-amber-500 text-xs">★</span>
+                      </span>
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">Striker (On Strike)</span>
+                    </div>
+                    <div className="text-right font-mono">
+                      <span className="text-base font-black text-emerald-600 dark:text-emerald-400">{match.striker?.runs || 0}</span>
+                      <span className="text-slate-500 dark:text-slate-400 text-xs"> ({match.striker?.balls || 0}b)</span>
+                      <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                        4s: {match.striker?.fours || 0} | 6s: {match.striker?.sixes || 0} | SR: {match.striker?.balls > 0 ? (((match.striker?.runs || 0) / match.striker.balls) * 100).toFixed(1) : '0.0'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Non-Striker */}
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+                    <div>
+                      <span className="font-bold text-slate-900 dark:text-white">{match.nonStriker?.name || 'Non-Striker'}</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono block">Non-Striker</span>
+                    </div>
+                    <div className="text-right font-mono">
+                      <span className="text-base font-black text-slate-900 dark:text-white">{match.nonStriker?.runs || 0}</span>
+                      <span className="text-slate-500 dark:text-slate-400 text-xs"> ({match.nonStriker?.balls || 0}b)</span>
+                      <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                        4s: {match.nonStriker?.fours || 0} | 6s: {match.nonStriker?.sixes || 0} | SR: {match.nonStriker?.balls > 0 ? (((match.nonStriker?.runs || 0) / match.nonStriker.balls) * 100).toFixed(1) : '0.0'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Active Bowler Card */}
+              <div className="bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-[#1E293B] p-4 space-y-3 shadow-sm">
+                <h4 className="text-xs font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider flex items-center gap-1.5">
+                  🎯 Current Active Bowler
+                </h4>
+                <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-black text-slate-900 dark:text-white text-sm">{match.bowler?.name || 'Bowler'}</span>
+                    <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 font-mono font-bold text-[10px]">
+                      Overs: {match.bowler?.overs || '0.0'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-2 text-center font-mono text-[11px] pt-1">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 rounded-lg">
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 block uppercase font-bold">Runs</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{match.bowler?.runs || 0}</span>
+                    </div>
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 rounded-lg">
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 block uppercase font-bold">Wkts</span>
+                      <span className="font-black text-rose-600 dark:text-rose-400">{match.bowler?.wickets || 0}</span>
+                    </div>
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 rounded-lg">
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 block uppercase font-bold">Maidens</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{match.bowler?.maidens || 0}</span>
+                    </div>
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 rounded-lg">
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 block uppercase font-bold">Econ</span>
+                      <span className="font-bold text-amber-600 dark:text-amber-400">
+                        {(() => {
+                          const ov = match.bowler?.overs || '0.0';
+                          const parts = String(ov).split('.');
+                          const balls = (parseInt(parts[0], 10) || 0) * 6 + (parseInt(parts[1], 10) || 0);
+                          return balls > 0 ? (((match.bowler?.runs || 0) / (balls / 6))).toFixed(2) : '0.00';
+                        })()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Play-by-Play Live Commentary */}
+            {(match.commentaryLog || []).length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-xs font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider">
+                  🎙️ Play-by-Play Live Commentary Feed
+                </h4>
+                <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                  {match.commentaryLog.map((c, idx) => (
+                    <div key={c.id || idx} className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs flex items-start gap-3 shadow-xs">
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-mono font-bold shrink-0">
+                        Over {c.over || '0.0'}
+                      </span>
+                      <span className="text-slate-800 dark:text-slate-200 font-sans leading-relaxed">{c.text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </div>
+        )}
 
         {/* BASKETBALL PLAYER LIVE STATS & FOULS SECTION */}
         {isBasketball && (

@@ -230,18 +230,6 @@ export const coordinatorApi = {
         return JSON.parse(saved);
       } catch (e) {}
     }
-    if (localStorage.getItem('sems_coordinator_token')) {
-      const defaultUser = {
-        username: 'coord_badminton',
-        assignedSport: 'badminton',
-        sportName: 'Badminton',
-        coordinatorName: 'Pooja Deshmukh',
-        email: 'badminton.coord@sems.edu',
-        role: 'sport_coordinator',
-      };
-      localStorage.setItem('sems_coordinator_user', JSON.stringify(defaultUser));
-      return defaultUser;
-    }
     return null;
   },
 
@@ -671,8 +659,8 @@ export const coordinatorApi = {
       } catch (e) {}
     }
 
-    // Default mock data seed for Badminton or any sport when empty
-    if (user.assignedSport === 'badminton' || !saved) {
+    // Default mock data seed ONLY for Badminton when empty
+    if (user.assignedSport === 'badminton' && !saved) {
       localStorage.setItem(key, JSON.stringify(MOCK_BADMINTON_PARTICIPANTS));
       return MOCK_BADMINTON_PARTICIPANTS;
     }

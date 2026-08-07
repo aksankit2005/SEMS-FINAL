@@ -18,9 +18,9 @@ export const CoordinatorProtectedRoute = ({ children }) => {
   // Guard 2: Sport Authorization Guard
   // Ensure coordinator can only access their assigned sport portal
   const currentPath = location.pathname.toLowerCase().trim();
-  const allowedSportRoute = getSportRoute(user.assignedSport).toLowerCase().trim();
+  const allowedSportRoute = getSportRoute(user?.assignedSport || '').toLowerCase().trim();
 
-  if (currentPath !== '/coordinator/dashboard' && currentPath !== allowedSportRoute) {
+  if (allowedSportRoute && currentPath !== allowedSportRoute) {
     return <Navigate to={allowedSportRoute} replace />;
   }
 

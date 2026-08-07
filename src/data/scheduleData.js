@@ -110,7 +110,7 @@ export const SCHEDULE_DATA = [
     gender: "Open",
     team1: "Kabir Singh (MPEC)",
     team2: "Swiss System Pairing",
-    venue: "Central Auditorium Hall B",
+    venue: "Table 1 (Central Auditorium)",
     date: "2026-08-06",
     time: "10:00 AM",
     format: "FIDE BLITZ (3m+2s)",

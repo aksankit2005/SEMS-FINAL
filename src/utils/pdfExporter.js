@@ -729,7 +729,12 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
       (match.sport || '').toLowerCase().includes('basketball') ||
       ((match.roster1 && match.roster1.length > 0) || (match.roster2 && match.roster2.length > 0));
 
-    if (isTugOfWar) {
+    const isCricketMatch = (cleanSport || '').toLowerCase().includes('cricket') ||
+      (match.sportId || '').toLowerCase().includes('cricket') ||
+      (match.sport || '').toLowerCase().includes('cricket') ||
+      (match.battingCard1 || match.innings1?.battingStats);
+
+    if (isCricketMatch) {
       doc.addPage();
 
       // Page 2 Outer Dark Theme Background
@@ -746,179 +751,276 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
       // Header Page 2
       doc.setTextColor(245, 158, 11);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(16);
-      doc.text('SEMS APEX CHAMPIONSHIP 2026', pageW / 2, 20, { align: 'center' });
+      doc.setFontSize(15);
+      doc.text('CRICKET OFFICIAL FULL SCORECARD & STATS REPORT', pageW / 2, 22, { align: 'center' });
 
       doc.setTextColor(148, 163, 184);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
-      doc.text(`TUG OF WAR OFFICIAL MATCH RESULT CERTIFICATE (ROSTERS & DETAILS)   |   Match ID: ${matchId}`, pageW / 2, 26, { align: 'center' });
+      doc.text(`Match: ${team1Name} vs ${team2Name}   |   Match ID: ${matchId}`, pageW / 2, 28, { align: 'center' });
 
-      const getTugOfWarEffectiveRoster = (rosterData, teamName) => {
-        const list = [];
-        const existing = Array.isArray(rosterData) ? rosterData : [];
-        for (let i = 0; i < 10; i++) {
-          const p = existing[i];
+      let py = 36;
+
+      const buildFullBattingCard = (card = [], st, nst) => {
+        const list = [...(card || [])];
+        if (st && st.name && !list.some((b) => b.name === st.name)) {
           list.push({
-            name: p && p.name ? p.name : `${teamName} Player ${i + 1}`,
-            jersey: p && p.jersey ? p.jersey : String(i + 1),
-            captain: p ? (p.captain || i === 0) : i === 0
+            name: st.name,
+            runs: st.runs || 0,
+            balls: st.balls || 0,
+            fours: st.fours || 0,
+            sixes: st.sixes || 0,
+            dismissal: 'not out',
+          });
+        }
+        if (nst && nst.name && !list.some((b) => b.name === nst.name)) {
+          list.push({
+            name: nst.name,
+            runs: nst.runs || 0,
+            balls: nst.balls || 0,
+            fours: nst.fours || 0,
+            sixes: nst.sixes || 0,
+            dismissal: 'not out',
           });
         }
         return list;
       };
 
-      const effectiveRoster1 = getTugOfWarEffectiveRoster(match.roster1, team1Name);
-      const effectiveRoster2 = getTugOfWarEffectiveRoster(match.roster2, team2Name);
-
-      let py = 34;
-      const renderTugOfWarTeamRoster = (teamTitle, rosterList, isTeamB = false) => {
-        doc.setTextColor(isTeamB ? 59 : 249, isTeamB ? 130 : 115, isTeamB ? 246 : 22);
-        doc.setFontSize(10.5);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`${isTeamB ? 'TEAM B' : 'TEAM A'}: ${teamTitle.toUpperCase()}`, margin, py);
-
-        py += 4;
-        (rosterList || []).forEach((player, idx) => {
-          doc.setFillColor(idx % 2 === 0 ? 30 : 15, 41, 59);
-          doc.rect(margin, py, contentW, 5.2, 'F');
-          doc.setTextColor(226, 232, 240);
-          doc.setFontSize(8);
-          doc.setFont('helvetica', 'normal');
-
-          const isCap = player.captain || idx === 0;
-          const playerLabel = `${idx + 1}. ${sanitizeText(player.name || `Player ${idx + 1}`)}${isCap ? ' (Captain)' : ''}`;
-          doc.text(playerLabel, margin + 4, py + 3.6);
-          doc.text(`Jersey #${sanitizeText(player.jersey || idx + 1)}`, margin + 130, py + 3.6);
-          py += 5.2;
-        });
-        py += 4;
-      };
-
-      renderTugOfWarTeamRoster(team1Name, effectiveRoster1, false);
-      renderTugOfWarTeamRoster(team2Name, effectiveRoster2, true);
-
-      // Venue, Format, Completed Date & Time, Officials Box
-      py += 2;
-      doc.setFillColor(30, 41, 59);
-      doc.setDrawColor(51, 65, 85);
-      doc.roundedRect(margin, py, contentW, 24, 3, 3, 'FD');
-
-      doc.setTextColor(148, 163, 184);
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Venue: ${sanitizeText(match.tableNumber || match.venue || 'Tug of War Ground 1')}`, margin + 8, py + 7);
-      doc.text(`Format: ${format}`, margin + 8, py + 14);
-      doc.text(`Completed Date & Time: ${completedAt}`, margin + 8, py + 21);
-      doc.text(`Officials: ${sanitizeText(match.officials || match.referee || 'Chief Referee / Match Officials Assigned')}`, margin + (contentW / 2), py + 7);
-
-      // Page 2 Verification Footer Stamp
-      doc.setFillColor(16, 185, 129);
-      doc.roundedRect(margin, 268, contentW, 10, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
-      doc.text('OFFICIAL VERIFIED RESULT CERTIFICATE - TUG OF WAR CHAMPIONSHIP 2026', pageW / 2, 274.5, { align: 'center' });
-    }
-
-    if (isVolleyballMatch) {
-      doc.addPage();
-
-      // Page 2 Outer Dark Theme Background
-      doc.setFillColor(15, 23, 42);
-      doc.rect(0, 0, 210, 297, 'F');
-
-      // Decorative Gold Border Page 2
-      doc.setDrawColor(245, 158, 11);
-      doc.setLineWidth(1.5);
-      doc.roundedRect(8, 8, 194, 281, 4, 4, 'D');
-      doc.setLineWidth(0.5);
-      doc.roundedRect(10, 10, 190, 277, 3, 3, 'D');
-
-      // Header Page 2
-      doc.setTextColor(245, 158, 11);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(16);
-      doc.text('SEMS APEX CHAMPIONSHIP 2026', pageW / 2, 20, { align: 'center' });
-
-      doc.setTextColor(148, 163, 184);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`VOLLEYBALL OFFICIAL MATCH RESULT CERTIFICATE (ROSTERS & DETAILS)   |   Match ID: ${matchId}`, pageW / 2, 26, { align: 'center' });
-
-      const getEffectiveRoster = (rosterData, teamName) => {
-        if (Array.isArray(rosterData) && rosterData.length > 0) {
-          return rosterData.map((p, idx) => ({
-            name: p.name || `Player ${idx + 1}`,
-            jersey: p.jersey || String(idx + 1),
-            captain: p.captain || idx === 0
-          }));
-        }
-        const list = [];
-        for (let i = 1; i <= 12; i++) {
-          list.push({
-            name: `${teamName} Player ${i}`,
-            jersey: String(i),
-            captain: i === 1
-          });
+      const buildFullBowlingCard = (card = [], bw) => {
+        const list = [...(card || [])];
+        if (bw && bw.name) {
+          const idx = list.findIndex((b) => b.name === bw.name);
+          if (idx >= 0) {
+            list[idx] = {
+              name: bw.name,
+              overs: bw.overs || list[idx].overs || '0.0',
+              maidens: bw.maidens || list[idx].maidens || 0,
+              runs: bw.runs || list[idx].runs || 0,
+              wickets: bw.wickets || list[idx].wickets || 0,
+            };
+          } else {
+            list.push({
+              name: bw.name,
+              overs: bw.overs || '0.0',
+              maidens: bw.maidens || 0,
+              runs: bw.runs || 0,
+              wickets: bw.wickets || 0,
+            });
+          }
         }
         return list;
       };
 
-      const effectiveRoster1 = getEffectiveRoster(match.roster1, team1Name);
-      const effectiveRoster2 = getEffectiveRoster(match.roster2, team2Name);
+      const rawBattingCard1 = match.battingCard1 || match.innings1?.battingStats || [];
+      const rawBowlingCard1 = match.bowlingCard1 || match.innings1?.bowlingStats || [];
+      const rawBattingCard2 = match.battingCard2 || match.innings2?.battingStats || [];
+      const rawBowlingCard2 = match.bowlingCard2 || match.innings2?.bowlingStats || [];
 
-      let py = 34;
-      const renderVolleyballTeamRoster = (teamTitle, rosterList, isTeamB = false) => {
-        doc.setTextColor(isTeamB ? 59 : 249, isTeamB ? 130 : 115, isTeamB ? 246 : 22);
-        doc.setFontSize(10.5);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`${isTeamB ? 'TEAM B' : 'TEAM A'}: ${teamTitle.toUpperCase()}`, margin, py);
+      const currentInnNum = match.currentInnings || 1;
 
-        py += 4;
-        (rosterList || []).forEach((player, idx) => {
-          doc.setFillColor(idx % 2 === 0 ? 30 : 15, 41, 59);
-          doc.rect(margin, py, contentW, 5.5, 'F');
-          doc.setTextColor(226, 232, 240);
-          doc.setFontSize(8);
-          doc.setFont('helvetica', 'normal');
+      const battingCard1 = buildFullBattingCard(
+        rawBattingCard1,
+        currentInnNum === 1 ? match.striker : null,
+        currentInnNum === 1 ? match.nonStriker : null
+      );
+      const bowlingCard1 = buildFullBowlingCard(
+        rawBowlingCard1,
+        currentInnNum === 1 ? match.bowler : null
+      );
 
-          const isCap = player.captain || idx === 0;
-          const playerLabel = `${idx + 1}. ${sanitizeText(player.name || `Player ${idx + 1}`)}${isCap ? ' (Captain)' : ''}`;
-          doc.text(playerLabel, margin + 4, py + 3.8);
-          doc.text(`Jersey #${sanitizeText(player.jersey || idx + 1)}`, margin + 130, py + 3.8);
-          py += 5.5;
-        });
-        py += 4;
+      const battingCard2 = buildFullBattingCard(
+        rawBattingCard2,
+        currentInnNum === 2 ? match.striker : null,
+        currentInnNum === 2 ? match.nonStriker : null
+      );
+      const bowlingCard2 = buildFullBowlingCard(
+        rawBowlingCard2,
+        currentInnNum === 2 ? match.bowler : null
+      );
+
+      const parseOversToBalls = (oversStr) => {
+        if (typeof oversStr === 'number') return Math.round(oversStr * 6);
+        if (!oversStr || typeof oversStr !== 'string') return 0;
+        const parts = oversStr.split('.');
+        const o = parseInt(parts[0], 10) || 0;
+        const b = parseInt(parts[1], 10) || 0;
+        return o * 6 + b;
       };
 
-      renderVolleyballTeamRoster(team1Name, effectiveRoster1, false);
-      renderVolleyballTeamRoster(team2Name, effectiveRoster2, true);
+      const calcEcon = (overs, runs) => {
+        const balls = parseOversToBalls(overs);
+        if (balls <= 0) return '0.00';
+        const oversDecimal = balls / 6;
+        return (runs / oversDecimal).toFixed(2);
+      };
 
-      // Venue, Format, Completed Date & Time, Officials Box
-      py += 2;
-      doc.setFillColor(30, 41, 59);
-      doc.setDrawColor(51, 65, 85);
-      doc.roundedRect(margin, py, contentW, 24, 3, 3, 'FD');
+      // Render Innings Batting Table Helper
+      const renderBattingPDFTable = (innTitle, batList, colorRGB, extrasData = null, totalScoreStr = '') => {
+        doc.setTextColor(colorRGB[0], colorRGB[1], colorRGB[2]);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text(innTitle.toUpperCase(), margin, py);
 
-      doc.setTextColor(148, 163, 184);
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Venue: ${sanitizeText(match.tableNumber || match.venue || 'Volleyball Arena Court 1')}`, margin + 8, py + 7);
-      doc.text(`Format: ${format}`, margin + 8, py + 14);
-      doc.text(`Completed Date & Time: ${completedAt}`, margin + 8, py + 21);
-      doc.text(`Officials: ${sanitizeText(match.officials || match.referee || 'Chief Referee / Match Officials Assigned')}`, margin + (contentW / 2), py + 7);
+        py += 4;
+        doc.setFillColor(30, 41, 59);
+        doc.rect(margin, py, contentW, 6.5, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Batter Name', margin + 4, py + 4.5);
+        doc.text('Dismissal Mode', margin + 65, py + 4.5);
+        doc.text('Runs', margin + 130, py + 4.5);
+        doc.text('Balls', margin + 148, py + 4.5);
+        doc.text('4s', margin + 163, py + 4.5);
+        doc.text('6s', margin + 175, py + 4.5);
+        doc.text('SR', margin + 187, py + 4.5);
 
-      // Page 2 Verification Footer Stamp
+        py += 6.5;
+        if (!batList || batList.length === 0) {
+          doc.setFillColor(15, 23, 42);
+          doc.rect(margin, py, contentW, 6, 'F');
+          doc.setTextColor(148, 163, 184);
+          doc.setFontSize(7.5);
+          doc.text('No batting statistics recorded for this innings', margin + 4, py + 4.5);
+          py += 6;
+        } else {
+          batList.forEach((b, idx) => {
+            doc.setFillColor(idx % 2 === 0 ? 20 : 15, 23, 42);
+            doc.rect(margin, py, contentW, 6, 'F');
+            doc.setTextColor(226, 232, 240);
+            doc.setFontSize(7.5);
+            doc.setFont('helvetica', 'bold');
+            doc.text(sanitizeText(b.name || `Batter ${idx + 1}`), margin + 4, py + 4.5);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(148, 163, 184);
+            doc.text(sanitizeText(b.dismissal || 'not out'), margin + 65, py + 4.5);
+            doc.setTextColor(colorRGB[0], colorRGB[1], colorRGB[2]);
+            doc.setFont('helvetica', 'bold');
+            doc.text(String(b.runs !== undefined ? b.runs : 0), margin + 130, py + 4.5);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(226, 232, 240);
+            doc.text(String(b.balls || 0), margin + 148, py + 4.5);
+            doc.text(String(b.fours || 0), margin + 163, py + 4.5);
+            doc.text(String(b.sixes || 0), margin + 175, py + 4.5);
+            const sr = b.balls > 0 ? ((b.runs / b.balls) * 100).toFixed(1) : '0.0';
+            doc.text(sr, margin + 187, py + 4.5);
+            py += 6;
+          });
+        }
+
+        // Extras Row
+        const exTotal = extrasData?.total || 0;
+        const exStr = `Extras: ${exTotal} (b ${extrasData?.byes || 0}, lb ${extrasData?.legByes || 0}, w ${extrasData?.wides || 0}, nb ${extrasData?.noBalls || 0})`;
+        doc.setFillColor(25, 35, 52);
+        doc.rect(margin, py, contentW, 6, 'F');
+        doc.setTextColor(148, 163, 184);
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'bold');
+        doc.text(exStr, margin + 4, py + 4.5);
+        py += 6;
+
+        // Total Innings Row
+        if (totalScoreStr) {
+          doc.setFillColor(30, 58, 48);
+          doc.rect(margin, py, contentW, 6.5, 'F');
+          doc.setTextColor(52, 211, 153);
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.text(`TOTAL INNINGS SCORE: ${totalScoreStr}`, margin + 4, py + 4.5);
+          py += 6.5;
+        }
+
+        py += 5;
+      };
+
+      // Render Innings Bowling Table Helper
+      const renderBowlingPDFTable = (innTitle, bowlList, colorRGB) => {
+        doc.setTextColor(colorRGB[0], colorRGB[1], colorRGB[2]);
+        doc.setFontSize(9.5);
+        doc.setFont('helvetica', 'bold');
+        doc.text(innTitle.toUpperCase(), margin, py);
+
+        py += 4;
+        doc.setFillColor(30, 41, 59);
+        doc.rect(margin, py, contentW, 6.5, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Bowler Name', margin + 4, py + 4.5);
+        doc.text('Overs', margin + 95, py + 4.5);
+        doc.text('Maidens', margin + 120, py + 4.5);
+        doc.text('Runs', margin + 145, py + 4.5);
+        doc.text('Wickets', margin + 168, py + 4.5);
+        doc.text('Econ', margin + 187, py + 4.5);
+
+        py += 6.5;
+        if (!bowlList || bowlList.length === 0) {
+          doc.setFillColor(15, 23, 42);
+          doc.rect(margin, py, contentW, 6, 'F');
+          doc.setTextColor(148, 163, 184);
+          doc.setFontSize(7.5);
+          doc.text('No bowling statistics recorded for this innings', margin + 4, py + 4.5);
+          py += 6;
+        } else {
+          bowlList.forEach((bw, idx) => {
+            doc.setFillColor(idx % 2 === 0 ? 20 : 15, 23, 42);
+            doc.rect(margin, py, contentW, 6, 'F');
+            doc.setTextColor(226, 232, 240);
+            doc.setFontSize(7.5);
+            doc.setFont('helvetica', 'bold');
+            doc.text(sanitizeText(bw.name || `Bowler ${idx + 1}`), margin + 4, py + 4.5);
+            doc.setFont('helvetica', 'normal');
+            doc.text(String(bw.overs || '0.0'), margin + 95, py + 4.5);
+            doc.text(String(bw.maidens || 0), margin + 120, py + 4.5);
+            doc.text(String(bw.runs || 0), margin + 145, py + 4.5);
+            doc.setTextColor(244, 63, 94);
+            doc.setFont('helvetica', 'bold');
+            doc.text(String(bw.wickets || 0), margin + 168, py + 4.5);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(226, 232, 240);
+            const econ = calcEcon(bw.overs, bw.runs || 0);
+            doc.text(econ, margin + 187, py + 4.5);
+            py += 6;
+          });
+        }
+        py += 6;
+      };
+
+      // Render 1st Innings Tables
+      const title1 = `1st Innings Batting — ${team1Name}`;
+      const total1Str = `${match.score1 || 0}/${match.wickets1 || 0} (${match.overs1 || '0.0'} Overs)`;
+      renderBattingPDFTable(title1, battingCard1, [16, 185, 129], match.extras1 || match.extras, total1Str);
+
+      const title1Bowl = `1st Innings Bowling — ${team2Name} Bowlers`;
+      renderBowlingPDFTable(title1Bowl, bowlingCard1, [245, 158, 11]);
+
+      // Check height for 2nd Innings
+      if (py > 210) {
+        doc.addPage();
+        doc.setFillColor(15, 23, 42);
+        doc.rect(0, 0, 210, 297, 'F');
+        doc.setDrawColor(245, 158, 11);
+        doc.setLineWidth(1.5);
+        doc.roundedRect(8, 8, 194, 281, 4, 4, 'D');
+        py = 22;
+      }
+
+      // Render 2nd Innings Tables
+      const title2 = `2nd Innings Batting — ${team2Name}`;
+      const total2Str = `${match.score2 || 0}/${match.wickets2 || 0} (${match.overs2 || '0.0'} Overs)`;
+      renderBattingPDFTable(title2, battingCard2, [34, 197, 94], match.extras2 || match.extras, total2Str);
+
+      const title2Bowl = `2nd Innings Bowling — ${team1Name} Bowlers`;
+      renderBowlingPDFTable(title2Bowl, bowlingCard2, [245, 158, 11]);
+
+      // Footer stamp
       doc.setFillColor(16, 185, 129);
       doc.roundedRect(margin, 268, contentW, 10, 2, 2, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
-      doc.text('OFFICIAL VERIFIED RESULT CERTIFICATE - VOLLEYBALL CHAMPIONSHIP 2026', pageW / 2, 274.5, { align: 'center' });
-    }
-
-    if (isBasketballMatch) {
+      doc.text('OFFICIAL VERIFIED RESULT CERTIFICATE - CRICKET FULL SCORECARD & STATS REPORT', pageW / 2, 274.5, { align: 'center' });
+    } else if (isBasketballMatch) {
       doc.addPage();
 
       // Page 2 Outer Dark Theme Background

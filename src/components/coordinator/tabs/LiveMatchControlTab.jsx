@@ -14,15 +14,20 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
   const { addToast } = useToast();
   const sportConfig = getSportConfig(user?.assignedSport);
 
-  const assignedSport = (user?.assignedSport || 'badminton').toLowerCase();
-  const venueType = ['table-tennis'].includes(assignedSport)
+  const assignedSport = (user?.assignedSport || 'sports').toLowerCase();
+  const isChess = assignedSport === 'chess';
+  const venueType = ['table-tennis', 'chess'].includes(assignedSport)
     ? 'Table'
     : ['cricket', 'football'].includes(assignedSport)
       ? 'Ground'
       : 'Court';
 
-  const venueCards = assignedSport === 'basketball'
+  const venueCards = isChess
+    ? Array.from({ length: 10 }, (_, i) => `Table ${i + 1}`)
+    : assignedSport === 'basketball'
     ? ['Basketball Court 1', 'Basketball Court 2']
+    : assignedSport === 'cricket'
+    ? ['Cricket Ground 1']
     : [
         `${venueType} 1`,
         `${venueType} 2`,
@@ -215,6 +220,17 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
 
     await coordinatorApi.completeMatch(active.id, completedObj);
 
+    // Save directly to sems_completed_results key in localStorage
+    const resultsKey = `sems_completed_results_${assignedSport}`;
+    const existingStr = localStorage.getItem(resultsKey);
+    let existingList = [];
+    if (existingStr) {
+      try { existingList = JSON.parse(existingStr); } catch (e) {}
+    }
+    existingList = [completedObj, ...existingList.filter((item) => item.id !== completedObj.id)];
+    localStorage.setItem(resultsKey, JSON.stringify(existingList));
+    window.dispatchEvent(new Event('sems_results_updated'));
+
     onUpdateMatchScore(active.id, { status: 'COMPLETED', score1: active.score1, score2: active.score2 });
     setLiveAssignments((prev) => {
       const copy = { ...prev };
@@ -225,7 +241,7 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
     // Automatically generate and download match result PDF
     generateMatchResultPDF(completedObj, user?.sportName || user?.assignedSport);
 
-    addToast(`Match on ${venue} completed! Result PDF generated & downloaded.`, 'success');
+    addToast(`Match on ${venue} completed! Saved to Results section.`, 'success');
   };
 
 

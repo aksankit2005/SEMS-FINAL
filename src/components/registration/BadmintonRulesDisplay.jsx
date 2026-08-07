@@ -185,36 +185,174 @@ export const BadmintonRulesDisplay = () => {
   );
 };
 
+/* ♟️ CHESS 10-MINUTE RAPID RULES DATA & DISPLAY */
+export const CHESS_10MIN_RULES_DATA = [
+  { num: 1, title: "Time Control", text: "Each player gets **10 minutes** for the entire game (10+0 unless increment is specified)." },
+  { num: 2, title: "Clock", text: "The chess clock starts when White makes the first move. Press the clock after every move." },
+  { num: 3, title: "Touch-Move Rule", text: "If you touch one of your own pieces, you must move it if a legal move exists." },
+  { num: 4, title: "Illegal Moves", text: "An illegal move must be corrected. If a player makes **two illegal moves**, they lose the game (common rapid rule)." },
+  { num: 5, title: "Win Conditions", text: "• **Checkmate**\n• **Opponent's time runs out**\n• **Opponent resigns**" },
+  { num: 6, title: "Draw Conditions", text: "• **Stalemate**\n• **Threefold repetition** (if claimed)\n• **50-move rule** (if claimed)\n• **Insufficient mating material**\n• **Mutual agreement**" },
+  { num: 7, title: "Spectators", text: "No talking or giving advice during the game." },
+  { num: 8, title: "Electronic Devices", text: "Mobile phones and other electronic devices must remain silent and unused." },
+  { num: 9, title: "Result Reporting", text: "Both players must report the result to the organizer immediately after the game." },
+  { num: 10, title: "Organizer's Decision", text: "The tournament arbiter/organizer's decision is final in case of disputes." }
+];
+
+export const ChessRulesDisplay = () => {
+  return (
+    <div className="space-y-6 text-slate-100 font-sans">
+      <div className="flex items-center justify-between border-b border-purple-500/20 pb-4">
+        <div className="flex items-center gap-2.5">
+          <span className="text-2xl">♟️</span>
+          <div>
+            <h4 className="font-black text-base uppercase tracking-wider text-purple-400">
+              Chess Rules (10-Minute Rapid)
+            </h4>
+            <p className="text-xs text-slate-400">Standard 10-Minute Rapid Chess tournament rules for college or club events</p>
+          </div>
+        </div>
+        <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30">
+          10-Min Rapid
+        </span>
+      </div>
+
+      <div className="space-y-3">
+        <h5 className="font-black text-sm sm:text-base text-purple-300 flex items-center gap-2">
+          <span>♟️</span>
+          <span>10-Minute Rapid Tournament Regulations</span>
+        </h5>
+        <div className="grid grid-cols-1 gap-3 text-xs sm:text-sm bg-slate-950/80 p-5 rounded-2xl border border-purple-500/20 shadow-inner">
+          {CHESS_10MIN_RULES_DATA.map((rule) => (
+            <div key={rule.num} className="flex items-start gap-3 leading-relaxed">
+              <span className="font-mono font-black text-purple-400 shrink-0 text-sm bg-purple-500/10 px-2 py-0.5 rounded-md border border-purple-500/20">
+                {rule.num}.
+              </span>
+              <div>
+                <strong className="font-bold text-white block text-xs uppercase tracking-wider text-purple-300">{rule.title}</strong>
+                <span className="text-slate-300 whitespace-pre-line">{renderFormattedText(rule.text)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* 🏀 BASKETBALL RULES DATA & DISPLAY */
+export const BASKETBALL_RULES_DATA = [
+  { title: "Team Composition", text: "Each team consists of **5 players on the court**. Substitutions are allowed as per the tournament rules." },
+  { title: "Match Duration", text: "The game consists of **4 quarters of 10 minutes each** with a **2-minute break** after the 1st and 3rd quarters and a **10-minute halftime** after the 2nd quarter." },
+  { title: "Scoring System", text: "• **Free Throw** = 1 Point\n• **Field Goal** (inside the 3-point line) = 2 Points\n• **Beyond the 3-point line** = 3 Points" },
+  { title: "Game Start", text: "The game begins with a **jump ball** at the center circle." },
+  { title: "Shot Clock", text: "A team must attempt a shot within **24 seconds** of gaining possession." },
+  { title: "Player Fouls", text: "A player who commits **5 personal fouls** is disqualified from the game." },
+  { title: "Team Fouls", text: "After a team reaches the foul limit in a quarter, the opposing team is awarded free throws according to the applicable rules." },
+  { title: "Timeouts", text: "Teams may request timeouts as permitted by the tournament regulations." },
+  { title: "Overtime", text: "If the score is tied at the end of regulation, **5-minute overtime periods** will be played until a winner is decided." },
+  { title: "Sportsmanship", text: "• Respect referees, opponents, and officials.\n• Unsportsmanlike behavior or abusive language may result in **technical fouls or disqualification**." },
+  { title: "Uniforms", text: "All players must wear **matching jerseys with clearly visible numbers** and appropriate basketball shoes." },
+  { title: "Organizer's Decision", text: "The referee's and tournament organizer's decisions are **final and binding**." }
+];
+
+export const BASKETBALL_GUIDELINES_DATA = [
+  "Teams should report **15 minutes before** their scheduled match.",
+  "Carry a valid **college ID card**.",
+  "Late arrival may result in a **walkover**.",
+  "Only **registered players** are allowed to participate.",
+  "Fair play and discipline are mandatory throughout the tournament."
+];
+
+export const BasketballRulesDisplay = () => {
+  return (
+    <div className="space-y-6 text-slate-100 font-sans">
+      <div className="flex items-center justify-between border-b border-orange-500/20 pb-4">
+        <div className="flex items-center gap-2.5">
+          <span className="text-2xl">🏀</span>
+          <div>
+            <h4 className="font-black text-base uppercase tracking-wider text-orange-400">
+              Official Basketball Tournament Rules
+            </h4>
+            <p className="text-xs text-slate-400">FIBA Standard Regulations for College & Inter-University Championships</p>
+          </div>
+        </div>
+        <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-orange-500/20 text-orange-300 border border-orange-500/30">
+          FIBA Standard
+        </span>
+      </div>
+
+      <div className="space-y-3">
+        <h5 className="font-black text-sm sm:text-base text-orange-300 flex items-center gap-2">
+          <span>🏀</span>
+          <span>Tournament Regulations</span>
+        </h5>
+        <div className="grid grid-cols-1 gap-3 text-xs sm:text-sm bg-slate-950/80 p-5 rounded-2xl border border-orange-500/20 shadow-inner">
+          {BASKETBALL_RULES_DATA.map((rule, idx) => (
+            <div key={idx} className="flex items-start gap-3 leading-relaxed">
+              <span className="font-mono font-black text-orange-400 shrink-0 text-sm bg-orange-500/10 px-2 py-0.5 rounded-md border border-orange-500/20">
+                {idx + 1}.
+              </span>
+              <div>
+                <strong className="font-bold text-white block text-xs uppercase tracking-wider text-orange-300">{rule.title}</strong>
+                <span className="text-slate-300 whitespace-pre-line">{renderFormattedText(rule.text)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <h5 className="font-black text-sm sm:text-base text-amber-300 flex items-center gap-2">
+          <span>📌</span>
+          <span>Additional Guidelines</span>
+        </h5>
+        <div className="grid grid-cols-1 gap-2.5 text-xs sm:text-sm bg-slate-950/80 p-4 rounded-2xl border border-slate-800 shadow-inner">
+          {BASKETBALL_GUIDELINES_DATA.map((guide, idx) => (
+            <div key={idx} className="flex items-start gap-2.5 leading-relaxed">
+              <span className="font-bold text-amber-400 shrink-0">•</span>
+              <span className="text-slate-200">{renderFormattedText(guide)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* FULL SCREEN RULEBOOK MODAL WITH GO BACK BUTTON */
 export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }) => {
   if (!isOpen) return null;
 
+  const isChess = (sportName || '').toLowerCase().includes('chess');
+  const isBasketball = (sportName || '').toLowerCase().includes('basketball');
+
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/95 backdrop-blur-xl p-3 sm:p-6 animate-fade-in flex flex-col items-center justify-center">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/95 backdrop-blur-xl p-3 sm:p-6 animate-fade-in flex flex-col items-center justify-center font-sans">
       <div className="w-full max-w-5xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh]">
         
         {/* Sticky Header with Go Back Button */}
         <div className="sticky top-0 z-20 bg-slate-950/90 backdrop-blur-md px-5 py-4 border-b border-slate-800 flex items-center justify-between gap-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-2 transition border border-slate-700 active:scale-95 shadow-md shrink-0"
+            className="px-4 py-2 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-2 transition border border-slate-700 active:scale-95 shadow-md shrink-0 cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4 text-amber-400" />
+            <ArrowLeft className={`w-4 h-4 ${isChess ? 'text-purple-400' : isBasketball ? 'text-orange-400' : 'text-amber-400'}`} />
             <span>Go Back</span>
           </button>
 
           <div className="text-center truncate">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 block font-bold">
-              Official BWF Rulebook
+            <span className={`text-[10px] font-mono uppercase tracking-widest block font-bold ${isChess ? 'text-purple-400' : isBasketball ? 'text-orange-400' : 'text-amber-400'}`}>
+              {isChess ? '10-Minute Rapid Chess Rulebook' : isBasketball ? 'FIBA Basketball Rulebook' : 'Official BWF Rulebook'}
             </span>
             <h2 className="text-sm sm:text-lg font-black text-white flex items-center gap-1.5 justify-center truncate">
-              <span>🏸</span> {sportName} Full Tournament Rules
+              <span>{isChess ? '♟️' : isBasketball ? '🏀' : '🏸'}</span> {sportName} Tournament Rules
             </h2>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white rounded-full bg-slate-800/80 transition shrink-0"
+            className="p-2 text-slate-400 hover:text-white rounded-full bg-slate-800/80 transition shrink-0 cursor-pointer"
             title="Close Rules"
           >
             <X className="w-5 h-5" />
@@ -223,17 +361,19 @@ export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }
 
         {/* Modal Scrollable Body */}
         <div className="p-5 sm:p-8 space-y-6 overflow-y-auto">
-          <BadmintonRulesDisplay />
+          {isChess ? <ChessRulesDisplay /> : isBasketball ? <BasketballRulesDisplay /> : <BadmintonRulesDisplay />}
         </div>
 
         {/* Sticky Footer with Go Back Button */}
         <div className="bg-slate-950 px-5 py-4 border-t border-slate-800 flex items-center justify-between gap-4">
           <span className="text-xs text-slate-400 italic hidden sm:inline">
-            Badminton World Federation (BWF) Standard Tournament Rules
+            {isChess ? '10-Minute Rapid Chess Tournament Regulations' : isBasketball ? 'FIBA Official Basketball Regulations & Guidelines' : 'Badminton World Federation (BWF) Standard Tournament Rules'}
           </span>
           <button
             onClick={onClose}
-            className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-2 transition shadow-md active:scale-95 ml-auto"
+            className={`px-6 py-2.5 rounded-2xl text-white font-bold text-xs flex items-center gap-2 transition shadow-md active:scale-95 ml-auto cursor-pointer ${
+              isChess ? 'bg-purple-600 hover:bg-purple-500' : isBasketball ? 'bg-orange-600 hover:bg-orange-500' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500'
+            }`}
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Go Back to Registration</span>

@@ -10,11 +10,53 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
 
   const sportId = user?.assignedSport || 'basketball';
   const participantsKey = `sems_participants_${sportId}`;
-  const sportName = user?.sportName || 'Basketball';
+  const sportName = user?.sportName || (sportId === 'chess' ? 'Chess' : 'Basketball');
 
   const isBasketball = sportId === 'basketball' || sportName.toLowerCase().includes('basketball');
+  const isChess = sportId === 'chess' || sportName.toLowerCase().includes('chess');
+  const isCricket = sportId === 'cricket' || sportName.toLowerCase().includes('cricket');
 
-  // Initial seed records for Basketball (ARC, RCD, TITANS)
+  // Initial seed records for Cricket
+  const defaultCricketParticipants = [
+    {
+      timestamp: '16 Jul, 10:30 AM',
+      sport: 'Cricket',
+      eventTitle: 'Inter-College T20 Cricket Championship 2026',
+      teamName: 'MPEC XI',
+      collegeName: 'MPEC Kanpur (KN142)',
+      name: 'Ankit Sharma',
+      captainName: 'Ankit Sharma',
+      phone: '9336938985',
+      email: 'ankit@mpec.edu',
+      squadSize: 11
+    },
+    {
+      timestamp: '16 Jul, 11:15 AM',
+      sport: 'Cricket',
+      eventTitle: 'Inter-College T20 Cricket Championship 2026',
+      teamName: 'PSIT Super Kings',
+      collegeName: 'PSIT Kanpur (KN056)',
+      name: 'Shubham Verma',
+      captainName: 'Shubham Verma',
+      phone: '9876543210',
+      email: 'shubham@psit.edu',
+      squadSize: 11
+    },
+    {
+      timestamp: '16 Jul, 02:45 PM',
+      sport: 'Cricket',
+      eventTitle: 'Inter-College T20 Cricket Championship 2026',
+      teamName: 'HBTI Strikers',
+      collegeName: 'HBTU Kanpur (KN022)',
+      name: 'Vikram Singh',
+      captainName: 'Vikram Singh',
+      phone: '9123456789',
+      email: 'vikram@hbtu.edu',
+      squadSize: 11
+    }
+  ];
+
+  // Initial seed records for Basketball
   const defaultBasketballParticipants = [
     {
       timestamp: '16 Jul, 10:30 AM',
@@ -51,6 +93,52 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
     }
   ];
 
+  // Initial seed records for Chess
+  const defaultChessParticipants = [
+    {
+      timestamp: '16 Jul, 10:30 AM',
+      sport: 'Chess',
+      eventTitle: 'Chess Championship 2026',
+      gender: 'Male',
+      player1: {
+        name: 'Grandmaster Anand Verma',
+        roll: '25261101308',
+        college: 'MPCPS (KN142)',
+        year: '2nd Year',
+        phone: '9336938985',
+        email: 'anand@sems.edu'
+      }
+    },
+    {
+      timestamp: '16 Jul, 11:15 AM',
+      sport: 'Chess',
+      eventTitle: 'Chess Championship 2026',
+      gender: 'Male',
+      player1: {
+        name: 'Vikramaditya Roy',
+        roll: '25261101412',
+        college: 'IIT Kanpur',
+        year: '3rd Year',
+        phone: '9876543210',
+        email: 'vikram@iitk.edu'
+      }
+    },
+    {
+      timestamp: '16 Jul, 02:45 PM',
+      sport: 'Chess',
+      eventTitle: 'Women Chess Masters',
+      gender: 'Female',
+      player1: {
+        name: 'Ananya Gupta',
+        roll: '25261101509',
+        college: 'MPEC (KN022)',
+        year: '1st Year',
+        phone: '9123456789',
+        email: 'ananya@mpec.edu'
+      }
+    }
+  ];
+
   const loadData = async () => {
     try {
       const data = await coordinatorApi.getRegistrations();
@@ -59,7 +147,6 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
           !d.sport || d.sport.toLowerCase().includes('basketball') || d.eventTitle?.toLowerCase().includes('basketball')
         );
 
-        // Guarantee ARC, RCD, TITANS are always seeded and merged with user registrations
         const mergedMap = new Map();
         defaultBasketballParticipants.forEach((item) => {
           mergedMap.set(item.teamName.toLowerCase(), item);
@@ -80,11 +167,46 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
         });
 
         setParticipants(Array.from(mergedMap.values()));
+      } else if (isCricket) {
+        const crkData = (data || []).filter((d) => 
+          !d.sport || d.sport.toLowerCase().includes('cricket') || d.eventTitle?.toLowerCase().includes('cricket')
+        );
+
+        const mergedMap = new Map();
+        defaultCricketParticipants.forEach((item) => {
+          mergedMap.set(item.teamName.toLowerCase(), item);
+        });
+
+        crkData.forEach((item) => {
+          const tName = (item.teamName || item.college || item.name || '').toLowerCase();
+          if (tName) {
+            mergedMap.set(tName, {
+              ...item,
+              teamName: item.teamName || item.name || 'Team Apex',
+              collegeName: item.collegeName || item.college || item.player1?.college || 'MPEC Kanpur (KN142)',
+              name: item.name || item.captainName || item.leaderName || item.player1?.name || item.studentName || 'Ankit Sharma',
+              phone: item.phone || item.mobile || item.player1?.phone || '9336938985',
+              email: item.email || item.player1?.email || 'ankit@mpec.edu'
+            });
+          }
+        });
+
+        setParticipants(Array.from(mergedMap.values()));
+      } else if (isChess) {
+        const chessData = (data || []).filter((d) =>
+          !d.sport || d.sport.toLowerCase().includes('chess') || d.eventTitle?.toLowerCase().includes('chess')
+        );
+        if (chessData.length > 0) {
+          setParticipants(chessData);
+        } else {
+          setParticipants(defaultChessParticipants);
+        }
       } else {
         setParticipants(data || []);
       }
     } catch (e) {
       if (isBasketball) setParticipants(defaultBasketballParticipants);
+      else if (isChess) setParticipants(defaultChessParticipants);
     }
   };
 
@@ -118,7 +240,7 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
     const roll = p.player1?.roll || p.roll || '';
     const phone = p.phone || p.mobile || p.player1?.phone || '';
     const email = p.email || p.player1?.email || '';
-    const gameName = isBasketball ? 'Basketball' : (p.eventTitle || p.sport || sportName || '');
+    const gameName = isBasketball ? 'Basketball' : isChess ? 'Chess' : (p.eventTitle || p.sport || sportName || '');
 
     return (
       teamName.toLowerCase().includes(activeSearch) ||
@@ -132,21 +254,28 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
     );
   });
 
-  // Helper to resolve exact Basketball row fields for UI Table & CSV Export
-  const getBasketballRowData = (p, defaultIndex = 0) => {
-    const defaultSeeds = [
+  const getTeamParticipantRowData = (p, defaultIndex = 0) => {
+    const crkSeeds = [
+      { teamName: 'MPEC XI', collegeName: 'MPEC Kanpur (KN142)', name: 'Ankit Sharma', phone: '9336938985', email: 'ankit@mpec.edu', time: '16 Jul, 10:30 AM' },
+      { teamName: 'PSIT Super Kings', collegeName: 'PSIT Kanpur (KN056)', name: 'Shubham Verma', phone: '9876543210', email: 'shubham@psit.edu', time: '16 Jul, 11:15 AM' },
+      { teamName: 'HBTI Strikers', collegeName: 'HBTU Kanpur (KN022)', name: 'Vikram Singh', phone: '9123456789', email: 'vikram@hbtu.edu', time: '16 Jul, 02:45 PM' },
+    ];
+
+    const bskSeeds = [
       { teamName: 'ARC', collegeName: 'MPCPS (KN142)', name: 'Aditya Singh', phone: '9336938985', email: 'aditya@sems.edu', time: '16 Jul, 10:30 AM' },
       { teamName: 'RCD', collegeName: 'SRMCEM (KN056)', name: 'Rahul Sharma', phone: '9876543210', email: 'rahul@sems.edu', time: '16 Jul, 11:15 AM' },
       { teamName: 'TITANS', collegeName: 'BBD (KN022)', name: 'Vikram Patel', phone: '9123456789', email: 'vikram@sems.edu', time: '16 Jul, 02:45 PM' },
     ];
+
+    const defaultSeeds = isCricket ? crkSeeds : bskSeeds;
     const seed = defaultSeeds[defaultIndex % defaultSeeds.length];
 
     return {
       timestamp: p.timestamp || p.registeredAt || p.date || seed.time,
-      gameName: 'Basketball',
+      gameName: isCricket ? 'Cricket' : 'Basketball',
       teamName: p.teamName || seed.teamName,
       collegeName: p.collegeName || p.college || p.player1?.college || seed.collegeName,
-      name: p.name || p.captainName || p.leaderName || p.player1?.name || p.studentName || seed.name,
+      name: p.name || p.captainName || p.leaderName || p.player1?.name || seed.name,
       mobileNo: p.phone || p.mobile || p.player1?.phone || seed.phone,
       email: p.email || p.player1?.email || seed.email,
     };
@@ -160,11 +289,11 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
 
     const escapeCsv = (str) => `"${String(str || '').replace(/"/g, '""')}"`;
 
-    if (isBasketball) {
-      // 🏀 BASKETBALL EXPORT FORMAT (Time, Game Name, Team Name, College Name, Name, Mobile No, Email)
+    if (isBasketball || isCricket) {
+      const sportLabel = isCricket ? 'Cricket' : 'Basketball';
       const headers = ['Time', 'Game Name', 'Team Name', 'College Name', 'Name', 'Mobile No', 'Email'];
       const rows = filtered.map((p, idx) => {
-        const row = getBasketballRowData(p, idx);
+        const row = getTeamParticipantRowData(p, idx);
         return [
           escapeCsv(row.timestamp),
           escapeCsv(row.gameName),
@@ -181,13 +310,63 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `Basketball_Participant_Database.csv`);
+      link.setAttribute('download', `${sportLabel}_Participant_Database.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      addToast(`Basketball participant database exported to CSV successfully!`, 'success');
+      addToast(`${sportLabel} participant database exported to CSV successfully!`, 'success');
+    } else if (isChess) {
+      // ♟️ CHESS EXPORT FORMAT (Timestamp, Sport, Gender, Player Name, Roll No, College, Year / Branch, Phone No, Email)
+      const headers = [
+        'Timestamp',
+        'Sport',
+        'Gender',
+        'Player Name',
+        'Roll No',
+        'College',
+        'Year / Branch',
+        'Phone No',
+        'Email'
+      ];
+
+      const rows = filtered.map((p) => {
+        const timestamp = p.timestamp || p.registeredAt || '16 Jul, 10:32 am';
+        const rawGender = String(p.gender || p.player1?.gender || p.category || '').toLowerCase();
+        const genderDisplay = (rawGender.includes('female') || rawGender.includes('girl') || rawGender.includes('women')) ? 'Female' : 'Male';
+
+        const p1 = p.player1 || {
+          name: p.studentName || p.name || 'Aditya Singh',
+          roll: p.roll || '25261101308',
+          college: p.college || 'MPCPS (KN142)',
+          year: p.department || '2nd Year',
+          phone: p.phone || '9336938985',
+          email: p.email || 'adityasinghmlzs01@gmail.com'
+        };
+
+        return [
+          escapeCsv(timestamp),
+          escapeCsv('Chess'),
+          escapeCsv(genderDisplay),
+          escapeCsv(p1.name || 'N/A'),
+          escapeCsv(p1.roll || 'N/A'),
+          escapeCsv(p1.college || 'N/A'),
+          escapeCsv(p1.year || 'N/A'),
+          escapeCsv(p1.phone || 'N/A'),
+          escapeCsv(p1.email || 'N/A')
+        ];
+      });
+
+      const csvContent = [headers.map(escapeCsv).join(','), ...rows.map((r) => r.join(','))].join('\n');
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Chess_Participant_Database.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      addToast(`Chess participant database exported to CSV successfully!`, 'success');
     } else {
-      // 🏸 BADMINTON & OTHER SPORTS EXPORT FORMAT (UNTOUCHED ORIGINAL FORMAT)
       const headers = [
         'Timestamp',
         'Sport',
@@ -267,7 +446,7 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
         {/* Header Title & Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-orange-500/10 text-orange-500 border border-orange-500/20">
+            <div className={`p-2 rounded-xl border ${isChess ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' : 'bg-orange-500/10 text-orange-500 border-orange-500/20'}`}>
               <Users className="w-5 h-5" />
             </div>
             <div>
@@ -280,7 +459,7 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Verified registration records for {sportName}
+                Verified registration records for {isChess ? 'Chess' : sportName}
               </p>
             </div>
 
@@ -298,7 +477,9 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button
               onClick={handleExportExcel}
-              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-md transition flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95"
+              className={`px-4 py-2 rounded-xl text-white text-xs font-black shadow-md transition flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95 ${
+                isChess ? 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/20' : 'bg-emerald-600 hover:bg-emerald-500'
+              }`}
             >
               <FileDown className="w-4 h-4" />
               <span>Export CSV</span>
@@ -311,17 +492,19 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={isBasketball ? "Search team, college, name..." : "Search name, roll..."}
-                className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-[#070B14] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className={`w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-[#070B14] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 ${
+                  isChess ? 'focus:ring-purple-500' : 'focus:ring-orange-500'
+                }`}
               />
             </div>
           </div>
         </div>
 
-        {/* TABLE VIEW: CONDITIONAL FOR BASKETBALL VS BADMINTON/OTHER SPORTS */}
+        {/* TABLE VIEW */}
         <div className="overflow-x-auto">
-          {isBasketball ? (
+          {(isBasketball || isCricket) ? (
 
-            /* 🏀 BASKETBALL TABLE FORMAT (Time, Game Name, Team Name, College Name, Name, Mobile No, Email) */
+            /* 🏀 BASKETBALL & 🏏 CRICKET TABLE FORMAT */
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">
@@ -338,12 +521,12 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                 {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="p-8 text-center text-slate-500 dark:text-slate-400 font-mono">
-                      No registered Basketball participants found in database.
+                      No registered {isCricket ? 'Cricket' : 'Basketball'} participants found in database.
                     </td>
                   </tr>
                 ) : (
                   filtered.map((p, idx) => {
-                    const row = getBasketballRowData(p, idx);
+                    const row = getTeamParticipantRowData(p, idx);
 
                     return (
                       <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
@@ -351,7 +534,11 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                           {row.timestamp}
                         </td>
                         <td className="p-4 font-bold text-slate-900 dark:text-white font-sans text-xs whitespace-nowrap">
-                          <span className="px-2.5 py-1 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 font-bold">
+                          <span className={`px-2.5 py-1 rounded-lg border font-bold ${
+                            isCricket
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                              : 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20'
+                          }`}>
                             {row.gameName}
                           </span>
                         </td>
@@ -379,21 +566,21 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
 
           ) : (
 
-            /* 🏸 BADMINTON & OTHER SPORTS TABLE FORMAT (UNTOUCHED ORIGINAL FORMAT) */
+            /* ♟️ CHESS / 🏸 BADMINTON & OTHER SPORTS TABLE FORMAT */
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">
                   <th className="p-4">Timestamp</th>
                   <th className="p-4">Sport</th>
-                  <th className="p-4">Category</th>
+                  <th className="p-4">{isChess ? 'Gender' : 'Category'}</th>
                   <th className="p-4">Player Details</th>
-                  <th className="p-4">Team Partner Details</th>
+                  {!isChess && <th className="p-4">Team Partner Details</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800/80 text-xs">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-8 text-center text-slate-500 dark:text-slate-400 font-mono">
+                    <td colSpan={isChess ? 4 : 5} className="p-8 text-center text-slate-500 dark:text-slate-400 font-mono">
                       No participant registrations found. Registered participants will appear here automatically.
                     </td>
                   </tr>
@@ -401,8 +588,11 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                   filtered.map((p, idx) => {
                     const isDoubles = p.category === 'DOUBLES' || p.format === 'DOUBLES' || p.player2;
                     const timestamp = p.timestamp || p.registeredAt || '16 Jul, 10:32 am';
-                    const sportDisplay = p.sport || sportName || 'Badminton';
-                    const categoryDisplay = p.category || (isDoubles ? 'DOUBLES' : 'SINGLES');
+                    const sportDisplay = isChess ? 'Chess' : (p.sport || sportName || 'Badminton');
+                    const rawG = String(p.gender || p.player1?.gender || p.category || '').toLowerCase();
+                    const categoryDisplay = isChess
+                      ? ((rawG.includes('female') || rawG.includes('girl') || rawG.includes('women')) ? 'Female' : 'Male')
+                      : (p.category || (isDoubles ? 'DOUBLES' : 'SINGLES'));
 
                     const p1 = p.player1 || {
                       name: p.studentName || p.name || 'Aditya Singh',
@@ -421,13 +611,21 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                           {timestamp}
                         </td>
                         <td className="p-4 font-bold text-slate-900 dark:text-white font-sans text-xs whitespace-nowrap">
-                          {sportDisplay}
+                          {isChess ? (
+                            <span className="px-2.5 py-1 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 font-bold">
+                              Chess
+                            </span>
+                          ) : (
+                            sportDisplay
+                          )}
                         </td>
                         <td className="p-4 whitespace-nowrap">
                           <span className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider ${
-                            categoryDisplay === 'DOUBLES'
+                            isChess
                               ? 'bg-purple-100 text-purple-800 border border-purple-200 dark:bg-purple-900/60 dark:text-purple-300 dark:border-purple-700/50'
-                              : 'bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/60 dark:text-blue-300 dark:border-blue-700/50'
+                              : (categoryDisplay === 'DOUBLES'
+                                  ? 'bg-purple-100 text-purple-800 border border-purple-200 dark:bg-purple-900/60 dark:text-purple-300 dark:border-purple-700/50'
+                                  : 'bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/60 dark:text-blue-300 dark:border-blue-700/50')
                           }`}>
                             {categoryDisplay}
                           </span>
@@ -444,24 +642,26 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                             Mob: {p1.phone} | Email: {p1.email}
                           </div>
                         </td>
-                        <td className="p-4 space-y-0.5">
-                          {isDoubles && p2 ? (
-                            <>
-                              <div className="font-bold text-slate-900 dark:text-white text-xs">{p2.name}</div>
-                              <div className="text-[11px] text-slate-600 dark:text-slate-400 font-mono">
-                                Roll: <strong className="text-slate-900 dark:text-slate-200">{p2.roll}</strong>
-                              </div>
-                              <div className="text-[11px] text-slate-600 dark:text-slate-400">
-                                Coll: {p2.college} {p2.year ? `| Yr: ${p2.year}` : ''}
-                              </div>
-                              <div className="text-[11px] text-slate-600 dark:text-slate-400 font-mono">
-                                Mob: {p2.phone} | Email: {p2.email}
-                              </div>
-                            </>
-                          ) : (
-                            <span className="text-slate-400 dark:text-slate-500 italic text-xs">N/A (Singles)</span>
-                          )}
-                        </td>
+                        {!isChess && (
+                          <td className="p-4 space-y-0.5">
+                            {isDoubles && p2 ? (
+                              <>
+                                <div className="font-bold text-slate-900 dark:text-white text-xs">{p2.name}</div>
+                                <div className="text-[11px] text-slate-600 dark:text-slate-400 font-mono">
+                                  Roll: <strong className="text-slate-900 dark:text-slate-200">{p2.roll}</strong>
+                                </div>
+                                <div className="text-[11px] text-slate-600 dark:text-slate-400">
+                                  Coll: {p2.college} {p2.year ? `| Yr: ${p2.year}` : ''}
+                                </div>
+                                <div className="text-[11px] text-slate-600 dark:text-slate-400 font-mono">
+                                  Mob: {p2.phone} | Email: {p2.email}
+                                </div>
+                              </>
+                            ) : (
+                              <span className="text-slate-400 dark:text-slate-500 italic text-xs">N/A (Singles)</span>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     );
                   })

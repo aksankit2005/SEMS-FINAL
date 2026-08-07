@@ -2,16 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Calendar, Layers, CheckCircle2, Clock, XCircle, Edit, Trash2, Eye, 
   Upload, Crop, Image as ImageIcon, Users, DollarSign, ShieldAlert, Download, 
-  Search, Filter, ToggleLeft, ToggleRight, X, AlertCircle, Sparkles, FileText, Phone, Mail
+  Search, Filter, ToggleLeft, ToggleRight, X, AlertCircle, Sparkles, FileText, Phone, Mail, UserCheck
 } from 'lucide-react';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { ImageCropperModal } from '../../common/ImageCropperModal';
 import { useToast } from '../../../context/ToastContext';
-import { exportToPDF, exportToCSV } from '../../../utils/pdfExporter';
+import { exportToCSV } from '../../../utils/pdfExporter';
 
-import { SPORT_PLAYER_BOUNDS, resolveSportKey } from '../../../data/sportsConfig';
-
-export const EventsTab = ({ user }) => {
+export const CricketEventsTab = ({ user }) => {
   const { addToast } = useToast();
 
   const [events, setEvents] = useState([]);
@@ -19,7 +17,7 @@ export const EventsTab = ({ user }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   
-  // Participant Drawer/Modal state
+  // Participant Roster Drawer/Modal state
   const [selectedEventForParticipants, setSelectedEventForParticipants] = useState(null);
   const [participants, setParticipants] = useState([]);
   const [participantSearch, setParticipantSearch] = useState('');
@@ -28,40 +26,40 @@ export const EventsTab = ({ user }) => {
   const [showCropper, setShowCropper] = useState(false);
   const [cropperRawSrc, setCropperRawSrc] = useState(null);
 
-  const defaultSportKey = resolveSportKey(user?.assignedSport || user?.sportName);
-  const defaultBounds = SPORT_PLAYER_BOUNDS[defaultSportKey] || { min: 1, max: 10 };
-
-  // Form State
+  // Form State specifically for Cricket (Team Fee only, Min 11 & Max 15 players)
   const [formData, setFormData] = useState({
     title: '',
-    sportName: user?.sportName || 'Sports',
-    coverImage: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80',
+    sportName: 'Cricket',
+    coverImage: 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=800&q=80',
     description: '',
     regStartDate: new Date().toISOString().split('T')[0],
     regEndDate: '2026-08-25',
     tournStartDate: '2026-09-01',
-    tournEndDate: '2026-09-03',
-    entryFee: 400,
-    singlesFee: 300,
-    doublesFee: 600,
-    minPlayers: defaultBounds.min,
-    maxPlayers: defaultBounds.max,
-    teamSize: `${defaultBounds.min} - ${defaultBounds.max} Players`,
-    maxRegistrations: 64,
-
+    tournEndDate: '2026-09-05',
+    teamFee: 2500, // Team registration fee ONLY
+    minPlayers: 11, // Min players per squad
+    maxPlayers: 15, // Max players per squad
+    teamSize: '11 - 15 Players',
     registeredCount: 0,
-    venue: 'Indoor Sports Complex Court A',
-    category: 'Open', // Boys, Girls, Mixed, Open
-    status: 'Published', // Draft, Published, Closed
+    venue: 'Cricket Stadium Ground 1',
+    category: 'Open', // Boys, Girls, Open
+    status: 'Published', // Draft, Upcoming, Published, Closed
     rules: [
-      'Official tournament rules apply.',
-      'College Student ID & Pass mandatory.',
-      'Sports jersey and proper shoes required.'
+      '1. Team Composition: Each playing team consists of 11 players on the field (Squad size 11-15 players). Substitutions allowed per ICC/BCCI rules.',
+      '2. Match Format: T20 Limited Overs format (20 overs per innings) with a 15-minute innings break.',
+      '3. Bowling Restrictions: Maximum 4 overs per bowler. Mandatory Powerplay in overs 1 to 6.',
+      '4. Scoring & Extras: Standard ICC scoring for Wide, No-Ball, Leg Bye, Bye, and Penalty runs. Free hit awarded on No-Ball for overstepping.',
+      '5. Toss & Playing 11: Team captains must submit verified playing 11 list to match referee 15 minutes before scheduled toss time.',
+      '6. Ball & Equipment: Standard white/red leather cricket balls provided by committee. Full cricket protective gear (pads, helmet, gloves) mandatory.',
+      '7. Rain & DLS Method: Duckworth-Lewis-Stern (DLS) method applied in case of rain interruptions. Minimum 5 overs required per team for a valid match.',
+      '8. Over Rate & Penalty: Teams must complete 20 overs within 80 minutes. Slow over rate incurs fielding penalties.',
+      '9. Uniforms & Conduct: Matching team jerseys with visible numbers mandatory. Misconduct, swearing, or dissent leads to warning/disqualification.',
+      '10. Guidelines: Report 30 mins early. Valid College ID mandatory. Late arrival may cause walkover.'
     ],
-    requiredDocuments: ['College Student ID', 'Aadhaar Card / Govt ID'],
-    contactName: user?.coordinatorName || '',
-    contactEmail: user?.email || '',
-    contactPhone: ''
+    requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'Team Playing 11 Roster Form'],
+    contactName: user?.coordinatorName || 'Vikramaditya Sharma',
+    contactEmail: user?.email || 'cricket.coord@sems.edu',
+    contactPhone: '+91 98765 43210'
   });
 
   const [rulesInput, setRulesInput] = useState('');
@@ -77,44 +75,39 @@ export const EventsTab = ({ user }) => {
       const list = await coordinatorApi.getEvents();
       setEvents(list);
     } catch (err) {
-      addToast('Error loading coordinator events', 'error');
+      addToast('Error loading cricket events console', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  // Preset form on edit
+  // Preset form on Edit event
   const handleOpenEdit = (eventObj) => {
     setEditingEvent(eventObj);
-    const sKey = resolveSportKey(user?.assignedSport || eventObj.sportName || eventObj.title);
-    const bounds = SPORT_PLAYER_BOUNDS[sKey] || { min: 1, max: 10 };
-    const minP = eventObj.minPlayers !== undefined ? Number(eventObj.minPlayers) : bounds.min;
-    const maxP = eventObj.maxPlayers !== undefined ? Number(eventObj.maxPlayers) : bounds.max;
-
+    const minP = eventObj.minPlayers !== undefined ? eventObj.minPlayers : 11;
+    const maxP = eventObj.maxPlayers !== undefined ? eventObj.maxPlayers : 15;
+    
     setFormData({
       title: eventObj.title || '',
-      sportName: user?.sportName || eventObj.sportName,
-      coverImage: eventObj.coverImage || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80',
+      sportName: 'Cricket',
+      coverImage: eventObj.coverImage || 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=800&q=80',
       description: eventObj.description || '',
       regStartDate: eventObj.regStartDate || new Date().toISOString().split('T')[0],
       regEndDate: eventObj.regEndDate || '2026-08-25',
       tournStartDate: eventObj.tournStartDate || '2026-09-01',
-      tournEndDate: eventObj.tournEndDate || '2026-09-03',
-      entryFee: eventObj.entryFee !== undefined ? eventObj.entryFee : 400,
-      singlesFee: eventObj.singlesFee !== undefined ? eventObj.singlesFee : 300,
-      doublesFee: eventObj.doublesFee !== undefined ? eventObj.doublesFee : 600,
+      tournEndDate: eventObj.tournEndDate || '2026-09-05',
+      teamFee: eventObj.teamFee !== undefined ? eventObj.teamFee : (eventObj.entryFee || 2500),
       minPlayers: minP,
       maxPlayers: maxP,
-      teamSize: eventObj.teamSize || `${minP} - ${maxP} Players`,
-      maxRegistrations: eventObj.maxRegistrations || 64,
+      teamSize: `${minP} - ${maxP} Players`,
       registeredCount: eventObj.registeredCount || 0,
-      venue: eventObj.venue || 'Indoor Sports Complex',
-      category: eventObj.category || 'Open',
+      venue: eventObj.venue || 'Cricket Stadium Ground 1',
+      category: eventObj.category === 'Mixed' ? 'Open' : (eventObj.category || 'Open'),
       status: eventObj.status || 'Published',
       rules: eventObj.rules || [],
-      requiredDocuments: eventObj.requiredDocuments || ['College Student ID'],
-      contactName: eventObj.contactInfo?.name || user?.coordinatorName,
-      contactEmail: eventObj.contactInfo?.email || user?.email,
+      requiredDocuments: eventObj.requiredDocuments || ['College Student ID Card'],
+      contactName: eventObj.contactInfo?.name || user?.coordinatorName || 'Cricket Coordinator',
+      contactEmail: eventObj.contactInfo?.email || user?.email || 'cricket.coord@sems.edu',
       contactPhone: eventObj.contactInfo?.phone || '+91 98765 43210'
     });
     setRulesInput(Array.isArray(eventObj.rules) ? eventObj.rules.join('\n') : '');
@@ -122,40 +115,61 @@ export const EventsTab = ({ user }) => {
     setShowCreateModal(true);
   };
 
+  // Preset form on Create event
   const handleOpenCreate = () => {
     setEditingEvent(null);
-    const sKey = resolveSportKey(user?.assignedSport || user?.sportName);
-    const bounds = SPORT_PLAYER_BOUNDS[sKey] || { min: 1, max: 10 };
-
     setFormData({
-      title: `${user?.sportName || 'Sports'} Championship 2026`,
-      sportName: user?.sportName || 'Sports',
-      coverImage: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80',
-      description: `Official inter-college ${user?.sportName} tournament. Register your entries today!`,
+      title: 'Inter-College T20 Cricket Championship 2026',
+      sportName: 'Cricket',
+      coverImage: 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=800&q=80',
+      description: 'Official inter-college T20 Cricket tournament. Register team entries (11 - 15 players) today!',
       regStartDate: new Date().toISOString().split('T')[0],
       regEndDate: '2026-08-25',
       tournStartDate: '2026-09-01',
-      tournEndDate: '2026-09-03',
-      entryFee: 400,
-      singlesFee: 300,
-      doublesFee: 600,
-      minPlayers: bounds.min,
-      maxPlayers: bounds.max,
-      teamSize: `${bounds.min} - ${bounds.max} Players`,
-      maxRegistrations: 64,
-
+      tournEndDate: '2026-09-05',
+      teamFee: 2500,
+      minPlayers: 11,
+      maxPlayers: 15,
+      teamSize: '11 - 15 Players',
       registeredCount: 0,
-      venue: 'Main Sports Complex',
+      venue: 'Cricket Stadium Ground 1',
       category: 'Open',
       status: 'Published',
-      rules: ['Official ITTF/BWF rules apply.', 'College ID mandatory.'],
-      requiredDocuments: ['College Student ID Card', 'Aadhaar Card'],
-      contactName: user?.coordinatorName || '',
-      contactEmail: user?.email || '',
-      contactPhone: ''
+      rules: [
+        '1. Team Composition: Each playing team consists of 11 players on the field (Squad size 11-15 players). Substitutions allowed per ICC/BCCI rules.',
+        '2. Match Format: T20 Limited Overs format (20 overs per innings) with a 15-minute innings break.',
+        '3. Bowling Restrictions: Maximum 4 overs per bowler. Mandatory Powerplay in overs 1 to 6.',
+        '4. Scoring & Extras: Standard ICC scoring for Wide, No-Ball, Leg Bye, Bye, and Penalty runs. Free hit awarded on No-Ball for overstepping.',
+        '5. Toss & Playing 11: Team captains must submit verified playing 11 list to match referee 15 minutes before scheduled toss time.',
+        '6. Ball & Equipment: Standard white/red leather cricket balls provided by committee. Full cricket protective gear (pads, helmet, gloves) mandatory.',
+        '7. Rain & DLS Method: Duckworth-Lewis-Stern (DLS) method applied in case of rain interruptions. Minimum 5 overs required per team for a valid match.',
+        '8. Over Rate & Penalty: Teams must complete 20 overs within 80 minutes. Slow over rate incurs fielding penalties.',
+        '9. Uniforms & Conduct: Matching team jerseys with visible numbers mandatory. Misconduct, swearing, or dissent leads to warning/disqualification.',
+        '10. Guidelines: Report 30 mins early. Valid College ID mandatory. Late arrival may cause walkover.'
+      ],
+      requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'Team Playing 11 Roster Form'],
+      contactName: user?.coordinatorName || 'Cricket Coordinator',
+      contactEmail: user?.email || 'cricket.coord@sems.edu',
+      contactPhone: '+91 98765 43210'
     });
-    setRulesInput('Official tournament rules apply.\nCollege Student ID & Pass mandatory.');
-    setDocInput('College Student ID Card\nAadhaar Card / Govt ID');
+    setRulesInput(`Cricket Tournament Rules
+
+Team Composition: Each playing team consists of 11 players on the field. Substitutions allowed as per tournament rules.
+Match Format: T20 Limited Overs format (20 overs per innings) with 15-min innings break.
+Bowling Limit: Max 4 overs per bowler. Powerplay in overs 1 to 6.
+Scoring: Standard ICC rules apply for runs, boundaries, wide, no-ball, free hit.
+Toss & Playing 11: Captains submit playing 11 list to match referee 15 minutes before toss.
+Balls & Gear: White/red leather balls provided. Full cricket gear (pads, helmet, gloves) mandatory.
+Rain Policy: DLS method applied for rain delays. Min 5 overs per team for valid match.
+Sportsmanship & Uniforms: Matching jerseys mandatory. Misconduct leads to warning/disqualification.
+Organizer's Decision: Umpire and referee decisions are final and binding.
+
+📌 Additional Guidelines:
+- Teams should report 30 minutes before scheduled match.
+- Carry a valid college ID card.
+- Late arrival may result in a walkover.
+- Only registered players allowed to participate.`);
+    setDocInput('College Student ID Card\nAadhaar Card / Govt ID\nTeam Playing 11 Roster Form');
     setShowCreateModal(true);
   };
 
@@ -173,13 +187,13 @@ export const EventsTab = ({ user }) => {
 
   const handleCropComplete = (croppedDataUrl) => {
     setFormData((prev) => ({ ...prev, coverImage: croppedDataUrl }));
-    addToast('Cover banner cropped and attached successfully!', 'success');
+    addToast('Cricket cover banner cropped and attached successfully!', 'success');
   };
 
   const handleRemoveCover = () => {
     setFormData((prev) => ({
       ...prev,
-      coverImage: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80'
+      coverImage: 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=800&q=80'
     }));
   };
 
@@ -191,19 +205,25 @@ export const EventsTab = ({ user }) => {
       return;
     }
 
+    if (formData.minPlayers < 1) {
+      addToast('Minimum players must be at least 1', 'error');
+      return;
+    }
+
+    if (formData.maxPlayers < formData.minPlayers) {
+      addToast('Maximum players cannot be less than minimum players', 'error');
+      return;
+    }
+
     const rulesArr = rulesInput.split('\n').map((r) => r.trim()).filter(Boolean);
     const docsArr = docInput.split('\n').map((d) => d.trim()).filter(Boolean);
 
-    const sKey = resolveSportKey(user?.assignedSport || formData.sportName);
-    const bounds = SPORT_PLAYER_BOUNDS[sKey] || { min: 1, max: 10 };
-    const minP = formData.minPlayers !== undefined ? Number(formData.minPlayers) : bounds.min;
-    const maxP = formData.maxPlayers !== undefined ? Number(formData.maxPlayers) : bounds.max;
+    const calculatedTeamSize = `${formData.minPlayers} - ${formData.maxPlayers} Players`;
 
     const eventPayload = {
       ...formData,
-      minPlayers: minP,
-      maxPlayers: maxP,
-      teamSize: formData.teamSize || `${minP} - ${maxP} Players`,
+      entryFee: formData.teamFee, // Standardize entryFee for common API compatibility
+      teamSize: calculatedTeamSize,
       rules: rulesArr,
       requiredDocuments: docsArr,
       contactInfo: {
@@ -217,34 +237,42 @@ export const EventsTab = ({ user }) => {
       if (editingEvent) {
         const updated = await coordinatorApi.updateEvent(editingEvent.id, eventPayload);
         setEvents((prev) => prev.map((item) => (item.id === editingEvent.id ? updated : item)));
-        addToast(`Registration event "${updated.title}" updated!`, 'success');
+        addToast(`Cricket registration event "${updated.title}" updated!`, 'success');
       } else {
         const created = await coordinatorApi.createEvent(eventPayload);
         setEvents((prev) => [created, ...prev]);
-        addToast(`New registration event "${created.title}" published!`, 'success');
+        addToast(`New cricket registration event "${created.title}" published!`, 'success');
       }
 
       setShowCreateModal(false);
       fetchEvents();
     } catch (err) {
-      addToast('Failed to save registration event', 'error');
+      addToast('Failed to save cricket registration event', 'error');
     }
   };
 
   const handleDeleteEvent = async (id, title) => {
-    if (window.confirm(`Are you sure you want to delete event "${title}"?`)) {
+    if (window.confirm(`Are you sure you want to delete cricket event "${title}"?`)) {
       try {
         await coordinatorApi.deleteEvent(id);
         setEvents((prev) => prev.filter((item) => item.id !== id));
-        addToast('Event deleted successfully', 'info');
+        addToast('Cricket event deleted successfully', 'info');
       } catch (err) {
         addToast('Failed to delete event', 'error');
       }
     }
   };
 
+  // Toggle status across: Draft -> Upcoming -> Published -> Closed -> Draft
   const handleToggleStatus = async (eventObj) => {
-    const nextStatus = eventObj.status === 'Published' ? 'Closed' : eventObj.status === 'Closed' ? 'Draft' : 'Published';
+    const statusCycle = {
+      'Draft': 'Upcoming',
+      'Upcoming': 'Published',
+      'Published': 'Closed',
+      'Closed': 'Draft'
+    };
+    const nextStatus = statusCycle[eventObj.status] || 'Published';
+
     try {
       const updated = await coordinatorApi.updateEvent(eventObj.id, { status: nextStatus });
       setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? updated : item)));
@@ -263,10 +291,23 @@ export const EventsTab = ({ user }) => {
   // Dashboard Stats calculation
   const totalEvents = events.length;
   const activeEvents = events.filter((e) => e.status === 'Published').length;
+  const upcomingEvents = events.filter((e) => e.status === 'Upcoming').length;
   const closedEvents = events.filter((e) => e.status === 'Closed').length;
   const totalRegCount = events.reduce((acc, curr) => acc + (curr.registeredCount || 0), 0);
-  const totalRevenue = events.reduce((acc, curr) => acc + ((curr.registeredCount || 0) * (curr.entryFee || 0)), 0);
-  const totalAvailableSlots = events.reduce((acc, curr) => acc + Math.max(0, (curr.maxRegistrations || 64) - (curr.registeredCount || 0)), 0);
+  const totalRevenue = events.reduce((acc, curr) => {
+    const fee = curr.teamFee !== undefined ? curr.teamFee : (curr.entryFee || 2500);
+    return acc + ((curr.registeredCount || 0) * fee);
+  }, 0);
+
+  const filteredParticipants = participants.filter((p) => {
+    if (!participantSearch.trim()) return true;
+    const q = participantSearch.toLowerCase();
+    return (
+      (p.teamName || p.studentName || '').toLowerCase().includes(q) ||
+      (p.college || '').toLowerCase().includes(q) ||
+      (p.id || '').toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div className="space-y-6 animate-fade-in font-sans">
@@ -284,23 +325,23 @@ export const EventsTab = ({ user }) => {
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
+          <span className="text-[10px] font-mono font-bold uppercase text-blue-600 dark:text-blue-400">Upcoming Events</span>
+          <p className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight">{upcomingEvents}</p>
+        </div>
+
+        <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
           <span className="text-[10px] font-mono font-bold uppercase text-rose-600 dark:text-rose-400">Closed Events</span>
           <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">{closedEvents}</p>
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-blue-600 dark:text-blue-400">Total Registrations</span>
-          <p className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight">{totalRegCount}</p>
-        </div>
-
-        <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-amber-600 dark:text-amber-400">Revenue Collected</span>
-          <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight">₹{totalRevenue.toLocaleString()}</p>
+          <span className="text-[10px] font-mono font-bold uppercase text-amber-600 dark:text-amber-400">Registered Teams</span>
+          <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight">{totalRegCount}</p>
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl col-span-2 sm:col-span-1 space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Assigned Sport</span>
-          <p className="text-sm font-black text-slate-900 dark:text-white truncate">{user?.sportName || 'Badminton'}</p>
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Team Revenue</span>
+          <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 truncate">₹{totalRevenue.toLocaleString()}</p>
         </div>
       </div>
 
@@ -308,75 +349,79 @@ export const EventsTab = ({ user }) => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#0B1120] p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-md">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-indigo-400 border border-blue-500/20 text-[10px] font-mono font-bold uppercase">
-              COORDINATOR REGISTRATION PORTAL
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-mono font-bold uppercase">
+              CRICKET COORDINATOR PORTAL
             </span>
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 font-mono">• {user?.sportName || 'Badminton'}</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 font-mono">• Team Events Configurator</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-            Sport Event Creation & Registration Management
+            Cricket Tournament Event Management
           </h2>
           <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-            Create sport events, upload cover banners, and track real-time participant registrations.
+            Configure Cricket team events with flat team entry fees and squad size controls (11 to 15 players).
           </p>
         </div>
 
         <button
           onClick={handleOpenCreate}
-          className="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-500/20 transition flex items-center gap-2 shrink-0 self-start sm:self-auto"
+          className="px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition flex items-center gap-2 shrink-0 self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          <span>Create Registration Event</span>
+          <span>Create Cricket Event</span>
         </button>
       </div>
 
-      {/* EVENTS MANAGEMENT TABLE & CARDS */}
+      {/* EVENTS MANAGEMENT CARDS GRID */}
       <div className="space-y-4">
         {loading ? (
           <div className="py-16 text-center space-y-2 bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800">
-            <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-xs text-slate-500 dark:text-slate-400">Loading {user?.sportName} registration events...</p>
+            <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-xs text-slate-500 dark:text-slate-400">Loading Cricket registration events...</p>
           </div>
         ) : events.length === 0 ? (
           <div className="py-16 text-center space-y-3 bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-soft dark:shadow-md">
             <Layers className="w-12 h-12 text-slate-400 dark:text-slate-600 mx-auto" />
-            <h3 className="text-base font-black text-slate-900 dark:text-white">No Registration Events Created Yet</h3>
+            <h3 className="text-base font-black text-slate-900 dark:text-white">No Cricket Events Created Yet</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-              Click the "Create Registration Event" button above to publish your first tournament registration event for {user?.sportName}.
+              Click the "Create Cricket Event" button above to publish your first team registration event for Cricket.
             </p>
             <button
               onClick={handleOpenCreate}
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
             >
-              + Create First Event
+              + Create First Cricket Event
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {events.map((event) => {
               const registered = event.registeredCount || 0;
-              const limit = event.maxRegistrations || 64;
-              const percent = Math.min(100, Math.round((registered / limit) * 100));
+              const fee = event.teamFee !== undefined ? event.teamFee : (event.entryFee || 2500);
+              const minP = event.minPlayers !== undefined ? event.minPlayers : 11;
+              const maxP = event.maxPlayers !== undefined ? event.maxPlayers : 15;
+              const teamSizeStr = event.teamSize || `${minP} - ${maxP} Players`;
 
               return (
                 <div
                   key={event.id}
-                  className="bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-soft dark:shadow-lg hover:border-blue-500/50 dark:hover:border-slate-700 transition flex flex-col justify-between"
+                  className="bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-soft dark:shadow-lg hover:border-emerald-500/50 dark:hover:border-slate-700 transition flex flex-col justify-between"
                 >
                   {/* Cover Banner */}
                   <div className="relative h-44 w-full bg-slate-900 overflow-hidden">
                     <img
-                      src={event.coverImage}
+                      src={event.coverImage || 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=800&q=80'}
                       alt={event.title}
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/30 to-transparent" />
 
-                    {/* Status Badge */}
+                    {/* Status Badge including Upcoming */}
                     <div className="absolute top-3 left-3 flex items-center gap-2">
                       <span className={`px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase border shadow-md ${
                         event.status === 'Published'
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                          : event.status === 'Upcoming'
+                          ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
                           : event.status === 'Closed'
                           ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
                           : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
@@ -384,17 +429,18 @@ export const EventsTab = ({ user }) => {
                         ● {event.status}
                       </span>
                       <span className="px-2.5 py-1 rounded-full bg-slate-950/70 backdrop-blur-xs text-white text-[10px] font-bold border border-slate-800">
-                        {event.category}
+                        {event.category || 'Open'}
                       </span>
                     </div>
 
-                    <div className="absolute top-3 right-3 bg-slate-950/80 backdrop-blur-xs px-3 py-1 rounded-full text-xs font-black text-amber-400 border border-slate-800">
-                      Fee: Singles ₹{event.singlesFee !== undefined ? event.singlesFee : 300} | Doubles ₹{event.doublesFee !== undefined ? event.doublesFee : 600}
+                    {/* Team Fee Display Badge */}
+                    <div className="absolute top-3 right-3 bg-slate-950/85 backdrop-blur-xs px-3.5 py-1 rounded-full text-xs font-black text-amber-400 border border-amber-500/30 shadow-md">
+                      Team Fee: ₹{fee}
                     </div>
 
                     <div className="absolute bottom-3 left-4 right-4">
-                      <span className="text-[10px] font-mono font-bold text-indigo-400 uppercase tracking-wider">
-                        {event.sportName}
+                      <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider">
+                        CRICKET TOURNAMENT
                       </span>
                       <h3 className="text-lg font-black text-white leading-tight truncate">
                         {event.title}
@@ -419,18 +465,21 @@ export const EventsTab = ({ user }) => {
                       </div>
                       <div>
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono">Venue / Location</span>
-                        <span className="font-bold text-blue-600 dark:text-indigo-300 text-[11px] truncate block">{event.venue}</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400 text-[11px] truncate block">{event.venue}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono">Team Size</span>
-                        <span className="font-bold text-slate-900 dark:text-white text-[11px]">{event.teamSize}</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono">Squad Limits</span>
+                        <span className="font-bold text-slate-900 dark:text-white text-[11px] flex items-center gap-1">
+                          <UserCheck className="w-3 h-3 text-emerald-500" />
+                          {teamSizeStr} (Min {minP}, Max {maxP})
+                        </span>
                       </div>
                     </div>
 
                     {/* Total Registrations Display */}
                     <div className="flex items-center justify-between text-xs pt-1">
-                      <span className="font-bold text-slate-500 dark:text-slate-400 font-mono text-[11px]">Total Registrations</span>
-                      <span className="font-mono font-black text-blue-600 dark:text-indigo-400">{registered} Registered</span>
+                      <span className="font-bold text-slate-500 dark:text-slate-400 font-mono text-[11px]">Registered Squads</span>
+                      <span className="font-mono font-black text-emerald-600 dark:text-emerald-400">{registered} Teams Registered</span>
                     </div>
 
                     {/* Actions Bar */}
@@ -439,15 +488,21 @@ export const EventsTab = ({ user }) => {
                         <button
                           onClick={() => handleToggleStatus(event)}
                           className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
-                          title="Toggle Status (Draft -> Published -> Closed)"
+                          title="Toggle Status (Draft -> Upcoming -> Published -> Closed)"
                         >
-                          {event.status === 'Published' ? <ToggleRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <ToggleLeft className="w-4 h-4 text-amber-600 dark:text-amber-400" />}
+                          {event.status === 'Published' ? (
+                            <ToggleRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          ) : event.status === 'Upcoming' ? (
+                            <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          ) : (
+                            <ToggleLeft className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                          )}
                           <span>Toggle Status</span>
                         </button>
 
                         <button
                           onClick={() => handleViewParticipants(event)}
-                          className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 text-blue-600 dark:text-indigo-400 border border-blue-200 dark:border-indigo-500/30 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
+                          className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
                         >
                           <Users className="w-3.5 h-3.5" />
                           <span>Roster ({registered})</span>
@@ -480,7 +535,7 @@ export const EventsTab = ({ user }) => {
         )}
       </div>
 
-      {/* CREATE / EDIT EVENT MODAL */}
+      {/* CREATE / EDIT CRICKET EVENT MODAL */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto font-sans">
           <div className="w-full max-w-3xl bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-2xl space-y-6 my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
@@ -488,11 +543,11 @@ export const EventsTab = ({ user }) => {
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
               <div>
-                <span className="text-[10px] font-mono font-bold uppercase text-blue-600 dark:text-indigo-400">
-                  {user?.sportName} Event Configurator
+                <span className="text-[10px] font-mono font-bold uppercase text-emerald-600 dark:text-emerald-400">
+                  Cricket Event Configurator
                 </span>
                 <h3 className="text-xl font-black text-slate-900 dark:text-white">
-                  {editingEvent ? 'Edit Registration Event' : 'Create New Registration Event'}
+                  {editingEvent ? 'Edit Cricket Event' : 'Create New Cricket Event'}
                 </h3>
               </div>
               <button
@@ -516,25 +571,25 @@ export const EventsTab = ({ user }) => {
                     required
                     value={formData.title}
                     onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
-                    placeholder="e.g. Badminton Championship 2026"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-indigo-500"
+                    placeholder="e.g. Inter-College T20 Cricket Championship 2026"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
-                    Assigned Sport (Auto-filled)
+                    Assigned Sport
                   </label>
                   <input
                     type="text"
                     readOnly
-                    value={formData.sportName}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 text-blue-600 dark:text-indigo-400 text-xs font-mono font-bold cursor-not-allowed"
+                    value="Cricket"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 text-emerald-600 dark:text-emerald-400 text-xs font-mono font-bold cursor-not-allowed"
                   />
                 </div>
               </div>
 
-              {/* Cover Banner Upload & Management */}
+              {/* Cover Banner Upload & Cropper */}
               <div className="space-y-2 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
                 <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
                   Cover Banner Image Upload & Cropper
@@ -551,11 +606,11 @@ export const EventsTab = ({ user }) => {
 
                   <div className="flex-1 space-y-2 w-full">
                     <p className="text-[11px] text-slate-600 dark:text-slate-400">
-                      Upload a high-resolution cover image. Click "Crop & Resize" to trim to standard 16:9 banner format before publishing.
+                      Upload a high-resolution Cricket cover image. Click "Crop & Resize" to trim to standard 16:9 banner format before publishing.
                     </p>
                     <div className="flex flex-wrap items-center gap-2">
                       <label className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white text-xs font-bold cursor-pointer transition flex items-center gap-1.5">
-                        <Upload className="w-3.5 h-3.5 text-blue-600 dark:text-indigo-400" />
+                        <Upload className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                         <span>Upload Image</span>
                         <input
                           type="file"
@@ -571,7 +626,7 @@ export const EventsTab = ({ user }) => {
                           setCropperRawSrc(formData.coverImage);
                           setShowCropper(true);
                         }}
-                        className="px-4 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 text-blue-600 dark:text-indigo-300 border border-blue-200 dark:border-indigo-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                        className="px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30 text-emerald-600 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                       >
                         <Crop className="w-3.5 h-3.5" />
                         <span>Crop & Resize</span>
@@ -600,8 +655,8 @@ export const EventsTab = ({ user }) => {
                   rows={3}
                   value={formData.description}
                   onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                  placeholder="Enter detailed description of tournament highlights, eligibility, format..."
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-indigo-500"
+                  placeholder="Enter detailed description of Cricket tournament rules, over format, eligibility..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
@@ -645,46 +700,82 @@ export const EventsTab = ({ user }) => {
                 </div>
               </div>
 
-              {/* Singles Fee, Doubles Fee, Team Size, Max Registrations, Venue, Category */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">Singles Fee (₹)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.singlesFee}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value) || 0;
-                      setFormData((prev) => ({ ...prev, singlesFee: val, entryFee: val }));
-                    }}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-emerald-600 dark:text-emerald-400"
-                  />
+              {/* TEAM FEE ONLY, MIN 11 & MAX 15 PLAYERS */}
+              <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-4">
+                <div className="flex items-center gap-2 border-b border-emerald-500/20 pb-2">
+                  <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <h4 className="text-xs font-black uppercase text-emerald-700 dark:text-emerald-400 tracking-wider">
+                    Cricket Team Pricing & Squad Limits
+                  </h4>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">Doubles Fee (₹)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.doublesFee}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, doublesFee: parseFloat(e.target.value) || 0 }))}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-blue-600 dark:text-cyan-400"
-                  />
-                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  {/* Team Fee Field */}
+                  <div className="space-y-1 sm:col-span-2">
+                    <label className="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300">
+                      Team Entry Fee (₹) <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      required
+                      value={formData.teamFee}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value) || 0;
+                        setFormData((prev) => ({ ...prev, teamFee: val }));
+                      }}
+                      placeholder="e.g. 2500"
+                      className="w-full px-4 py-2.5 rounded-xl border border-emerald-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-black text-amber-600 dark:text-amber-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">Flat registration fee collected per participating cricket team.</p>
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">Team Size</label>
-                  <input
-                    type="text"
-                    value={formData.teamSize}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, teamSize: e.target.value }))}
-                    placeholder="e.g. 1 - 2 Players"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-semibold text-slate-900 dark:text-white"
-                  />
-                </div>
+                  {/* Min Players (Min 11) */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300">
+                      Min Players <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="20"
+                      required
+                      value={formData.minPlayers}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10) || 11;
+                        setFormData((prev) => ({ ...prev, minPlayers: val }));
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-900 dark:text-white"
+                    />
+                    <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Default: 11</p>
+                  </div>
 
+                  {/* Max Players (Max 15) */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300">
+                      Max Players <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="20"
+                      required
+                      value={formData.maxPlayers}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10) || 15;
+                        setFormData((prev) => ({ ...prev, maxPlayers: val }));
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-900 dark:text-white"
+                    />
+                    <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Default: 15</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Category & Status */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">Category</label>
+                  <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Category</label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
@@ -692,19 +783,19 @@ export const EventsTab = ({ user }) => {
                   >
                     <option value="Boys">Boys</option>
                     <option value="Girls">Girls</option>
-                    <option value="Mixed">Mixed</option>
                     <option value="Open">Open</option>
                   </select>
                 </div>
 
-                <div className="space-y-1 col-span-2 sm:col-span-1">
-                  <label className="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">Status</label>
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Status</label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value }))}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-emerald-600 dark:text-emerald-400"
                   >
                     <option value="Draft">Draft (Hidden)</option>
+                    <option value="Upcoming">Upcoming (Coming Soon)</option>
                     <option value="Published">Published (Open)</option>
                     <option value="Closed">Closed</option>
                   </select>
@@ -718,7 +809,7 @@ export const EventsTab = ({ user }) => {
                   type="text"
                   value={formData.venue}
                   onChange={(e) => setFormData((prev) => ({ ...prev, venue: e.target.value }))}
-                  placeholder="e.g. Indoor Sports Complex Hall A"
+                  placeholder="e.g. Cricket Stadium Ground 1"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold"
                 />
               </div>
@@ -732,7 +823,7 @@ export const EventsTab = ({ user }) => {
                   rows={3}
                   value={rulesInput}
                   onChange={(e) => setRulesInput(e.target.value)}
-                  placeholder="Official BWF rules apply&#10;Non-marking shoes mandatory&#10;College ID card required"
+                  placeholder="Official ICC/BCCI Cricket rules apply&#10;Min 11 and Max 15 players required per squad&#10;Leather ball and full protective kit mandatory"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-mono"
                 />
               </div>
@@ -746,14 +837,12 @@ export const EventsTab = ({ user }) => {
                   rows={2}
                   value={docInput}
                   onChange={(e) => setDocInput(e.target.value)}
-                  placeholder="College ID Card&#10;Student Aadhaar / Govt ID"
+                  placeholder="College Student ID Card&#10;Aadhaar Card / Govt ID"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-mono"
                 />
               </div>
 
-
-
-              {/* Modal Buttons */}
+              {/* Modal Action Buttons */}
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
@@ -764,9 +853,9 @@ export const EventsTab = ({ user }) => {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
                 >
-                  {editingEvent ? 'Save Event Changes' : 'Publish Registration Event'}
+                  {editingEvent ? 'Save Cricket Event' : 'Publish Cricket Event'}
                 </button>
               </div>
 
@@ -775,7 +864,6 @@ export const EventsTab = ({ user }) => {
         </div>
       )}
 
-
       {/* PARTICIPANTS ROSTER MODAL & EXPORT */}
       {selectedEventForParticipants && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xs font-sans">
@@ -783,8 +871,8 @@ export const EventsTab = ({ user }) => {
             
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
               <div>
-                <span className="text-[10px] font-mono text-blue-600 dark:text-indigo-400 font-bold uppercase">
-                  {selectedEventForParticipants.sportName} Participant Roster
+                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold uppercase">
+                  Cricket Registered Squads
                 </span>
                 <h3 className="text-lg font-black text-slate-900 dark:text-white">{selectedEventForParticipants.title}</h3>
               </div>
@@ -794,17 +882,17 @@ export const EventsTab = ({ user }) => {
                   onClick={() => {
                     const csvData = participants.map((p) => ({
                       RegID: p.id,
-                      TeamOrParticipant: p.teamName || p.studentName,
+                      TeamName: p.teamName || p.studentName,
                       Captain: p.studentName,
                       College: p.college,
-                      Department: p.department,
-                      Gender: p.gender,
+                      Department: p.department || 'N/A',
+                      SquadCount: p.squadCount || '11-15',
                       Phone: p.contactPhone || p.phone,
                       Status: p.status,
                       RegisteredDate: p.registeredDate
                     }));
-                    exportToCSV(csvData, `${selectedEventForParticipants.sportName}_Participants`);
-                    addToast('Exported Participant Roster as CSV/Excel', 'success');
+                    exportToCSV(csvData, `Cricket_Participants_${selectedEventForParticipants.id}`);
+                    addToast('Exported Cricket Roster as CSV/Excel', 'success');
                   }}
                   className="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/20 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                 >
@@ -820,76 +908,63 @@ export const EventsTab = ({ user }) => {
               </div>
             </div>
 
-            {/* Search */}
+            {/* Search Bar */}
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400 dark:text-slate-500" />
               <input
                 type="text"
-                placeholder="Search registered teams, captain name, college..."
                 value={participantSearch}
                 onChange={(e) => setParticipantSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-indigo-500"
+                placeholder="Search registered team, captain name, college..."
+                className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
 
-            {/* Table */}
+            {/* Participants Table */}
             <div className="flex-1 overflow-y-auto custom-scrollbar border border-slate-200 dark:border-slate-800 rounded-2xl">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider">
-                    <th className="p-3">Reg ID / Team</th>
-                    <th className="p-3">Captain Name</th>
+              <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+                <thead className="bg-slate-100 dark:bg-slate-900 text-[10px] font-mono uppercase text-slate-500 dark:text-slate-400 sticky top-0">
+                  <tr>
+                    <th className="p-3">Registration ID</th>
+                    <th className="p-3">Team / Student Name</th>
                     <th className="p-3">College</th>
-                    <th className="p-3">Gender</th>
-                    <th className="p-3">Fee Status</th>
-                    <th className="p-3">Date</th>
+                    <th className="p-3">Category</th>
+                    <th className="p-3">Squad Size</th>
+                    <th className="p-3 text-right">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-xs">
-                  {participants
-                    .filter((p) => 
-                      !participantSearch ||
-                      p.teamName?.toLowerCase().includes(participantSearch.toLowerCase()) ||
-                      p.studentName?.toLowerCase().includes(participantSearch.toLowerCase()) ||
-                      p.college?.toLowerCase().includes(participantSearch.toLowerCase())
-                    )
-                    .map((p) => (
-                      <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/40">
-                        <td className="p-3 font-bold text-slate-900 dark:text-white">
-                          {p.teamName || p.studentName}
-                          <span className="block text-[10px] font-mono text-slate-500 dark:text-slate-400">{p.id}</span>
-                        </td>
-                        <td className="p-3 text-slate-700 dark:text-slate-300 font-semibold">{p.studentName}</td>
-                        <td className="p-3 font-bold text-amber-600 dark:text-amber-400">{p.college}</td>
-                        <td className="p-3 text-slate-600 dark:text-slate-300">{p.gender}</td>
-                        <td className="p-3">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/20">
-                            {p.feePaid ? `PAID ₹${p.feePaid}` : 'CONFIRMED'}
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                  {filteredParticipants.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="py-8 text-center text-slate-400 text-xs">
+                        No team registrations found matching query.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredParticipants.map((p) => (
+                      <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition">
+                        <td className="p-3 font-mono font-bold text-emerald-600 dark:text-emerald-400">{p.id}</td>
+                        <td className="p-3 font-bold text-slate-900 dark:text-white">{p.teamName || p.studentName}</td>
+                        <td className="p-3">{p.college}</td>
+                        <td className="p-3">{p.category || 'Open'}</td>
+                        <td className="p-3 font-mono">11-15 Players</td>
+                        <td className="p-3 text-right">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            {p.status || 'VERIFIED'}
                           </span>
                         </td>
-                        <td className="p-3 text-slate-500 dark:text-slate-400 font-mono text-[11px]">{p.registeredDate}</td>
                       </tr>
-                    ))}
+                    ))
+                  )}
                 </tbody>
               </table>
-            </div>
-
-            <div className="pt-2 flex justify-between items-center text-xs text-slate-500 dark:text-slate-400">
-              <span>Total Registered: <strong className="text-slate-900 dark:text-white">{participants.length} Entries</strong></span>
-              <button
-                onClick={() => setSelectedEventForParticipants(null)}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-bold text-xs cursor-pointer"
-              >
-                Close Roster
-              </button>
             </div>
 
           </div>
         </div>
       )}
 
-
-      {/* Image Cropper Modal */}
+      {/* IMAGE CROPPER MODAL */}
       {showCropper && cropperRawSrc && (
         <ImageCropperModal
           imageSrc={cropperRawSrc}

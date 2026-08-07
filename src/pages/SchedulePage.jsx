@@ -31,12 +31,34 @@ export const SchedulePage = () => {
               const t2 = (m.team2 || '').trim().toLowerCase();
               if (mockNames.includes(t1) || mockNames.includes(t2)) return;
 
-              const sportId = (m.sportId || 'badminton').toLowerCase();
-              const rawSportName = m.sportName || (sportId.charAt(0).toUpperCase() + sportId.slice(1).replace('-', ' '));
-              const rawVenue = m.tableNumber || m.venue || 'Court 1';
-              const isTT = sportId === 'table-tennis';
-              const venueLabel = isTT ? 'Table' : ['cricket', 'football'].includes(sportId) ? 'Ground' : 'Court';
-              const displayVenue = rawVenue.replace(/Table/gi, venueLabel);
+              const sportId = (m.sportId || m.sport || 'badminton').toLowerCase();
+              const rawSportName = m.sportName || m.sport || (sportId.charAt(0).toUpperCase() + sportId.slice(1).replace('-', ' '));
+              const rawVenue = m.tableNumber || m.venue || 'Table 1';
+
+              let displayVenue = rawVenue;
+              const isChess = sportId.includes('chess') || rawSportName.toLowerCase().includes('chess');
+              const isTT = sportId.includes('table-tennis') || rawSportName.toLowerCase().includes('table tennis');
+
+              if (isChess || isTT) {
+                if (/court/gi.test(rawVenue)) {
+                  displayVenue = rawVenue.replace(/court/gi, 'Table');
+                } else if (!/table/gi.test(rawVenue)) {
+                  const num = rawVenue.replace(/\D/g, '') || '1';
+                  displayVenue = `Table ${num}`;
+                }
+              } else if (sportId.includes('cricket') || sportId.includes('football')) {
+                if (/table/gi.test(rawVenue)) {
+                  displayVenue = rawVenue.replace(/table/gi, 'Ground');
+                }
+              } else if (sportId.includes('kabaddi')) {
+                if (/table/gi.test(rawVenue)) {
+                  displayVenue = rawVenue.replace(/table/gi, 'Mat');
+                }
+              } else {
+                if (/table/gi.test(rawVenue)) {
+                  displayVenue = rawVenue.replace(/table/gi, 'Court');
+                }
+              }
 
               allSchedules.push({
                 id: m.id || `M-${Math.random()}`,

@@ -45,10 +45,16 @@ export const BasketballEventsTab = ({ user }) => {
     category: 'Open', // Boys, Girls, Open (Mixed removed)
     status: 'Published', // Draft, Upcoming, Published, Closed
     rules: [
-      'Official FIBA tournament rules apply.',
-      'Team squad must consist of minimum 5 and maximum 10 players.',
-      'College Student ID & Pass mandatory for all players.',
-      'Standard non-marking basketball sneakers strictly required.'
+      '1. Team Composition: Each team consists of 5 players on the court (Squad size 5-10 players). Substitutions allowed per rules.',
+      '2. Match Duration: 4 quarters of 10 minutes each with a 2-min break after 1st & 3rd quarters and a 10-min halftime after 2nd quarter.',
+      '3. Scoring: Free Throw = 1 Point | Field Goal = 2 Points | 3-Point Shot = 3 Points.',
+      '4. Game Start: Jump ball at the center circle.',
+      '5. Shot Clock: 24 seconds to attempt a shot upon gaining possession.',
+      '6. Player Fouls: 5 personal fouls results in player disqualification.',
+      '7. Team Fouls: Reaching quarter foul limit awards free throws to opponent.',
+      '8. Overtime: Tied games play 5-minute overtime periods until winner decided.',
+      '9. Uniforms & Conduct: Matching jerseys with visible numbers and basketball shoes mandatory. Technical fouls for misconduct.',
+      '10. Guidelines: Report 15 mins early. Valid College ID mandatory. Late arrival may cause walkover.'
     ],
     requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'Team Roster Approval Form'],
     contactName: user?.coordinatorName || 'Michael Jordan Singh',
@@ -130,16 +136,40 @@ export const BasketballEventsTab = ({ user }) => {
       category: 'Open',
       status: 'Published',
       rules: [
-        'Official FIBA tournament rules apply.',
-        'Team squad must consist of min 5 and max 10 players.',
-        'College ID mandatory for all squad members.'
+        '1. Team Composition: Each team consists of 5 players on the court (Squad size 5-10 players). Substitutions allowed per rules.',
+        '2. Match Duration: 4 quarters of 10 minutes each with a 2-min break after 1st & 3rd quarters and a 10-min halftime after 2nd quarter.',
+        '3. Scoring: Free Throw = 1 Point | Field Goal = 2 Points | 3-Point Shot = 3 Points.',
+        '4. Game Start: Jump ball at the center circle.',
+        '5. Shot Clock: 24 seconds to attempt a shot upon gaining possession.',
+        '6. Player Fouls: 5 personal fouls results in player disqualification.',
+        '7. Team Fouls: Reaching quarter foul limit awards free throws to opponent.',
+        '8. Overtime: Tied games play 5-minute overtime periods until winner decided.',
+        '9. Uniforms & Conduct: Matching jerseys with visible numbers and basketball shoes mandatory. Technical fouls for misconduct.',
+        '10. Guidelines: Report 15 mins early. Valid College ID mandatory. Late arrival may cause walkover.'
       ],
       requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID'],
       contactName: user?.coordinatorName || 'Basketball Coordinator',
       contactEmail: user?.email || 'basketball.coord@sems.edu',
       contactPhone: '+91 98765 43210'
     });
-    setRulesInput('Official FIBA tournament rules apply.\nTeam squad must consist of min 5 and max 10 players.\nCollege Student ID Card mandatory.');
+    setRulesInput(`Basketball Tournament Rules
+
+Team Composition: Each team consists of 5 players on the court. Substitutions are allowed as per tournament rules.
+Match Duration: 4 quarters of 10 minutes each with 2-min break after 1st & 3rd quarters and 10-min halftime after 2nd quarter.
+Scoring: Free Throw = 1 Point | Field Goal (inside 3-pt line) = 2 Points | Beyond 3-pt line = 3 Points
+Game Start: Jump ball at the center circle.
+Shot Clock: 24 seconds to attempt a shot upon gaining possession.
+Player Fouls: 5 personal fouls results in player disqualification.
+Team Fouls: Reaching quarter foul limit awards free throws to opponent.
+Timeouts & Overtime: Permitted timeouts allowed. Tied regulation games play 5-minute overtime periods.
+Sportsmanship & Uniforms: Matching jerseys with visible numbers and basketball shoes mandatory. Misconduct leads to technical fouls.
+Organizer's Decision: Referee and organizer decisions are final and binding.
+
+📌 Additional Guidelines:
+- Teams should report 15 minutes before scheduled match.
+- Carry a valid college ID card.
+- Late arrival may result in a walkover.
+- Only registered players allowed to participate.`);
     setDocInput('College Student ID Card\nAadhaar Card / Govt ID');
     setShowCreateModal(true);
   };

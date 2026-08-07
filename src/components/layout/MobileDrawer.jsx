@@ -98,7 +98,6 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
     { name: 'Leaderboard', path: '/leaderboard', icon: Award },
     { name: 'Announcements', path: '/announcements', icon: Newspaper },
     { name: 'Gallery', path: '/gallery', icon: Image },
-    ...(isPRAuth ? [{ name: 'PR Portal', path: '/pr-dashboard', icon: Camera }] : []),
     { name: 'About Us', path: '/about', icon: Info },
   ];
 
