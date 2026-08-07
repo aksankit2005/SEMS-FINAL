@@ -52,9 +52,9 @@ export const EventsTab = ({ user }) => {
       'Sports jersey and proper shoes required.'
     ],
     requiredDocuments: ['College Student ID', 'Aadhaar Card / Govt ID'],
-    contactName: user?.coordinatorName || 'Sport Coordinator',
-    contactEmail: user?.email || `${user?.assignedSport || 'badminton'}.coord@sems.edu`,
-    contactPhone: '+91 98765 43210'
+    contactName: user?.coordinatorName || '',
+    contactEmail: user?.email || '',
+    contactPhone: ''
   });
 
   const [rulesInput, setRulesInput] = useState('');
@@ -131,9 +131,9 @@ export const EventsTab = ({ user }) => {
       status: 'Published',
       rules: ['Official ITTF/BWF rules apply.', 'College ID mandatory.'],
       requiredDocuments: ['College Student ID Card', 'Aadhaar Card'],
-      contactName: user?.coordinatorName || 'Sport Coordinator',
-      contactEmail: user?.email || `${user?.assignedSport}.coord@sems.edu`,
-      contactPhone: '+91 98765 43210'
+      contactName: user?.coordinatorName || '',
+      contactEmail: user?.email || '',
+      contactPhone: ''
     });
     setRulesInput('Official tournament rules apply.\nCollege Student ID & Pass mandatory.');
     setDocInput('College Student ID Card\nAadhaar Card / Govt ID');
@@ -724,33 +724,7 @@ export const EventsTab = ({ user }) => {
                 />
               </div>
 
-              {/* Contact Information */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3">
-                <span className="text-xs font-bold uppercase text-blue-600 dark:text-indigo-400 block">Coordinator Contact Information</span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <input
-                    type="text"
-                    placeholder="Contact Name"
-                    value={formData.contactName}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, contactName: e.target.value }))}
-                    className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs text-slate-900 dark:text-white"
-                  />
-                  <input
-                    type="email"
-                    placeholder="Contact Email"
-                    value={formData.contactEmail}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, contactEmail: e.target.value }))}
-                    className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs text-slate-900 dark:text-white"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Contact Phone"
-                    value={formData.contactPhone}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, contactPhone: e.target.value }))}
-                    className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs text-slate-900 dark:text-white"
-                  />
-                </div>
-              </div>
+
 
               {/* Modal Buttons */}
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">

@@ -1,15 +1,68 @@
 import React, { useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { Search, Menu, Trophy, User, ShieldCheck, Sparkles, LayoutDashboard, LogOut, ChevronDown, Building2, Shield, Camera } from 'lucide-react';
+import { Menu, Trophy, User, ShieldCheck, Sparkles, LayoutDashboard, LogOut, ChevronDown, Building2, Shield, Camera } from 'lucide-react';
 import { ThemeToggle } from '../common/ThemeToggle';
-import { QuickSearchModal } from '../common/QuickSearchModal';
 import { MobileDrawer } from './MobileDrawer';
 import { useAuth } from '../../context/AuthContext';
+import { collegeHeadApi } from '../../services/collegeHeadApi';
+import { coordinatorApi } from '../../services/coordinatorApi';
+import { galleryApi } from '../../services/galleryApi';
 
 export const Navbar = () => {
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const { user, setIsAuthModalOpen, logout } = useAuth();
+  const { user, logout } = useAuth();
+
+  const getActiveSession = () => {
+    if (user) {
+      return {
+        name: user.name || 'User Profile',
+        roleLabel: user.role === 'admin' ? 'Admin' : 'Profile / Dashboard',
+        dashboardPath: '/dashboard',
+        logoutHandler: () => {
+          logout();
+        }
+      };
+    }
+    if (collegeHeadApi.isAuthenticated()) {
+      const chUser = collegeHeadApi.getUser();
+      return {
+        name: chUser?.faculty_name || chUser?.college || 'College Head',
+        roleLabel: 'College Head',
+        dashboardPath: '/college-head/dashboard',
+        logoutHandler: () => {
+          collegeHeadApi.logout();
+          window.location.href = '/';
+        }
+      };
+    }
+    if (Boolean(localStorage.getItem('sems_coordinator_token'))) {
+      const coordUser = coordinatorApi.getCurrentUser();
+      return {
+        name: coordUser?.coordinatorName || coordUser?.sportName || 'Coordinator',
+        roleLabel: 'Sport Coord',
+        dashboardPath: '/coordinator/dashboard',
+        logoutHandler: () => {
+          coordinatorApi.logout();
+          window.location.href = '/';
+        }
+      };
+    }
+    if (galleryApi.isPRAuthenticated()) {
+      const prUser = JSON.parse(localStorage.getItem('pr_user') || '{}');
+      return {
+        name: prUser?.username || 'PR Media',
+        roleLabel: 'PR Coordinator',
+        dashboardPath: '/pr-dashboard',
+        logoutHandler: () => {
+          galleryApi.logoutPR();
+          window.location.href = '/';
+        }
+      };
+    }
+    return null;
+  };
+
+  const activeSession = getActiveSession();
 
   const navLinks = [
     { name: 'Home', path: '/' },
@@ -19,7 +72,6 @@ export const Navbar = () => {
     { name: 'Schedule', path: '/schedule' },
     { name: 'Results', path: '/results' },
     { name: 'Leaderboard', path: '/leaderboard' },
-    { name: 'Coordinators', path: '/coordinators' },
     { name: 'Announcements', path: '/announcements' },
     { name: 'Gallery', path: '/gallery' },
     { name: 'About Us', path: '/about' },
@@ -30,17 +82,17 @@ export const Navbar = () => {
       <header className="sticky top-0 z-40 w-full glass-panel border-b border-slate-200/50 dark:border-slate-800/80 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
-            
+
             {/* Logo */}
             <Link to="/" className="flex items-center group">
-              <img 
-                src="/logo-dark.png" 
-                alt="APEX Logo" 
+              <img
+                src="/logo-dark.png"
+                alt="APEX Logo"
                 className="hidden dark:block h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
               />
-              <img 
-                src="/logo-light.png" 
-                alt="APEX Logo" 
+              <img
+                src="/logo-light.png"
+                alt="APEX Logo"
                 className="block dark:hidden h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
               />
             </Link>
@@ -52,10 +104,9 @@ export const Navbar = () => {
                   key={link.path}
                   to={link.path}
                   className={({ isActive }) =>
-                    `relative px-3 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all duration-200 flex items-center gap-1.5 ${
-                      isActive
-                        ? 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 font-bold'
-                        : 'text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                    `relative px-3 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all duration-200 flex items-center gap-1.5 ${isActive
+                      ? 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 font-bold'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
                     }`
                   }
                 >
@@ -70,41 +121,26 @@ export const Navbar = () => {
               ))}
             </nav>
 
-            {/* Actions: Search, Theme Toggle, Auth / Dashboard */}
+            {/* Actions: Theme Toggle, Auth / Dashboard */}
             <div className="flex items-center gap-2.5">
-
-              {/* Quick Search Command Trigger */}
-              <button
-                onClick={() => setIsSearchOpen(true)}
-                className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs border border-slate-200 dark:border-slate-700/60 transition shadow-sm"
-                title="Search (Ctrl + K)"
-              >
-                <Search className="w-3.5 h-3.5" />
-                <span className="font-medium">Search...</span>
-                <kbd className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                  Ctrl K
-                </kbd>
-              </button>
-
               <ThemeToggle />
 
-              {/* User Dashboard / Log Out / Login Button */}
-              {user ? (
+              {/* User Profile / Log Out OR Login Button */}
+              {activeSession ? (
                 <div className="flex items-center gap-2">
                   <Link
-                    to="/dashboard"
+                    to={activeSession.dashboardPath}
                     className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-semibold text-xs shadow-lg shadow-cyan-600/20 transition-all"
                   >
-                    {user.role === 'admin' ? (
-                      <ShieldCheck className="w-4 h-4 text-amber-300" />
-                    ) : (
-                      <LayoutDashboard className="w-4 h-4" />
-                    )}
-                    <span className="max-w-[100px] truncate">{user.name}</span>
+                    <LayoutDashboard className="w-4 h-4 text-amber-300" />
+                    <span className="max-w-[110px] truncate">{activeSession.name}</span>
+                    <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-white/20 text-white">
+                      {activeSession.roleLabel}
+                    </span>
                   </Link>
                   <button
-                    onClick={logout}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-500/30 font-bold text-xs transition"
+                    onClick={activeSession.logoutHandler}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-500/30 font-bold text-xs transition cursor-pointer"
                     title="Log Out"
                   >
                     <LogOut className="w-3.5 h-3.5" />
@@ -115,7 +151,7 @@ export const Navbar = () => {
                 <div className="relative group">
                   <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-semibold text-xs shadow-lg shadow-cyan-600/20 transition-all cursor-pointer">
                     <User className="w-3.5 h-3.5" />
-                    <span>Login</span>
+                    <span>Portal Sign In</span>
                     <ChevronDown className="w-3.5 h-3.5 text-cyan-200 group-hover:rotate-180 transition-transform duration-200" />
                   </button>
                   <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex flex-col overflow-hidden p-1.5 space-y-1">
@@ -175,8 +211,7 @@ export const Navbar = () => {
         </div>
       </header>
 
-      {/* Modals & Drawers */}
-      <QuickSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      {/* Mobile Drawer */}
       <MobileDrawer isOpen={isMobileOpen} onClose={() => setIsMobileOpen(false)} />
     </>
   );

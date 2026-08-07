@@ -21,9 +21,11 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Initial empty fallback events & media
-const INITIAL_FALLBACK_EVENTS = [];
-const INITIAL_FALLBACK_MEDIA = [];
+import { GALLERY_EVENTS, GALLERY_MEDIA } from '../data/galleryData';
+
+// Initial rich fallback events & media
+const INITIAL_FALLBACK_EVENTS = GALLERY_EVENTS;
+const INITIAL_FALLBACK_MEDIA = GALLERY_MEDIA;
 
 // Helper to manage localStorage mock state when API server is not running
 const getLocalEvents = () => {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, RotateCcw, Pause, Play, Trophy, ShieldAlert, CheckCircle2, Lock, Unlock, AlertCircle } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
+import { generateMatchResultPDF } from '../../../utils/pdfExporter';
 
 export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMatchUpdated }) => {
   const { addToast } = useToast();
@@ -209,6 +210,59 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
     }
   };
 
+  // Finish Match Action directly from Controller
+  const handleFinishMatch = async () => {
+    const defaultTeam1 = match?.team1 || 'Player 1';
+    const defaultTeam2 = match?.team2 || 'Player 2';
+
+    // Calculate sets won from setsHistory
+    const calculatedSetsWon1 = setsHistory.filter((s) => s.winner === match?.team1 || (s.score1 > 0 && s.score1 > s.score2)).length;
+    const calculatedSetsWon2 = setsHistory.filter((s) => s.winner === match?.team2 || (s.score2 > 0 && s.score2 > s.score1)).length;
+
+    const winnerName = matchWinner || (calculatedSetsWon1 >= calculatedSetsWon2 ? (score1 >= score2 ? defaultTeam1 : defaultTeam2) : defaultTeam2);
+    if (!window.confirm(`Finish match and declare winner as "${winnerName}"?`)) return;
+
+    const matchId = match?.id || `M${Math.floor(100000 + Math.random() * 900000)}`;
+
+    const setsBreakdownStr = setsHistory
+      .filter((s) => s.score1 > 0 || s.score2 > 0)
+      .map((s) => `S${s.set}: ${s.score1}-${s.score2}`)
+      .join(', ');
+
+    const scoreSummary = `${calculatedSetsWon1} - ${calculatedSetsWon2} Sets${setsBreakdownStr ? ` (${setsBreakdownStr})` : ` (${score1}-${score2} Pts)`}`;
+
+    const completedObj = {
+      ...match,
+      id: matchId,
+      winner: winnerName,
+      score1,
+      score2,
+      setsWon1: calculatedSetsWon1,
+      setsWon2: calculatedSetsWon2,
+      setsHistory,
+      scoreSummary,
+      status: 'COMPLETED',
+      tableNumber: null,
+      isLiveStreaming: false,
+      completedAt: new Date().toISOString(),
+    };
+
+    try {
+      await coordinatorApi.completeMatch(matchId, completedObj);
+      try {
+        generateMatchResultPDF(completedObj, match?.sportName || 'Badminton');
+      } catch (pdfErr) {
+        console.warn('PDF export fallback:', pdfErr);
+      }
+      if (onMatchUpdated) onMatchUpdated(matchId, { status: 'COMPLETED', scoreSummary, setsWon1: calculatedSetsWon1, setsWon2: calculatedSetsWon2, winner: winnerName });
+      addToast(`🏆 Match Finished! Winner: ${winnerName}. Saved to Results section.`, 'success');
+      onClose();
+    } catch (err) {
+      console.error('Error finishing match:', err);
+      addToast('Error finishing match. Please try again.', 'error');
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 dark:bg-[#070B14]/90 backdrop-blur-md overflow-y-auto animate-fade-in font-sans">
       <div className="w-full max-w-4xl bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden my-auto space-y-0 text-slate-900 dark:text-slate-200">
@@ -250,7 +304,9 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
           {/* Player 1 Card (Left) */}
           <div className="md:col-span-5 p-6 rounded-3xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-slate-800/90 shadow-soft dark:shadow-2xl flex flex-col items-center text-center space-y-4 relative">
             <div>
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{match.team1}</h2>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                {(match.team1 || '').replace(/\s*\(.*?\)/, '')}
+              </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">Roll: N/A</p>
             </div>
 
@@ -284,7 +340,9 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
           {/* Player 2 Card (Right) */}
           <div className="md:col-span-5 p-6 rounded-3xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-slate-800/90 shadow-soft dark:shadow-2xl flex flex-col items-center text-center space-y-4 relative">
             <div>
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{match.team2}</h2>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                {(match.team2 || '').replace(/\s*\(.*?\)/, '')}
+              </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">Roll: N/A</p>
             </div>
 
@@ -363,7 +421,7 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
           </div>
         </div>
 
-        {/* Bottom Control Actions (Undo, Reset, Pause, Walkover) */}
+        {/* Bottom Control Actions (Undo, Reset, Pause, Finish Match) */}
         <div className="p-6 bg-slate-50 dark:bg-[#111827] flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <button
@@ -385,15 +443,23 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
 
           <div className="flex items-center gap-2">
             <button
-              onClick={handleDeclareWalkover}
-              className="px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+              onClick={handleFinishMatch}
+              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md shadow-emerald-600/30 transition flex items-center gap-1.5 cursor-pointer active:scale-95"
             >
-              <ShieldAlert className="w-3.5 h-3.5" /> Walkover / W.O.
+              <CheckCircle2 className="w-4 h-4" />
+              <span>🏁 Finish Match</span>
+            </button>
+
+            <button
+              onClick={handleDeclareWalkover}
+              className="px-3.5 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <ShieldAlert className="w-3.5 h-3.5" /> W.O.
             </button>
 
             <button
               onClick={handleResetMatch}
-              className="px-4 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-rose-600 hover:text-white text-slate-700 dark:text-slate-300 font-bold text-xs transition cursor-pointer"
+              className="px-3.5 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-rose-600 hover:text-white text-slate-700 dark:text-slate-300 font-bold text-xs transition cursor-pointer"
             >
               Reset 0-0
             </button>

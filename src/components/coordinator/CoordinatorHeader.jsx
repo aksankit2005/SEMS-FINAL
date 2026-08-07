@@ -1,8 +1,9 @@
 import React from 'react';
-import { RefreshCw, LogOut, Calendar, Radio, Award, Users, Layers } from 'lucide-react';
+import { RefreshCw, LogOut, Calendar, Radio, Award, Users, Layers, User } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 
 export const OPERATIONAL_TABS = [
+  { id: 'profile', label: 'My Profile', icon: User },
   { id: 'events', label: 'Registration Events', icon: Layers },
   { id: 'schedule', label: 'Match Schedule', icon: Calendar },
   { id: 'live-control', label: 'Live Match Control', icon: Radio, badge: 'LIVE' },
@@ -42,7 +43,7 @@ export const CoordinatorHeader = ({ user, activeTab, setActiveTab, onLogout }) =
           </p>
         </div>
 
-        {/* Right Top Actions (Sync Data & Logout) */}
+        {/* Right Top Actions (Sync Data) */}
         <div className="flex items-center gap-2.5">
           <button
             onClick={handleSyncData}
@@ -50,14 +51,6 @@ export const CoordinatorHeader = ({ user, activeTab, setActiveTab, onLogout }) =
           >
             <RefreshCw className="w-3.5 h-3.5 text-blue-600 dark:text-indigo-400" />
             <span>Sync Data</span>
-          </button>
-
-          <button
-            onClick={onLogout}
-            className="px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-white font-bold text-xs border border-rose-500/20 transition flex items-center gap-1.5 cursor-pointer"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Logout</span>
           </button>
         </div>
 

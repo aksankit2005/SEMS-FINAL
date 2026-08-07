@@ -39,6 +39,20 @@ import { CoordinatorDashboardPage } from './pages/coordinator/CoordinatorDashboa
 import { CoordinatorProtectedRoute } from './components/coordinator/CoordinatorProtectedRoute';
 import { NotFoundPage } from './pages/NotFoundPage';
 
+// ── Sport Coordinator Pages (independent modules) ──────────────────────────
+import { BadmintonCoordinatorPage } from './pages/coordinator/sports/badminton/BadmintonCoordinatorPage';
+import { FootballCoordinatorPage } from './pages/coordinator/sports/football/FootballCoordinatorPage';
+import { BasketballCoordinatorPage } from './pages/coordinator/sports/basketball/BasketballCoordinatorPage';
+import { VolleyballCoordinatorPage } from './pages/coordinator/sports/volleyball/VolleyballCoordinatorPage';
+import { TableTennisCoordinatorPage } from './pages/coordinator/sports/table-tennis/TableTennisCoordinatorPage';
+import { ChessCoordinatorPage } from './pages/coordinator/sports/chess/ChessCoordinatorPage';
+import { KabaddiCoordinatorPage } from './pages/coordinator/sports/kabaddi/KabaddiCoordinatorPage';
+import { KhoKhoCoordinatorPage } from './pages/coordinator/sports/kho-kho/KhoKhoCoordinatorPage';
+import { AthleticsCoordinatorPage } from './pages/coordinator/sports/athletics/AthleticsCoordinatorPage';
+import { TugOfWarCoordinatorPage } from './pages/coordinator/sports/tug-of-war/TugOfWarCoordinatorPage';
+import { GullyCricketCoordinatorPage } from './pages/coordinator/sports/gully-cricket/GullyCricketCoordinatorPage';
+import { CricketCoordinatorPage } from './pages/coordinator/sports/cricket/CricketCoordinatorPage';
+
 function App() {
   return (
     <ThemeProvider>
@@ -91,8 +105,22 @@ function App() {
                   <Route path="/coordinator/login" element={<CoordinatorLoginPage />} />
                   <Route path="/coordinator-login" element={<CoordinatorLoginPage />} />
 
-                  {/* Protected Sport Coordinator Portal Routes */}
+                  {/* Protected Sport Coordinator Portal Routes — Badminton (existing & new) */}
                   <Route path="/coordinator/dashboard" element={<CoordinatorProtectedRoute><CoordinatorDashboardPage /></CoordinatorProtectedRoute>} />
+                  <Route path="/coordinator/badminton" element={<CoordinatorProtectedRoute><BadmintonCoordinatorPage /></CoordinatorProtectedRoute>} />
+
+                  {/* Protected Sport Coordinator Portals — Other Sports (independent modules) */}
+                  <Route path="/coordinator/football" element={<CoordinatorProtectedRoute><FootballCoordinatorPage /></CoordinatorProtectedRoute>} />
+                  <Route path="/coordinator/basketball" element={<CoordinatorProtectedRoute><BasketballCoordinatorPage /></CoordinatorProtectedRoute>} />
+                  <Route path="/coordinator/volleyball" element={<CoordinatorProtectedRoute><VolleyballCoordinatorPage /></CoordinatorProtectedRoute>} />
+                  <Route path="/coordinator/table-tennis" element={<CoordinatorProtectedRoute><TableTennisCoordinatorPage /></CoordinatorProtectedRoute>} />
+                  <Route path="/coordinator/chess" element={<CoordinatorProtectedRoute><ChessCoordinatorPage /></CoordinatorProtectedRoute>} />
+                  <Route path="/coordinator/kabaddi" element={<CoordinatorProtectedRoute><KabaddiCoordinatorPage /></CoordinatorProtectedRoute>} />
+                  <Route path="/coordinator/kho-kho" element={<CoordinatorProtectedRoute><KhoKhoCoordinatorPage /></CoordinatorProtectedRoute>} />
+                  <Route path="/coordinator/athletics" element={<CoordinatorProtectedRoute><AthleticsCoordinatorPage /></CoordinatorProtectedRoute>} />
+                  <Route path="/coordinator/tug-of-war" element={<CoordinatorProtectedRoute><TugOfWarCoordinatorPage /></CoordinatorProtectedRoute>} />
+                  <Route path="/coordinator/gully-cricket" element={<CoordinatorProtectedRoute><GullyCricketCoordinatorPage /></CoordinatorProtectedRoute>} />
+                  <Route path="/coordinator/cricket" element={<CoordinatorProtectedRoute><CricketCoordinatorPage /></CoordinatorProtectedRoute>} />
                 </Route>
 
                 {/* Full-Screen Standalone Global 404 Route */}
