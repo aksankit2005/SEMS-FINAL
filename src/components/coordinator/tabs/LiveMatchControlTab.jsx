@@ -26,6 +26,8 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
     ? Array.from({ length: 10 }, (_, i) => `Table ${i + 1}`)
     : assignedSport === 'basketball'
     ? ['Basketball Court 1', 'Basketball Court 2']
+    : assignedSport === 'cricket'
+    ? ['Cricket Ground 1']
     : [
         `${venueType} 1`,
         `${venueType} 2`,

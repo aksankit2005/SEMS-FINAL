@@ -111,7 +111,7 @@ export const SPORTS_CONFIG = {
     minPlayers: 11,
     maxPlayers: 15,
     venueLabel: 'Cricket Pitch',
-    venueOptions: ['Main University Stadium Oval', 'Ground 2 Cricket Pitch'],
+    venueOptions: ['Cricket Ground 1'],
     formats: ['T20 Knockout', '15-Overs Limited'],
     rounds: ['Pool Stage', 'Quarter Final', 'Semi Final', 'Final'],
     setMode: false,

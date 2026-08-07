@@ -74,7 +74,6 @@ export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
     { name: 'Leaderboard', path: '/leaderboard', icon: Award },
     { name: 'Announcements', path: '/announcements', icon: Newspaper },
     { name: 'Gallery', path: '/gallery', icon: Image },
-    ...(isPRAuth ? [{ name: 'PR Portal', path: '/pr-dashboard', icon: Camera }] : []),
     { name: 'About Us', path: '/about', icon: Info },
   ];
 
