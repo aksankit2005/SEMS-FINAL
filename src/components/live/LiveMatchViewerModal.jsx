@@ -117,7 +117,10 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
   const setsWonA = calcSetsWon1();
   const setsWonB = calcSetsWon2();
 
-  const isBasketball = (match.sportId || match.sport || match.sportName || '').toLowerCase().includes('basketball') || Boolean(match.roster1 || match.roster2);
+  const isBasketball = (match.sportId || match.sport || match.sportName || '').toLowerCase().includes('basketball') || (Boolean(match.roster1 || match.roster2) && !(match.sportId || match.sport || match.sportName || '').toLowerCase().includes('chess'));
+  const isChess = (match.sportId || match.sport || match.sportName || '').toLowerCase().includes('chess') ||
+                  (match.matchTitle || match.title || '').toLowerCase().includes('chess') ||
+                  (match.eventTitle || '').toLowerCase().includes('chess');
 
   const roster1 = match.roster1 && match.roster1.length > 0
     ? match.roster1
@@ -202,7 +205,7 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
           </div>
         </div>
 
-        {/* Video Player Stream (Memoized to prevent iframe refresh on score updates) */}
+        {/* Video Player Stream */}
         {match.youtubeVideoId ? (
           <YouTubePlayer youtubeVideoId={match.youtubeVideoId} />
         ) : (
@@ -211,7 +214,9 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
               <VideoOff className="w-6 h-6 text-slate-500" />
             </div>
             <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Live video is not available</h4>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">Showing real-time live score updates from official tournament scoring table.</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              {isChess ? 'Showing real-time chess board status updates from official tournament table.' : 'Showing real-time live score updates from official tournament scoring table.'}
+            </p>
           </div>
         )}
 
@@ -224,41 +229,77 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
             {/* Player / Team A */}
             <div className="text-center md:text-left space-y-2">
               <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{team1Name}</h2>
-              <div className="flex items-center justify-center md:justify-start gap-2 text-xs text-slate-500 dark:text-slate-400">
-                <span>Sets / Quarters Won:</span>
-                <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-indigo-600/20 text-blue-700 dark:text-indigo-300 font-mono font-bold">
-                  {setsWonA}
+              {!isChess && (
+                <div className="flex items-center justify-center md:justify-start gap-2 text-xs text-slate-500 dark:text-slate-400">
+                  <span>Sets / Quarters Won:</span>
+                  <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-indigo-600/20 text-blue-700 dark:text-indigo-300 font-mono font-bold">
+                    {setsWonA}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Middle Box - Custom for Chess vs Point Sports */}
+            {isChess ? (
+              <div className="text-center bg-white dark:bg-[#090D16] p-5 rounded-2xl border border-purple-500/30 shadow-md space-y-3">
+                <span className="text-[10px] font-mono uppercase font-bold text-purple-600 dark:text-purple-400 tracking-widest block">
+                  ♟️ CHESS MATCH {isFinished ? 'VERDICT & WINNER' : 'IN PROGRESS'}
                 </span>
-              </div>
-            </div>
 
-            {/* Middle Live Score */}
-            <div className="text-center bg-white dark:bg-[#090D16] p-5 rounded-2xl border border-slate-200 dark:border-[#1E293B] shadow-sm dark:shadow-inner space-y-2">
-              <span className="text-[10px] font-mono uppercase font-bold text-slate-500 dark:text-slate-400 tracking-widest block">
-                {sportConfig.name} {isFinished ? 'Final Score' : 'Live Points'}
-              </span>
-              
-              <div className="flex items-center justify-center gap-4 text-5xl font-black font-mono text-slate-900 dark:text-white">
-                <span className="text-blue-600 dark:text-indigo-400">{score1Val}</span>
-                <span className="text-slate-400 dark:text-slate-600 text-3xl">:</span>
-                <span className="text-blue-600 dark:text-indigo-400">{score2Val}</span>
+                {isFinished ? (
+                  <div className="space-y-1.5 py-1">
+                    <div className="text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1.5 text-base font-black">
+                      <Award className="w-5 h-5 text-amber-400" />
+                      <span>Winner: {match.winner || (score1Val > score2Val ? team1Name : score2Val > score1Val ? team2Name : 'Draw (½ - ½)')}</span>
+                    </div>
+                    <p className="text-xs font-mono text-purple-600 dark:text-purple-300 font-bold bg-purple-500/10 py-1 px-3 rounded-full inline-block">
+                      {match.scoreText || match.scoreSummary || (score1Val === 1 ? 'Result: 1 - 0 (White Wins)' : score2Val === 1 ? 'Result: 0 - 1 (Black Wins)' : 'Result: ½ - ½ (Draw)')}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 py-1">
+                    <div className="text-base font-black text-slate-900 dark:text-white flex items-center justify-center gap-2">
+                      <span className="text-purple-600 dark:text-purple-400">{team1Name}</span>
+                      <span className="text-xs font-mono text-slate-400 dark:text-slate-500 font-bold">VS</span>
+                      <span className="text-purple-600 dark:text-purple-400">{team2Name}</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 text-xs font-mono text-emerald-600 dark:text-emerald-400">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                      <span className="font-bold">REAL-TIME CHESS MATCH IN PROGRESS</span>
+                    </div>
+                  </div>
+                )}
               </div>
+            ) : (
+              <div className="text-center bg-white dark:bg-[#090D16] p-5 rounded-2xl border border-slate-200 dark:border-[#1E293B] shadow-sm dark:shadow-inner space-y-2">
+                <span className="text-[10px] font-mono uppercase font-bold text-slate-500 dark:text-slate-400 tracking-widest block">
+                  {sportConfig.name} {isFinished ? 'Final Score' : 'Live Points'}
+                </span>
+                
+                <div className="flex items-center justify-center gap-4 text-5xl font-black font-mono text-slate-900 dark:text-white">
+                  <span className="text-blue-600 dark:text-indigo-400">{score1Val}</span>
+                  <span className="text-slate-400 dark:text-slate-600 text-3xl">:</span>
+                  <span className="text-blue-600 dark:text-indigo-400">{score2Val}</span>
+                </div>
 
-              <div className="pt-2 flex items-center justify-center gap-2 text-xs font-mono text-emerald-600 dark:text-emerald-400">
-                {!isFinished && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />}
-                <span className="font-bold">{isFinished ? 'MATCH FINISHED' : 'REAL-TIME LIVE SCORE'}</span>
+                <div className="pt-2 flex items-center justify-center gap-2 text-xs font-mono text-emerald-600 dark:text-emerald-400">
+                  {!isFinished && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />}
+                  <span className="font-bold">{isFinished ? 'MATCH FINISHED' : 'REAL-TIME LIVE SCORE'}</span>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Player / Team B */}
             <div className="text-center md:text-right space-y-2">
               <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{team2Name}</h2>
-              <div className="flex items-center justify-center md:justify-end gap-2 text-xs text-slate-500 dark:text-slate-400">
-                <span>Sets / Quarters Won:</span>
-                <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-indigo-600/20 text-blue-700 dark:text-indigo-300 font-mono font-bold">
-                  {setsWonB}
-                </span>
-              </div>
+              {!isChess && (
+                <div className="flex items-center justify-center md:justify-end gap-2 text-xs text-slate-500 dark:text-slate-400">
+                  <span>Sets / Quarters Won:</span>
+                  <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-indigo-600/20 text-blue-700 dark:text-indigo-300 font-mono font-bold">
+                    {setsWonB}
+                  </span>
+                </div>
+              )}
             </div>
 
           </div>
