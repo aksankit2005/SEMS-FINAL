@@ -4,7 +4,6 @@ import { useToast } from '../../../context/ToastContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { extractYouTubeVideoId, getYouTubeEmbedUrl } from '../../../utils/youtube';
 import { generateMatchResultPDF } from '../../../utils/pdfExporter';
-import { VolleyballRosterSetupModal } from '../modal/VolleyballRosterSetupModal';
 import { VolleyballLiveScoreControllerModal } from '../modal/VolleyballLiveScoreControllerModal';
 
 export const VolleyballLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
@@ -29,7 +28,6 @@ export const VolleyballLiveMatchControlTab = ({ matches, user, onUpdateMatchScor
   });
 
   const [activeControllerVenue, setActiveControllerVenue] = useState(null);
-  const [activeRosterSetupMatch, setActiveRosterSetupMatch] = useState(null); // { match, targetVenue }
   const [streamInputMap, setStreamInputMap] = useState({});
   const [previewVideoId, setPreviewVideoId] = useState(null);
 
@@ -71,11 +69,7 @@ export const VolleyballLiveMatchControlTab = ({ matches, user, onUpdateMatchScor
       ? requestedVenue
       : availableCourts[0];
 
-    if (!matchItem.roster1 || matchItem.roster1.length < 6) {
-      setActiveRosterSetupMatch({ match: matchItem, targetVenue });
-    } else {
-      executePromoteGoLive(matchItem, targetVenue, matchItem.roster1, matchItem.roster2);
-    }
+    executePromoteGoLive(matchItem, targetVenue, matchItem.roster1, matchItem.roster2);
   };
 
   const executePromoteGoLive = async (matchItem, targetVenue, r1, r2) => {
@@ -427,23 +421,6 @@ export const VolleyballLiveMatchControlTab = ({ matches, user, onUpdateMatchScor
           </div>
         );
       })()}
-
-      {/* Roster Setup Modal before Go Live */}
-      {activeRosterSetupMatch && (
-        <VolleyballRosterSetupModal
-          match={activeRosterSetupMatch.match}
-          targetVenue={activeRosterSetupMatch.targetVenue}
-          onClose={() => setActiveRosterSetupMatch(null)}
-          onRosterSaved={({ roster1, roster2 }) => {
-            executePromoteGoLive(
-              activeRosterSetupMatch.match,
-              activeRosterSetupMatch.targetVenue,
-              roster1,
-              roster2
-            );
-          }}
-        />
-      )}
 
       {/* Score & Sub Controller Modal */}
       {activeControllerVenue && (
