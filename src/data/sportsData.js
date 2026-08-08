@@ -100,10 +100,11 @@ export const SPORTS_DATA = [
     teamSize: "11 + 4 Subs",
     venue: "Main University Stadium Ground 1",
     rules: [
-      "15 overs per side for prelims; T20 format for Finals.",
-      "White leather balls; full cricket kit mandatory.",
-      "Powerplay rules: 4 overs restricted fielding.",
-      "Super Over in case of a tie."
+      "8-Over or 10-Over Cricket rules as per tournament format (8/10 overs per innings).",
+      "11 players per team on field.",
+      "Powerplay: 2 overs (8-Over) or 3 overs (10-Over); Max 2 overs per bowler.",
+      "Wide: 1 extra run + rebowled; No-Ball: 1 extra run + Free Hit.",
+      "Innings Break: 5 to 7 mins; Tie: Super Over deciding match."
     ],
     schedule: "Day 1 to Day 4 - 07:30 AM onwards"
   },

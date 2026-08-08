@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ShieldAlert, Info, CheckCircle2, ChevronDown, ChevronUp, Image as ImageIcon, X, ArrowLeft } from 'lucide-react';
+import { CricketRulesDisplay } from './CricketRulesDisplay';
 
 export const BADMINTON_RULES_DATA = {
   singles: [
@@ -324,8 +325,26 @@ export const BasketballRulesDisplay = () => {
 export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }) => {
   if (!isOpen) return null;
 
-  const isChess = (sportName || '').toLowerCase().includes('chess');
-  const isBasketball = (sportName || '').toLowerCase().includes('basketball');
+  const sName = (sportName || '').toLowerCase();
+  const isCricket = sName.includes('cricket');
+  const isChess = sName.includes('chess');
+  const isBasketball = sName.includes('basketball');
+
+  const themeColorClass = isCricket 
+    ? 'text-emerald-400' 
+    : isChess 
+    ? 'text-purple-400' 
+    : isBasketball 
+    ? 'text-orange-400' 
+    : 'text-amber-400';
+
+  const themeBtnClass = isCricket 
+    ? 'bg-emerald-600 hover:bg-emerald-500' 
+    : isChess 
+    ? 'bg-purple-600 hover:bg-purple-500' 
+    : isBasketball 
+    ? 'bg-orange-600 hover:bg-orange-500' 
+    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500';
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/95 backdrop-blur-xl p-3 sm:p-6 animate-fade-in flex flex-col items-center justify-center font-sans">
@@ -337,16 +356,16 @@ export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }
             onClick={onClose}
             className="px-4 py-2 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-2 transition border border-slate-700 active:scale-95 shadow-md shrink-0 cursor-pointer"
           >
-            <ArrowLeft className={`w-4 h-4 ${isChess ? 'text-purple-400' : isBasketball ? 'text-orange-400' : 'text-amber-400'}`} />
+            <ArrowLeft className={`w-4 h-4 ${themeColorClass}`} />
             <span>Go Back</span>
           </button>
 
           <div className="text-center truncate">
-            <span className={`text-[10px] font-mono uppercase tracking-widest block font-bold ${isChess ? 'text-purple-400' : isBasketball ? 'text-orange-400' : 'text-amber-400'}`}>
-              {isChess ? '10-Minute Rapid Chess Rulebook' : isBasketball ? 'FIBA Basketball Rulebook' : 'Official BWF Rulebook'}
+            <span className={`text-[10px] font-mono uppercase tracking-widest block font-bold ${themeColorClass}`}>
+              {isCricket ? 'Official Cricket Tournament Rulebook' : isChess ? '10-Minute Rapid Chess Rulebook' : isBasketball ? 'FIBA Basketball Rulebook' : 'Official BWF Rulebook'}
             </span>
             <h2 className="text-sm sm:text-lg font-black text-white flex items-center gap-1.5 justify-center truncate">
-              <span>{isChess ? '♟️' : isBasketball ? '🏀' : '🏸'}</span> {sportName} Tournament Rules
+              <span>{isCricket ? '🏏' : isChess ? '♟️' : isBasketball ? '🏀' : '🏸'}</span> {sportName} Tournament Rules
             </h2>
           </div>
 
@@ -361,19 +380,25 @@ export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }
 
         {/* Modal Scrollable Body */}
         <div className="p-5 sm:p-8 space-y-6 overflow-y-auto">
-          {isChess ? <ChessRulesDisplay /> : isBasketball ? <BasketballRulesDisplay /> : <BadmintonRulesDisplay />}
+          {isCricket ? (
+            <CricketRulesDisplay />
+          ) : isChess ? (
+            <ChessRulesDisplay />
+          ) : isBasketball ? (
+            <BasketballRulesDisplay />
+          ) : (
+            <BadmintonRulesDisplay />
+          )}
         </div>
 
         {/* Sticky Footer with Go Back Button */}
         <div className="bg-slate-950 px-5 py-4 border-t border-slate-800 flex items-center justify-between gap-4">
           <span className="text-xs text-slate-400 italic hidden sm:inline">
-            {isChess ? '10-Minute Rapid Chess Tournament Regulations' : isBasketball ? 'FIBA Official Basketball Regulations & Guidelines' : 'Badminton World Federation (BWF) Standard Tournament Rules'}
+            {isCricket ? 'Official 8-Over & 10-Over Cricket Regulations' : isChess ? '10-Minute Rapid Chess Regulations' : isBasketball ? 'FIBA Official Basketball Regulations' : 'BWF Standard Tournament Rules'}
           </span>
           <button
             onClick={onClose}
-            className={`px-6 py-2.5 rounded-2xl text-white font-bold text-xs flex items-center gap-2 transition shadow-md active:scale-95 ml-auto cursor-pointer ${
-              isChess ? 'bg-purple-600 hover:bg-purple-500' : isBasketball ? 'bg-orange-600 hover:bg-orange-500' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500'
-            }`}
+            className={`px-6 py-2.5 rounded-2xl text-white font-bold text-xs flex items-center gap-2 transition shadow-md active:scale-95 ml-auto cursor-pointer ${themeBtnClass}`}
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Go Back to Registration</span>
