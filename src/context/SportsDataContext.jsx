@@ -3,8 +3,8 @@ import { SPORTS_DATA } from '../data/sportsData';
 import { LIVE_MATCHES_DATA } from '../data/liveMatchesData';
 import { SCHEDULE_DATA } from '../data/scheduleData';
 import { RESULTS_DATA } from '../data/resultsData';
-import { LEADERBOARD_DATA } from '../data/leaderboardData';
 import { ANNOUNCEMENTS_DATA } from '../data/announcementsData';
+import { ALL_COLLEGES } from '../services/superCoordinatorApi';
 
 const SportsDataContext = createContext();
 
@@ -13,8 +13,42 @@ export const SportsDataProvider = ({ children }) => {
   const [liveMatches, setLiveMatches] = useState([]);
   const [schedule] = useState(SCHEDULE_DATA);
   const [results] = useState(RESULTS_DATA);
-  const [leaderboard] = useState(LEADERBOARD_DATA);
+  const [leaderboard, setLeaderboard] = useState([]);
   const [announcements, setAnnouncements] = useState(ANNOUNCEMENTS_DATA);
+
+  const computeLeaderboard = () => {
+    let entries = [];
+    try {
+      const stored = localStorage.getItem('sems_super_coord_leaderboard');
+      if (stored) entries = JSON.parse(stored);
+    } catch (e) {}
+    const tally = {};
+    entries.forEach((entry) => {
+      if (entry.winnerCollege) {
+        if (!tally[entry.winnerCollege]) tally[entry.winnerCollege] = { gold: 0, silver: 0 };
+        tally[entry.winnerCollege].gold += 1;
+      }
+      if (entry.runnerUpCollege) {
+        if (!tally[entry.runnerUpCollege]) tally[entry.runnerUpCollege] = { gold: 0, silver: 0 };
+        tally[entry.runnerUpCollege].silver += 1;
+      }
+    });
+    const standings = ALL_COLLEGES
+      .filter((c) => c.id !== 'EXTERNAL')
+      .map((college) => {
+        const counts = tally[college.id] || { gold: 0, silver: 0 };
+        return {
+          id: college.id,
+          college: college.name,
+          code: college.id,
+          gold: counts.gold,
+          silver: counts.silver,
+          totalPoints: counts.gold * 2 + counts.silver * 1,
+        };
+      });
+    standings.sort((a, b) => b.totalPoints - a.totalPoints || b.gold - a.gold || b.silver - a.silver || a.college.localeCompare(b.college));
+    setLeaderboard(standings);
+  };
 
   useEffect(() => {
     const syncLiveMatches = () => {
@@ -53,6 +87,16 @@ export const SportsDataProvider = ({ children }) => {
     return () => {
       window.removeEventListener('storage', syncLiveMatches);
       window.removeEventListener('sems_matches_updated', syncLiveMatches);
+    };
+  }, []);
+
+  useEffect(() => {
+    computeLeaderboard();
+    window.addEventListener('sems_leaderboard_updated', computeLeaderboard);
+    window.addEventListener('storage', computeLeaderboard);
+    return () => {
+      window.removeEventListener('sems_leaderboard_updated', computeLeaderboard);
+      window.removeEventListener('storage', computeLeaderboard);
     };
   }, []);
 
