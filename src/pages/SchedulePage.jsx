@@ -14,22 +14,42 @@ export const SchedulePage = () => {
   useEffect(() => {
     const fetchSchedules = async () => {
       const allSchedules = [];
+      const completedMatchIds = new Set();
+      const completedMatchTitles = new Set();
 
-      const mockNames = [
-        '1', '2', 'a', 'b', 'player 1', 'player 2', 'player 3', 'player 4', 'team 1', 'team 2', 'team a', 'team b', 'albert', 'romi',
-        'aarav sharma (mpec)', 'rohan gupta (mips)', 'ankur dixit (mpcps)', 'aditya singh (mpec)',
-        'aagaz khan (mpcps kn142)', 'shiv prakash (mpcps kn142)', 'kapil verma (mpcps kn142)', 'anubhav sachan (mpcps kn142)',
-        'kapil verma', 'anubhav sachan', 'team a', 'team b', 'team 1', 'team 2', 'player / team a', 'player / team b'
-      ];
+      // Scan localStorage for any completed match IDs and titles
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('sems_completed_results_') || key.startsWith('sems_coord_matches_'))) {
+          try {
+            const list = JSON.parse(localStorage.getItem(key));
+            if (Array.isArray(list)) {
+              list.forEach((m) => {
+                if (m && (m.status === 'COMPLETED' || m.status === 'FINISHED')) {
+                  if (m.id) completedMatchIds.add(m.id);
+                  const t1 = typeof m.team1 === 'object' ? (m.team1?.name || '') : String(m.team1 || '').trim();
+                  const t2 = typeof m.team2 === 'object' ? (m.team2?.name || '') : String(m.team2 || '').trim();
+                  if (t1 && t2) {
+                    completedMatchTitles.add(`${t1} vs ${t2}`.toLowerCase());
+                  }
+                }
+              });
+            }
+          } catch (e) {}
+        }
+      }
 
       try {
         const publicMatches = await coordinatorApi.getPublicMatches();
         if (publicMatches && Array.isArray(publicMatches)) {
           publicMatches.forEach((m) => {
-            if (m && m.status !== 'COMPLETED' && m.status !== 'FINISHED') {
-              const t1 = (m.team1 || '').trim().toLowerCase();
-              const t2 = (m.team2 || '').trim().toLowerCase();
-              if (mockNames.includes(t1) || mockNames.includes(t2)) return;
+            if (m && m.status !== 'COMPLETED' && m.status !== 'FINISHED' && !completedMatchIds.has(m.id)) {
+              const t1 = typeof m.team1 === 'object' ? (m.team1?.name || '') : String(m.team1 || '').trim();
+              const t2 = typeof m.team2 === 'object' ? (m.team2?.name || '') : String(m.team2 || '').trim();
+              if (!t1 || !t2) return;
+
+              const matchKey = `${t1} vs ${t2}`.toLowerCase();
+              if (completedMatchTitles.has(matchKey)) return;
 
               const sportId = (m.sportId || m.sport || 'badminton').toLowerCase();
               const rawSportName = m.sportName || m.sport || (sportId.charAt(0).toUpperCase() + sportId.slice(1).replace('-', ' '));
@@ -65,11 +85,11 @@ export const SchedulePage = () => {
                 event: m.eventTitle || m.title || `${rawSportName} Championship 2026`,
                 sport: rawSportName,
                 gender: m.category || m.gender || 'Open',
-                team1: typeof m.team1 === 'object' ? (m.team1?.name || 'Team 1') : (m.team1 || 'Team 1'),
-                team2: typeof m.team2 === 'object' ? (m.team2?.name || 'Team 2') : (m.team2 || 'Team 2'),
+                team1: t1,
+                team2: t2,
                 venue: displayVenue,
-                date: m.date || '2026-08-05',
-                time: m.time || '05:30 PM',
+                date: m.date || '2026-08-08',
+                time: m.time || '10:00 AM',
                 format: m.format || 'SINGLES',
                 mapUrl: 'https://maps.google.com'
               });
@@ -87,11 +107,13 @@ export const SchedulePage = () => {
     window.addEventListener('storage', handleRefresh);
     window.addEventListener('focus', handleRefresh);
     window.addEventListener('sems_matches_updated', handleRefresh);
+    window.addEventListener('sems_results_updated', handleRefresh);
 
     return () => {
       window.removeEventListener('storage', handleRefresh);
       window.removeEventListener('focus', handleRefresh);
       window.removeEventListener('sems_matches_updated', handleRefresh);
+      window.removeEventListener('sems_results_updated', handleRefresh);
     };
   }, []);
 

@@ -21,10 +21,19 @@ export const SPORTS_DATA = [
     teamSize: "1 - 2 Players",
     venue: "Indoor Sports Complex Hall A",
     rules: [
-      "Standard ITTF rules apply.",
-      "Matches will be best of 5 sets (11 points per set).",
-      "Valid non-marking shoes are mandatory in the indoor arena.",
-      "Players must bring their own paddles; standard balls provided."
+      "1. GAMES ARE PLAYED TO 11 POINTS (Must win by 2 points. Best 3 of 5 Games).",
+      "2. ALTERNATE SERVES EVERY TWO POINTS (At 10-10 deuce, service alternates every point. No special rule for Game Point).",
+      "3. TOSS THE BALL STRAIGHT UP AT LEAST 6\" WHEN SERVING (From open palm behind table. Must bounce on your side then receiver's side).",
+      "4. THE SERVE CAN LAND ANYWHERE IN SINGLES (Can bounce 2+ times, over side, or hit top edge).",
+      "5. DOUBLES SERVES MUST GO RIGHT COURT TO RIGHT COURT (Center line is fair. Partners switch after 2 serves).",
+      "6. A SERVE THAT TOUCHES THE NET ON THE WAY OVER IS A 'LET' (Replayed with no limit. Net hits during rally are legal).",
+      "7. ALTERNATE HITTING IN A DOUBLES RALLY (Partners must alternate hits in rally).",
+      "8. VOLLEYS ARE NOT ALLOWED (Hitting ball before it bounces on your side results in point for opponent).",
+      "9. IF YOUR HIT BOUNCES BACK OVER THE NET BY ITSELF IT IS YOUR POINT (Due to extreme spin without opponent touch).",
+      "10. TOUCHING THE BALL WITH YOUR PADDLE HAND IS ALLOWED (Hand/fingers below wrist. Non-paddle hand touching is a fault).",
+      "11. YOU MAY NOT TOUCH THE TABLE WITH YOUR NON-PADDLE HAND (If table moves at all during rally, point to opponent).",
+      "12. AN 'EDGE' BALL BOUNCING OFF HORIZONTAL TOP SURFACE IS GOOD (Vertical sides are NOT legal surface).",
+      "13. HONOR SYSTEM APPLIES TO DISAGREEMENTS (Agree or play point over if no referee present)."
     ],
     schedule: "Day 1 & Day 2 - 09:00 AM onwards"
   },
@@ -100,10 +109,11 @@ export const SPORTS_DATA = [
     teamSize: "11 + 4 Subs",
     venue: "Main University Stadium Ground 1",
     rules: [
-      "15 overs per side for prelims; T20 format for Finals.",
-      "White leather balls; full cricket kit mandatory.",
-      "Powerplay rules: 4 overs restricted fielding.",
-      "Super Over in case of a tie."
+      "8-Over or 10-Over Cricket rules as per tournament format (8/10 overs per innings).",
+      "11 players per team on field.",
+      "Powerplay: 2 overs (8-Over) or 3 overs (10-Over); Max 2 overs per bowler.",
+      "Wide: 1 extra run + rebowled; No-Ball: 1 extra run + Free Hit.",
+      "Innings Break: 5 to 7 mins; Tie: Super Over deciding match."
     ],
     schedule: "Day 1 to Day 4 - 07:30 AM onwards"
   },

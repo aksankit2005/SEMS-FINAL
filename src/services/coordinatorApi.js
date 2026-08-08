@@ -584,18 +584,8 @@ export const coordinatorApi = {
       console.warn('Backend completeMatch API fallback:', e);
     }
 
-    // Save updated match in match list with COMPLETED status
-    let foundInList = false;
-    const updatedList = matches.map((m) => {
-      if (m.id === matchId) {
-        foundInList = true;
-        return completedObj;
-      }
-      return m;
-    });
-    if (!foundInList) {
-      updatedList.unshift(completedObj);
-    }
+    // Remove completed match from active match schedule list
+    const updatedList = matches.filter((m) => m.id !== matchId);
     this.saveMatches(updatedList);
 
 
@@ -688,7 +678,7 @@ export const coordinatorApi = {
         const activeMap = JSON.parse(savedActiveStr);
         Object.values(activeMap).forEach((m) => {
           const s = (m?.status || '').toLowerCase();
-          if (m && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active' || s === 'scheduled')) {
+          if (m && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active')) {
             if (!activeList.some((a) => a.id === m.id)) {
               activeList.push(m);
             }
@@ -706,7 +696,7 @@ export const coordinatorApi = {
           if (Array.isArray(list)) {
             list.forEach((m) => {
               const s = (m?.status || '').toLowerCase();
-              if (m && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active' || s === 'scheduled')) {
+              if (m && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active')) {
                 if (!activeList.some((a) => a.id === m.id)) {
                   activeList.push(m);
                 }
