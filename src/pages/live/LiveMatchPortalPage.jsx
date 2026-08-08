@@ -20,22 +20,60 @@ export const LiveMatchPortalPage = () => {
       const localActiveStr = localStorage.getItem('sems_active_live_matches');
       let localActiveList = [];
 
+      // Collect ended/completed match IDs across all storage keys
+      const completedMatchIds = new Set();
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('sems_completed_results_') || key.startsWith('sems_coord_matches_'))) {
+          try {
+            const list = JSON.parse(localStorage.getItem(key));
+            if (Array.isArray(list)) {
+              list.forEach((m) => {
+                if (m && (m.status === 'COMPLETED' || m.status === 'FINISHED')) {
+                  if (m.id) completedMatchIds.add(m.id);
+                }
+              });
+            }
+          } catch (e) {}
+        }
+      }
+
       if (localActiveStr) {
         try {
           const parsed = JSON.parse(localActiveStr);
           localActiveList = Object.values(parsed).filter((m) => {
             const s = (m?.status || '').toLowerCase();
-            return m && m.id !== 'M595473' && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active' || s === 'scheduled');
+            return m && m.id !== 'M595473' && !completedMatchIds.has(m.id) && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active');
           });
         } catch (e) { }
       }
 
-      // Merge backend matches, local active matches & fallback 12 live matches (removing duplicate IDs)
-      const combined = [...(publicLive || []), ...localActiveList, ...LIVE_MATCHES_DATA];
+      // Check if coordinator explicitly launched any live match for Table Tennis
+      const hasCoordinatorLiveTT = (localActiveList || []).some((m) => {
+        const s = (m?.status || '').toLowerCase();
+        const isTT = (m?.sportId || m?.sportName || '').toLowerCase().includes('table-tennis') || (m?.sportId || m?.sportName || '').toLowerCase().includes('tt');
+        return isTT && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active');
+      }) || (publicLive || []).some((m) => {
+        const s = (m?.status || '').toLowerCase();
+        const isTT = (m?.sportId || m?.sportName || '').toLowerCase().includes('table-tennis') || (m?.sportId || m?.sportName || '').toLowerCase().includes('tt');
+        return isTT && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active');
+      });
+
+      // Filter out fallback static mock match for Table Tennis unless coordinator explicitly went live
+      const filteredFallbackData = LIVE_MATCHES_DATA.filter((m) => {
+        const isTT = (m?.sportId || m?.sportName || '').toLowerCase().includes('table-tennis') || (m?.sportId || m?.sportName || '').toLowerCase().includes('tt');
+        if (isTT && !hasCoordinatorLiveTT) {
+          return false;
+        }
+        return !completedMatchIds.has(m.id);
+      });
+
+      // Merge backend matches, local active matches & fallback live matches (removing duplicate IDs)
+      const combined = [...(publicLive || []), ...localActiveList, ...filteredFallbackData];
       const uniqueMap = {};
       combined.forEach((m) => {
         const s = (m?.status || '').toLowerCase();
-        if (m && m.id && m.id !== 'M595473' && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active' || s === 'scheduled' || s === '')) {
+        if (m && m.id && m.id !== 'M595473' && !completedMatchIds.has(m.id) && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active')) {
           const inferredSportId = (m.sportId || m.sport || (m.sportName ? m.sportName.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'badminton')).toLowerCase();
           const inferredSportName = m.sportName || m.sport || (inferredSportId.charAt(0).toUpperCase() + inferredSportId.slice(1).replace('-', ' '));
 
@@ -52,36 +90,30 @@ export const LiveMatchPortalPage = () => {
 
       setLiveMatches(Object.values(uniqueMap));
 
-      // Dynamic upcoming scheduled matches fetching (purging mock names)
+      // Dynamic upcoming scheduled matches fetching
       const upcomingList = [];
-      const mockNames = [
-        '1', '2', 'a', 'b', 'player 1', 'player 2', 'player 3', 'player 4', 'team 1', 'team 2', 'team a', 'team b', 'albert', 'romi',
-        'aarav sharma (mpec)', 'rohan gupta (mips)', 'ankur dixit (mpcps)', 'aditya singh (mpec)',
-        'aagaz khan (mpcps kn142)', 'shiv prakash (mpcps kn142)', 'kapil verma (mpcps kn142)', 'anubhav sachan (mpcps kn142)',
-        'kapil verma', 'anubhav sachan', 'team a', 'team b', 'team 1', 'team 2', 'player / team a', 'player / team b'
-      ];
 
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('sems_coord_matches_')) {
+        if (key && (key.startsWith('sems_coord_matches_') || key.endsWith('MatchSchedules'))) {
           try {
             const list = JSON.parse(localStorage.getItem(key));
             if (Array.isArray(list)) {
-              const sportId = key.replace('sems_coord_matches_', '');
+              const sportId = key.replace('sems_coord_matches_', '').replace('MatchSchedules', '').toLowerCase();
               list.forEach((m) => {
-                if (m && m.status !== 'COMPLETED' && m.status !== 'FINISHED' && m.status !== 'running' && m.status !== 'live') {
-                  const t1 = (m.team1 || '').trim().toLowerCase();
-                  const t2 = (m.team2 || '').trim().toLowerCase();
-                  if (mockNames.includes(t1) || mockNames.includes(t2)) return;
+                if (m && m.status !== 'COMPLETED' && m.status !== 'FINISHED' && m.status !== 'running' && m.status !== 'live' && !completedMatchIds.has(m.id)) {
+                  const t1 = typeof m.team1 === 'object' ? (m.team1?.name || '') : String(m.team1 || '').trim();
+                  const t2 = typeof m.team2 === 'object' ? (m.team2?.name || '') : String(m.team2 || '').trim();
+                  if (!t1 || !t2) return;
                   if (!upcomingList.some((u) => u.id === m.id)) {
                     upcomingList.push({
                       id: m.id || `M-${Math.random()}`,
                       sportId,
-                      matchTitle: m.matchTitle || `${m.team1} vs ${m.team2}`,
-                      team1: m.team1,
-                      team2: m.team2,
-                      venue: m.tableNumber || m.venue || 'Court 1',
-                      time: m.time || '05:30 PM',
+                      matchTitle: m.matchTitle || `${t1} vs ${t2}`,
+                      team1: t1,
+                      team2: t2,
+                      venue: m.tableNumber || m.venue || 'Table 1',
+                      time: m.time || '10:00 AM',
                       date: m.date || 'Today'
                     });
                   }
@@ -104,10 +136,12 @@ export const LiveMatchPortalPage = () => {
     const interval = setInterval(() => fetchScores(), 1500);
     const handleRefresh = () => fetchScores();
     window.addEventListener('sems_matches_updated', handleRefresh);
+    window.addEventListener('sems_results_updated', handleRefresh);
     window.addEventListener('storage', handleRefresh);
     return () => {
       clearInterval(interval);
       window.removeEventListener('sems_matches_updated', handleRefresh);
+      window.removeEventListener('sems_results_updated', handleRefresh);
       window.removeEventListener('storage', handleRefresh);
     };
   }, []);

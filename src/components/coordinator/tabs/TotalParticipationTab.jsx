@@ -15,6 +15,119 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
   const isBasketball = sportId === 'basketball' || sportName.toLowerCase().includes('basketball');
   const isChess = sportId === 'chess' || sportName.toLowerCase().includes('chess');
   const isCricket = sportId === 'cricket' || sportName.toLowerCase().includes('cricket');
+  const isTableTennis = sportId === 'table-tennis' || sportId === 'tabletennis' || sportName.toLowerCase().includes('table tennis');
+
+  // Initial seed records for Table Tennis
+  const defaultTableTennisParticipants = [
+    {
+      timestamp: '16 Jul, 10:30 AM',
+      sport: 'Table Tennis',
+      category: 'SINGLES',
+      gender: 'Boys / Mens',
+      player1: {
+        name: 'Aarav Sharma',
+        roll: '25261101301',
+        college: 'MPEC Kanpur (KN142)',
+        year: '3rd Year',
+        phone: '9876543210',
+        email: 'aarav.sharma@mpec.edu'
+      }
+    },
+    {
+      timestamp: '16 Jul, 11:15 AM',
+      sport: 'Table Tennis',
+      category: 'SINGLES',
+      gender: 'Boys / Mens',
+      player1: {
+        name: 'Kunal Dixith',
+        roll: '25261101345',
+        college: 'MPCPS Kanpur (KN056)',
+        year: '2nd Year',
+        phone: '9876543211',
+        email: 'kunal.dixith@mpcps.edu'
+      }
+    },
+    {
+      timestamp: '16 Jul, 01:45 PM',
+      sport: 'Table Tennis',
+      category: 'DOUBLES',
+      gender: 'Girls / Womens',
+      player1: {
+        name: 'Pooja Verma',
+        roll: '25261101410',
+        college: 'MIPS Kanpur (KN022)',
+        year: '3rd Year',
+        phone: '9876543212',
+        email: 'pooja.verma@mips.edu'
+      },
+      player2: {
+        name: 'Neha Saxena',
+        roll: '25261101411',
+        college: 'MIPS Kanpur (KN022)',
+        year: '3rd Year',
+        phone: '9876543213',
+        email: 'neha.saxena@mips.edu'
+      }
+    },
+    {
+      timestamp: '16 Jul, 03:20 PM',
+      sport: 'Table Tennis',
+      category: 'DOUBLES',
+      gender: 'Girls / Womens',
+      player1: {
+        name: 'Sneha Pandey',
+        roll: '25261101520',
+        college: 'PSIT Kanpur (KN088)',
+        year: '4th Year',
+        phone: '9876543214',
+        email: 'sneha.pandey@psit.edu'
+      },
+      player2: {
+        name: 'Riya Gupta',
+        roll: '25261101521',
+        college: 'PSIT Kanpur (KN088)',
+        year: '4th Year',
+        phone: '9876543215',
+        email: 'riya.gupta@psit.edu'
+      }
+    },
+    {
+      timestamp: '17 Jul, 09:30 AM',
+      sport: 'Table Tennis',
+      category: 'SINGLES',
+      gender: 'Boys / Mens',
+      player1: {
+        name: 'Rohan Mehra',
+        roll: '25261101602',
+        college: 'HBTU Kanpur (KN011)',
+        year: '2nd Year',
+        phone: '9876543216',
+        email: 'rohan.mehra@hbtu.edu'
+      }
+    },
+    {
+      timestamp: '17 Jul, 11:00 AM',
+      sport: 'Table Tennis',
+      category: 'DOUBLES',
+      gender: 'Mixed Doubles',
+      player1: {
+        name: 'Devansh Roy',
+        roll: '25261101705',
+        college: 'IIT Kanpur',
+        year: '3rd Year',
+        phone: '9876543217',
+        email: 'devansh@iitk.ac.in'
+      },
+      player2: {
+        name: 'Ananya Mishra',
+        roll: '25261101706',
+        college: 'IIT Kanpur',
+        year: '3rd Year',
+        phone: '9876543218',
+        email: 'ananya@iitk.ac.in'
+      }
+    }
+  ];
 
   // Initial seed records for Cricket
   const defaultCricketParticipants = [
@@ -201,12 +314,29 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
         } else {
           setParticipants(defaultChessParticipants);
         }
+      } else if (isTableTennis) {
+        const ttData = (data || []).filter((d) =>
+          !d.sport || d.sport.toLowerCase().includes('table tennis') || d.sport.toLowerCase().includes('table-tennis') || d.eventTitle?.toLowerCase().includes('table tennis')
+        );
+        if (ttData.length > 0) {
+          setParticipants(ttData);
+        } else {
+          setParticipants(defaultTableTennisParticipants);
+        }
       } else {
-        setParticipants(data || []);
+        if (data && data.length > 0) {
+          setParticipants(data);
+        } else if (sportId.includes('table')) {
+          setParticipants(defaultTableTennisParticipants);
+        } else {
+          setParticipants(data || []);
+        }
       }
     } catch (e) {
       if (isBasketball) setParticipants(defaultBasketballParticipants);
       else if (isChess) setParticipants(defaultChessParticipants);
+      else if (isCricket) setParticipants(defaultCricketParticipants);
+      else if (isTableTennis) setParticipants(defaultTableTennisParticipants);
     }
   };
 

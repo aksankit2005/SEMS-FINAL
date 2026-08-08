@@ -564,7 +564,7 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
               <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                 {(match.team1 || '').replace(/\s*\(.*?\)/, '')}
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">Roll: N/A</p>
+              {match.college1 && <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">{match.college1}</p>}
             </div>
 
             {/* Large Point Counter */}
@@ -600,7 +600,7 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
               <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                 {(match.team2 || '').replace(/\s*\(.*?\)/, '')}
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">Roll: N/A</p>
+              {match.college2 && <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">{match.college2}</p>}
             </div>
 
             {/* Large Point Counter */}
