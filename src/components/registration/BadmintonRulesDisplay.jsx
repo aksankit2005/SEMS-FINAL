@@ -321,6 +321,64 @@ export const BasketballRulesDisplay = () => {
   );
 };
 
+/* 🏓 TABLE TENNIS OFFICIAL TOURNAMENT RULES DATA & DISPLAY */
+export const TABLE_TENNIS_RULES_DATA = [
+  { num: 1, title: "Games are played to 11 points", text: "A Game is played to **11 points**. A Game must be won by **two points**. A Match is generally the best **three of five Games**." },
+  { num: 2, title: "Alternate serves every two points", text: "Each side of the table alternates serving **two points at a time**. EXCEPTION: After tied **10-10 (“deuce”)**, service alternates at **every point**. There is no separate rule for serving on Game Point (you CAN lose on a serve)." },
+  { num: 3, title: "Toss the ball straight up when serving", text: "Hold the ball in your open palm, behind your end of the table. Toss at least **6 inches straight up**, and strike it on the way down. It must hit your side of the table and then the opponent's side. NOTE: Once the ball leaves the server’s hand it is in play, and counts as receiver’s point if missed or mis-hit." },
+  { num: 4, title: "The serve can land anywhere in singles", text: "There is no restriction on where the ball lands on your side or your opponent’s side of the table. It can bounce two or more times on your opponent’s side, bounce over the side, or even hit the edge." },
+  { num: 5, title: "Doubles serves must go right court to right court", text: "The serve must bounce in the **server’s right court**, and **receiver’s right court** (landing on center line is fair). Doubles partners switch places after their team serves twice." },
+  { num: 6, title: "A serve that touches the net on the way over is a “LET”", text: "During a RALLY, if the ball touches the top of the net and lands in play, it is a legitimate hit. BUT not when serving. If a served ball hits the net on the way over and bounces in play, it’s a **“let” serve and is replayed**. There is no limit on how many times this can happen." },
+  { num: 7, title: "Alternate hitting in a doubles rally", text: "Doubles partners must **alternate hitting balls in a rally**, no matter where the ball lands on the table." },
+  { num: 8, title: "Volleys are NOT allowed", text: "You cannot hit the ball before it bounces on your side of the table. In table tennis, **volleying results in a point for your opponent**. NOTE: When your opponent hits a ball that sails over your end of the table without touching it and then hits you or your paddle, that is still your point." },
+  { num: 9, title: "If your hit bounces back over the net by itself it is your point", text: "If you hit the ball in a rally or on a serve and it bounces back over the net after hitting your opponent’s side of the table (due to extreme spin), without your opponent touching it, that is **your point**." },
+  { num: 10, title: "Touching the ball with your paddle hand is allowed", text: "If the ball touches your **PADDLE hand** (fingers and hand area below the wrist) and results in a legal hit, play continues normally. You may NOT touch the ball with your non-paddle hand. BUT if opponent’s hit sails over your table without touching and hits you/paddle, it is still your point." },
+  { num: 11, title: "You may not touch the table with your non-paddle hand", text: "You may touch the ball or table with your paddle hand or body. NOTE: If the table moves at all from your touching it during a rally, that is **your opponent’s point**." },
+  { num: 12, title: "An “edge” ball bouncing off the horizontal table top surface is good", text: "An otherwise legal serve or hit contacting the **top edge of the horizontal table top surface** is valid, even if it bounces sidewise. Vertical sides of the table are NOT part of the legal playing surface." },
+  { num: 13, title: "Honor system applies to disagreements", text: "If no referee is present during a match and players disagree on a call, the **“honor system”** applies and players should agree or replay the point. Table tennis carries a tradition of fierce but fair play!" }
+];
+
+export const TableTennisRulesDisplay = () => {
+  return (
+    <div className="space-y-6 text-slate-100 font-sans">
+      <div className="flex items-center justify-between border-b border-cyan-500/20 pb-4">
+        <div className="flex items-center gap-2.5">
+          <span className="text-2xl">🏓</span>
+          <div>
+            <h4 className="font-black text-base uppercase tracking-wider text-cyan-400">
+              Official ITTF Table Tennis Rules & Regulations
+            </h4>
+            <p className="text-xs text-slate-400">13 Official Rules of Table Tennis (ITTF Standard)</p>
+          </div>
+        </div>
+        <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+          ITTF Standard
+        </span>
+      </div>
+
+      <div className="space-y-3">
+        <h5 className="font-black text-sm sm:text-base text-cyan-300 flex items-center gap-2">
+          <span>🏓</span>
+          <span>13 Official Table Tennis Match Rules</span>
+        </h5>
+        <div className="grid grid-cols-1 gap-3 text-xs sm:text-sm bg-slate-950/80 p-5 rounded-2xl border border-cyan-500/20 shadow-inner">
+          {TABLE_TENNIS_RULES_DATA.map((rule) => (
+            <div key={rule.num} className="flex items-start gap-3 leading-relaxed">
+              <span className="font-mono font-black text-cyan-400 shrink-0 text-sm bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/20">
+                {rule.num}.
+              </span>
+              <div>
+                <strong className="font-bold text-white block text-xs uppercase tracking-wider text-cyan-300 mb-0.5">{rule.title}</strong>
+                <span className="text-slate-300 whitespace-pre-line">{renderFormattedText(rule.text)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* FULL SCREEN RULEBOOK MODAL WITH GO BACK BUTTON */
 export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }) => {
   if (!isOpen) return null;
@@ -329,13 +387,16 @@ export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }
   const isCricket = sName.includes('cricket');
   const isChess = sName.includes('chess');
   const isBasketball = sName.includes('basketball');
+  const isTableTennis = sName.includes('table') || sName.includes('tt') || sName.includes('ping pong');
 
   const themeColorClass = isCricket 
     ? 'text-emerald-400' 
     : isChess 
     ? 'text-purple-400' 
     : isBasketball 
-    ? 'text-orange-400' 
+    ? 'text-orange-400'
+    : isTableTennis
+    ? 'text-cyan-400' 
     : 'text-amber-400';
 
   const themeBtnClass = isCricket 
@@ -343,7 +404,9 @@ export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }
     : isChess 
     ? 'bg-purple-600 hover:bg-purple-500' 
     : isBasketball 
-    ? 'bg-orange-600 hover:bg-orange-500' 
+    ? 'bg-orange-600 hover:bg-orange-500'
+    : isTableTennis
+    ? 'bg-cyan-600 hover:bg-cyan-500' 
     : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500';
 
   return (
@@ -362,10 +425,10 @@ export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }
 
           <div className="text-center truncate">
             <span className={`text-[10px] font-mono uppercase tracking-widest block font-bold ${themeColorClass}`}>
-              {isCricket ? 'Official Cricket Tournament Rulebook' : isChess ? '10-Minute Rapid Chess Rulebook' : isBasketball ? 'FIBA Basketball Rulebook' : 'Official BWF Rulebook'}
+              {isCricket ? 'Official Cricket Tournament Rulebook' : isChess ? '10-Minute Rapid Chess Rulebook' : isBasketball ? 'FIBA Basketball Rulebook' : isTableTennis ? 'Official ITTF Table Tennis Rulebook' : 'Official BWF Rulebook'}
             </span>
             <h2 className="text-sm sm:text-lg font-black text-white flex items-center gap-1.5 justify-center truncate">
-              <span>{isCricket ? '🏏' : isChess ? '♟️' : isBasketball ? '🏀' : '🏸'}</span> {sportName} Tournament Rules
+              <span>{isCricket ? '🏏' : isChess ? '♟️' : isBasketball ? '🏀' : isTableTennis ? '🏓' : '🏸'}</span> {sportName} Tournament Rules
             </h2>
           </div>
 
@@ -386,6 +449,8 @@ export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }
             <ChessRulesDisplay />
           ) : isBasketball ? (
             <BasketballRulesDisplay />
+          ) : isTableTennis ? (
+            <TableTennisRulesDisplay />
           ) : (
             <BadmintonRulesDisplay />
           )}
@@ -394,7 +459,7 @@ export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }
         {/* Sticky Footer with Go Back Button */}
         <div className="bg-slate-950 px-5 py-4 border-t border-slate-800 flex items-center justify-between gap-4">
           <span className="text-xs text-slate-400 italic hidden sm:inline">
-            {isCricket ? 'Official 8-Over & 10-Over Cricket Regulations' : isChess ? '10-Minute Rapid Chess Regulations' : isBasketball ? 'FIBA Official Basketball Regulations' : 'BWF Standard Tournament Rules'}
+            {isCricket ? 'Official 8-Over & 10-Over Cricket Regulations' : isChess ? '10-Minute Rapid Chess Regulations' : isBasketball ? 'FIBA Official Basketball Regulations' : isTableTennis ? 'ITTF Official 13 Table Tennis Tournament Rules' : 'BWF Standard Tournament Rules'}
           </span>
           <button
             onClick={onClose}
