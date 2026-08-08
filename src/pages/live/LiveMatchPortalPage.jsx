@@ -298,7 +298,7 @@ export const LiveMatchPortalPage = () => {
                       </div>
                     </div>
 
-                    {/* Footer Action Row (No Time Display) */}
+                    {/* Footer Action Row */}
                     <div className="flex items-center justify-between gap-2 pt-1">
                       <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 font-mono truncate max-w-[180px]">
                         {m.currentInfo || (isFinished ? 'Match Ended' : 'Match In Progress')}
@@ -312,6 +312,20 @@ export const LiveMatchPortalPage = () => {
                         <span>{m.youtubeVideoId ? 'Watch Stream' : 'View Scoreboard'}</span>
                       </button>
                     </div>
+
+                    {/* Set / Half-by-Half Points Display */}
+                    {m.setsHistory && m.setsHistory.some((s) => s.score1 > 0 || s.score2 > 0 || s.isLocked) && (
+                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between gap-2 text-[10px] font-mono">
+                        <span className="text-slate-400 font-bold uppercase shrink-0">Set Scores:</span>
+                        <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar py-0.5">
+                          {m.setsHistory.filter((s) => s.score1 > 0 || s.score2 > 0 || s.isLocked).map((s) => (
+                            <span key={s.set} className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border border-slate-200 dark:border-slate-700 shrink-0">
+                              S{s.set}: {s.score1}-{s.score2}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}

@@ -117,10 +117,36 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
   const setsWonA = calcSetsWon1();
   const setsWonB = calcSetsWon2();
 
-  const isBasketball = (match.sportId || match.sport || match.sportName || '').toLowerCase().includes('basketball') || (Boolean(match.roster1 || match.roster2) && !(match.sportId || match.sport || match.sportName || '').toLowerCase().includes('chess'));
+  // Disabled per-player detail table for Kabaddi per user request so Kabaddi displays set/half slot score breakdown live like Kho-Kho
+  const isKabaddi = false;
+
+  const isBasketball = !isKabaddi && ((match.sportId || match.sport || match.sportName || '').toLowerCase().includes('basketball') || (Boolean(match.roster1 || match.roster2) && !(match.sportId || match.sport || match.sportName || '').toLowerCase().includes('chess')));
   const isChess = (match.sportId || match.sport || match.sportName || '').toLowerCase().includes('chess') ||
                   (match.matchTitle || match.title || '').toLowerCase().includes('chess') ||
                   (match.eventTitle || '').toLowerCase().includes('chess');
+
+  const defaultKabaddiTeam1 = [
+    { id: 1, name: 'Player A', jersey: '07', position: 'Raider', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 2, name: 'Player B', jersey: '12', position: 'Defender', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 3, name: 'Player C', jersey: '03', position: 'All Rounder', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 4, name: 'Player D', jersey: '05', position: 'Raider', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 5, name: 'Player E', jersey: '09', position: 'Defender', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 6, name: 'Player F', jersey: '11', position: 'Defender', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 7, name: 'Player G', jersey: '04', position: 'Raider', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+  ];
+
+  const defaultKabaddiTeam2 = [
+    { id: 1, name: 'Player 1', jersey: '01', position: 'Raider', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 2, name: 'Player 2', jersey: '02', position: 'Defender', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 3, name: 'Player 3', jersey: '10', position: 'All Rounder', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 4, name: 'Player 4', jersey: '08', position: 'Raider', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 5, name: 'Player 5', jersey: '06', position: 'Defender', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 6, name: 'Player 6', jersey: '14', position: 'Defender', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 7, name: 'Player 7', jersey: '15', position: 'Raider', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+  ];
+
+  const playerStats1 = match.playerStats1 && match.playerStats1.length > 0 ? match.playerStats1 : defaultKabaddiTeam1;
+  const playerStats2 = match.playerStats2 && match.playerStats2.length > 0 ? match.playerStats2 : defaultKabaddiTeam2;
 
   const roster1 = match.roster1 && match.roster1.length > 0
     ? match.roster1
@@ -174,27 +200,27 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
           </div>
 
           <div className="flex items-center gap-2">
-            {isFinished && (
-              <button
-                onClick={() => {
-                  generateMatchResultPDF({
-                    ...match,
-                    team1: team1Name,
-                    team2: team2Name,
-                    score1: score1Val,
-                    score2: score2Val,
-                    roster1,
-                    roster2,
-                    setsHistory
-                  }, sportConfig.name || match.sportName);
-                }}
-                className="px-3 py-1.5 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
-                title="Download Official Match Result PDF"
-              >
-                <Download className="w-3.5 h-3.5 text-orange-500" />
-                <span className="hidden sm:inline">Download Result PDF</span>
-              </button>
-            )}
+            <button
+              onClick={() => {
+                generateMatchResultPDF({
+                  ...match,
+                  team1: team1Name,
+                  team2: team2Name,
+                  score1: score1Val,
+                  score2: score2Val,
+                  roster1,
+                  roster2,
+                  playerStats1,
+                  playerStats2,
+                  setsHistory
+                }, sportConfig.name || match.sportName);
+              }}
+              className="px-3 py-1.5 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+              title="Download Official Score Sheet PDF"
+            >
+              <Download className="w-3.5 h-3.5 text-orange-500" />
+              <span className="hidden sm:inline">Download Score Sheet PDF</span>
+            </button>
 
             <button
               onClick={onClose}
@@ -323,6 +349,117 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
           </div>
 
         </div>
+
+        {/* KABADDI TEAM POINTS BREAKDOWN (TEAM A & TEAM B WITH HALF 1 & HALF 2 SUMMARY) */}
+        {(match.kabaddiStats1 || match.kabaddiStats2 || (match.sportId || match.sportName || '').toLowerCase().includes('kabaddi')) && (
+          <div className="p-6 bg-slate-50 dark:bg-[#0B1120] border-b border-slate-200 dark:border-[#1E293B] space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-[#1E293B] pb-4">
+              <div>
+                <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                  <Award className="w-4 h-4 text-amber-500" />
+                  Kabaddi Live Team Points Summary Breakdown
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Real-time Team Raid, Tackle, Bonus, Super Tackle & Super Raid points by Half
+                </p>
+              </div>
+              <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-mono font-bold self-start sm:self-auto">
+                Half {match.half || 1} Live Score
+              </span>
+            </div>
+
+            {/* 1st Half Completed Banner */}
+            {(match.completedHalf1 || match.half1Score1 !== undefined) && (
+              <div className="bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-blue-500/10 border border-purple-500/30 rounded-2xl p-4 text-center space-y-1">
+                <span className="text-xs font-mono font-black text-amber-500 dark:text-amber-400 uppercase tracking-widest flex items-center justify-center gap-1.5">
+                  <Award className="w-4 h-4 text-amber-400" /> 1ST HALF FINAL RESULT
+                </span>
+                <div className="text-base sm:text-lg font-mono font-black text-slate-900 dark:text-white flex items-center justify-center gap-4">
+                  <span className="text-blue-600 dark:text-blue-400">{team1Name}: {match.half1Score1 || 0} Pts</span>
+                  <span className="text-slate-400">|</span>
+                  <span className="text-blue-600 dark:text-blue-400">{team2Name}: {match.half1Score2 || 0} Pts</span>
+                </div>
+                {match.half === 2 && (
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                    Currently in 2nd Half. Active 2nd Half score started from 0-0. (Overall Total: {score1Val} - {score2Val})
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Team 1 Card */}
+              <div className="bg-white dark:bg-[#0F172A] p-4 rounded-2xl border border-slate-200 dark:border-[#1E293B] space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-[#1E293B]">
+                  <span className="font-extrabold text-xs text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                    {team1Name} (Team A)
+                  </span>
+                  <span className="text-sm font-mono font-black text-amber-600 dark:text-amber-400">
+                    Total: {score1Val} PTS
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-5 gap-1.5 text-center text-[10px] font-mono font-bold">
+                  <div className="bg-blue-500/10 p-2 rounded-xl border border-blue-500/20">
+                    <span className="text-slate-400 block text-[9px]">RAID</span>
+                    <span className="text-blue-600 dark:text-blue-400 font-black text-xs">{(match.kabaddiStats1?.raid) || 0}</span>
+                  </div>
+                  <div className="bg-emerald-500/10 p-2 rounded-xl border border-emerald-500/20">
+                    <span className="text-slate-400 block text-[9px]">TACKLE</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-black text-xs">{(match.kabaddiStats1?.tackle) || 0}</span>
+                  </div>
+                  <div className="bg-purple-500/10 p-2 rounded-xl border border-purple-500/20">
+                    <span className="text-slate-400 block text-[9px]">BONUS</span>
+                    <span className="text-purple-600 dark:text-purple-400 font-black text-xs">{(match.kabaddiStats1?.bonus) || 0}</span>
+                  </div>
+                  <div className="bg-rose-500/10 p-2 rounded-xl border border-rose-500/20">
+                    <span className="text-slate-400 block text-[9px]">S.TACKLE</span>
+                    <span className="text-rose-600 dark:text-rose-400 font-black text-xs">{(match.kabaddiStats1?.superTackle) || 0}</span>
+                  </div>
+                  <div className="bg-amber-500/10 p-2 rounded-xl border border-amber-500/20">
+                    <span className="text-slate-400 block text-[9px]">S.RAID</span>
+                    <span className="text-amber-600 dark:text-amber-400 font-black text-xs">{(match.kabaddiStats1?.superRaid) || 0}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Team 2 Card */}
+              <div className="bg-white dark:bg-[#0F172A] p-4 rounded-2xl border border-slate-200 dark:border-[#1E293B] space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-[#1E293B]">
+                  <span className="font-extrabold text-xs text-blue-600 dark:text-indigo-400 uppercase tracking-wider">
+                    {team2Name} (Team B)
+                  </span>
+                  <span className="text-sm font-mono font-black text-blue-600 dark:text-indigo-400">
+                    Total: {score2Val} PTS
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-5 gap-1.5 text-center text-[10px] font-mono font-bold">
+                  <div className="bg-blue-500/10 p-2 rounded-xl border border-blue-500/20">
+                    <span className="text-slate-400 block text-[9px]">RAID</span>
+                    <span className="text-blue-600 dark:text-blue-400 font-black text-xs">{(match.kabaddiStats2?.raid) || 0}</span>
+                  </div>
+                  <div className="bg-emerald-500/10 p-2 rounded-xl border border-emerald-500/20">
+                    <span className="text-slate-400 block text-[9px]">TACKLE</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-black text-xs">{(match.kabaddiStats2?.tackle) || 0}</span>
+                  </div>
+                  <div className="bg-purple-500/10 p-2 rounded-xl border border-purple-500/20">
+                    <span className="text-slate-400 block text-[9px]">BONUS</span>
+                    <span className="text-purple-600 dark:text-purple-400 font-black text-xs">{(match.kabaddiStats2?.bonus) || 0}</span>
+                  </div>
+                  <div className="bg-rose-500/10 p-2 rounded-xl border border-rose-500/20">
+                    <span className="text-slate-400 block text-[9px]">S.TACKLE</span>
+                    <span className="text-rose-600 dark:text-rose-400 font-black text-xs">{(match.kabaddiStats2?.superTackle) || 0}</span>
+                  </div>
+                  <div className="bg-amber-500/10 p-2 rounded-xl border border-amber-500/20">
+                    <span className="text-slate-400 block text-[9px]">S.RAID</span>
+                    <span className="text-amber-400 font-black text-xs">{(match.kabaddiStats2?.superRaid) || 0}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* BASKETBALL PLAYER LIVE STATS & FOULS SECTION */}
         {isBasketball && (

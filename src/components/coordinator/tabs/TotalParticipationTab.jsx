@@ -163,6 +163,14 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
     }
   };
 
+  const handleDeleteParticipant = async (id, name) => {
+    if (window.confirm(`Delete registration entry for "${name || id}"?`)) {
+      await coordinatorApi.deleteRegistration(id);
+      addToast(`Registration entry deleted successfully!`, 'warning');
+      await loadData();
+    }
+  };
+
   const filtered = participants.filter((p) => {
     const activeSearch = (search || globalSearch || '').toLowerCase().trim();
     if (!activeSearch) return true;
@@ -440,12 +448,13 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                   <th className="p-4">Name</th>
                   <th className="p-4">Mobile No</th>
                   <th className="p-4">Email</th>
+                  <th className="p-4 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800/80 text-xs font-sans">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-slate-500 dark:text-slate-400 font-mono">
+                    <td colSpan={8} className="p-8 text-center text-slate-500 dark:text-slate-400 font-mono">
                       No registered Basketball participants found in database.
                     </td>
                   </tr>
@@ -478,6 +487,15 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                         <td className="p-4 font-mono text-slate-600 dark:text-slate-400 text-xs whitespace-nowrap">
                           {row.email}
                         </td>
+                        <td className="p-4 text-right whitespace-nowrap">
+                          <button
+                            onClick={() => handleDeleteParticipant(p.id, row.teamName || row.name)}
+                            className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition cursor-pointer"
+                            title="Delete Registration"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
                       </tr>
                     );
                   })
@@ -496,12 +514,13 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                   <th className="p-4">{isChess ? 'Gender' : 'Category'}</th>
                   <th className="p-4">Player Details</th>
                   {!isChess && <th className="p-4">Team Partner Details</th>}
+                  <th className="p-4 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800/80 text-xs">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={isChess ? 4 : 5} className="p-8 text-center text-slate-500 dark:text-slate-400 font-mono">
+                    <td colSpan={isChess ? 5 : 6} className="p-8 text-center text-slate-500 dark:text-slate-400 font-mono">
                       No participant registrations found. Registered participants will appear here automatically.
                     </td>
                   </tr>
@@ -583,6 +602,15 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                             )}
                           </td>
                         )}
+                        <td className="p-4 text-right whitespace-nowrap">
+                          <button
+                            onClick={() => handleDeleteParticipant(p.id, p1.name || p.teamName)}
+                            className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition cursor-pointer"
+                            title="Delete Registration"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
                       </tr>
                     );
                   })

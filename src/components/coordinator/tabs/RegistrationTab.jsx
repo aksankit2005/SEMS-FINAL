@@ -1,12 +1,21 @@
-import React, { useState } from 'react';
 import { 
   UserCheck, UserX, Search, Filter, Calendar, CheckCircle2, 
-  XCircle, Clock, Eye, Download, ShieldCheck, ToggleLeft, ToggleRight, X 
+  XCircle, Clock, Eye, Download, ShieldCheck, ToggleLeft, ToggleRight, X, Trash2
 } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
+import { coordinatorApi } from '../../../services/coordinatorApi';
 
 export const RegistrationTab = ({ registrations, user, onUpdateRegistrations }) => {
   const { addToast } = useToast();
+
+  const handleDelete = async (id, name) => {
+    if (window.confirm(`Delete registration for "${name || id}"?`)) {
+      await coordinatorApi.deleteRegistration(id);
+      const updated = (registrations || []).filter(r => r.id !== id);
+      onUpdateRegistrations(updated);
+      addToast(`Registration for "${name || id}" deleted successfully!`, 'warning');
+    }
+  };
   
   const [search, setSearch] = useState('');
   const [collegeFilter, setCollegeFilter] = useState('all');
@@ -231,11 +240,19 @@ export const RegistrationTab = ({ registrations, user, onUpdateRegistrations }) 
                       {r.status !== 'Rejected' && (
                         <button
                           onClick={() => handleReject(r.id)}
-                          className="px-2 py-1.5 rounded-xl bg-rose-500/10 text-rose-500 font-bold text-[10px] hover:bg-rose-500 hover:text-white transition flex items-center gap-1"
+                          className="px-2 py-1.5 rounded-xl bg-rose-500/10 text-rose-500 font-bold text-[10px] hover:bg-rose-500 hover:text-white transition flex items-center gap-1 cursor-pointer"
                         >
                           <UserX className="w-3 h-3" /> Reject
                         </button>
                       )}
+
+                      <button
+                        onClick={() => handleDelete(r.id, r.teamName || r.studentName)}
+                        className="p-2 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition cursor-pointer"
+                        title="Delete Registration"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </td>
                 </tr>

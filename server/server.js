@@ -1338,9 +1338,18 @@ app.get('/api/live-matches', async (req, res) => {
 // GET /api/coordinator/events - Get events for logged in coordinator's sport ONLY from PostgreSQL
 app.get('/api/coordinator/events', verifyCoordinatorToken, async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
+  const normalizedSportId = sportId.replace(/_/g, '-');
+  const underscoreSportId = sportId.replace(/-/g, '_');
+
   try {
     const dbEvents = await prisma.coordinatorEventItem.findMany({
-      where: { sportId: { equals: sportId, mode: 'insensitive' } },
+      where: {
+        OR: [
+          { sportId: { equals: sportId, mode: 'insensitive' } },
+          { sportId: { equals: normalizedSportId, mode: 'insensitive' } },
+          { sportId: { equals: underscoreSportId, mode: 'insensitive' } }
+        ]
+      },
       orderBy: { createdAt: 'desc' }
     });
     if (dbEvents && dbEvents.length > 0) {
@@ -1350,8 +1359,16 @@ app.get('/api/coordinator/events', verifyCoordinatorToken, async (req, res) => {
   } catch (err) {
     console.error('Error fetching coordinator events from DB:', err.message);
   }
-  const events = inMemoryCoordinatorEvents[sportId] || [];
-  return res.json(events);
+
+  const eventsMap = new Map();
+  [sportId, normalizedSportId, underscoreSportId].forEach((k) => {
+    const list = inMemoryCoordinatorEvents[k] || [];
+    list.forEach((e) => {
+      if (e && e.id) eventsMap.set(e.id, e);
+    });
+  });
+
+  return res.json(Array.from(eventsMap.values()));
 });
 
 // POST /api/coordinator/events - Create new event for assigned sport in PostgreSQL
@@ -1451,14 +1468,16 @@ app.put('/api/coordinator/events/:id', verifyCoordinatorToken, async (req, res) 
   return res.json({ success: true, event: index !== -1 ? list[index] : req.body });
 });
 
-// DELETE /api/coordinator/events/:id - Delete event in PostgreSQL
+// DELETE /api/coordinator/events/:id - Delete event in PostgreSQL & memory
 app.delete('/api/coordinator/events/:id', verifyCoordinatorToken, async (req, res) => {
-  const sportId = req.user.assignedSport.toLowerCase();
   const { id } = req.params;
 
-  if (inMemoryCoordinatorEvents[sportId]) {
-    inMemoryCoordinatorEvents[sportId] = inMemoryCoordinatorEvents[sportId].filter((e) => e.id !== id);
-  }
+  // Purge from all inMemoryCoordinatorEvents keys
+  Object.keys(inMemoryCoordinatorEvents).forEach((sKey) => {
+    if (inMemoryCoordinatorEvents[sKey]) {
+      inMemoryCoordinatorEvents[sKey] = inMemoryCoordinatorEvents[sKey].filter((e) => e && e.id !== id);
+    }
+  });
 
   try {
     await prisma.coordinatorEventItem.deleteMany({ where: { id } });
