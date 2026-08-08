@@ -60,6 +60,9 @@ import { SuperAdminSettingsPage } from './pages/superAdmin/SuperAdminSettingsPag
 import { SuperAdminProfilePage } from './pages/superAdmin/SuperAdminProfilePage';
 import { SuperAdminAuditLogsPage } from './pages/superAdmin/SuperAdminAuditLogsPage';
 import { SuperAdminEventsSportsPage } from './pages/superAdmin/SuperAdminEventsSportsPage';
+import { SuperCoordinatorLoginPage } from './pages/superCoordinator/SuperCoordinatorLoginPage';
+import { SuperCoordinatorDashboardPage } from './pages/superCoordinator/SuperCoordinatorDashboardPage';
+import { SuperCoordinatorProtectedRoute } from './components/superCoordinator/SuperCoordinatorProtectedRoute';
 
 import { NotFoundPage } from './pages/NotFoundPage';
 
@@ -157,6 +160,12 @@ function App() {
 
                   {/* Protected College Head Portal Routes */}
                   <Route path="/college-head/dashboard" element={<CollegeHeadProtectedRoute><CollegeHeadDashboardPage /></CollegeHeadProtectedRoute>} />
+
+                  {/* Standalone Super Coordinator (President / Event Host) Routes */}
+                  <Route path="/super-coordinator/login" element={<SuperCoordinatorLoginPage />} />
+                  <Route path="/super-coordinator-login" element={<SuperCoordinatorLoginPage />} />
+                  <Route path="/super-coordinator/dashboard" element={<SuperCoordinatorProtectedRoute><SuperCoordinatorDashboardPage /></SuperCoordinatorProtectedRoute>} />
+                  <Route path="/super-coordinator" element={<SuperCoordinatorProtectedRoute><SuperCoordinatorDashboardPage /></SuperCoordinatorProtectedRoute>} />
 
                   {/* Public Sport Coordinator Login Routes */}
                   <Route path="/coordinator/login" element={<CoordinatorLoginPage />} />

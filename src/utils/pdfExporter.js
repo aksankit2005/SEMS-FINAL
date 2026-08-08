@@ -304,32 +304,66 @@ export const downloadPassAsPDF = async (receiptOrElementId, filename = 'APEX_Pas
 };
 
 /**
- * Export tabular data as a downloadable CSV file.
+ * Export tabular data as a downloadable CSV/Excel file.
+ * Supports both signatures:
+ * 1. exportToCSV(filename, headers, rows)
+ * 2. exportToCSV(dataArray, filename)
  */
-export const exportToCSV = (dataArray = [], filename = 'Export_Data') => {
-  if (!dataArray || dataArray.length === 0) return;
+export const exportToCSV = (arg1, arg2, arg3) => {
+  let filename = 'Export_Data';
+  let headers = [];
+  let rows = [];
 
-  const headers = Object.keys(dataArray[0]);
-  const csvRows = [];
-  csvRows.push(headers.join(','));
+  if (typeof arg1 === 'string' && Array.isArray(arg2) && Array.isArray(arg3)) {
+    // Signature 1: exportToCSV(filename, headers, rows)
+    filename = arg1;
+    headers = arg2;
+    rows = arg3;
+  } else if (Array.isArray(arg1)) {
+    // Signature 2: exportToCSV(dataArray, filename)
+    filename = typeof arg2 === 'string' ? arg2 : 'Export_Data';
+    if (arg1.length > 0) {
+      if (Array.isArray(arg1[0])) {
+        rows = arg1;
+      } else if (typeof arg1[0] === 'object') {
+        headers = Object.keys(arg1[0]);
+        rows = arg1.map((item) => headers.map((h) => item[h]));
+      }
+    }
+  }
 
-  dataArray.forEach((row) => {
-    const values = headers.map((header) => {
-      const escaped = ('' + (row[header] || '')).replace(/"/g, '\\"');
-      return `"${escaped}"`;
-    });
-    csvRows.push(values.join(','));
+  if (rows.length === 0 && headers.length === 0) return;
+
+  const csvLines = [];
+
+  // Add Header Row
+  if (headers && headers.length > 0) {
+    const escapedHeaders = headers.map((h) => `"${('' + (h || '')).replace(/"/g, '""')}"`);
+    csvLines.push(escapedHeaders.join(','));
+  }
+
+  // Add Data Rows
+  rows.forEach((row) => {
+    if (Array.isArray(row)) {
+      const escapedValues = row.map((val) => `"${('' + (val ?? '')).replace(/"/g, '""')}"`);
+      csvLines.push(escapedValues.join(','));
+    }
   });
 
-  const csvString = csvRows.join('\n');
-  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
+  const csvContent = '\uFEFF' + csvLines.join('\r\n'); // UTF-8 BOM for MS Excel compatibility
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  
+  const cleanFilename = filename.toLowerCase().endsWith('.csv') ? filename : `${filename}.csv`;
+
   const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
   link.setAttribute('href', url);
-  link.setAttribute('download', `${filename}.csv`);
+  link.setAttribute('download', cleanFilename);
+  link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 100);
 };
 
 /**

@@ -1,21 +1,87 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Trophy, Crown, Search } from 'lucide-react';
-import { LEADERBOARD_DATA } from '../data/leaderboardData';
+import { ALL_COLLEGES } from '../services/superCoordinatorApi';
+
+// Build college standings from Super Coordinator awarded points in localStorage
+const computeStandings = () => {
+  let entries = [];
+  try {
+    const stored = localStorage.getItem('sems_super_coord_leaderboard');
+    if (stored) entries = JSON.parse(stored);
+  } catch (e) {}
+
+  // Tally gold and silver per college
+  const tally = {};
+  entries.forEach((entry) => {
+    const winner = entry.winnerCollege;
+    const runnerUp = entry.runnerUpCollege;
+    if (winner) {
+      if (!tally[winner]) tally[winner] = { gold: 0, silver: 0 };
+      tally[winner].gold += 1;
+    }
+    if (runnerUp) {
+      if (!tally[runnerUp]) tally[runnerUp] = { gold: 0, silver: 0 };
+      tally[runnerUp].silver += 1;
+    }
+  });
+
+  // Include ALL colleges — those without points get 0s
+  const standings = ALL_COLLEGES
+    .filter((c) => c.id !== 'EXTERNAL') // exclude external/guest colleges from table
+    .map((college) => {
+      const counts = tally[college.id] || { gold: 0, silver: 0 };
+      return {
+        id: college.id,
+        college: college.name,
+        code: college.id,
+        gold: counts.gold,
+        silver: counts.silver,
+        totalPoints: counts.gold * 2 + counts.silver * 1,
+      };
+    });
+
+  // Sort: points desc → gold desc → silver desc → name asc
+  standings.sort((a, b) => {
+    if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+    if (b.gold !== a.gold) return b.gold - a.gold;
+    if (b.silver !== a.silver) return b.silver - a.silver;
+    return a.college.localeCompare(b.college);
+  });
+
+  return standings;
+};
 
 export const LeaderboardPage = () => {
   const [query, setQuery] = useState('');
+  const [standings, setStandings] = useState([]);
 
-  const filteredLeaderboard = LEADERBOARD_DATA.filter((item) =>
-    item.college.toLowerCase().includes(query.toLowerCase()) ||
-    item.code.toLowerCase().includes(query.toLowerCase())
+  const refresh = () => setStandings(computeStandings());
+
+  useEffect(() => {
+    refresh();
+    // Listen for super coordinator leaderboard updates
+    const handler = () => refresh();
+    window.addEventListener('sems_leaderboard_updated', handler);
+    window.addEventListener('storage', handler);
+    return () => {
+      window.removeEventListener('sems_leaderboard_updated', handler);
+      window.removeEventListener('storage', handler);
+    };
+  }, []);
+
+  const filtered = standings.filter(
+    (item) =>
+      item.college.toLowerCase().includes(query.toLowerCase()) ||
+      item.code.toLowerCase().includes(query.toLowerCase())
   );
 
-  const top3 = LEADERBOARD_DATA.slice(0, 3);
+  const top2 = standings.slice(0, 2);
+  const hasData = standings.length > 0;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white py-12 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-12">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-orange-500/10 text-orange-500 text-xs font-black uppercase tracking-wider mb-3">
@@ -25,67 +91,52 @@ export const LeaderboardPage = () => {
             Overall <span className="bg-gradient-to-r from-orange-500 via-amber-500 to-blue-600 bg-clip-text text-transparent">Leaderboard</span>
           </h1>
           <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
-            Current medal tallies and cumulative points across all 11 sports events.
+            Live medal tallies and cumulative points across all sports events. 🥇 Gold = 2 pts &nbsp;•&nbsp; 🥈 Silver = 1 pt
           </p>
         </div>
 
-        {/* Top 3 Podium Visual Display / Empty State */}
-        {top3.length < 3 ? (
+        {/* Top 2 Podium or Empty State */}
+        {!hasData ? (
           <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-soft p-8 mb-10">
             <Trophy className="w-12 h-12 text-slate-400 mx-auto mb-3" />
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">No Leaderboard Standings Yet</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Inter-college standings and medal tallies will appear here as matches complete.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Inter-college standings will appear here as the Super Coordinator awards match points.
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 items-end">
-            {/* Silver - 2nd */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-soft text-center flex flex-col items-center relative overflow-hidden order-2 md:order-1">
-              <span className="px-3 py-1 rounded-full text-xs font-black bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 mb-3">
-                🥈 RANK 2 - SILVER
-              </span>
-              <div className="text-5xl mb-3">{top3[1].logo}</div>
-              <h3 className="font-black text-xl text-slate-900 dark:text-white">{top3[1].college}</h3>
-              <p className="text-xs text-slate-500 mb-4">Top Sports: {top3[1].topSport}</p>
-              <div className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 flex justify-around text-xs font-bold">
-                <span>🥇 {top3[1].gold}</span>
-                <span>🥈 {top3[1].silver}</span>
-                <span>🥉 {top3[1].bronze}</span>
-              </div>
-              <div className="mt-4 text-2xl font-black text-slate-900 dark:text-white">{top3[1].totalPoints} Pts</div>
-            </div>
+          <div className={`grid gap-6 mb-16 items-end ${top2.length >= 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 max-w-md mx-auto'}`}>
 
-            {/* Gold - 1st (Center Podium - Champion) */}
-            <div className="bg-gradient-to-b from-orange-500/10 via-white to-slate-50 dark:via-slate-900 dark:to-slate-950 rounded-3xl p-8 border-2 border-orange-500 shadow-xl text-center flex flex-col items-center relative overflow-hidden order-1 md:order-2 scale-105">
-              <div className="absolute top-3 right-3 text-xs px-2 py-0.5 rounded bg-orange-500 text-white font-black">
-                CHAMPION
+            {/* Gold – Champion */}
+            {top2[0] && (
+              <div className="bg-gradient-to-b from-orange-500/10 via-white to-slate-50 dark:via-slate-900 dark:to-slate-950 rounded-3xl p-8 border-2 border-orange-500 shadow-xl text-center flex flex-col items-center relative overflow-hidden scale-105">
+                <div className="absolute top-3 right-3 text-xs px-2 py-0.5 rounded bg-orange-500 text-white font-black">CHAMPION</div>
+                <Crown className="w-10 h-10 text-orange-500 mb-2 animate-bounce" />
+                <span className="px-3 py-1 rounded-full text-xs font-black bg-orange-500/10 text-orange-600 dark:text-orange-400 mb-3">🥇 RANK 1 — GOLD</span>
+                <h3 className="font-black text-2xl text-orange-600 dark:text-orange-400">{top2[0].college}</h3>
+                <p className="text-xs text-slate-500 mt-1 mb-4">{top2[0].code}</p>
+                <div className="w-full p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-orange-500/30 flex justify-around text-xs font-bold">
+                  <span>🥇 {top2[0].gold} Gold</span>
+                  <span>🥈 {top2[0].silver} Silver</span>
+                </div>
+                <div className="mt-4 text-4xl font-black text-orange-500">{top2[0].totalPoints} Pts</div>
               </div>
-              <Crown className="w-10 h-10 text-orange-500 mb-2 animate-bounce" />
-              <div className="text-6xl mb-3">{top3[0].logo}</div>
-              <h3 className="font-black text-2xl text-orange-600 dark:text-orange-400">{top3[0].college}</h3>
-              <p className="text-xs text-slate-500 mb-4">Top Sports: {top3[0].topSport}</p>
-              <div className="w-full p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-orange-500/30 flex justify-around text-xs font-bold">
-                <span>🥇 {top3[0].gold}</span>
-                <span>🥈 {top3[0].silver}</span>
-                <span>🥉 {top3[0].bronze}</span>
-              </div>
-              <div className="mt-4 text-4xl font-black text-orange-500">{top3[0].totalPoints} Pts</div>
-            </div>
+            )}
 
-            {/* Bronze - 3rd */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-soft text-center flex flex-col items-center relative overflow-hidden order-3">
-              <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-900/10 text-amber-600 dark:text-amber-400 mb-3">
-                🥉 RANK 3 - BRONZE
-              </span>
-              <div className="text-5xl mb-3">{top3[2].logo}</div>
-              <h3 className="font-black text-xl text-slate-900 dark:text-white">{top3[2].college}</h3>
-              <p className="text-xs text-slate-500 mb-4">Top Sports: {top3[2].topSport}</p>
-              <div className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 flex justify-around text-xs font-bold">
-                <span>🥇 {top3[2].gold}</span>
-                <span>🥈 {top3[2].silver}</span>
-                <span>🥉 {top3[2].bronze}</span>
+            {/* Silver – Runner-Up */}
+            {top2[1] && (
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-soft text-center flex flex-col items-center relative overflow-hidden">
+                <span className="px-3 py-1 rounded-full text-xs font-black bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 mb-3">🥈 RANK 2 — SILVER</span>
+                <div className="text-5xl mb-3">🏛️</div>
+                <h3 className="font-black text-xl text-slate-900 dark:text-white">{top2[1].college}</h3>
+                <p className="text-xs text-slate-500 mt-1 mb-4">{top2[1].code}</p>
+                <div className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 flex justify-around text-xs font-bold">
+                  <span>🥇 {top2[1].gold} Gold</span>
+                  <span>🥈 {top2[1].silver} Silver</span>
+                </div>
+                <div className="mt-4 text-2xl font-black text-slate-900 dark:text-white">{top2[1].totalPoints} Pts</div>
               </div>
-              <div className="mt-4 text-2xl font-black text-amber-600 dark:text-amber-400">{top3[2].totalPoints} Pts</div>
-            </div>
+            )}
           </div>
         )}
 
@@ -114,41 +165,36 @@ export const LeaderboardPage = () => {
                 <tr>
                   <th className="p-4 text-center">Rank</th>
                   <th className="p-4">College / University</th>
-                  <th className="p-4 text-center">Gold 🥇</th>
-                  <th className="p-4 text-center">Silver 🥈</th>
-                  <th className="p-4 text-center">Bronze 🥉</th>
+                  <th className="p-4 text-center">Gold 🥇 (+2 pts)</th>
+                  <th className="p-4 text-center">Silver 🥈 (+1 pt)</th>
                   <th className="p-4 text-center font-black text-blue-600 dark:text-blue-400">Total Points</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {filteredLeaderboard.length === 0 ? (
+                {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 font-bold">
-                      No college rankings recorded yet.
+                    <td colSpan={5} className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 font-bold">
+                      {hasData ? 'No college matches your search.' : 'No rankings yet — Super Coordinator will award points as matches complete.'}
                     </td>
                   </tr>
                 ) : (
-                  filteredLeaderboard.map((item) => (
-                    <tr key={item.rank} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+                  filtered.map((item, index) => (
+                    <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
                       <td className="p-4 text-center font-black">
                         <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs ${
-                          item.rank === 1 ? 'bg-orange-500 text-white font-black' :
-                          item.rank === 2 ? 'bg-slate-300 text-slate-950 font-bold' :
-                          item.rank === 3 ? 'bg-amber-700 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                          index === 0 ? 'bg-orange-500 text-white font-black' :
+                          index === 1 ? 'bg-slate-300 text-slate-950 font-bold' :
+                          'bg-slate-100 dark:bg-slate-800 text-slate-500'
                         }`}>
-                          {item.rank}
+                          {index + 1}
                         </span>
                       </td>
-                      <td className="p-4 font-bold flex items-center gap-3">
-                        <span className="text-xl">{item.logo}</span>
-                        <div>
-                          <div className="text-slate-900 dark:text-white font-black">{item.college}</div>
-                          <div className="text-[10px] text-slate-400">{item.code} • Key: {item.topSport}</div>
-                        </div>
+                      <td className="p-4 font-bold">
+                        <div className="text-slate-900 dark:text-white font-black">{item.college}</div>
+                        <div className="text-[10px] text-slate-400">{item.code}</div>
                       </td>
                       <td className="p-4 text-center font-black text-orange-500">{item.gold}</td>
                       <td className="p-4 text-center font-bold text-slate-400">{item.silver}</td>
-                      <td className="p-4 text-center font-bold text-amber-700">{item.bronze}</td>
                       <td className="p-4 text-center font-black text-base text-blue-600 dark:text-blue-400">
                         {item.totalPoints}
                       </td>
