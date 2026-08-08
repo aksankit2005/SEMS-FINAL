@@ -379,6 +379,62 @@ export const TableTennisRulesDisplay = () => {
   );
 };
 
+export const FOOTBALL_5V5_RULES_DATA = [
+  { num: 1, title: "1. Team Composition", text: "5 players on the field at a time (1 Goalkeeper + 4 Outfield players). Substitutes: Up to 3 rolling/flying substitutes. A team must have at least 4 players to start or continue a match." },
+  { num: 2, title: "2. Match Duration & Knockouts", text: "2 halves × 10 minutes each with a 5-minute half-time interval. Clock stopped for serious injuries. Tied knockout matches go directly to Penalty Shootout (3 penalties per team initially, then sudden death)." },
+  { num: 3, title: "3. Kick-Off", text: "The match starts with a kick-off from the center circle. Opponents must remain outside the required distance. A goal can be scored directly from a kick-off." },
+  { num: 4, title: "4. Ball Out of Play", text: "Sideline: Restart with a kick-in or throw-in depending on pitch rules. Goal line: Goal kick or corner kick. The ball must completely cross the boundary line to be out of play." },
+  { num: 5, title: "5. Goalkeeper Rules", text: "Only the goalkeeper can use hands inside their own penalty area. Goalkeepers cannot deliberately handle a ball kicked back to them by a teammate's foot. Must release the ball within tournament time limit." },
+  { num: 6, title: "6. Fouls & Penalty Kicks", text: "Includes kicking, tripping, pushing, holding, dangerous tackles, handball, or unsporting behavior. Direct fouls inside defending penalty area result in a Penalty Kick." },
+  { num: 7, title: "7. Cards & Discipline", text: "🟨 Yellow Card: Warning / Caution.\n🟥 Red Card: Player sent off and cannot return to the match. 2 Yellow Cards in a match auto-convert to a Red Card." },
+  { num: 8, title: "8. Offside Rule", text: "❌ No Offside Rule in 5v5 mini-football format. This keeps gameplay fast, dynamic, and easy to manage on small turfs." },
+  { num: 9, title: "9. Free Kicks", text: "Free kicks can be direct or indirect depending on the nature of the foul. Opponents must maintain the required wall distance." },
+  { num: 10, title: "10. Corner Kick", text: "Awarded when the defending team is last to touch the ball before it completely crosses their goal line. Taken from the designated corner arc." },
+  { num: 11, title: "11. Penalty Kick", text: "Awarded for direct-free-kick offences inside the defending team's penalty area. Only the goalkeeper defends. All other players stay outside the penalty line." },
+  { num: 12, title: "12. Equipment & Fair Play", text: "Proper sports shoes and team jerseys mandatory. No jewelry or dangerous accessories. Abusive behavior or fighting results in immediate player/team disqualification." }
+];
+
+export const FootballRulesDisplay = () => {
+  return (
+    <div className="space-y-6 text-slate-100">
+      <div className="flex items-center justify-between border-b border-emerald-500/20 pb-4">
+        <div className="flex items-center gap-2.5">
+          <span className="text-2xl">⚽</span>
+          <div>
+            <h4 className="font-black text-base uppercase tracking-wider text-emerald-400">
+              Official 5v5 Football Tournament Rulebook
+            </h4>
+            <p className="text-xs text-slate-400">12 Official Rules of 5-a-Side Mini Football</p>
+          </div>
+        </div>
+        <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+          5v5 Format
+        </span>
+      </div>
+
+      <div className="space-y-3">
+        <h5 className="font-black text-sm sm:text-base text-emerald-300 flex items-center gap-2">
+          <span>⚽</span>
+          <span>12 Official Football 5v5 Tournament Rules</span>
+        </h5>
+        <div className="grid grid-cols-1 gap-3 text-xs sm:text-sm bg-slate-950/80 p-5 rounded-2xl border border-emerald-500/20 shadow-inner">
+          {FOOTBALL_5V5_RULES_DATA.map((rule) => (
+            <div key={rule.num} className="flex items-start gap-3 leading-relaxed">
+              <span className="font-mono font-black text-emerald-400 shrink-0 text-sm bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+                {rule.num}.
+              </span>
+              <div>
+                <strong className="font-bold text-white block text-xs uppercase tracking-wider text-emerald-300 mb-0.5">{rule.title}</strong>
+                <span className="text-slate-300 whitespace-pre-line">{renderFormattedText(rule.text)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* FULL SCREEN RULEBOOK MODAL WITH GO BACK BUTTON */
 export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }) => {
   if (!isOpen) return null;
@@ -388,6 +444,7 @@ export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }
   const isChess = sName.includes('chess');
   const isBasketball = sName.includes('basketball');
   const isTableTennis = sName.includes('table') || sName.includes('tt') || sName.includes('ping pong');
+  const isFootball = sName.includes('football') || sName.includes('soccer');
 
   const themeColorClass = isCricket 
     ? 'text-emerald-400' 
@@ -396,7 +453,9 @@ export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }
     : isBasketball 
     ? 'text-orange-400'
     : isTableTennis
-    ? 'text-cyan-400' 
+    ? 'text-cyan-400'
+    : isFootball
+    ? 'text-emerald-400' 
     : 'text-amber-400';
 
   const themeBtnClass = isCricket 
@@ -406,7 +465,9 @@ export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }
     : isBasketball 
     ? 'bg-orange-600 hover:bg-orange-500'
     : isTableTennis
-    ? 'bg-cyan-600 hover:bg-cyan-500' 
+    ? 'bg-cyan-600 hover:bg-cyan-500'
+    : isFootball
+    ? 'bg-emerald-600 hover:bg-emerald-500' 
     : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500';
 
   return (
@@ -425,10 +486,10 @@ export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }
 
           <div className="text-center truncate">
             <span className={`text-[10px] font-mono uppercase tracking-widest block font-bold ${themeColorClass}`}>
-              {isCricket ? 'Official Cricket Tournament Rulebook' : isChess ? '10-Minute Rapid Chess Rulebook' : isBasketball ? 'FIBA Basketball Rulebook' : isTableTennis ? 'Official ITTF Table Tennis Rulebook' : 'Official BWF Rulebook'}
+              {isCricket ? 'Official Cricket Tournament Rulebook' : isChess ? '10-Minute Rapid Chess Rulebook' : isBasketball ? 'FIBA Basketball Rulebook' : isTableTennis ? 'Official ITTF Table Tennis Rulebook' : isFootball ? 'Official 5v5 Football Tournament Rulebook' : 'Official BWF Rulebook'}
             </span>
             <h2 className="text-sm sm:text-lg font-black text-white flex items-center gap-1.5 justify-center truncate">
-              <span>{isCricket ? '🏏' : isChess ? '♟️' : isBasketball ? '🏀' : isTableTennis ? '🏓' : '🏸'}</span> {sportName} Tournament Rules
+              <span>{isCricket ? '🏏' : isChess ? '♟️' : isBasketball ? '🏀' : isTableTennis ? '🏓' : isFootball ? '⚽' : '🏸'}</span> {sportName} Tournament Rules
             </h2>
           </div>
 
@@ -451,6 +512,8 @@ export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }
             <BasketballRulesDisplay />
           ) : isTableTennis ? (
             <TableTennisRulesDisplay />
+          ) : isFootball ? (
+            <FootballRulesDisplay />
           ) : (
             <BadmintonRulesDisplay />
           )}
@@ -459,7 +522,7 @@ export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }
         {/* Sticky Footer with Go Back Button */}
         <div className="bg-slate-950 px-5 py-4 border-t border-slate-800 flex items-center justify-between gap-4">
           <span className="text-xs text-slate-400 italic hidden sm:inline">
-            {isCricket ? 'Official 8-Over & 10-Over Cricket Regulations' : isChess ? '10-Minute Rapid Chess Regulations' : isBasketball ? 'FIBA Official Basketball Regulations' : isTableTennis ? 'ITTF Official 13 Table Tennis Tournament Rules' : 'BWF Standard Tournament Rules'}
+            {isCricket ? 'Official 8-Over & 10-Over Cricket Regulations' : isChess ? '10-Minute Rapid Chess Regulations' : isBasketball ? 'FIBA Official Basketball Regulations' : isTableTennis ? 'ITTF Official 13 Table Tennis Tournament Rules' : isFootball ? 'Official 12 Football 5v5 Tournament Rules' : 'BWF Standard Tournament Rules'}
           </span>
           <button
             onClick={onClose}

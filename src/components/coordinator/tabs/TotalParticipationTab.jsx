@@ -13,6 +13,7 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
   const sportName = user?.sportName || (sportId === 'chess' ? 'Chess' : 'Basketball');
 
   const isBasketball = sportId === 'basketball' || sportName.toLowerCase().includes('basketball');
+  const isFootball = sportId === 'football' || sportName.toLowerCase().includes('football');
   const isChess = sportId === 'chess' || sportName.toLowerCase().includes('chess');
   const isCricket = sportId === 'cricket' || sportName.toLowerCase().includes('cricket');
   const isTableTennis = sportId === 'table-tennis' || sportId === 'tabletennis' || sportName.toLowerCase().includes('table tennis');
@@ -206,6 +207,46 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
     }
   ];
 
+  // Initial seed records for Football
+  const defaultFootballParticipants = [
+    {
+      timestamp: '16 Jul, 10:30 AM',
+      sport: 'Football',
+      eventTitle: 'Football Championship 2026',
+      teamName: 'MPEC FC',
+      collegeName: 'MPEC Kanpur (KN142)',
+      name: 'Vikramjit Singh',
+      captainName: 'Vikramjit Singh',
+      phone: '9876543210',
+      email: 'vikram@mpec.edu',
+      squadSize: 7
+    },
+    {
+      timestamp: '16 Jul, 11:15 AM',
+      sport: 'Football',
+      eventTitle: 'Football Championship 2026',
+      teamName: 'PSIT Strikers',
+      collegeName: 'PSIT Kanpur (KN056)',
+      name: 'Aman Verma',
+      captainName: 'Aman Verma',
+      phone: '9876543211',
+      email: 'aman@psit.edu',
+      squadSize: 8
+    },
+    {
+      timestamp: '16 Jul, 02:45 PM',
+      sport: 'Football',
+      eventTitle: 'Football Championship 2026',
+      teamName: 'HBTU United',
+      collegeName: 'HBTU Kanpur (KN022)',
+      name: 'Rahul Roy',
+      captainName: 'Rahul Roy',
+      phone: '9876543212',
+      email: 'rahul@hbtu.edu',
+      squadSize: 6
+    }
+  ];
+
   // Initial seed records for Chess
   const defaultChessParticipants = [
     {
@@ -275,6 +316,31 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
               name: item.name || item.captainName || item.leaderName || item.player1?.name || item.studentName || 'Aditya Singh',
               phone: item.phone || item.mobile || item.player1?.phone || '9336938985',
               email: item.email || item.player1?.email || 'aditya@sems.edu'
+            });
+          }
+        });
+
+        setParticipants(Array.from(mergedMap.values()));
+      } else if (isFootball) {
+        const ftbData = (data || []).filter((d) => 
+          !d.sport || d.sport.toLowerCase().includes('football') || d.eventTitle?.toLowerCase().includes('football')
+        );
+
+        const mergedMap = new Map();
+        defaultFootballParticipants.forEach((item) => {
+          mergedMap.set(item.teamName.toLowerCase(), item);
+        });
+
+        ftbData.forEach((item) => {
+          const tName = (item.teamName || item.college || item.name || '').toLowerCase();
+          if (tName) {
+            mergedMap.set(tName, {
+              ...item,
+              teamName: item.teamName || item.name || 'Football Squad',
+              collegeName: item.collegeName || item.college || item.player1?.college || 'MPEC Kanpur (KN142)',
+              name: item.name || item.captainName || item.leaderName || item.player1?.name || item.studentName || 'Vikramjit Singh',
+              phone: item.phone || item.mobile || item.player1?.phone || '9876543210',
+              email: item.email || item.player1?.email || 'vikram@mpec.edu'
             });
           }
         });
@@ -397,12 +463,18 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
       { teamName: 'TITANS', collegeName: 'BBD (KN022)', name: 'Vikram Patel', phone: '9123456789', email: 'vikram@sems.edu', time: '16 Jul, 02:45 PM' },
     ];
 
-    const defaultSeeds = isCricket ? crkSeeds : bskSeeds;
+    const ftbSeeds = [
+      { teamName: 'MPEC FC', collegeName: 'MPEC Kanpur (KN142)', name: 'Vikramjit Singh', phone: '9876543210', email: 'vikram@mpec.edu', time: '16 Jul, 10:30 AM' },
+      { teamName: 'PSIT Strikers', collegeName: 'PSIT Kanpur (KN056)', name: 'Aman Verma', phone: '9876543211', email: 'aman@psit.edu', time: '16 Jul, 11:15 AM' },
+      { teamName: 'HBTU United', collegeName: 'HBTU Kanpur (KN022)', name: 'Rahul Roy', phone: '9876543212', email: 'rahul@hbtu.edu', time: '16 Jul, 02:45 PM' },
+    ];
+
+    const defaultSeeds = isCricket ? crkSeeds : isFootball ? ftbSeeds : bskSeeds;
     const seed = defaultSeeds[defaultIndex % defaultSeeds.length];
 
     return {
       timestamp: p.timestamp || p.registeredAt || p.date || seed.time,
-      gameName: isCricket ? 'Cricket' : 'Basketball',
+      gameName: isCricket ? 'Cricket' : isFootball ? 'Football' : 'Basketball',
       teamName: p.teamName || seed.teamName,
       collegeName: p.collegeName || p.college || p.player1?.college || seed.collegeName,
       name: p.name || p.captainName || p.leaderName || p.player1?.name || seed.name,
@@ -419,8 +491,8 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
 
     const escapeCsv = (str) => `"${String(str || '').replace(/"/g, '""')}"`;
 
-    if (isBasketball || isCricket) {
-      const sportLabel = isCricket ? 'Cricket' : 'Basketball';
+    if (isBasketball || isCricket || isFootball) {
+      const sportLabel = isCricket ? 'Cricket' : isFootball ? 'Football' : 'Basketball';
       const headers = ['Time', 'Game Name', 'Team Name', 'College Name', 'Name', 'Mobile No', 'Email'];
       const rows = filtered.map((p, idx) => {
         const row = getTeamParticipantRowData(p, idx);
@@ -632,9 +704,9 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
 
         {/* TABLE VIEW */}
         <div className="overflow-x-auto">
-          {(isBasketball || isCricket) ? (
+          {(isBasketball || isCricket || isFootball) ? (
 
-            /* 🏀 BASKETBALL & 🏏 CRICKET TABLE FORMAT */
+            /* 🏀 BASKETBALL, ⚽ FOOTBALL & 🏏 CRICKET TABLE FORMAT */
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">
@@ -651,7 +723,7 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                 {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="p-8 text-center text-slate-500 dark:text-slate-400 font-mono">
-                      No registered {isCricket ? 'Cricket' : 'Basketball'} participants found in database.
+                      No registered {isCricket ? 'Cricket' : isFootball ? 'Football' : 'Basketball'} participants found in database.
                     </td>
                   </tr>
                 ) : (
