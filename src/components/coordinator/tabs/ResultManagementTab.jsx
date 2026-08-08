@@ -134,6 +134,40 @@ export const ResultManagementTab = ({ user }) => {
         }
       ];
     }
+    if (assignedSport === 'football') {
+      return [
+        {
+          id: 'M-FTB-101',
+          eventTitle: 'Inter-College Football Championship 2026',
+          format: 'TEAM',
+          category: 'Boys',
+          team1: 'MPEC FC',
+          team2: 'PSIT Strikers',
+          score1: 2,
+          score2: 1,
+          scoreSummary: 'MPEC FC won 2 - 1',
+          winner: 'MPEC FC',
+          tableNumber: 'Ground 1',
+          venue: 'Ground 1',
+          completedAt: new Date(Date.now() - 3600000).toISOString()
+        },
+        {
+          id: 'M-FTB-102',
+          eventTitle: 'Inter-College Football Championship 2026',
+          format: 'TEAM',
+          category: 'Boys',
+          team1: 'HBTU United',
+          team2: 'KIET Warriors',
+          score1: 3,
+          score2: 0,
+          scoreSummary: 'HBTU United won 3 - 0',
+          winner: 'HBTU United',
+          tableNumber: 'Ground 2',
+          venue: 'Ground 2',
+          completedAt: new Date(Date.now() - 7200000).toISOString()
+        }
+      ];
+    }
     return [
       {
         id: 'M-BADM-101',

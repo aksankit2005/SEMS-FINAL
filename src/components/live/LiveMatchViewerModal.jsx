@@ -220,8 +220,11 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
                     (match.eventTitle || '').toLowerCase().includes('cricket') ||
                     Boolean(match.striker || match.bowler);
 
-  const isBasketball = !isCricket && ((match.sportId || match.sport || match.sportName || '').toLowerCase().includes('basketball') || (Boolean(match.roster1 || match.roster2) && !(match.sportId || match.sport || match.sportName || '').toLowerCase().includes('chess')));
-  const isChess = !isCricket && ((match.sportId || match.sport || match.sportName || '').toLowerCase().includes('chess') ||
+  const isFootball = (match.sportId || match.sport || match.sportName || '').toLowerCase().includes('football') ||
+                     (match.eventTitle || match.title || match.matchTitle || '').toLowerCase().includes('football');
+
+  const isBasketball = !isCricket && !isFootball && ((match.sportId || match.sport || match.sportName || '').toLowerCase().includes('basketball') || (Boolean(match.roster1 || match.roster2) && !(match.sportId || match.sport || match.sportName || '').toLowerCase().includes('chess')));
+  const isChess = !isCricket && !isFootball && ((match.sportId || match.sport || match.sportName || '').toLowerCase().includes('chess') ||
                   (match.matchTitle || match.title || '').toLowerCase().includes('chess') ||
                   (match.eventTitle || '').toLowerCase().includes('chess'));
 
@@ -574,20 +577,24 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
           </div>
         )}
 
-        {/* BASKETBALL PLAYER LIVE STATS & FOULS SECTION */}
-        {isBasketball && (
+        {/* PLAYER LIVE STATS SECTION (BASKETBALL & FOOTBALL) */}
+        {(isBasketball || isFootball) && (
           <div className="p-6 bg-slate-50 dark:bg-[#0B1120] border-b border-slate-200 dark:border-[#1E293B] space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-[#1E293B] pb-4">
               <div>
                 <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                  <Users className="w-4 h-4 text-amber-500" />
-                  Basketball Live Player Stats (Points & Personal Fouls)
+                  <Users className={`w-4 h-4 ${isFootball ? 'text-emerald-500' : 'text-amber-500'}`} />
+                  {isFootball ? 'Football Live Player Stats (Goals & Cards)' : 'Basketball Live Player Stats (Points & Personal Fouls)'}
                 </h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Real-time individual points scored and fouls committed by players on court
+                  {isFootball ? 'Real-time goals scored and cards received by players' : 'Real-time individual points scored and fouls committed by players on court'}
                 </p>
               </div>
-              <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-mono font-bold self-start sm:self-auto">
+              <span className={`px-3 py-1 rounded-full text-xs font-mono font-bold self-start sm:self-auto border ${
+                isFootball
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                  : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+              }`}>
                 {match.quarter || 'Live Match'}
               </span>
             </div>
@@ -597,18 +604,24 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
               
               {/* Team 1 Roster Card */}
               <div className="bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-[#1E293B] overflow-hidden shadow-sm">
-                <div className="px-4 py-3 bg-blue-600/10 dark:bg-indigo-600/20 border-b border-slate-200 dark:border-[#1E293B] flex items-center justify-between">
-                  <span className="font-extrabold text-xs text-blue-700 dark:text-indigo-300 uppercase tracking-wider">
+                <div className={`px-4 py-3 border-b border-slate-200 dark:border-[#1E293B] flex items-center justify-between ${
+                  isFootball ? 'bg-emerald-600/10 dark:bg-emerald-600/20' : 'bg-blue-600/10 dark:bg-indigo-600/20'
+                }`}>
+                  <span className={`font-extrabold text-xs uppercase tracking-wider ${
+                    isFootball ? 'text-emerald-700 dark:text-emerald-300' : 'text-blue-700 dark:text-indigo-300'
+                  }`}>
                     {team1Name} Roster
                   </span>
                   <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400">
-                    Team Score: <strong className="text-blue-600 dark:text-indigo-400">{score1Val} PTS</strong>
+                    Team Score: <strong className={isFootball ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-indigo-400'}>{score1Val} {isFootball ? 'Goals' : 'PTS'}</strong>
                   </span>
                 </div>
 
                 <div className="divide-y divide-slate-100 dark:divide-slate-800/60 max-h-72 overflow-y-auto">
                   {roster1.map((p) => {
-                    const isFouledOut = (p.fouls || 0) >= 5;
+                    const isFouledOut = isFootball ? p.redCard : (p.fouls || 0) >= 5;
+                    const pGoals = p.goals !== undefined ? p.goals : (p.points || 0);
+
                     return (
                       <div key={p.id || p.jersey} className={`p-3 flex items-center justify-between text-xs transition ${isFouledOut ? 'bg-rose-500/10' : p.onCourt ? 'bg-emerald-500/5' : ''}`}>
                         <div className="flex items-center gap-3">
@@ -620,12 +633,17 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
                               <span className="font-bold text-slate-900 dark:text-white">{p.name}</span>
                               {p.onCourt && !isFouledOut && (
                                 <span className="px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-mono font-extrabold uppercase">
-                                  ON COURT
+                                  ON PITCH
+                                </span>
+                              )}
+                              {p.yellowCards > 0 && !p.redCard && (
+                                <span className="px-1 py-0.2 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[9px] font-mono font-bold">
+                                  🟨 {p.yellowCards}
                                 </span>
                               )}
                               {isFouledOut && (
                                 <span className="px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-600 dark:text-rose-400 text-[9px] font-mono font-extrabold uppercase flex items-center gap-1">
-                                  <ShieldAlert className="w-2.5 h-2.5" /> FOULED OUT
+                                  <ShieldAlert className="w-2.5 h-2.5" /> {isFootball ? 'RED CARD (SENT OFF)' : 'FOULED OUT'}
                                 </span>
                               )}
                             </div>
@@ -633,27 +651,29 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
                         </div>
 
                         <div className="flex items-center gap-4 font-mono">
-                          {/* Points */}
+                          {/* Goals / Points */}
                           <div className="text-right">
-                            <span className="text-[10px] text-slate-400 block uppercase">Points</span>
-                            <span className="font-black text-amber-600 dark:text-amber-400 text-sm">
-                              {p.points || 0} PTS
+                            <span className="text-[10px] text-slate-400 block uppercase">{isFootball ? 'Goals' : 'Points'}</span>
+                            <span className={`font-black text-sm ${isFootball ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                              {isFootball ? `${pGoals} G` : `${p.points || 0} PTS`}
                             </span>
                           </div>
 
-                          {/* Fouls */}
-                          <div className="text-right">
-                            <span className="text-[10px] text-slate-400 block uppercase">Fouls</span>
-                            <span className={`font-black text-xs px-2 py-0.5 rounded ${
-                              (p.fouls || 0) >= 5
-                                ? 'bg-rose-500 text-white font-extrabold'
-                                : (p.fouls || 0) >= 4
-                                ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                            }`}>
-                              {p.fouls || 0} / 5
-                            </span>
-                          </div>
+                          {/* Fouls (Only for Basketball) */}
+                          {!isFootball && (
+                            <div className="text-right">
+                              <span className="text-[10px] text-slate-400 block uppercase">Fouls</span>
+                              <span className={`font-black text-xs px-2 py-0.5 rounded ${
+                                (p.fouls || 0) >= 5
+                                  ? 'bg-rose-500 text-white font-extrabold'
+                                  : (p.fouls || 0) >= 4
+                                  ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                              }`}>
+                                {p.fouls || 0} / 5
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -663,18 +683,24 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
 
               {/* Team 2 Roster Card */}
               <div className="bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-[#1E293B] overflow-hidden shadow-sm">
-                <div className="px-4 py-3 bg-blue-600/10 dark:bg-indigo-600/20 border-b border-slate-200 dark:border-[#1E293B] flex items-center justify-between">
-                  <span className="font-extrabold text-xs text-blue-700 dark:text-indigo-300 uppercase tracking-wider">
+                <div className={`px-4 py-3 border-b border-slate-200 dark:border-[#1E293B] flex items-center justify-between ${
+                  isFootball ? 'bg-teal-600/10 dark:bg-teal-600/20' : 'bg-blue-600/10 dark:bg-indigo-600/20'
+                }`}>
+                  <span className={`font-extrabold text-xs uppercase tracking-wider ${
+                    isFootball ? 'text-teal-700 dark:text-teal-300' : 'text-blue-700 dark:text-indigo-300'
+                  }`}>
                     {team2Name} Roster
                   </span>
                   <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400">
-                    Team Score: <strong className="text-blue-600 dark:text-indigo-400">{score2Val} PTS</strong>
+                    Team Score: <strong className={isFootball ? 'text-teal-600 dark:text-teal-400' : 'text-blue-600 dark:text-indigo-400'}>{score2Val} {isFootball ? 'Goals' : 'PTS'}</strong>
                   </span>
                 </div>
 
                 <div className="divide-y divide-slate-100 dark:divide-slate-800/60 max-h-72 overflow-y-auto">
                   {roster2.map((p) => {
-                    const isFouledOut = (p.fouls || 0) >= 5;
+                    const isFouledOut = isFootball ? p.redCard : (p.fouls || 0) >= 5;
+                    const pGoals = p.goals !== undefined ? p.goals : (p.points || 0);
+
                     return (
                       <div key={p.id || p.jersey} className={`p-3 flex items-center justify-between text-xs transition ${isFouledOut ? 'bg-rose-500/10' : p.onCourt ? 'bg-emerald-500/5' : ''}`}>
                         <div className="flex items-center gap-3">
@@ -686,12 +712,17 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
                               <span className="font-bold text-slate-900 dark:text-white">{p.name}</span>
                               {p.onCourt && !isFouledOut && (
                                 <span className="px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-mono font-extrabold uppercase">
-                                  ON COURT
+                                  ON PITCH
+                                </span>
+                              )}
+                              {p.yellowCards > 0 && !p.redCard && (
+                                <span className="px-1 py-0.2 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[9px] font-mono font-bold">
+                                  🟨 {p.yellowCards}
                                 </span>
                               )}
                               {isFouledOut && (
                                 <span className="px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-600 dark:text-rose-400 text-[9px] font-mono font-extrabold uppercase flex items-center gap-1">
-                                  <ShieldAlert className="w-2.5 h-2.5" /> FOULED OUT
+                                  <ShieldAlert className="w-2.5 h-2.5" /> {isFootball ? 'RED CARD (SENT OFF)' : 'FOULED OUT'}
                                 </span>
                               )}
                             </div>
@@ -699,27 +730,29 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
                         </div>
 
                         <div className="flex items-center gap-4 font-mono">
-                          {/* Points */}
+                          {/* Goals / Points */}
                           <div className="text-right">
-                            <span className="text-[10px] text-slate-400 block uppercase">Points</span>
-                            <span className="font-black text-amber-600 dark:text-amber-400 text-sm">
-                              {p.points || 0} PTS
+                            <span className="text-[10px] text-slate-400 block uppercase">{isFootball ? 'Goals' : 'Points'}</span>
+                            <span className={`font-black text-sm ${isFootball ? 'text-teal-600 dark:text-teal-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                              {isFootball ? `${pGoals} G` : `${p.points || 0} PTS`}
                             </span>
                           </div>
 
-                          {/* Fouls */}
-                          <div className="text-right">
-                            <span className="text-[10px] text-slate-400 block uppercase">Fouls</span>
-                            <span className={`font-black text-xs px-2 py-0.5 rounded ${
-                              (p.fouls || 0) >= 5
-                                ? 'bg-rose-500 text-white font-extrabold'
-                                : (p.fouls || 0) >= 4
-                                ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                            }`}>
-                              {p.fouls || 0} / 5
-                            </span>
-                          </div>
+                          {/* Fouls (Only for Basketball) */}
+                          {!isFootball && (
+                            <div className="text-right">
+                              <span className="text-[10px] text-slate-400 block uppercase">Fouls</span>
+                              <span className={`font-black text-xs px-2 py-0.5 rounded ${
+                                (p.fouls || 0) >= 5
+                                  ? 'bg-rose-500 text-white font-extrabold'
+                                  : (p.fouls || 0) >= 4
+                                  ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                              }`}>
+                                {p.fouls || 0} / 5
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );

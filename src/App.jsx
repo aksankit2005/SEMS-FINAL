@@ -24,6 +24,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { FAQPage } from './pages/FAQPage';
 import { TermsPage } from './pages/TermsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
+
 import { PRLoginPage } from './pages/pr/PRLoginPage';
 import { PRDashboardPage } from './pages/pr/PRDashboardPage';
 import { PREventsPage } from './pages/pr/PREventsPage';
@@ -36,6 +37,30 @@ import { CollegeHeadProtectedRoute } from './components/collegeHead/CollegeHeadP
 
 import { CoordinatorLoginPage } from './pages/coordinator/CoordinatorLoginPage';
 import { CoordinatorProtectedRoute } from './components/coordinator/CoordinatorProtectedRoute';
+
+// ── Super Admin Imports ───────────────────────────────────────────────────
+import { SuperAdminLoginPage } from './pages/superAdmin/SuperAdminLoginPage';
+import { SuperAdminLayout } from './components/superAdmin/SuperAdminLayout';
+import { SuperAdminProtectedRoute } from './components/superAdmin/SuperAdminProtectedRoute';
+import { SuperAdminDashboardPage } from './pages/superAdmin/SuperAdminDashboardPage';
+import { SuperAdminEventsPage } from './pages/superAdmin/SuperAdminEventsPage';
+import { SuperAdminCoordinatorsPage } from './pages/superAdmin/SuperAdminCoordinatorsPage';
+import { SuperAdminCollegeHeadsPage } from './pages/superAdmin/SuperAdminCollegeHeadsPage';
+import { SuperAdminPRPage } from './pages/superAdmin/SuperAdminPRPage';
+import { SuperAdminMembersPage } from './pages/superAdmin/SuperAdminMembersPage';
+import { SuperAdminParticipantsPage } from './pages/superAdmin/SuperAdminParticipantsPage';
+import { SuperAdminRegistrationsPage } from './pages/superAdmin/SuperAdminRegistrationsPage';
+import { SuperAdminSchedulePage } from './pages/superAdmin/SuperAdminSchedulePage';
+import { SuperAdminLiveMatchesPage } from './pages/superAdmin/SuperAdminLiveMatchesPage';
+import { SuperAdminResultsPage } from './pages/superAdmin/SuperAdminResultsPage';
+import { SuperAdminAnnouncementsPage } from './pages/superAdmin/SuperAdminAnnouncementsPage';
+import { SuperAdminGalleryPage } from './pages/superAdmin/SuperAdminGalleryPage';
+import { SuperAdminReportsPage } from './pages/superAdmin/SuperAdminReportsPage';
+import { SuperAdminSettingsPage } from './pages/superAdmin/SuperAdminSettingsPage';
+import { SuperAdminProfilePage } from './pages/superAdmin/SuperAdminProfilePage';
+import { SuperAdminAuditLogsPage } from './pages/superAdmin/SuperAdminAuditLogsPage';
+import { SuperAdminEventsSportsPage } from './pages/superAdmin/SuperAdminEventsSportsPage';
+
 import { NotFoundPage } from './pages/NotFoundPage';
 
 // ── Sport Coordinator Pages (independent modules) ──────────────────────────
@@ -61,12 +86,45 @@ function App() {
             <Router>
               <ScrollToTop />
               <Routes>
+                {/* Dedicated Standalone Super Admin Routes */}
+                <Route path="/super-admin/login" element={<SuperAdminLoginPage />} />
+                <Route path="/super-admin-login" element={<SuperAdminLoginPage />} />
+
+                <Route
+                  path="/super-admin"
+                  element={
+                    <SuperAdminProtectedRoute>
+                      <SuperAdminLayout />
+                    </SuperAdminProtectedRoute>
+                  }
+                >
+                  <Route index element={<SuperAdminDashboardPage />} />
+                  <Route path="dashboard" element={<SuperAdminDashboardPage />} />
+                  <Route path="events" element={<SuperAdminEventsPage />} />
+                  <Route path="coordinators" element={<SuperAdminCoordinatorsPage />} />
+                  <Route path="college-heads" element={<SuperAdminCollegeHeadsPage />} />
+                  <Route path="pr-members" element={<SuperAdminPRPage />} />
+                  <Route path="members" element={<SuperAdminMembersPage />} />
+                  <Route path="participants" element={<SuperAdminParticipantsPage />} />
+                  <Route path="registrations" element={<SuperAdminRegistrationsPage />} />
+                  <Route path="schedule" element={<SuperAdminSchedulePage />} />
+                  <Route path="live-matches" element={<SuperAdminLiveMatchesPage />} />
+                  <Route path="results" element={<SuperAdminResultsPage />} />
+                  <Route path="announcements" element={<SuperAdminAnnouncementsPage />} />
+                  <Route path="gallery" element={<SuperAdminGalleryPage />} />
+                  <Route path="reports" element={<SuperAdminReportsPage />} />
+                  <Route path="settings" element={<SuperAdminSettingsPage />} />
+                  <Route path="profile" element={<SuperAdminProfilePage />} />
+                  <Route path="audit-logs" element={<SuperAdminAuditLogsPage />} />
+                  <Route path="events-sports" element={<SuperAdminEventsSportsPage />} />
+                </Route>
+
                 <Route element={<DashboardLayout />}>
                   <Route path="/" element={<HomePage />} />
-                   <Route path="/sports" element={<SportsPage />} />
-                   <Route path="/registration" element={<RegistrationPage />} />
-                   <Route path="/registration/:eventId" element={<RegistrationPage />} />
-                   <Route path="/register/:eventId" element={<RegistrationPage />} />
+                  <Route path="/sports" element={<SportsPage />} />
+                  <Route path="/registration" element={<RegistrationPage />} />
+                  <Route path="/registration/:eventId" element={<RegistrationPage />} />
+                  <Route path="/register/:eventId" element={<RegistrationPage />} />
                   <Route path="/live" element={<LiveMatchPortalPage />} />
                   <Route path="/schedule" element={<SchedulePage />} />
                   <Route path="/results" element={<ResultsPage />} />
@@ -94,7 +152,7 @@ function App() {
                   <Route path="/pr/video-upload" element={<PRProtectedRoute><PRUploadPage /></PRProtectedRoute>} />
                   <Route path="/pr/media-management" element={<PRProtectedRoute><PREventsPage /></PRProtectedRoute>} />
 
-                  {/* Public College Head Login Route (ONLY ONE NEW PUBLIC LOGIN ROUTE) */}
+                  {/* Public College Head Login Route */}
                   <Route path="/college-head/login" element={<CollegeHeadLoginPage />} />
 
                   {/* Protected College Head Portal Routes */}
@@ -106,8 +164,6 @@ function App() {
 
                   {/* Protected Sport Coordinator Portal Routes */}
                   <Route path="/coordinator/badminton" element={<CoordinatorProtectedRoute><BadmintonCoordinatorPage /></CoordinatorProtectedRoute>} />
-
-                  {/* Protected Sport Coordinator Portals — Other Sports (independent modules) */}
                   <Route path="/coordinator/football" element={<CoordinatorProtectedRoute><FootballCoordinatorPage /></CoordinatorProtectedRoute>} />
                   <Route path="/coordinator/basketball" element={<CoordinatorProtectedRoute><BasketballCoordinatorPage /></CoordinatorProtectedRoute>} />
                   <Route path="/coordinator/volleyball" element={<CoordinatorProtectedRoute><VolleyballCoordinatorPage /></CoordinatorProtectedRoute>} />
@@ -135,5 +191,3 @@ function App() {
 }
 
 export default App;
-
-
