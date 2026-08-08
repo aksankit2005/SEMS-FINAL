@@ -93,9 +93,7 @@ export const Footer = () => {
               <li><Link to="/registration" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Online Registration</Link></li>
               <li><Link to="/schedule" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Tournament Fixtures</Link></li>
               <li><Link to="/results" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Match Results</Link></li>
-              <li><Link to="/leaderboard" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Medal Standings</Link></li>
               <li><Link to="/gallery" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Photo & Video Gallery</Link></li>
-              <li><Link to="/coordinators" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Coordinators Directory</Link></li>
               <li><Link to="/announcements" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">News & Announcements</Link></li>
               <li><Link to="/about" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">About APEX & Committee</Link></li>
             </ul>

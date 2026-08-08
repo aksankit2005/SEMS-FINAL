@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Search, Trophy, Users, MapPin, CheckCircle, Info, ArrowRight, ShieldCheck, Flame, X } from 'lucide-react';
 import { SPORTS_DATA } from '../data/sportsData';
 import { BadmintonRulesDisplay } from '../components/registration/BadmintonRulesDisplay';
+import { AthleticsRulesDisplay } from '../components/registration/AthleticsRulesDisplay';
 import { galleryApi } from '../services/galleryApi';
 import { coordinatorApi } from '../services/coordinatorApi';
 import { UnifiedSportCard } from '../components/common/UnifiedSportCard';
@@ -294,6 +295,8 @@ export const SportsPage = () => {
 
               {activeModalSport.id === 'badminton' || (activeModalSport.name || '').toLowerCase().includes('badminton') ? (
                 <BadmintonRulesDisplay />
+              ) : activeModalSport.id === 'athletics' || (activeModalSport.name || '').toLowerCase().includes('athletics') ? (
+                <AthleticsRulesDisplay />
               ) : (
                 <div>
                   <h4 className="font-bold text-slate-900 dark:text-white mb-2 uppercase text-xs">Official Rulebook:</h4>

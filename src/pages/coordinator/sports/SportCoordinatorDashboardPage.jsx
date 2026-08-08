@@ -11,6 +11,10 @@ import { MatchScheduleTab } from '../../../components/coordinator/tabs/MatchSche
 import { LiveMatchControlTab } from '../../../components/coordinator/tabs/LiveMatchControlTab';
 import { ResultManagementTab } from '../../../components/coordinator/tabs/ResultManagementTab';
 import { TotalParticipationTab } from '../../../components/coordinator/tabs/TotalParticipationTab';
+import { AthleticsEventsTab } from '../../../components/coordinator/tabs/AthleticsEventsTab';
+import { AthleticsResultManagementTab } from '../../../components/coordinator/tabs/AthleticsResultManagementTab';
+import { AthleticsLiveMatchControlTab } from '../../../components/coordinator/tabs/AthleticsLiveMatchControlTab';
+import { AthleticsMatchScheduleTab } from '../../../components/coordinator/tabs/AthleticsMatchScheduleTab';
 import { useToast } from '../../../context/ToastContext';
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
@@ -111,6 +115,8 @@ export const SportCoordinatorDashboardPage = ({ sportName, sportSlug }) => {
   const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState('events');
 
+  const isAthletics = sportSlug?.toLowerCase() === 'athletics';
+
   // Fetch preset account details or logged in user details for this sport
   const presetUser = coordinatorApi.getPresetAccount(sportSlug);
   const currentUser = coordinatorApi.getCurrentUser();
@@ -130,8 +136,6 @@ export const SportCoordinatorDashboardPage = ({ sportName, sportSlug }) => {
     navigate('/coordinator/login');
   };
 
-  const currentTab = TABS.find((t) => t.id === activeTab);
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#090D16] text-slate-900 dark:text-white flex flex-col font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-150">
       <Header
@@ -141,19 +145,19 @@ export const SportCoordinatorDashboardPage = ({ sportName, sportSlug }) => {
       />
       <main className="flex-1 p-3 sm:p-4 max-w-[1600px] w-full mx-auto">
         {activeTab === 'events' && (
-          <PlaceholderTab sportName={sportName} tabLabel="Registration Events" />
+          isAthletics ? <AthleticsEventsTab sportSlug={sportSlug} /> : <EventsTab user={user} assignedSport={sportSlug} />
         )}
         {activeTab === 'schedule' && (
-          <PlaceholderTab sportName={sportName} tabLabel="Match Schedule" />
+          isAthletics ? <AthleticsMatchScheduleTab user={user} /> : <MatchScheduleTab user={user} assignedSport={sportSlug} />
         )}
         {activeTab === 'live-control' && (
-          <PlaceholderTab sportName={sportName} tabLabel="Live Match Control" />
+          isAthletics ? <AthleticsLiveMatchControlTab user={user} /> : <PlaceholderTab sportName={sportName} tabLabel="Live Match Control" />
         )}
         {activeTab === 'results' && (
-          <PlaceholderTab sportName={sportName} tabLabel="Results Management" />
+          isAthletics ? <AthleticsResultManagementTab sportName={sportName} sportSlug={sportSlug} user={user} /> : <ResultManagementTab user={user} assignedSport={sportSlug} />
         )}
         {activeTab === 'participants' && (
-          <PlaceholderTab sportName={sportName} tabLabel="Participants List" />
+          <TotalParticipationTab user={user} assignedSport={sportSlug} />
         )}
         {activeTab === 'profile' && (
           <ProfileTab
@@ -167,4 +171,3 @@ export const SportCoordinatorDashboardPage = ({ sportName, sportSlug }) => {
     </div>
   );
 };
-
