@@ -10,11 +10,51 @@ const SportsDataContext = createContext();
 
 export const SportsDataProvider = ({ children }) => {
   const [sports] = useState(SPORTS_DATA);
-  const [liveMatches, setLiveMatches] = useState(LIVE_MATCHES_DATA);
+  const [liveMatches, setLiveMatches] = useState([]);
   const [schedule] = useState(SCHEDULE_DATA);
   const [results] = useState(RESULTS_DATA);
   const [leaderboard] = useState(LEADERBOARD_DATA);
   const [announcements, setAnnouncements] = useState(ANNOUNCEMENTS_DATA);
+
+  useEffect(() => {
+    const syncLiveMatches = () => {
+      let activeList = [];
+      const saved = localStorage.getItem('sems_active_live_matches');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          activeList = Object.values(parsed).filter(
+            (m) => m && m.id !== 'M595473' && (m.status === 'running' || m.status === 'live' || m.status === 'in_progress')
+          );
+        } catch (e) {}
+      }
+
+      const hasTTLive = activeList.some(
+        (m) => (m.sportId || m.sportName || '').toLowerCase().includes('table-tennis') || (m.sportId || m.sportName || '').toLowerCase().includes('tt')
+      );
+
+      const filteredFallback = LIVE_MATCHES_DATA.filter((m) => {
+        const isTT = (m.sportId || m.sportName || '').toLowerCase().includes('table-tennis') || (m.sportId || m.sportName || '').toLowerCase().includes('tt');
+        if (isTT && !hasTTLive) return false;
+        return true;
+      });
+
+      const combined = [...activeList, ...filteredFallback];
+      const uniqueMap = {};
+      combined.forEach((m) => {
+        if (m && m.id) uniqueMap[m.id] = m;
+      });
+      setLiveMatches(Object.values(uniqueMap));
+    };
+
+    syncLiveMatches();
+    window.addEventListener('storage', syncLiveMatches);
+    window.addEventListener('sems_matches_updated', syncLiveMatches);
+    return () => {
+      window.removeEventListener('storage', syncLiveMatches);
+      window.removeEventListener('sems_matches_updated', syncLiveMatches);
+    };
+  }, []);
 
 
 

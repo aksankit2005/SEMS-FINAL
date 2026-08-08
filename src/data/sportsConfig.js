@@ -56,7 +56,7 @@ export const SPORTS_CONFIG = {
     minPlayers: 1,
     maxPlayers: 2,
     venueLabel: 'Table Number',
-    venueOptions: ['Table 1 (Main Court)', 'Table 2 (Hall A)', 'Table 3 (Hall A)', 'Table 4 (Practice Arena)'],
+    venueOptions: ['Table 1', 'Table 2', 'Table 3', 'Table 4'],
     formats: ['Singles', 'Doubles'],
     rounds: ['Round of 32', 'Round of 16', 'Quarter Final', 'Semi Final', 'Final'],
     setMode: true,
