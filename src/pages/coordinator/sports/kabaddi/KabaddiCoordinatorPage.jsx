@@ -7,7 +7,7 @@ import { KabaddiEventsTab } from '../../../../components/coordinator/tabs/Kabadd
 import { KabaddiMatchScheduleTab } from '../../../../components/coordinator/tabs/KabaddiMatchScheduleTab';
 import { KabaddiLiveMatchControlTab } from '../../../../components/coordinator/tabs/KabaddiLiveMatchControlTab';
 import { ResultManagementTab } from '../../../../components/coordinator/tabs/ResultManagementTab';
-import { TotalParticipationTab } from '../../../../components/coordinator/tabs/TotalParticipationTab';
+import { KabaddiTotalParticipationTab } from '../../../../components/coordinator/tabs/KabaddiTotalParticipationTab';
 import { useToast } from '../../../../context/ToastContext';
 
 export const KabaddiCoordinatorPage = () => {
@@ -159,10 +159,8 @@ export const KabaddiCoordinatorPage = () => {
             )}
 
             {activeTab === 'participants' && (
-              <TotalParticipationTab
-                registrations={registrations}
+              <KabaddiTotalParticipationTab
                 user={user}
-                onUpdateRegistrations={handleUpdateRegistrations}
                 globalSearch={globalSearch}
               />
             )}

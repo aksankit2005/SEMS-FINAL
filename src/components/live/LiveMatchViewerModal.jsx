@@ -140,47 +140,88 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
   const [match, setMatch] = useState(initialMatch);
 
   useEffect(() => {
-    setMatch(initialMatch);
+    if (initialMatch) {
+      setMatch(initialMatch);
+    }
   }, [initialMatch]);
 
   useEffect(() => {
-    const handleUpdate = () => {
-      if (!match || !match.id) return;
+    let isSubscribed = true;
+
+    const handleUpdate = async () => {
+      const targetId = initialMatch?.id || initialMatch?.matchId || match?.id || match?.matchId;
+      if (!targetId) return;
+
+      let updated = null;
+
+      // 1. Check local active live matches map first
       const localActiveStr = localStorage.getItem('sems_active_live_matches');
       if (localActiveStr) {
         try {
           const parsed = JSON.parse(localActiveStr);
-          if (parsed && parsed[match.id]) {
-            const updated = parsed[match.id];
-            setMatch((prev) => {
-              if (
-                prev.score1 === updated.score1 &&
-                prev.score2 === updated.score2 &&
-                prev.setsWon1 === updated.setsWon1 &&
-                prev.setsWon2 === updated.setsWon2 &&
-                JSON.stringify(prev.roster1) === JSON.stringify(updated.roster1) &&
-                JSON.stringify(prev.roster2) === JSON.stringify(updated.roster2) &&
-                JSON.stringify(prev.setsHistory) === JSON.stringify(updated.setsHistory)
-              ) {
-                return prev;
-              }
-              return { ...prev, ...updated };
-            });
+          if (parsed) {
+            if (parsed[targetId]) {
+              updated = parsed[targetId];
+            } else {
+              const list = Array.isArray(parsed) ? parsed : Object.values(parsed);
+              updated = list.find((m) => m && (m.id === targetId || m.matchId === targetId));
+            }
+          }
+        } catch (e) { }
+      }
+
+      // 2. Fallback to coordinator public live matches (scans server API + local storage)
+      if (!updated) {
+        try {
+          const publicLive = await coordinatorApi.getPublicLiveMatches();
+          if (Array.isArray(publicLive)) {
+            updated = publicLive.find((m) => m && (m.id === targetId || m.matchId === targetId));
           }
         } catch (e) {}
       }
+
+      // 3. Fallback to scanning all sems_coord_matches_* keys in localStorage
+      if (!updated) {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith('sems_coord_matches_') || key.endsWith('MatchSchedules'))) {
+            try {
+              const list = JSON.parse(localStorage.getItem(key));
+              if (Array.isArray(list)) {
+                const item = list.find((m) => m && (m.id === targetId || m.matchId === targetId));
+                if (item) {
+                  updated = item;
+                  break;
+                }
+              }
+            } catch (e) {}
+          }
+        }
+      }
+
+      if (updated && isSubscribed) {
+        setMatch((prev) => {
+          if (!prev) return updated;
+          return { ...prev, ...updated };
+        });
+      }
     };
 
+    handleUpdate();
+
     window.addEventListener('sems_matches_updated', handleUpdate);
+    window.addEventListener('sems_results_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     const interval = setInterval(handleUpdate, 1000);
 
     return () => {
+      isSubscribed = false;
       window.removeEventListener('sems_matches_updated', handleUpdate);
+      window.removeEventListener('sems_results_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
       clearInterval(interval);
     };
-  }, [match?.id]);
+  }, [initialMatch?.id, initialMatch?.matchId, match?.id]);
 
   if (!match) return null;
 
@@ -254,31 +295,31 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
   const roster1 = match.roster1 && match.roster1.length > 0
     ? match.roster1
     : [
-        { id: 'T1-1', name: `${team1Name} Player 1`, jersey: '4', onCourt: true, points: Math.floor(score1Val * 0.4), fouls: 1 },
-        { id: 'T1-2', name: `${team1Name} Player 2`, jersey: '7', onCourt: true, points: Math.floor(score1Val * 0.3), fouls: 2 },
-        { id: 'T1-3', name: `${team1Name} Player 3`, jersey: '10', onCourt: true, points: Math.floor(score1Val * 0.2), fouls: 0 },
-        { id: 'T1-4', name: `${team1Name} Player 4`, jersey: '11', onCourt: true, points: Math.floor(score1Val * 0.1), fouls: 3 },
-        { id: 'T1-5', name: `${team1Name} Player 5`, jersey: '23', onCourt: true, points: 0, fouls: 1 },
-        { id: 'T1-6', name: `${team1Name} Sub 1`, jersey: '30', onCourt: false, points: 0, fouls: 0 },
-        { id: 'T1-7', name: `${team1Name} Sub 2`, jersey: '33', onCourt: false, points: 0, fouls: 0 },
-      ];
+      { id: 'T1-1', name: `${team1Name} Player 1`, jersey: '4', onCourt: true, points: Math.floor(score1Val * 0.4), fouls: 1 },
+      { id: 'T1-2', name: `${team1Name} Player 2`, jersey: '7', onCourt: true, points: Math.floor(score1Val * 0.3), fouls: 2 },
+      { id: 'T1-3', name: `${team1Name} Player 3`, jersey: '10', onCourt: true, points: Math.floor(score1Val * 0.2), fouls: 0 },
+      { id: 'T1-4', name: `${team1Name} Player 4`, jersey: '11', onCourt: true, points: Math.floor(score1Val * 0.1), fouls: 3 },
+      { id: 'T1-5', name: `${team1Name} Player 5`, jersey: '23', onCourt: true, points: 0, fouls: 1 },
+      { id: 'T1-6', name: `${team1Name} Sub 1`, jersey: '30', onCourt: false, points: 0, fouls: 0 },
+      { id: 'T1-7', name: `${team1Name} Sub 2`, jersey: '33', onCourt: false, points: 0, fouls: 0 },
+    ];
 
   const roster2 = match.roster2 && match.roster2.length > 0
     ? match.roster2
     : [
-        { id: 'T2-1', name: `${team2Name} Player 1`, jersey: '4', onCourt: true, points: Math.floor(score2Val * 0.4), fouls: 2 },
-        { id: 'T2-2', name: `${team2Name} Player 2`, jersey: '7', onCourt: true, points: Math.floor(score2Val * 0.3), fouls: 1 },
-        { id: 'T2-3', name: `${team2Name} Player 3`, jersey: '10', onCourt: true, points: Math.floor(score2Val * 0.2), fouls: 0 },
-        { id: 'T2-4', name: `${team2Name} Player 4`, jersey: '11', onCourt: true, points: Math.floor(score2Val * 0.1), fouls: 4 },
-        { id: 'T2-5', name: `${team2Name} Player 5`, jersey: '23', onCourt: true, points: 0, fouls: 2 },
-        { id: 'T2-6', name: `${team2Name} Sub 1`, jersey: '30', onCourt: false, points: 0, fouls: 0 },
-        { id: 'T2-7', name: `${team2Name} Sub 2`, jersey: '33', onCourt: false, points: 0, fouls: 0 },
-      ];
+      { id: 'T2-1', name: `${team2Name} Player 1`, jersey: '4', onCourt: true, points: Math.floor(score2Val * 0.4), fouls: 2 },
+      { id: 'T2-2', name: `${team2Name} Player 2`, jersey: '7', onCourt: true, points: Math.floor(score2Val * 0.3), fouls: 1 },
+      { id: 'T2-3', name: `${team2Name} Player 3`, jersey: '10', onCourt: true, points: Math.floor(score2Val * 0.2), fouls: 0 },
+      { id: 'T2-4', name: `${team2Name} Player 4`, jersey: '11', onCourt: true, points: Math.floor(score2Val * 0.1), fouls: 4 },
+      { id: 'T2-5', name: `${team2Name} Player 5`, jersey: '23', onCourt: true, points: 0, fouls: 2 },
+      { id: 'T2-6', name: `${team2Name} Sub 1`, jersey: '30', onCourt: false, points: 0, fouls: 0 },
+      { id: 'T2-7', name: `${team2Name} Sub 2`, jersey: '33', onCourt: false, points: 0, fouls: 0 },
+    ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-sm overflow-y-auto animate-fade-in font-sans">
       <div className="w-full max-w-4xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-[#1E293B] rounded-3xl shadow-2xl overflow-hidden my-auto space-y-0 text-slate-900 dark:text-slate-200">
-        
+
         {/* Modal Header */}
         <div className="p-4 sm:p-6 bg-white dark:bg-[#0F172A] border-b border-slate-200 dark:border-[#1E293B] flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -352,9 +393,9 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
 
         {/* Large Spectator Scoreboard Section */}
         <div className="p-6 bg-slate-50 dark:bg-gradient-to-b dark:from-[#0B1120] dark:to-[#0F172A] border-b border-slate-200 dark:border-[#1E293B] space-y-6">
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-            
+
             {/* Player / Team A */}
             <div className="text-center md:text-left space-y-2">
               <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{team1Name}</h2>
@@ -420,7 +461,7 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
                 <span className="text-[10px] font-mono uppercase font-bold text-slate-500 dark:text-slate-400 tracking-widest block">
                   {sportConfig.name} {isFinished ? 'Final Score' : 'Live Points'}
                 </span>
-                
+
                 <div className="flex items-center justify-center gap-4 text-5xl font-black font-mono text-slate-900 dark:text-white">
                   <span className="text-blue-600 dark:text-indigo-400">{score1Val}</span>
                   <span className="text-slate-400 dark:text-slate-600 text-3xl">:</span>
@@ -632,7 +673,7 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
                 </div>
                 {match.half === 2 && (
                   <p className="text-xs text-emerald-600 dark:text-emerald-400 font-mono font-bold">
-                    Currently in 2nd Half. Active 2nd Half score started from 0-0. (Overall Total: {score1Val} - {score2Val})
+                    Currently in 2nd Half. Scores carrying over continuously from 1st Half ({match.half1Score1 || 0} - {match.half1Score2 || 0}).
                   </p>
                 )}
               </div>
@@ -736,7 +777,7 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
 
             {/* Side-by-Side Team Rosters */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              
+
               {/* Team 1 Roster Card */}
               <div className="bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-[#1E293B] overflow-hidden shadow-sm">
                 <div className={`px-4 py-3 border-b border-slate-200 dark:border-[#1E293B] flex items-center justify-between ${

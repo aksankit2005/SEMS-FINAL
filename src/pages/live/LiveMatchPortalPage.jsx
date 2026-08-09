@@ -88,7 +88,15 @@ export const LiveMatchPortalPage = () => {
         }
       });
 
-      setLiveMatches(Object.values(uniqueMap));
+      const activeMatchesList = Object.values(uniqueMap);
+      setLiveMatches(activeMatchesList);
+
+      setSelectedMatch((prev) => {
+        if (!prev || !prev.id) return prev;
+        const fresh = uniqueMap[prev.id];
+        if (fresh) return { ...prev, ...fresh };
+        return prev;
+      });
 
       // Dynamic upcoming scheduled matches fetching
       const upcomingList = [];

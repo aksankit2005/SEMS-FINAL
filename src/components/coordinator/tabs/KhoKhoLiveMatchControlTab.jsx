@@ -6,6 +6,7 @@ import { getSportConfig } from '../../../data/sportsConfig';
 import { extractYouTubeVideoId, getYouTubeEmbedUrl } from '../../../utils/youtube';
 import { generateMatchResultPDF } from '../../../utils/pdfExporter';
 import { LiveMatchScoreControllerModal } from '../modal/LiveMatchScoreControllerModal';
+import { KhoKhoRoleSetupModal } from '../modal/KhoKhoRoleSetupModal';
 
 export const KhoKhoLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
   const { addToast } = useToast();
@@ -32,6 +33,7 @@ export const KhoKhoLiveMatchControlTab = ({ matches, user, onUpdateMatchScore })
   const [activeControllerVenue, setActiveControllerVenue] = useState(null);
   const [streamInputMap, setStreamInputMap] = useState({});
   const [previewVideoId, setPreviewVideoId] = useState(null);
+  const [roleSetupTarget, setRoleSetupTarget] = useState(null);
 
   useEffect(() => {
     const cacheKey = `sems_active_live_matches_${assignedSport}`;
@@ -59,19 +61,27 @@ export const KhoKhoLiveMatchControlTab = ({ matches, user, onUpdateMatchScore })
     });
   }, [liveAssignments, assignedSport]);
 
-  // DIRECT GO LIVE - DOES NOT ASK FOR PLAYER DETAILS BEFORE STARTING GAME
-  const executePromoteGoLive = async (matchItem, targetVenue) => {
+  // PROMOTES MATCH TO LIVE WITH SELECTED CHASER/RUNNER ROLES
+  const executePromoteGoLive = async (matchItem, targetVenue, roleData = {}) => {
     const liveObj = {
       ...matchItem,
       id: matchItem.id || `M-KHO-${Math.floor(100000 + Math.random() * 900000)}`,
       sportId: 'kho-kho',
       sportName: 'Kho-Kho',
-      format: 'Standard (9 Players)',
+      format: '2 Innings / 2 Sets (Standard 9v9)',
       tableNumber: targetVenue,
       venue: targetVenue,
       status: 'running',
       score1: matchItem.score1 || 0,
       score2: matchItem.score2 || 0,
+      currentSet: 1,
+      chasingTeamKey: roleData.chasingTeamKey || matchItem.chasingTeamKey || 'team1',
+      tossWinner: roleData.tossWinner || matchItem.tossWinner || matchItem.team1,
+      tossDecision: roleData.tossDecision || matchItem.tossDecision || 'chasing',
+      setsHistory: matchItem.setsHistory || roleData.setsHistory || [
+        { set: 1, label: 'Set 1 (Inning 1)', score1: 0, score2: 0, isLocked: false, winner: null },
+        { set: 2, label: 'Set 2 (Inning 2)', score1: 0, score2: 0, isLocked: false, winner: null },
+      ],
       turn: 1,
       isLiveStreaming: true,
       streamStartedAt: new Date().toISOString(),
@@ -86,6 +96,8 @@ export const KhoKhoLiveMatchControlTab = ({ matches, user, onUpdateMatchScore })
     });
 
     setLiveAssignments((prev) => ({ ...prev, [targetVenue]: liveObj }));
+    setRoleSetupTarget(null);
+    setActiveControllerVenue(targetVenue);
     addToast(`🏃‍♂️ Kho-Kho Match "${matchItem.team1} vs ${matchItem.team2}" is LIVE on ${targetVenue}!`, 'success');
   };
 
@@ -246,8 +258,13 @@ export const KhoKhoLiveMatchControlTab = ({ matches, user, onUpdateMatchScore })
 
                   {/* Teams & Score Display */}
                   <div className="text-center space-y-1">
-                    <div className="text-xs font-mono font-bold text-amber-500 uppercase">
-                      Official Kho-Kho Field Rules
+                    <div className="text-xs font-mono font-bold uppercase flex items-center justify-center gap-2 flex-wrap">
+                      <span className="px-2 py-0.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                        🔥 Chasing: {activeLive.chasingTeamKey === 'team2' ? activeLive.team2 : activeLive.team1}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                        🛡️ Running: {activeLive.chasingTeamKey === 'team2' ? activeLive.team1 : activeLive.team2}
+                      </span>
                     </div>
                     <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
                       {activeLive.team1} <span className="text-amber-500 font-mono font-black">{activeLive.score1 || 0}</span>
@@ -329,14 +346,21 @@ export const KhoKhoLiveMatchControlTab = ({ matches, user, onUpdateMatchScore })
                     <span>🎮 Open Kho-Kho Score & Turn Controller</span>
                   </button>
 
-                  {/* Action Buttons Below (Complete & Demote) */}
-                  <div className="flex items-center justify-center gap-3 pt-1">
+                  {/* Action Buttons Below (Complete, Adjust Roles & Demote) */}
+                  <div className="flex items-center justify-center gap-2 flex-wrap pt-1">
                     <button
                       onClick={() => handleCompleteMatch(venueName)}
                       className="px-4 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>Complete</span>
+                    </button>
+
+                    <button
+                      onClick={() => setRoleSetupTarget({ match: activeLive, targetVenue: venueName })}
+                      className="px-3.5 py-1.5 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>🔄 Adjust Roles</span>
                     </button>
 
                     <button
@@ -392,10 +416,10 @@ export const KhoKhoLiveMatchControlTab = ({ matches, user, onUpdateMatchScore })
                   </div>
 
                   <button
-                    onClick={() => executePromoteGoLive(m, targetVenue)}
+                    onClick={() => setRoleSetupTarget({ match: m, targetVenue })}
                     className="px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shadow-lg shadow-rose-600/30 transition flex items-center gap-1.5 shrink-0 cursor-pointer"
                   >
-                    <span>📡 GO LIVE NOW</span>
+                    <span>📡 SET ROLES & GO LIVE</span>
                   </button>
                 </div>
               );
@@ -425,6 +449,16 @@ export const KhoKhoLiveMatchControlTab = ({ matches, user, onUpdateMatchScore })
             </div>
           </div>
         </div>
+      )}
+
+      {/* Role Setup Modal before Going Live */}
+      {roleSetupTarget && (
+        <KhoKhoRoleSetupModal
+          match={roleSetupTarget.match}
+          targetVenue={roleSetupTarget.targetVenue}
+          onClose={() => setRoleSetupTarget(null)}
+          onSetupComplete={(roleData) => executePromoteGoLive(roleSetupTarget.match, roleSetupTarget.targetVenue, roleData)}
+        />
       )}
 
       {/* Score Controller Modal */}

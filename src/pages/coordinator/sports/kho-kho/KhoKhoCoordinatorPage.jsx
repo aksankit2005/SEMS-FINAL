@@ -6,8 +6,8 @@ import { ProfileTab } from '../../../../components/coordinator/tabs/ProfileTab';
 import { KhoKhoEventsTab } from '../../../../components/coordinator/tabs/KhoKhoEventsTab';
 import { KhoKhoMatchScheduleTab } from '../../../../components/coordinator/tabs/KhoKhoMatchScheduleTab';
 import { KhoKhoLiveMatchControlTab } from '../../../../components/coordinator/tabs/KhoKhoLiveMatchControlTab';
-import { ResultManagementTab } from '../../../../components/coordinator/tabs/ResultManagementTab';
-import { TotalParticipationTab } from '../../../../components/coordinator/tabs/TotalParticipationTab';
+import { KhoKhoResultManagementTab } from '../../../../components/coordinator/tabs/KhoKhoResultManagementTab';
+import { KhoKhoTotalParticipationTab } from '../../../../components/coordinator/tabs/KhoKhoTotalParticipationTab';
 import { useToast } from '../../../../context/ToastContext';
 
 export const KhoKhoCoordinatorPage = () => {
@@ -152,14 +152,14 @@ export const KhoKhoCoordinatorPage = () => {
             )}
 
             {activeTab === 'results' && (
-              <ResultManagementTab
+              <KhoKhoResultManagementTab
                 user={user}
                 globalSearch={globalSearch}
               />
             )}
 
             {activeTab === 'participants' && (
-              <TotalParticipationTab
+              <KhoKhoTotalParticipationTab
                 registrations={registrations}
                 user={user}
                 onUpdateRegistrations={handleUpdateRegistrations}
