@@ -426,13 +426,16 @@ export const coordinatorApi = {
     if (updatedMatch.status === 'running' || updatedMatch.status === 'live') {
       const tableKey = updatedMatch.tableNumber || 'Table 1';
       activeMap[tableKey] = updatedMatch;
+      if (matchId) activeMap[matchId] = updatedMatch;
     } else if (updatedMatch.status === 'COMPLETED' || updatedMatch.status === 'DEMOTED' || updatedMatch.status === 'SCHEDULED') {
       Object.keys(activeMap).forEach((key) => {
-        if (activeMap[key]?.id === matchId) delete activeMap[key];
+        if (activeMap[key]?.id === matchId || key === matchId) delete activeMap[key];
       });
     }
 
     localStorage.setItem('sems_active_live_matches', JSON.stringify(activeMap));
+    window.dispatchEvent(new Event('storage'));
+    window.dispatchEvent(new CustomEvent('sems_matches_updated', { detail: { matchId, match: updatedMatch } }));
     return updatedMatch;
   },
 
@@ -494,6 +497,9 @@ export const coordinatorApi = {
       localStorage.setItem(resultsKey, JSON.stringify(updatedResults));
     }
 
+    window.dispatchEvent(new Event('storage'));
+    window.dispatchEvent(new Event('sems_matches_updated'));
+    window.dispatchEvent(new Event('sems_results_updated'));
     return completedObj;
   },
 
