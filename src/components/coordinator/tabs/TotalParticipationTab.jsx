@@ -102,7 +102,7 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
     try {
       const data = await coordinatorApi.getRegistrations();
       if (isBasketball) {
-        const bskData = (data || []).filter((d) => 
+        const bskData = (data || []).filter((d) =>
           !d.sport || d.sport.toLowerCase().includes('basketball') || d.eventTitle?.toLowerCase().includes('basketball')
         );
 
@@ -410,9 +410,8 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button
               onClick={handleExportExcel}
-              className={`px-4 py-2 rounded-xl text-white text-xs font-black shadow-md transition flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95 ${
-                isChess ? 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/20' : 'bg-emerald-600 hover:bg-emerald-500'
-              }`}
+              className={`px-4 py-2 rounded-xl text-white text-xs font-black shadow-md transition flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95 ${isChess ? 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/20' : 'bg-emerald-600 hover:bg-emerald-500'
+                }`}
             >
               <FileDown className="w-4 h-4" />
               <span>Export CSV</span>
@@ -425,9 +424,8 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={isBasketball ? "Search team, college, name..." : "Search name, roll..."}
-                className={`w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-[#070B14] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 ${
-                  isChess ? 'focus:ring-purple-500' : 'focus:ring-orange-500'
-                }`}
+                className={`w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-[#070B14] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 ${isChess ? 'focus:ring-purple-500' : 'focus:ring-orange-500'
+                  }`}
               />
             </div>
           </div>
@@ -560,13 +558,12 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                           )}
                         </td>
                         <td className="p-4 whitespace-nowrap">
-                          <span className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider ${
-                            isChess
+                          <span className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider ${isChess
                               ? 'bg-purple-100 text-purple-800 border border-purple-200 dark:bg-purple-900/60 dark:text-purple-300 dark:border-purple-700/50'
                               : (categoryDisplay === 'DOUBLES'
-                                  ? 'bg-purple-100 text-purple-800 border border-purple-200 dark:bg-purple-900/60 dark:text-purple-300 dark:border-purple-700/50'
-                                  : 'bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/60 dark:text-blue-300 dark:border-blue-700/50')
-                          }`}>
+                                ? 'bg-purple-100 text-purple-800 border border-purple-200 dark:bg-purple-900/60 dark:text-purple-300 dark:border-purple-700/50'
+                                : 'bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/60 dark:text-blue-300 dark:border-blue-700/50')
+                            }`}>
                             {categoryDisplay}
                           </span>
                         </td>

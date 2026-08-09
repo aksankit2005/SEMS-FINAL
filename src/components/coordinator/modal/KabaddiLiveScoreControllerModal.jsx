@@ -56,25 +56,12 @@ export const KabaddiLiveScoreControllerModal = ({ match, venueName, onClose, onM
   const activeStats1 = half === 1 ? half1Stats1 : half2Stats1;
   const activeStats2 = half === 1 ? half1Stats2 : half2Stats2;
 
-  // Overall Total Match Scores (Half 1 + Half 2)
-  const totalScore1 = half1Score1 + half2Score1;
-  const totalScore2 = half1Score2 + half2Score2;
+  // Overall Total Match Scores (Carry over continuously from Half 1 to Half 2)
+  const totalScore1 = half === 1 ? half1Score1 : half2Score1;
+  const totalScore2 = half === 1 ? half1Score2 : half2Score2;
 
-  const totalStats1 = {
-    raid: (half1Stats1.raid || 0) + (half2Stats1.raid || 0),
-    tackle: (half1Stats1.tackle || 0) + (half2Stats1.tackle || 0),
-    bonus: (half1Stats1.bonus || 0) + (half2Stats1.bonus || 0),
-    superTackle: (half1Stats1.superTackle || 0) + (half2Stats1.superTackle || 0),
-    superRaid: (half1Stats1.superRaid || 0) + (half2Stats1.superRaid || 0),
-  };
-
-  const totalStats2 = {
-    raid: (half1Stats2.raid || 0) + (half2Stats2.raid || 0),
-    tackle: (half1Stats2.tackle || 0) + (half2Stats2.tackle || 0),
-    bonus: (half1Stats2.bonus || 0) + (half2Stats2.bonus || 0),
-    superTackle: (half1Stats2.superTackle || 0) + (half2Stats2.superTackle || 0),
-    superRaid: (half1Stats2.superRaid || 0) + (half2Stats2.superRaid || 0),
-  };
+  const totalStats1 = half === 1 ? half1Stats1 : half2Stats1;
+  const totalStats2 = half === 1 ? half1Stats2 : half2Stats2;
 
   const syncToServer = async (
     h = half,
@@ -88,24 +75,11 @@ export const KabaddiLiveScoreControllerModal = ({ match, venueName, onClose, onM
     h2st1 = half2Stats1,
     h2st2 = half2Stats2
   ) => {
-    const totS1 = h1s1 + h2s1;
-    const totS2 = h1s2 + h2s2;
+    const totS1 = h === 1 ? h1s1 : h2s1;
+    const totS2 = h === 1 ? h1s2 : h2s2;
 
-    const totSt1 = {
-      raid: (h1st1.raid || 0) + (h2st1.raid || 0),
-      tackle: (h1st1.tackle || 0) + (h2st1.tackle || 0),
-      bonus: (h1st1.bonus || 0) + (h2st1.bonus || 0),
-      superTackle: (h1st1.superTackle || 0) + (h2st1.superTackle || 0),
-      superRaid: (h1st1.superRaid || 0) + (h2st1.superRaid || 0),
-    };
-
-    const totSt2 = {
-      raid: (h1st2.raid || 0) + (h2st2.raid || 0),
-      tackle: (h1st2.tackle || 0) + (h2st2.tackle || 0),
-      bonus: (h1st2.bonus || 0) + (h2st2.bonus || 0),
-      superTackle: (h1st2.superTackle || 0) + (h2st2.superTackle || 0),
-      superRaid: (h1st2.superRaid || 0) + (h2st2.superRaid || 0),
-    };
+    const totSt1 = h === 1 ? h1st1 : h2st1;
+    const totSt2 = h === 1 ? h1st2 : h2st2;
 
     const payload = {
       score1: totS1,
@@ -246,16 +220,16 @@ export const KabaddiLiveScoreControllerModal = ({ match, venueName, onClose, onM
   };
 
   const handleFinishHalf1AndStartHalf2 = () => {
-    if (window.confirm(`Finish 1st Half (${team1Name} ${half1Score1} - ${half1Score2} ${team2Name}) and start 2nd Half from 0?`)) {
+    if (window.confirm(`Finish 1st Half (${team1Name} ${half1Score1} - ${half1Score2} ${team2Name}) and start 2nd Half carrying over points (${half1Score1}-${half1Score2})?`)) {
       pushUndoState();
       setCompletedHalf1(true);
       setHalf(2);
-      setHalf2Score1(0);
-      setHalf2Score2(0);
-      setHalf2Stats1(defaultZeroStats);
-      setHalf2Stats2(defaultZeroStats);
-      syncToServer(2, true, half1Score1, half1Score2, half1Stats1, half1Stats2, 0, 0, defaultZeroStats, defaultZeroStats);
-      addToast(`🏆 1st Half Finished! (${half1Score1}-${half1Score2}). 2nd Half started from 0-0.`, 'success');
+      setHalf2Score1(half1Score1);
+      setHalf2Score2(half1Score2);
+      setHalf2Stats1({ ...half1Stats1 });
+      setHalf2Stats2({ ...half1Stats2 });
+      syncToServer(2, true, half1Score1, half1Score2, half1Stats1, half1Stats2, half1Score1, half1Score2, { ...half1Stats1 }, { ...half1Stats2 });
+      addToast(`🏆 1st Half Finished! (${half1Score1}-${half1Score2}). 2nd Half started carrying over points (${half1Score1}-${half1Score2}).`, 'success');
     }
   };
 
@@ -298,7 +272,7 @@ export const KabaddiLiveScoreControllerModal = ({ match, venueName, onClose, onM
       completedHalf1: true,
       kabaddiStats1: totalStats1,
       kabaddiStats2: totalStats2,
-      scoreSummary: `Total: ${totalScore1} - ${totalScore2} Pts (H1: ${half1Score1}-${half1Score2}, H2: ${half2Score1}-${half2Score2})`,
+      scoreSummary: `Total: ${totalScore1} - ${totalScore2} Pts (H1: ${half1Score1}-${half1Score2}, Full Match: ${totalScore1}-${totalScore2})`,
       status: 'COMPLETED',
       tableNumber: null,
       isLiveStreaming: false,
@@ -390,7 +364,7 @@ export const KabaddiLiveScoreControllerModal = ({ match, venueName, onClose, onM
               <span className="text-blue-400">{team2Name}: {half1Score2} Pts</span>
             </div>
             <p className="text-[10px] text-slate-400 font-mono">
-              2nd Half is active. Points below are for 2nd Half starting from 0. (Overall Total: {totalScore1} - {totalScore2})
+              2nd Half is active. Points carry over continuously from 1st Half ({half1Score1} - {half1Score2}).
             </p>
           </div>
         )}
@@ -406,14 +380,14 @@ export const KabaddiLiveScoreControllerModal = ({ match, venueName, onClose, onM
               <span className="text-xs font-black text-blue-400 uppercase tracking-widest block leading-none">TEAM A</span>
               <h2 className="text-xl sm:text-3xl font-black text-white tracking-tight drop-shadow-sm truncate mt-1">{team1Name}</h2>
               {completedHalf1 && (
-                <span className="text-[10px] font-mono text-slate-400 block mt-0.5">Total: <strong className="text-white">{totalScore1}</strong> pts</span>
+                <span className="text-[10px] font-mono text-slate-400 block mt-0.5">1st Half: <strong className="text-white">{half1Score1}</strong> pts</span>
               )}
             </div>
 
             {/* Center Scores & Half Status */}
             <div className="col-span-4 text-center space-y-1.5">
               <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest block">
-                {half === 1 ? '1ST HALF LIVE POINTS' : '2ND HALF LIVE POINTS (FROM 0)'}
+                {half === 1 ? '1ST HALF LIVE POINTS' : '2ND HALF LIVE POINTS (CONTINUING)'}
               </span>
               
               <div className="flex items-center justify-center gap-3 sm:gap-5 text-4xl sm:text-5xl font-black font-mono leading-none">
@@ -445,7 +419,7 @@ export const KabaddiLiveScoreControllerModal = ({ match, venueName, onClose, onM
               <span className="text-xs font-black text-blue-400 uppercase tracking-widest block leading-none">TEAM B</span>
               <h2 className="text-xl sm:text-3xl font-black text-white tracking-tight drop-shadow-sm truncate mt-1">{team2Name}</h2>
               {completedHalf1 && (
-                <span className="text-[10px] font-mono text-slate-400 block mt-0.5">Total: <strong className="text-white">{totalScore2}</strong> pts</span>
+                <span className="text-[10px] font-mono text-slate-400 block mt-0.5">1st Half: <strong className="text-white">{half1Score2}</strong> pts</span>
               )}
             </div>
 

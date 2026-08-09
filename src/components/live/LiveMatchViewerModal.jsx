@@ -69,7 +69,7 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
               return { ...prev, ...updated };
             });
           }
-        } catch (e) {}
+        } catch (e) { }
       }
     };
 
@@ -122,8 +122,8 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
 
   const isBasketball = !isKabaddi && ((match.sportId || match.sport || match.sportName || '').toLowerCase().includes('basketball') || (Boolean(match.roster1 || match.roster2) && !(match.sportId || match.sport || match.sportName || '').toLowerCase().includes('chess')));
   const isChess = (match.sportId || match.sport || match.sportName || '').toLowerCase().includes('chess') ||
-                  (match.matchTitle || match.title || '').toLowerCase().includes('chess') ||
-                  (match.eventTitle || '').toLowerCase().includes('chess');
+    (match.matchTitle || match.title || '').toLowerCase().includes('chess') ||
+    (match.eventTitle || '').toLowerCase().includes('chess');
 
   const defaultKabaddiTeam1 = [
     { id: 1, name: 'Player A', jersey: '07', position: 'Raider', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
@@ -151,31 +151,31 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
   const roster1 = match.roster1 && match.roster1.length > 0
     ? match.roster1
     : [
-        { id: 'T1-1', name: `${team1Name} Player 1`, jersey: '4', onCourt: true, points: Math.floor(score1Val * 0.4), fouls: 1 },
-        { id: 'T1-2', name: `${team1Name} Player 2`, jersey: '7', onCourt: true, points: Math.floor(score1Val * 0.3), fouls: 2 },
-        { id: 'T1-3', name: `${team1Name} Player 3`, jersey: '10', onCourt: true, points: Math.floor(score1Val * 0.2), fouls: 0 },
-        { id: 'T1-4', name: `${team1Name} Player 4`, jersey: '11', onCourt: true, points: Math.floor(score1Val * 0.1), fouls: 3 },
-        { id: 'T1-5', name: `${team1Name} Player 5`, jersey: '23', onCourt: true, points: 0, fouls: 1 },
-        { id: 'T1-6', name: `${team1Name} Sub 1`, jersey: '30', onCourt: false, points: 0, fouls: 0 },
-        { id: 'T1-7', name: `${team1Name} Sub 2`, jersey: '33', onCourt: false, points: 0, fouls: 0 },
-      ];
+      { id: 'T1-1', name: `${team1Name} Player 1`, jersey: '4', onCourt: true, points: Math.floor(score1Val * 0.4), fouls: 1 },
+      { id: 'T1-2', name: `${team1Name} Player 2`, jersey: '7', onCourt: true, points: Math.floor(score1Val * 0.3), fouls: 2 },
+      { id: 'T1-3', name: `${team1Name} Player 3`, jersey: '10', onCourt: true, points: Math.floor(score1Val * 0.2), fouls: 0 },
+      { id: 'T1-4', name: `${team1Name} Player 4`, jersey: '11', onCourt: true, points: Math.floor(score1Val * 0.1), fouls: 3 },
+      { id: 'T1-5', name: `${team1Name} Player 5`, jersey: '23', onCourt: true, points: 0, fouls: 1 },
+      { id: 'T1-6', name: `${team1Name} Sub 1`, jersey: '30', onCourt: false, points: 0, fouls: 0 },
+      { id: 'T1-7', name: `${team1Name} Sub 2`, jersey: '33', onCourt: false, points: 0, fouls: 0 },
+    ];
 
   const roster2 = match.roster2 && match.roster2.length > 0
     ? match.roster2
     : [
-        { id: 'T2-1', name: `${team2Name} Player 1`, jersey: '4', onCourt: true, points: Math.floor(score2Val * 0.4), fouls: 2 },
-        { id: 'T2-2', name: `${team2Name} Player 2`, jersey: '7', onCourt: true, points: Math.floor(score2Val * 0.3), fouls: 1 },
-        { id: 'T2-3', name: `${team2Name} Player 3`, jersey: '10', onCourt: true, points: Math.floor(score2Val * 0.2), fouls: 0 },
-        { id: 'T2-4', name: `${team2Name} Player 4`, jersey: '11', onCourt: true, points: Math.floor(score2Val * 0.1), fouls: 4 },
-        { id: 'T2-5', name: `${team2Name} Player 5`, jersey: '23', onCourt: true, points: 0, fouls: 2 },
-        { id: 'T2-6', name: `${team2Name} Sub 1`, jersey: '30', onCourt: false, points: 0, fouls: 0 },
-        { id: 'T2-7', name: `${team2Name} Sub 2`, jersey: '33', onCourt: false, points: 0, fouls: 0 },
-      ];
+      { id: 'T2-1', name: `${team2Name} Player 1`, jersey: '4', onCourt: true, points: Math.floor(score2Val * 0.4), fouls: 2 },
+      { id: 'T2-2', name: `${team2Name} Player 2`, jersey: '7', onCourt: true, points: Math.floor(score2Val * 0.3), fouls: 1 },
+      { id: 'T2-3', name: `${team2Name} Player 3`, jersey: '10', onCourt: true, points: Math.floor(score2Val * 0.2), fouls: 0 },
+      { id: 'T2-4', name: `${team2Name} Player 4`, jersey: '11', onCourt: true, points: Math.floor(score2Val * 0.1), fouls: 4 },
+      { id: 'T2-5', name: `${team2Name} Player 5`, jersey: '23', onCourt: true, points: 0, fouls: 2 },
+      { id: 'T2-6', name: `${team2Name} Sub 1`, jersey: '30', onCourt: false, points: 0, fouls: 0 },
+      { id: 'T2-7', name: `${team2Name} Sub 2`, jersey: '33', onCourt: false, points: 0, fouls: 0 },
+    ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-sm overflow-y-auto animate-fade-in font-sans">
       <div className="w-full max-w-4xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-[#1E293B] rounded-3xl shadow-2xl overflow-hidden my-auto space-y-0 text-slate-900 dark:text-slate-200">
-        
+
         {/* Modal Header */}
         <div className="p-4 sm:p-6 bg-white dark:bg-[#0F172A] border-b border-slate-200 dark:border-[#1E293B] flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -249,9 +249,9 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
 
         {/* Large Spectator Scoreboard Section */}
         <div className="p-6 bg-slate-50 dark:bg-gradient-to-b dark:from-[#0B1120] dark:to-[#0F172A] border-b border-slate-200 dark:border-[#1E293B] space-y-6">
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-            
+
             {/* Player / Team A */}
             <div className="text-center md:text-left space-y-2">
               <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{team1Name}</h2>
@@ -301,7 +301,7 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
                 <span className="text-[10px] font-mono uppercase font-bold text-slate-500 dark:text-slate-400 tracking-widest block">
                   {sportConfig.name} {isFinished ? 'Final Score' : 'Live Points'}
                 </span>
-                
+
                 <div className="flex items-center justify-center gap-4 text-5xl font-black font-mono text-slate-900 dark:text-white">
                   <span className="text-blue-600 dark:text-indigo-400">{score1Val}</span>
                   <span className="text-slate-400 dark:text-slate-600 text-3xl">:</span>
@@ -381,7 +381,7 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
                 </div>
                 {match.half === 2 && (
                   <p className="text-xs text-emerald-600 dark:text-emerald-400 font-mono font-bold">
-                    Currently in 2nd Half. Active 2nd Half score started from 0-0. (Overall Total: {score1Val} - {score2Val})
+                    Currently in 2nd Half. Scores carrying over continuously from 1st Half ({match.half1Score1 || 0} - {match.half1Score2 || 0}).
                   </p>
                 )}
               </div>
@@ -481,7 +481,7 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
 
             {/* Side-by-Side Team Rosters */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              
+
               {/* Team 1 Roster Card */}
               <div className="bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-[#1E293B] overflow-hidden shadow-sm">
                 <div className="px-4 py-3 bg-blue-600/10 dark:bg-indigo-600/20 border-b border-slate-200 dark:border-[#1E293B] flex items-center justify-between">
@@ -531,13 +531,12 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
                           {/* Fouls */}
                           <div className="text-right">
                             <span className="text-[10px] text-slate-400 block uppercase">Fouls</span>
-                            <span className={`font-black text-xs px-2 py-0.5 rounded ${
-                              (p.fouls || 0) >= 5
+                            <span className={`font-black text-xs px-2 py-0.5 rounded ${(p.fouls || 0) >= 5
                                 ? 'bg-rose-500 text-white font-extrabold'
                                 : (p.fouls || 0) >= 4
-                                ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                            }`}>
+                                  ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                              }`}>
                               {p.fouls || 0} / 5
                             </span>
                           </div>
@@ -597,13 +596,12 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
                           {/* Fouls */}
                           <div className="text-right">
                             <span className="text-[10px] text-slate-400 block uppercase">Fouls</span>
-                            <span className={`font-black text-xs px-2 py-0.5 rounded ${
-                              (p.fouls || 0) >= 5
+                            <span className={`font-black text-xs px-2 py-0.5 rounded ${(p.fouls || 0) >= 5
                                 ? 'bg-rose-500 text-white font-extrabold'
                                 : (p.fouls || 0) >= 4
-                                ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                            }`}>
+                                  ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                              }`}>
                               {p.fouls || 0} / 5
                             </span>
                           </div>

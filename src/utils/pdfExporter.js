@@ -304,7 +304,148 @@ export const downloadPassAsPDF = async (receiptOrElementId, filename = 'APEX_Pas
 };
 
 /**
- * Export tabular data as a downloadable CSV file.
+ * Opens an interactive Excel / CSV Spreadsheet Viewer in a new browser tab
+ * without forcing repeated file downloads to the user's computer.
+ */
+export const openSpreadsheetViewer = (dataArray = [], title = 'Excel / CSV Spreadsheet Data') => {
+  if (!dataArray || dataArray.length === 0) return;
+
+  const headers = Object.keys(dataArray[0]);
+
+  const escapeHtml = (str) =>
+    String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+  const headerCells = headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('');
+  const bodyRows = dataArray
+    .map(
+      (row) =>
+        `<tr>${headers.map((h) => `<td>${escapeHtml(row[h])}</td>`).join('')}</tr>`
+    )
+    .join('');
+
+  const csvString = [
+    headers.map((h) => `"${String(h).replace(/"/g, '""')}"`).join(','),
+    ...dataArray.map((row) =>
+      headers.map((h) => `"${String(row[h] || '').replace(/"/g, '""')}"`).join(',')
+    ),
+  ].join('\n');
+
+  const htmlDoc = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>${escapeHtml(title)} - Excel / CSV Spreadsheet View</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b1120; color: #f8fafc; margin: 0; padding: 24px; }
+    .container { max-width: 1400px; margin: 0 auto; }
+    .header-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #1e293b; }
+    .title-group h1 { margin: 0; font-size: 22px; font-weight: 900; color: #f59e0b; }
+    .title-group p { margin: 4px 0 0; font-size: 13px; color: #94a3b8; font-family: monospace; }
+    .actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .btn { padding: 9px 16px; border-radius: 12px; font-weight: 800; font-size: 12px; border: none; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-primary { background: #d97706; color: white; }
+    .btn-primary:hover { background: #b45309; }
+    .btn-secondary { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
+    .btn-secondary:hover { background: #334155; color: white; }
+    .search-input { padding: 9px 14px; border-radius: 12px; background: #1e293b; border: 1px solid #334155; color: white; font-size: 12px; width: 260px; outline: none; }
+    .table-wrapper { overflow-x: auto; border-radius: 16px; border: 1px solid #1e293b; background: #111827; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    th { background: #0f172a; color: #f59e0b; padding: 14px 16px; font-weight: 800; text-transform: uppercase; font-size: 10.5px; tracking-wider; border-bottom: 2px solid #1e293b; position: sticky; top: 0; }
+    td { padding: 13px 16px; border-bottom: 1px solid #1e293b; color: #e2e8f0; font-weight: 500; }
+    tr:hover td { background: #1e293b; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header-bar">
+      <div class="title-group">
+        <h1>📊 ${escapeHtml(title)}</h1>
+        <p>Total Records: ${dataArray.length} | Generated: ${new Date().toLocaleString()}</p>
+      </div>
+      <div class="actions">
+        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 Filter rows..." class="search-input" />
+        <button class="btn btn-primary" onclick="window.print()">🖨️ Print / PDF</button>
+        <button class="btn btn-secondary" onclick="copyTable()">📋 Copy Table</button>
+        <button class="btn btn-secondary" onclick="downloadCsv()">💾 Save CSV File</button>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table id="spreadsheetTable">
+        <thead>
+          <tr>${headerCells}</tr>
+        </thead>
+        <tbody>
+          ${bodyRows}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    function filterTable() {
+      var input = document.getElementById("searchInput");
+      var filter = input.value.toLowerCase();
+      var rows = document.querySelectorAll("#spreadsheetTable tbody tr");
+      rows.forEach(function(row) {
+        var text = row.innerText.toLowerCase();
+        row.style.display = text.includes(filter) ? "" : "none";
+      });
+    }
+
+    function copyTable() {
+      var table = document.getElementById("spreadsheetTable");
+      navigator.clipboard.writeText(table.innerText).then(function() {
+        alert("Spreadsheet table copied to clipboard!");
+      });
+    }
+
+    function downloadCsv() {
+      var csvData = "\ufeff" + ${JSON.stringify(csvString)};
+      var blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+      var url = URL.createObjectURL(blob);
+      var link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "${title.replace(/[^a-zA-Z0-9_-]/g, '_')}.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>`;
+
+  const blob = new Blob([htmlDoc], { type: 'text/html;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+
+  if (!win) {
+    // If popup blocked, fallback to direct download
+    const headers = Object.keys(dataArray[0]);
+    const csvRows = [];
+    csvRows.push(headers.join(','));
+    dataArray.forEach((row) => {
+      const values = headers.map((header) => `"${('' + (row[header] || '')).replace(/"/g, '\\"')}"`);
+      csvRows.push(values.join(','));
+    });
+    const csvStringFallback = csvRows.join('\n');
+    const fallbackBlob = new Blob(['\ufeff' + csvStringFallback], { type: 'text/csv;charset=utf-8;' });
+    const fallbackUrl = URL.createObjectURL(fallbackBlob);
+    const link = document.createElement('a');
+    link.setAttribute('href', fallbackUrl);
+    link.setAttribute('download', `${title}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+};
+
+/**
+ * Export tabular data directly as a downloadable CSV file.
  */
 export const exportToCSV = (dataArray = [], filename = 'Export_Data') => {
   if (!dataArray || dataArray.length === 0) return;
@@ -322,7 +463,7 @@ export const exportToCSV = (dataArray = [], filename = 'Export_Data') => {
   });
 
   const csvString = csvRows.join('\n');
-  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob(['\ufeff' + csvString], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
@@ -577,132 +718,13 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
     doc.setFontSize(8);
     doc.text('OFFICIAL VERIFIED RESULT CERTIFICATE - APEX CHAMPIONSHIP 2026', pageW / 2, 274.5, { align: 'center' });
 
-    // INDIVIDUAL PLAYER PERFORMANCE / PER-PERSON POINT BREAKDOWN
-    const isKabaddiMatch = (cleanSport || '').toLowerCase().includes('kabaddi') ||
-      (match.sportId || '').toLowerCase().includes('kabaddi') ||
-      (match.sport || '').toLowerCase().includes('kabaddi') ||
-      Boolean(match.playerStats1 || match.playerStats2);
+    // INDIVIDUAL PLAYER PERFORMANCE / PER-PERSON POINT BREAKDOWN (Disabled Kabaddi player table per user request)
+    const isKabaddiMatch = false;
 
-    const isBasketballMatch = !isKabaddiMatch && ((cleanSport || '').toLowerCase().includes('basketball') || 
+    const isBasketballMatch = (cleanSport || '').toLowerCase().includes('basketball') || 
       (match.sportId || '').toLowerCase().includes('basketball') || 
       (match.sport || '').toLowerCase().includes('basketball') ||
-      ((match.roster1 && match.roster1.length > 0) || (match.roster2 && match.roster2.length > 0)));
-
-    if (isKabaddiMatch) {
-      doc.addPage();
-      doc.setFillColor(15, 23, 42);
-      doc.rect(0, 0, 210, 297, 'F');
-
-      doc.setDrawColor(245, 158, 11);
-      doc.setLineWidth(1.5);
-      doc.roundedRect(8, 8, 194, 281, 4, 4, 'D');
-      doc.setLineWidth(0.5);
-      doc.roundedRect(10, 10, 190, 277, 3, 3, 'D');
-
-      doc.setTextColor(245, 158, 11);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(16);
-      doc.text('KABADDI OFFICIAL TEAM & PLAYER DETAILS SCORE SHEET', pageW / 2, 22, { align: 'center' });
-
-      doc.setTextColor(148, 163, 184);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Match: ${team1Name} vs ${team2Name}   |   Match ID: ${matchId}`, pageW / 2, 28, { align: 'center' });
-
-      const defaultKabaddiTeam1 = [
-        { id: 1, name: 'Player A', jersey: '07', position: 'Raider', raidPts: 5, tacklePts: 0, bonusPts: 2, superRaid: 1, superTackle: 0, total: 8 },
-        { id: 2, name: 'Player B', jersey: '12', position: 'Defender', raidPts: 0, tacklePts: 6, bonusPts: 0, superRaid: 0, superTackle: 2, total: 8 },
-        { id: 3, name: 'Player C', jersey: '03', position: 'All Rounder', raidPts: 3, tacklePts: 3, bonusPts: 1, superRaid: 0, superTackle: 1, total: 8 },
-        { id: 4, name: 'Player D', jersey: '05', position: 'Raider', raidPts: 2, tacklePts: 1, bonusPts: 0, superRaid: 0, superTackle: 0, total: 3 },
-        { id: 5, name: 'Player E', jersey: '09', position: 'Defender', raidPts: 0, tacklePts: 2, bonusPts: 0, superRaid: 0, superTackle: 1, total: 2 },
-        { id: 6, name: 'Player F', jersey: '11', position: 'Defender', raidPts: 0, tacklePts: 1, bonusPts: 0, superRaid: 0, superTackle: 0, total: 1 },
-        { id: 7, name: 'Player G', jersey: '04', position: 'Raider', raidPts: 1, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 1 },
-      ];
-
-      const defaultKabaddiTeam2 = [
-        { id: 1, name: 'Player 1', jersey: '01', position: 'Raider', raidPts: 4, tacklePts: 0, bonusPts: 1, superRaid: 0, superTackle: 0, total: 5 },
-        { id: 2, name: 'Player 2', jersey: '02', position: 'Defender', raidPts: 0, tacklePts: 4, bonusPts: 0, superRaid: 0, superTackle: 1, total: 4 },
-        { id: 3, name: 'Player 3', jersey: '10', position: 'All Rounder', raidPts: 2, tacklePts: 2, bonusPts: 1, superRaid: 0, superTackle: 0, total: 5 },
-        { id: 4, name: 'Player 4', jersey: '08', position: 'Raider', raidPts: 3, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 3 },
-        { id: 5, name: 'Player 5', jersey: '06', position: 'Defender', raidPts: 0, tacklePts: 3, bonusPts: 0, superRaid: 0, superTackle: 0, total: 3 },
-        { id: 6, name: 'Player 6', jersey: '14', position: 'Defender', raidPts: 0, tacklePts: 1, bonusPts: 0, superRaid: 0, superTackle: 0, total: 1 },
-        { id: 7, name: 'Player 7', jersey: '15', position: 'Raider', raidPts: 1, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 1 },
-      ];
-
-      const kStats1 = match.playerStats1 && match.playerStats1.length > 0 ? match.playerStats1 : defaultKabaddiTeam1;
-      const kStats2 = match.playerStats2 && match.playerStats2.length > 0 ? match.playerStats2 : defaultKabaddiTeam2;
-
-      let py = 36;
-      const renderKabaddiTeamPDFTable = (teamTitle, rosterList, accentColor) => {
-        doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
-        doc.setFontSize(10.5);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`${teamTitle.toUpperCase()} - TEAM & PLAYER DETAILS`, margin, py);
-
-        py += 4;
-        doc.setFillColor(30, 41, 59);
-        doc.rect(margin, py, contentW, 7, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(7.5);
-        doc.setFont('helvetica', 'bold');
-
-        doc.text('#', margin + 3, py + 5);
-        doc.text('Player', margin + 12, py + 5);
-        doc.text('Jersey No.', margin + 55, py + 5);
-        doc.text('Position', margin + 78, py + 5);
-        doc.text('Raid Pts', margin + 105, py + 5);
-        doc.text('Tackle Pts', margin + 124, py + 5);
-        doc.text('Bonus', margin + 144, py + 5);
-        doc.text('Super Raid', margin + 160, py + 5);
-        doc.text('Super Tackle', margin + 178, py + 5);
-
-        py += 7;
-        rosterList.forEach((p, idx) => {
-          doc.setFillColor(idx % 2 === 0 ? 20 : 15, 23, 42);
-          doc.rect(margin, py, contentW, 6.5, 'F');
-          doc.setTextColor(226, 232, 240);
-          doc.setFontSize(7.5);
-          doc.setFont('helvetica', 'normal');
-
-          doc.text(String(idx + 1), margin + 3, py + 4.5);
-          doc.setFont('helvetica', 'bold');
-          doc.text(sanitizeText(p.name || `Player ${idx + 1}`).substring(0, 18), margin + 12, py + 4.5);
-          doc.setFont('helvetica', 'normal');
-
-          doc.text(sanitizeText(p.jersey || `#${idx + 1}`), margin + 55, py + 4.5);
-          doc.text(sanitizeText(p.position || 'Raider').substring(0, 12), margin + 78, py + 4.5);
-
-          doc.setTextColor(59, 130, 246);
-          doc.text(String(p.raidPts || 0), margin + 105, py + 4.5);
-
-          doc.setTextColor(16, 185, 129);
-          doc.text(String(p.tacklePts || 0), margin + 124, py + 4.5);
-
-          doc.setTextColor(168, 85, 247);
-          doc.text(String(p.bonusPts || 0), margin + 144, py + 4.5);
-
-          doc.setTextColor(245, 158, 11);
-          doc.text(String(p.superRaid || 0), margin + 160, py + 4.5);
-
-          doc.setTextColor(244, 63, 94);
-          doc.text(String(p.superTackle || 0), margin + 178, py + 4.5);
-
-          py += 6.5;
-        });
-
-        py += 6;
-      };
-
-      renderKabaddiTeamPDFTable(team1Name, kStats1, [245, 158, 11]);
-      renderKabaddiTeamPDFTable(team2Name, kStats2, [59, 130, 246]);
-
-      doc.setFillColor(16, 185, 129);
-      doc.roundedRect(margin, 268, contentW, 10, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
-      doc.text('OFFICIAL VERIFIED RESULT CERTIFICATE - KABADDI SCORE SHEET REPORT', pageW / 2, 274.5, { align: 'center' });
-    }
+      ((match.roster1 && match.roster1.length > 0) || (match.roster2 && match.roster2.length > 0));
 
     if (isBasketballMatch) {
       doc.addPage();

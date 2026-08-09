@@ -221,7 +221,13 @@ export const RESULTS_DATA = [
     sport: "Kho-Kho",
     event: "Mens Championship Final",
     winner: "MPEC Chasers",
-    scoreSummary: "MPEC Chasers (16 Pts) def. MIPS Runners (12 Pts)",
+    scoreSummary: "MPEC Chasers def. MIPS Runners 18-14 Pts (Set 1 / Inning 1: 10-6 | Set 2 / Inning 2: 8-8)",
+    setsHistory: [
+      { set: 1, label: 'Set 1 (Inning 1)', score1: 10, score2: 6, winner: 'MPEC Chasers' },
+      { set: 2, label: 'Set 2 (Inning 2)', score1: 8, score2: 8, winner: 'Draw' }
+    ],
+    setsWon1: 1,
+    setsWon2: 0,
     date: "2026-08-04",
     mvp: "Deepak Yadav (MPEC) - 6 Pole Dives",
     medals: {

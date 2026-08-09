@@ -2,91 +2,95 @@ import React, { useState, useEffect } from 'react';
 import { Search, Trash2, FileDown, Users } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
+import { openSpreadsheetViewer } from '../../../utils/pdfExporter';
 
-const DEFAULT_VOLLEYBALL_PARTICIPANTS = [
+const DEFAULT_KHOKHO_PARTICIPANTS = [
   {
-    id: 'REG-VOL-101',
+    id: 'REG-KHO-101',
     timestamp: '16 Jul, 10:30 AM',
-    sport: 'Volleyball',
-    eventTitle: 'Volleyball Championship 2026',
-    teamName: 'MPCN&PS Volleys',
-    collegeName: 'MPCN&PS',
-    name: 'Sameer Khan',
-    captainName: 'Sameer Khan',
-    phone: '9876543210',
-    email: 'sameer.volleys@sems.edu'
-  },
-  {
-    id: 'REG-VOL-102',
-    timestamp: '16 Jul, 11:15 AM',
-    sport: 'Volleyball',
-    eventTitle: 'Volleyball Championship 2026',
-    teamName: 'MPCP Spikers',
-    collegeName: 'MPCP',
-    name: 'Vikas Dubey',
-    captainName: 'Vikas Dubey',
-    phone: '9876543211',
-    email: 'vikas.spikers@sems.edu'
-  },
-  {
-    id: 'REG-VOL-103',
-    timestamp: '16 Jul, 02:45 PM',
-    sport: 'Volleyball',
-    eventTitle: 'Womens Volleyball Tournament',
-    teamName: 'MIPS Smashers',
-    collegeName: 'MIPS',
-    name: 'Kavya Sen',
-    captainName: 'Kavya Sen',
-    phone: '9876543212',
-    email: 'kavya.smashers@sems.edu'
-  },
-  {
-    id: 'REG-VOL-104',
-    timestamp: '17 Jul, 09:30 AM',
-    sport: 'Volleyball',
-    eventTitle: 'Volleyball Championship 2026',
-    teamName: 'MPEC Blockers',
+    sport: 'Kho-Kho',
+    eventTitle: 'Kho-Kho Championship 2026',
+    teamName: 'MPEC Chasers',
     collegeName: 'MPEC',
-    name: 'Rohan Sharma',
-    captainName: 'Rohan Sharma',
-    phone: '9876543213',
-    email: 'rohan.blockers@sems.edu'
+    name: 'Deepak Yadav',
+    captainName: 'Deepak Yadav',
+    phone: '9876543220',
+    email: 'deepak.chasers@sems.edu'
+  },
+  {
+    id: 'REG-KHO-102',
+    timestamp: '16 Jul, 11:15 AM',
+    sport: 'Kho-Kho',
+    eventTitle: 'Kho-Kho Championship 2026',
+    teamName: 'MIPS Runners',
+    collegeName: 'MIPS',
+    name: 'Saurabh Srivastava',
+    captainName: 'Saurabh Srivastava',
+    phone: '9876543221',
+    email: 'saurabh.runners@sems.edu'
+  },
+  {
+    id: 'REG-KHO-103',
+    timestamp: '16 Jul, 02:45 PM',
+    sport: 'Kho-Kho',
+    eventTitle: 'Womens Kho-Kho League',
+    teamName: 'MPCP Defenders',
+    collegeName: 'MPCP',
+    name: 'Shivangi Pandey',
+    captainName: 'Shivangi Pandey',
+    phone: '9876543222',
+    email: 'shivangi.defenders@sems.edu'
+  },
+  {
+    id: 'REG-KHO-104',
+    timestamp: '17 Jul, 09:30 AM',
+    sport: 'Kho-Kho',
+    eventTitle: 'Kho-Kho Championship 2026',
+    teamName: 'MPCPS Strikers',
+    collegeName: 'MPCPS (KN142)',
+    name: 'Ankit Dixith',
+    captainName: 'Ankit Dixith',
+    phone: '9876543223',
+    email: 'ankit.strikers@sems.edu'
   }
 ];
 
-export const VolleyballTotalParticipationTab = ({ user, globalSearch = '' }) => {
+export const KhoKhoTotalParticipationTab = ({ user, globalSearch = '' }) => {
   const { addToast } = useToast();
   const [search, setSearch] = useState('');
   const [participants, setParticipants] = useState([]);
 
-  const sportId = 'volleyball';
+  const sportId = 'kho-kho';
   const participantsKey = `sems_participants_${sportId}`;
-  const sportName = 'Volleyball';
+  const sportName = 'Kho-Kho';
 
   const loadData = async () => {
     try {
       const data = await coordinatorApi.getRegistrations();
-      const volData = (data || []).filter((d) => 
-        !d.sport || d.sport.toLowerCase().includes('volleyball') || d.eventTitle?.toLowerCase().includes('volleyball')
+      const khoData = (data || []).filter((d) => 
+        !d.sport ||
+        d.sport?.toLowerCase().includes('kho') ||
+        d.sportId?.toLowerCase().includes('kho') ||
+        d.eventTitle?.toLowerCase().includes('kho')
       );
 
-      if (volData && volData.length > 0) {
-        setParticipants(volData);
+      if (khoData && khoData.length > 0) {
+        setParticipants(khoData);
       } else {
-        const saved = localStorage.getItem(participantsKey);
+        const saved = localStorage.getItem(participantsKey) || localStorage.getItem('sems_participants_kho_kho');
         if (saved) {
           try {
             const parsed = JSON.parse(saved);
-            setParticipants(Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_VOLLEYBALL_PARTICIPANTS);
+            setParticipants(Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_KHOKHO_PARTICIPANTS);
           } catch (e) {
-            setParticipants(DEFAULT_VOLLEYBALL_PARTICIPANTS);
+            setParticipants(DEFAULT_KHOKHO_PARTICIPANTS);
           }
         } else {
-          setParticipants(DEFAULT_VOLLEYBALL_PARTICIPANTS);
+          setParticipants(DEFAULT_KHOKHO_PARTICIPANTS);
         }
       }
     } catch (e) {
-      setParticipants(DEFAULT_VOLLEYBALL_PARTICIPANTS);
+      setParticipants(DEFAULT_KHOKHO_PARTICIPANTS);
     }
   };
 
@@ -97,11 +101,11 @@ export const VolleyballTotalParticipationTab = ({ user, globalSearch = '' }) => 
   }, [user]);
 
   const handleClearParticipants = async () => {
-    if (window.confirm('Clear all volleyball participant data from storage?')) {
+    if (window.confirm('Clear all Kho-Kho participant data from storage?')) {
       setParticipants([]);
       localStorage.removeItem(participantsKey);
-      localStorage.removeItem('sems_participants_volleyball');
-      addToast('All volleyball participant data cleared', 'warning');
+      localStorage.removeItem('sems_participants_kho_kho');
+      addToast('All Kho-Kho participant data cleared', 'warning');
     }
   };
 
@@ -130,30 +134,18 @@ export const VolleyballTotalParticipationTab = ({ user, globalSearch = '' }) => 
       return;
     }
 
-    const escapeCsv = (str) => `"${String(str || '').replace(/"/g, '""')}"`;
-    const headers = ['Time', 'Game Name', 'Team Name', 'College Name', 'Captain / Name', 'Mobile No', 'Email'];
-    const rows = filtered.map((p) => {
-      return [
-        escapeCsv(p.timestamp || p.registeredAt || 'N/A'),
-        escapeCsv(p.sport || sportName),
-        escapeCsv(p.teamName || p.name || 'Team'),
-        escapeCsv(p.collegeName || p.college || 'N/A'),
-        escapeCsv(p.name || p.captainName || p.player1?.name || 'N/A'),
-        escapeCsv(p.phone || p.mobile || p.player1?.phone || 'N/A'),
-        escapeCsv(p.email || p.player1?.email || 'N/A')
-      ];
-    });
+    const excelData = filtered.map((p) => ({
+      'Time': p.timestamp || p.registeredAt || 'N/A',
+      'Game Name': p.sport || sportName,
+      'Team Name': p.teamName || p.name || 'Team',
+      'College Name': p.collegeName || p.college || 'N/A',
+      'Captain / Name': p.name || p.captainName || p.player1?.name || 'N/A',
+      'Mobile No': p.phone || p.mobile || p.player1?.phone || 'N/A',
+      'Email': p.email || p.player1?.email || 'N/A'
+    }));
 
-    const csvContent = [headers.map(escapeCsv).join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `Volleyball_Participant_Database.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    addToast(`Volleyball participant database exported to CSV successfully!`, 'success');
+    openSpreadsheetViewer(excelData, `Kho-Kho_Participant_Database`);
+    addToast(`Opened Kho-Kho participant database in Excel/CSV view tab!`, 'success');
   };
 
   return (
@@ -163,7 +155,7 @@ export const VolleyballTotalParticipationTab = ({ user, globalSearch = '' }) => 
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-orange-500/10 text-orange-500 border border-orange-500/20">
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
               <Users className="w-5 h-5" />
             </div>
             <div>
@@ -176,7 +168,7 @@ export const VolleyballTotalParticipationTab = ({ user, globalSearch = '' }) => 
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Verified registration records for Volleyball ({filtered.length} Records)
+                Verified registration records for Kho-Kho ({filtered.length} Records)
               </p>
             </div>
 
@@ -194,7 +186,7 @@ export const VolleyballTotalParticipationTab = ({ user, globalSearch = '' }) => 
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button
               onClick={handleExportExcel}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-orange-600 hover:bg-orange-500 text-white font-black text-xs shadow-lg shadow-orange-500/20 transition flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2 cursor-pointer"
             >
               <FileDown className="w-4 h-4" />
               <span>Export CSV / Excel</span>
@@ -210,7 +202,7 @@ export const VolleyballTotalParticipationTab = ({ user, globalSearch = '' }) => 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search team name, college, captain, phone or email..."
-            className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
         </div>
 
@@ -239,7 +231,7 @@ export const VolleyballTotalParticipationTab = ({ user, globalSearch = '' }) => 
                 filtered.map((p, idx) => (
                   <tr key={p.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition">
                     <td className="p-3.5 font-mono text-slate-500">{p.timestamp || p.registeredAt || 'N/A'}</td>
-                    <td className="p-3.5 font-bold text-orange-600 dark:text-orange-400">{p.sport || sportName}</td>
+                    <td className="p-3.5 font-bold text-amber-600 dark:text-amber-400">{p.sport || sportName}</td>
                     <td className="p-3.5 font-black text-slate-900 dark:text-white">{p.teamName || p.name || 'Team'}</td>
                     <td className="p-3.5 text-slate-600 dark:text-slate-300">{p.collegeName || p.college || 'N/A'}</td>
                     <td className="p-3.5 font-bold text-slate-800 dark:text-slate-200">{p.name || p.captainName || p.player1?.name || 'N/A'}</td>

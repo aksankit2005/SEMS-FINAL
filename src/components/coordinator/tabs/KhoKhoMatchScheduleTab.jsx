@@ -29,7 +29,7 @@ export const KhoKhoMatchScheduleTab = ({ matches, user, onUpdateMatches, globalS
   const [editingId, setEditingId] = useState(null);
 
   const [form, setForm] = useState({
-    format: 'Standard (9 Players)',
+    format: '2 Innings / 2 Sets (Standard 9v9)',
     category: 'Open',
     eventTitle: 'Kho-Kho Championship 2026',
     team1: '',
@@ -127,7 +127,7 @@ export const KhoKhoMatchScheduleTab = ({ matches, user, onUpdateMatches, globalS
         tableNumber: form.tableNumber,
         date: form.date,
         time: form.time,
-        format: 'Standard (9 Players)',
+        format: form.format || '2 Innings / 2 Sets (Standard 9v9)',
         category: form.category,
         eventTitle: form.eventTitle,
       });
@@ -144,12 +144,16 @@ export const KhoKhoMatchScheduleTab = ({ matches, user, onUpdateMatches, globalS
         tableNumber: form.tableNumber,
         date: form.date,
         time: form.time,
-        format: 'Standard (9 Players)',
+        format: form.format || '2 Innings / 2 Sets (Standard 9v9)',
         category: form.category,
         eventTitle: form.eventTitle,
         status: 'SCHEDULED',
         score1: 0,
         score2: 0,
+        setsHistory: [
+          { set: 1, label: 'Set 1 (Inning 1)', score1: 0, score2: 0, isLocked: false, winner: null },
+          { set: 2, label: 'Set 2 (Inning 2)', score1: 0, score2: 0, isLocked: false, winner: null },
+        ]
       };
       const updated = [...matches, newSlot];
       onUpdateMatches(updated);
@@ -158,7 +162,7 @@ export const KhoKhoMatchScheduleTab = ({ matches, user, onUpdateMatches, globalS
     }
 
     setForm({
-      format: 'Standard (9 Players)',
+      format: '2 Innings / 2 Sets (Standard 9v9)',
       category: 'Open',
       eventTitle: createdEvents[0]?.title || 'Kho-Kho Championship 2026',
       team1: '',
