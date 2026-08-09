@@ -305,7 +305,7 @@ export const GullyCricketLiveScoreControllerModal = ({ match, venueName, onClose
       setStriker({ name: `${teamB} Opener 1`, runs: 0, balls: 0, fours: 0, sixes: 0 });
       setNonStriker({ name: `${teamB} Opener 2`, runs: 0, balls: 0, fours: 0, sixes: 0 });
       setPartnership({ runs: 0, balls: 0 });
-      setRecentBalls();
+      setRecentBalls([]);
       addToast('Innings 2 Started! Target: ' + (runs + 1), 'success');
     }
   };
