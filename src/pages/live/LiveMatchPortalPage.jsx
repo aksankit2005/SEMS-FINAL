@@ -308,7 +308,8 @@ export const LiveMatchPortalPage = () => {
                 return (
                   <div
                     key={m.id}
-                    className="p-5 rounded-3xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-[#1E293B] hover:border-indigo-500/50 shadow-md dark:shadow-xl transition-all duration-300 space-y-4 group"
+                    onClick={() => setSelectedMatch(m)}
+                    className="p-5 rounded-3xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-[#1E293B] hover:border-indigo-500/50 shadow-md dark:shadow-xl transition-all duration-300 space-y-4 group cursor-pointer"
                   >
                     {/* Status & Venue Top Bar */}
                     <div className="flex items-center justify-between gap-2">

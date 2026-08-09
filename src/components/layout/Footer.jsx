@@ -208,6 +208,14 @@ export const Footer = () => {
             >
               Privacy Policy
             </Link>
+            <span>•</span>
+            <Link
+              to="/super-coordinator/dashboard"
+              onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' })}
+              className="hover:text-amber-400 font-bold transition text-amber-500/90"
+            >
+              👑 President Console
+            </Link>
           </div>
 
           <div className="flex items-center justify-center md:justify-start gap-1 text-slate-500 dark:text-slate-400">

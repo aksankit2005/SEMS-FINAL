@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { 
   Flame, Trophy, Radio, UserCheck, Calendar, BarChart3, 
   Award, Newspaper, Image, Info, ChevronLeft, ChevronRight, LayoutDashboard, Camera,
-  Building2, Shield
+  Building2, Shield, Crown
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { galleryApi } from '../../services/galleryApi';
@@ -135,58 +135,8 @@ export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
         })}
       </div>
 
-      {/* Staff Portals Links when not logged in */}
-      {!activeSession && (
-        <div className="p-3 border-t border-slate-200/80 dark:border-slate-800/80 space-y-1">
-          {!isCollapsed && (
-            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-2 mb-1">
-              Staff Portals
-            </p>
-          )}
-          <NavLink
-            to="/college-head/login"
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition-all ${
-                isActive
-                  ? 'bg-emerald-600 text-white shadow-md'
-                  : 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 dark:hover:text-emerald-400'
-              } ${isCollapsed ? 'justify-center px-0' : ''}`
-            }
-            title={isCollapsed ? 'College Head Login' : undefined}
-          >
-            <Building2 className="w-4 h-4 text-emerald-500 shrink-0" />
-            {!isCollapsed && <span className="truncate">College Head Login</span>}
-          </NavLink>
-          <NavLink
-            to="/coordinator/login"
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition-all ${
-                isActive
-                  ? 'bg-orange-500 text-white shadow-md'
-                  : 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-orange-50 dark:hover:bg-orange-950/40 hover:text-orange-600 dark:hover:text-orange-400'
-              } ${isCollapsed ? 'justify-center px-0' : ''}`
-            }
-            title={isCollapsed ? 'Coordinator Login' : undefined}
-          >
-            <Shield className="w-4 h-4 text-orange-500 shrink-0" />
-            {!isCollapsed && <span className="truncate">Coordinator Login</span>}
-          </NavLink>
-          <NavLink
-            to="/pr-login"
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition-all ${
-                isActive
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:text-indigo-600 dark:hover:text-indigo-400'
-              } ${isCollapsed ? 'justify-center px-0' : ''}`
-            }
-            title={isCollapsed ? 'PR Portal Login' : undefined}
-          >
-            <Camera className="w-4 h-4 text-indigo-500 shrink-0" />
-            {!isCollapsed && <span className="truncate">PR Portal Login</span>}
-          </NavLink>
-        </div>
-      )}
+
+
 
       {/* Dashboard Shortcut Footer when logged in */}
       {activeSession && (

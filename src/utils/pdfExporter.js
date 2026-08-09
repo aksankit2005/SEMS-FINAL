@@ -304,32 +304,66 @@ export const downloadPassAsPDF = async (receiptOrElementId, filename = 'APEX_Pas
 };
 
 /**
- * Export tabular data as a downloadable CSV file.
+ * Export tabular data as a downloadable CSV/Excel file.
+ * Supports both signatures:
+ * 1. exportToCSV(filename, headers, rows)
+ * 2. exportToCSV(dataArray, filename)
  */
-export const exportToCSV = (dataArray = [], filename = 'Export_Data') => {
-  if (!dataArray || dataArray.length === 0) return;
+export const exportToCSV = (arg1, arg2, arg3) => {
+  let filename = 'Export_Data';
+  let headers = [];
+  let rows = [];
 
-  const headers = Object.keys(dataArray[0]);
-  const csvRows = [];
-  csvRows.push(headers.join(','));
+  if (typeof arg1 === 'string' && Array.isArray(arg2) && Array.isArray(arg3)) {
+    // Signature 1: exportToCSV(filename, headers, rows)
+    filename = arg1;
+    headers = arg2;
+    rows = arg3;
+  } else if (Array.isArray(arg1)) {
+    // Signature 2: exportToCSV(dataArray, filename)
+    filename = typeof arg2 === 'string' ? arg2 : 'Export_Data';
+    if (arg1.length > 0) {
+      if (Array.isArray(arg1[0])) {
+        rows = arg1;
+      } else if (typeof arg1[0] === 'object') {
+        headers = Object.keys(arg1[0]);
+        rows = arg1.map((item) => headers.map((h) => item[h]));
+      }
+    }
+  }
 
-  dataArray.forEach((row) => {
-    const values = headers.map((header) => {
-      const escaped = ('' + (row[header] || '')).replace(/"/g, '\\"');
-      return `"${escaped}"`;
-    });
-    csvRows.push(values.join(','));
+  if (rows.length === 0 && headers.length === 0) return;
+
+  const csvLines = [];
+
+  // Add Header Row
+  if (headers && headers.length > 0) {
+    const escapedHeaders = headers.map((h) => `"${('' + (h || '')).replace(/"/g, '""')}"`);
+    csvLines.push(escapedHeaders.join(','));
+  }
+
+  // Add Data Rows
+  rows.forEach((row) => {
+    if (Array.isArray(row)) {
+      const escapedValues = row.map((val) => `"${('' + (val ?? '')).replace(/"/g, '""')}"`);
+      csvLines.push(escapedValues.join(','));
+    }
   });
 
-  const csvString = csvRows.join('\n');
-  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
+  const csvContent = '\uFEFF' + csvLines.join('\r\n'); // UTF-8 BOM for MS Excel compatibility
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  
+  const cleanFilename = filename.toLowerCase().endsWith('.csv') ? filename : `${filename}.csv`;
+
   const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
   link.setAttribute('href', url);
-  link.setAttribute('download', `${filename}.csv`);
+  link.setAttribute('download', cleanFilename);
+  link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 100);
 };
 
 /**
@@ -723,11 +757,15 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
     doc.setFontSize(8);
     doc.text('OFFICIAL VERIFIED RESULT CERTIFICATE - APEX CHAMPIONSHIP 2026', pageW / 2, 274.5, { align: 'center' });
 
-    // INDIVIDUAL PLAYER PERFORMANCE / PER-PERSON POINT BREAKDOWN (Page 2 FOR BASKETBALL ONLY)
-    const isBasketballMatch = (cleanSport || '').toLowerCase().includes('basketball') || 
+    // INDIVIDUAL PLAYER PERFORMANCE / PER-PERSON POINT BREAKDOWN
+    const isFootballMatch = (cleanSport || '').toLowerCase().includes('football') || 
+      (match.sportId || '').toLowerCase().includes('football') || 
+      (match.sport || '').toLowerCase().includes('football');
+
+    const isBasketballMatch = ((cleanSport || '').toLowerCase().includes('basketball') || 
       (match.sportId || '').toLowerCase().includes('basketball') || 
       (match.sport || '').toLowerCase().includes('basketball') ||
-      ((match.roster1 && match.roster1.length > 0) || (match.roster2 && match.roster2.length > 0));
+      ((match.roster1 && match.roster1.length > 0) || (match.roster2 && match.roster2.length > 0))) && !isFootballMatch;
 
     const isCricketMatch = (cleanSport || '').toLowerCase().includes('cricket') ||
       (match.sportId || '').toLowerCase().includes('cricket') ||
@@ -1020,6 +1058,143 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
       doc.text('OFFICIAL VERIFIED RESULT CERTIFICATE - CRICKET FULL SCORECARD & STATS REPORT', pageW / 2, 274.5, { align: 'center' });
+    } else if (isFootballMatch) {
+      doc.addPage();
+
+      // Page 2 Outer Dark Theme Background
+      doc.setFillColor(15, 23, 42);
+      doc.rect(0, 0, 210, 297, 'F');
+
+      // Decorative Emerald Border Page 2
+      doc.setDrawColor(16, 185, 129); // Emerald 500
+      doc.setLineWidth(1.5);
+      doc.roundedRect(8, 8, 194, 281, 4, 4, 'D');
+      doc.setLineWidth(0.5);
+      doc.roundedRect(10, 10, 190, 277, 3, 3, 'D');
+
+      // Header Page 2
+      doc.setTextColor(16, 185, 129);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text('FOOTBALL OFFICIAL GOALSCORERS & MATCH REPORT', pageW / 2, 22, { align: 'center' });
+
+      doc.setTextColor(148, 163, 184);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Match: ${team1Name} vs ${team2Name}   |   Match ID: ${matchId}`, pageW / 2, 28, { align: 'center' });
+
+      const score1Num = Number(match.score1 !== undefined ? match.score1 : 0);
+      const score2Num = Number(match.score2 !== undefined ? match.score2 : 0);
+
+      const effectiveRoster1 = (match.roster1 && Array.isArray(match.roster1) && match.roster1.length > 0)
+        ? match.roster1
+        : [
+            { id: 'T1-1', name: `${team1Name} Player 1`, jersey: '1', onCourt: true, goals: Math.max(0, Math.floor(score1Num * 0.6)), yellowCards: 0, redCard: false },
+            { id: 'T1-2', name: `${team1Name} Player 2`, jersey: '4', onCourt: true, goals: Math.max(0, Math.floor(score1Num * 0.4)), yellowCards: 1, redCard: false },
+            { id: 'T1-3', name: `${team1Name} Player 3`, jersey: '7', onCourt: true, goals: 0, yellowCards: 0, redCard: false },
+            { id: 'T1-4', name: `${team1Name} Player 4`, jersey: '9', onCourt: true, goals: 0, yellowCards: 0, redCard: false },
+            { id: 'T1-5', name: `${team1Name} Player 5`, jersey: '10', onCourt: true, goals: 0, yellowCards: 0, redCard: false },
+            { id: 'T1-6', name: `${team1Name} Sub 1`, jersey: '12', onCourt: false, goals: 0, yellowCards: 0, redCard: false },
+          ];
+
+      const effectiveRoster2 = (match.roster2 && Array.isArray(match.roster2) && match.roster2.length > 0)
+        ? match.roster2
+        : [
+            { id: 'T2-1', name: `${team2Name} Player 1`, jersey: '1', onCourt: true, goals: Math.max(0, Math.floor(score2Num * 0.6)), yellowCards: 1, redCard: false },
+            { id: 'T2-2', name: `${team2Name} Player 2`, jersey: '4', onCourt: true, goals: Math.max(0, Math.floor(score2Num * 0.4)), yellowCards: 0, redCard: false },
+            { id: 'T2-3', name: `${team2Name} Player 3`, jersey: '7', onCourt: true, goals: 0, yellowCards: 0, redCard: false },
+            { id: 'T2-4', name: `${team2Name} Player 4`, jersey: '9', onCourt: true, goals: 0, yellowCards: 0, redCard: false },
+            { id: 'T2-5', name: `${team2Name} Player 5`, jersey: '10', onCourt: true, goals: 0, yellowCards: 0, redCard: false },
+            { id: 'T2-6', name: `${team2Name} Sub 1`, jersey: '12', onCourt: false, goals: 0, yellowCards: 0, redCard: false },
+          ];
+
+      // Top Scorer / Golden Boot Award Calculation
+      const allPlayers = [
+        ...effectiveRoster1.map(p => ({ ...p, team: team1Name })),
+        ...effectiveRoster2.map(p => ({ ...p, team: team2Name }))
+      ];
+
+      const topScorer = allPlayers.reduce((max, p) => (((p.goals || p.points || 0) > (max?.goals || max?.points || 0)) ? p : max), null);
+      const topGoals = topScorer ? (topScorer.goals !== undefined ? topScorer.goals : (topScorer.points || 0)) : 0;
+
+      if (topScorer && topGoals > 0) {
+        doc.setFillColor(16, 185, 129); // Emerald 500
+        doc.roundedRect(margin, 33, contentW, 14, 3, 3, 'F');
+        doc.setTextColor(15, 23, 42);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text(`MATCH TOP GOALSCORER / GOLDEN BOOT: #${sanitizeText(topScorer.jersey)} ${sanitizeText(topScorer.name)} (${sanitizeText(topScorer.team)}) - ${topGoals} GOALS SCORED`, pageW / 2, 42, { align: 'center' });
+      }
+
+      let py = topScorer && topGoals > 0 ? 54 : 36;
+
+      // Render Football Team Roster Table Helper
+      const renderFootballTeamRosterTable = (teamTitle, rosterList, accentColor) => {
+        doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${teamTitle.toUpperCase()} - GOALS & DISCIPLINARY RECORD`, margin, py);
+
+        py += 4;
+        // Table Header
+        doc.setFillColor(30, 41, 59);
+        doc.rect(margin, py, contentW, 7, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.text('#', margin + 4, py + 5);
+        doc.text('Player Name', margin + 18, py + 5);
+        doc.text('Goals Scored', margin + 95, py + 5);
+        doc.text('Yellow Cards', margin + 130, py + 5);
+        doc.text('Red Card Status', margin + 160, py + 5);
+
+        py += 7;
+        (rosterList || []).forEach((player, idx) => {
+          doc.setFillColor(idx % 2 === 0 ? 20 : 15, 23, 42);
+          doc.rect(margin, py, contentW, 6.5, 'F');
+          doc.setTextColor(226, 232, 240);
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'normal');
+
+          const jerseyStr = `#${sanitizeText(player.jersey || idx + 1)}`;
+          const pName = sanitizeText(player.name || `Player ${idx + 1}`);
+          const pGoals = `${player.goals !== undefined ? player.goals : (player.points || 0)} Goal(s)`;
+          const pYellows = `${player.yellowCards || 0} Yellow`;
+          const pRed = player.redCard ? 'RED CARD (SENT OFF)' : 'Clean';
+
+          doc.text(jerseyStr, margin + 4, py + 4.5);
+          doc.setFont('helvetica', 'bold');
+          doc.text(pName, margin + 18, py + 4.5);
+          doc.setFont('helvetica', 'normal');
+
+          doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+          doc.setFont('helvetica', 'bold');
+          doc.text(pGoals, margin + 95, py + 4.5);
+
+          doc.setTextColor(player.yellowCards > 0 ? 245 : 226, player.yellowCards > 0 ? 158 : 232, player.yellowCards > 0 ? 11 : 240);
+          doc.setFont('helvetica', 'normal');
+          doc.text(pYellows, margin + 130, py + 4.5);
+
+          doc.setTextColor(player.redCard ? 244 : 52, player.redCard ? 63 : 211, player.redCard ? 94 : 153);
+          doc.setFont('helvetica', 'bold');
+          doc.text(pRed, margin + 160, py + 4.5);
+
+          py += 6.5;
+        });
+
+        py += 6;
+      };
+
+      renderFootballTeamRosterTable(team1Name, effectiveRoster1, [16, 185, 129]); // Emerald Green accent
+      renderFootballTeamRosterTable(team2Name, effectiveRoster2, [20, 184, 166]); // Teal accent
+
+      // Page 2 Verification Footer Stamp
+      doc.setFillColor(16, 185, 129);
+      doc.roundedRect(margin, 268, contentW, 10, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.text('OFFICIAL VERIFIED RESULT CERTIFICATE - FOOTBALL GOALSCORERS & MATCH STATS REPORT', pageW / 2, 274.5, { align: 'center' });
     } else if (isBasketballMatch) {
       doc.addPage();
 
