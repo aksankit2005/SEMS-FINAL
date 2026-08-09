@@ -188,7 +188,21 @@ export const Footer = () => {
             <span>•</span>
             <Link to="/terms" className="hover:text-cyan-500 transition">Terms & Conditions</Link>
             <span>•</span>
-            <Link to="/privacy" className="hover:text-cyan-500 transition">Privacy Policy</Link>
+            <Link
+              to="/privacy"
+              onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' })}
+              className="hover:text-cyan-500 transition"
+            >
+              Privacy Policy
+            </Link>
+            <span>•</span>
+            <Link
+              to="/super-coordinator/dashboard"
+              onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' })}
+              className="hover:text-amber-400 font-bold transition text-amber-500/90"
+            >
+              👑 President Console
+            </Link>
           </div>
 
           <div className="flex items-center justify-center gap-1 text-slate-500 dark:text-slate-400">

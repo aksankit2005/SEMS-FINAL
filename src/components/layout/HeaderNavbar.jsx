@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Trophy, Bell, Clock, User, ShieldCheck, 
   Menu, X, Sparkles, CheckCircle2, ChevronRight, LogOut, Camera,
-  ChevronDown, Building2, Shield, LayoutDashboard
+  ChevronDown, Building2, Shield, LayoutDashboard, Crown
 } from 'lucide-react';
 import { ThemeToggle } from '../common/ThemeToggle';
 import { useAuth } from '../../context/AuthContext';
@@ -51,8 +51,22 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
     hour12: true
   });
 
-  // Check active session across all user roles (Student, College Head, Sport Coordinator, PR Coordinator)
+  // Check active session across all user roles (Student, College Head, Sport Coordinator, PR Coordinator, Super Coordinator)
   const getActiveSession = () => {
+    if (localStorage.getItem('sems_super_coord_token')) {
+      const scUser = JSON.parse(localStorage.getItem('sems_super_coord_user') || '{}');
+      return {
+        name: scUser?.name || 'Super Coordinator',
+        roleLabel: 'Super Coord',
+        dashboardPath: '/super-coordinator/dashboard',
+        logoutHandler: () => {
+          localStorage.removeItem('sems_super_coord_token');
+          localStorage.removeItem('sems_super_coord_user');
+          window.dispatchEvent(new Event('sems-auth-change'));
+          navigate('/');
+        }
+      };
+    }
     if (user) {
       return {
         name: user.name || 'User Profile',
@@ -247,8 +261,20 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
                       Official Access Portals
                     </div>
                     <Link
+                      to="/super-coordinator/login"
+                      className="px-3 py-2.5 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-amber-50 dark:hover:bg-slate-800 rounded-xl transition flex items-center gap-3 group/item"
+                    >
+                      <span className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover/item:bg-amber-500 group-hover/item:text-slate-950 transition">
+                        <Crown className="w-3.5 h-3.5" />
+                      </span>
+                      <div>
+                        <p className="font-extrabold text-slate-900 dark:text-white">Super Coordinator</p>
+                        <p className="text-[10px] text-slate-400 font-medium">President & overall host console</p>
+                      </div>
+                    </Link>
+                    <Link
                       to="/college-head/login"
-                      className="px-3 py-2.5 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 rounded-xl transition flex items-center gap-3 group/item"
+                      className="px-3 py-2.5 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 rounded-xl transition flex items-center gap-3 group/item border-t border-slate-100 dark:border-slate-800/60"
                     >
                       <span className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover/item:bg-emerald-600 group-hover/item:text-white transition">
                         <Building2 className="w-3.5 h-3.5" />

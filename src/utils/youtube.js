@@ -17,5 +17,5 @@ export const extractYouTubeVideoId = (url) => {
 
 export const getYouTubeEmbedUrl = (videoId, autoplay = true) => {
   if (!videoId) return null;
-  return `https://www.youtube.com/embed/${videoId}?autoplay=${autoplay ? 1 : 0}&rel=0&modestbranding=1`;
+  return `https://www.youtube.com/embed/${videoId}?autoplay=${autoplay ? 1 : 0}&rel=0&modestbranding=1&fs=0`;
 };

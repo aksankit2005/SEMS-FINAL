@@ -445,32 +445,65 @@ export const openSpreadsheetViewer = (dataArray = [], title = 'Excel / CSV Sprea
 };
 
 /**
- * Export tabular data directly as a downloadable CSV file.
+ * Export tabular data as a downloadable CSV/Excel file.
+ * Supports both signatures:
+ * 1. exportToCSV(filename, headers, rows)
+ * 2. exportToCSV(dataArray, filename)
  */
-export const exportToCSV = (dataArray = [], filename = 'Export_Data') => {
-  if (!dataArray || dataArray.length === 0) return;
+export const exportToCSV = (arg1, arg2, arg3) => {
+  let filename = 'Export_Data';
+  let headers = [];
+  let rows = [];
 
-  const headers = Object.keys(dataArray[0]);
-  const csvRows = [];
-  csvRows.push(headers.join(','));
+  if (typeof arg1 === 'string' && Array.isArray(arg2) && Array.isArray(arg3)) {
+    // Signature 1: exportToCSV(filename, headers, rows)
+    filename = arg1;
+    headers = arg2;
+    rows = arg3;
+  } else if (Array.isArray(arg1)) {
+    // Signature 2: exportToCSV(dataArray, filename)
+    filename = typeof arg2 === 'string' ? arg2 : 'Export_Data';
+    if (arg1.length > 0) {
+      if (Array.isArray(arg1[0])) {
+        rows = arg1;
+      } else if (typeof arg1[0] === 'object') {
+        headers = Object.keys(arg1[0]);
+        rows = arg1.map((item) => headers.map((h) => item[h]));
+      }
+    }
+  }
 
-  dataArray.forEach((row) => {
-    const values = headers.map((header) => {
-      const escaped = ('' + (row[header] || '')).replace(/"/g, '\\"');
-      return `"${escaped}"`;
-    });
-    csvRows.push(values.join(','));
+  if (rows.length === 0 && headers.length === 0) return;
+
+  const csvLines = [];
+
+  // Add Header Row
+  if (headers && headers.length > 0) {
+    const escapedHeaders = headers.map((h) => `"${('' + (h || '')).replace(/"/g, '""')}"`);
+    csvLines.push(escapedHeaders.join(','));
+  }
+
+  // Add Data Rows
+  rows.forEach((row) => {
+    if (Array.isArray(row)) {
+      const escapedValues = row.map((val) => `"${('' + (val ?? '')).replace(/"/g, '""')}"`);
+      csvLines.push(escapedValues.join(','));
+    }
   });
 
-  const csvString = csvRows.join('\n');
-  const blob = new Blob(['\ufeff' + csvString], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
+  const csvContent = '\uFEFF' + csvLines.join('\r\n'); // UTF-8 BOM for MS Excel compatibility
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  
+  const cleanFilename = filename.toLowerCase().endsWith('.csv') ? filename : `${filename}.csv`;
   const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
   link.setAttribute('href', url);
-  link.setAttribute('download', `${filename}.csv`);
+  link.setAttribute('download', cleanFilename);
+  link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 100);
 };
 
 /**
@@ -567,16 +600,65 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
     const rawTitle = match.matchTitle || `${match.team1 || 'Team 1'} vs ${match.team2 || 'Team 2'}`;
     const matchTitle = sanitizeText(rawTitle) || 'Official Match Result';
 
-    const rawWinner = match.winner || (match.score1 >= match.score2 ? match.team1 : match.team2) || 'Champion';
+    const cleanSport = sanitizeText(sportName || match.sportName || match.sport || 'Sports');
+    const isTugOfWar = cleanSport.toLowerCase().includes('tug') || 
+      (match.sportId || '').toLowerCase().includes('tug') || 
+      (match.sport || '').toLowerCase().includes('tug');
+    const isVolleyballMatch = cleanSport.toLowerCase().includes('volleyball') || 
+      (match.sportId || '').toLowerCase().includes('volleyball') || 
+      (match.sport || '').toLowerCase().includes('volleyball');
+
+    const roundsHistory = Array.isArray(match.roundsHistory) && match.roundsHistory.length > 0
+      ? match.roundsHistory
+      : [
+          { round: 1, winner: match.winner || match.team1, isLocked: true },
+          { round: 2, winner: null, isLocked: false },
+          { round: 3, winner: null, isLocked: false }
+        ];
+    const playedRounds = roundsHistory.filter(s => s.winner || s.isLocked);
+
+    const roundsWon1 = match.roundsWon1 !== undefined 
+      ? match.roundsWon1 
+      : playedRounds.filter(s => s.winner === match.team1).length;
+
+    const roundsWon2 = match.roundsWon2 !== undefined 
+      ? match.roundsWon2 
+      : playedRounds.filter(s => s.winner === match.team2).length;
+
+    const maxFormatSets = (match.format || '').includes('3') ? 3 : 5;
+    const allSets = Array.isArray(match.setsHistory) && match.setsHistory.length > 0
+      ? match.setsHistory
+      : [
+          { set: 1, score1: match.score1 || 0, score2: match.score2 || 0, isLocked: true, winner: match.winner || match.team1 },
+          { set: 2, score1: 0, score2: 0, isLocked: false, winner: null },
+          { set: 3, score1: 0, score2: 0, isLocked: false, winner: null },
+        ];
+    const playedSets = allSets
+      .slice(0, maxFormatSets)
+      .filter(s => s.isLocked || s.score1 > 0 || s.score2 > 0 || s.winner);
+
+    const setsWon1 = match.setsWon1 !== undefined 
+      ? match.setsWon1 
+      : playedSets.filter(s => s.winner === match.team1 || (s.score1 > s.score2)).length;
+    const setsWon2 = match.setsWon2 !== undefined 
+      ? match.setsWon2 
+      : playedSets.filter(s => s.winner === match.team2 || (s.score2 > s.score1)).length;
+
+    const rawWinner = match.winner || (
+      isTugOfWar
+        ? (roundsWon1 >= roundsWon2 ? match.team1 : match.team2)
+        : isVolleyballMatch
+        ? (setsWon1 >= setsWon2 ? match.team1 : match.team2)
+        : (match.score1 >= match.score2 ? match.team1 : match.team2)
+    ) || 'Champion';
     const winnerName = sanitizeText(rawWinner) || 'CHAMPION';
 
     const team1Name = sanitizeText(match.team1) || 'Team 1';
     const team2Name = sanitizeText(match.team2) || 'Team 2';
 
-    const format = sanitizeText(match.format || 'Standard Match');
+    const format = sanitizeText(match.format || (isTugOfWar ? 'Team Match (8v8)' : 'Standard Match'));
     const matchId = sanitizeText(match.id || `M${Math.floor(100000 + Math.random() * 900000)}`);
     const completedAt = match.completedAt ? sanitizeText(match.completedAt) : new Date().toLocaleString();
-    const cleanSport = sanitizeText(sportName || match.sportName || 'Sports');
 
     // Outer Dark Theme Container
     doc.setFillColor(15, 23, 42);
@@ -648,14 +730,111 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
       doc.text(`Result: ${sanitizeText(match.scoreSummary)}`, margin + 8, y + 22);
     } else if (typeof match.score1 === 'string' && match.score1.includes('-')) {
       doc.text(`Result: ${sanitizeText(match.score1)}`, margin + 8, y + 22);
+    } else if (isTugOfWar) {
+      doc.text(`${team1Name} : ${roundsWon1} Round${roundsWon1 === 1 ? '' : 's'} Won`, margin + 8, y + 22);
+      doc.text(`${team2Name} : ${roundsWon2} Round${roundsWon2 === 1 ? '' : 's'} Won`, margin + (contentW / 2) + 8, y + 22);
+    } else if (isVolleyballMatch) {
+      doc.text(`${team1Name} : ${setsWon1} Sets Won`, margin + 8, y + 22);
+      doc.text(`${team2Name} : ${setsWon2} Sets Won`, margin + (contentW / 2) + 8, y + 22);
     } else {
       doc.text(`${team1Name}: ${match.score1 !== undefined ? match.score1 : 0}`, margin + 8, y + 22);
       doc.text(`${team2Name}: ${match.score2 !== undefined ? match.score2 : 0}`, margin + (contentW / 2) + 8, y + 22);
     }
 
-    // Sets Breakdown Table (if sets history exists)
+    // Rounds / Sets Breakdown Table & Match Statistics
     y += 38;
-    if (match.setsHistory && Array.isArray(match.setsHistory) && match.setsHistory.length > 0) {
+    if (isTugOfWar) {
+      doc.setTextColor(245, 158, 11);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('ROUND BREAKDOWN', margin, y);
+
+      y += 4;
+      doc.setFillColor(51, 65, 85);
+      doc.rect(margin, y, contentW, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
+      doc.text('Round #', margin + 4, y + 5.5);
+      doc.text('Winner', margin + 60, y + 5.5);
+      doc.text('Status', margin + 130, y + 5.5);
+
+      y += 8;
+      playedRounds.forEach((s, idx) => {
+        doc.setFillColor(idx % 2 === 0 ? 30 : 15, 41, 59);
+        doc.rect(margin, y, contentW, 7, 'F');
+        doc.setTextColor(226, 232, 240);
+        doc.setFontSize(8);
+        doc.text(`Round ${s.round || idx + 1}`, margin + 4, y + 5);
+        doc.text(sanitizeText(s.winner || '-'), margin + 60, y + 5);
+        doc.text(s.isLocked ? 'Completed / Locked' : 'Pending', margin + 130, y + 5);
+        y += 7;
+      });
+      y += 6;
+
+      // Match Statistics Section
+      doc.setFillColor(30, 41, 59);
+      doc.setDrawColor(51, 65, 85);
+      doc.roundedRect(margin, y, contentW, 26, 3, 3, 'FD');
+
+      doc.setTextColor(245, 158, 11);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('MATCH STATISTICS', margin + 8, y + 8);
+
+      doc.setTextColor(203, 213, 225);
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`• Total Rounds Played: ${playedRounds.length}   |   • Team A Rounds Won: ${roundsWon1}   |   • Team B Rounds Won: ${roundsWon2}`, margin + 8, y + 15);
+      doc.text(`• Registered Players Per Team: 10   |   • Match Format: ${format}`, margin + 8, y + 21);
+      y += 32;
+    } else if (isVolleyballMatch) {
+      doc.setTextColor(245, 158, 11);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('SET BREAKDOWN', margin, y);
+
+      y += 4;
+      doc.setFillColor(51, 65, 85);
+      doc.rect(margin, y, contentW, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
+      doc.text('Set #', margin + 4, y + 5.5);
+      doc.text(`${team1Name} Score`, margin + 35, y + 5.5);
+      doc.text(`${team2Name} Score`, margin + 100, y + 5.5);
+      doc.text('Winner', margin + 155, y + 5.5);
+
+      y += 8;
+      playedSets.forEach((s, idx) => {
+        doc.setFillColor(idx % 2 === 0 ? 30 : 15, 41, 59);
+        doc.rect(margin, y, contentW, 7, 'F');
+        doc.setTextColor(226, 232, 240);
+        doc.setFontSize(8);
+        doc.text(`Set ${s.set || idx + 1}`, margin + 4, y + 5);
+        doc.text(String(s.score1 !== undefined ? s.score1 : '0'), margin + 35, y + 5);
+        doc.text(String(s.score2 !== undefined ? s.score2 : '0'), margin + 100, y + 5);
+        const setWinner = s.winner || (s.score1 > s.score2 ? team1Name : team2Name);
+        doc.text(sanitizeText(setWinner || '-'), margin + 155, y + 5);
+        y += 7;
+      });
+      y += 6;
+
+      // Match Statistics Section
+      doc.setFillColor(30, 41, 59);
+      doc.setDrawColor(51, 65, 85);
+      doc.roundedRect(margin, y, contentW, 26, 3, 3, 'FD');
+
+      doc.setTextColor(245, 158, 11);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('MATCH STATISTICS', margin + 8, y + 8);
+
+      doc.setTextColor(203, 213, 225);
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`• Total Sets Played: ${playedSets.length}   |   • Team A Sets Won: ${setsWon1}   |   • Team B Sets Won: ${setsWon2}`, margin + 8, y + 15);
+      doc.text(`• Best of: ${format}   |   • Match Duration: ${match.duration || 'N/A'}`, margin + 8, y + 21);
+      y += 32;
+    } else if (match.setsHistory && Array.isArray(match.setsHistory) && match.setsHistory.length > 0) {
       doc.setTextColor(245, 158, 11);
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
@@ -713,20 +892,449 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
     // Bottom Verification Stamp Page 1
     doc.setFillColor(16, 185, 129);
     doc.roundedRect(margin, 268, contentW, 10, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
     doc.text('OFFICIAL VERIFIED RESULT CERTIFICATE - APEX CHAMPIONSHIP 2026', pageW / 2, 274.5, { align: 'center' });
 
-    // INDIVIDUAL PLAYER PERFORMANCE / PER-PERSON POINT BREAKDOWN (Disabled Kabaddi player table per user request)
-    const isKabaddiMatch = false;
+    // INDIVIDUAL PLAYER PERFORMANCE / PER-PERSON POINT BREAKDOWN
+    const isFootballMatch = (cleanSport || '').toLowerCase().includes('football') || 
+      (match.sportId || '').toLowerCase().includes('football') || 
+      (match.sport || '').toLowerCase().includes('football');
 
-    const isBasketballMatch = (cleanSport || '').toLowerCase().includes('basketball') || 
+    const isKabaddiMatch = false; // Disabled Kabaddi player table per user request
+
+    const isBasketballMatch = !isFootballMatch && ((cleanSport || '').toLowerCase().includes('basketball') || 
       (match.sportId || '').toLowerCase().includes('basketball') || 
       (match.sport || '').toLowerCase().includes('basketball') ||
-      ((match.roster1 && match.roster1.length > 0) || (match.roster2 && match.roster2.length > 0));
+      ((match.roster1 && match.roster1.length > 0) || (match.roster2 && match.roster2.length > 0)));
 
-    if (isBasketballMatch) {
+    const isCricketMatch = (cleanSport || '').toLowerCase().includes('cricket') ||
+      (match.sportId || '').toLowerCase().includes('cricket') ||
+      (match.sport || '').toLowerCase().includes('cricket') ||
+      (match.battingCard1 || match.innings1?.battingStats);
+
+    if (isCricketMatch) {
+      doc.addPage();
+
+      // Page 2 Outer Dark Theme Background
+      doc.setFillColor(15, 23, 42);
+      doc.rect(0, 0, 210, 297, 'F');
+
+      // Decorative Gold Border Page 2
+      doc.setDrawColor(245, 158, 11);
+      doc.setLineWidth(1.5);
+      doc.roundedRect(8, 8, 194, 281, 4, 4, 'D');
+      doc.setLineWidth(0.5);
+      doc.roundedRect(10, 10, 190, 277, 3, 3, 'D');
+
+      // Header Page 2
+      doc.setTextColor(245, 158, 11);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(15);
+      doc.text('CRICKET OFFICIAL FULL SCORECARD & STATS REPORT', pageW / 2, 22, { align: 'center' });
+
+      doc.setTextColor(148, 163, 184);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Match: ${team1Name} vs ${team2Name}   |   Match ID: ${matchId}`, pageW / 2, 28, { align: 'center' });
+
+      let py = 36;
+
+      const buildFullBattingCard = (card = [], st, nst) => {
+        const list = [...(card || [])];
+        if (st && st.name && !list.some((b) => b.name === st.name)) {
+          list.push({
+            name: st.name,
+            runs: st.runs || 0,
+            balls: st.balls || 0,
+            fours: st.fours || 0,
+            sixes: st.sixes || 0,
+            dismissal: 'not out',
+          });
+        }
+        if (nst && nst.name && !list.some((b) => b.name === nst.name)) {
+          list.push({
+            name: nst.name,
+            runs: nst.runs || 0,
+            balls: nst.balls || 0,
+            fours: nst.fours || 0,
+            sixes: nst.sixes || 0,
+            dismissal: 'not out',
+          });
+        }
+        return list;
+      };
+
+      const buildFullBowlingCard = (card = [], bw) => {
+        const list = [...(card || [])];
+        if (bw && bw.name) {
+          const idx = list.findIndex((b) => b.name === bw.name);
+          if (idx >= 0) {
+            list[idx] = {
+              name: bw.name,
+              overs: bw.overs || list[idx].overs || '0.0',
+              maidens: bw.maidens || list[idx].maidens || 0,
+              runs: bw.runs || list[idx].runs || 0,
+              wickets: bw.wickets || list[idx].wickets || 0,
+            };
+          } else {
+            list.push({
+              name: bw.name,
+              overs: bw.overs || '0.0',
+              maidens: bw.maidens || 0,
+              runs: bw.runs || 0,
+              wickets: bw.wickets || 0,
+            });
+          }
+        }
+        return list;
+      };
+
+      const rawBattingCard1 = match.battingCard1 || match.innings1?.battingStats || [];
+      const rawBowlingCard1 = match.bowlingCard1 || match.innings1?.bowlingStats || [];
+      const rawBattingCard2 = match.battingCard2 || match.innings2?.battingStats || [];
+      const rawBowlingCard2 = match.bowlingCard2 || match.innings2?.bowlingStats || [];
+
+      const currentInnNum = match.currentInnings || 1;
+
+      const battingCard1 = buildFullBattingCard(
+        rawBattingCard1,
+        currentInnNum === 1 ? match.striker : null,
+        currentInnNum === 1 ? match.nonStriker : null
+      );
+      const bowlingCard1 = buildFullBowlingCard(
+        rawBowlingCard1,
+        currentInnNum === 1 ? match.bowler : null
+      );
+
+      const battingCard2 = buildFullBattingCard(
+        rawBattingCard2,
+        currentInnNum === 2 ? match.striker : null,
+        currentInnNum === 2 ? match.nonStriker : null
+      );
+      const bowlingCard2 = buildFullBowlingCard(
+        rawBowlingCard2,
+        currentInnNum === 2 ? match.bowler : null
+      );
+
+      const parseOversToBalls = (oversStr) => {
+        if (typeof oversStr === 'number') return Math.round(oversStr * 6);
+        if (!oversStr || typeof oversStr !== 'string') return 0;
+        const parts = oversStr.split('.');
+        const o = parseInt(parts[0], 10) || 0;
+        const b = parseInt(parts[1], 10) || 0;
+        return o * 6 + b;
+      };
+
+      const calcEcon = (overs, runs) => {
+        const balls = parseOversToBalls(overs);
+        if (balls <= 0) return '0.00';
+        const oversDecimal = balls / 6;
+        return (runs / oversDecimal).toFixed(2);
+      };
+
+      // Render Innings Batting Table Helper
+      const renderBattingPDFTable = (innTitle, batList, colorRGB, extrasData = null, totalScoreStr = '') => {
+        doc.setTextColor(colorRGB[0], colorRGB[1], colorRGB[2]);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text(innTitle.toUpperCase(), margin, py);
+
+        py += 4;
+        doc.setFillColor(30, 41, 59);
+        doc.rect(margin, py, contentW, 6.5, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Batter Name', margin + 4, py + 4.5);
+        doc.text('Dismissal Mode', margin + 65, py + 4.5);
+        doc.text('Runs', margin + 130, py + 4.5);
+        doc.text('Balls', margin + 148, py + 4.5);
+        doc.text('4s', margin + 163, py + 4.5);
+        doc.text('6s', margin + 175, py + 4.5);
+        doc.text('SR', margin + 187, py + 4.5);
+
+        py += 6.5;
+        if (!batList || batList.length === 0) {
+          doc.setFillColor(15, 23, 42);
+          doc.rect(margin, py, contentW, 6, 'F');
+          doc.setTextColor(148, 163, 184);
+          doc.setFontSize(7.5);
+          doc.text('No batting statistics recorded for this innings', margin + 4, py + 4.5);
+          py += 6;
+        } else {
+          batList.forEach((b, idx) => {
+            doc.setFillColor(idx % 2 === 0 ? 20 : 15, 23, 42);
+            doc.rect(margin, py, contentW, 6, 'F');
+            doc.setTextColor(226, 232, 240);
+            doc.setFontSize(7.5);
+            doc.setFont('helvetica', 'bold');
+            doc.text(sanitizeText(b.name || `Batter ${idx + 1}`), margin + 4, py + 4.5);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(148, 163, 184);
+            doc.text(sanitizeText(b.dismissal || 'not out'), margin + 65, py + 4.5);
+            doc.setTextColor(colorRGB[0], colorRGB[1], colorRGB[2]);
+            doc.setFont('helvetica', 'bold');
+            doc.text(String(b.runs !== undefined ? b.runs : 0), margin + 130, py + 4.5);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(226, 232, 240);
+            doc.text(String(b.balls || 0), margin + 148, py + 4.5);
+            doc.text(String(b.fours || 0), margin + 163, py + 4.5);
+            doc.text(String(b.sixes || 0), margin + 175, py + 4.5);
+            const sr = b.balls > 0 ? ((b.runs / b.balls) * 100).toFixed(1) : '0.0';
+            doc.text(sr, margin + 187, py + 4.5);
+            py += 6;
+          });
+        }
+
+        // Extras Row
+        const exTotal = extrasData?.total || 0;
+        const exStr = `Extras: ${exTotal} (b ${extrasData?.byes || 0}, lb ${extrasData?.legByes || 0}, w ${extrasData?.wides || 0}, nb ${extrasData?.noBalls || 0})`;
+        doc.setFillColor(25, 35, 52);
+        doc.rect(margin, py, contentW, 6, 'F');
+        doc.setTextColor(148, 163, 184);
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'bold');
+        doc.text(exStr, margin + 4, py + 4.5);
+        py += 6;
+
+        // Total Innings Row
+        if (totalScoreStr) {
+          doc.setFillColor(30, 58, 48);
+          doc.rect(margin, py, contentW, 6.5, 'F');
+          doc.setTextColor(52, 211, 153);
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.text(`TOTAL INNINGS SCORE: ${totalScoreStr}`, margin + 4, py + 4.5);
+          py += 6.5;
+        }
+
+        py += 5;
+      };
+
+      // Render Innings Bowling Table Helper
+      const renderBowlingPDFTable = (innTitle, bowlList, colorRGB) => {
+        doc.setTextColor(colorRGB[0], colorRGB[1], colorRGB[2]);
+        doc.setFontSize(9.5);
+        doc.setFont('helvetica', 'bold');
+        doc.text(innTitle.toUpperCase(), margin, py);
+
+        py += 4;
+        doc.setFillColor(30, 41, 59);
+        doc.rect(margin, py, contentW, 6.5, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Bowler Name', margin + 4, py + 4.5);
+        doc.text('Overs', margin + 95, py + 4.5);
+        doc.text('Maidens', margin + 120, py + 4.5);
+        doc.text('Runs', margin + 145, py + 4.5);
+        doc.text('Wickets', margin + 168, py + 4.5);
+        doc.text('Econ', margin + 187, py + 4.5);
+
+        py += 6.5;
+        if (!bowlList || bowlList.length === 0) {
+          doc.setFillColor(15, 23, 42);
+          doc.rect(margin, py, contentW, 6, 'F');
+          doc.setTextColor(148, 163, 184);
+          doc.setFontSize(7.5);
+          doc.text('No bowling statistics recorded for this innings', margin + 4, py + 4.5);
+          py += 6;
+        } else {
+          bowlList.forEach((bw, idx) => {
+            doc.setFillColor(idx % 2 === 0 ? 20 : 15, 23, 42);
+            doc.rect(margin, py, contentW, 6, 'F');
+            doc.setTextColor(226, 232, 240);
+            doc.setFontSize(7.5);
+            doc.setFont('helvetica', 'bold');
+            doc.text(sanitizeText(bw.name || `Bowler ${idx + 1}`), margin + 4, py + 4.5);
+            doc.setFont('helvetica', 'normal');
+            doc.text(String(bw.overs || '0.0'), margin + 95, py + 4.5);
+            doc.text(String(bw.maidens || 0), margin + 120, py + 4.5);
+            doc.text(String(bw.runs || 0), margin + 145, py + 4.5);
+            doc.setTextColor(244, 63, 94);
+            doc.setFont('helvetica', 'bold');
+            doc.text(String(bw.wickets || 0), margin + 168, py + 4.5);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(226, 232, 240);
+            const econ = calcEcon(bw.overs, bw.runs || 0);
+            doc.text(econ, margin + 187, py + 4.5);
+            py += 6;
+          });
+        }
+        py += 6;
+      };
+
+      // Render 1st Innings Tables
+      const title1 = `1st Innings Batting — ${team1Name}`;
+      const total1Str = `${match.score1 || 0}/${match.wickets1 || 0} (${match.overs1 || '0.0'} Overs)`;
+      renderBattingPDFTable(title1, battingCard1, [16, 185, 129], match.extras1 || match.extras, total1Str);
+
+      const title1Bowl = `1st Innings Bowling — ${team2Name} Bowlers`;
+      renderBowlingPDFTable(title1Bowl, bowlingCard1, [245, 158, 11]);
+
+      // Check height for 2nd Innings
+      if (py > 210) {
+        doc.addPage();
+        doc.setFillColor(15, 23, 42);
+        doc.rect(0, 0, 210, 297, 'F');
+        doc.setDrawColor(245, 158, 11);
+        doc.setLineWidth(1.5);
+        doc.roundedRect(8, 8, 194, 281, 4, 4, 'D');
+        py = 22;
+      }
+
+      // Render 2nd Innings Tables
+      const title2 = `2nd Innings Batting — ${team2Name}`;
+      const total2Str = `${match.score2 || 0}/${match.wickets2 || 0} (${match.overs2 || '0.0'} Overs)`;
+      renderBattingPDFTable(title2, battingCard2, [34, 197, 94], match.extras2 || match.extras, total2Str);
+
+      const title2Bowl = `2nd Innings Bowling — ${team1Name} Bowlers`;
+      renderBowlingPDFTable(title2Bowl, bowlingCard2, [245, 158, 11]);
+
+      // Footer stamp
+      doc.setFillColor(16, 185, 129);
+      doc.roundedRect(margin, 268, contentW, 10, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.text('OFFICIAL VERIFIED RESULT CERTIFICATE - CRICKET FULL SCORECARD & STATS REPORT', pageW / 2, 274.5, { align: 'center' });
+    } else if (isFootballMatch) {
+      doc.addPage();
+
+      // Page 2 Outer Dark Theme Background
+      doc.setFillColor(15, 23, 42);
+      doc.rect(0, 0, 210, 297, 'F');
+
+      // Decorative Emerald Border Page 2
+      doc.setDrawColor(16, 185, 129); // Emerald 500
+      doc.setLineWidth(1.5);
+      doc.roundedRect(8, 8, 194, 281, 4, 4, 'D');
+      doc.setLineWidth(0.5);
+      doc.roundedRect(10, 10, 190, 277, 3, 3, 'D');
+
+      // Header Page 2
+      doc.setTextColor(16, 185, 129);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text('FOOTBALL OFFICIAL GOALSCORERS & MATCH REPORT', pageW / 2, 22, { align: 'center' });
+
+      doc.setTextColor(148, 163, 184);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Match: ${team1Name} vs ${team2Name}   |   Match ID: ${matchId}`, pageW / 2, 28, { align: 'center' });
+
+      const score1Num = Number(match.score1 !== undefined ? match.score1 : 0);
+      const score2Num = Number(match.score2 !== undefined ? match.score2 : 0);
+
+      const effectiveRoster1 = (match.roster1 && Array.isArray(match.roster1) && match.roster1.length > 0)
+        ? match.roster1
+        : [
+            { id: 'T1-1', name: `${team1Name} Player 1`, jersey: '1', onCourt: true, goals: Math.max(0, Math.floor(score1Num * 0.6)), yellowCards: 0, redCard: false },
+            { id: 'T1-2', name: `${team1Name} Player 2`, jersey: '4', onCourt: true, goals: Math.max(0, Math.floor(score1Num * 0.4)), yellowCards: 1, redCard: false },
+            { id: 'T1-3', name: `${team1Name} Player 3`, jersey: '7', onCourt: true, goals: 0, yellowCards: 0, redCard: false },
+            { id: 'T1-4', name: `${team1Name} Player 4`, jersey: '9', onCourt: true, goals: 0, yellowCards: 0, redCard: false },
+            { id: 'T1-5', name: `${team1Name} Player 5`, jersey: '10', onCourt: true, goals: 0, yellowCards: 0, redCard: false },
+            { id: 'T1-6', name: `${team1Name} Sub 1`, jersey: '12', onCourt: false, goals: 0, yellowCards: 0, redCard: false },
+          ];
+
+      const effectiveRoster2 = (match.roster2 && Array.isArray(match.roster2) && match.roster2.length > 0)
+        ? match.roster2
+        : [
+            { id: 'T2-1', name: `${team2Name} Player 1`, jersey: '1', onCourt: true, goals: Math.max(0, Math.floor(score2Num * 0.6)), yellowCards: 1, redCard: false },
+            { id: 'T2-2', name: `${team2Name} Player 2`, jersey: '4', onCourt: true, goals: Math.max(0, Math.floor(score2Num * 0.4)), yellowCards: 0, redCard: false },
+            { id: 'T2-3', name: `${team2Name} Player 3`, jersey: '7', onCourt: true, goals: 0, yellowCards: 0, redCard: false },
+            { id: 'T2-4', name: `${team2Name} Player 4`, jersey: '9', onCourt: true, goals: 0, yellowCards: 0, redCard: false },
+            { id: 'T2-5', name: `${team2Name} Player 5`, jersey: '10', onCourt: true, goals: 0, yellowCards: 0, redCard: false },
+            { id: 'T2-6', name: `${team2Name} Sub 1`, jersey: '12', onCourt: false, goals: 0, yellowCards: 0, redCard: false },
+          ];
+
+      // Top Scorer / Golden Boot Award Calculation
+      const allPlayers = [
+        ...effectiveRoster1.map(p => ({ ...p, team: team1Name })),
+        ...effectiveRoster2.map(p => ({ ...p, team: team2Name }))
+      ];
+
+      const topScorer = allPlayers.reduce((max, p) => (((p.goals || p.points || 0) > (max?.goals || max?.points || 0)) ? p : max), null);
+      const topGoals = topScorer ? (topScorer.goals !== undefined ? topScorer.goals : (topScorer.points || 0)) : 0;
+
+      if (topScorer && topGoals > 0) {
+        doc.setFillColor(16, 185, 129); // Emerald 500
+        doc.roundedRect(margin, 33, contentW, 14, 3, 3, 'F');
+        doc.setTextColor(15, 23, 42);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text(`MATCH TOP GOALSCORER / GOLDEN BOOT: #${sanitizeText(topScorer.jersey)} ${sanitizeText(topScorer.name)} (${sanitizeText(topScorer.team)}) - ${topGoals} GOALS SCORED`, pageW / 2, 42, { align: 'center' });
+      }
+
+      let py = topScorer && topGoals > 0 ? 54 : 36;
+
+      // Render Football Team Roster Table Helper
+      const renderFootballTeamRosterTable = (teamTitle, rosterList, accentColor) => {
+        doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${teamTitle.toUpperCase()} - GOALS & DISCIPLINARY RECORD`, margin, py);
+
+        py += 4;
+        // Table Header
+        doc.setFillColor(30, 41, 59);
+        doc.rect(margin, py, contentW, 7, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.text('#', margin + 4, py + 5);
+        doc.text('Player Name', margin + 18, py + 5);
+        doc.text('Goals Scored', margin + 95, py + 5);
+        doc.text('Yellow Cards', margin + 130, py + 5);
+        doc.text('Red Card Status', margin + 160, py + 5);
+
+        py += 7;
+        (rosterList || []).forEach((player, idx) => {
+          doc.setFillColor(idx % 2 === 0 ? 20 : 15, 23, 42);
+          doc.rect(margin, py, contentW, 6.5, 'F');
+          doc.setTextColor(226, 232, 240);
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'normal');
+
+          const jerseyStr = `#${sanitizeText(player.jersey || idx + 1)}`;
+          const pName = sanitizeText(player.name || `Player ${idx + 1}`);
+          const pGoals = `${player.goals !== undefined ? player.goals : (player.points || 0)} Goal(s)`;
+          const pYellows = `${player.yellowCards || 0} Yellow`;
+          const pRed = player.redCard ? 'RED CARD (SENT OFF)' : 'Clean';
+
+          doc.text(jerseyStr, margin + 4, py + 4.5);
+          doc.setFont('helvetica', 'bold');
+          doc.text(pName, margin + 18, py + 4.5);
+          doc.setFont('helvetica', 'normal');
+
+          doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+          doc.setFont('helvetica', 'bold');
+          doc.text(pGoals, margin + 95, py + 4.5);
+
+          doc.setTextColor(player.yellowCards > 0 ? 245 : 226, player.yellowCards > 0 ? 158 : 232, player.yellowCards > 0 ? 11 : 240);
+          doc.setFont('helvetica', 'normal');
+          doc.text(pYellows, margin + 130, py + 4.5);
+
+          doc.setTextColor(player.redCard ? 244 : 52, player.redCard ? 63 : 211, player.redCard ? 94 : 153);
+          doc.setFont('helvetica', 'bold');
+          doc.text(pRed, margin + 160, py + 4.5);
+
+          py += 6.5;
+        });
+
+        py += 6;
+      };
+
+      renderFootballTeamRosterTable(team1Name, effectiveRoster1, [16, 185, 129]); // Emerald Green accent
+      renderFootballTeamRosterTable(team2Name, effectiveRoster2, [20, 184, 166]); // Teal accent
+
+      // Page 2 Verification Footer Stamp
+      doc.setFillColor(16, 185, 129);
+      doc.roundedRect(margin, 268, contentW, 10, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.text('OFFICIAL VERIFIED RESULT CERTIFICATE - FOOTBALL GOALSCORERS & MATCH STATS REPORT', pageW / 2, 274.5, { align: 'center' });
+    } else if (isBasketballMatch) {
       doc.addPage();
       // Page 2 Outer Dark Theme Background
       doc.setFillColor(15, 23, 42);

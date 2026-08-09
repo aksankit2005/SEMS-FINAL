@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ShieldAlert, Info, CheckCircle2, ChevronDown, ChevronUp, Image as ImageIcon, X, ArrowLeft } from 'lucide-react';
+import { CricketRulesDisplay } from './CricketRulesDisplay';
 
 export const BADMINTON_RULES_DATA = {
   singles: [
@@ -320,12 +321,154 @@ export const BasketballRulesDisplay = () => {
   );
 };
 
+/* 🏓 TABLE TENNIS OFFICIAL TOURNAMENT RULES DATA & DISPLAY */
+export const TABLE_TENNIS_RULES_DATA = [
+  { num: 1, title: "Games are played to 11 points", text: "A Game is played to **11 points**. A Game must be won by **two points**. A Match is generally the best **three of five Games**." },
+  { num: 2, title: "Alternate serves every two points", text: "Each side of the table alternates serving **two points at a time**. EXCEPTION: After tied **10-10 (“deuce”)**, service alternates at **every point**. There is no separate rule for serving on Game Point (you CAN lose on a serve)." },
+  { num: 3, title: "Toss the ball straight up when serving", text: "Hold the ball in your open palm, behind your end of the table. Toss at least **6 inches straight up**, and strike it on the way down. It must hit your side of the table and then the opponent's side. NOTE: Once the ball leaves the server’s hand it is in play, and counts as receiver’s point if missed or mis-hit." },
+  { num: 4, title: "The serve can land anywhere in singles", text: "There is no restriction on where the ball lands on your side or your opponent’s side of the table. It can bounce two or more times on your opponent’s side, bounce over the side, or even hit the edge." },
+  { num: 5, title: "Doubles serves must go right court to right court", text: "The serve must bounce in the **server’s right court**, and **receiver’s right court** (landing on center line is fair). Doubles partners switch places after their team serves twice." },
+  { num: 6, title: "A serve that touches the net on the way over is a “LET”", text: "During a RALLY, if the ball touches the top of the net and lands in play, it is a legitimate hit. BUT not when serving. If a served ball hits the net on the way over and bounces in play, it’s a **“let” serve and is replayed**. There is no limit on how many times this can happen." },
+  { num: 7, title: "Alternate hitting in a doubles rally", text: "Doubles partners must **alternate hitting balls in a rally**, no matter where the ball lands on the table." },
+  { num: 8, title: "Volleys are NOT allowed", text: "You cannot hit the ball before it bounces on your side of the table. In table tennis, **volleying results in a point for your opponent**. NOTE: When your opponent hits a ball that sails over your end of the table without touching it and then hits you or your paddle, that is still your point." },
+  { num: 9, title: "If your hit bounces back over the net by itself it is your point", text: "If you hit the ball in a rally or on a serve and it bounces back over the net after hitting your opponent’s side of the table (due to extreme spin), without your opponent touching it, that is **your point**." },
+  { num: 10, title: "Touching the ball with your paddle hand is allowed", text: "If the ball touches your **PADDLE hand** (fingers and hand area below the wrist) and results in a legal hit, play continues normally. You may NOT touch the ball with your non-paddle hand. BUT if opponent’s hit sails over your table without touching and hits you/paddle, it is still your point." },
+  { num: 11, title: "You may not touch the table with your non-paddle hand", text: "You may touch the ball or table with your paddle hand or body. NOTE: If the table moves at all from your touching it during a rally, that is **your opponent’s point**." },
+  { num: 12, title: "An “edge” ball bouncing off the horizontal table top surface is good", text: "An otherwise legal serve or hit contacting the **top edge of the horizontal table top surface** is valid, even if it bounces sidewise. Vertical sides of the table are NOT part of the legal playing surface." },
+  { num: 13, title: "Honor system applies to disagreements", text: "If no referee is present during a match and players disagree on a call, the **“honor system”** applies and players should agree or replay the point. Table tennis carries a tradition of fierce but fair play!" }
+];
+
+export const TableTennisRulesDisplay = () => {
+  return (
+    <div className="space-y-6 text-slate-100 font-sans">
+      <div className="flex items-center justify-between border-b border-cyan-500/20 pb-4">
+        <div className="flex items-center gap-2.5">
+          <span className="text-2xl">🏓</span>
+          <div>
+            <h4 className="font-black text-base uppercase tracking-wider text-cyan-400">
+              Official ITTF Table Tennis Rules & Regulations
+            </h4>
+            <p className="text-xs text-slate-400">13 Official Rules of Table Tennis (ITTF Standard)</p>
+          </div>
+        </div>
+        <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+          ITTF Standard
+        </span>
+      </div>
+
+      <div className="space-y-3">
+        <h5 className="font-black text-sm sm:text-base text-cyan-300 flex items-center gap-2">
+          <span>🏓</span>
+          <span>13 Official Table Tennis Match Rules</span>
+        </h5>
+        <div className="grid grid-cols-1 gap-3 text-xs sm:text-sm bg-slate-950/80 p-5 rounded-2xl border border-cyan-500/20 shadow-inner">
+          {TABLE_TENNIS_RULES_DATA.map((rule) => (
+            <div key={rule.num} className="flex items-start gap-3 leading-relaxed">
+              <span className="font-mono font-black text-cyan-400 shrink-0 text-sm bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/20">
+                {rule.num}.
+              </span>
+              <div>
+                <strong className="font-bold text-white block text-xs uppercase tracking-wider text-cyan-300 mb-0.5">{rule.title}</strong>
+                <span className="text-slate-300 whitespace-pre-line">{renderFormattedText(rule.text)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const FOOTBALL_5V5_RULES_DATA = [
+  { num: 1, title: "1. Team Composition", text: "5 players on the field at a time (1 Goalkeeper + 4 Outfield players). Substitutes: Up to 3 rolling/flying substitutes. A team must have at least 4 players to start or continue a match." },
+  { num: 2, title: "2. Match Duration & Knockouts", text: "2 halves × 10 minutes each with a 5-minute half-time interval. Clock stopped for serious injuries. Tied knockout matches go directly to Penalty Shootout (3 penalties per team initially, then sudden death)." },
+  { num: 3, title: "3. Kick-Off", text: "The match starts with a kick-off from the center circle. Opponents must remain outside the required distance. A goal can be scored directly from a kick-off." },
+  { num: 4, title: "4. Ball Out of Play", text: "Sideline: Restart with a kick-in or throw-in depending on pitch rules. Goal line: Goal kick or corner kick. The ball must completely cross the boundary line to be out of play." },
+  { num: 5, title: "5. Goalkeeper Rules", text: "Only the goalkeeper can use hands inside their own penalty area. Goalkeepers cannot deliberately handle a ball kicked back to them by a teammate's foot. Must release the ball within tournament time limit." },
+  { num: 6, title: "6. Fouls & Penalty Kicks", text: "Includes kicking, tripping, pushing, holding, dangerous tackles, handball, or unsporting behavior. Direct fouls inside defending penalty area result in a Penalty Kick." },
+  { num: 7, title: "7. Cards & Discipline", text: "🟨 Yellow Card: Warning / Caution.\n🟥 Red Card: Player sent off and cannot return to the match. 2 Yellow Cards in a match auto-convert to a Red Card." },
+  { num: 8, title: "8. Offside Rule", text: "❌ No Offside Rule in 5v5 mini-football format. This keeps gameplay fast, dynamic, and easy to manage on small turfs." },
+  { num: 9, title: "9. Free Kicks", text: "Free kicks can be direct or indirect depending on the nature of the foul. Opponents must maintain the required wall distance." },
+  { num: 10, title: "10. Corner Kick", text: "Awarded when the defending team is last to touch the ball before it completely crosses their goal line. Taken from the designated corner arc." },
+  { num: 11, title: "11. Penalty Kick", text: "Awarded for direct-free-kick offences inside the defending team's penalty area. Only the goalkeeper defends. All other players stay outside the penalty line." },
+  { num: 12, title: "12. Equipment & Fair Play", text: "Proper sports shoes and team jerseys mandatory. No jewelry or dangerous accessories. Abusive behavior or fighting results in immediate player/team disqualification." }
+];
+
+export const FootballRulesDisplay = () => {
+  return (
+    <div className="space-y-6 text-slate-100">
+      <div className="flex items-center justify-between border-b border-emerald-500/20 pb-4">
+        <div className="flex items-center gap-2.5">
+          <span className="text-2xl">⚽</span>
+          <div>
+            <h4 className="font-black text-base uppercase tracking-wider text-emerald-400">
+              Official 5v5 Football Tournament Rulebook
+            </h4>
+            <p className="text-xs text-slate-400">12 Official Rules of 5-a-Side Mini Football</p>
+          </div>
+        </div>
+        <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+          5v5 Format
+        </span>
+      </div>
+
+      <div className="space-y-3">
+        <h5 className="font-black text-sm sm:text-base text-emerald-300 flex items-center gap-2">
+          <span>⚽</span>
+          <span>12 Official Football 5v5 Tournament Rules</span>
+        </h5>
+        <div className="grid grid-cols-1 gap-3 text-xs sm:text-sm bg-slate-950/80 p-5 rounded-2xl border border-emerald-500/20 shadow-inner">
+          {FOOTBALL_5V5_RULES_DATA.map((rule) => (
+            <div key={rule.num} className="flex items-start gap-3 leading-relaxed">
+              <span className="font-mono font-black text-emerald-400 shrink-0 text-sm bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+                {rule.num}.
+              </span>
+              <div>
+                <strong className="font-bold text-white block text-xs uppercase tracking-wider text-emerald-300 mb-0.5">{rule.title}</strong>
+                <span className="text-slate-300 whitespace-pre-line">{renderFormattedText(rule.text)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* FULL SCREEN RULEBOOK MODAL WITH GO BACK BUTTON */
 export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }) => {
   if (!isOpen) return null;
 
-  const isChess = (sportName || '').toLowerCase().includes('chess');
-  const isBasketball = (sportName || '').toLowerCase().includes('basketball');
+  const sName = (sportName || '').toLowerCase();
+  const isCricket = sName.includes('cricket');
+  const isChess = sName.includes('chess');
+  const isBasketball = sName.includes('basketball');
+  const isTableTennis = sName.includes('table') || sName.includes('tt') || sName.includes('ping pong');
+  const isFootball = sName.includes('football') || sName.includes('soccer');
+
+  const themeColorClass = isCricket 
+    ? 'text-emerald-400' 
+    : isChess 
+    ? 'text-purple-400' 
+    : isBasketball 
+    ? 'text-orange-400'
+    : isTableTennis
+    ? 'text-cyan-400'
+    : isFootball
+    ? 'text-emerald-400' 
+    : 'text-amber-400';
+
+  const themeBtnClass = isCricket 
+    ? 'bg-emerald-600 hover:bg-emerald-500' 
+    : isChess 
+    ? 'bg-purple-600 hover:bg-purple-500' 
+    : isBasketball 
+    ? 'bg-orange-600 hover:bg-orange-500'
+    : isTableTennis
+    ? 'bg-cyan-600 hover:bg-cyan-500'
+    : isFootball
+    ? 'bg-emerald-600 hover:bg-emerald-500' 
+    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500';
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/95 backdrop-blur-xl p-3 sm:p-6 animate-fade-in flex flex-col items-center justify-center font-sans">
@@ -337,16 +480,16 @@ export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }
             onClick={onClose}
             className="px-4 py-2 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-2 transition border border-slate-700 active:scale-95 shadow-md shrink-0 cursor-pointer"
           >
-            <ArrowLeft className={`w-4 h-4 ${isChess ? 'text-purple-400' : isBasketball ? 'text-orange-400' : 'text-amber-400'}`} />
+            <ArrowLeft className={`w-4 h-4 ${themeColorClass}`} />
             <span>Go Back</span>
           </button>
 
           <div className="text-center truncate">
-            <span className={`text-[10px] font-mono uppercase tracking-widest block font-bold ${isChess ? 'text-purple-400' : isBasketball ? 'text-orange-400' : 'text-amber-400'}`}>
-              {isChess ? '10-Minute Rapid Chess Rulebook' : isBasketball ? 'FIBA Basketball Rulebook' : 'Official BWF Rulebook'}
+            <span className={`text-[10px] font-mono uppercase tracking-widest block font-bold ${themeColorClass}`}>
+              {isCricket ? 'Official Cricket Tournament Rulebook' : isChess ? '10-Minute Rapid Chess Rulebook' : isBasketball ? 'FIBA Basketball Rulebook' : isTableTennis ? 'Official ITTF Table Tennis Rulebook' : isFootball ? 'Official 5v5 Football Tournament Rulebook' : 'Official BWF Rulebook'}
             </span>
             <h2 className="text-sm sm:text-lg font-black text-white flex items-center gap-1.5 justify-center truncate">
-              <span>{isChess ? '♟️' : isBasketball ? '🏀' : '🏸'}</span> {sportName} Tournament Rules
+              <span>{isCricket ? '🏏' : isChess ? '♟️' : isBasketball ? '🏀' : isTableTennis ? '🏓' : isFootball ? '⚽' : '🏸'}</span> {sportName} Tournament Rules
             </h2>
           </div>
 
@@ -361,19 +504,29 @@ export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton" }
 
         {/* Modal Scrollable Body */}
         <div className="p-5 sm:p-8 space-y-6 overflow-y-auto">
-          {isChess ? <ChessRulesDisplay /> : isBasketball ? <BasketballRulesDisplay /> : <BadmintonRulesDisplay />}
+          {isCricket ? (
+            <CricketRulesDisplay />
+          ) : isChess ? (
+            <ChessRulesDisplay />
+          ) : isBasketball ? (
+            <BasketballRulesDisplay />
+          ) : isTableTennis ? (
+            <TableTennisRulesDisplay />
+          ) : isFootball ? (
+            <FootballRulesDisplay />
+          ) : (
+            <BadmintonRulesDisplay />
+          )}
         </div>
 
         {/* Sticky Footer with Go Back Button */}
         <div className="bg-slate-950 px-5 py-4 border-t border-slate-800 flex items-center justify-between gap-4">
           <span className="text-xs text-slate-400 italic hidden sm:inline">
-            {isChess ? '10-Minute Rapid Chess Tournament Regulations' : isBasketball ? 'FIBA Official Basketball Regulations & Guidelines' : 'Badminton World Federation (BWF) Standard Tournament Rules'}
+            {isCricket ? 'Official 8-Over & 10-Over Cricket Regulations' : isChess ? '10-Minute Rapid Chess Regulations' : isBasketball ? 'FIBA Official Basketball Regulations' : isTableTennis ? 'ITTF Official 13 Table Tennis Tournament Rules' : isFootball ? 'Official 12 Football 5v5 Tournament Rules' : 'BWF Standard Tournament Rules'}
           </span>
           <button
             onClick={onClose}
-            className={`px-6 py-2.5 rounded-2xl text-white font-bold text-xs flex items-center gap-2 transition shadow-md active:scale-95 ml-auto cursor-pointer ${
-              isChess ? 'bg-purple-600 hover:bg-purple-500' : isBasketball ? 'bg-orange-600 hover:bg-orange-500' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500'
-            }`}
+            className={`px-6 py-2.5 rounded-2xl text-white font-bold text-xs flex items-center gap-2 transition shadow-md active:scale-95 ml-auto cursor-pointer ${themeBtnClass}`}
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Go Back to Registration</span>

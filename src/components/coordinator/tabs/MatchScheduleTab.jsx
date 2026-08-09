@@ -38,7 +38,7 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches }) => {
 
     try {
       await coordinatorApi.completeMatch(matchItem.id, completedObj);
-      const updated = matches.map((m) => (m.id === matchItem.id ? completedObj : m));
+      const updated = matches.filter((m) => m.id !== matchItem.id);
       onUpdateMatches(updated);
       addToast(`🏆 Match Finished! Winner: ${winnerName.trim()}. Saved to Results section.`, 'success');
     } catch (err) {

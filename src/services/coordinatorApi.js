@@ -55,132 +55,6 @@ export const getSportRoute = (assignedSport) => {
 };
 
 
-export const MOCK_BADMINTON_PARTICIPANTS = [
-  {
-    id: "REG-BAD-101",
-    timestamp: "16 Jul, 10:32 am",
-    sport: "Badminton",
-    category: "SINGLES",
-    format: "SINGLES",
-    player1: {
-      name: "Aditya Singh",
-      roll: "25261101308",
-      college: "MPCPS (KN142)",
-      year: "2nd Year",
-      phone: "9336938985",
-      email: "adityasinghmlzs01@gmail.com"
-    },
-    feePaid: "₹100",
-    transactionStatus: "Captured",
-    verificationStatus: "Razorpay Auto-Verified"
-  },
-  {
-    id: "REG-BAD-102",
-    timestamp: "19 Jul, 01:11 pm",
-    sport: "Badminton",
-    category: "SINGLES",
-    format: "SINGLES",
-    player1: {
-      name: "Kavyansh Sonwani",
-      roll: "2300461540052",
-      college: "MPEC",
-      year: "4th Year",
-      phone: "8112425951",
-      email: "kavyanshsonwani@gmail.com"
-    },
-    feePaid: "₹100",
-    transactionStatus: "Captured",
-    verificationStatus: "Razorpay Auto-Verified"
-  },
-  {
-    id: "REG-BAD-103",
-    timestamp: "19 Jul, 02:12 pm",
-    sport: "Badminton",
-    category: "DOUBLES",
-    format: "DOUBLES",
-    player1: {
-      name: "Kavyansh Sonwani",
-      roll: "2300461540052",
-      college: "MPEC",
-      year: "4th Year",
-      phone: "8112425951",
-      email: "kavyanshsonwani@gmail.com"
-    },
-    player2: {
-      name: "Prabal Agrahari",
-      roll: "2300460100084",
-      college: "MPEC",
-      year: "4th Year",
-      phone: "9305828388",
-      email: "prabalagrahari2006@gmail.com"
-    },
-    feePaid: "₹200",
-    transactionStatus: "Captured",
-    verificationStatus: "Razorpay Auto-Verified"
-  },
-  {
-    id: "REG-BAD-104",
-    timestamp: "21 Jul, 11:45 am",
-    sport: "Badminton",
-    category: "SINGLES",
-    format: "SINGLES",
-    player1: {
-      name: "Rohan Verma",
-      roll: "2400460100112",
-      college: "MIPS Kanpur",
-      year: "3rd Year",
-      phone: "9839120492",
-      email: "rohanverma2026@gmail.com"
-    },
-    feePaid: "₹100",
-    transactionStatus: "Captured",
-    verificationStatus: "Razorpay Auto-Verified"
-  },
-  {
-    id: "REG-BAD-105",
-    timestamp: "23 Jul, 04:20 pm",
-    sport: "Badminton",
-    category: "DOUBLES",
-    format: "DOUBLES",
-    player1: {
-      name: "Aman Sharma",
-      roll: "2300460200045",
-      college: "MPEC",
-      year: "3rd Year",
-      phone: "9876543210",
-      email: "amansharma@mpec.edu"
-    },
-    player2: {
-      name: "Rahul Verma",
-      roll: "2300460200048",
-      college: "MPEC",
-      year: "3rd Year",
-      phone: "9876543211",
-      email: "rahulverma@mpec.edu"
-    },
-    feePaid: "₹200",
-    transactionStatus: "Captured",
-    verificationStatus: "Razorpay Auto-Verified"
-  },
-  {
-    id: "REG-BAD-106",
-    timestamp: "25 Jul, 09:15 am",
-    sport: "Badminton",
-    category: "SINGLES",
-    format: "SINGLES",
-    player1: {
-      name: "Sanya Malhotra",
-      roll: "25261102901",
-      college: "MPCP Kanpur",
-      year: "2nd Year",
-      phone: "9834567890",
-      email: "sanyamalhotra@mpcp.edu"
-    },
-    feePaid: "₹100",
-    transactionStatus: "Captured",
-    verificationStatus: "Razorpay Auto-Verified"
-  }
-];
 
 export const coordinatorApi = {
   getPresetAccount(usernameOrSport) {
@@ -584,18 +458,8 @@ export const coordinatorApi = {
       console.warn('Backend completeMatch API fallback:', e);
     }
 
-    // Save updated match in match list with COMPLETED status
-    let foundInList = false;
-    const updatedList = matches.map((m) => {
-      if (m.id === matchId) {
-        foundInList = true;
-        return completedObj;
-      }
-      return m;
-    });
-    if (!foundInList) {
-      updatedList.unshift(completedObj);
-    }
+    // Remove completed match from active match schedule list
+    const updatedList = matches.filter((m) => m.id !== matchId);
     this.saveMatches(updatedList);
 
 
@@ -819,7 +683,7 @@ export const coordinatorApi = {
         const activeMap = JSON.parse(savedActiveStr);
         Object.values(activeMap).forEach((m) => {
           const s = (m?.status || '').toLowerCase();
-          if (m && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active' || s === 'scheduled')) {
+          if (m && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active')) {
             if (!activeList.some((a) => a.id === m.id)) {
               activeList.push(m);
             }
@@ -837,7 +701,7 @@ export const coordinatorApi = {
           if (Array.isArray(list)) {
             list.forEach((m) => {
               const s = (m?.status || '').toLowerCase();
-              if (m && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active' || s === 'scheduled')) {
+              if (m && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active')) {
                 if (!activeList.some((a) => a.id === m.id)) {
                   activeList.push(m);
                 }

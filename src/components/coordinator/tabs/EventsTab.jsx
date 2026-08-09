@@ -148,13 +148,39 @@ export const EventsTab = ({ user }) => {
       venue: 'Main Sports Complex',
       category: 'Open',
       status: 'Published',
-      rules: ['Official ITTF/BWF rules apply.', 'College ID mandatory.'],
+      rules: isTableTennis ? [
+        '1. GAMES ARE PLAYED TO 11 POINTS (Must win by 2 points. Best 3 of 5 Games).',
+        '2. ALTERNATE SERVES EVERY TWO POINTS (Deuce at 10-10 alternates every point).',
+        '3. TOSS THE BALL STRAIGHT UP AT LEAST 6" WHEN SERVING.',
+        '4. THE SERVE CAN LAND ANYWHERE IN SINGLES.',
+        '5. DOUBLES SERVES MUST GO RIGHT COURT TO RIGHT COURT.',
+        '6. A SERVE THAT TOUCHES THE NET ON THE WAY OVER IS A "LET" (Replayed).',
+        '7. ALTERNATE HITTING IN A DOUBLES RALLY.',
+        '8. VOLLEYS ARE NOT ALLOWED (Ball must bounce on your side first).',
+        '9. IF YOUR HIT BOUNCES BACK OVER THE NET BY ITSELF IT IS YOUR POINT.',
+        '10. TOUCHING THE BALL WITH YOUR PADDLE HAND IS ALLOWED.',
+        '11. YOU MAY NOT TOUCH THE TABLE WITH YOUR NON-PADDLE HAND.',
+        '12. AN "EDGE" BALL BOUNCING OFF THE HORIZONTAL TABLE TOP SURFACE IS GOOD.',
+        '13. HONOR SYSTEM APPLIES TO DISAGREEMENTS.'
+      ] : ['Official ITTF/BWF rules apply.', 'College ID mandatory.'],
       requiredDocuments: ['College Student ID Card', 'Aadhaar Card'],
       contactName: user?.coordinatorName || '',
       contactEmail: user?.email || '',
       contactPhone: ''
     });
-    setRulesInput('Official tournament rules apply.\nCollege Student ID & Pass mandatory.');
+    setRulesInput(isTableTennis ? `1. GAMES ARE PLAYED TO 11 POINTS (Must win by 2 points. Best 3 of 5 Games).
+2. ALTERNATE SERVES EVERY TWO POINTS (Deuce at 10-10 alternates every point).
+3. TOSS THE BALL STRAIGHT UP AT LEAST 6" WHEN SERVING.
+4. THE SERVE CAN LAND ANYWHERE IN SINGLES.
+5. DOUBLES SERVES MUST GO RIGHT COURT TO RIGHT COURT.
+6. A SERVE THAT TOUCHES THE NET ON THE WAY OVER IS A "LET" (Replayed).
+7. ALTERNATE HITTING IN A DOUBLES RALLY.
+8. VOLLEYS ARE NOT ALLOWED (Ball must bounce on your side first).
+9. IF YOUR HIT BOUNCES BACK OVER THE NET BY ITSELF IT IS YOUR POINT.
+10. TOUCHING THE BALL WITH YOUR PADDLE HAND IS ALLOWED.
+11. YOU MAY NOT TOUCH THE TABLE WITH YOUR NON-PADDLE HAND.
+12. AN "EDGE" BALL BOUNCING OFF THE HORIZONTAL TABLE TOP SURFACE IS GOOD.
+13. HONOR SYSTEM APPLIES TO DISAGREEMENTS.` : 'Official tournament rules apply.\nCollege Student ID & Pass mandatory.');
     setDocInput('College Student ID Card\nAadhaar Card / Govt ID');
     setShowCreateModal(true);
   };
@@ -244,7 +270,13 @@ export const EventsTab = ({ user }) => {
   };
 
   const handleToggleStatus = async (eventObj) => {
-    const nextStatus = eventObj.status === 'Published' ? 'Closed' : eventObj.status === 'Closed' ? 'Draft' : 'Published';
+    const statusCycle = {
+      'Draft': 'Upcoming',
+      'Upcoming': 'Published',
+      'Published': 'Closed',
+      'Closed': 'Draft'
+    };
+    const nextStatus = statusCycle[eventObj.status] || 'Published';
     try {
       const updated = await coordinatorApi.updateEvent(eventObj.id, { status: nextStatus });
       setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? updated : item)));
@@ -377,6 +409,8 @@ export const EventsTab = ({ user }) => {
                       <span className={`px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase border shadow-md ${
                         event.status === 'Published'
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                          : event.status === 'Upcoming'
+                          ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
                           : event.status === 'Closed'
                           ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
                           : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
@@ -705,6 +739,7 @@ export const EventsTab = ({ user }) => {
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-emerald-600 dark:text-emerald-400"
                   >
                     <option value="Draft">Draft (Hidden)</option>
+                    <option value="Upcoming">Upcoming (Scheduled)</option>
                     <option value="Published">Published (Open)</option>
                     <option value="Closed">Closed</option>
                   </select>

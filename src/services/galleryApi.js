@@ -191,9 +191,10 @@ export const galleryApi = {
 
   // POST /api/media/upload - Upload media item
   async uploadMedia(mediaData) {
+    let result;
     try {
       const res = await api.post('/media/upload', mediaData);
-      return res.data;
+      result = res.data;
     } catch (err) {
       const media = getLocalMedia();
       const newMedia = {
@@ -207,8 +208,11 @@ export const galleryApi = {
       };
       const updated = [newMedia, ...media];
       saveLocalMedia(updated);
-      return newMedia;
+      result = newMedia;
     }
+    window.dispatchEvent(new Event('sems_events_updated'));
+    window.dispatchEvent(new Event('sems_media_updated'));
+    return result;
   },
 
   // GET /api/media/event/:eventId - Get media for event

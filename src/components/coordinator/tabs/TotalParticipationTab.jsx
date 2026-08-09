@@ -13,7 +13,162 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
   const sportName = user?.sportName || (sportId === 'chess' ? 'Chess' : 'Basketball');
 
   const isBasketball = sportId === 'basketball' || sportName.toLowerCase().includes('basketball');
+  const isFootball = sportId === 'football' || sportName.toLowerCase().includes('football');
   const isChess = sportId === 'chess' || sportName.toLowerCase().includes('chess');
+  const isCricket = sportId === 'cricket' || sportName.toLowerCase().includes('cricket');
+  const isTableTennis = sportId === 'table-tennis' || sportId === 'tabletennis' || sportName.toLowerCase().includes('table tennis');
+
+  // Initial seed records for Table Tennis
+  const defaultTableTennisParticipants = [
+    {
+      timestamp: '16 Jul, 10:30 AM',
+      sport: 'Table Tennis',
+      category: 'SINGLES',
+      gender: 'Boys / Mens',
+      player1: {
+        name: 'Aarav Sharma',
+        roll: '25261101301',
+        college: 'MPEC Kanpur (KN142)',
+        year: '3rd Year',
+        phone: '9876543210',
+        email: 'aarav.sharma@mpec.edu'
+      }
+    },
+    {
+      timestamp: '16 Jul, 11:15 AM',
+      sport: 'Table Tennis',
+      category: 'SINGLES',
+      gender: 'Boys / Mens',
+      player1: {
+        name: 'Kunal Dixith',
+        roll: '25261101345',
+        college: 'MPCPS Kanpur (KN056)',
+        year: '2nd Year',
+        phone: '9876543211',
+        email: 'kunal.dixith@mpcps.edu'
+      }
+    },
+    {
+      timestamp: '16 Jul, 01:45 PM',
+      sport: 'Table Tennis',
+      category: 'DOUBLES',
+      gender: 'Girls / Womens',
+      player1: {
+        name: 'Pooja Verma',
+        roll: '25261101410',
+        college: 'MIPS Kanpur (KN022)',
+        year: '3rd Year',
+        phone: '9876543212',
+        email: 'pooja.verma@mips.edu'
+      },
+      player2: {
+        name: 'Neha Saxena',
+        roll: '25261101411',
+        college: 'MIPS Kanpur (KN022)',
+        year: '3rd Year',
+        phone: '9876543213',
+        email: 'neha.saxena@mips.edu'
+      }
+    },
+    {
+      timestamp: '16 Jul, 03:20 PM',
+      sport: 'Table Tennis',
+      category: 'DOUBLES',
+      gender: 'Girls / Womens',
+      player1: {
+        name: 'Sneha Pandey',
+        roll: '25261101520',
+        college: 'PSIT Kanpur (KN088)',
+        year: '4th Year',
+        phone: '9876543214',
+        email: 'sneha.pandey@psit.edu'
+      },
+      player2: {
+        name: 'Riya Gupta',
+        roll: '25261101521',
+        college: 'PSIT Kanpur (KN088)',
+        year: '4th Year',
+        phone: '9876543215',
+        email: 'riya.gupta@psit.edu'
+      }
+    },
+    {
+      timestamp: '17 Jul, 09:30 AM',
+      sport: 'Table Tennis',
+      category: 'SINGLES',
+      gender: 'Boys / Mens',
+      player1: {
+        name: 'Rohan Mehra',
+        roll: '25261101602',
+        college: 'HBTU Kanpur (KN011)',
+        year: '2nd Year',
+        phone: '9876543216',
+        email: 'rohan.mehra@hbtu.edu'
+      }
+    },
+    {
+      timestamp: '17 Jul, 11:00 AM',
+      sport: 'Table Tennis',
+      category: 'DOUBLES',
+      gender: 'Mixed Doubles',
+      player1: {
+        name: 'Devansh Roy',
+        roll: '25261101705',
+        college: 'IIT Kanpur',
+        year: '3rd Year',
+        phone: '9876543217',
+        email: 'devansh@iitk.ac.in'
+      },
+      player2: {
+        name: 'Ananya Mishra',
+        roll: '25261101706',
+        college: 'IIT Kanpur',
+        year: '3rd Year',
+        phone: '9876543218',
+        email: 'ananya@iitk.ac.in'
+      }
+    }
+  ];
+
+  // Initial seed records for Cricket
+  const defaultCricketParticipants = [
+    {
+      timestamp: '16 Jul, 10:30 AM',
+      sport: 'Cricket',
+      eventTitle: 'Inter-College T20 Cricket Championship 2026',
+      teamName: 'MPEC XI',
+      collegeName: 'MPEC Kanpur (KN142)',
+      name: 'Ankit Sharma',
+      captainName: 'Ankit Sharma',
+      phone: '9336938985',
+      email: 'ankit@mpec.edu',
+      squadSize: 11
+    },
+    {
+      timestamp: '16 Jul, 11:15 AM',
+      sport: 'Cricket',
+      eventTitle: 'Inter-College T20 Cricket Championship 2026',
+      teamName: 'PSIT Super Kings',
+      collegeName: 'PSIT Kanpur (KN056)',
+      name: 'Shubham Verma',
+      captainName: 'Shubham Verma',
+      phone: '9876543210',
+      email: 'shubham@psit.edu',
+      squadSize: 11
+    },
+    {
+      timestamp: '16 Jul, 02:45 PM',
+      sport: 'Cricket',
+      eventTitle: 'Inter-College T20 Cricket Championship 2026',
+      teamName: 'HBTI Strikers',
+      collegeName: 'HBTU Kanpur (KN022)',
+      name: 'Vikram Singh',
+      captainName: 'Vikram Singh',
+      phone: '9123456789',
+      email: 'vikram@hbtu.edu',
+      squadSize: 11
+    }
+  ];
 
   // Initial seed records for Basketball
   const defaultBasketballParticipants = [
@@ -49,6 +204,46 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
       captainName: 'Vikram Patel',
       phone: '9123456789',
       email: 'vikram@sems.edu'
+    }
+  ];
+
+  // Initial seed records for Football
+  const defaultFootballParticipants = [
+    {
+      timestamp: '16 Jul, 10:30 AM',
+      sport: 'Football',
+      eventTitle: 'Football Championship 2026',
+      teamName: 'MPEC FC',
+      collegeName: 'MPEC Kanpur (KN142)',
+      name: 'Vikramjit Singh',
+      captainName: 'Vikramjit Singh',
+      phone: '9876543210',
+      email: 'vikram@mpec.edu',
+      squadSize: 7
+    },
+    {
+      timestamp: '16 Jul, 11:15 AM',
+      sport: 'Football',
+      eventTitle: 'Football Championship 2026',
+      teamName: 'PSIT Strikers',
+      collegeName: 'PSIT Kanpur (KN056)',
+      name: 'Aman Verma',
+      captainName: 'Aman Verma',
+      phone: '9876543211',
+      email: 'aman@psit.edu',
+      squadSize: 8
+    },
+    {
+      timestamp: '16 Jul, 02:45 PM',
+      sport: 'Football',
+      eventTitle: 'Football Championship 2026',
+      teamName: 'HBTU United',
+      collegeName: 'HBTU Kanpur (KN022)',
+      name: 'Rahul Roy',
+      captainName: 'Rahul Roy',
+      phone: '9876543212',
+      email: 'rahul@hbtu.edu',
+      squadSize: 6
     }
   ];
 
@@ -126,6 +321,56 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
         });
 
         setParticipants(Array.from(mergedMap.values()));
+      } else if (isFootball) {
+        const ftbData = (data || []).filter((d) => 
+          !d.sport || d.sport.toLowerCase().includes('football') || d.eventTitle?.toLowerCase().includes('football')
+        );
+
+        const mergedMap = new Map();
+        defaultFootballParticipants.forEach((item) => {
+          mergedMap.set(item.teamName.toLowerCase(), item);
+        });
+
+        ftbData.forEach((item) => {
+          const tName = (item.teamName || item.college || item.name || '').toLowerCase();
+          if (tName) {
+            mergedMap.set(tName, {
+              ...item,
+              teamName: item.teamName || item.name || 'Football Squad',
+              collegeName: item.collegeName || item.college || item.player1?.college || 'MPEC Kanpur (KN142)',
+              name: item.name || item.captainName || item.leaderName || item.player1?.name || item.studentName || 'Vikramjit Singh',
+              phone: item.phone || item.mobile || item.player1?.phone || '9876543210',
+              email: item.email || item.player1?.email || 'vikram@mpec.edu'
+            });
+          }
+        });
+
+        setParticipants(Array.from(mergedMap.values()));
+      } else if (isCricket) {
+        const crkData = (data || []).filter((d) => 
+          !d.sport || d.sport.toLowerCase().includes('cricket') || d.eventTitle?.toLowerCase().includes('cricket')
+        );
+
+        const mergedMap = new Map();
+        defaultCricketParticipants.forEach((item) => {
+          mergedMap.set(item.teamName.toLowerCase(), item);
+        });
+
+        crkData.forEach((item) => {
+          const tName = (item.teamName || item.college || item.name || '').toLowerCase();
+          if (tName) {
+            mergedMap.set(tName, {
+              ...item,
+              teamName: item.teamName || item.name || 'Team Apex',
+              collegeName: item.collegeName || item.college || item.player1?.college || 'MPEC Kanpur (KN142)',
+              name: item.name || item.captainName || item.leaderName || item.player1?.name || item.studentName || 'Ankit Sharma',
+              phone: item.phone || item.mobile || item.player1?.phone || '9336938985',
+              email: item.email || item.player1?.email || 'ankit@mpec.edu'
+            });
+          }
+        });
+
+        setParticipants(Array.from(mergedMap.values()));
       } else if (isChess) {
         const chessData = (data || []).filter((d) =>
           !d.sport || d.sport.toLowerCase().includes('chess') || d.eventTitle?.toLowerCase().includes('chess')
@@ -135,12 +380,29 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
         } else {
           setParticipants(defaultChessParticipants);
         }
+      } else if (isTableTennis) {
+        const ttData = (data || []).filter((d) =>
+          !d.sport || d.sport.toLowerCase().includes('table tennis') || d.sport.toLowerCase().includes('table-tennis') || d.eventTitle?.toLowerCase().includes('table tennis')
+        );
+        if (ttData.length > 0) {
+          setParticipants(ttData);
+        } else {
+          setParticipants(defaultTableTennisParticipants);
+        }
       } else {
-        setParticipants(data || []);
+        if (data && data.length > 0) {
+          setParticipants(data);
+        } else if (sportId.includes('table')) {
+          setParticipants(defaultTableTennisParticipants);
+        } else {
+          setParticipants(data || []);
+        }
       }
     } catch (e) {
       if (isBasketball) setParticipants(defaultBasketballParticipants);
       else if (isChess) setParticipants(defaultChessParticipants);
+      else if (isCricket) setParticipants(defaultCricketParticipants);
+      else if (isTableTennis) setParticipants(defaultTableTennisParticipants);
     }
   };
 
@@ -196,17 +458,31 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
     );
   });
 
-  const getBasketballRowData = (p, defaultIndex = 0) => {
-    const defaultSeeds = [
+  const getTeamParticipantRowData = (p, defaultIndex = 0) => {
+    const crkSeeds = [
+      { teamName: 'MPEC XI', collegeName: 'MPEC Kanpur (KN142)', name: 'Ankit Sharma', phone: '9336938985', email: 'ankit@mpec.edu', time: '16 Jul, 10:30 AM' },
+      { teamName: 'PSIT Super Kings', collegeName: 'PSIT Kanpur (KN056)', name: 'Shubham Verma', phone: '9876543210', email: 'shubham@psit.edu', time: '16 Jul, 11:15 AM' },
+      { teamName: 'HBTI Strikers', collegeName: 'HBTU Kanpur (KN022)', name: 'Vikram Singh', phone: '9123456789', email: 'vikram@hbtu.edu', time: '16 Jul, 02:45 PM' },
+    ];
+
+    const bskSeeds = [
       { teamName: 'ARC', collegeName: 'MPCPS (KN142)', name: 'Aditya Singh', phone: '9336938985', email: 'aditya@sems.edu', time: '16 Jul, 10:30 AM' },
       { teamName: 'RCD', collegeName: 'SRMCEM (KN056)', name: 'Rahul Sharma', phone: '9876543210', email: 'rahul@sems.edu', time: '16 Jul, 11:15 AM' },
       { teamName: 'TITANS', collegeName: 'BBD (KN022)', name: 'Vikram Patel', phone: '9123456789', email: 'vikram@sems.edu', time: '16 Jul, 02:45 PM' },
     ];
+
+    const ftbSeeds = [
+      { teamName: 'MPEC FC', collegeName: 'MPEC Kanpur (KN142)', name: 'Vikramjit Singh', phone: '9876543210', email: 'vikram@mpec.edu', time: '16 Jul, 10:30 AM' },
+      { teamName: 'PSIT Strikers', collegeName: 'PSIT Kanpur (KN056)', name: 'Aman Verma', phone: '9876543211', email: 'aman@psit.edu', time: '16 Jul, 11:15 AM' },
+      { teamName: 'HBTU United', collegeName: 'HBTU Kanpur (KN022)', name: 'Rahul Roy', phone: '9876543212', email: 'rahul@hbtu.edu', time: '16 Jul, 02:45 PM' },
+    ];
+
+    const defaultSeeds = isCricket ? crkSeeds : isFootball ? ftbSeeds : bskSeeds;
     const seed = defaultSeeds[defaultIndex % defaultSeeds.length];
 
     return {
       timestamp: p.timestamp || p.registeredAt || p.date || seed.time,
-      gameName: 'Basketball',
+      gameName: isCricket ? 'Cricket' : isFootball ? 'Football' : 'Basketball',
       teamName: p.teamName || seed.teamName,
       collegeName: p.collegeName || p.college || p.player1?.college || seed.collegeName,
       name: p.name || p.captainName || p.leaderName || p.player1?.name || seed.name,
@@ -223,10 +499,11 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
 
     const escapeCsv = (str) => `"${String(str || '').replace(/"/g, '""')}"`;
 
-    if (isBasketball) {
+    if (isBasketball || isCricket || isFootball) {
+      const sportLabel = isCricket ? 'Cricket' : isFootball ? 'Football' : 'Basketball';
       const headers = ['Time', 'Game Name', 'Team Name', 'College Name', 'Name', 'Mobile No', 'Email'];
       const rows = filtered.map((p, idx) => {
-        const row = getBasketballRowData(p, idx);
+        const row = getTeamParticipantRowData(p, idx);
         return [
           escapeCsv(row.timestamp),
           escapeCsv(row.gameName),
@@ -243,11 +520,11 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `Basketball_Participant_Database.csv`);
+      link.setAttribute('download', `${sportLabel}_Participant_Database.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      addToast(`Basketball participant database exported to CSV successfully!`, 'success');
+      addToast(`${sportLabel} participant database exported to CSV successfully!`, 'success');
     } else if (isChess) {
       // ♟️ CHESS EXPORT FORMAT (Timestamp, Sport, Gender, Player Name, Roll No, College, Year / Branch, Phone No, Email)
       const headers = [
@@ -433,9 +710,9 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
 
         {/* TABLE VIEW */}
         <div className="overflow-x-auto">
-          {isBasketball ? (
+          {(isBasketball || isCricket || isFootball) ? (
 
-            /* 🏀 BASKETBALL TABLE FORMAT */
+            /* 🏀 BASKETBALL, ⚽ FOOTBALL & 🏏 CRICKET TABLE FORMAT */
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">
@@ -453,12 +730,12 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                 {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="p-8 text-center text-slate-500 dark:text-slate-400 font-mono">
-                      No registered Basketball participants found in database.
+                      No registered {isCricket ? 'Cricket' : isFootball ? 'Football' : 'Basketball'} participants found in database.
                     </td>
                   </tr>
                 ) : (
                   filtered.map((p, idx) => {
-                    const row = getBasketballRowData(p, idx);
+                    const row = getTeamParticipantRowData(p, idx);
 
                     return (
                       <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
@@ -466,7 +743,11 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                           {row.timestamp}
                         </td>
                         <td className="p-4 font-bold text-slate-900 dark:text-white font-sans text-xs whitespace-nowrap">
-                          <span className="px-2.5 py-1 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 font-bold">
+                          <span className={`px-2.5 py-1 rounded-lg border font-bold ${
+                            isCricket
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                              : 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20'
+                          }`}>
                             {row.gameName}
                           </span>
                         </td>

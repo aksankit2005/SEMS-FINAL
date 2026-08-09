@@ -110,6 +110,64 @@ export const ResultManagementTab = ({ user }) => {
         }
       ];
     }
+    if (assignedSport === 'cricket') {
+      return [
+        {
+          id: 'M-CRK-101',
+          eventTitle: 'Inter-College T20 Cricket Championship 2026',
+          format: 'T20',
+          category: 'Men',
+          team1: 'MPEC XI',
+          team2: 'PSIT Super Kings',
+          score1: 145,
+          wickets1: 6,
+          overs1: '20.0',
+          score2: 148,
+          wickets2: 4,
+          overs2: '18.4',
+          scoreSummary: 'PSIT Super Kings won by 6 wickets',
+          resultString: 'PSIT Super Kings won by 6 wickets',
+          winner: 'PSIT Super Kings',
+          tableNumber: 'Cricket Ground 1',
+          venue: 'Cricket Ground 1',
+          completedAt: new Date(Date.now() - 3600000).toISOString()
+        }
+      ];
+    }
+    if (assignedSport === 'football') {
+      return [
+        {
+          id: 'M-FTB-101',
+          eventTitle: 'Inter-College Football Championship 2026',
+          format: 'TEAM',
+          category: 'Boys',
+          team1: 'MPEC FC',
+          team2: 'PSIT Strikers',
+          score1: 2,
+          score2: 1,
+          scoreSummary: 'MPEC FC won 2 - 1',
+          winner: 'MPEC FC',
+          tableNumber: 'Ground 1',
+          venue: 'Ground 1',
+          completedAt: new Date(Date.now() - 3600000).toISOString()
+        },
+        {
+          id: 'M-FTB-102',
+          eventTitle: 'Inter-College Football Championship 2026',
+          format: 'TEAM',
+          category: 'Boys',
+          team1: 'HBTU United',
+          team2: 'KIET Warriors',
+          score1: 3,
+          score2: 0,
+          scoreSummary: 'HBTU United won 3 - 0',
+          winner: 'HBTU United',
+          tableNumber: 'Ground 2',
+          venue: 'Ground 2',
+          completedAt: new Date(Date.now() - 7200000).toISOString()
+        }
+      ];
+    }
     return [
       {
         id: 'M-BADM-101',
@@ -351,7 +409,26 @@ export const ResultManagementTab = ({ user }) => {
       return;
     }
 
+    const isCricket = assignedSport === 'cricket';
+
     const excelData = filteredResults.map((r) => {
+      if (isCricket) {
+        return {
+          'Match ID': r.id || 'N/A',
+          'Tournament / Event': r.eventTitle || 'Cricket Championship',
+          'Format': r.format || 'T20',
+          'Category': r.category || 'Men',
+          'Team 1': r.team1 || 'Team A',
+          '1st Innings Score': `${r.score1 || 0}/${r.wickets1 || 0} (${r.overs1 || '0.0'} Ov)`,
+          'Team 2': r.team2 || 'Team B',
+          '2nd Innings Score': `${r.score2 || 0}/${r.wickets2 || 0} (${r.overs2 || '0.0'} Ov)`,
+          'Result & Victory Summary': r.resultString || r.scoreSummary || r.winner || 'Completed',
+          'Declared Winner': r.winner || 'TBD',
+          'Venue': r.venue || 'Cricket Ground 1',
+          'Completed Date': r.completedAt ? new Date(r.completedAt).toLocaleString() : 'N/A'
+        };
+      }
+
       const setsBreakdown = r.setsHistory && Array.isArray(r.setsHistory) && r.setsHistory.some((s) => s.score1 > 0 || s.score2 > 0)
         ? r.setsHistory.filter((s) => s.score1 > 0 || s.score2 > 0).map((s) => `S${s.set}: ${s.score1}-${s.score2}`).join(' | ')
         : (r.scoreText || r.scoreSummary || 'Completed');
