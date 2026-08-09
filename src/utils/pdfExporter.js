@@ -752,9 +752,6 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
     // Bottom Verification Stamp Page 1
     doc.setFillColor(16, 185, 129);
     doc.roundedRect(margin, 268, contentW, 10, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
     doc.text('OFFICIAL VERIFIED RESULT CERTIFICATE - APEX CHAMPIONSHIP 2026', pageW / 2, 274.5, { align: 'center' });
 
     // INDIVIDUAL PLAYER PERFORMANCE / PER-PERSON POINT BREAKDOWN
@@ -762,10 +759,131 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
       (match.sportId || '').toLowerCase().includes('football') || 
       (match.sport || '').toLowerCase().includes('football');
 
-    const isBasketballMatch = ((cleanSport || '').toLowerCase().includes('basketball') || 
+    const isKabaddiMatch = (cleanSport || '').toLowerCase().includes('kabaddi') ||
+      (match.sportId || '').toLowerCase().includes('kabaddi') ||
+      (match.sport || '').toLowerCase().includes('kabaddi') ||
+      Boolean(match.playerStats1 || match.playerStats2);
+
+    const isBasketballMatch = !isFootballMatch && !isKabaddiMatch && ((cleanSport || '').toLowerCase().includes('basketball') || 
       (match.sportId || '').toLowerCase().includes('basketball') || 
       (match.sport || '').toLowerCase().includes('basketball') ||
-      ((match.roster1 && match.roster1.length > 0) || (match.roster2 && match.roster2.length > 0))) && !isFootballMatch;
+      ((match.roster1 && match.roster1.length > 0) || (match.roster2 && match.roster2.length > 0)));
+
+    if (isKabaddiMatch) {
+      doc.addPage();
+      doc.setFillColor(15, 23, 42);
+      doc.rect(0, 0, 210, 297, 'F');
+
+      doc.setDrawColor(245, 158, 11);
+      doc.setLineWidth(1.5);
+      doc.roundedRect(8, 8, 194, 281, 4, 4, 'D');
+      doc.setLineWidth(0.5);
+      doc.roundedRect(10, 10, 190, 277, 3, 3, 'D');
+
+      doc.setTextColor(245, 158, 11);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text('KABADDI OFFICIAL TEAM & PLAYER DETAILS SCORE SHEET', pageW / 2, 22, { align: 'center' });
+
+      doc.setTextColor(148, 163, 184);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Match: ${team1Name} vs ${team2Name}   |   Match ID: ${matchId}`, pageW / 2, 28, { align: 'center' });
+
+      const defaultKabaddiTeam1 = [
+        { id: 1, name: 'Player A', jersey: '07', position: 'Raider', raidPts: 5, tacklePts: 0, bonusPts: 2, superRaid: 1, superTackle: 0, total: 8 },
+        { id: 2, name: 'Player B', jersey: '12', position: 'Defender', raidPts: 0, tacklePts: 6, bonusPts: 0, superRaid: 0, superTackle: 2, total: 8 },
+        { id: 3, name: 'Player C', jersey: '03', position: 'All Rounder', raidPts: 3, tacklePts: 3, bonusPts: 1, superRaid: 0, superTackle: 1, total: 8 },
+        { id: 4, name: 'Player D', jersey: '05', position: 'Raider', raidPts: 2, tacklePts: 1, bonusPts: 0, superRaid: 0, superTackle: 0, total: 3 },
+        { id: 5, name: 'Player E', jersey: '09', position: 'Defender', raidPts: 0, tacklePts: 2, bonusPts: 0, superRaid: 0, superTackle: 1, total: 2 },
+        { id: 6, name: 'Player F', jersey: '11', position: 'Defender', raidPts: 0, tacklePts: 1, bonusPts: 0, superRaid: 0, superTackle: 0, total: 1 },
+        { id: 7, name: 'Player G', jersey: '04', position: 'Raider', raidPts: 1, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 1 },
+      ];
+
+      const defaultKabaddiTeam2 = [
+        { id: 1, name: 'Player 1', jersey: '01', position: 'Raider', raidPts: 4, tacklePts: 0, bonusPts: 1, superRaid: 0, superTackle: 0, total: 5 },
+        { id: 2, name: 'Player 2', jersey: '02', position: 'Defender', raidPts: 0, tacklePts: 4, bonusPts: 0, superRaid: 0, superTackle: 1, total: 4 },
+        { id: 3, name: 'Player 3', jersey: '10', position: 'All Rounder', raidPts: 2, tacklePts: 2, bonusPts: 1, superRaid: 0, superTackle: 0, total: 5 },
+        { id: 4, name: 'Player 4', jersey: '08', position: 'Raider', raidPts: 3, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 3 },
+        { id: 5, name: 'Player 5', jersey: '06', position: 'Defender', raidPts: 0, tacklePts: 3, bonusPts: 0, superRaid: 0, superTackle: 0, total: 3 },
+        { id: 6, name: 'Player 6', jersey: '14', position: 'Defender', raidPts: 0, tacklePts: 1, bonusPts: 0, superRaid: 0, superTackle: 0, total: 1 },
+        { id: 7, name: 'Player 7', jersey: '15', position: 'Raider', raidPts: 1, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 1 },
+      ];
+
+      const kStats1 = match.playerStats1 && match.playerStats1.length > 0 ? match.playerStats1 : defaultKabaddiTeam1;
+      const kStats2 = match.playerStats2 && match.playerStats2.length > 0 ? match.playerStats2 : defaultKabaddiTeam2;
+
+      let py = 36;
+      const renderKabaddiTeamPDFTable = (teamTitle, rosterList, accentColor) => {
+        doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+        doc.setFontSize(10.5);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${teamTitle.toUpperCase()} - TEAM & PLAYER DETAILS`, margin, py);
+
+        py += 4;
+        doc.setFillColor(30, 41, 59);
+        doc.rect(margin, py, contentW, 7, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'bold');
+
+        doc.text('#', margin + 3, py + 5);
+        doc.text('Player', margin + 12, py + 5);
+        doc.text('Jersey No.', margin + 55, py + 5);
+        doc.text('Position', margin + 78, py + 5);
+        doc.text('Raid Pts', margin + 105, py + 5);
+        doc.text('Tackle Pts', margin + 124, py + 5);
+        doc.text('Bonus', margin + 144, py + 5);
+        doc.text('Super Raid', margin + 160, py + 5);
+        doc.text('Super Tackle', margin + 178, py + 5);
+
+        py += 7;
+        rosterList.forEach((p, idx) => {
+          doc.setFillColor(idx % 2 === 0 ? 20 : 15, 23, 42);
+          doc.rect(margin, py, contentW, 6.5, 'F');
+          doc.setTextColor(226, 232, 240);
+          doc.setFontSize(7.5);
+          doc.setFont('helvetica', 'normal');
+
+          doc.text(String(idx + 1), margin + 3, py + 4.5);
+          doc.setFont('helvetica', 'bold');
+          doc.text(sanitizeText(p.name || `Player ${idx + 1}`).substring(0, 18), margin + 12, py + 4.5);
+          doc.setFont('helvetica', 'normal');
+
+          doc.text(sanitizeText(p.jersey || `#${idx + 1}`), margin + 55, py + 4.5);
+          doc.text(sanitizeText(p.position || 'Raider').substring(0, 12), margin + 78, py + 4.5);
+
+          doc.setTextColor(59, 130, 246);
+          doc.text(String(p.raidPts || 0), margin + 105, py + 4.5);
+
+          doc.setTextColor(16, 185, 129);
+          doc.text(String(p.tacklePts || 0), margin + 124, py + 4.5);
+
+          doc.setTextColor(168, 85, 247);
+          doc.text(String(p.bonusPts || 0), margin + 144, py + 4.5);
+
+          doc.setTextColor(245, 158, 11);
+          doc.text(String(p.superRaid || 0), margin + 160, py + 4.5);
+
+          doc.setTextColor(244, 63, 94);
+          doc.text(String(p.superTackle || 0), margin + 178, py + 4.5);
+
+          py += 6.5;
+        });
+
+        py += 6;
+      };
+
+      renderKabaddiTeamPDFTable(team1Name, kStats1, [245, 158, 11]);
+      renderKabaddiTeamPDFTable(team2Name, kStats2, [59, 130, 246]);
+
+      doc.setFillColor(16, 185, 129);
+      doc.roundedRect(margin, 268, contentW, 10, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.text('OFFICIAL VERIFIED RESULT CERTIFICATE - KABADDI SCORE SHEET REPORT', pageW / 2, 274.5, { align: 'center' });
+    }
 
     const isCricketMatch = (cleanSport || '').toLowerCase().includes('cricket') ||
       (match.sportId || '').toLowerCase().includes('cricket') ||
@@ -1197,7 +1315,6 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
       doc.text('OFFICIAL VERIFIED RESULT CERTIFICATE - FOOTBALL GOALSCORERS & MATCH STATS REPORT', pageW / 2, 274.5, { align: 'center' });
     } else if (isBasketballMatch) {
       doc.addPage();
-
       // Page 2 Outer Dark Theme Background
       doc.setFillColor(15, 23, 42);
       doc.rect(0, 0, 210, 297, 'F');

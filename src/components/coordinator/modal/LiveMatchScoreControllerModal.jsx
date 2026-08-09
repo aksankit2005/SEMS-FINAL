@@ -15,6 +15,14 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
     (match?.title || '').toLowerCase().includes('chess')
   );
 
+  const isKabaddi = (
+    (match?.sportId || '').toLowerCase() === 'kabaddi' ||
+    (match?.sportName || '').toLowerCase() === 'kabaddi' ||
+    (match?.assignedSport || '').toLowerCase() === 'kabaddi' ||
+    (match?.eventTitle || '').toLowerCase().includes('kabaddi') ||
+    (match?.title || '').toLowerCase().includes('kabaddi')
+  );
+
   // Lock background scrolling & hide navbar/sidebar behind modal via portal & body overflow
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -25,17 +33,53 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
     };
   }, []);
 
-  // State specifically for Chess (Outcome selection without point scores/sets)
+  // State specifically for Chess
   const [selectedChessResult, setSelectedChessResult] = useState('team1');
   const [chessReason, setChessReason] = useState('Checkmate');
+
+  // Kabaddi Default Rosters & Per-Player Stats (Initially All 0)
+  const defaultKabaddiTeam1 = [
+    { id: 1, name: 'Player A', jersey: '07', position: 'Raider', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 2, name: 'Player B', jersey: '12', position: 'Defender', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 3, name: 'Player C', jersey: '03', position: 'All Rounder', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 4, name: 'Player D', jersey: '05', position: 'Raider', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 5, name: 'Player E', jersey: '09', position: 'Defender', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 6, name: 'Player F', jersey: '11', position: 'Defender', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 7, name: 'Player G', jersey: '04', position: 'Raider', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+  ];
+
+  const defaultKabaddiTeam2 = [
+    { id: 1, name: 'Player 1', jersey: '01', position: 'Raider', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 2, name: 'Player 2', jersey: '02', position: 'Defender', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 3, name: 'Player 3', jersey: '10', position: 'All Rounder', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 4, name: 'Player 4', jersey: '08', position: 'Raider', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 5, name: 'Player 5', jersey: '06', position: 'Defender', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 6, name: 'Player 6', jersey: '14', position: 'Defender', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+    { id: 7, name: 'Player 7', jersey: '15', position: 'Raider', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
+  ];
+
+  const [playerStats1, setPlayerStats1] = useState(() => match?.playerStats1 || defaultKabaddiTeam1);
+  const [playerStats2, setPlayerStats2] = useState(() => match?.playerStats2 || defaultKabaddiTeam2);
 
   // States for general set-based sports
   const [format, setFormat] = useState(match?.format || 'Best of 5 Sets');
   const maxSets = format === 'Best of 3 Sets' ? 3 : 5;
   const targetSetsToWin = format === 'Best of 3 Sets' ? 2 : 3;
 
-  const [score1, setScore1] = useState(match?.score1 || 0);
-  const [score2, setScore2] = useState(match?.score2 || 0);
+  const [score1, setScore1] = useState(() => {
+    if (isKabaddi && playerStats1 && playerStats1.length > 0) {
+      return playerStats1.reduce((sum, p) => sum + (p.total || 0), 0);
+    }
+    return match?.score1 || 0;
+  });
+
+  const [score2, setScore2] = useState(() => {
+    if (isKabaddi && playerStats2 && playerStats2.length > 0) {
+      return playerStats2.reduce((sum, p) => sum + (p.total || 0), 0);
+    }
+    return match?.score2 || 0;
+  });
+
   const [activeTurn, setActiveTurn] = useState(match?.activeTurn || 1);
   const [currentSetIndex, setCurrentSetIndex] = useState(match?.currentSet || 1);
   const [isPaused, setIsPaused] = useState(match?.isPaused || false);
@@ -69,6 +113,8 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
       setsHistory,
       setsWon1,
       setsWon2,
+      playerStats1,
+      playerStats2,
       format,
       ...overrideData,
     };
@@ -78,6 +124,66 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
     } catch (err) {
       console.warn('Error syncing score state to server', err);
     }
+  };
+
+  // Kabaddi Per-Player Stat Action Change
+  const handleKabaddiStatChange = (teamNum, playerId, statType, delta) => {
+    if (matchWinner) return;
+    saveStateToUndo();
+
+    const updateRoster = (roster) =>
+      roster.map((p) => {
+        if (p.id === playerId) {
+          let raidPts = p.raidPts || 0;
+          let tacklePts = p.tacklePts || 0;
+          let bonusPts = p.bonusPts || 0;
+          let superRaid = p.superRaid || 0;
+          let superTackle = p.superTackle || 0;
+
+          if (statType === 'raidPts') raidPts = Math.max(0, raidPts + delta);
+          if (statType === 'tacklePts') tacklePts = Math.max(0, tacklePts + delta);
+          if (statType === 'bonusPts') bonusPts = Math.max(0, bonusPts + delta);
+          if (statType === 'superRaid') {
+            superRaid = Math.max(0, superRaid + delta);
+            if (delta > 0) raidPts += 3;
+            else raidPts = Math.max(0, raidPts - 3);
+          }
+          if (statType === 'superTackle') {
+            superTackle = Math.max(0, superTackle + delta);
+            if (delta > 0) tacklePts += 2;
+            else tacklePts = Math.max(0, tacklePts - 2);
+          }
+
+          const total = raidPts + tacklePts + bonusPts;
+
+          return { ...p, raidPts, tacklePts, bonusPts, superRaid, superTackle, total };
+        }
+        return p;
+      });
+
+    let newStats1 = playerStats1;
+    let newStats2 = playerStats2;
+
+    if (teamNum === 1) {
+      newStats1 = updateRoster(playerStats1);
+      setPlayerStats1(newStats1);
+    } else {
+      newStats2 = updateRoster(playerStats2);
+      setPlayerStats2(newStats2);
+    }
+
+    const newScore1 = newStats1.reduce((sum, p) => sum + (p.total || 0), 0);
+    const newScore2 = newStats2.reduce((sum, p) => sum + (p.total || 0), 0);
+
+    setScore1(newScore1);
+    setScore2(newScore2);
+
+    syncToServer({
+      score1: newScore1,
+      score2: newScore2,
+      playerStats1: newStats1,
+      playerStats2: newStats2,
+    });
   };
 
   // Push to undo stack
@@ -333,6 +439,8 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
       setsWon1: calculatedSetsWon1,
       setsWon2: calculatedSetsWon2,
       setsHistory,
+      playerStats1,
+      playerStats2,
       scoreSummary,
       status: 'COMPLETED',
       tableNumber: null,
@@ -626,6 +734,191 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
           </div>
 
         </div>
+
+        {/* KABADDI DETAILED PER-PLAYER SCORING CONTROLLER & SCORE SHEET */}
+        {isKabaddi && (
+          <div className="p-6 bg-slate-50 dark:bg-[#0B1120] border-b border-slate-200 dark:border-slate-800 space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-4">
+              <div>
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[10px] font-mono font-bold uppercase tracking-wider">
+                  🤼 KABADDI PER-PLAYER SCORING & SCORE SHEET
+                </span>
+                <h4 className="text-base font-black text-slate-900 dark:text-white mt-1">
+                  Team & Player Details Score Sheet
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Click point buttons to award Raid Pts, Tackle Pts, Bonus, Super Raid, or Super Tackle to individual players in real-time.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {/* Team 1 Score Table */}
+              <div className="bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+                <div className="px-4 py-3 bg-amber-500/10 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                  <span className="font-black text-xs text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                    {match.team1 || 'Team A'} Player Details
+                  </span>
+                  <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                    Total Team Points: <strong className="text-amber-600 dark:text-amber-400 text-sm">{score1} PTS</strong>
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto custom-scrollbar">
+                  <table className="w-full text-left text-xs min-w-[700px]">
+                    <thead className="bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 font-mono text-[10px] uppercase font-bold">
+                      <tr>
+                        <th className="px-3 py-2.5">#</th>
+                        <th className="px-3 py-2.5">Player</th>
+                        <th className="px-3 py-2.5">Jersey No.</th>
+                        <th className="px-3 py-2.5">Position</th>
+                        <th className="px-3 py-2.5 text-center">Raid Pts</th>
+                        <th className="px-3 py-2.5 text-center">Tackle Pts</th>
+                        <th className="px-3 py-2.5 text-center">Bonus</th>
+                        <th className="px-3 py-2.5 text-center">Super Raid</th>
+                        <th className="px-3 py-2.5 text-center">Super Tackle</th>
+                        <th className="px-3 py-2.5 text-center">Total</th>
+                        <th className="px-3 py-2.5 text-center">Point Actions (+ / -)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                      {playerStats1.map((p, idx) => (
+                        <tr key={p.id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition">
+                          <td className="px-3 py-2 font-mono font-bold text-slate-400">{idx + 1}</td>
+                          <td className="px-3 py-2 font-bold text-slate-900 dark:text-white whitespace-nowrap">{p.name}</td>
+                          <td className="px-3 py-2 font-mono font-bold text-amber-600 dark:text-amber-400">#{p.jersey}</td>
+                          <td className="px-3 py-2 text-slate-500 dark:text-slate-400 text-[11px] whitespace-nowrap">{p.position}</td>
+                          <td className="px-3 py-2 text-center font-mono font-bold text-blue-600 dark:text-blue-400">{p.raidPts || 0}</td>
+                          <td className="px-3 py-2 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">{p.tacklePts || 0}</td>
+                          <td className="px-3 py-2 text-center font-mono font-bold text-purple-600 dark:text-purple-400">{p.bonusPts || 0}</td>
+                          <td className="px-3 py-2 text-center font-mono font-bold text-amber-500">{p.superRaid || 0}</td>
+                          <td className="px-3 py-2 text-center font-mono font-bold text-rose-500">{p.superTackle || 0}</td>
+                          <td className="px-3 py-2 text-center font-mono font-black text-sm text-slate-900 dark:text-white">{p.total || 0}</td>
+                          <td className="px-3 py-2">
+                            <div className="flex flex-wrap items-center justify-center gap-1.5">
+                              {/* Raid */}
+                              <div className="flex items-center rounded-lg bg-blue-500/10 border border-blue-500/20 p-0.5">
+                                <button onClick={() => handleKabaddiStatChange(1, p.id, 'raidPts', -1)} className="px-1.5 py-0.5 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 font-bold text-xs rounded transition cursor-pointer" title="Reduce Raid Pt">-</button>
+                                <span className="px-1 text-[10px] font-bold text-blue-600 dark:text-blue-400">Raid</span>
+                                <button onClick={() => handleKabaddiStatChange(1, p.id, 'raidPts', 1)} className="px-1.5 py-0.5 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 font-bold text-xs rounded transition cursor-pointer" title="Add Raid Pt">+</button>
+                              </div>
+                              {/* Tackle */}
+                              <div className="flex items-center rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-0.5">
+                                <button onClick={() => handleKabaddiStatChange(1, p.id, 'tacklePts', -1)} className="px-1.5 py-0.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 font-bold text-xs rounded transition cursor-pointer" title="Reduce Tackle Pt">-</button>
+                                <span className="px-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Tackle</span>
+                                <button onClick={() => handleKabaddiStatChange(1, p.id, 'tacklePts', 1)} className="px-1.5 py-0.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 font-bold text-xs rounded transition cursor-pointer" title="Add Tackle Pt">+</button>
+                              </div>
+                              {/* Bonus */}
+                              <div className="flex items-center rounded-lg bg-purple-500/10 border border-purple-500/20 p-0.5">
+                                <button onClick={() => handleKabaddiStatChange(1, p.id, 'bonusPts', -1)} className="px-1.5 py-0.5 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 font-bold text-xs rounded transition cursor-pointer" title="Reduce Bonus Pt">-</button>
+                                <span className="px-1 text-[10px] font-bold text-purple-600 dark:text-purple-400">Bonus</span>
+                                <button onClick={() => handleKabaddiStatChange(1, p.id, 'bonusPts', 1)} className="px-1.5 py-0.5 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 font-bold text-xs rounded transition cursor-pointer" title="Add Bonus Pt">+</button>
+                              </div>
+                              {/* S.Raid */}
+                              <div className="flex items-center rounded-lg bg-amber-500/10 border border-amber-500/20 p-0.5">
+                                <button onClick={() => handleKabaddiStatChange(1, p.id, 'superRaid', -1)} className="px-1.5 py-0.5 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 font-bold text-xs rounded transition cursor-pointer" title="Reduce Super Raid">-</button>
+                                <span className="px-1 text-[10px] font-bold text-amber-600 dark:text-amber-400">S.Raid</span>
+                                <button onClick={() => handleKabaddiStatChange(1, p.id, 'superRaid', 1)} className="px-1.5 py-0.5 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 font-bold text-xs rounded transition cursor-pointer" title="Add Super Raid (+3 Pts)">+</button>
+                              </div>
+                              {/* S.Tackle */}
+                              <div className="flex items-center rounded-lg bg-rose-500/10 border border-rose-500/20 p-0.5">
+                                <button onClick={() => handleKabaddiStatChange(1, p.id, 'superTackle', -1)} className="px-1.5 py-0.5 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 font-bold text-xs rounded transition cursor-pointer" title="Reduce Super Tackle">-</button>
+                                <span className="px-1 text-[10px] font-bold text-rose-600 dark:text-rose-400">S.Tackle</span>
+                                <button onClick={() => handleKabaddiStatChange(1, p.id, 'superTackle', 1)} className="px-1.5 py-0.5 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 font-bold text-xs rounded transition cursor-pointer" title="Add Super Tackle (+2 Pts)">+</button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Team 2 Score Table */}
+              <div className="bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+                <div className="px-4 py-3 bg-amber-500/10 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                  <span className="font-black text-xs text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                    {match.team2 || 'Team B'} Player Details
+                  </span>
+                  <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                    Total Team Points: <strong className="text-amber-600 dark:text-amber-400 text-sm">{score2} PTS</strong>
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto custom-scrollbar">
+                  <table className="w-full text-left text-xs min-w-[700px]">
+                    <thead className="bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 font-mono text-[10px] uppercase font-bold">
+                      <tr>
+                        <th className="px-3 py-2.5">#</th>
+                        <th className="px-3 py-2.5">Player</th>
+                        <th className="px-3 py-2.5">Jersey No.</th>
+                        <th className="px-3 py-2.5">Position</th>
+                        <th className="px-3 py-2.5 text-center">Raid Pts</th>
+                        <th className="px-3 py-2.5 text-center">Tackle Pts</th>
+                        <th className="px-3 py-2.5 text-center">Bonus</th>
+                        <th className="px-3 py-2.5 text-center">Super Raid</th>
+                        <th className="px-3 py-2.5 text-center">Super Tackle</th>
+                        <th className="px-3 py-2.5 text-center">Total</th>
+                        <th className="px-3 py-2.5 text-center">Point Actions (+ / -)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                      {playerStats2.map((p, idx) => (
+                        <tr key={p.id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition">
+                          <td className="px-3 py-2 font-mono font-bold text-slate-400">{idx + 1}</td>
+                          <td className="px-3 py-2 font-bold text-slate-900 dark:text-white whitespace-nowrap">{p.name}</td>
+                          <td className="px-3 py-2 font-mono font-bold text-amber-600 dark:text-amber-400">#{p.jersey}</td>
+                          <td className="px-3 py-2 text-slate-500 dark:text-slate-400 text-[11px] whitespace-nowrap">{p.position}</td>
+                          <td className="px-3 py-2 text-center font-mono font-bold text-blue-600 dark:text-blue-400">{p.raidPts || 0}</td>
+                          <td className="px-3 py-2 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">{p.tacklePts || 0}</td>
+                          <td className="px-3 py-2 text-center font-mono font-bold text-purple-600 dark:text-purple-400">{p.bonusPts || 0}</td>
+                          <td className="px-3 py-2 text-center font-mono font-bold text-amber-500">{p.superRaid || 0}</td>
+                          <td className="px-3 py-2 text-center font-mono font-bold text-rose-500">{p.superTackle || 0}</td>
+                          <td className="px-3 py-2 text-center font-mono font-black text-sm text-slate-900 dark:text-white">{p.total || 0}</td>
+                          <td className="px-3 py-2">
+                            <div className="flex flex-wrap items-center justify-center gap-1.5">
+                              {/* Raid */}
+                              <div className="flex items-center rounded-lg bg-blue-500/10 border border-blue-500/20 p-0.5">
+                                <button onClick={() => handleKabaddiStatChange(2, p.id, 'raidPts', -1)} className="px-1.5 py-0.5 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 font-bold text-xs rounded transition cursor-pointer" title="Reduce Raid Pt">-</button>
+                                <span className="px-1 text-[10px] font-bold text-blue-600 dark:text-blue-400">Raid</span>
+                                <button onClick={() => handleKabaddiStatChange(2, p.id, 'raidPts', 1)} className="px-1.5 py-0.5 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 font-bold text-xs rounded transition cursor-pointer" title="Add Raid Pt">+</button>
+                              </div>
+                              {/* Tackle */}
+                              <div className="flex items-center rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-0.5">
+                                <button onClick={() => handleKabaddiStatChange(2, p.id, 'tacklePts', -1)} className="px-1.5 py-0.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 font-bold text-xs rounded transition cursor-pointer" title="Reduce Tackle Pt">-</button>
+                                <span className="px-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Tackle</span>
+                                <button onClick={() => handleKabaddiStatChange(2, p.id, 'tacklePts', 1)} className="px-1.5 py-0.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 font-bold text-xs rounded transition cursor-pointer" title="Add Tackle Pt">+</button>
+                              </div>
+                              {/* Bonus */}
+                              <div className="flex items-center rounded-lg bg-purple-500/10 border border-purple-500/20 p-0.5">
+                                <button onClick={() => handleKabaddiStatChange(2, p.id, 'bonusPts', -1)} className="px-1.5 py-0.5 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 font-bold text-xs rounded transition cursor-pointer" title="Reduce Bonus Pt">-</button>
+                                <span className="px-1 text-[10px] font-bold text-purple-600 dark:text-purple-400">Bonus</span>
+                                <button onClick={() => handleKabaddiStatChange(2, p.id, 'bonusPts', 1)} className="px-1.5 py-0.5 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 font-bold text-xs rounded transition cursor-pointer" title="Add Bonus Pt">+</button>
+                              </div>
+                              {/* S.Raid */}
+                              <div className="flex items-center rounded-lg bg-amber-500/10 border border-amber-500/20 p-0.5">
+                                <button onClick={() => handleKabaddiStatChange(2, p.id, 'superRaid', -1)} className="px-1.5 py-0.5 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 font-bold text-xs rounded transition cursor-pointer" title="Reduce Super Raid">-</button>
+                                <span className="px-1 text-[10px] font-bold text-amber-600 dark:text-amber-400">S.Raid</span>
+                                <button onClick={() => handleKabaddiStatChange(2, p.id, 'superRaid', 1)} className="px-1.5 py-0.5 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 font-bold text-xs rounded transition cursor-pointer" title="Add Super Raid (+3 Pts)">+</button>
+                              </div>
+                              {/* S.Tackle */}
+                              <div className="flex items-center rounded-lg bg-rose-500/10 border border-rose-500/20 p-0.5">
+                                <button onClick={() => handleKabaddiStatChange(2, p.id, 'superTackle', -1)} className="px-1.5 py-0.5 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 font-bold text-xs rounded transition cursor-pointer" title="Reduce Super Tackle">-</button>
+                                <span className="px-1 text-[10px] font-bold text-rose-600 dark:text-rose-400">S.Tackle</span>
+                                <button onClick={() => handleKabaddiStatChange(2, p.id, 'superTackle', 1)} className="px-1.5 py-0.5 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 font-bold text-xs rounded transition cursor-pointer" title="Add Super Tackle (+2 Pts)">+</button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* SET SCORES LOG Section */}
         <div className="p-6 bg-white dark:bg-[#0B1120] border-b border-slate-200 dark:border-slate-800 space-y-4">
