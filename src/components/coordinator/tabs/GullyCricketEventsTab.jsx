@@ -26,31 +26,33 @@ export const GullyCricketEventsTab = ({ user }) => {
   const [showCropper, setShowCropper] = useState(false);
   const [cropperRawSrc, setCropperRawSrc] = useState(null);
 
-  // Form State specifically for Gully Cricket (Team Fee only, Min 6 & Max 8 players)
+  // Form State specifically for Gully Cricket (Team Fee, Min 6 & Max 8 players, Overs, Ball Type)
   const [formData, setFormData] = useState({
     title: '',
     sportName: 'Gully Cricket',
-    coverImage: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYTENZs6EFVZgdCAhlvuzBiLHu0Pty9fKyTRI3Q5cuhQ&s=10',
+    coverImage: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=800&q=80',
     description: '',
     regStartDate: new Date().toISOString().split('T')[0],
     regEndDate: '2026-08-30',
     tournStartDate: '2026-09-05',
     tournEndDate: '2026-09-07',
-    teamFee: 1000, // Team registration fee ONLY
-    minPlayers: 6,  // Min players per squad
-    maxPlayers: 8,  // Max players per squad
+    teamFee: 1000,
+    minPlayers: 6,
+    maxPlayers: 8,
     overs: 6,
-    matchFormat: 'Tennis Ball Cricket',
+    ballType: 'Tennis Ball', // Tennis Ball / Tape Ball / Rubber Ball
     teamSize: '6 - 8 Players',
     registeredCount: 0,
-    venue: 'Central Ground B',
+    venue: 'Ground 1',
     category: 'Open',
     status: 'Published',
     rules: [
-      'Official tennis ball gully cricket tournament rules apply.',
-      'Team squad must consist of minimum 6 and maximum 8 players.',
-      'College Student ID & Pass mandatory for all players.',
-      'Standard tennis ball and street/box rules strictly followed.'
+      '1. Team Composition: Each team consists of 6 to 8 players squad.',
+      '2. Match Format: Played with Tennis Ball / Tape Ball / Rubber Ball across specified Overs.',
+      '3. Scoring: Runs & Wickets recorded per ball. Extras include Wides, No-Balls, Byes.',
+      '4. Toss & Batting First: Toss winner decides Batting First or Bowling First.',
+      '5. Umpire Decision: Umpire decision is final and binding.',
+      '6. Guidelines: Report 15 mins early. Valid College ID mandatory.'
     ],
     requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'Team Roster Approval Form'],
     contactName: user?.coordinatorName || 'Chiku Bhai',
@@ -69,33 +71,7 @@ export const GullyCricketEventsTab = ({ user }) => {
     try {
       setLoading(true);
       const list = await coordinatorApi.getEvents();
-      const gullyList = (list || []).filter(e => (e.sportName || '').toLowerCase().includes('gully') || (e.sportId || '').toLowerCase().includes('gully'));
-      setEvents(gullyList.length > 0 ? gullyList : [
-        {
-          id: 'EVT-GULLY-CRICKET-001',
-          title: '6-Overs Fast Box Gully Cricket Championship 2026',
-          sportName: 'Gully Cricket',
-          coverImage: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYTENZs6EFVZgdCAhlvuzBiLHu0Pty9fKyTRI3Q5cuhQ&s=10',
-          description: 'Official inter-college Gully Cricket tournament. Register team entries (6 - 8 players) today!',
-          regStartDate: '2026-07-01',
-          regEndDate: '2026-08-30',
-          tournStartDate: '2026-09-05',
-          tournEndDate: '2026-09-07',
-          teamFee: 1000,
-          minPlayers: 6,
-          maxPlayers: 8,
-          overs: 6,
-          matchFormat: 'Tennis Ball Cricket',
-          teamSize: '6 - 8 Players',
-          registeredCount: 0,
-          venue: 'Central Ground B',
-          category: 'Open',
-          status: 'Published',
-          rules: ['Official tournament rules apply.'],
-          requiredDocuments: ['College Student ID Card'],
-          contactInfo: { name: 'Chiku Bhai', email: 'gullycricket.coord@sems.edu', phone: '+91 98765 43210' }
-        }
-      ]);
+      setEvents(list);
     } catch (err) {
       addToast('Error loading gully cricket events console', 'error');
     } finally {
@@ -103,7 +79,6 @@ export const GullyCricketEventsTab = ({ user }) => {
     }
   };
 
-  // Preset form on Edit event
   const handleOpenEdit = (eventObj) => {
     setEditingEvent(eventObj);
     const minP = eventObj.minPlayers !== undefined ? eventObj.minPlayers : 6;
@@ -112,7 +87,7 @@ export const GullyCricketEventsTab = ({ user }) => {
     setFormData({
       title: eventObj.title || '',
       sportName: 'Gully Cricket',
-      coverImage: eventObj.coverImage || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYTENZs6EFVZgdCAhlvuzBiLHu0Pty9fKyTRI3Q5cuhQ&s=10',
+      coverImage: eventObj.coverImage || 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=800&q=80',
       description: eventObj.description || '',
       regStartDate: eventObj.regStartDate || new Date().toISOString().split('T')[0],
       regEndDate: eventObj.regEndDate || '2026-08-30',
@@ -122,10 +97,10 @@ export const GullyCricketEventsTab = ({ user }) => {
       minPlayers: minP,
       maxPlayers: maxP,
       overs: eventObj.overs !== undefined ? eventObj.overs : 6,
-      matchFormat: eventObj.matchFormat || 'Tennis Ball Cricket',
+      ballType: eventObj.ballType || 'Tennis Ball',
       teamSize: `${minP} - ${maxP} Players`,
       registeredCount: eventObj.registeredCount || 0,
-      venue: eventObj.venue || 'Central Ground B',
+      venue: eventObj.venue || 'Ground 1',
       category: eventObj.category === 'Mixed' ? 'Open' : (eventObj.category || 'Open'),
       status: eventObj.status || 'Published',
       rules: eventObj.rules || [],
@@ -139,14 +114,13 @@ export const GullyCricketEventsTab = ({ user }) => {
     setShowCreateModal(true);
   };
 
-  // Preset form on Create event
   const handleOpenCreate = () => {
     setEditingEvent(null);
     setFormData({
-      title: '6-Overs Fast Box Gully Cricket Championship 2026',
+      title: 'Inter-College Gully Cricket Championship 2026',
       sportName: 'Gully Cricket',
-      coverImage: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYTENZs6EFVZgdCAhlvuzBiLHu0Pty9fKyTRI3Q5cuhQ&s=10',
-      description: 'Official inter-college Gully Cricket tournament. Register team entries (6 - 8 players) today!',
+      coverImage: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=800&q=80',
+      description: 'Official inter-college Gully Cricket tournament. Register Team A and Team B squads (6 - 8 players) today!',
       regStartDate: new Date().toISOString().split('T')[0],
       regEndDate: '2026-08-30',
       tournStartDate: '2026-09-05',
@@ -155,23 +129,33 @@ export const GullyCricketEventsTab = ({ user }) => {
       minPlayers: 6,
       maxPlayers: 8,
       overs: 6,
-      matchFormat: 'Tennis Ball Cricket',
+      ballType: 'Tennis Ball',
       teamSize: '6 - 8 Players',
       registeredCount: 0,
-      venue: 'Central Ground B',
+      venue: 'Ground 1',
       category: 'Open',
       status: 'Published',
       rules: [
-        'Official tournament rules apply.',
-        'Team squad must consist of min 6 and max 8 players.',
-        'College ID mandatory for all squad members.'
+        '1. Team Composition: Each team consists of 6 to 8 players squad.',
+        '2. Match Format: Played with Tennis Ball / Tape Ball / Rubber Ball across specified Overs.',
+        '3. Scoring: Runs & Wickets recorded per ball. Extras include Wides, No-Balls, Byes.',
+        '4. Toss & Batting First: Toss winner decides Batting First or Bowling First.',
+        '5. Umpire Decision: Umpire decision is final and binding.',
+        '6. Guidelines: Report 15 mins early. Valid College ID mandatory.'
       ],
       requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID'],
       contactName: user?.coordinatorName || 'Chiku Bhai',
       contactEmail: user?.email || 'gullycricket.coord@sems.edu',
       contactPhone: '+91 98765 43210'
     });
-    setRulesInput('Official tournament rules apply.\nTeam squad must consist of min 6 and max 8 players.\nCollege Student ID Card mandatory.');
+    setRulesInput(`Gully Cricket Tournament Rules
+
+1. Team Composition: Each team consists of 6 to 8 players squad.
+2. Match Format: Played with Tennis Ball / Tape Ball / Rubber Ball across specified Overs.
+3. Scoring: Runs & Wickets recorded per ball. Extras include Wides, No-Balls, Byes.
+4. Toss & Batting First: Toss winner decides Batting First or Bowling First.
+5. Umpire Decision: Umpire decision is final and binding.
+6. Guidelines: Report 15 mins early. Valid College ID mandatory.`);
     setDocInput('College Student ID Card\nAadhaar Card / Govt ID');
     setShowCreateModal(true);
   };
@@ -196,7 +180,7 @@ export const GullyCricketEventsTab = ({ user }) => {
   const handleRemoveCover = () => {
     setFormData((prev) => ({
       ...prev,
-      coverImage: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYTENZs6EFVZgdCAhlvuzBiLHu0Pty9fKyTRI3Q5cuhQ&s=10'
+      coverImage: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=800&q=80'
     }));
   };
 
@@ -240,24 +224,17 @@ export const GullyCricketEventsTab = ({ user }) => {
       if (editingEvent) {
         const updated = await coordinatorApi.updateEvent(editingEvent.id, eventPayload);
         setEvents((prev) => prev.map((item) => (item.id === editingEvent.id ? updated : item)));
-        addToast('Gully Cricket Event Updated Successfully', 'success');
+        addToast(`Gully Cricket registration event "${updated.title}" updated!`, 'success');
       } else {
         const created = await coordinatorApi.createEvent(eventPayload);
         setEvents((prev) => [created, ...prev]);
-        addToast('Gully Cricket Event Created Successfully', 'success');
+        addToast(`New gully cricket registration event "${created.title}" published!`, 'success');
       }
 
       setShowCreateModal(false);
       fetchEvents();
     } catch (err) {
-      if (editingEvent) {
-        setEvents(prev => prev.map(item => item.id === editingEvent.id ? { ...item, ...eventPayload } : item));
-        addToast('Gully Cricket Event Updated Successfully', 'success');
-      } else {
-        setEvents(prev => [{ ...eventPayload, id: `EVT-GULLY-${Date.now()}` }, ...prev]);
-        addToast('Gully Cricket Event Created Successfully', 'success');
-      }
-      setShowCreateModal(false);
+      addToast('Failed to save gully cricket registration event', 'error');
     }
   };
 
@@ -265,9 +242,11 @@ export const GullyCricketEventsTab = ({ user }) => {
     if (window.confirm(`Are you sure you want to delete gully cricket event "${title}"?`)) {
       try {
         await coordinatorApi.deleteEvent(id);
-      } catch (e) {}
-      setEvents((prev) => prev.filter((item) => item.id !== id));
-      addToast('Gully Cricket event deleted successfully', 'info');
+        setEvents((prev) => prev.filter((item) => item.id !== id));
+        addToast('Gully Cricket event deleted successfully', 'info');
+      } catch (err) {
+        addToast('Failed to delete event', 'error');
+      }
     }
   };
 
@@ -283,23 +262,16 @@ export const GullyCricketEventsTab = ({ user }) => {
     try {
       const updated = await coordinatorApi.updateEvent(eventObj.id, { status: nextStatus });
       setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? updated : item)));
-    } catch (e) {
-      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, status: nextStatus } : item)));
+      addToast(`Event status changed to ${nextStatus}`, 'info');
+    } catch (err) {
+      addToast('Status toggle failed', 'error');
     }
-    addToast(`Event status changed to ${nextStatus}`, 'info');
   };
 
   const handleViewParticipants = async (eventObj) => {
     setSelectedEventForParticipants(eventObj);
-    try {
-      const allRegs = await coordinatorApi.getRegistrations();
-      setParticipants(allRegs || []);
-    } catch (e) {
-      setParticipants([
-        { id: 'REG-GULLY-5001', teamName: 'Gully Smashers', studentName: 'Dr. Nikhil Arora', college: 'MPDC', department: 'Dental Surgery', squadCount: '7 Players', contactPhone: '+91 9876543210', status: 'VERIFIED', registeredDate: '2026-08-02' },
-        { id: 'REG-GULLY-6001', teamName: 'Street Kings', studentName: 'Tushar Saxena', college: 'MPCAMS', department: 'Nursing & Paramedical', squadCount: '6 Players', contactPhone: '+91 9876543211', status: 'VERIFIED', registeredDate: '2026-08-03' }
-      ]);
-    }
+    const allRegs = await coordinatorApi.getRegistrations();
+    setParticipants(allRegs);
   };
 
   const totalEvents = events.length;
@@ -422,13 +394,12 @@ export const GullyCricketEventsTab = ({ user }) => {
                   {/* Cover Banner */}
                   <div className="relative h-44 w-full bg-slate-900 overflow-hidden">
                     <img
-                      src={event.coverImage || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYTENZs6EFVZgdCAhlvuzBiLHu0Pty9fKyTRI3Q5cuhQ&s=10'}
+                      src={event.coverImage || 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=800&q=80'}
                       alt={event.title}
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/30 to-transparent" />
 
-                    {/* Status Badge */}
                     <div className="absolute top-3 left-3 flex items-center gap-2">
                       <span className={`px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase border shadow-md ${
                         event.status === 'Published'
@@ -446,7 +417,6 @@ export const GullyCricketEventsTab = ({ user }) => {
                       </span>
                     </div>
 
-                    {/* Team Fee Display Badge */}
                     <div className="absolute top-3 right-3 bg-slate-950/85 backdrop-blur-xs px-3.5 py-1 rounded-full text-xs font-black text-amber-400 border border-amber-500/30 shadow-md">
                       Team Fee: ₹{fee}
                     </div>
@@ -477,7 +447,7 @@ export const GullyCricketEventsTab = ({ user }) => {
                         <span className="font-bold text-slate-900 dark:text-white text-[11px]">{event.tournStartDate} to {event.tournEndDate}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono">Venue / Location</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono">Ground / Venue</span>
                         <span className="font-bold text-orange-600 dark:text-orange-400 text-[11px] truncate block">{event.venue}</span>
                       </div>
                       <div>
@@ -581,7 +551,7 @@ export const GullyCricketEventsTab = ({ user }) => {
                     required
                     value={formData.title}
                     onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
-                    placeholder="e.g. 6-Overs Fast Box Gully Cricket Championship 2026"
+                    placeholder="e.g. Inter-College Gully Cricket Championship 2026"
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
@@ -599,6 +569,7 @@ export const GullyCricketEventsTab = ({ user }) => {
                 </div>
               </div>
 
+              {/* Cover Banner Upload & Cropper */}
               <div className="space-y-2 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
                 <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
                   Cover Banner Image Upload & Cropper
@@ -615,7 +586,7 @@ export const GullyCricketEventsTab = ({ user }) => {
 
                   <div className="flex-1 space-y-2 w-full">
                     <p className="text-[11px] text-slate-600 dark:text-slate-400">
-                      Upload a high-resolution Gully Cricket cover image. Click "Crop & Resize" to trim it to the standard 16:9 banner before publishing.
+                      Upload a high-resolution Gully Cricket cover image. Click "Crop & Resize" to trim to standard 16:9 banner format before publishing.
                     </p>
                     <div className="flex flex-wrap items-center gap-2">
                       <label className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white text-xs font-bold cursor-pointer transition flex items-center gap-1.5">
@@ -663,11 +634,12 @@ export const GullyCricketEventsTab = ({ user }) => {
                   rows={3}
                   value={formData.description}
                   onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                  placeholder="Enter detailed description of Gully Cricket tournament rules, overs, tennis ball rules, eligibility..."
+                  placeholder="Enter detailed description of Gully Cricket tournament rules, overs, ball types, eligibility..."
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
 
+              {/* Date Ranges */}
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div className="space-y-1">
                   <label className="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">Reg Start Date</label>
@@ -707,38 +679,7 @@ export const GullyCricketEventsTab = ({ user }) => {
                 </div>
               </div>
 
-              {/* MATCH FORMAT & OVERS */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
-                    Match Format <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.matchFormat}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, matchFormat: e.target.value }))}
-                    placeholder="Tennis Ball Cricket"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
-                    Overs <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="50"
-                    value={formData.overs}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, overs: parseInt(e.target.value, 10) || 6 }))}
-                    placeholder="6"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold"
-                  />
-                </div>
-              </div>
-
-              {/* TEAM PRICING & SQUAD LIMITS SECTION */}
+              {/* TEAM FEE & SQUAD LIMITS */}
               <div className="p-4 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-4">
                 <div className="flex items-center gap-2 border-b border-orange-500/20 pb-2">
                   <DollarSign className="w-4 h-4 text-orange-600 dark:text-orange-400" />
@@ -783,7 +724,7 @@ export const GullyCricketEventsTab = ({ user }) => {
                       }}
                       className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-900 dark:text-white"
                     />
-                    <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Team Size: Minimum 6 Players</p>
+                    <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Default: 6</p>
                   </div>
 
                   <div className="space-y-1">
@@ -802,8 +743,38 @@ export const GullyCricketEventsTab = ({ user }) => {
                       }}
                       className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-900 dark:text-white"
                     />
-                    <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Maximum 8 Players</p>
+                    <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Default: 8</p>
                   </div>
+                </div>
+              </div>
+
+              {/* Overs & Ball Type (Tennis Ball / Tape Ball / Rubber Ball) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Overs (5, 6, 8, 10, Custom)</label>
+                  <select
+                    value={formData.overs}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, overs: parseInt(e.target.value, 10) || 6 }))}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-slate-900 dark:text-white"
+                  >
+                    <option value={5}>5 Overs</option>
+                    <option value={6}>6 Overs</option>
+                    <option value={8}>8 Overs</option>
+                    <option value={10}>10 Overs</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Ball Type</label>
+                  <select
+                    value={formData.ballType}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, ballType: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-slate-900 dark:text-white"
+                  >
+                    <option value="Tennis Ball">Tennis Ball</option>
+                    <option value="Tape Ball">Tape Ball</option>
+                    <option value="Rubber Ball">Rubber Ball</option>
+                  </select>
                 </div>
               </div>
 
@@ -837,32 +808,32 @@ export const GullyCricketEventsTab = ({ user }) => {
               </div>
 
               <div className="space-y-1">
-                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Venue / Location</label>
+                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Ground / Location</label>
                 <input
                   type="text"
                   value={formData.venue}
                   onChange={(e) => setFormData((prev) => ({ ...prev, venue: e.target.value }))}
-                  placeholder="Enter Gully Cricket Ground / Venue"
+                  placeholder="e.g. Ground 1"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold"
                 />
               </div>
 
               <div className="space-y-1">
                 <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
-                  Rules & Regulations (One rule per line for Gully Cricket)
+                  Rules & Regulations (One per line)
                 </label>
                 <textarea
                   rows={3}
                   value={rulesInput}
                   onChange={(e) => setRulesInput(e.target.value)}
-                  placeholder="Official tennis ball gully rules apply&#10;Min 6 and Max 8 players required per squad&#10;Underarm/overarm as agreed"
+                  placeholder="Tennis ball gully rules apply&#10;Min 6 and Max 8 players required per squad"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-mono"
                 />
               </div>
 
               <div className="space-y-1">
                 <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
-                  Required Documents (One document per line)
+                  Required Documents (One per line)
                 </label>
                 <textarea
                   rows={2}
@@ -964,21 +935,21 @@ export const GullyCricketEventsTab = ({ user }) => {
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                   {filteredParticipants.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="py-8 text-center text-slate-400 text-xs">
-                        No team registrations found matching query.
-                      </td>
+                      <td colSpan="6" className="p-8 text-center text-slate-400 font-mono">No registered squads found.</td>
                     </tr>
                   ) : (
                     filteredParticipants.map((p) => (
-                      <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition">
+                      <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition">
                         <td className="p-3 font-mono font-bold text-orange-600 dark:text-orange-400">{p.id}</td>
-                        <td className="p-3 font-bold text-slate-900 dark:text-white">{p.teamName || p.studentName}</td>
+                        <td className="p-3 font-black text-slate-900 dark:text-white">{p.teamName || p.studentName}</td>
                         <td className="p-3">{p.college}</td>
-                        <td className="p-3">{p.category || 'Open'}</td>
-                        <td className="p-3 font-mono">6-8 Players</td>
-                        <td className="p-3 text-right">
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                            {p.status || 'VERIFIED'}
+                        <td className="p-3 uppercase font-mono text-[10px]">{p.category || 'Open'}</td>
+                        <td className="p-3 font-mono">{p.squadCount || '6 - 8'}</td>
+                        <td className="p-3 text-right font-mono">
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                            p.status === 'VERIFIED' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
+                          }`}>
+                            {p.status || 'Pending'}
                           </span>
                         </td>
                       </tr>
@@ -992,11 +963,12 @@ export const GullyCricketEventsTab = ({ user }) => {
         </div>
       )}
 
-      {showCropper && cropperRawSrc && (
+      {showCropper && (
         <ImageCropperModal
           imageSrc={cropperRawSrc}
-          onClose={() => setShowCropper(false)}
+          aspectRatio={16 / 9}
           onCropComplete={handleCropComplete}
+          onClose={() => setShowCropper(false)}
         />
       )}
 
