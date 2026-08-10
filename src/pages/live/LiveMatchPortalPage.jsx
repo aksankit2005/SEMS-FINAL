@@ -48,6 +48,37 @@ export const LiveMatchPortalPage = () => {
         } catch (e) { }
       }
 
+      // Check Athletics live stream state
+      const cachedAthleticsStream = localStorage.getItem('sems_athletics_live_stream');
+      if (cachedAthleticsStream) {
+        try {
+          const parsedAth = JSON.parse(cachedAthleticsStream);
+          if (parsedAth && (parsedAth.status === 'In Progress' || parsedAth.status === 'running' || parsedAth.status === 'live')) {
+            const athId = 'M-ATHLETICS-LIVE';
+            if (!completedMatchIds.has(athId) && !localActiveList.some((m) => m.id === athId)) {
+              localActiveList.push({
+                id: athId,
+                sportId: 'athletics',
+                sportName: 'Athletics',
+                matchTitle: `Athletics Meet — ${parsedAth.activeSubEvent || '100m Race'} Live`,
+                team1: 'Athletes Track A',
+                team2: 'Athletes Track B',
+                tableNumber: 'Main Stadium Track',
+                venue: 'Main Track & Field Ground',
+                status: 'running',
+                score1: 0,
+                score2: 0,
+                activeSubEvent: parsedAth.activeSubEvent || '100m Race',
+                scoreSummary: parsedAth.scoreSummary || `Live Sub-Event: ${parsedAth.activeSubEvent || '100m Race'}`,
+                youtubeVideoId: parsedAth.youtubeVideoId,
+                streamUrl: parsedAth.streamUrl,
+                isLiveStreaming: true,
+              });
+            }
+          }
+        } catch (e) {}
+      }
+
       // Check if coordinator explicitly launched any live match for Table Tennis
       const hasCoordinatorLiveTT = (localActiveList || []).some((m) => {
         const s = (m?.status || '').toLowerCase();
