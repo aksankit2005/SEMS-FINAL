@@ -51,8 +51,22 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
     hour12: true
   });
 
-  // Check active session across all user roles (Student, College Head, Sport Coordinator, PR Coordinator, Super Coordinator)
+  // Check active session across all user roles (Admin, Student, College Head, Sport Coordinator, PR Coordinator, Super Coordinator)
   const getActiveSession = () => {
+    if (localStorage.getItem('sems_admin_token')) {
+      const adUser = JSON.parse(localStorage.getItem('sems_admin_user') || '{}');
+      return {
+        name: adUser?.name || 'System Administrator',
+        roleLabel: 'Admin',
+        dashboardPath: '/admin/dashboard',
+        logoutHandler: () => {
+          localStorage.removeItem('sems_admin_token');
+          localStorage.removeItem('sems_admin_user');
+          window.dispatchEvent(new Event('sems-auth-change'));
+          navigate('/');
+        }
+      };
+    }
     if (localStorage.getItem('sems_super_coord_token')) {
       const scUser = JSON.parse(localStorage.getItem('sems_super_coord_user') || '{}');
       return {
@@ -260,6 +274,18 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
                     <div className="px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
                       Official Access Portals
                     </div>
+                    <Link
+                      to="/admin/login"
+                      className="px-3 py-2.5 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded-xl transition flex items-center gap-3 group/item"
+                    >
+                      <span className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover/item:bg-indigo-600 group-hover/item:text-white transition">
+                        <LayoutDashboard className="w-3.5 h-3.5" />
+                      </span>
+                      <div>
+                        <p className="font-extrabold text-slate-900 dark:text-white">Admin Login</p>
+                        <p className="text-[10px] text-slate-400 font-medium">Central admin management portal</p>
+                      </div>
+                    </Link>
                     <Link
                       to="/super-coordinator/login"
                       className="px-3 py-2.5 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-amber-50 dark:hover:bg-slate-800 rounded-xl transition flex items-center gap-3 group/item"

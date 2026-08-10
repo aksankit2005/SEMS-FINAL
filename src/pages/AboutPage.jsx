@@ -1,9 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck, Sparkles, ChevronDown,
   GraduationCap, Code
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { committeeApi } from '../services/committeeApi';
+
+const DEFAULT_EXEC_COMMITTEE = [
+  { role: 'President', name: 'Praveen Rai', image: '/team/praveen.jpg' },
+  { role: 'Vice President', name: 'Harsh Singh', image: '/team/harsh.jpg' },
+  { role: 'Technical Head', name: 'Ankit Kumar Singh', image: '/team/ankit.jpg' },
+  { role: 'Secretary', name: 'Aditya Singh', image: '/team/aditya.jpg' },
+  { role: 'Treasurer', name: 'Shubham Tiwari', image: '/team/shubham.jpg' },
+  { role: 'Coordinator', name: 'Gunjan Gupta', image: '/team/gunjan.jpg' },
+  { role: 'PR Head', name: 'Vishesh Panday', image: '/team/vishesh.jpg' }
+];
 
 const LinkedinIcon = (props) => (
   <svg
@@ -20,6 +31,22 @@ const LinkedinIcon = (props) => (
 
 export const AboutPage = () => {
   const [selectedYear, setSelectedYear] = useState('2025');
+  const [sessions, setSessions] = useState([]);
+
+  useEffect(() => {
+    const load = () => {
+      committeeApi.getCommitteeData().then((data) => {
+        setSessions(data || []);
+      });
+    };
+    load();
+    window.addEventListener('sems_committee_updated', load);
+    window.addEventListener('storage', load);
+    return () => {
+      window.removeEventListener('sems_committee_updated', load);
+      window.removeEventListener('storage', load);
+    };
+  }, []);
 
   const facultyAdvisors = [
     {
@@ -87,188 +114,44 @@ export const AboutPage = () => {
     }
   ];
 
-  const committeeData = {
-    '2025': [
-      {
-        role: 'President',
-        name: 'Praveen Rai',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/praveen.jpg',
-      },
-      {
-        role: 'Vice President',
-        name: 'Harsh Singh',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/harsh.jpg',
-      },
-      {
-        role: 'Technical Head',
-        name: 'Ankit Kumar Singh',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/ankit.jpg',
-      },
-      {
-        role: 'Secretary',
-        name: 'Aditya Singh',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/aditya.jpg',
-      },
-      {
-        role: 'Treasurer',
-        name: 'Shubham Tiwari',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/shubham.jpg',
-      },
-      {
-        role: 'Coordinator',
-        name: 'Gunjan Gupta',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/gunjan.jpg',
-      },
-      {
-        role: 'PR Head',
-        name: 'Vishesh Panday',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/vishesh.jpg',
-      }
-    ],
-    '2026': [
-      {
-        role: 'President',
-        name: 'Praveen Rai',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/praveen.jpg',
-      },
-      {
-        role: 'Vice President',
-        name: 'Harsh Singh',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/harsh.jpg',
-      },
-      {
-        role: 'Technical Head',
-        name: 'Ankit Kumar Singh',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/ankit.jpg',
-      },
-      {
-        role: 'Secretary',
-        name: 'Aditya Singh',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/aditya.jpg',
-      },
-      {
-        role: 'Treasurer',
-        name: 'Shubham Tiwari',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/shubham.jpg',
-      },
-      {
-        role: 'Coordinator',
-        name: 'Gunjan Gupta',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/gunjan.jpg',
-      },
-      {
-        role: 'PR Head',
-        name: 'Vishesh Panday',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/vishesh.jpg',
-      }
-    ],
-    '2027': [
-      {
-        role: 'President',
-        name: 'Praveen Rai',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/praveen.jpg',
-      },
-      {
-        role: 'Vice President',
-        name: 'Harsh Singh',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/harsh.jpg',
-      },
-      {
-        role: 'Technical Head',
-        name: 'Ankit Kumar Singh',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/ankit.jpg',
-      },
-      {
-        role: 'Secretary',
-        name: 'Aditya Singh',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/aditya.jpg',
-      },
-      {
-        role: 'Treasurer',
-        name: 'Shubham Tiwari',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/shubham.jpg',
-      },
-      {
-        role: 'Coordinator',
-        name: 'Gunjan Gupta',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/gunjan.jpg',
-      },
-      {
-        role: 'PR Head',
-        name: 'Vishesh Panday',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/vishesh.jpg',
-      }
-    ],
-    '2028': [
-      {
-        role: 'President',
-        name: 'Praveen Rai',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/praveen.jpg',
-      },
-      {
-        role: 'Vice President',
-        name: 'Harsh Singh',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/harsh.jpg',
-      },
-      {
-        role: 'Technical Head',
-        name: 'Ankit Kumar Singh',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/ankit.jpg',
-      },
-      {
-        role: 'Secretary',
-        name: 'Aditya Singh',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/aditya.jpg',
-      },
-      {
-        role: 'Treasurer',
-        name: 'Shubham Tiwari',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/shubham.jpg',
-      },
-      {
-        role: 'Coordinator',
-        name: 'Gunjan Gupta',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/gunjan.jpg',
-      },
-      {
-        role: 'PR Head',
-        name: 'Vishesh Panday',
-        badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-        image: '/team/vishesh.jpg',
-      }
-    ]
-  };
+  const committeeData = { '2025': DEFAULT_EXEC_COMMITTEE };
 
-  const isUpcoming = selectedYear === '2027' || selectedYear === '2028';
-  const upcomingLabel = selectedYear === '2027' ? '2026-27' : '2027-28';
-  const currentTeam = committeeData[selectedYear] || committeeData['2025'];
+  // ── Build year map from admin-managed sessions ───────────────────────────
+  const committeeYears = {};
+  sessions.forEach((s) => {
+    const year = (s.label || '').split('-')[0] || s.label || '2025';
+    committeeYears[year] = s;
+  });
+
+  const activeSession = sessions.find((s) => s.isActive) || sessions[0] || null;
+  const selectedSession = committeeYears[selectedYear] || activeSession;
+
+  // Faculty Advisors from active session (fallback to static defaults)
+  const advisors =
+    activeSession?.advisors && activeSession.advisors.length > 0
+      ? activeSession.advisors
+      : facultyAdvisors;
+
+  const currentTeam = (selectedSession?.executiveCommittee || committeeData['2025'] || []).map((m) => ({
+    ...m,
+    badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30'
+  }));
+
+  const isUpcoming = !(currentTeam && currentTeam.length > 0);
+  const upcomingLabel = selectedSession?.label || `${selectedYear}-26`;
+
+  const yearOptions = sessions.map((s) => {
+    const year = (s.label || '').split('-')[0] || s.label || '2025';
+    return {
+      value: year,
+      label: s.label || year,
+      isUpcoming: !(s.executiveCommittee && s.executiveCommittee.length > 0)
+    };
+  });
+
+  if (yearOptions.length === 0) {
+    yearOptions.push({ value: '2025', label: '2025-26', isUpcoming: false });
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white py-12 transition-colors">
@@ -289,9 +172,9 @@ export const AboutPage = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-            {facultyAdvisors.map((advisor, index) => (
+            {advisors.map((advisor, index) => (
               <div
-                key={index}
+                key={advisor.id || index}
                 className="overflow-hidden rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 flex flex-col hover:border-indigo-500/50 transition-all duration-300 group shadow-sm hover:shadow-xl"
               >
                 <div className="relative w-full h-56 overflow-hidden bg-slate-200 dark:bg-slate-800">
@@ -377,7 +260,7 @@ export const AboutPage = () => {
                 <ShieldCheck className="w-4 h-4" /> Leadership & Governance
               </div>
               <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
-                {isUpcoming ? `Executive Committee (${upcomingLabel})` : 'Executive Committee 2025-26'}
+                {isUpcoming ? `Executive Committee (${upcomingLabel})` : `Executive Committee ${upcomingLabel}`}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Select a tournament year to view the office bearers and core coordinators.
@@ -395,9 +278,11 @@ export const AboutPage = () => {
                   onChange={(e) => setSelectedYear(e.target.value)}
                   className="appearance-none bg-cyan-600 hover:bg-cyan-500 text-white font-black text-sm px-4 py-2.5 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-400 shadow-md cursor-pointer transition-all"
                 >
-                  <option value="2025" className="bg-slate-900 text-white">2025-26</option>
-                  <option value="2027" className="bg-slate-900 text-white">2026-27 (Upcoming)</option>
-                  <option value="2028" className="bg-slate-900 text-white">2027-28 (Upcoming)</option>
+                  {yearOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value} className="bg-slate-900 text-white">
+                      {opt.label}{opt.isUpcoming ? ' (Upcoming)' : ''}
+                    </option>
+                  ))}
                 </select>
                 <ChevronDown className="w-4 h-4 text-white absolute right-3 top-3.5 pointer-events-none" />
               </div>
