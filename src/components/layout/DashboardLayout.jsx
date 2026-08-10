@@ -1,13 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { HeaderNavbar } from './HeaderNavbar';
 import { CollapsibleSidebar } from './CollapsibleSidebar';
 import { MobileDrawer } from './MobileDrawer';
 import { Footer } from './Footer';
+import { MaintenancePage } from '../common/MaintenancePage';
+import { adminApi } from '../../services/adminApi';
 
 export const DashboardLayout = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [settings, setSettings] = useState({ maintenanceMode: false });
+
+  const loadSettings = async () => {
+    try {
+      const data = await adminApi.getSettings();
+      setSettings(data || {});
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    loadSettings();
+
+    const handleSettingsUpdate = () => {
+      loadSettings();
+    };
+
+    window.addEventListener('sems_settings_updated', handleSettingsUpdate);
+    window.addEventListener('storage', handleSettingsUpdate);
+
+    return () => {
+      window.removeEventListener('sems_settings_updated', handleSettingsUpdate);
+      window.removeEventListener('storage', handleSettingsUpdate);
+    };
+  }, []);
+
+  // Render full-screen System Maintenance Mode for public users when enabled by Admin
+  if (settings.maintenanceMode) {
+    return <MaintenancePage settings={settings} />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors">

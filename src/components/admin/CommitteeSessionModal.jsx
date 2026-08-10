@@ -1,0 +1,118 @@
+import React, { useState, useEffect } from 'react';
+import { X, CalendarRange, Loader2, CheckCircle2 } from 'lucide-react';
+
+export const CommitteeSessionModal = ({ isOpen, session = null, onSave, onClose }) => {
+  const [formData, setFormData] = useState({ label: '', isActive: false });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (session) {
+      setFormData({
+        id: session.id,
+        label: session.label || '',
+        isActive: session.isActive ?? false
+      });
+    } else {
+      setFormData({ label: '', isActive: false });
+    }
+    setError('');
+  }, [session, isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.label.trim()) {
+      setError('Session label is required (e.g. 2025-26)!');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+    try {
+      await onSave(formData);
+      onClose();
+    } catch (err) {
+      setError(err.message || 'Failed to save session');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-5">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+              <CalendarRange className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white leading-tight">
+                {session ? 'Edit Session' : 'Add New Session'}
+              </h3>
+              <p className="text-xs text-slate-400">Create a session-wise committee (e.g. 2025-26)</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {error && (
+          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-slate-300 block mb-1">Session Label *</label>
+            <input
+              type="text"
+              value={formData.label}
+              onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+              placeholder="e.g. 2025-26"
+              className="w-full bg-slate-800/70 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+            />
+            <p className="text-[10px] text-slate-500 mt-1">Example: 2025-26, 2026-27</p>
+          </div>
+
+          <label className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-800/40 border border-slate-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.isActive}
+              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+              className="w-4 h-4 accent-emerald-500"
+            />
+            <span className="text-xs font-bold text-slate-200">Mark as Current / Active Session</span>
+          </label>
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2"
+            >
+              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+              <span>Save Session</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
