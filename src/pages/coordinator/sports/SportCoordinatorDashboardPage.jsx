@@ -145,7 +145,7 @@ export const SportCoordinatorDashboardPage = ({ sportName, sportSlug }) => {
       />
       <main className="flex-1 p-3 sm:p-4 max-w-[1600px] w-full mx-auto">
         {activeTab === 'events' && (
-          isAthletics ? <AthleticsEventsTab sportSlug={sportSlug} /> : <EventsTab user={user} assignedSport={sportSlug} />
+          isAthletics ? <AthleticsEventsTab user={user} sportSlug={sportSlug} /> : <EventsTab user={user} assignedSport={sportSlug} />
         )}
         {activeTab === 'schedule' && (
           isAthletics ? <AthleticsMatchScheduleTab user={user} /> : <MatchScheduleTab user={user} assignedSport={sportSlug} />

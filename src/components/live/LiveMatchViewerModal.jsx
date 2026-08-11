@@ -269,6 +269,9 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
                   (match.matchTitle || match.title || '').toLowerCase().includes('chess') ||
                   (match.eventTitle || '').toLowerCase().includes('chess'));
 
+  const isAthletics = (match.sportId || match.sport || match.sportName || '').toLowerCase().includes('athletics') ||
+                      (match.matchTitle || match.title || '').toLowerCase().includes('athletics');
+
   const defaultKabaddiTeam1 = [
     { id: 1, name: 'Player A', jersey: '07', position: 'Raider', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
     { id: 2, name: 'Player B', jersey: '12', position: 'Defender', raidPts: 0, tacklePts: 0, bonusPts: 0, superRaid: 0, superTackle: 0, total: 0 },
@@ -455,6 +458,19 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
                     </div>
                   </div>
                 )}
+              </div>
+            ) : isAthletics ? (
+              <div className="text-center bg-white dark:bg-[#090D16] p-5 rounded-2xl border border-blue-500/30 shadow-md space-y-2">
+                <span className="text-[10px] font-mono uppercase font-bold text-blue-600 dark:text-blue-400 tracking-widest block">
+                  🏃 ATHLETICS MEET — {match.activeSubEvent || '100m Race'} LIVE
+                </span>
+                <div className="text-sm font-black text-slate-900 dark:text-white py-1">
+                  {match.scoreSummary || `Live Sub-Event: ${match.activeSubEvent || '100m Race'}`}
+                </div>
+                <div className="flex items-center justify-center gap-2 text-xs font-mono text-emerald-600 dark:text-emerald-400">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="font-bold">LIVE BROADCAST ACTIVE</span>
+                </div>
               </div>
             ) : (
               <div className="text-center bg-white dark:bg-[#090D16] p-5 rounded-2xl border border-slate-200 dark:border-[#1E293B] shadow-sm dark:shadow-inner space-y-2">
