@@ -111,15 +111,15 @@ export const FAQPage = () => {
                 >
                   <button
                     onClick={() => setOpenIndex(isOpen ? null : index)}
-                    className="w-full p-5 sm:p-6 text-left flex items-center justify-between gap-4 font-bold text-slate-900 dark:text-white text-sm sm:text-base"
+                    className="w-full p-4 sm:p-6 text-left flex items-center justify-between gap-4 font-bold text-slate-900 dark:text-white text-xs sm:text-base"
                   >
-                    <span className="flex items-center gap-3">
-                      <span className="text-cyan-500 text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-500/10 shrink-0">
+                    <span className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
+                      <span className="text-cyan-500 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-500/10 shrink-0 self-start sm:self-auto">
                         {faq.category}
                       </span>
-                      {faq.question}
+                      <span>{faq.question}</span>
                     </span>
-                    <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-300 shrink-0 ${isOpen ? 'rotate-180 text-cyan-500' : ''}`} />
+                    <ChevronDown className={`w-4 h-4 sm:w-5 sm:h-5 text-slate-400 transition-transform duration-300 shrink-0 ${isOpen ? 'rotate-180 text-cyan-500' : ''}`} />
                   </button>
 
                   {isOpen && (

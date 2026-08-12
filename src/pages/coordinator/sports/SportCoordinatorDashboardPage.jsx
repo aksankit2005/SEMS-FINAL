@@ -5,6 +5,7 @@ import {
   RefreshCw, Clock, Construction
 } from 'lucide-react';
 import { coordinatorApi } from '../../../services/coordinatorApi';
+import { ThemeToggle } from '../../../components/common/ThemeToggle';
 import { ProfileTab } from '../../../components/coordinator/tabs/ProfileTab';
 import { EventsTab } from '../../../components/coordinator/tabs/EventsTab';
 import { MatchScheduleTab } from '../../../components/coordinator/tabs/MatchScheduleTab';
@@ -30,8 +31,8 @@ const TABS = [
 // ─── Placeholder tab content ──────────────────────────────────────────────────
 const PlaceholderTab = ({ sportName, tabLabel }) => (
   <div className="flex flex-col items-center justify-center py-24 space-y-5 text-center animate-fade-in">
-    <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 dark:bg-indigo-500/20 border border-indigo-500/20 flex items-center justify-center">
-      <Construction className="w-8 h-8 text-indigo-500 dark:text-indigo-400" />
+    <div className="w-16 h-16 rounded-2xl bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/20 flex items-center justify-center">
+      <Construction className="w-8 h-8 text-amber-500 dark:text-amber-400" />
     </div>
     <div className="space-y-1.5">
       <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -53,7 +54,7 @@ const Header = ({ sportName, activeTab, setActiveTab }) => (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div className="space-y-1">
         <div className="flex items-center gap-2">
-          <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-indigo-400 border border-blue-500/20 text-[10px] font-mono font-bold uppercase tracking-wider">
+          <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[10px] font-mono font-bold uppercase tracking-wider">
             COORDINATOR PORTAL
           </span>
           <span className="text-xs font-bold text-slate-500 dark:text-slate-400 font-mono">• {sportName}</span>
@@ -66,13 +67,14 @@ const Header = ({ sportName, activeTab, setActiveTab }) => (
         </p>
       </div>
       <div className="flex items-center gap-2.5">
+        <ThemeToggle />
         <button
           onClick={() => {
             window.location.reload();
           }}
           className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-slate-700 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
         >
-          <RefreshCw className="w-3.5 h-3.5 text-blue-600 dark:text-indigo-400" />
+          <RefreshCw className="w-3.5 h-3.5 text-amber-500" />
           <span>Sync Data</span>
         </button>
       </div>
@@ -90,11 +92,11 @@ const Header = ({ sportName, activeTab, setActiveTab }) => (
               onClick={() => setActiveTab(tab.id)}
               className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 relative cursor-pointer
                 ${isActive
-                  ? 'text-blue-600 dark:text-white border-b-2 border-blue-600 dark:border-indigo-500 bg-blue-50 dark:bg-slate-800/60 font-black'
+                  ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-500/20 font-black border-l-2 border-amber-500'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/40'
                 }`}
             >
-              <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`} />
+              <Icon className={`w-4 h-4 ${isActive ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}`} />
               <span>{tab.label}</span>
               {tab.badge && (
                 <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-500 text-white animate-pulse">

@@ -164,15 +164,15 @@ export const AdminMasterDataPage = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl transition-colors">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
               Super Coordinator Replicated View
             </span>
           </div>
-          <h1 className="text-2xl font-black text-white">Master Data / Participants Roster</h1>
-          <p className="text-xs text-slate-400">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white">Master Data / Participants Roster</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Central database of all registered fest participants & squad rosters ({participants.length} Total Records)
           </p>
         </div>
@@ -180,21 +180,21 @@ export const AdminMasterDataPage = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-bold transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold transition-colors cursor-pointer"
           >
             <FileSpreadsheet className="w-4 h-4" />
             <span>CSV</span>
           </button>
           <button
             onClick={handleExportPDF}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-bold transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs font-bold transition-colors cursor-pointer"
           >
             <FileText className="w-4 h-4" />
             <span>PDF</span>
           </button>
           <button
             onClick={fetchMasterData}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
             title="Refresh list"
           >
             <RefreshCw className="w-4 h-4" />
@@ -202,11 +202,11 @@ export const AdminMasterDataPage = () => {
         </div>
       </div>
 
-      {/* EXACT 5 FILTERS CONTROL BAR REQUESTED BY USER */}
-      <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
-            <Filter className="w-4 h-4 text-purple-400" />
+      {/* 5 FILTERS CONTROL BAR */}
+      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm transition-colors">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+            <Filter className="w-4 h-4 text-purple-600 dark:text-purple-400" />
             <span>Master Data Filters</span>
           </div>
 
@@ -220,7 +220,7 @@ export const AdminMasterDataPage = () => {
                 setSearchQuery('');
                 setCurrentPage(1);
               }}
-              className="text-xs font-bold text-rose-400 hover:underline cursor-pointer"
+              className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
             >
               Reset All Filters
             </button>
@@ -230,17 +230,17 @@ export const AdminMasterDataPage = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
           {/* 1. 🎯 Filter by Game */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
               🎯 Filter by Game
             </label>
             <select
               value={selectedSport}
               onChange={(e) => { setSelectedSport(e.target.value); setSelectedEvent('ALL'); setCurrentPage(1); }}
-              className="w-full bg-slate-800/70 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
             >
-              <option value="ALL">All 12 Sports</option>
+              <option value="ALL" className="bg-white dark:bg-slate-900">All 12 Sports</option>
               {ALL_12_SPORTS.map((s) => (
-                <option key={s.id} value={s.name}>
+                <option key={s.id} value={s.name} className="bg-white dark:bg-slate-900">
                   {s.icon} {s.name}
                 </option>
               ))}
@@ -249,17 +249,17 @@ export const AdminMasterDataPage = () => {
 
           {/* 2. 📋 Filter by Event Title */}
           <div>
-            <label className="block text-[11px] font-bold text-purple-400 uppercase mb-1">
+            <label className="block text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase mb-1">
               📋 Filter by Event Title
             </label>
             <select
               value={selectedEvent}
               onChange={(e) => { setSelectedEvent(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-slate-800/70 border border-purple-500/40 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-amber-500/40 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
             >
-              <option value="ALL">All Created Events ({availableEvents.length})</option>
+              <option value="ALL" className="bg-white dark:bg-slate-900">All Created Events ({availableEvents.length})</option>
               {availableEvents.map((evt) => (
-                <option key={evt.id} value={evt.eventTitle}>
+                <option key={evt.id} value={evt.eventTitle} className="bg-white dark:bg-slate-900">
                   {evt.eventTitle}
                 </option>
               ))}
@@ -268,34 +268,34 @@ export const AdminMasterDataPage = () => {
 
           {/* 3. ⚧️ Filter by Gender */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
               ⚧️ Filter by Gender
             </label>
             <select
               value={selectedGender}
               onChange={(e) => { setSelectedGender(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-slate-800/70 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
             >
-              <option value="ALL">All Genders</option>
-              <option value="Boys">Boys (Male)</option>
-              <option value="Girls">Girls (Female)</option>
-              <option value="Mixed">Mixed</option>
+              <option value="ALL" className="bg-white dark:bg-slate-900">All Genders</option>
+              <option value="Boys" className="bg-white dark:bg-slate-900">Boys (Male)</option>
+              <option value="Girls" className="bg-white dark:bg-slate-900">Girls (Female)</option>
+              <option value="Mixed" className="bg-white dark:bg-slate-900">Mixed</option>
             </select>
           </div>
 
           {/* 4. 🏫 Filter by College */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
               🏫 Filter by College
             </label>
             <select
               value={selectedCollege}
               onChange={(e) => { setSelectedCollege(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-slate-800/70 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
             >
-              <option value="ALL">All Colleges</option>
+              <option value="ALL" className="bg-white dark:bg-slate-900">All Colleges</option>
               {ALL_COLLEGES.map((c) => (
-                <option key={c.id} value={c.id}>
+                <option key={c.id} value={c.id} className="bg-white dark:bg-slate-900">
                   {c.name}
                 </option>
               ))}
@@ -304,7 +304,7 @@ export const AdminMasterDataPage = () => {
 
           {/* 5. 🔍 Search Participant */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
               🔍 Search Participant
             </label>
             <div className="relative">
@@ -313,76 +313,38 @@ export const AdminMasterDataPage = () => {
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                 placeholder="Search name, mobile, team..."
-                className="w-full bg-slate-800/70 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
               />
-              <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
+              <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-2.5" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* FILTERED SUMMARY CARDS (कुल रजिस्ट्रेशन + कुल पैसा) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800/60 border border-slate-800 flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
-            <Database className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Registrations (Filtered)</p>
-            <p className="text-2xl font-black text-white">{totalRegistrations}</p>
-            <p className="text-[11px] text-slate-500 truncate">of {participants.length} total records</p>
-          </div>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800/60 border border-slate-800 flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-            <IndianRupee className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Money Collected (Filtered)</p>
-            <p className="text-2xl font-black text-emerald-400">₹{totalMoney.toLocaleString('en-IN')}</p>
-            <p className="text-[11px] text-slate-500 truncate">based on sport entry fees</p>
-          </div>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800/60 border border-slate-800 flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
-            <Users className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Colleges (Filtered)</p>
-            <p className="text-2xl font-black text-white">
-              {new Set(filteredParticipants.map((p) => p.college).filter(Boolean)).size}
-            </p>
-            <p className="text-[11px] text-slate-500 truncate">unique colleges in filtered roster</p>
-          </div>
-        </div>
-      </div>
-
       {/* Participants Table */}
-      <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <span className="text-xs font-bold text-white">
+      <div className="p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm transition-colors">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+          <span className="text-xs font-bold text-slate-900 dark:text-white">
             Showing {filteredParticipants.length} of {participants.length} Participants
           </span>
-          <span className="text-[11px] text-purple-400 font-mono">Master Database Records</span>
+          <span className="text-[11px] text-purple-600 dark:text-purple-400 font-mono">Master Database Records</span>
         </div>
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12 space-y-3">
-            <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
-            <p className="text-xs text-slate-400">Loading Master Participant Roster...</p>
+            <Loader2 className="w-6 h-6 text-purple-600 dark:text-purple-400 animate-spin" />
+            <p className="text-xs text-slate-500 dark:text-slate-400">Loading Master Participant Roster...</p>
           </div>
         ) : paginatedParticipants.length === 0 ? (
           <div className="text-center py-12 space-y-2">
-            <p className="text-sm font-bold text-slate-300">No participants found matching criteria.</p>
-            <p className="text-xs text-slate-500">Adjust filters to broaden roster view.</p>
+            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No participants found matching criteria.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Adjust filters to broaden roster view.</p>
           </div>
         ) : (
           <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-slate-800 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-bold text-[10px] tracking-wider">
                   <th className="py-3 px-3">Reg Time</th>
                   <th className="py-3 px-3">Game & Event Title</th>
                   <th className="py-3 px-3">Team Name</th>
@@ -394,52 +356,52 @@ export const AdminMasterDataPage = () => {
                   <th className="py-3 px-3 text-right">Details</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-slate-200">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200">
                 {paginatedParticipants.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
+                  <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                     {/* 1. Reg Time */}
-                    <td className="py-3 px-3 whitespace-nowrap text-slate-300 font-mono">
+                    <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300 font-mono">
                       <div>{p.date || '2026-08-05'}</div>
-                      <div className="text-[10px] text-slate-500">{p.time || '10:00 AM'}</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">{p.time || '10:00 AM'}</div>
                     </td>
 
                     {/* 2. Game & Event Title */}
                     <td className="py-3 px-3 whitespace-nowrap">
-                      <div className="font-bold text-white">{p.sportName}</div>
-                      <div className="text-[10px] text-purple-400 font-semibold max-w-[200px] truncate" title={p.eventTitle}>
+                      <div className="font-bold text-slate-900 dark:text-white">{p.sportName}</div>
+                      <div className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold max-w-[200px] truncate" title={p.eventTitle}>
                         {p.eventTitle || `${p.sportName} Championship`}
                       </div>
                     </td>
 
                     {/* 3. Team Name */}
-                    <td className="py-3 px-3 whitespace-nowrap font-bold text-slate-200">
+                    <td className="py-3 px-3 whitespace-nowrap font-bold text-slate-800 dark:text-slate-200">
                       {p.teamName || p.name}
                     </td>
 
                     {/* 4. College Name */}
-                    <td className="py-3 px-3 whitespace-nowrap font-medium text-amber-400">
+                    <td className="py-3 px-3 whitespace-nowrap font-medium text-amber-600 dark:text-amber-400">
                       {p.college}
                     </td>
 
                     {/* 5. Student Name */}
-                    <td className="py-3 px-3 whitespace-nowrap font-semibold text-white">
+                    <td className="py-3 px-3 whitespace-nowrap font-semibold text-slate-900 dark:text-white">
                       <div>{p.name}</div>
-                      <div className="text-[10px] text-slate-500 font-normal">{p.email}</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">{p.email}</div>
                     </td>
 
                     {/* 6. Mobile No */}
-                    <td className="py-3 px-3 whitespace-nowrap text-slate-300 font-mono">
+                    <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300 font-mono">
                       {p.mobile}
                     </td>
 
                     {/* 7. Gender */}
-                    <td className="py-3 px-3 whitespace-nowrap text-slate-300 font-medium">
+                    <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300 font-medium">
                       {p.gender}
                     </td>
 
                     {/* 8. Status */}
                     <td className="py-3 px-3 whitespace-nowrap">
-                      <span className="px-2.5 py-0.5 text-[10px] font-bold rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      <span className="px-2.5 py-0.5 text-[10px] font-bold rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                         {p.status || 'VERIFIED'}
                       </span>
                     </td>

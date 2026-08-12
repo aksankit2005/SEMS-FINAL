@@ -753,7 +753,17 @@ export const RegistrationPage = () => {
                             </div>
                           </div>
 
-                          <div className="pt-1">
+                          <div className="pt-1 flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setRulesModalSport({ sportName: evt.sportName || evt.title, rules: evt.rules })}
+                              className="flex-1 py-2.5 rounded-2xl font-bold text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-xs"
+                              title="View Official Tournament Rules for this event"
+                            >
+                              <Info className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                              <span>View Rules</span>
+                            </button>
+
                             <button
                               disabled={isClosed || evt.status === 'Coming Soon'}
                               onClick={() => {
@@ -784,7 +794,7 @@ export const RegistrationPage = () => {
                                 };
                                 handleSportSelect(adaptedSport);
                               }}
-                              className={`w-full py-2.5 rounded-2xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 ${
+                              className={`flex-1 py-2.5 rounded-2xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 ${
                                 evt.status === 'Coming Soon'
                                   ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 cursor-not-allowed font-extrabold'
                                   : isClosed
@@ -811,29 +821,6 @@ export const RegistrationPage = () => {
                 </div>
               </div>
             )}
-
-            {/* OFFICIAL CHAMPIONSHIP DISCIPLINES (ALL 12 GAMES GRID) */}
-            <div className="space-y-4 pt-6 border-t border-slate-200 dark:border-slate-800">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-amber-500" />
-                  Official Championship Disciplines ({sportsList.length})
-                </h2>
-                <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono text-xs font-bold border border-blue-500/20">
-                  Select Game to Register
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {sportsList.map((sport) => (
-                  <SportCard
-                    key={sport.id}
-                    sport={sport}
-                    onSelect={() => handleSportSelect(sport)}
-                  />
-                ))}
-              </div>
-            </div>
 
           </div>
         ) : (
@@ -948,8 +935,8 @@ export const RegistrationPage = () => {
                     <Info className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
                     <div className="text-xs space-y-1.5">
                       <h4 className="font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">2. College Verification Policy</h4>
-                      <p className="leading-relaxed">
-                        After payment, your entry pass is generated immediately and sent to your College Sports Desk for verification. If any eligibility discrepancy is flagged, full payment refund will be processed to your source account.
+                      <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                        Upon successful submission and payment, your registration will be reviewed and verified by your respective <strong>College Head</strong>. Ensure all student details are valid to prevent rejection during gate pass generation.
                       </p>
                     </div>
                   </div>
@@ -1025,7 +1012,8 @@ export const RegistrationPage = () => {
         <BadmintonRulesModal
           isOpen={!!rulesModalSport}
           onClose={() => setRulesModalSport(null)}
-          sportName={rulesModalSport || 'Badminton'}
+          sportName={typeof rulesModalSport === 'object' ? rulesModalSport?.sportName : (rulesModalSport || activeSport?.name || 'Badminton')}
+          rules={typeof rulesModalSport === 'object' ? rulesModalSport?.rules : (activeSport?.rules || [])}
         />
 
       </div>

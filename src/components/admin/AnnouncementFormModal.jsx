@@ -112,96 +112,96 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl relative space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl relative space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar text-slate-900 dark:text-white">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white leading-tight">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
                 {announcement ? 'Edit Announcement' : 'Create New Announcement'}
               </h3>
-              <p className="text-xs text-slate-400">Publish notice to participant portal with PDF attachments</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Publish notice to participant portal with PDF attachments</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+            className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {errors.api && (
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400">
+          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400">
             {errors.api}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1">Announcement Title *</label>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Announcement Title *</label>
             <input
               type="text"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="e.g. Basketball Tournament Schedule & Venue Update"
-              className="w-full bg-slate-800/70 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
             />
-            {errors.title && <p className="text-[11px] text-rose-400 mt-1">{errors.title}</p>}
+            {errors.title && <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{errors.title}</p>}
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1">Description / Details *</label>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Description / Details *</label>
             <textarea
               rows={4}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Enter full notice text, rules, timing details..."
-              className="w-full bg-slate-800/70 border border-slate-700 rounded-xl p-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors resize-none"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors resize-none"
             />
-            {errors.description && <p className="text-[11px] text-rose-400 mt-1">{errors.description}</p>}
+            {errors.description && <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{errors.description}</p>}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Publish Date</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Publish Date</label>
               <input
                 type="date"
                 value={formData.publishDate}
                 onChange={(e) => setFormData({ ...formData, publishDate: e.target.value })}
-                className="w-full bg-slate-800/70 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Expiry Date</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Expiry Date</label>
               <input
                 type="date"
                 value={formData.expiryDate}
                 onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
-                className="w-full bg-slate-800/70 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
               />
             </div>
           </div>
 
           {/* PDF Documents Upload Section */}
-          <div className="space-y-2 pt-2 border-t border-slate-800">
+          <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                <Paperclip className="w-4 h-4 text-amber-400" />
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <Paperclip className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                 <span>PDF Document Attachments (Max 2 PDFs)</span>
               </label>
-              <span className="text-[11px] font-semibold text-slate-400">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
                 {formData.attachments.length} / 2 uploaded
               </span>
             </div>
 
             {errors.attachment && (
-              <p className="text-[11px] text-rose-400 flex items-center gap-1">
+              <p className="text-[11px] text-rose-600 dark:text-rose-400 flex items-center gap-1">
                 <AlertCircle className="w-3.5 h-3.5" />
                 <span>{errors.attachment}</span>
               </p>
@@ -213,15 +213,15 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
                 {formData.attachments.map((att) => (
                   <div
                     key={att.id}
-                    className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/80 flex items-center justify-between gap-3 text-xs"
+                    className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between gap-3 text-xs"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center font-bold text-[10px] shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-[10px] shrink-0">
                         PDF
                       </div>
                       <div className="min-w-0">
-                        <p className="font-semibold text-white truncate">{att.name}</p>
-                        <p className="text-[10px] text-slate-400">{att.size || 'PDF Document'}</p>
+                        <p className="font-semibold text-slate-900 dark:text-white truncate">{att.name}</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400">{att.size || 'PDF Document'}</p>
                       </div>
                     </div>
 
@@ -231,7 +231,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
                           href={att.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-700 transition-colors"
+                          className="p-1.5 text-slate-400 hover:text-amber-500 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                           title="Preview PDF"
                         >
                           <Eye className="w-4 h-4" />
@@ -240,7 +240,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
                       <button
                         type="button"
                         onClick={() => handleRemoveAttachment(att.id)}
-                        className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-700 transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                         title="Delete PDF attachment"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -253,9 +253,9 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
 
             {/* Upload Button */}
             {formData.attachments.length < 2 && (
-              <label className="border-2 border-dashed border-slate-700 hover:border-amber-500/50 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors group">
-                <Upload className="w-6 h-6 text-slate-500 group-hover:text-amber-400 transition-colors mb-1" />
-                <span className="text-xs font-semibold text-slate-300 group-hover:text-white">
+              <label className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-amber-500/50 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors group">
+                <Upload className="w-6 h-6 text-slate-400 dark:text-slate-500 group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors mb-1" />
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white">
                   Click to select PDF document
                 </span>
                 <span className="text-[10px] text-slate-500">Only PDF files up to 10MB</span>
@@ -270,10 +270,10 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
           </div>
 
           {/* Publish Toggle */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-800/40 border border-slate-800">
+          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
             <div>
-              <p className="text-xs font-bold text-white">Publish Immediately</p>
-              <p className="text-[11px] text-slate-400">Make notice visible to public participant dashboard</p>
+              <p className="text-xs font-bold text-slate-900 dark:text-white">Publish Immediately</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">Make notice visible to public participant dashboard</p>
             </div>
             <input
               type="checkbox"
@@ -284,11 +284,11 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors"
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors"
             >
               Cancel
             </button>

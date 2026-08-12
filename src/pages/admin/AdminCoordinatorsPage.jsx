@@ -159,10 +159,10 @@ export const AdminCoordinatorsPage = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl transition-colors">
         <div className="space-y-1">
-          <h1 className="text-2xl font-black text-white">Coordinator & Role Management</h1>
-          <p className="text-xs text-slate-400">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white">Coordinator & Role Management</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Manage 12 Sports Coordinators, Head Coordinators, Super Coordinators & PR Members (Edit, Password Reset, Active/Inactive)
           </p>
         </div>
@@ -170,14 +170,14 @@ export const AdminCoordinatorsPage = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => { setSelectedCoord(null); setIsFormOpen(true); }}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-lg shadow-amber-500/20 transition-all shrink-0"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-lg shadow-amber-500/20 transition-all shrink-0 cursor-pointer"
           >
             <UserPlus className="w-4 h-4" />
             <span>Create New Account</span>
           </button>
           <button
             onClick={fetchCoordinators}
-            className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+            className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
             title="Refresh list"
           >
             <RefreshCw className="w-4 h-4" />
@@ -185,11 +185,11 @@ export const AdminCoordinatorsPage = () => {
         </div>
       </div>
 
-      {/* FILTER CONTROL BAR (फिल्टर भी लगा दो) */}
-      <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
-            <Filter className="w-4 h-4 text-amber-400" />
+      {/* FILTER CONTROL BAR */}
+      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm transition-colors">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+            <Filter className="w-4 h-4 text-amber-500 dark:text-amber-400" />
             <span>Master Account Filters</span>
           </div>
 
@@ -212,60 +212,60 @@ export const AdminCoordinatorsPage = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
           {/* Live Search */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">🔍 Search Account</label>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">🔍 Search Account</label>
             <div className="relative">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search name, email, sport..."
-                className="w-full bg-slate-800/70 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
               />
-              <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
+              <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-2.5" />
             </div>
           </div>
 
           {/* Filter by Role */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">👤 Filter by Role</label>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">👤 Filter by Role</label>
             <select
               value={filterRole}
               onChange={(e) => setFilterRole(e.target.value)}
-              className="w-full bg-slate-800/70 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
             >
-              <option value="ALL">All Roles</option>
-              <option value="Coordinator">Coordinator (12 Sports)</option>
-              <option value="Head Coordinator">Head Coordinator</option>
-              <option value="Super Coordinator">Super Coordinator</option>
-              <option value="PR Member">PR Member</option>
+              <option value="ALL" className="bg-white dark:bg-slate-900">All Roles</option>
+              <option value="Coordinator" className="bg-white dark:bg-slate-900">Coordinator (12 Sports)</option>
+              <option value="Head Coordinator" className="bg-white dark:bg-slate-900">Head Coordinator</option>
+              <option value="Super Coordinator" className="bg-white dark:bg-slate-900">Super Coordinator</option>
+              <option value="PR Member" className="bg-white dark:bg-slate-900">PR Member</option>
             </select>
           </div>
 
           {/* Filter by Status */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">⚡ Filter by Status</label>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">⚡ Filter by Status</label>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full bg-slate-800/70 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
             >
-              <option value="ALL">All Status</option>
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
+              <option value="ALL" className="bg-white dark:bg-slate-900">All Status</option>
+              <option value="Active" className="bg-white dark:bg-slate-900">Active</option>
+              <option value="Inactive" className="bg-white dark:bg-slate-900">Inactive</option>
             </select>
           </div>
 
           {/* Filter by College */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">🏫 Filter by College</label>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">🏫 Filter by College</label>
             <select
               value={filterCollege}
               onChange={(e) => setFilterCollege(e.target.value)}
-              className="w-full bg-slate-800/70 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
             >
-              <option value="ALL">All Colleges</option>
+              <option value="ALL" className="bg-white dark:bg-slate-900">All Colleges</option>
               {ALL_COLLEGES.map((c) => (
-                <option key={c.id} value={c.id}>
+                <option key={c.id} value={c.id} className="bg-white dark:bg-slate-900">
                   {c.id}
                 </option>
               ))}
@@ -274,15 +274,15 @@ export const AdminCoordinatorsPage = () => {
 
           {/* Filter by Sport */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">🎯 Filter by Sport</label>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">🎯 Filter by Sport</label>
             <select
               value={filterSport}
               onChange={(e) => setFilterSport(e.target.value)}
-              className="w-full bg-slate-800/70 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
             >
-              <option value="ALL">All 12 Sports</option>
+              <option value="ALL" className="bg-white dark:bg-slate-900">All 12 Sports</option>
               {ALL_12_SPORTS.map((s) => (
-                <option key={s.id} value={s.name}>
+                <option key={s.id} value={s.name} className="bg-white dark:bg-slate-900">
                   {s.name}
                 </option>
               ))}
@@ -291,15 +291,15 @@ export const AdminCoordinatorsPage = () => {
         </div>
       </div>
 
-      {/* SECTION 1: 12 SPORTS COORDINATORS (सबसे पहले 12 स्पोर्ट के कोऑर्डिनेटर) */}
+      {/* SECTION 1: 12 SPORTS COORDINATORS */}
       {(filterRole === 'ALL' || filterRole === 'Coordinator') && (
-        <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-white">
-              <Trophy className="w-4 h-4 text-amber-400" />
+        <div className="p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm transition-colors">
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
+              <Trophy className="w-4 h-4 text-amber-500 dark:text-amber-400" />
               <span>1. Sports Coordinators ({sportsCoordinators.length})</span>
             </div>
-            <span className="text-[11px] text-amber-400 font-mono">{ALL_12_SPORTS.length} Games Covered</span>
+            <span className="text-[11px] text-amber-600 dark:text-amber-400 font-mono">{ALL_12_SPORTS.length} Games Covered</span>
           </div>
 
           {loading ? (
@@ -308,12 +308,12 @@ export const AdminCoordinatorsPage = () => {
               <p className="text-xs text-slate-400">Loading sports coordinators...</p>
             </div>
           ) : sportsCoordinators.length === 0 ? (
-            <p className="text-xs text-slate-500 text-center py-6">No Coordinators match filters.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 text-center py-6">No Coordinators match filters.</p>
           ) : (
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-bold text-[10px] tracking-wider">
                     <th className="py-3 px-3">Sport / Game</th>
                     <th className="py-3 px-3">Coordinator Name</th>
                     <th className="py-3 px-3">Username</th>
@@ -323,7 +323,7 @@ export const AdminCoordinatorsPage = () => {
                     <th className="py-3 px-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-200">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200">
                   {sportsCoordinators.map((coordinator) => {
                     const sportObj = ALL_12_SPORTS.find(
                       (s) =>
@@ -331,28 +331,28 @@ export const AdminCoordinatorsPage = () => {
                         s.name.toLowerCase() === (coordinator.sportName || '').toLowerCase()
                     ) || { icon: '🎯', name: coordinator.sportName || 'General' };
                     return (
-                      <tr key={coordinator.id} className="hover:bg-slate-800/40 transition-colors">
-                        <td className="py-3 px-3 font-bold text-white whitespace-nowrap">
+                      <tr key={coordinator.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                        <td className="py-3 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">
                           <span className="mr-1.5">{sportObj.icon}</span> {sportObj.name}
                         </td>
                         <td className="py-3 px-3 font-semibold whitespace-nowrap">
-                          <span className="text-amber-400">{coordinator.name}</span>
+                          <span className="text-amber-600 dark:text-amber-400">{coordinator.name}</span>
                         </td>
-                        <td className="py-3 px-3 whitespace-nowrap text-slate-300">
+                        <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">
                           {coordinator.username}
                         </td>
-                        <td className="py-3 px-3 whitespace-nowrap text-slate-400">
+                        <td className="py-3 px-3 whitespace-nowrap text-slate-500 dark:text-slate-400">
                           {coordinator.email}
                         </td>
-                        <td className="py-3 px-3 whitespace-nowrap text-slate-300">
+                        <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">
                           {coordinator.phone}
                         </td>
                         <td className="py-3 px-3 whitespace-nowrap">
                           <span
                             className={`px-2 py-0.5 text-[10px] font-bold rounded ${
                               coordinator.status === 'Active'
-                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
                             }`}
                           >
                             {coordinator.status}
@@ -361,31 +361,31 @@ export const AdminCoordinatorsPage = () => {
                         <td className="py-3 px-3 whitespace-nowrap text-right space-x-1">
                           <button
                             onClick={() => { setSelectedCoord(coordinator); setIsFormOpen(true); }}
-                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-[11px] border border-slate-700 transition-colors"
+                            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-[11px] border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                             title="Edit Coordinator Details"
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => setResetTargetCoord(coordinator)}
-                            className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-semibold text-[11px] border border-amber-500/20 transition-colors"
+                            className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-semibold text-[11px] border border-amber-500/20 transition-colors cursor-pointer"
                             title="Reset Password"
                           >
                             Reset Password
                           </button>
                           <button
                             onClick={() => setToggleTargetCoord(coordinator)}
-                            className={`px-2.5 py-1 rounded-lg font-semibold text-[11px] transition-colors border ${
+                            className={`px-2.5 py-1 rounded-lg font-semibold text-[11px] transition-colors border cursor-pointer ${
                               coordinator.status === 'Active'
-                                ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/20'
-                                : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/20'
+                                ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                                : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                             }`}
                           >
                             {coordinator.status === 'Active' ? 'Deactivate' : 'Activate'}
                           </button>
                           <button
                             onClick={() => setDeleteTargetCoord(coordinator)}
-                            className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-semibold text-[11px] border border-rose-500/20 transition-colors"
+                            className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-semibold text-[11px] border border-rose-500/20 transition-colors cursor-pointer"
                             title="Delete Coordinator Permanently"
                           >
                             Delete
@@ -401,24 +401,24 @@ export const AdminCoordinatorsPage = () => {
         </div>
       )}
 
-      {/* SECTION 2: HEAD COORDINATORS (सारे हेड कोऑर्डिनेटर) */}
+      {/* SECTION 2: HEAD COORDINATORS */}
       {(filterRole === 'ALL' || filterRole === 'Head Coordinator') && (
-        <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-white">
-              <Building className="w-4 h-4 text-purple-400" />
+        <div className="p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm transition-colors">
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
+              <Building className="w-4 h-4 text-purple-600 dark:text-purple-400" />
               <span>2. Head Coordinators / College Heads ({headCoordinators.length})</span>
             </div>
-            <span className="text-[11px] text-purple-400 font-mono">College Head Controls</span>
+            <span className="text-[11px] text-purple-600 dark:text-purple-400 font-mono">College Head Controls</span>
           </div>
 
           {headCoordinators.length === 0 ? (
-            <p className="text-xs text-slate-500 text-center py-6">No Head Coordinators match filters.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 text-center py-6">No Head Coordinators match filters.</p>
           ) : (
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-bold text-[10px] tracking-wider">
                     <th className="py-3 px-3">College Name</th>
                     <th className="py-3 px-3">Head Coordinator Name</th>
                     <th className="py-3 px-3">Username</th>
@@ -428,20 +428,20 @@ export const AdminCoordinatorsPage = () => {
                     <th className="py-3 px-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-200">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200">
                   {headCoordinators.map((c) => (
-                    <tr key={c.id} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3 px-3 font-bold text-purple-400 whitespace-nowrap">{c.college || 'MPEC'}</td>
-                      <td className="py-3 px-3 font-bold text-white whitespace-nowrap">{c.name}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-300">{c.username}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-400">{c.email}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-300">{c.phone}</td>
+                    <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="py-3 px-3 font-bold text-purple-600 dark:text-purple-400 whitespace-nowrap">{c.college || 'MPEC'}</td>
+                      <td className="py-3 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">{c.name}</td>
+                      <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.username}</td>
+                      <td className="py-3 px-3 whitespace-nowrap text-slate-500 dark:text-slate-400">{c.email}</td>
+                      <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.phone}</td>
                       <td className="py-3 px-3 whitespace-nowrap">
                         <span
                           className={`px-2 py-0.5 text-[10px] font-bold rounded ${
                             c.status === 'Active'
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                              : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                              : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
                           }`}
                         >
                           {c.status}
@@ -450,29 +450,29 @@ export const AdminCoordinatorsPage = () => {
                       <td className="py-3 px-3 whitespace-nowrap text-right space-x-1">
                         <button
                           onClick={() => { setSelectedCoord(c); setIsFormOpen(true); }}
-                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-[11px] border border-slate-700 transition-colors"
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-[11px] border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => setResetTargetCoord(c)}
-                          className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-semibold text-[11px] border border-amber-500/20 transition-colors"
+                          className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-semibold text-[11px] border border-amber-500/20 transition-colors cursor-pointer"
                         >
                           Reset Password
                         </button>
                         <button
                           onClick={() => setToggleTargetCoord(c)}
-                          className={`px-2.5 py-1 rounded-lg font-semibold text-[11px] transition-colors border ${
+                          className={`px-2.5 py-1 rounded-lg font-semibold text-[11px] transition-colors border cursor-pointer ${
                             c.status === 'Active'
-                              ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/20'
-                              : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/20'
+                              ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                              : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                           }`}
                         >
                           {c.status === 'Active' ? 'Deactivate' : 'Activate'}
                         </button>
                         <button
                           onClick={() => setDeleteTargetCoord(c)}
-                          className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-semibold text-[11px] border border-rose-500/20 transition-colors"
+                          className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-semibold text-[11px] border border-rose-500/20 transition-colors cursor-pointer"
                           title="Delete Coordinator Permanently"
                         >
                           Delete
@@ -487,24 +487,24 @@ export const AdminCoordinatorsPage = () => {
         </div>
       )}
 
-      {/* SECTION 3: SUPER COORDINATORS (सुपर कोऑर्डिनेटर कौन है) */}
+      {/* SECTION 3: SUPER COORDINATORS */}
       {(filterRole === 'ALL' || filterRole === 'Super Coordinator') && (
-        <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-white">
-              <Crown className="w-4 h-4 text-amber-400" />
+        <div className="p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm transition-colors">
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
+              <Crown className="w-4 h-4 text-amber-500 dark:text-amber-400" />
               <span>3. Super Coordinators / Event Hosts ({superCoordinators.length})</span>
             </div>
-            <span className="text-[11px] text-amber-400 font-mono">Global Fest Authority</span>
+            <span className="text-[11px] text-amber-600 dark:text-amber-400 font-mono">Global Fest Authority</span>
           </div>
 
           {superCoordinators.length === 0 ? (
-            <p className="text-xs text-slate-500 text-center py-6">No Super Coordinators match filters.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 text-center py-6">No Super Coordinators match filters.</p>
           ) : (
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-bold text-[10px] tracking-wider">
                     <th className="py-3 px-3">Super Coordinator Name</th>
                     <th className="py-3 px-3">Username</th>
                     <th className="py-3 px-3">Email</th>
@@ -513,19 +513,19 @@ export const AdminCoordinatorsPage = () => {
                     <th className="py-3 px-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-200">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200">
                   {superCoordinators.map((c) => (
-                    <tr key={c.id} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3 px-3 font-bold text-white whitespace-nowrap">{c.name}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-300">{c.username}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-400">{c.email}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-300">{c.phone}</td>
+                    <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="py-3 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">{c.name}</td>
+                      <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.username}</td>
+                      <td className="py-3 px-3 whitespace-nowrap text-slate-500 dark:text-slate-400">{c.email}</td>
+                      <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.phone}</td>
                       <td className="py-3 px-3 whitespace-nowrap">
                         <span
                           className={`px-2 py-0.5 text-[10px] font-bold rounded ${
                             c.status === 'Active'
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                              : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                              : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
                           }`}
                         >
                           {c.status}
@@ -534,29 +534,29 @@ export const AdminCoordinatorsPage = () => {
                       <td className="py-3 px-3 whitespace-nowrap text-right space-x-1">
                         <button
                           onClick={() => { setSelectedCoord(c); setIsFormOpen(true); }}
-                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-[11px] border border-slate-700 transition-colors"
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-[11px] border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => setResetTargetCoord(c)}
-                          className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-semibold text-[11px] border border-amber-500/20 transition-colors"
+                          className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-semibold text-[11px] border border-amber-500/20 transition-colors cursor-pointer"
                         >
                           Reset Password
                         </button>
                         <button
                           onClick={() => setToggleTargetCoord(c)}
-                          className={`px-2.5 py-1 rounded-lg font-semibold text-[11px] transition-colors border ${
+                          className={`px-2.5 py-1 rounded-lg font-semibold text-[11px] transition-colors border cursor-pointer ${
                             c.status === 'Active'
-                              ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/20'
-                              : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/20'
+                              ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                              : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                           }`}
                         >
                           {c.status === 'Active' ? 'Deactivate' : 'Activate'}
                         </button>
                         <button
                           onClick={() => setDeleteTargetCoord(c)}
-                          className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-semibold text-[11px] border border-rose-500/20 transition-colors"
+                          className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-semibold text-[11px] border border-rose-500/20 transition-colors cursor-pointer"
                           title="Delete Coordinator Permanently"
                         >
                           Delete
@@ -571,24 +571,24 @@ export const AdminCoordinatorsPage = () => {
         </div>
       )}
 
-      {/* SECTION 4: PR MEMBERS (और पीआर कौन है) */}
+      {/* SECTION 4: PR MEMBERS */}
       {(filterRole === 'ALL' || filterRole === 'PR Member') && (
-        <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-white">
-              <Camera className="w-4 h-4 text-cyan-400" />
+        <div className="p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm transition-colors">
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
+              <Camera className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
               <span>4. PR Members / Media Team ({prMembers.length})</span>
             </div>
-            <span className="text-[11px] text-cyan-400 font-mono">Media & PR Desk</span>
+            <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-mono">Media & PR Desk</span>
           </div>
 
           {prMembers.length === 0 ? (
-            <p className="text-xs text-slate-500 text-center py-6">No PR Members match filters.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 text-center py-6">No PR Members match filters.</p>
           ) : (
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-bold text-[10px] tracking-wider">
                     <th className="py-3 px-3">PR Member Name</th>
                     <th className="py-3 px-3">Username</th>
                     <th className="py-3 px-3">Email</th>
@@ -597,19 +597,19 @@ export const AdminCoordinatorsPage = () => {
                     <th className="py-3 px-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-200">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200">
                   {prMembers.map((c) => (
-                    <tr key={c.id} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3 px-3 font-bold text-white whitespace-nowrap">{c.name}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-300">{c.username}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-400">{c.email}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-300">{c.phone}</td>
+                    <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="py-3 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">{c.name}</td>
+                      <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.username}</td>
+                      <td className="py-3 px-3 whitespace-nowrap text-slate-500 dark:text-slate-400">{c.email}</td>
+                      <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.phone}</td>
                       <td className="py-3 px-3 whitespace-nowrap">
                         <span
                           className={`px-2 py-0.5 text-[10px] font-bold rounded ${
                             c.status === 'Active'
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                              : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                              : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
                           }`}
                         >
                           {c.status}
@@ -618,29 +618,29 @@ export const AdminCoordinatorsPage = () => {
                       <td className="py-3 px-3 whitespace-nowrap text-right space-x-1">
                         <button
                           onClick={() => { setSelectedCoord(c); setIsFormOpen(true); }}
-                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-[11px] border border-slate-700 transition-colors"
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-[11px] border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => setResetTargetCoord(c)}
-                          className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-semibold text-[11px] border border-amber-500/20 transition-colors"
+                          className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-semibold text-[11px] border border-amber-500/20 transition-colors cursor-pointer"
                         >
                           Reset Password
                         </button>
                         <button
                           onClick={() => setToggleTargetCoord(c)}
-                          className={`px-2.5 py-1 rounded-lg font-semibold text-[11px] transition-colors border ${
+                          className={`px-2.5 py-1 rounded-lg font-semibold text-[11px] transition-colors border cursor-pointer ${
                             c.status === 'Active'
-                              ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/20'
-                              : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/20'
+                              ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                              : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                           }`}
                         >
                           {c.status === 'Active' ? 'Deactivate' : 'Activate'}
                         </button>
                         <button
                           onClick={() => setDeleteTargetCoord(c)}
-                          className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-semibold text-[11px] border border-rose-500/20 transition-colors"
+                          className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-semibold text-[11px] border border-rose-500/20 transition-colors cursor-pointer"
                           title="Delete Coordinator Permanently"
                         >
                           Delete

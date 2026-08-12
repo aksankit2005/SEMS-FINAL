@@ -265,20 +265,20 @@ export const BasketballLiveScoreControllerModal = ({ match, venueName, onClose, 
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[999999] bg-[#060911] text-white flex flex-col font-sans overflow-hidden w-screen h-screen select-none p-2 sm:p-3 space-y-2">
+    <div className="fixed inset-0 z-[999999] bg-slate-100 dark:bg-[#060911] text-slate-900 dark:text-white flex flex-col font-sans overflow-hidden w-screen h-screen select-none p-2 sm:p-3 space-y-2 transition-colors">
       
       {/* 1. ULTRA-COMPACT COMBINED TOP SCOREBOARD & CONTROLS HEADER BAR (~60px) */}
-      <header className="px-4 py-2.5 bg-[#0D1424] border border-slate-800 rounded-2xl flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-lg">
+      <header className="px-4 py-2.5 bg-white dark:bg-[#0D1424] border border-slate-200 dark:border-slate-800 rounded-2xl flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-lg transition-colors">
         
         {/* Left: Venue & Team 1 Score */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
-            <span className="text-[11px] font-mono font-bold text-orange-400 uppercase tracking-wider">{venueName}</span>
+            <span className="text-[11px] font-mono font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider">{venueName}</span>
           </div>
 
           <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-orange-500/10 border border-orange-500/30">
-            <span className="text-xs font-black text-white uppercase truncate max-w-[120px] sm:max-w-[180px]">{team1Name}</span>
+            <span className="text-xs font-black text-slate-900 dark:text-white uppercase truncate max-w-[120px] sm:max-w-[180px]">{team1Name}</span>
             <span className="text-2xl sm:text-3xl font-black font-mono text-orange-500">{calculatedScore1}</span>
           </div>
         </div>
@@ -287,14 +287,14 @@ export const BasketballLiveScoreControllerModal = ({ match, venueName, onClose, 
         <div className="flex items-center gap-2">
           <span className="text-xs font-black text-slate-400 font-mono">VS</span>
 
-          <div className="px-3 py-1 rounded-xl bg-orange-500/20 text-orange-400 border border-orange-500/40 text-xs font-black uppercase tracking-wider">
+          <div className="px-3 py-1 rounded-xl bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/40 text-xs font-black uppercase tracking-wider">
             🏀 {quarter}
           </div>
 
           <button
             type="button"
             onClick={handleNextQuarter}
-            className="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700 transition cursor-pointer"
+            className="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-bold text-xs border border-slate-300 dark:border-slate-700 transition cursor-pointer"
             title="Advance Quarter (Points continue)"
           >
             Next ➔
@@ -304,9 +304,9 @@ export const BasketballLiveScoreControllerModal = ({ match, venueName, onClose, 
             type="button"
             onClick={handleUndo}
             disabled={historyStack.length === 0}
-            className="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-slate-300 font-bold text-xs border border-slate-700 flex items-center gap-1 transition cursor-pointer"
+            className="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-30 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-300 dark:border-slate-700 flex items-center gap-1 transition cursor-pointer"
           >
-            <RotateCcw className="w-3 h-3 text-orange-400" /> Undo
+            <RotateCcw className="w-3 h-3 text-orange-500 dark:text-orange-400" /> Undo
           </button>
         </div>
 
@@ -314,7 +314,7 @@ export const BasketballLiveScoreControllerModal = ({ match, venueName, onClose, 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-blue-500/10 border border-blue-500/30">
             <span className="text-2xl sm:text-3xl font-black font-mono text-blue-500">{calculatedScore2}</span>
-            <span className="text-xs font-black text-white uppercase truncate max-w-[120px] sm:max-w-[180px]">{team2Name}</span>
+            <span className="text-xs font-black text-slate-900 dark:text-white uppercase truncate max-w-[120px] sm:max-w-[180px]">{team2Name}</span>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -329,16 +329,16 @@ export const BasketballLiveScoreControllerModal = ({ match, venueName, onClose, 
             <button
               type="button"
               onClick={toggleBrowserFullscreen}
-              className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer"
+              className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 cursor-pointer"
               title="Fullscreen"
             >
-              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4 text-orange-400" />}
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4 text-orange-500 dark:text-orange-400" />}
             </button>
 
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/30 transition cursor-pointer"
+              className="p-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500 text-rose-600 dark:text-rose-300 hover:text-white border border-rose-500/30 transition cursor-pointer"
               title="Close Console"
             >
               <X className="w-4 h-4" />
@@ -352,19 +352,19 @@ export const BasketballLiveScoreControllerModal = ({ match, venueName, onClose, 
       <main className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 overflow-hidden">
         
         {/* TEAM 1 PANEL */}
-        <div className="flex flex-col h-full overflow-hidden p-3 rounded-2xl bg-[#0D1424] border border-orange-500/30 shadow-xl">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-800 shrink-0">
+        <div className="flex flex-col h-full overflow-hidden p-3 rounded-2xl bg-white dark:bg-[#0D1424] border border-orange-500/30 shadow-xl transition-colors">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800 shrink-0">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-orange-500" />
-              <h3 className="text-xs font-black text-white uppercase tracking-wide truncate max-w-[200px]">{team1Name}</h3>
-              <span className="text-[10px] font-mono text-orange-400 font-bold">PLAYING 5</span>
+              <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wide truncate max-w-[200px]">{team1Name}</h3>
+              <span className="text-[10px] font-mono text-orange-600 dark:text-orange-400 font-bold">PLAYING 5</span>
             </div>
             <span className="text-xs font-mono font-black text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded border border-orange-500/20">
               {calculatedScore1} PTS
             </span>
           </div>
 
-          {/* ON-COURT 5 PLAYERS LIST (VERTICAL COMPACT CONTAINER) */}
+          {/* ON-COURT 5 PLAYERS LIST */}
           <div className="flex-1 overflow-y-auto space-y-2 py-2 pr-1 custom-scrollbar">
             {roster1.filter((p) => p.onCourt).map((player) => {
               const isFouledOut = (player.fouls || 0) >= 5;
@@ -372,35 +372,35 @@ export const BasketballLiveScoreControllerModal = ({ match, venueName, onClose, 
               return (
                 <div
                   key={player.id}
-                  className={`p-2 rounded-xl border transition ${
+                  className={`p-2.5 rounded-xl border flex flex-col gap-2 transition ${
                     isFouledOut
-                      ? 'bg-rose-950/40 border-rose-500/60 text-rose-300'
-                      : 'bg-[#121A2D] border-slate-800 hover:border-orange-500/30'
+                      ? 'bg-rose-500/10 border-rose-500/40 opacity-70'
+                      : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/60 hover:border-orange-500/40'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 truncate">
-                      <span className="w-6 h-6 rounded bg-orange-500/20 text-orange-400 font-mono font-black text-xs flex items-center justify-center shrink-0 border border-orange-500/30">
-                        #{player.jersey}
+                      <span className="w-6 h-6 rounded bg-orange-500/20 text-orange-600 dark:text-orange-400 font-mono font-black text-xs flex items-center justify-center shrink-0 border border-orange-500/30">
+                        #{player.jersey || player.jerseyNo}
                       </span>
-                      <span className="text-xs font-bold text-white truncate">{player.name}</span>
-                      <span className="text-[11px] font-mono text-slate-400 shrink-0">
-                        PTS: <strong className="text-orange-400 font-bold">{player.points || 0}</strong> | Fouls: <strong className={isFouledOut ? 'text-rose-400 font-black' : 'text-amber-400'}>{player.fouls || 0}/5</strong>
+                      <span className="text-xs font-bold text-slate-900 dark:text-white truncate">{player.name}</span>
+                      <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 shrink-0">
+                        PTS: <strong className="text-orange-600 dark:text-orange-400 font-bold">{player.points || 0}</strong> | Fouls: <strong className={isFouledOut ? 'text-rose-600 dark:text-rose-400 font-black' : 'text-amber-600 dark:text-amber-400'}>{player.fouls || 0}/5</strong>
                       </span>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => setSubModal({ teamNum: 1, outPlayer: player })}
-                      className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[10px] border border-slate-700 transition cursor-pointer shrink-0 flex items-center gap-1"
+                      className="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-bold text-[10px] border border-slate-300 dark:border-slate-700 transition cursor-pointer shrink-0 flex items-center gap-1"
                     >
-                      <RefreshCw className="w-2.5 h-2.5 text-orange-400" /> Sub Out
+                      <RefreshCw className="w-2.5 h-2.5 text-orange-600 dark:text-orange-400" /> Sub Out
                     </button>
                   </div>
 
                   {/* OPEN COMPACT CONTROL BAR */}
                   {isFouledOut ? (
-                    <div className="p-1 rounded bg-rose-500/20 text-[10px] font-bold text-rose-300 text-center">
+                    <div className="p-1 rounded bg-rose-500/20 text-[10px] font-bold text-rose-600 dark:text-rose-300 text-center">
                       ⚠️ FOULED OUT (5 Fouls - Must Sub Out)
                     </div>
                   ) : (
@@ -422,14 +422,14 @@ export const BasketballLiveScoreControllerModal = ({ match, venueName, onClose, 
                       <button
                         type="button"
                         onClick={() => handleAwardPoints(1, player.id, 1)}
-                        className="py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition cursor-pointer border border-slate-700 active:scale-95"
+                        className="py-1 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-900 dark:text-white font-bold text-xs transition cursor-pointer border border-slate-300 dark:border-slate-700 active:scale-95"
                       >
                         +1 PTS
                       </button>
                       <button
                         type="button"
                         onClick={() => handleAwardFoul(1, player.id)}
-                        className="py-1 rounded-lg bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white font-bold text-xs border border-rose-500/30 transition cursor-pointer active:scale-95"
+                        className="py-1 rounded-lg bg-rose-500/20 hover:bg-rose-600 text-rose-700 dark:text-rose-300 hover:text-white font-bold text-xs border border-rose-500/30 transition cursor-pointer active:scale-95"
                       >
                         +1 FOUL
                       </button>
@@ -441,8 +441,8 @@ export const BasketballLiveScoreControllerModal = ({ match, venueName, onClose, 
           </div>
 
           {/* BENCH SUBSTITUTES ROW AT BOTTOM */}
-          <div className="shrink-0 pt-2 border-t border-slate-800 flex items-center justify-between gap-2 text-[11px] font-mono">
-            <span className="text-slate-400 font-bold uppercase shrink-0">BENCH ({roster1.filter((p) => !p.onCourt).length}):</span>
+          <div className="shrink-0 pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 text-[11px] font-mono">
+            <span className="text-slate-500 dark:text-slate-400 font-bold uppercase shrink-0">BENCH ({roster1.filter((p) => !p.onCourt).length}):</span>
             <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar py-0.5">
               {roster1.filter((p) => !p.onCourt).map((bp) => (
                 <button
@@ -455,32 +455,31 @@ export const BasketballLiveScoreControllerModal = ({ match, venueName, onClose, 
                   }}
                   className={`px-2 py-0.5 rounded text-[10px] font-bold border shrink-0 transition flex items-center gap-1 cursor-pointer ${
                     (bp.fouls || 0) >= 5
-                      ? 'bg-rose-950/40 text-rose-400 border-rose-500/30'
-                      : 'bg-[#121A2D] hover:bg-orange-500/20 text-slate-300 border-slate-700'
+                      ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30'
+                      : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700'
                   }`}
                 >
-                  <span className="text-orange-400">#{bp.jersey}</span> {bp.name.split(' ')[0]} ({bp.points}p)
+                  <span className="text-orange-600 dark:text-orange-400">#{bp.jersey || bp.jerseyNo}</span> {bp.name.split(' ')[0]} ({bp.points || 0}p)
                 </button>
               ))}
             </div>
           </div>
-
         </div>
 
         {/* TEAM 2 PANEL */}
-        <div className="flex flex-col h-full overflow-hidden p-3 rounded-2xl bg-[#0D1424] border border-blue-500/30 shadow-xl">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-800 shrink-0">
+        <div className="flex flex-col h-full overflow-hidden p-3 rounded-2xl bg-white dark:bg-[#0D1424] border border-blue-500/30 shadow-xl transition-colors">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800 shrink-0">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-blue-500" />
-              <h3 className="text-xs font-black text-white uppercase tracking-wide truncate max-w-[200px]">{team2Name}</h3>
-              <span className="text-[10px] font-mono text-blue-400 font-bold">PLAYING 5</span>
+              <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wide truncate max-w-[200px]">{team2Name}</h3>
+              <span className="text-[10px] font-mono text-blue-600 dark:text-blue-400 font-bold">PLAYING 5</span>
             </div>
             <span className="text-xs font-mono font-black text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
               {calculatedScore2} PTS
             </span>
           </div>
 
-          {/* ON-COURT 5 PLAYERS LIST (VERTICAL COMPACT CONTAINER) */}
+          {/* ON-COURT 5 PLAYERS LIST */}
           <div className="flex-1 overflow-y-auto space-y-2 py-2 pr-1 custom-scrollbar">
             {roster2.filter((p) => p.onCourt).map((player) => {
               const isFouledOut = (player.fouls || 0) >= 5;
@@ -488,35 +487,35 @@ export const BasketballLiveScoreControllerModal = ({ match, venueName, onClose, 
               return (
                 <div
                   key={player.id}
-                  className={`p-2 rounded-xl border transition ${
+                  className={`p-2.5 rounded-xl border flex flex-col gap-2 transition ${
                     isFouledOut
-                      ? 'bg-rose-950/40 border-rose-500/60 text-rose-300'
-                      : 'bg-[#121A2D] border-slate-800 hover:border-blue-500/30'
+                      ? 'bg-rose-500/10 border-rose-500/40 opacity-70'
+                      : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/60 hover:border-blue-500/40'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 truncate">
-                      <span className="w-6 h-6 rounded bg-blue-500/20 text-blue-400 font-mono font-black text-xs flex items-center justify-center shrink-0 border border-blue-500/30">
-                        #{player.jersey}
+                      <span className="w-6 h-6 rounded bg-blue-500/20 text-blue-600 dark:text-blue-400 font-mono font-black text-xs flex items-center justify-center shrink-0 border border-blue-500/30">
+                        #{player.jersey || player.jerseyNo}
                       </span>
-                      <span className="text-xs font-bold text-white truncate">{player.name}</span>
-                      <span className="text-[11px] font-mono text-slate-400 shrink-0">
-                        PTS: <strong className="text-blue-400 font-bold">{player.points || 0}</strong> | Fouls: <strong className={isFouledOut ? 'text-rose-400 font-black' : 'text-amber-400'}>{player.fouls || 0}/5</strong>
+                      <span className="text-xs font-bold text-slate-900 dark:text-white truncate">{player.name}</span>
+                      <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 shrink-0">
+                        PTS: <strong className="text-blue-600 dark:text-blue-400 font-bold">{player.points || 0}</strong> | Fouls: <strong className={isFouledOut ? 'text-rose-600 dark:text-rose-400 font-black' : 'text-amber-600 dark:text-amber-400'}>{player.fouls || 0}/5</strong>
                       </span>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => setSubModal({ teamNum: 2, outPlayer: player })}
-                      className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[10px] border border-slate-700 transition cursor-pointer shrink-0 flex items-center gap-1"
+                      className="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-bold text-[10px] border border-slate-300 dark:border-slate-700 transition cursor-pointer shrink-0 flex items-center gap-1"
                     >
-                      <RefreshCw className="w-2.5 h-2.5 text-blue-400" /> Sub Out
+                      <RefreshCw className="w-2.5 h-2.5 text-blue-600 dark:text-blue-400" /> Sub Out
                     </button>
                   </div>
 
                   {/* OPEN COMPACT CONTROL BAR */}
                   {isFouledOut ? (
-                    <div className="p-1 rounded bg-rose-500/20 text-[10px] font-bold text-rose-300 text-center">
+                    <div className="p-1 rounded bg-rose-500/20 text-[10px] font-bold text-rose-600 dark:text-rose-300 text-center">
                       ⚠️ FOULED OUT (5 Fouls - Must Sub Out)
                     </div>
                   ) : (
@@ -538,14 +537,14 @@ export const BasketballLiveScoreControllerModal = ({ match, venueName, onClose, 
                       <button
                         type="button"
                         onClick={() => handleAwardPoints(2, player.id, 1)}
-                        className="py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition cursor-pointer border border-slate-700 active:scale-95"
+                        className="py-1 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-900 dark:text-white font-bold text-xs transition cursor-pointer border border-slate-300 dark:border-slate-700 active:scale-95"
                       >
                         +1 PTS
                       </button>
                       <button
                         type="button"
                         onClick={() => handleAwardFoul(2, player.id)}
-                        className="py-1 rounded-lg bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white font-bold text-xs border border-rose-500/30 transition cursor-pointer active:scale-95"
+                        className="py-1 rounded-lg bg-rose-500/20 hover:bg-rose-600 text-rose-700 dark:text-rose-300 hover:text-white font-bold text-xs border border-rose-500/30 transition cursor-pointer active:scale-95"
                       >
                         +1 FOUL
                       </button>

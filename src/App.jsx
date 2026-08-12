@@ -151,8 +151,9 @@ function App() {
                   <Route path="/live" element={<LiveMatchPortalPage />} />
                   <Route path="/schedule" element={<SchedulePage />} />
                   <Route path="/results" element={<ResultsPage />} />
+                  <Route path="/coordinator-results" element={<AdminCoordinatorMatchResultsPage />} />
+                  <Route path="/admin-coordinator-results" element={<AdminCoordinatorMatchResultsPage />} />
                   <Route path="/leaderboard" element={<LeaderboardPage />} />
-                  <Route path="/coordinators" element={<CoordinatorsPage />} />
                   <Route path="/announcements" element={<AnnouncementsPage />} />
                   <Route path="/gallery" element={<GalleryPage />} />
                   <Route path="/about" element={<AboutPage />} />

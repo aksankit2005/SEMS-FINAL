@@ -75,42 +75,42 @@ export const LiveMatchesPage = () => {
                 </div>
 
                 {/* Scoreboard Visual */}
-                <div className="grid grid-cols-3 gap-4 items-center my-4 text-center">
+                <div className="grid grid-cols-3 gap-1 sm:gap-4 items-center my-4 text-center">
                   {/* Team 1 */}
-                  <div className="space-y-2">
-                    <div className="text-4xl">{match.team1.logo}</div>
-                    <h3 className="font-black text-sm text-slate-900 dark:text-white leading-tight">
+                  <div className="space-y-1 sm:space-y-2 min-w-0">
+                    <div className="text-3xl sm:text-4xl">{match.team1.logo}</div>
+                    <h3 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white leading-tight truncate">
                       {match.team1.name}
                     </h3>
-                    <div className="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400">
+                    <div className="text-xl sm:text-3xl font-black text-blue-600 dark:text-blue-400">
                       {match.team1.score}
                     </div>
                     {match.team1.overs && (
-                      <div className="text-[11px] text-slate-400 font-medium">{match.team1.overs}</div>
+                      <div className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">{match.team1.overs}</div>
                     )}
                   </div>
 
                   {/* VS Divider */}
-                  <div className="space-y-1">
-                    <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-black text-slate-400">
+                  <div className="space-y-1 shrink-0">
+                    <span className="px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] sm:text-xs font-black text-slate-400">
                       VS
                     </span>
-                    <div className="text-[11px] text-emerald-500 font-bold mt-2">
+                    <div className="text-[10px] sm:text-[11px] text-emerald-500 font-bold mt-1 sm:mt-2">
                       In Progress
                     </div>
                   </div>
 
                   {/* Team 2 */}
-                  <div className="space-y-2">
-                    <div className="text-4xl">{match.team2.logo}</div>
-                    <h3 className="font-black text-sm text-slate-900 dark:text-white leading-tight">
+                  <div className="space-y-1 sm:space-y-2 min-w-0">
+                    <div className="text-3xl sm:text-4xl">{match.team2.logo}</div>
+                    <h3 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white leading-tight truncate">
                       {match.team2.name}
                     </h3>
-                    <div className="text-2xl sm:text-3xl font-black text-rose-500">
+                    <div className="text-xl sm:text-3xl font-black text-rose-500">
                       {match.team2.score}
                     </div>
                     {match.team2.overs && (
-                      <div className="text-[11px] text-slate-400 font-medium">{match.team2.overs}</div>
+                      <div className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">{match.team2.overs}</div>
                     )}
                   </div>
                 </div>

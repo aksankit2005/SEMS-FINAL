@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../../services/adminApi';
 import { useToast } from '../../context/ToastContext';
 import { ResultEditModal } from '../../components/admin/ResultEditModal';
@@ -16,7 +17,8 @@ import {
   Loader2,
   FileSpreadsheet,
   Crown,
-  CheckCircle2
+  CheckCircle2,
+  Swords
 } from 'lucide-react';
 
 // Normalize declared results (super coord leaderboard entries + admin saved results)
@@ -53,6 +55,7 @@ const normalizeDeclaredResult = (entry) => {
 };
 
 export const AdminResultsPage = () => {
+  const navigate = useNavigate();
   const { addToast } = useToast();
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -211,20 +214,29 @@ export const AdminResultsPage = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl transition-colors">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
               Super Admin Central Control
             </span>
           </div>
-          <h1 className="text-2xl font-black text-white">Results & Leaderboard</h1>
-          <p className="text-xs text-slate-400">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white">Results & Leaderboard</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Only Super Coordinator declared match results — row-wise table view with delete option & Excel export
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            onClick={() => navigate('/admin/coordinator-results')}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/20 transition-all cursor-pointer"
+            title="View completed match feed submitted by sport coordinators"
+          >
+            <Swords className="w-4 h-4 text-amber-300" />
+            <span>Coordinator Match Results Feed</span>
+          </button>
+
           <button
             onClick={handleExportExcel}
             className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/20 transition-all cursor-pointer"
@@ -245,14 +257,14 @@ export const AdminResultsPage = () => {
       </div>
 
       {/* Tabs Bar */}
-      <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-2">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setActiveTab('results')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'results'
                 ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
             🏆 Super Coordinator Declared Results ({filteredResults.length})
@@ -262,16 +274,23 @@ export const AdminResultsPage = () => {
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'leaderboard'
                 ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
             🏅 Inter-College Leaderboard Points
+          </button>
+          <button
+            onClick={() => navigate('/admin/coordinator-results')}
+            className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center gap-1.5 border border-slate-200 dark:border-slate-800"
+          >
+            <Swords className="w-3.5 h-3.5 text-purple-500" />
+            <span>Coordinator Matches Feed ➔</span>
           </button>
         </div>
 
         <button
           onClick={fetchResultsData}
-          className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors cursor-pointer"
+          className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
           title="Refresh results list"
         >
           <RefreshCw className="w-4 h-4" />
@@ -280,12 +299,12 @@ export const AdminResultsPage = () => {
 
       {activeTab === 'leaderboard' ? (
         /* LEADERBOARD STANDINGS CARD */
-        <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-6">
-          <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
-            <Crown className="w-6 h-6 text-amber-400" />
+        <div className="p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-6 shadow-sm transition-colors">
+          <div className="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+            <Crown className="w-6 h-6 text-amber-500 dark:text-amber-400" />
             <div>
-              <h2 className="text-base font-bold text-white">Overall Inter-College Championship Standings</h2>
-              <p className="text-xs text-slate-400">Points tally based on 🥇 1st Position (5 pts) & 🥈 2nd Position (3 pts)</p>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">Overall Inter-College Championship Standings</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Points tally based on 🥇 1st Position (5 pts) & 🥈 2nd Position (3 pts)</p>
             </div>
           </div>
 
@@ -295,27 +314,27 @@ export const AdminResultsPage = () => {
                 key={col.id}
                 className={`p-5 rounded-2xl border flex flex-col justify-between space-y-3 relative overflow-hidden ${
                   idx === 0
-                    ? 'bg-gradient-to-br from-amber-500/20 via-slate-900 to-slate-900 border-amber-500/40'
-                    : 'bg-gradient-to-br from-slate-300/20 via-slate-900 to-slate-900 border-slate-600/40'
+                    ? 'bg-gradient-to-br from-amber-500/10 via-white to-white dark:from-amber-500/20 dark:via-slate-900 dark:to-slate-900 border-amber-500/40'
+                    : 'bg-gradient-to-br from-slate-100 via-white to-white dark:from-slate-300/20 dark:via-slate-900 dark:to-slate-900 border-slate-200 dark:border-slate-600/40'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-2xl">
                     {idx === 0 ? '🥇' : '🥈'}
                   </span>
-                  <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-amber-400">
+                  <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-amber-600 dark:text-amber-400">
                     Rank #{idx + 1}
                   </span>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-black text-white">{col.id}</h3>
-                  <p className="text-xs text-slate-400 line-clamp-1">{col.name}</p>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white">{col.id}</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{col.name}</p>
                 </div>
 
-                <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-800">
-                  <span className="text-slate-400">G: {col.goldCount} | S: {col.silverCount}</span>
-                  <span className="text-sm font-black text-amber-400">{col.totalPoints} PTS</span>
+                <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200 dark:border-slate-800">
+                  <span className="text-slate-500 dark:text-slate-400">G: {col.goldCount} | S: {col.silverCount}</span>
+                  <span className="text-sm font-black text-amber-600 dark:text-amber-400">{col.totalPoints} PTS</span>
                 </div>
               </div>
             ))}
@@ -325,7 +344,7 @@ export const AdminResultsPage = () => {
           <div className="overflow-x-auto custom-scrollbar pt-4">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-slate-800 text-slate-400 uppercase font-bold text-[10px]">
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-bold text-[10px]">
                   <th className="py-3 px-3">Rank</th>
                   <th className="py-3 px-3">College Name</th>
                   <th className="py-3 px-3">🥇 Firsts (Winners)</th>
@@ -333,16 +352,16 @@ export const AdminResultsPage = () => {
                   <th className="py-3 px-3 text-right">Total Points</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-slate-200">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200">
                 {collegeStandings.map((col, idx) => (
-                  <tr key={col.id} className="hover:bg-slate-800/40">
-                    <td className="py-3 px-3 font-black text-amber-400">#{idx + 1}</td>
-                    <td className="py-3 px-3 font-bold text-white">
+                  <tr key={col.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                    <td className="py-3 px-3 font-black text-amber-600 dark:text-amber-400">#{idx + 1}</td>
+                    <td className="py-3 px-3 font-bold text-slate-900 dark:text-white">
                       {col.id}
                     </td>
-                    <td className="py-3 px-3 font-semibold text-amber-400">{col.goldCount}</td>
-                    <td className="py-3 px-3 font-semibold text-slate-300">{col.silverCount}</td>
-                    <td className="py-3 px-3 font-black text-amber-400 text-right">{col.totalPoints} PTS</td>
+                    <td className="py-3 px-3 font-semibold text-amber-600 dark:text-amber-400">{col.goldCount}</td>
+                    <td className="py-3 px-3 font-semibold text-slate-700 dark:text-slate-300">{col.silverCount}</td>
+                    <td className="py-3 px-3 font-black text-amber-600 dark:text-amber-400 text-right">{col.totalPoints} PTS</td>
                   </tr>
                 ))}
               </tbody>
@@ -353,9 +372,9 @@ export const AdminResultsPage = () => {
         /* DECLARED RESULTS TABLE SECTION */
         <div className="space-y-4">
           {/* Filters Control Bar */}
-          <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-amber-400">
+          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-3 shadow-sm transition-colors">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800/80 pb-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-amber-600 dark:text-amber-400">
                 <Filter className="w-4 h-4" />
                 <span>Filter Declared Results</span>
               </div>
@@ -363,7 +382,7 @@ export const AdminResultsPage = () => {
               {hasActiveFilters && (
                 <button
                   onClick={resetFilters}
-                  className="text-xs font-bold text-rose-400 hover:underline cursor-pointer"
+                  className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
                 >
                   Reset All Filters
                 </button>
@@ -373,67 +392,67 @@ export const AdminResultsPage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
               {/* 1. 🏆 Filter by Sport */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">
+                <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
                   🏆 Sport Discipline
                 </label>
                 <select
                   value={filterSport}
                   onChange={(e) => setFilterSport(e.target.value)}
-                  className="w-full bg-slate-800/70 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
                 >
-                  <option value="ALL">All 12 Sports</option>
+                  <option value="ALL" className="bg-white dark:bg-slate-900">All 12 Sports</option>
                   {ALL_12_SPORTS.map(s => (
-                    <option key={s.id} value={s.id}>{s.icon} {s.name}</option>
+                    <option key={s.id} value={s.id} className="bg-white dark:bg-slate-900">{s.icon} {s.name}</option>
                   ))}
                 </select>
               </div>
 
               {/* 2. 🚻 Filter by Gender */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">
+                <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
                   🚻 Gender Event
                 </label>
                 <select
                   value={filterGender}
                   onChange={(e) => setFilterGender(e.target.value)}
-                  className="w-full bg-slate-800/70 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
                 >
-                  <option value="ALL">All Genders</option>
-                  <option value="Boys">Boys (Male)</option>
-                  <option value="Girls">Girls (Female)</option>
-                  <option value="Mixed">Mixed</option>
+                  <option value="ALL" className="bg-white dark:bg-slate-900">All Genders</option>
+                  <option value="Boys" className="bg-white dark:bg-slate-900">Boys (Male)</option>
+                  <option value="Girls" className="bg-white dark:bg-slate-900">Girls (Female)</option>
+                  <option value="Mixed" className="bg-white dark:bg-slate-900">Mixed</option>
                 </select>
               </div>
 
               {/* 3. 🔍 Search Input */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">
+                <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
                   🔍 Search Match / Winner
                 </label>
                 <div className="relative">
-                  <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
+                  <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-2.5" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search team, winner, college..."
-                    className="w-full bg-slate-800/70 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                    className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Results Header Bar with Excel Export Shortcut */}
-          <div className="flex items-center justify-between text-xs font-bold text-slate-300 px-1">
+          {/* Results Header Bar */}
+          <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 px-1">
             <span>
               Showing {filteredResults.length} declared result{filteredResults.length !== 1 ? 's' : ''}
-              {filterSport !== 'ALL' && <> for <span className="text-amber-400">{filterSport}</span></>}
+              {filterSport !== 'ALL' && <> for <span className="text-amber-600 dark:text-amber-400">{filterSport}</span></>}
               {filterGender !== 'ALL' && <> ({filterGender} Gender)</>}
             </span>
             <button
               onClick={handleExportExcel}
-              className="text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+              className="text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
             >
               <FileSpreadsheet className="w-3.5 h-3.5" />
               <span>Export Filtered Table to Excel</span>
@@ -443,41 +462,41 @@ export const AdminResultsPage = () => {
           {/* Results Table */}
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16 space-y-3">
-              <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
-              <p className="text-xs text-slate-400">Loading Super Coordinator declared results...</p>
+              <Loader2 className="w-8 h-8 text-amber-500 dark:text-amber-400 animate-spin" />
+              <p className="text-xs text-slate-500 dark:text-slate-400">Loading Super Coordinator declared results...</p>
             </div>
           ) : filteredResults.length === 0 ? (
-            <div className="p-12 text-center bg-slate-900/60 rounded-2xl border border-slate-800 space-y-2">
-              <p className="text-sm font-bold text-slate-300">No declared results found for current filters.</p>
-              <p className="text-xs text-slate-500">Only results declared by the Super Coordinator appear here.</p>
+            <div className="p-12 text-center bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2 shadow-sm">
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No declared results found for current filters.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Only results declared by the Super Coordinator appear here.</p>
               <button
                 onClick={() => { setSelectedResult(null); setIsEditOpen(true); }}
-                className="text-xs font-bold text-amber-400 hover:underline mt-2 inline-block cursor-pointer"
+                className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline mt-2 inline-block cursor-pointer"
               >
                 + Declare First Match Result Manually
               </button>
             </div>
           ) : (
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/80 overflow-hidden shadow-xl">
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 overflow-hidden shadow-sm">
               <div className="overflow-x-auto custom-scrollbar">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-800 bg-slate-800/60">
-                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-400 whitespace-nowrap">#</th>
-                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-400 whitespace-nowrap">Sport & Event</th>
-                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-400 whitespace-nowrap">Gender</th>
-                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-400 whitespace-nowrap">Format</th>
-                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-amber-400 whitespace-nowrap">🥇 Winner</th>
-                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-400 whitespace-nowrap">🥈 Runner-Up</th>
-                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-400 whitespace-nowrap">Score / Result</th>
-                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-400 whitespace-nowrap">Declared By</th>
-                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-400 whitespace-nowrap">Date</th>
-                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-rose-400 whitespace-nowrap">Actions</th>
+                    <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
+                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">#</th>
+                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Sport & Event</th>
+                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Gender</th>
+                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Format</th>
+                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-amber-600 dark:text-amber-400 whitespace-nowrap">🥇 Winner</th>
+                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">🥈 Runner-Up</th>
+                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Score / Result</th>
+                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Declared By</th>
+                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Date</th>
+                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-rose-600 dark:text-rose-400 whitespace-nowrap">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60">
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60">
                     {filteredResults.map((res, idx) => (
-                      <tr key={res.id} className="hover:bg-slate-800/40 transition-colors group">
+                      <tr key={res.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group">
                         {/* # */}
                         <td className="px-4 py-3 font-mono text-slate-500 whitespace-nowrap">{idx + 1}</td>
 

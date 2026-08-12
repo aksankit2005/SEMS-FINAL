@@ -126,24 +126,24 @@ export const CoordinatorFormModal = ({ isOpen, coordinator = null, onSave, onClo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar text-slate-900 dark:text-white">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
               <Shield className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white leading-tight">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
                 {coordinator ? 'Edit Account' : 'Create Account'}
               </h3>
-              <p className="text-xs text-slate-400">Configure management permissions & profile parameters</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Configure management permissions & profile parameters</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+            className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -151,7 +151,7 @@ export const CoordinatorFormModal = ({ isOpen, coordinator = null, onSave, onClo
 
         {/* Global Error Banner */}
         {errors.api && (
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400">
+          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400">
             {errors.api}
           </div>
         )}
@@ -160,11 +160,11 @@ export const CoordinatorFormModal = ({ isOpen, coordinator = null, onSave, onClo
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Select Role */}
           <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1">Select Role *</label>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Select Role *</label>
             <select
               value={formData.role}
               onChange={(e) => handleRoleChange(e.target.value)}
-              className="w-full bg-slate-800/70 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500 font-bold transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 font-bold transition-colors"
             >
               <option value="Coordinator">Coordinator (12 Sports Coordinator)</option>
               <option value="Head Coordinator">Head Coordinator (College Head)</option>
@@ -174,39 +174,39 @@ export const CoordinatorFormModal = ({ isOpen, coordinator = null, onSave, onClo
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1">Full Name *</label>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Full Name *</label>
             <div className="relative">
-              <User className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+              <User className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="e.g. Vikramaditya Sharma"
-                className="w-full bg-slate-800/70 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
               />
             </div>
-            {errors.name && <p className="text-[11px] text-rose-400 mt-1">{errors.name}</p>}
+            {errors.name && <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{errors.name}</p>}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Username *</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Username *</label>
               <input
                 type="text"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                 placeholder="e.g. coord_cricket"
-                className="w-full bg-slate-800/70 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
               />
-              {errors.username && <p className="text-[11px] text-rose-400 mt-1">{errors.username}</p>}
+              {errors.username && <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{errors.username}</p>}
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Account Status</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Account Status</label>
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="w-full bg-slate-800/70 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
               >
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
@@ -216,72 +216,72 @@ export const CoordinatorFormModal = ({ isOpen, coordinator = null, onSave, onClo
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Email Address *</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Email Address *</label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                <Mail className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="coordinator@sems.edu"
-                  className="w-full bg-slate-800/70 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
                 />
               </div>
-              {errors.email && <p className="text-[11px] text-rose-400 mt-1">{errors.email}</p>}
+              {errors.email && <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{errors.email}</p>}
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Phone Number *</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Phone Number *</label>
               <div className="relative">
-                <Phone className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                <Phone className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />
                 <input
                   type="text"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="+91 98765 43210"
-                  className="w-full bg-slate-800/70 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
                 />
               </div>
-              {errors.phone && <p className="text-[11px] text-rose-400 mt-1">{errors.phone}</p>}
+              {errors.phone && <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{errors.phone}</p>}
             </div>
           </div>
 
           {/* Password */}
           <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
               Password {coordinator ? '' : '*'}
             </label>
             <div className="relative">
-              <Lock className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+              <Lock className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 placeholder={coordinator ? 'Leave blank to keep current password' : 'e.g. Password@123'}
-                className="w-full bg-slate-800/70 border border-slate-700 rounded-xl pl-9 pr-10 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-10 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 text-slate-400 hover:text-white"
+                className="absolute right-3 top-3 text-slate-400 hover:text-slate-700 dark:hover:text-white"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            {errors.password && <p className="text-[11px] text-rose-400 mt-1">{errors.password}</p>}
+            {errors.password && <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{errors.password}</p>}
           </div>
 
           {/* DYNAMIC FIELD CONDITION 1: Show Sport option ONLY when Role === 'Coordinator' */}
           {formData.role === 'Coordinator' && (
             <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-1.5">
-              <label className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+              <label className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
                 <Trophy className="w-4 h-4" />
                 <span>Select Sport (12 Games Coordinator) *</span>
               </label>
               <select
                 value={formData.assignedSport}
                 onChange={(e) => handleSportChange(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
               >
                 {ALL_12_SPORTS.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -295,14 +295,14 @@ export const CoordinatorFormModal = ({ isOpen, coordinator = null, onSave, onClo
           {/* DYNAMIC FIELD CONDITION 2: Show College option ONLY when Role === 'Head Coordinator' */}
           {formData.role === 'Head Coordinator' && (
             <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-1.5">
-              <label className="text-xs font-bold text-purple-400 flex items-center gap-1.5">
+              <label className="text-xs font-bold text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
                 <Building className="w-4 h-4" />
                 <span>Select College (College Head Coordinator) *</span>
               </label>
               <select
                 value={formData.college}
                 onChange={(e) => setFormData({ ...formData, college: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-purple-500"
               >
                 {ALL_COLLEGES.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -315,17 +315,17 @@ export const CoordinatorFormModal = ({ isOpen, coordinator = null, onSave, onClo
 
           {/* DYNAMIC FIELD CONDITION 3 & 4: PR Member or Super Coordinator (Sport/College option hidden) */}
           {(formData.role === 'PR Member' || formData.role === 'Super Coordinator') && (
-            <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-800 text-[11px] text-slate-400">
+            <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400">
               ℹ️ {formData.role === 'PR Member' ? 'PR Members have overall Media & PR access. Sport option is not required.' : 'Super Coordinators have global fest administrative access across all 12 sports.'}
             </div>
           )}
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors"
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors"
             >
               Cancel
             </button>

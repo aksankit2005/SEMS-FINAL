@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Search, Trophy, Users, MapPin, CheckCircle, Info, ArrowRight, ShieldCheck, Flame, X } from 'lucide-react';
 import { SPORTS_DATA } from '../data/sportsData';
-import { BadmintonRulesDisplay } from '../components/registration/BadmintonRulesDisplay';
+import { BadmintonRulesDisplay, BadmintonRulesModal } from '../components/registration/BadmintonRulesDisplay';
 import { AthleticsRulesDisplay } from '../components/registration/AthleticsRulesDisplay';
 import { galleryApi } from '../services/galleryApi';
 import { coordinatorApi } from '../services/coordinatorApi';
@@ -271,68 +271,12 @@ export const SportsPage = () => {
       </div>
 
       {/* Rules Modal */}
-      {activeModalSport && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto text-slate-900 dark:text-white">
-            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
-              <div>
-                <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase">{activeModalSport.category}</span>
-                <h3 className="text-2xl font-black">{activeModalSport.name} Rules</h3>
-              </div>
-              <button
-                onClick={() => setActiveModalSport(null)}
-                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-full"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
-              <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-700 dark:text-blue-300">
-                <span className="font-bold block mb-1">Venue & Schedule:</span>
-                <p>{activeModalSport.venue} • {activeModalSport.schedule}</p>
-              </div>
-
-              {activeModalSport.id === 'badminton' || (activeModalSport.name || '').toLowerCase().includes('badminton') ? (
-                <BadmintonRulesDisplay />
-              ) : activeModalSport.id === 'athletics' || (activeModalSport.name || '').toLowerCase().includes('athletics') ? (
-                <AthleticsRulesDisplay />
-              ) : (
-                <div>
-                  <h4 className="font-bold text-slate-900 dark:text-white mb-2 uppercase text-xs">Official Rulebook:</h4>
-                  <ul className="space-y-2">
-                    {activeModalSport.rules.map((rule, idx) => (
-                      <li key={idx} className="flex items-start gap-2">
-                        <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                        <span>{rule}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
-              {isSportOpen(activeModalSport) ? (
-                <Link
-                  to={`/register/${getActiveEventForSport(activeModalSport).raw?.id || activeModalSport.id}`}
-                  onClick={() => setActiveModalSport(null)}
-                  className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs shadow-md"
-                >
-                  Proceed to Register for {activeModalSport.name}
-                </Link>
-              ) : (
-                <button
-                  disabled
-                  className="px-6 py-2.5 rounded-2xl bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold text-xs cursor-not-allowed"
-                >
-                  Registration Not Available
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <BadmintonRulesModal
+        isOpen={!!activeModalSport}
+        onClose={() => setActiveModalSport(null)}
+        sportName={activeModalSport?.name}
+        rules={activeModalSport?.rules || []}
+      />
     </div>
   );
 };

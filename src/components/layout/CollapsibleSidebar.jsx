@@ -10,7 +10,6 @@ import { galleryApi } from '../../services/galleryApi';
 import { collegeHeadApi } from '../../services/collegeHeadApi';
 import { coordinatorApi, getSportRoute } from '../../services/coordinatorApi';
 
-
 export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
   const location = useLocation();
   const { user } = useAuth();
@@ -62,7 +61,6 @@ export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
   };
 
   const activeSession = getActiveSession();
-  const isPRAuth = galleryApi.isPRAuthenticated() || (user && (user.role === 'PR' || user.role === 'pr_coordinator'));
 
   const navItems = [
     { name: 'Home', path: '/', icon: Flame },
@@ -79,30 +77,31 @@ export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
 
   return (
     <aside
-      className={`hidden lg:flex flex-col sticky top-20 h-[calc(100vh-5rem)] glass-sidebar transition-all duration-300 z-30 shrink-0 select-none ${
-        isCollapsed ? 'w-20' : 'w-64'
+      className={`hidden lg:flex flex-col sticky top-14 sm:top-16 h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] bg-white/95 dark:bg-slate-950/95 border-r border-slate-200/80 dark:border-slate-800/80 transition-all duration-200 z-30 shrink-0 select-none ${
+        isCollapsed ? 'w-16' : 'w-56'
       }`}
     >
-      {/* Sidebar Header & Toggle */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-200/80 dark:border-slate-800/80">
+      {/* Sidebar Top Title & Collapse Toggle */}
+      <div className="flex items-center justify-between p-3 sm:p-3.5 border-b border-slate-200/80 dark:border-slate-800/80">
         {!isCollapsed && (
-          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-            Navigation Menu
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+            NAVIGATION
           </span>
         )}
         <button
           onClick={onToggleCollapse}
-          className={`p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition hover:scale-105 ${
+          className={`p-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition hover:scale-105 cursor-pointer active:scale-95 ${
             isCollapsed ? 'mx-auto' : ''
           }`}
           title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+          aria-label={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
         >
           {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
       </div>
 
-      {/* Nav List */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-1.5 no-scrollbar">
+      {/* Navigation Links Scroll Container */}
+      <div className="flex-1 overflow-y-auto p-2 sm:p-2.5 space-y-1 custom-scrollbar">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
@@ -110,21 +109,21 @@ export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `group relative flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-xs font-bold transition-all duration-200 ${
+                `group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 ${
                   isActive
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25 font-black'
-                    : 'text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-950 dark:hover:text-white'
+                    ? 'bg-blue-500/10 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 border-l-4 border-blue-600 dark:border-blue-400 font-extrabold shadow-xs'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900/60 hover:text-slate-900 dark:hover:text-white'
                 } ${isCollapsed ? 'justify-center px-0' : ''}`
               }
               title={isCollapsed ? item.name : undefined}
             >
-              <Icon className="w-5 h-5 shrink-0 transition-transform group-hover:scale-110" />
+              <Icon className="w-4 h-4 shrink-0 transition-transform group-hover:scale-110" />
 
               {!isCollapsed && (
                 <div className="flex-1 flex items-center justify-between truncate">
-                  <span className="truncate">{item.name}</span>
+                  <span className="truncate group-hover:translate-x-0.5 transition-transform">{item.name}</span>
                   {item.badge && (
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-rose-500 text-white animate-pulse">
+                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-rose-500 text-white animate-pulse">
                       {item.badge}
                     </span>
                   )}
@@ -135,19 +134,16 @@ export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
         })}
       </div>
 
-
-
-
-      {/* Dashboard Shortcut Footer when logged in */}
+      {/* Active Session Dashboard Shortcut */}
       {activeSession && (
-        <div className="p-3 border-t border-slate-200/80 dark:border-slate-800/80">
+        <div className="p-2.5 border-t border-slate-200/80 dark:border-slate-800/80">
           <NavLink
             to={activeSession.dashboardPath}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition-all ${
+              `flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                 isActive
-                  ? 'bg-orange-500 text-white shadow-md'
-                  : 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
+                  ? 'bg-orange-500 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
               } ${isCollapsed ? 'justify-center px-0' : ''}`
             }
             title={isCollapsed ? activeSession.roleLabel : undefined}

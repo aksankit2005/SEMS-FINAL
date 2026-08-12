@@ -79,7 +79,7 @@ export const AnnouncementsPage = () => {
               <div
                 key={item.id}
                 onClick={() => setActiveModal(item)}
-                className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-soft hover:shadow-xl transition cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-6"
+                className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-soft hover:shadow-xl transition cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6"
               >
                 <div className="space-y-2 flex-1">
                   <div className="flex items-center gap-3 flex-wrap">
@@ -103,7 +103,7 @@ export const AnnouncementsPage = () => {
                     <span className="text-xs text-slate-400">{item.date} • {item.time || '10:00 AM'}</span>
                   </div>
 
-                  <h3 className="text-xl font-black text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition">
+                  <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition">
                     {item.title}
                   </h3>
 
@@ -125,12 +125,12 @@ export const AnnouncementsPage = () => {
 
       {/* Detail Modal with PDF View & Download */}
       {activeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md text-slate-900 dark:text-white animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-xl w-full space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md text-slate-900 dark:text-white animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-8 max-w-xl w-full space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div className="flex justify-between items-start pb-3 border-b border-slate-100 dark:border-slate-800">
               <div>
                 <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">{activeModal.category}</span>
-                <h3 className="text-xl font-black mt-1 leading-snug">{activeModal.title}</h3>
+                <h3 className="text-lg sm:text-xl font-black mt-1 leading-snug">{activeModal.title}</h3>
               </div>
               <button
                 onClick={() => setActiveModal(null)}
@@ -162,7 +162,7 @@ export const AnnouncementsPage = () => {
                   {activeModal.attachments.map((pdf) => (
                     <div
                       key={pdf.id || pdf.name}
-                      className="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between gap-3"
+                      className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-500 dark:text-rose-400 flex items-center justify-center font-bold text-xs shrink-0 border border-rose-500/20">
@@ -174,7 +174,7 @@ export const AnnouncementsPage = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                         {pdf.url && pdf.url !== '#' ? (
                           <>
                             <a

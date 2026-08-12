@@ -140,10 +140,10 @@ export const AdminCommitteePage = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl transition-colors">
         <div className="space-y-1">
-          <h1 className="text-2xl font-black text-white">Executive Committee & Faculty Advisors</h1>
-          <p className="text-xs text-slate-400">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white">Executive Committee & Faculty Advisors</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Manage session-wise committee members — photo, name & position. Visible on the public About page.
           </p>
         </div>
@@ -151,7 +151,7 @@ export const AdminCommitteePage = () => {
         <div className="flex items-center gap-2.5 flex-wrap">
           <button
             onClick={handleResetData}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold text-xs transition-all cursor-pointer"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-bold text-xs transition-all cursor-pointer"
             title="Reset all committee data to default"
           >
             <RotateCcw className="w-4 h-4" />
@@ -168,7 +168,7 @@ export const AdminCommitteePage = () => {
       </div>
 
       {/* Session Tabs */}
-      <div className="flex items-center gap-2 flex-wrap border-b border-slate-800 pb-3">
+      <div className="flex items-center gap-2 flex-wrap border-b border-slate-200 dark:border-slate-800 pb-3">
         {sessions.map((s) => (
           <button
             key={s.id}
@@ -176,26 +176,26 @@ export const AdminCommitteePage = () => {
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
               selectedSessionId === s.id
                 ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
             <CalendarRange className="w-3.5 h-3.5" />
             <span>{s.label}</span>
             {s.isActive && (
-              <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[8px] font-black uppercase">Active</span>
+              <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase">Active</span>
             )}
           </button>
         ))}
       </div>
 
       {!selectedSession ? (
-        <div className="p-12 text-center bg-slate-900/60 rounded-2xl border border-slate-800 space-y-2">
-          <CalendarRange className="w-10 h-10 text-slate-600 mx-auto" />
-          <p className="text-sm font-bold text-slate-300">No session selected.</p>
-          <p className="text-xs text-slate-500">Add a session (e.g. 2025-26) to start adding committee members.</p>
+        <div className="p-12 text-center bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2 shadow-sm">
+          <CalendarRange className="w-10 h-10 text-slate-400 dark:text-slate-600 mx-auto" />
+          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No session selected.</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Add a session (e.g. 2025-26) to start adding committee members.</p>
           <button
             onClick={() => { setEditingSession(null); setIsSessionModalOpen(true); }}
-            className="text-xs font-bold text-emerald-400 hover:underline mt-2 inline-block cursor-pointer"
+            className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline mt-2 inline-block cursor-pointer"
           >
             + Add First Session
           </button>
@@ -203,39 +203,40 @@ export const AdminCommitteePage = () => {
       ) : (
         <div className="space-y-6">
           {/* Session Header Card */}
-          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm transition-colors">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                 <CalendarRange className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-base font-black text-white">
+                <h2 className="text-base font-black text-slate-900 dark:text-white">
                   Session {selectedSession.label}
                   {selectedSession.isActive && (
-                    <span className="ml-2 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-extrabold uppercase">
+                    <span className="ml-2 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[9px] font-extrabold uppercase">
                       Current Active
                     </span>
                   )}
                 </h2>
-                <p className="text-xs text-slate-400">
-                  {selectedSession.executiveCommittee?.length || 0} executive members · {selectedSession.advisors?.length || 0} faculty advisors
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Manage committee and faculty for session {selectedSession.label}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => { setEditingSession(selectedSession); setIsSessionModalOpen(true); }}
-                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold text-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1 cursor-pointer"
               >
-                <Edit className="w-3.5 h-3.5" /> Edit Session
+                <Edit className="w-3.5 h-3.5 text-amber-500" /> Edit Session
               </button>
               <button
                 onClick={() => setConfirmState({
                   type: 'session',
+                  sessionId: selectedSession.id,
                   id: selectedSession.id,
-                  message: `Delete session "${selectedSession.label}" and all its members?`
+                  message: `Delete Session ${selectedSession.label}? All associated committee & faculty members will be permanently removed.`
                 })}
-                className="px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 font-bold text-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs border border-rose-500/20 transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" /> Delete Session
               </button>
@@ -243,15 +244,15 @@ export const AdminCommitteePage = () => {
           </div>
 
           {/* Executive Committee Section */}
-          <div className="rounded-2xl bg-slate-900/80 border border-slate-800 overflow-hidden">
-            <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 bg-slate-900/60">
+          <div className="rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm transition-colors">
+            <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">Executive Committee {selectedSession.label}</h3>
-                  <p className="text-xs text-slate-400">Office bearers & core coordinators (President, Secretary, etc.)</p>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Executive Committee {selectedSession.label}</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Office bearers & core coordinators (President, Secretary, etc.)</p>
                 </div>
               </div>
               <button
@@ -264,11 +265,11 @@ export const AdminCommitteePage = () => {
 
             {(!selectedSession.executiveCommittee || selectedSession.executiveCommittee.length === 0) ? (
               <div className="p-10 text-center space-y-2">
-                <ShieldCheck className="w-10 h-10 text-slate-600 mx-auto" />
-                <p className="text-xs font-bold text-slate-400">No executive committee members yet.</p>
+                <ShieldCheck className="w-10 h-10 text-slate-400 dark:text-slate-600 mx-auto" />
+                <p className="text-xs font-bold text-slate-500 dark:text-slate-400">No executive committee members yet.</p>
                 <button
                   onClick={() => openMemberModal('executiveCommittee')}
-                  className="text-xs font-bold text-amber-400 hover:underline inline-block cursor-pointer"
+                  className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline inline-block cursor-pointer"
                 >
                   + Add First Member
                 </button>
@@ -278,25 +279,25 @@ export const AdminCommitteePage = () => {
                 {selectedSession.executiveCommittee.map((member) => (
                   <div
                     key={member.id}
-                    className="rounded-2xl bg-slate-950/60 border border-slate-800 overflow-hidden flex flex-col hover:border-amber-500/40 transition-all group shadow-sm"
+                    className="rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col hover:border-amber-500/40 transition-all group shadow-sm"
                   >
-                    <div className="relative w-full h-40 overflow-hidden bg-slate-800">
+                    <div className="relative w-full h-40 overflow-hidden bg-slate-100 dark:bg-slate-800">
                       <img
                         src={member.image || FALLBACK_IMAGE}
                         alt={member.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_IMAGE; }}
                       />
-                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide bg-amber-500/90 text-slate-950">
+                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide bg-amber-500 text-slate-950">
                         {member.role}
                       </span>
                     </div>
                     <div className="p-3 flex items-center justify-between gap-2 flex-1">
-                      <h4 className="text-xs font-extrabold text-white line-clamp-1" title={member.name}>{member.name}</h4>
+                      <h4 className="text-xs font-extrabold text-slate-900 dark:text-white line-clamp-1" title={member.name}>{member.name}</h4>
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           onClick={() => openMemberModal('executiveCommittee', member)}
-                          className="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                          className="p-1.5 text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                           title="Edit Member"
                         >
                           <Edit className="w-3.5 h-3.5" />
@@ -308,7 +309,7 @@ export const AdminCommitteePage = () => {
                             id: member.id,
                             message: `Delete ${member.name} from the executive committee?`
                           })}
-                          className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          className="p-1.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 rounded-lg hover:bg-rose-500/10 transition-colors cursor-pointer"
                           title="Delete Member"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -322,15 +323,15 @@ export const AdminCommitteePage = () => {
           </div>
 
           {/* Faculty Advisors Section */}
-          <div className="rounded-2xl bg-slate-900/80 border border-slate-800 overflow-hidden">
-            <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 bg-slate-900/60">
+          <div className="rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm transition-colors">
+            <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
                   <GraduationCap className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">Faculty Advisors {selectedSession.label}</h3>
-                  <p className="text-xs text-slate-400">Faculty members guiding the sports tournament operations</p>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Faculty Advisors {selectedSession.label}</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Faculty members guiding the sports tournament operations</p>
                 </div>
               </div>
               <button
@@ -343,8 +344,8 @@ export const AdminCommitteePage = () => {
 
             {(!selectedSession.advisors || selectedSession.advisors.length === 0) ? (
               <div className="p-10 text-center space-y-2">
-                <GraduationCap className="w-10 h-10 text-slate-600 mx-auto" />
-                <p className="text-xs font-bold text-slate-400">No faculty advisors added yet.</p>
+                <GraduationCap className="w-10 h-10 text-slate-400 dark:text-slate-600 mx-auto" />
+                <p className="text-xs font-bold text-slate-500 dark:text-slate-400">No faculty advisors added yet.</p>
                 <button
                   onClick={() => openMemberModal('advisors')}
                   className="text-xs font-bold text-indigo-400 hover:underline inline-block cursor-pointer"

@@ -158,7 +158,7 @@ export const AboutPage = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
 
         {/* Faculty Advisors Section */}
-        <div className="p-8 sm:p-10 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-8 relative overflow-hidden">
+        <div className="p-4 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-8 relative overflow-hidden">
           <div className="border-b border-slate-100 dark:border-slate-800/80 pb-6">
             <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-1">
               <GraduationCap className="w-4 h-4" /> Academic Mentors
@@ -200,7 +200,7 @@ export const AboutPage = () => {
         </div>
 
         {/* Developers Section */}
-        <div className="p-8 sm:p-10 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-8 relative overflow-hidden">
+        <div className="p-4 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-8 relative overflow-hidden">
           <div className="border-b border-slate-100 dark:border-slate-800/80 pb-6">
             <div className="flex items-center gap-2 text-xs font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-wider mb-1">
               <Code className="w-4 h-4" /> Platform Engineers
@@ -253,7 +253,7 @@ export const AboutPage = () => {
         </div>
 
         {/* Executive Committee Section with Year Dropdown */}
-        <div className="p-8 sm:p-10 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-10 relative overflow-hidden">
+        <div className="p-4 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-10 relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-100 dark:border-slate-800/80 pb-8">
             <div>
               <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
@@ -335,21 +335,21 @@ export const AboutPage = () => {
         </div>
 
         {/* CTA Footer Banner */}
-        <div className="p-8 sm:p-12 rounded-3xl bg-gradient-to-r from-cyan-600 via-blue-600 to-emerald-600 text-white shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="p-6 sm:p-12 rounded-3xl bg-gradient-to-r from-cyan-600 via-blue-600 to-emerald-600 text-white shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
           <div>
             <h3 className="text-2xl sm:text-3xl font-black tracking-tight">Ready to join the tournament?</h3>
             <p className="text-sm text-cyan-100 mt-1">Register your team today or explore upcoming match schedules.</p>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 w-full sm:w-auto">
             <Link
               to="/registration"
-              className="px-6 py-3 rounded-xl bg-white text-slate-950 font-bold text-sm hover:bg-slate-100 transition shadow-lg"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-white text-slate-950 font-bold text-sm text-center hover:bg-slate-100 transition shadow-lg"
             >
               Register Team
             </Link>
             <Link
               to="/sports"
-              className="px-6 py-3 rounded-xl bg-slate-950/40 hover:bg-slate-950/60 text-white font-bold text-sm transition border border-white/20"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-950/40 hover:bg-slate-950/60 text-white font-bold text-sm text-center transition border border-white/20"
             >
               Explore Sports
             </Link>

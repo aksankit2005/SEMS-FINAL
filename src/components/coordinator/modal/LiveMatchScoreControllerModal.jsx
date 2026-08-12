@@ -536,7 +536,7 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
     const player2 = match?.team2 || 'Player 2 (Black)';
 
     return createPortal(
-      <div className="fixed inset-0 z-[99999] bg-[#070B14]/95 backdrop-blur-md flex items-start justify-center p-3 sm:p-4 pt-3 sm:pt-4 overflow-y-auto animate-fade-in font-sans">
+      <div className="fixed inset-0 z-[99999] bg-slate-900/60 dark:bg-[#070B14]/95 backdrop-blur-md flex items-start justify-center p-3 sm:p-4 pt-3 sm:pt-4 overflow-y-auto animate-fade-in font-sans transition-colors">
         <div className="w-full max-w-2xl bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-y-auto max-h-[92vh] custom-scrollbar text-slate-900 dark:text-slate-200 relative mt-0 mb-10 flex flex-col justify-between">
 
           {/* Sticky Top Header Bar */}
@@ -692,7 +692,7 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
 
   // ─── GENERAL SET-BASED SPORTS SCORES CONTROLLER ─────────────────────
   return createPortal(
-    <div className="fixed inset-0 z-[99999] bg-[#070B14]/95 backdrop-blur-md flex items-start justify-center p-3 sm:p-4 pt-3 sm:pt-4 overflow-y-auto animate-fade-in font-sans">
+    <div className="fixed inset-0 z-[99999] bg-slate-900/60 dark:bg-[#070B14]/95 backdrop-blur-md flex items-start justify-center p-3 sm:p-4 pt-3 sm:pt-4 overflow-y-auto animate-fade-in font-sans transition-colors">
       <div className="w-full max-w-4xl bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-y-auto max-h-[92vh] custom-scrollbar text-slate-900 dark:text-slate-200 relative mt-0 mb-10 flex flex-col justify-between">
 
         {/* Sticky Top Header Bar */}
