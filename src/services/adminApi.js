@@ -257,28 +257,28 @@ export const adminApi = {
   },
 
   login: async (username, password) => {
-    const savedPass = localStorage.getItem('sems_admin_custom_password');
-    const isValidPass = savedPass ? password === savedPass : (password === 'admin123' || password === 'admin' || password === 'superadmin');
+    try {
+      const res = await api.post('/admin/login', { username, password });
+      if (res.data && res.data.token) {
+        localStorage.setItem(STORAGE_KEYS.TOKEN, res.data.token);
+        setStorageItem(STORAGE_KEYS.USER, res.data.user || INITIAL_ADMIN_USER);
 
-    if ((username === 'admin' || username === 'superadmin') && isValidPass) {
-      const user = {
-        ...INITIAL_ADMIN_USER,
-        username,
-        lastLogin: new Date().toISOString()
-      };
-      localStorage.setItem(STORAGE_KEYS.TOKEN, 'sems_admin_token_' + Date.now());
-      setStorageItem(STORAGE_KEYS.USER, user);
+        adminApi.addAuditLog({
+          user: res.data.user?.name || 'System Administrator',
+          role: 'ADMIN',
+          action: 'Admin Login',
+          target: 'Admin logged into central Admin Portal'
+        });
 
-      adminApi.addAuditLog({
-        user: user.name,
-        role: 'ADMIN',
-        action: 'Admin Login',
-        target: 'Admin logged into central Admin Portal'
-      });
-
-      return { success: true, user };
+        return { success: true, user: res.data.user };
+      }
+      throw new Error('Invalid response from server.');
+    } catch (err) {
+      if (err.response) {
+        throw new Error(err.response.data?.message || 'Invalid Admin username or password.');
+      }
+      throw new Error(err.message || 'Cannot connect to server.');
     }
-    throw new Error('Invalid Admin username or password! Default is admin / admin123');
   },
 
   logout: () => {

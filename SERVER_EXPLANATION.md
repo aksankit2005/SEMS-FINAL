@@ -8,6 +8,7 @@ This document provides a thorough, step-by-step technical breakdown of **`server
 1. [Overview & Core Architecture](#1-overview--core-architecture)
 2. [Dependencies & Essential Terminology](#2-dependencies--essential-terminology)
 3. [Section-by-Section Code Walkthrough](#3-section-by-section-code-walkthrough)
+
    - [Step 1: Imports & Module Loading (Lines 1–12)](#step-1-imports--module-loading-lines-112)
    - [Step 2: Express App Initialization & Port Setup (Lines 13–17)](#step-2-express-app-initialization--port-setup-lines-1317)
    - [Step 3: Security Secrets & Configured Credentials (Lines 18–38)](#step-3-security-secrets--configured-credentials-lines-1838)
