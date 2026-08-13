@@ -2,227 +2,199 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Phone, ShieldCheck, MessageSquareText } from 'lucide-react';
 
-const YoutubeIcon = ({ className = "w-3.5 h-3.5 md:w-4 md:h-4" }) => (
+const InstagramIcon = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+    <circle cx="12" cy="12" r="4" />
+    <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+const YoutubeIcon = ({ className = "w-4 h-4" }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
     <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
   </svg>
 );
 
-const FooterContactItem = ({ icon: Icon, bgClass, textClass, value, href, label }) => {
-  const [show, setShow] = useState(false);
-  const itemRef = useRef(null);
-
-  useEffect(() => {
-    if (!show) return;
-    const handleClickOutside = (e) => {
-      if (itemRef.current && !itemRef.current.contains(e.target)) {
-        setShow(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [show]);
-
-  return (
-    <div ref={itemRef} className="flex items-center gap-2 md:gap-2.5">
-      <button
-        onClick={() => setShow(!show)}
-        title={show ? "Click to hide" : `Click to view ${label}`}
-        className={`p-1.5 md:p-2 rounded-lg md:rounded-xl ${bgClass} ${textClass} hover:scale-110 hover:bg-blue-500/20 active:scale-95 transition-all cursor-pointer flex items-center justify-center shrink-0`}
-      >
-        <Icon className="w-3.5 h-3.5 md:w-4 md:h-4" />
-      </button>
-      {show ? (
-        <a
-          href={href}
-          className="font-semibold text-slate-800 dark:text-slate-200 hover:text-cyan-500 transition select-all text-[11px] md:text-xs"
-        >
-          {value}
-        </a>
-      ) : (
-        <button
-          onClick={() => setShow(true)}
-          className="text-[11px] md:text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-cyan-500 dark:hover:text-cyan-400 transition cursor-pointer"
-        >
-          {label}
-        </button>
-      )}
-    </div>
-  );
-};
-
 export const Footer = () => {
+  const [copiedItem, setCopiedItem] = useState(null);
+
+  const handleCopy = (text, type) => {
+    navigator.clipboard?.writeText(text);
+    setCopiedItem(type);
+    setTimeout(() => setCopiedItem(null), 2000);
+  };
+
   return (
-    <footer className="relative bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-350 border-t border-slate-200 dark:border-slate-800 pt-5 md:pt-8 pb-5 md:pb-6 overflow-hidden transition-all duration-200">
-      {/* Glow effects */}
-      <div className="absolute top-0 left-1/4 w-48 h-48 md:w-96 md:h-96 bg-cyan-500/5 dark:bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-48 h-48 md:w-96 md:h-96 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+    <footer className="relative bg-slate-50/90 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-t border-slate-200/80 dark:border-slate-800/80 pt-6 sm:pt-8 pb-5 sm:pb-6 transition-colors duration-200 overflow-hidden font-sans">
+      {/* Subtle Glow Overlays */}
+      <div className="absolute top-0 left-1/4 w-64 h-64 bg-cyan-500/5 dark:bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 pb-5 md:pb-8 border-b border-slate-200 dark:border-slate-800/80">
-
-          {/* Brand Col */}
-          <div className="lg:col-span-2 space-y-2.5 md:space-y-4">
-            <Link to="/" className="flex items-center gap-2.5 md:gap-3">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-6">
+        
+        {/* Main Footer Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 pb-6 border-b border-slate-200/80 dark:border-slate-800/70 items-start">
+          
+          {/* Brand & Mission (Col 5) */}
+          <div className="md:col-span-5 space-y-2.5">
+            <Link to="/" className="inline-flex items-center gap-2.5 group">
               <img
                 src="/logo-dark.png"
                 alt="APEX Logo"
-                className="hidden dark:block h-8 md:h-10 w-auto object-contain"
+                className="hidden dark:block h-7 sm:h-8 w-auto object-contain transition-transform group-hover:scale-105"
               />
               <img
                 src="/logo-light.png"
                 alt="APEX Logo"
-                className="block dark:hidden h-8 md:h-10 w-auto object-contain"
+                className="block dark:hidden h-7 sm:h-8 w-auto object-contain transition-transform group-hover:scale-105"
               />
-              <span className="text-xl md:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                APEX <span className="text-cyan-550 dark:text-cyan-400">2026</span>
+              <span className="text-lg sm:text-xl font-black tracking-tight text-slate-900 dark:text-white">
+                APEX <span className="text-cyan-600 dark:text-cyan-400">2026</span>
               </span>
             </Link>
-            <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-sm">
-              The premier inter-college Sports Event Management System, bringing together registrations, fixtures, live scoring, real-time results, and championship leaderboards in one powerful platform.
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-md">
+              The premier inter-college Sports Event Management System, uniting registrations, tournament fixtures, live scoring, and championship leaderboards.
             </p>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h4 className="text-[11px] md:text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-200 mb-2.5 md:mb-4">
-              Quick Navigation
+          {/* Quick Navigation (Col 4) */}
+          <div className="md:col-span-4 space-y-2">
+            <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-slate-200">
+              Quick Links
             </h4>
-            <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 md:block md:space-y-2.5 text-xs md:text-sm text-slate-500 dark:text-slate-400">
-              <li><Link to="/sports" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Sports Hub</Link></li>
-              <li><Link to="/live" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition flex items-center gap-1.5">Live Scores <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-rose-500 animate-ping" /></Link></li>
-              <li><Link to="/registration" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Online Registration</Link></li>
-              <li><Link to="/schedule" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Tournament Fixtures</Link></li>
-              <li><Link to="/results" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Match Results</Link></li>
-              <li><Link to="/leaderboard" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Medal Standings</Link></li>
-              <li><Link to="/gallery" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Photo & Video Gallery</Link></li>
-              <li><Link to="/coordinators" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">Coordinators Directory</Link></li>
-              <li><Link to="/announcements" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">News & Announcements</Link></li>
-              <li><Link to="/about" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition">About APEX & Committee</Link></li>
-            </ul>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+              <Link to="/sports" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors py-0.5">
+                Sports Hub
+              </Link>
+              <Link to="/live" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors py-0.5 flex items-center gap-1.5">
+                Live Scores <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+              </Link>
+              <Link to="/registration" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors py-0.5">
+                Registration
+              </Link>
+              <Link to="/schedule" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors py-0.5">
+                Fixtures
+              </Link>
+              <Link to="/results" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors py-0.5">
+                Match Results
+              </Link>
+              <Link to="/gallery" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors py-0.5">
+                Gallery
+              </Link>
+              <Link to="/announcements" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors py-0.5">
+                Announcements
+              </Link>
+              <Link to="/about" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors py-0.5">
+                About APEX
+              </Link>
+            </div>
           </div>
 
-          {/* Social & Contact Desk */}
-          <div>
-            <h4 className="text-[11px] md:text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-200 mb-2.5 md:mb-4">
+          {/* Connect & Support (Col 3) */}
+          <div className="md:col-span-3 space-y-2.5">
+            <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-slate-200">
               Connect & Support
             </h4>
-            <ul className="space-y-2 md:space-y-3 text-xs text-slate-600 dark:text-slate-350">
-              <li>
-                <a
-                  href="https://www.youtube.com/channel/UCcWYHWAgzKI7Mik084w-JFg"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 md:gap-2.5 hover:text-red-500 transition group"
-                >
-                  <div className="p-1.5 md:p-2 rounded-lg md:rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 group-hover:scale-105 transition-transform">
-                    <YoutubeIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                  </div>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200 text-[11px] md:text-xs">YouTube Channel</span>
-                </a>
-              </li>
+            
+            {/* Unified Social Icon Action Row */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Instagram */}
+              <a
+                href="https://www.instagram.com/apex_mpgi"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="APEX Instagram Profile"
+                title="Follow APEX on Instagram (@apex_mpgi)"
+                className="w-9 h-9 sm:w-8 sm:h-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-pink-600 dark:hover:text-pink-400 hover:border-pink-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-xs"
+              >
+                <InstagramIcon className="w-4 h-4" />
+              </a>
 
-              <li>
-                <a
-                  href="https://forms.gle/efdESb3ipHsvwfaX7"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 md:gap-2.5 hover:text-emerald-500 transition group"
-                >
-                  <div className="p-1.5 md:p-2 rounded-lg md:rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform">
-                    <MessageSquareText className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                  </div>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200 text-[11px] md:text-xs">Feedback Form</span>
-                </a>
-              </li>
+              {/* YouTube */}
+              <a
+                href="https://www.youtube.com/channel/UCcWYHWAgzKI7Mik084w-JFg"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="APEX Official YouTube Channel"
+                title="Watch APEX Matches on YouTube"
+                className="w-9 h-9 sm:w-8 sm:h-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:border-red-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-xs"
+              >
+                <YoutubeIcon className="w-4 h-4" />
+              </a>
 
-              <li>
-                <a
-                  href="https://www.instagram.com/apex_mpgi"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 md:gap-2.5 hover:text-pink-500 transition group"
-                >
-                  <div className="p-1.5 md:p-2 rounded-lg md:rounded-xl bg-pink-500/10 text-pink-600 dark:text-pink-400 group-hover:scale-105 transition-transform">
-                    <svg className="w-3.5 h-3.5 md:w-4 md:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-                      <circle cx="12" cy="12" r="4" />
-                      <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none" />
-                    </svg>
-                  </div>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200 text-[11px] md:text-xs">@apex_mpgi</span>
-                </a>
-              </li>
+              {/* Feedback Form */}
+              <a
+                href="https://forms.gle/efdESb3ipHsvwfaX7"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="APEX Feedback Form"
+                title="Submit Feedback / Suggestions"
+                className="w-9 h-9 sm:w-8 sm:h-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400 hover:border-purple-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-xs"
+              >
+                <MessageSquareText className="w-4 h-4" />
+              </a>
 
-              <li>
-                <FooterContactItem
-                  icon={Mail}
-                  bgClass="bg-blue-500/10"
-                  textClass="text-blue-600 dark:text-blue-400"
-                  value="sports@mpgi.edu.in"
-                  href="mailto:sports@mpgi.edu.in"
-                  label="Email"
-                />
-              </li>
+              {/* Email Icon Button */}
+              <a
+                href="mailto:sports@mpgi.edu.in"
+                aria-label="Email APEX Support Desk"
+                title="Email: sports@mpgi.edu.in"
+                className="w-9 h-9 sm:w-8 sm:h-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 hover:border-cyan-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-xs"
+              >
+                <Mail className="w-4 h-4" />
+              </a>
 
-              <li>
-                <FooterContactItem
-                  icon={Phone}
-                  bgClass="bg-emerald-500/10"
-                  textClass="text-emerald-600 dark:text-emerald-400"
-                  value="+91 91197 05860"
-                  href="tel:+919119705860"
-                  label="Contact Us"
-                />
-              </li>
-            </ul>
+              {/* Phone Icon Button */}
+              <a
+                href="tel:+919119705860"
+                aria-label="Call APEX Support Desk"
+                title="Call Support: +91 91197 05860"
+                className="w-9 h-9 sm:w-8 sm:h-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-xs"
+              >
+                <Phone className="w-4 h-4" />
+              </a>
+            </div>
           </div>
 
         </div>
 
-        {/* Bottom bar */}
-        <div className="pt-4 md:pt-8 flex flex-col md:flex-row items-center justify-between gap-2.5 md:gap-4 text-[11px] md:text-xs text-slate-500 text-center md:text-left">
-          <p>© 2026 APEX - Spirit of Sporting Excellence. All rights reserved.</p>
+        {/* Bottom Copyright & Legal Links Bar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400 text-center sm:text-left">
+          
+          <div className="flex items-center gap-1.5">
+            <span className="font-semibold text-slate-700 dark:text-slate-300">© 2026 APEX</span>
+            <span>•</span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">Spirit of Sporting Excellence</span>
+          </div>
 
-          <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5 md:gap-4 text-slate-500 dark:text-slate-400 font-medium">
-            <Link
-              to="/faq"
-              onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' })}
-              className="hover:text-cyan-500 transition"
-            >
+          {/* Legal Links */}
+          <div className="flex flex-wrap items-center justify-center gap-3 font-medium text-[11px] sm:text-xs">
+            <Link to="/faq" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
               FAQ
             </Link>
             <span>•</span>
-            <Link
-              to="/terms"
-              onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' })}
-              className="hover:text-cyan-500 transition"
-            >
+            <Link to="/terms" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
               Terms & Conditions
             </Link>
             <span>•</span>
             <Link
               to="/privacy"
               onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' })}
-              className="hover:text-cyan-500 transition"
+              className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
             >
               Privacy Policy
             </Link>
-            <span>•</span>
-            <Link
-              to="/super-coordinator/dashboard"
-              onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' })}
-              className="hover:text-amber-400 font-bold transition text-amber-500/90"
-            >
-              👑 President Console
-            </Link>
           </div>
 
-          <div className="flex items-center justify-center md:justify-start gap-1 text-slate-500 dark:text-slate-400">
-            <span>Engineered for Modern Sports Management.</span>
-            <ShieldCheck className="w-3.5 h-3.5 md:w-4 md:h-4 text-emerald-400 shrink-0" />
+          {/* Platform Tagline */}
+          <div className="hidden lg:flex items-center gap-1 text-[11px] text-slate-400 dark:text-slate-500">
+            <span>Engineered for Sports Management</span>
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500/80 shrink-0" />
           </div>
+
         </div>
+
       </div>
     </footer>
   );

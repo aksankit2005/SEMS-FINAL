@@ -38,28 +38,23 @@ import { CollegeHeadProtectedRoute } from './components/collegeHead/CollegeHeadP
 import { CoordinatorLoginPage } from './pages/coordinator/CoordinatorLoginPage';
 import { CoordinatorProtectedRoute } from './components/coordinator/CoordinatorProtectedRoute';
 
-// ── Super Admin Imports ───────────────────────────────────────────────────
-import { SuperAdminLoginPage } from './pages/superAdmin/SuperAdminLoginPage';
-import { SuperAdminLayout } from './components/superAdmin/SuperAdminLayout';
-import { SuperAdminProtectedRoute } from './components/superAdmin/SuperAdminProtectedRoute';
-import { SuperAdminDashboardPage } from './pages/superAdmin/SuperAdminDashboardPage';
-import { SuperAdminEventsPage } from './pages/superAdmin/SuperAdminEventsPage';
-import { SuperAdminCoordinatorsPage } from './pages/superAdmin/SuperAdminCoordinatorsPage';
-import { SuperAdminCollegeHeadsPage } from './pages/superAdmin/SuperAdminCollegeHeadsPage';
-import { SuperAdminPRPage } from './pages/superAdmin/SuperAdminPRPage';
-import { SuperAdminMembersPage } from './pages/superAdmin/SuperAdminMembersPage';
-import { SuperAdminParticipantsPage } from './pages/superAdmin/SuperAdminParticipantsPage';
-import { SuperAdminRegistrationsPage } from './pages/superAdmin/SuperAdminRegistrationsPage';
-import { SuperAdminSchedulePage } from './pages/superAdmin/SuperAdminSchedulePage';
-import { SuperAdminLiveMatchesPage } from './pages/superAdmin/SuperAdminLiveMatchesPage';
-import { SuperAdminResultsPage } from './pages/superAdmin/SuperAdminResultsPage';
-import { SuperAdminAnnouncementsPage } from './pages/superAdmin/SuperAdminAnnouncementsPage';
-import { SuperAdminGalleryPage } from './pages/superAdmin/SuperAdminGalleryPage';
-import { SuperAdminReportsPage } from './pages/superAdmin/SuperAdminReportsPage';
-import { SuperAdminSettingsPage } from './pages/superAdmin/SuperAdminSettingsPage';
-import { SuperAdminProfilePage } from './pages/superAdmin/SuperAdminProfilePage';
-import { SuperAdminAuditLogsPage } from './pages/superAdmin/SuperAdminAuditLogsPage';
-import { SuperAdminEventsSportsPage } from './pages/superAdmin/SuperAdminEventsSportsPage';
+// ── Admin Portal Imports ──────────────────────────────────────────────────
+import { AdminLoginPage } from './pages/admin/AdminLoginPage';
+import { AdminLayout } from './components/admin/AdminLayout';
+import { AdminProtectedRoute } from './components/admin/AdminProtectedRoute';
+import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
+import { AdminProfilePage } from './pages/admin/AdminProfilePage';
+import { AdminRegistrationsPage } from './pages/admin/AdminRegistrationsPage';
+import { AdminPRManagementPage } from './pages/admin/AdminPRManagementPage';
+import { AdminCoordinatorsPage } from './pages/admin/AdminCoordinatorsPage';
+import { AdminAnnouncementsPage } from './pages/admin/AdminAnnouncementsPage';
+import { AdminMasterDataPage } from './pages/admin/AdminMasterDataPage';
+import { AdminResultsPage } from './pages/admin/AdminResultsPage';
+import { AdminCommitteePage } from './pages/admin/AdminCommitteePage';
+import { AdminCoordinatorMatchResultsPage } from './pages/admin/AdminCoordinatorMatchResultsPage';
+import { AdminActivityPage } from './pages/admin/AdminActivityPage';
+import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
+
 import { SuperCoordinatorLoginPage } from './pages/superCoordinator/SuperCoordinatorLoginPage';
 import { SuperCoordinatorDashboardPage } from './pages/superCoordinator/SuperCoordinatorDashboardPage';
 import { SuperCoordinatorProtectedRoute } from './components/superCoordinator/SuperCoordinatorProtectedRoute';
@@ -89,37 +84,62 @@ function App() {
             <Router>
               <ScrollToTop />
               <Routes>
-                {/* Dedicated Standalone Super Admin Routes */}
-                <Route path="/super-admin/login" element={<SuperAdminLoginPage />} />
-                <Route path="/super-admin-login" element={<SuperAdminLoginPage />} />
+                {/* Standalone Admin Portal Login Routes */}
+                <Route path="/admin/login" element={<AdminLoginPage />} />
+                <Route path="/portal/admin/login" element={<AdminLoginPage />} />
+                <Route path="/admin-login" element={<AdminLoginPage />} />
 
+                {/* Dedicated Protected Admin Portal Routes */}
                 <Route
-                  path="/super-admin"
+                  path="/admin"
                   element={
-                    <SuperAdminProtectedRoute>
-                      <SuperAdminLayout />
-                    </SuperAdminProtectedRoute>
+                    <AdminProtectedRoute>
+                      <AdminLayout />
+                    </AdminProtectedRoute>
                   }
                 >
-                  <Route index element={<SuperAdminDashboardPage />} />
-                  <Route path="dashboard" element={<SuperAdminDashboardPage />} />
-                  <Route path="events" element={<SuperAdminEventsPage />} />
-                  <Route path="coordinators" element={<SuperAdminCoordinatorsPage />} />
-                  <Route path="college-heads" element={<SuperAdminCollegeHeadsPage />} />
-                  <Route path="pr-members" element={<SuperAdminPRPage />} />
-                  <Route path="members" element={<SuperAdminMembersPage />} />
-                  <Route path="participants" element={<SuperAdminParticipantsPage />} />
-                  <Route path="registrations" element={<SuperAdminRegistrationsPage />} />
-                  <Route path="schedule" element={<SuperAdminSchedulePage />} />
-                  <Route path="live-matches" element={<SuperAdminLiveMatchesPage />} />
-                  <Route path="results" element={<SuperAdminResultsPage />} />
-                  <Route path="announcements" element={<SuperAdminAnnouncementsPage />} />
-                  <Route path="gallery" element={<SuperAdminGalleryPage />} />
-                  <Route path="reports" element={<SuperAdminReportsPage />} />
-                  <Route path="settings" element={<SuperAdminSettingsPage />} />
-                  <Route path="profile" element={<SuperAdminProfilePage />} />
-                  <Route path="audit-logs" element={<SuperAdminAuditLogsPage />} />
-                  <Route path="events-sports" element={<SuperAdminEventsSportsPage />} />
+                  <Route index element={<AdminDashboardPage />} />
+                  <Route path="dashboard" element={<AdminDashboardPage />} />
+                  <Route path="profile" element={<AdminProfilePage />} />
+                  <Route path="registrations" element={<AdminRegistrationsPage />} />
+                  <Route path="pr-management" element={<AdminPRManagementPage />} />
+                  <Route path="pr" element={<AdminPRManagementPage />} />
+                  <Route path="coordinators" element={<AdminCoordinatorsPage />} />
+                  <Route path="announcements" element={<AdminAnnouncementsPage />} />
+                  <Route path="master-data" element={<AdminMasterDataPage />} />
+                  <Route path="participants" element={<AdminMasterDataPage />} />
+                  <Route path="committee" element={<AdminCommitteePage />} />
+                  <Route path="results" element={<AdminResultsPage />} />
+                  <Route path="coordinator-results" element={<AdminCoordinatorMatchResultsPage />} />
+                  <Route path="activity" element={<AdminActivityPage />} />
+                  <Route path="audit-logs" element={<AdminActivityPage />} />
+                  <Route path="settings" element={<AdminSettingsPage />} />
+                </Route>
+
+                <Route
+                  path="/portal/admin"
+                  element={
+                    <AdminProtectedRoute>
+                      <AdminLayout />
+                    </AdminProtectedRoute>
+                  }
+                >
+                  <Route index element={<AdminDashboardPage />} />
+                  <Route path="dashboard" element={<AdminDashboardPage />} />
+                  <Route path="profile" element={<AdminProfilePage />} />
+                  <Route path="registrations" element={<AdminRegistrationsPage />} />
+                  <Route path="pr-management" element={<AdminPRManagementPage />} />
+                  <Route path="pr" element={<AdminPRManagementPage />} />
+                  <Route path="coordinators" element={<AdminCoordinatorsPage />} />
+                  <Route path="announcements" element={<AdminAnnouncementsPage />} />
+                  <Route path="master-data" element={<AdminMasterDataPage />} />
+                  <Route path="participants" element={<AdminMasterDataPage />} />
+                  <Route path="committee" element={<AdminCommitteePage />} />
+                  <Route path="results" element={<AdminResultsPage />} />
+                  <Route path="coordinator-results" element={<AdminCoordinatorMatchResultsPage />} />
+                  <Route path="activity" element={<AdminActivityPage />} />
+                  <Route path="audit-logs" element={<AdminActivityPage />} />
+                  <Route path="settings" element={<AdminSettingsPage />} />
                 </Route>
 
                 <Route element={<DashboardLayout />}>
@@ -131,8 +151,9 @@ function App() {
                   <Route path="/live" element={<LiveMatchPortalPage />} />
                   <Route path="/schedule" element={<SchedulePage />} />
                   <Route path="/results" element={<ResultsPage />} />
+                  <Route path="/coordinator-results" element={<AdminCoordinatorMatchResultsPage />} />
+                  <Route path="/admin-coordinator-results" element={<AdminCoordinatorMatchResultsPage />} />
                   <Route path="/leaderboard" element={<LeaderboardPage />} />
-                  <Route path="/coordinators" element={<CoordinatorsPage />} />
                   <Route path="/announcements" element={<AnnouncementsPage />} />
                   <Route path="/gallery" element={<GalleryPage />} />
                   <Route path="/about" element={<AboutPage />} />

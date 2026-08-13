@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, Lock, User, ArrowRight, Sparkles, Camera, CheckCircle2 } from 'lucide-react';
 import { galleryApi } from '../../services/galleryApi';
 import { useToast } from '../../context/ToastContext';
+import { ThemeToggle } from '../../components/common/ThemeToggle';
 
 export const PRLoginPage = () => {
   const [username, setUsername] = useState('');
@@ -42,7 +43,11 @@ export const PRLoginPage = () => {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+    <div className="min-h-[85vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950 transition-colors duration-200 relative">
+      {/* Top right theme toggle */}
+      <div className="absolute top-4 right-4 z-20">
+        <ThemeToggle />
+      </div>
       <div className="max-w-md w-full space-y-8 bg-white dark:bg-slate-900 p-8 sm:p-10 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-soft relative overflow-hidden">
         
         {/* Background glow */}

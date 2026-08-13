@@ -7,12 +7,12 @@ export const LiveTicker = () => {
   const { liveMatches } = useSportsData();
 
   return (
-    <div className="bg-slate-100 dark:bg-slate-900 border-y border-slate-200 dark:border-slate-800 text-slate-850 dark:text-white py-3 overflow-hidden shadow-inner transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-4 flex items-center gap-4">
+    <div className="bg-slate-100 dark:bg-slate-900 border-y border-slate-200 dark:border-slate-800 text-slate-850 dark:text-white py-2.5 sm:py-3 overflow-hidden shadow-inner transition-colors duration-200">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 flex items-center gap-2 sm:gap-4">
         {/* Live Badge */}
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 text-rose-550 dark:text-rose-400 border border-rose-500/40 text-xs font-black shrink-0">
-          <Radio className="w-4 h-4 animate-pulse" />
-          <span>LIVE TICKER</span>
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-550 dark:text-rose-400 border border-rose-500/40 text-[10px] sm:text-xs font-black shrink-0">
+          <Radio className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-pulse shrink-0" />
+          <span>LIVE</span>
         </div>
 
         {/* Ticker marquee */}

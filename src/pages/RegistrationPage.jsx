@@ -665,212 +665,162 @@ export const RegistrationPage = () => {
         {!activeSport ? (
           <div className="space-y-8">
             
-            {/* DYNAMIC COORDINATOR PUBLISHED EVENTS SECTION */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-indigo-500 animate-pulse" />
-                  Official Coordinator Events
-                </h2>
-                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-mono text-xs font-bold border border-indigo-500/20">
-                  Live Events ({
-                    (coordinatorEvents || []).filter((evt) => {
-                      return evt && evt.id !== 'EVT-BADMINTON-001' && evt.id !== 'EVT-CRICKET-001' && evt.id !== 'EVT-FOOTBALL-001';
-                    }).length
-                  })
-                </span>
-              </div>
-
-              {(coordinatorEvents || []).filter((evt) => {
-                return evt && evt.id !== 'EVT-BADMINTON-001' && evt.id !== 'EVT-CRICKET-001' && evt.id !== 'EVT-FOOTBALL-001';
-              }).length === 0 ? (
-                <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-soft p-8 space-y-3">
-                  <Sparkles className="w-12 h-12 text-indigo-500 mx-auto" />
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">No Coordinator Events Currently Available</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Published events created by Sport Coordinators will appear here dynamically for registration.</p>
+            {/* DYNAMIC OFFICIAL COORDINATOR PUBLISHED EVENTS SECTION */}
+            {coordinatorEvents && coordinatorEvents.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-indigo-500 animate-pulse" />
+                    Official Coordinator Published Events
+                  </h2>
+                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-mono text-xs font-bold border border-indigo-500/20">
+                    Live Published Events ({coordinatorEvents.length})
+                  </span>
                 </div>
-              ) : (
-                <div className="flex justify-center">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-3xl w-full">
-                    {(coordinatorEvents || []).filter((evt) => {
-                      return evt && evt.id !== 'EVT-BADMINTON-001' && evt.id !== 'EVT-CRICKET-001' && evt.id !== 'EVT-FOOTBALL-001';
-                    }).map((evt) => {
-                      const registered = evt.registeredCount || 0;
-                      const limit = evt.maxRegistrations || 64;
-                      const slotsLeft = Math.max(0, limit - registered);
-                      const isClosed = evt.status === 'Closed' || slotsLeft === 0;
 
-                      const isRacket = isRacketSportCheck(evt);
-                      const sFee = evt.singlesFee !== undefined ? Number(evt.singlesFee) : Number(evt.entryFee || 300);
-                      const dFee = evt.doublesFee !== undefined ? Number(evt.doublesFee) : (evt.singlesFee !== undefined ? Number(evt.singlesFee) * 2 : 600);
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-4xl mx-auto w-full">
+                  {coordinatorEvents.map((evt) => {
+                    const registered = evt.registeredCount || 0;
+                    const limit = evt.maxRegistrations || 64;
+                    const slotsLeft = Math.max(0, limit - registered);
+                    const isClosed = evt.status === 'Closed' || slotsLeft === 0;
 
-                      const key = resolveSportKey(evt);
-                      const bounds = SPORT_PLAYER_BOUNDS[key] || { min: 1, max: 10 };
-                      const minP = evt.minPlayers !== undefined ? Number(evt.minPlayers) : bounds.min;
-                      const maxP = evt.maxPlayers !== undefined ? Number(evt.maxPlayers) : bounds.max;
+                    const isRacket = isRacketSportCheck(evt);
+                    const sFee = evt.singlesFee !== undefined ? Number(evt.singlesFee) : Number(evt.entryFee || 300);
+                    const dFee = evt.doublesFee !== undefined ? Number(evt.doublesFee) : (evt.singlesFee !== undefined ? Number(evt.singlesFee) * 2 : 600);
 
-                      return (
-                        <div
-                          key={evt.id}
-                          className="max-w-md mx-auto w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-md hover:shadow-xl transition duration-300 flex flex-col justify-between group"
-                        >
-                          <div className="relative h-44 w-full overflow-hidden bg-slate-950">
-                            <img
-                              src={evt.coverImage}
-                              alt={evt.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
+                    const key = resolveSportKey(evt);
+                    const bounds = SPORT_PLAYER_BOUNDS[key] || { min: 1, max: 10 };
+                    const minP = evt.minPlayers !== undefined ? Number(evt.minPlayers) : bounds.min;
+                    const maxP = evt.maxPlayers !== undefined ? Number(evt.maxPlayers) : bounds.max;
 
-                            <div className="absolute top-3 left-3 flex items-center gap-2">
-                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase shadow-md ${
-                                evt.status === 'Coming Soon'
-                                  ? 'bg-amber-500 text-slate-950 font-black'
-                                  : isClosed
-                                  ? 'bg-rose-500 text-white'
-                                  : 'bg-emerald-500 text-white'
-                              }`}>
-                                {evt.status === 'Coming Soon' ? '🟡 Coming Soon' : isClosed ? '● Closed' : '● Open'}
-                              </span>
-                            </div>
+                    return (
+                      <div
+                        key={evt.id}
+                        className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-md hover:shadow-xl transition duration-300 flex flex-col justify-between group"
+                      >
+                        <div className="relative h-44 w-full overflow-hidden bg-slate-950">
+                          <img
+                            src={evt.coverImage || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80'}
+                            alt={evt.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
 
-                            {/* Dynamic Fee Badge showing both Singles & Doubles for Racket sports */}
-                            <div className="absolute top-3 right-3 bg-slate-950/85 backdrop-blur-xs px-3 py-1 rounded-full text-[11px] font-black text-amber-400 border border-slate-700 shadow-md">
-                              {isRacket ? `Singles: ₹${sFee} | Doubles: ₹${dFee}` : (evt.entryFee > 0 ? `Fee: ₹${evt.entryFee}` : 'FREE')}
-                            </div>
-
-                            <div className="absolute bottom-3 left-4 right-4">
-                              <span className="text-[10px] font-mono font-bold text-indigo-400 uppercase tracking-wider block">
-                                {evt.sportName} Coordinator Event
-                              </span>
-                              <h3 className="text-lg sm:text-xl font-black text-white leading-tight drop-shadow-md">
-                                {evt.title}
-                              </h3>
-                            </div>
+                          <div className="absolute top-3 left-3 flex items-center gap-2">
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase shadow-md ${
+                              evt.status === 'Coming Soon'
+                                ? 'bg-amber-500 text-slate-950 font-black'
+                                : isClosed
+                                ? 'bg-rose-500 text-white'
+                                : 'bg-emerald-500 text-white'
+                            }`}>
+                              {evt.status === 'Coming Soon' ? '🟡 Coming Soon' : isClosed ? '● Closed' : '● Open'}
+                            </span>
                           </div>
 
-                          <div className="p-5 space-y-3.5 flex-1 flex flex-col justify-between">
-                            <div className="grid grid-cols-2 gap-2.5 text-xs bg-slate-50 dark:bg-slate-950 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800">
-                              <div>
-                                <span className="text-[9px] text-slate-400 uppercase font-mono block">Reg Deadline</span>
-                                <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px]">{evt.regEndDate}</span>
-                              </div>
-                              <div>
-                                <span className="text-[9px] text-slate-400 uppercase font-mono block">Tournament Start</span>
-                                <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px]">{evt.tournStartDate}</span>
-                              </div>
-                              <div>
-                                <span className="text-[9px] text-slate-400 uppercase font-mono block">Venue</span>
-                                <span className="font-bold text-blue-600 dark:text-blue-400 text-[10px] truncate block">{evt.venue}</span>
-                              </div>
-                              <div>
-                                <span className="text-[9px] text-slate-400 uppercase font-mono block">Team Size</span>
-                                <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px]">{evt.teamSize || `${minP} - ${maxP} Players`}</span>
-                              </div>
-                            </div>
+                          <div className="absolute top-3 right-3 bg-slate-950/85 backdrop-blur-xs px-3 py-1 rounded-full text-[11px] font-black text-amber-400 border border-slate-700 shadow-md">
+                            {isRacket ? `Singles: ₹${sFee} | Doubles: ₹${dFee}` : (evt.entryFee > 0 ? `Fee: ₹${evt.entryFee}` : 'FREE')}
+                          </div>
 
-                            {/* Registration Countdown Timer */}
-                            <div className="flex items-center justify-between text-xs bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 p-2.5 rounded-xl border border-amber-500/30">
-                              <span className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5 text-amber-500 animate-pulse" /> Reg Ends In:
-                              </span>
-                              <RegistrationCountdownTimer endDateStr={evt.regEndDate} />
-                            </div>
-
-                            {/* View Tournament Rules Button */}
-                            <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800">
-                              <button
-                                type="button"
-                                onClick={() => setRulesModalSport(evt.title || evt.sportName || 'Badminton')}
-                                className="w-full py-2 px-3.5 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-2 transition active:scale-[0.98] shadow-xs"
-                              >
-                                <span>📜 View Official Tournament Rules</span>
-                                <span className="text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded-full font-extrabold text-emerald-700 dark:text-emerald-300">Full Screen</span>
-                              </button>
-                            </div>
-
-                            <div className="pt-1">
-                              <button
-                                disabled={isClosed || evt.status === 'Coming Soon'}
-                                onClick={() => {
-                                  const adaptedSport = {
-                                    id: evt.sportId || evt.id,
-                                    name: evt.title,
-                                    sportName: evt.sportName,
-                                    category: evt.category,
-                                    type: evt.teamSize || `${minP} - ${maxP} Players`,
-                                    tagline: evt.title,
-                                    description: evt.description,
-                                    image: evt.coverImage,
-                                    status: isClosed ? 'Closed' : evt.status === 'Coming Soon' ? 'Coming Soon' : 'Open',
-                                    participantsCount: registered,
-                                    maxParticipants: limit,
-                                    entryFee: sFee,
-                                    singlesFee: sFee,
-                                    doublesFee: dFee,
-                                    minPlayers: minP,
-                                    maxPlayers: maxP,
-                                    teamSize: evt.teamSize || `${minP} - ${maxP} Players`,
-                                    venue: evt.venue,
-                                    rules: evt.rules || ['Standard rules apply.'],
-                                    startDate: evt.regStartDate,
-                                    endDate: evt.regEndDate,
-                                    isCoordinatorEvent: true,
-                                    eventId: evt.id
-                                  };
-                                  handleSportSelect(adaptedSport);
-                                }}
-                                className={`w-full py-2.5 rounded-2xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 ${
-                                  evt.status === 'Coming Soon'
-                                    ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 cursor-not-allowed font-extrabold'
-                                    : isClosed
-                                    ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-300 dark:border-slate-700'
-                                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white shadow-blue-500/20 active:scale-[0.98]'
-                                }`}
-                              >
-                                <span>
-                                  {evt.status === 'Coming Soon'
-                                    ? '⏳ Coming Soon'
-                                    : isClosed
-                                    ? (slotsLeft === 0 ? 'Event Full' : 'Registration Closed')
-                                    : 'Register Now'
-                                  }
-                                </span>
-                                {evt.status !== 'Coming Soon' && <Trophy className="w-4 h-4" />}
-                              </button>
-                            </div>
-
+                          <div className="absolute bottom-3 left-4 right-4">
+                            <span className="text-[10px] font-mono font-bold text-indigo-400 uppercase tracking-wider block">
+                              {evt.sportName} Coordinator Event
+                            </span>
+                            <h3 className="text-lg sm:text-xl font-black text-white leading-tight drop-shadow-md">
+                              {evt.title}
+                            </h3>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+
+                        <div className="p-5 space-y-3.5 flex-1 flex flex-col justify-between">
+                          <div className="grid grid-cols-2 gap-2.5 text-xs bg-slate-50 dark:bg-slate-950 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800">
+                            <div>
+                              <span className="text-[9px] text-slate-400 uppercase font-mono block">Reg Deadline</span>
+                              <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px]">{evt.regEndDate}</span>
+                            </div>
+                            <div>
+                              <span className="text-[9px] text-slate-400 uppercase font-mono block">Tournament Start</span>
+                              <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px]">{evt.tournStartDate}</span>
+                            </div>
+                            <div>
+                              <span className="text-[9px] text-slate-400 uppercase font-mono block">Venue</span>
+                              <span className="font-bold text-blue-600 dark:text-blue-400 text-[10px] truncate block">{evt.venue}</span>
+                            </div>
+                            <div>
+                              <span className="text-[9px] text-slate-400 uppercase font-mono block">Team Size</span>
+                              <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px]">{evt.teamSize || `${minP} - ${maxP} Players`}</span>
+                            </div>
+                          </div>
+
+                          <div className="pt-1 flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setRulesModalSport({ sportName: evt.sportName || evt.title, rules: evt.rules })}
+                              className="flex-1 py-2.5 rounded-2xl font-bold text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-xs"
+                              title="View Official Tournament Rules for this event"
+                            >
+                              <Info className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                              <span>View Rules</span>
+                            </button>
+
+                            <button
+                              disabled={isClosed || evt.status === 'Coming Soon'}
+                              onClick={() => {
+                                const adaptedSport = {
+                                  id: evt.sportId || evt.id,
+                                  name: evt.title,
+                                  sportName: evt.sportName,
+                                  category: evt.category || 'Open',
+                                  type: evt.teamSize || `${minP} - ${maxP} Players`,
+                                  tagline: evt.title,
+                                  description: evt.description,
+                                  image: evt.coverImage || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80',
+                                  status: isClosed ? 'Closed' : evt.status === 'Coming Soon' ? 'Coming Soon' : 'Open',
+                                  participantsCount: registered,
+                                  maxParticipants: limit,
+                                  entryFee: sFee,
+                                  singlesFee: sFee,
+                                  doublesFee: dFee,
+                                  minPlayers: minP,
+                                  maxPlayers: maxP,
+                                  teamSize: evt.teamSize || `${minP} - ${maxP} Players`,
+                                  venue: evt.venue,
+                                  rules: evt.rules || ['Standard rules apply.'],
+                                  startDate: evt.regStartDate,
+                                  endDate: evt.regEndDate,
+                                  isCoordinatorEvent: true,
+                                  eventId: evt.id
+                                };
+                                handleSportSelect(adaptedSport);
+                              }}
+                              className={`flex-1 py-2.5 rounded-2xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 ${
+                                evt.status === 'Coming Soon'
+                                  ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 cursor-not-allowed font-extrabold'
+                                  : isClosed
+                                  ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-300 dark:border-slate-700'
+                                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white shadow-blue-500/20 active:scale-[0.98]'
+                              }`}
+                            >
+                              <span>
+                                {evt.status === 'Coming Soon'
+                                  ? '⏳ Coming Soon'
+                                  : isClosed
+                                  ? (slotsLeft === 0 ? 'Event Full' : 'Registration Closed')
+                                  : 'Register Now'
+                                }
+                              </span>
+                              {evt.status !== 'Coming Soon' && <Trophy className="w-4 h-4" />}
+                            </button>
+                          </div>
+
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-
-            {/* OFFICIAL CHAMPIONSHIP DISCIPLINES (ALL 12 GAMES GRID) */}
-            <div className="space-y-4 pt-6 border-t border-slate-200 dark:border-slate-800">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-amber-500" />
-                  Official Championship Disciplines ({sportsList.length})
-                </h2>
-                <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono text-xs font-bold border border-blue-500/20">
-                  Select Game to Register
-                </span>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {sportsList.map((sport) => (
-                  <SportCard
-                    key={sport.id}
-                    sport={sport}
-                    onSelect={() => handleSportSelect(sport)}
-                  />
-                ))}
-              </div>
-            </div>
+            )}
 
           </div>
         ) : (
@@ -985,8 +935,8 @@ export const RegistrationPage = () => {
                     <Info className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
                     <div className="text-xs space-y-1.5">
                       <h4 className="font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">2. College Verification Policy</h4>
-                      <p className="leading-relaxed">
-                        After payment, your entry pass is generated immediately and sent to your College Sports Desk for verification. If any eligibility discrepancy is flagged, full payment refund will be processed to your source account.
+                      <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                        Upon successful submission and payment, your registration will be reviewed and verified by your respective <strong>College Head</strong>. Ensure all student details are valid to prevent rejection during gate pass generation.
                       </p>
                     </div>
                   </div>
@@ -1062,7 +1012,8 @@ export const RegistrationPage = () => {
         <BadmintonRulesModal
           isOpen={!!rulesModalSport}
           onClose={() => setRulesModalSport(null)}
-          sportName={rulesModalSport || 'Badminton'}
+          sportName={typeof rulesModalSport === 'object' ? rulesModalSport?.sportName : (rulesModalSport || activeSport?.name || 'Badminton')}
+          rules={typeof rulesModalSport === 'object' ? rulesModalSport?.rules : (activeSport?.rules || [])}
         />
 
       </div>

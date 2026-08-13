@@ -304,6 +304,147 @@ export const downloadPassAsPDF = async (receiptOrElementId, filename = 'APEX_Pas
 };
 
 /**
+ * Opens an interactive Excel / CSV Spreadsheet Viewer in a new browser tab
+ * without forcing repeated file downloads to the user's computer.
+ */
+export const openSpreadsheetViewer = (dataArray = [], title = 'Excel / CSV Spreadsheet Data') => {
+  if (!dataArray || dataArray.length === 0) return;
+
+  const headers = Object.keys(dataArray[0]);
+
+  const escapeHtml = (str) =>
+    String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+  const headerCells = headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('');
+  const bodyRows = dataArray
+    .map(
+      (row) =>
+        `<tr>${headers.map((h) => `<td>${escapeHtml(row[h])}</td>`).join('')}</tr>`
+    )
+    .join('');
+
+  const csvString = [
+    headers.map((h) => `"${String(h).replace(/"/g, '""')}"`).join(','),
+    ...dataArray.map((row) =>
+      headers.map((h) => `"${String(row[h] || '').replace(/"/g, '""')}"`).join(',')
+    ),
+  ].join('\n');
+
+  const htmlDoc = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>${escapeHtml(title)} - Excel / CSV Spreadsheet View</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b1120; color: #f8fafc; margin: 0; padding: 24px; }
+    .container { max-width: 1400px; margin: 0 auto; }
+    .header-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #1e293b; }
+    .title-group h1 { margin: 0; font-size: 22px; font-weight: 900; color: #f59e0b; }
+    .title-group p { margin: 4px 0 0; font-size: 13px; color: #94a3b8; font-family: monospace; }
+    .actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .btn { padding: 9px 16px; border-radius: 12px; font-weight: 800; font-size: 12px; border: none; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-primary { background: #d97706; color: white; }
+    .btn-primary:hover { background: #b45309; }
+    .btn-secondary { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
+    .btn-secondary:hover { background: #334155; color: white; }
+    .search-input { padding: 9px 14px; border-radius: 12px; background: #1e293b; border: 1px solid #334155; color: white; font-size: 12px; width: 260px; outline: none; }
+    .table-wrapper { overflow-x: auto; border-radius: 16px; border: 1px solid #1e293b; background: #111827; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    th { background: #0f172a; color: #f59e0b; padding: 14px 16px; font-weight: 800; text-transform: uppercase; font-size: 10.5px; tracking-wider; border-bottom: 2px solid #1e293b; position: sticky; top: 0; }
+    td { padding: 13px 16px; border-bottom: 1px solid #1e293b; color: #e2e8f0; font-weight: 500; }
+    tr:hover td { background: #1e293b; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header-bar">
+      <div class="title-group">
+        <h1>📊 ${escapeHtml(title)}</h1>
+        <p>Total Records: ${dataArray.length} | Generated: ${new Date().toLocaleString()}</p>
+      </div>
+      <div class="actions">
+        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 Filter rows..." class="search-input" />
+        <button class="btn btn-primary" onclick="window.print()">🖨️ Print / PDF</button>
+        <button class="btn btn-secondary" onclick="copyTable()">📋 Copy Table</button>
+        <button class="btn btn-secondary" onclick="downloadCsv()">💾 Save CSV File</button>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table id="spreadsheetTable">
+        <thead>
+          <tr>${headerCells}</tr>
+        </thead>
+        <tbody>
+          ${bodyRows}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    function filterTable() {
+      var input = document.getElementById("searchInput");
+      var filter = input.value.toLowerCase();
+      var rows = document.querySelectorAll("#spreadsheetTable tbody tr");
+      rows.forEach(function(row) {
+        var text = row.innerText.toLowerCase();
+        row.style.display = text.includes(filter) ? "" : "none";
+      });
+    }
+
+    function copyTable() {
+      var table = document.getElementById("spreadsheetTable");
+      navigator.clipboard.writeText(table.innerText).then(function() {
+        alert("Spreadsheet table copied to clipboard!");
+      });
+    }
+
+    function downloadCsv() {
+      var csvData = "\ufeff" + ${JSON.stringify(csvString)};
+      var blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+      var url = URL.createObjectURL(blob);
+      var link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "${title.replace(/[^a-zA-Z0-9_-]/g, '_')}.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>`;
+
+  const blob = new Blob([htmlDoc], { type: 'text/html;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+
+  if (!win) {
+    // If popup blocked, fallback to direct download
+    const headers = Object.keys(dataArray[0]);
+    const csvRows = [];
+    csvRows.push(headers.join(','));
+    dataArray.forEach((row) => {
+      const values = headers.map((header) => `"${('' + (row[header] || '')).replace(/"/g, '\\"')}"`);
+      csvRows.push(values.join(','));
+    });
+    const csvStringFallback = csvRows.join('\n');
+    const fallbackBlob = new Blob(['\ufeff' + csvStringFallback], { type: 'text/csv;charset=utf-8;' });
+    const fallbackUrl = URL.createObjectURL(fallbackBlob);
+    const link = document.createElement('a');
+    link.setAttribute('href', fallbackUrl);
+    link.setAttribute('download', `${title}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+};
+
+/**
  * Export tabular data as a downloadable CSV/Excel file.
  * Supports both signatures:
  * 1. exportToCSV(filename, headers, rows)
@@ -354,7 +495,6 @@ export const exportToCSV = (arg1, arg2, arg3) => {
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   
   const cleanFilename = filename.toLowerCase().endsWith('.csv') ? filename : `${filename}.csv`;
-
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
   link.setAttribute('href', url);
@@ -752,9 +892,6 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
     // Bottom Verification Stamp Page 1
     doc.setFillColor(16, 185, 129);
     doc.roundedRect(margin, 268, contentW, 10, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
     doc.text('OFFICIAL VERIFIED RESULT CERTIFICATE - APEX CHAMPIONSHIP 2026', pageW / 2, 274.5, { align: 'center' });
 
     // INDIVIDUAL PLAYER PERFORMANCE / PER-PERSON POINT BREAKDOWN
@@ -762,10 +899,12 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
       (match.sportId || '').toLowerCase().includes('football') || 
       (match.sport || '').toLowerCase().includes('football');
 
-    const isBasketballMatch = ((cleanSport || '').toLowerCase().includes('basketball') || 
+    const isKabaddiMatch = false; // Disabled Kabaddi player table per user request
+
+    const isBasketballMatch = !isFootballMatch && ((cleanSport || '').toLowerCase().includes('basketball') || 
       (match.sportId || '').toLowerCase().includes('basketball') || 
       (match.sport || '').toLowerCase().includes('basketball') ||
-      ((match.roster1 && match.roster1.length > 0) || (match.roster2 && match.roster2.length > 0))) && !isFootballMatch;
+      ((match.roster1 && match.roster1.length > 0) || (match.roster2 && match.roster2.length > 0)));
 
     const isCricketMatch = (cleanSport || '').toLowerCase().includes('cricket') ||
       (match.sportId || '').toLowerCase().includes('cricket') ||
@@ -1197,7 +1336,6 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
       doc.text('OFFICIAL VERIFIED RESULT CERTIFICATE - FOOTBALL GOALSCORERS & MATCH STATS REPORT', pageW / 2, 274.5, { align: 'center' });
     } else if (isBasketballMatch) {
       doc.addPage();
-
       // Page 2 Outer Dark Theme Background
       doc.setFillColor(15, 23, 42);
       doc.rect(0, 0, 210, 297, 'F');

@@ -751,10 +751,10 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
   }, [handleKeyDown]);
 
   const modalJSX = (
-    <div className="fixed inset-0 z-[9999] flex flex-col bg-slate-950 text-white font-sans overflow-hidden select-none">
+    <div className="fixed inset-0 z-[9999] flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-sans overflow-hidden select-none transition-colors">
       
       {/* STICKY TOP LIVE SCOREBAR HEADER */}
-      <header className="sticky top-0 z-40 bg-[#0B1120] border-b border-slate-800/80 px-4 py-3 flex flex-wrap items-center justify-between gap-3 shadow-xl shrink-0">
+      <header className="sticky top-0 z-40 bg-white dark:bg-[#0B1120] border-b border-slate-200 dark:border-slate-800/80 px-4 py-3 flex flex-wrap items-center justify-between gap-3 shadow-xl shrink-0 transition-colors">
         
         {/* Left: Tournament & Teams Live Score */}
         <div className="flex items-center gap-4">
@@ -781,14 +781,14 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
         </div>
 
         {/* Center: Run Rates & Equations */}
-        <div className="hidden md:flex items-center gap-4 text-xs font-mono bg-slate-900/80 px-4 py-1.5 rounded-2xl border border-slate-800">
-          <div>CRR: <span className="font-bold text-emerald-400">{currentRunRate}</span></div>
+        <div className="hidden md:flex items-center gap-4 text-xs font-mono bg-slate-100 dark:bg-slate-900/80 px-4 py-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 transition-colors">
+          <div>CRR: <span className="font-bold text-emerald-600 dark:text-emerald-400">{currentRunRate}</span></div>
           {currentInnings === 2 && targetRuns && (
             <>
-              <div className="text-slate-700">|</div>
-              <div>RRR: <span className="font-bold text-amber-400">{requiredRunRate}</span></div>
-              <div className="text-slate-700">|</div>
-              <div className="text-emerald-300 font-bold">
+              <div className="text-slate-400 dark:text-slate-700">|</div>
+              <div>RRR: <span className="font-bold text-amber-600 dark:text-amber-400">{requiredRunRate}</span></div>
+              <div className="text-slate-400 dark:text-slate-700">|</div>
+              <div className="text-emerald-600 dark:text-emerald-300 font-bold">
                 Need {remainingRuns} runs from {remainingBalls} balls
               </div>
             </>
@@ -802,7 +802,7 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
             className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1 cursor-pointer ${
               isPaused
                 ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-black'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
+                : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700'
             }`}
           >
             {isPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
@@ -811,16 +811,16 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
 
           <button
             onClick={() => setShowFullScorecard(true)}
-            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition flex items-center gap-1 cursor-pointer"
+            className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs border border-slate-300 dark:border-slate-700 transition flex items-center gap-1 cursor-pointer"
           >
-            <FileText className="w-3.5 h-3.5 text-emerald-400" /> Scorecard
+            <FileText className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Scorecard
           </button>
 
           <button
             onClick={() => setSubstituteModalOpen(true)}
-            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition flex items-center gap-1 cursor-pointer"
+            className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs border border-slate-300 dark:border-slate-700 transition flex items-center gap-1 cursor-pointer"
           >
-            <UserCheck className="w-3.5 h-3.5 text-cyan-400" /> Substitute
+            <UserCheck className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" /> Substitute
           </button>
 
           <button
@@ -832,7 +832,7 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
 
           <button
             onClick={toggleBrowserFullscreen}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 transition cursor-pointer"
             title="Toggle Fullscreen"
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -840,7 +840,7 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer"
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-700 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -848,21 +848,21 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
       </header>
 
       {/* SECONDARY INFO TICKER BAR */}
-      <div className="bg-[#0D1527] border-b border-slate-800/60 px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs font-mono shrink-0">
+      <div className="bg-slate-100 dark:bg-[#0D1527] border-b border-slate-200 dark:border-slate-800/60 px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs font-mono shrink-0 transition-colors">
         
         {/* Partnership & Last Wicket */}
-        <div className="flex items-center gap-4 text-slate-300">
+        <div className="flex items-center gap-4 text-slate-700 dark:text-slate-300">
           <div>
-            Partnership: <span className="font-bold text-emerald-400">{partnershipRuns}</span> runs ({partnershipBalls} balls)
+            Partnership: <span className="font-bold text-emerald-600 dark:text-emerald-400">{partnershipRuns}</span> runs ({partnershipBalls} balls)
           </div>
         </div>
 
         {/* Recent 6 Balls Ticker Bar */}
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-slate-400 uppercase font-bold">Last Balls:</span>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">Last Balls:</span>
           <div className="flex items-center gap-1.5">
             {recentBalls.length === 0 ? (
-              <span className="text-slate-600 text-xs">Waiting for first ball...</span>
+              <span className="text-slate-500 dark:text-slate-600 text-xs">Waiting for first ball...</span>
             ) : (
               recentBalls.map((b, idx) => (
                 <span
@@ -876,7 +876,7 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
                       ? 'bg-rose-600 text-white border-rose-400'
                       : b === 'WD' || b === 'NB'
                       ? 'bg-amber-600 text-white border-amber-400'
-                      : 'bg-slate-800 text-slate-200 border-slate-700'
+                      : 'bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700'
                   }`}
                 >
                   {b}
@@ -894,10 +894,10 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           
           {/* BATSMEN PANEL (7 COLS) */}
-          <div className="lg:col-span-7 bg-[#0B1120] rounded-3xl border border-slate-800 p-5 space-y-4 shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="lg:col-span-7 bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-xl transition-colors">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-black uppercase text-emerald-400 tracking-wider">Current Batsmen</span>
+                <span className="text-xs font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">Current Batsmen</span>
                 {isFreeHit && (
                   <span className="px-2 py-0.5 rounded bg-amber-500 text-slate-950 text-[10px] font-black uppercase animate-bounce">
                     FREE HIT
@@ -906,9 +906,9 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
               </div>
               <button
                 onClick={handleSwapStriker}
-                className="px-3 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                className="px-3 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-300 dark:border-slate-700 transition flex items-center gap-1 cursor-pointer"
               >
-                <ArrowLeftRight className="w-3.5 h-3.5 text-emerald-400" /> Swap Strike
+                <ArrowLeftRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Swap Strike
               </button>
             </div>
 
@@ -917,42 +917,42 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
               {/* STRIKER CARD */}
               <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-2 relative overflow-hidden">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-emerald-400 truncate flex items-center gap-1">
+                  <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 truncate flex items-center gap-1">
                     ⭐ {striker.name}
                   </span>
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-500 text-slate-950 text-[9px] font-black uppercase">
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500 text-white dark:text-slate-950 text-[9px] font-black uppercase">
                     STRIKER
                   </span>
                 </div>
 
                 <div className="flex items-baseline justify-between pt-1">
-                  <div className="text-3xl font-black text-white font-mono">{striker.runs}</div>
-                  <div className="text-xs text-slate-400 font-mono">({striker.balls} balls)</div>
+                  <div className="text-3xl font-black text-slate-900 dark:text-white font-mono">{striker.runs}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">({striker.balls} balls)</div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-1 pt-2 border-t border-emerald-500/20 text-[10px] font-mono text-slate-300">
-                  <div>4s: <strong className="text-white">{striker.fours}</strong></div>
-                  <div>6s: <strong className="text-white">{striker.sixes}</strong></div>
-                  <div>SR: <strong className="text-emerald-400">{striker.balls > 0 ? ((striker.runs / striker.balls) * 100).toFixed(1) : '0.0'}</strong></div>
+                <div className="grid grid-cols-3 gap-1 pt-2 border-t border-emerald-500/20 text-[10px] font-mono text-slate-600 dark:text-slate-300">
+                  <div>4s: <strong className="text-slate-900 dark:text-white">{striker.fours}</strong></div>
+                  <div>6s: <strong className="text-slate-900 dark:text-white">{striker.sixes}</strong></div>
+                  <div>SR: <strong className="text-emerald-600 dark:text-emerald-400">{striker.balls > 0 ? ((striker.runs / striker.balls) * 100).toFixed(1) : '0.0'}</strong></div>
                 </div>
               </div>
 
               {/* NON-STRIKER CARD */}
-              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 relative">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2 relative transition-colors">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-300 truncate">{nonStriker.name}</span>
-                  <span className="text-[9px] font-mono text-slate-500 uppercase">NON-STRIKER</span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">{nonStriker.name}</span>
+                  <span className="text-[9px] font-mono text-slate-400 dark:text-slate-500 uppercase">NON-STRIKER</span>
                 </div>
 
                 <div className="flex items-baseline justify-between pt-1">
-                  <div className="text-3xl font-black text-white font-mono">{nonStriker.runs}</div>
-                  <div className="text-xs text-slate-400 font-mono">({nonStriker.balls} balls)</div>
+                  <div className="text-3xl font-black text-slate-900 dark:text-white font-mono">{nonStriker.runs}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">({nonStriker.balls} balls)</div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-1 pt-2 border-t border-slate-800 text-[10px] font-mono text-slate-400">
-                  <div>4s: <strong className="text-white">{nonStriker.fours}</strong></div>
-                  <div>6s: <strong className="text-white">{nonStriker.sixes}</strong></div>
-                  <div>SR: <strong className="text-slate-300">{nonStriker.balls > 0 ? ((nonStriker.runs / nonStriker.balls) * 100).toFixed(1) : '0.0'}</strong></div>
+                <div className="grid grid-cols-3 gap-1 pt-2 border-t border-slate-200 dark:border-slate-800 text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                  <div>4s: <strong className="text-slate-900 dark:text-white">{nonStriker.fours}</strong></div>
+                  <div>6s: <strong className="text-slate-900 dark:text-white">{nonStriker.sixes}</strong></div>
+                  <div>SR: <strong className="text-slate-700 dark:text-slate-300">{nonStriker.balls > 0 ? ((nonStriker.runs / nonStriker.balls) * 100).toFixed(1) : '0.0'}</strong></div>
                 </div>
               </div>
 
@@ -960,39 +960,39 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
           </div>
 
           {/* BOWLER PANEL (5 COLS) */}
-          <div className="lg:col-span-5 bg-[#0B1120] rounded-3xl border border-slate-800 p-5 space-y-4 shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <span className="text-xs font-black uppercase text-amber-400 tracking-wider">Current Bowler</span>
+          <div className="lg:col-span-5 bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-xl transition-colors">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <span className="text-xs font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider">Current Bowler</span>
               <button
                 onClick={() => setNextBowlerModalOpen(true)}
-                className="px-3 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                className="px-3 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-300 dark:border-slate-700 transition flex items-center gap-1 cursor-pointer"
               >
-                <Edit3 className="w-3.5 h-3.5 text-amber-400" /> Change Bowler
+                <Edit3 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Change Bowler
               </button>
             </div>
 
             <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-black text-amber-300 truncate">🏏 {bowler.name}</span>
-                <span className="text-xs font-mono font-bold text-amber-400">{bowler.wickets} - {bowler.runs}</span>
+                <span className="text-sm font-black text-amber-700 dark:text-amber-300 truncate">🏏 {bowler.name}</span>
+                <span className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400">{bowler.wickets} - {bowler.runs}</span>
               </div>
 
-              <div className="grid grid-cols-4 gap-2 pt-2 border-t border-amber-500/20 text-xs font-mono text-slate-300">
+              <div className="grid grid-cols-4 gap-2 pt-2 border-t border-amber-500/20 text-xs font-mono text-slate-600 dark:text-slate-300">
                 <div>
                   <span className="text-[10px] text-slate-500 block uppercase">Overs</span>
-                  <strong className="text-white">{bowler.overs}</strong>
+                  <strong className="text-slate-900 dark:text-white">{bowler.overs}</strong>
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-500 block uppercase">Maidens</span>
-                  <strong className="text-white">{bowler.maidens || 0}</strong>
+                  <strong className="text-slate-900 dark:text-white">{bowler.maidens || 0}</strong>
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-500 block uppercase">Wickets</span>
-                  <strong className="text-rose-400">{bowler.wickets}</strong>
+                  <strong className="text-rose-600 dark:text-rose-400">{bowler.wickets}</strong>
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-500 block uppercase">Econ</span>
-                  <strong className="text-amber-400">{bowler.legalBalls > 0 ? (bowler.runs / (bowler.legalBalls / 6)).toFixed(2) : '0.00'}</strong>
+                  <strong className="text-amber-600 dark:text-amber-400">{bowler.legalBalls > 0 ? (bowler.runs / (bowler.legalBalls / 6)).toFixed(2) : '0.00'}</strong>
                 </div>
               </div>
             </div>
@@ -1001,10 +1001,10 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
         </div>
 
         {/* BALL BY BALL SCORING CONTROLS */}
-        <div className="bg-[#0B1120] rounded-3xl border border-slate-800 p-5 sm:p-6 space-y-6 shadow-2xl">
+        <div className="bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 space-y-6 shadow-2xl transition-colors">
           
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <span className="text-xs font-black uppercase text-slate-300 tracking-wider">Ball By Ball Scoring Console</span>
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+            <span className="text-xs font-black uppercase text-slate-800 dark:text-slate-300 tracking-wider">Ball By Ball Scoring Console</span>
             <span className="text-[10px] font-mono text-slate-500">Keyboard Shortcuts Active (0-6, W, N, K, Ctrl+Z)</span>
           </div>
 
@@ -1020,8 +1020,8 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
                     : run === 6
                     ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/30 font-black scale-105 border border-purple-400'
                     : run === 0
-                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-300'
-                    : 'bg-slate-900 hover:bg-slate-800 text-white border border-slate-800'
+                    ? 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700'
+                    : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-800'
                 }`}
               >
                 {run === 0 ? '0' : run}
@@ -1034,29 +1034,29 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
             
             {/* Extras Buttons */}
             <div className="space-y-2">
-              <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">EXTRAS</span>
+              <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 uppercase">EXTRAS</span>
               <div className="grid grid-cols-4 gap-2">
                 <button
                   onClick={() => handleScoreExtra('WIDE')}
-                  className="py-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-bold text-xs transition cursor-pointer"
+                  className="py-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-bold text-xs transition cursor-pointer"
                 >
                   WD (+1)
                 </button>
                 <button
                   onClick={() => handleScoreExtra('NO_BALL')}
-                  className="py-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-bold text-xs transition cursor-pointer"
+                  className="py-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-bold text-xs transition cursor-pointer"
                 >
                   NB (+1)
                 </button>
                 <button
                   onClick={() => handleScoreExtra('BYE')}
-                  className="py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs transition cursor-pointer"
+                  className="py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 font-bold text-xs transition cursor-pointer"
                 >
                   BYE (+1)
                 </button>
                 <button
                   onClick={() => handleScoreExtra('LEG_BYE')}
-                  className="py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs transition cursor-pointer"
+                  className="py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 font-bold text-xs transition cursor-pointer"
                 >
                   LEG BYE
                 </button>
@@ -1065,13 +1065,13 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
 
             {/* Dismissal Buttons */}
             <div className="space-y-2">
-              <span className="text-[10px] font-mono font-bold text-rose-400 uppercase">DISMISSALS (WICKETS)</span>
+              <span className="text-[10px] font-mono font-bold text-rose-600 dark:text-rose-400 uppercase">DISMISSALS (WICKETS)</span>
               <div className="grid grid-cols-4 gap-2">
                 {['Bowled', 'Caught', 'LBW', 'Run Out'].map((dis) => (
                   <button
                     key={dis}
                     onClick={() => handleInitiateWicket(dis)}
-                    className="py-3 rounded-xl bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/40 font-bold text-xs transition cursor-pointer"
+                    className="py-3 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-700 dark:text-rose-300 border border-rose-500/40 font-bold text-xs transition cursor-pointer"
                   >
                     ☝️ {dis}
                   </button>
@@ -1082,17 +1082,17 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
           </div>
 
           {/* Quick Undo & Secondary Controls */}
-          <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+          <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
             <button
               onClick={handleUndo}
               disabled={historyStack.length === 0}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                 historyStack.length > 0
-                  ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer'
-                  : 'bg-slate-900 text-slate-600 cursor-not-allowed'
+                  ? 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 cursor-pointer'
+                  : 'bg-slate-100 dark:bg-slate-900 text-slate-400 dark:text-slate-600 cursor-not-allowed'
               }`}
             >
-              <RotateCcw className="w-3.5 h-3.5 text-amber-400" /> Undo Last Ball
+              <RotateCcw className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> Undo Last Ball
             </button>
 
             <span className="text-[11px] text-slate-500 font-mono">
@@ -1103,18 +1103,18 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
         </div>
 
         {/* LIVE COMMENTARY FEED */}
-        <div className="bg-[#0B1120] rounded-3xl border border-slate-800 p-5 space-y-3 shadow-xl">
-          <span className="text-xs font-black uppercase text-slate-300 tracking-wider">Live Match Commentary</span>
+        <div className="bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800 p-5 space-y-3 shadow-xl transition-colors">
+          <span className="text-xs font-black uppercase text-slate-800 dark:text-slate-300 tracking-wider">Live Match Commentary</span>
           <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
             {commentaryLog.length === 0 ? (
               <p className="text-xs text-slate-500 font-mono">No ball commentary recorded yet.</p>
             ) : (
               commentaryLog.map((c) => (
-                <div key={c.id} className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-mono flex items-start gap-3">
-                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold text-[10px] shrink-0">
+                <div key={c.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-xs font-mono flex items-start gap-3 transition-colors">
+                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold text-[10px] shrink-0">
                     Over {c.over}
                   </span>
-                  <p className="text-slate-200 font-medium leading-relaxed">{c.text}</p>
+                  <p className="text-slate-800 dark:text-slate-200 font-medium leading-relaxed">{c.text}</p>
                 </div>
               ))
             )}
@@ -1125,19 +1125,19 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
 
       {/* WICKET DETAILS POPUP MODAL */}
       {wicketModalOpen && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
-          <div className="w-full max-w-md bg-[#0B1120] text-white rounded-3xl border border-slate-800 p-6 space-y-4 shadow-2xl">
-            <h3 className="text-lg font-black text-rose-400 flex items-center gap-2">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/90 backdrop-blur-md">
+          <div className="w-full max-w-md bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-2xl transition-colors">
+            <h3 className="text-lg font-black text-rose-600 dark:text-rose-400 flex items-center gap-2">
               ☝️ Record Wicket Details
             </h3>
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block font-bold text-slate-400 uppercase mb-1">Who got out?</label>
+                <label className="block font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">Who got out?</label>
                 <select
                   value={wicketDetails.whoOut}
                   onChange={(e) => setWicketDetails({ ...wicketDetails, whoOut: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white font-bold"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white font-bold"
                 >
                   <option value="striker">Striker: {striker.name}</option>
                   <option value="nonStriker">Non-Striker: {nonStriker.name}</option>
@@ -1145,11 +1145,11 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
               </div>
 
               <div>
-                <label className="block font-bold text-slate-400 uppercase mb-1">Dismissal Type</label>
+                <label className="block font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">Dismissal Type</label>
                 <select
                   value={wicketDetails.dismissal}
                   onChange={(e) => setWicketDetails({ ...wicketDetails, dismissal: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white font-bold"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white font-bold"
                 >
                   <option value="Bowled">Bowled</option>
                   <option value="Caught">Caught</option>
@@ -1163,13 +1163,13 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
 
               {['Caught', 'Stumped', 'Run Out'].includes(wicketDetails.dismissal) && (
                 <div>
-                  <label className="block font-bold text-slate-400 uppercase mb-1">
+                  <label className="block font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
                     Fielder Name (Select from {bowlingTeam} Roll-Down List)
                   </label>
                   <select
                     value={wicketDetails.fielder}
                     onChange={(e) => setWicketDetails({ ...wicketDetails, fielder: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-amber-400 font-bold text-xs mb-1.5"
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-amber-600 dark:text-amber-400 font-bold text-xs mb-1.5"
                   >
                     <option value="">-- Select Fielder from {bowlingTeam} --</option>
                     {currentBowlingSquad.map((p) => (
@@ -1183,19 +1183,19 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
                     value={wicketDetails.fielder}
                     onChange={(e) => setWicketDetails({ ...wicketDetails, fielder: e.target.value })}
                     placeholder="Or type custom fielder name..."
-                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block font-bold text-slate-400 uppercase mb-1">
+                <label className="block font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
                   New Incoming Batsman (Select from {battingTeam} Roll-Down List)
                 </label>
                 <select
                   value={wicketDetails.newBatsman}
                   onChange={(e) => setWicketDetails({ ...wicketDetails, newBatsman: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-emerald-400 font-bold text-xs mb-1.5"
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-emerald-600 dark:text-emerald-400 font-bold text-xs mb-1.5"
                 >
                   <option value="">-- Select Player from {battingTeam} Squad --</option>
                   {currentBattingSquad.map((p) => {
@@ -1216,15 +1216,15 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
                   value={wicketDetails.newBatsman}
                   onChange={(e) => setWicketDetails({ ...wicketDetails, newBatsman: e.target.value })}
                   placeholder="Or type custom batsman name..."
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-semibold"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-semibold"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
               <button
                 onClick={() => setWicketModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-300 dark:border-slate-700 cursor-pointer"
               >
                 Cancel
               </button>
@@ -1241,21 +1241,21 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
 
       {/* NEXT BOWLER SELECTION MODAL */}
       {nextBowlerModalOpen && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
-          <div className="w-full max-w-md bg-[#0B1120] text-white rounded-3xl border border-slate-800 p-6 space-y-4 shadow-2xl">
-            <h3 className="text-lg font-black text-amber-400 flex items-center gap-2">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/90 backdrop-blur-md">
+          <div className="w-full max-w-md bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-2xl transition-colors">
+            <h3 className="text-lg font-black text-amber-600 dark:text-amber-400 flex items-center gap-2">
               🏏 End of Over — Select Next Bowler
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               Over completed. Please select or enter the bowler for the next over.
             </p>
 
             <div className="space-y-3 text-xs">
-              <label className="block font-bold text-slate-400 uppercase">Bowler Name</label>
+              <label className="block font-bold text-slate-600 dark:text-slate-400 uppercase">Bowler Name</label>
               <select
                 value={newBowlerName}
                 onChange={(e) => setNewBowlerName(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-amber-400 font-bold"
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-amber-600 dark:text-amber-400 font-bold"
               >
                 <option value="">Select Bowler from Squad...</option>
                 {currentBowlingSquad.map((p) => {
@@ -1275,7 +1275,7 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
                 value={newBowlerName}
                 onChange={(e) => setNewBowlerName(e.target.value)}
                 placeholder="Or type custom bowler name..."
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs"
               />
             </div>
 
@@ -1292,15 +1292,15 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
 
       {/* INNINGS BREAK MODAL */}
       {inningsBreakModalOpen && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
-          <div className="w-full max-w-lg bg-[#0B1120] text-white rounded-3xl border border-slate-800 p-6 space-y-4 shadow-2xl text-center">
-            <Trophy className="w-12 h-12 text-amber-400 mx-auto animate-bounce" />
-            <h3 className="text-xl font-black text-white">1st Innings Completed!</h3>
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/90 backdrop-blur-md">
+          <div className="w-full max-w-lg bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-2xl text-center transition-colors">
+            <Trophy className="w-12 h-12 text-amber-500 dark:text-amber-400 mx-auto animate-bounce" />
+            <h3 className="text-xl font-black text-slate-900 dark:text-white">1st Innings Completed!</h3>
             
-            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
-              <span className="text-xs text-slate-400 uppercase font-mono">{battingTeam} Score</span>
-              <p className="text-3xl font-black text-emerald-400 font-mono">{runs} / {wickets}</p>
-              <span className="text-xs text-slate-400 font-mono">Target for {bowlingTeam}: <strong className="text-amber-400">{targetRuns} Runs</strong></span>
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
+              <span className="text-xs text-slate-500 dark:text-slate-400 uppercase font-mono">{battingTeam} Score</span>
+              <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono">{runs} / {wickets}</p>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">Target for {bowlingTeam}: <strong className="text-amber-600 dark:text-amber-400">{targetRuns} Runs</strong></span>
             </div>
 
             <button
@@ -1315,41 +1315,41 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
 
       {/* MATCH ENDED POPUP MODAL */}
       {matchEndedModal && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md font-sans">
-          <div className="w-full max-w-lg bg-[#0B1120] text-white rounded-3xl border border-slate-800 p-6 space-y-5 shadow-2xl text-center">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/90 backdrop-blur-md font-sans">
+          <div className="w-full max-w-lg bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-6 space-y-5 shadow-2xl text-center transition-colors">
             
-            <div className="w-16 h-16 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto">
+            <div className="w-16 h-16 rounded-full bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto">
               <Trophy className="w-8 h-8 animate-bounce" />
             </div>
 
             <div className="space-y-1">
-              <span className="text-[10px] font-mono font-bold uppercase text-emerald-400 tracking-wider">
+              <span className="text-[10px] font-mono font-bold uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">
                 Official Match Concluded
               </span>
-              <h3 className="text-2xl font-black text-white">MATCH ENDED!</h3>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white">MATCH ENDED!</h3>
             </div>
 
             {/* Winner Banner */}
             <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-amber-500/20 border border-amber-500/40 space-y-1">
-              <span className="text-[10px] font-mono text-amber-300 font-bold uppercase">Official Winner Declaration</span>
-              <p className="text-lg font-black text-amber-400">
+              <span className="text-[10px] font-mono text-amber-700 dark:text-amber-300 font-bold uppercase">Official Winner Declaration</span>
+              <p className="text-lg font-black text-amber-600 dark:text-amber-400">
                 🏆 {matchWinnerResult || `${battingTeam} won by ${10 - wickets} wickets!`}
               </p>
             </div>
 
             {/* Scores Summary */}
-            <div className="grid grid-cols-2 gap-3 font-mono text-xs text-slate-300">
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+            <div className="grid grid-cols-2 gap-3 font-mono text-xs text-slate-700 dark:text-slate-300">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                 <span className="text-[10px] text-slate-500 block uppercase font-bold">{teamA}</span>
-                <strong className="text-white text-base">
+                <strong className="text-slate-900 dark:text-white text-base">
                   {currentInnings === 1 ? runs : firstInningsScore || 0}/{currentInnings === 1 ? wickets : (match?.wickets1 || 0)}
                 </strong>
                 <span className="block text-[10px] text-slate-500">({currentInnings === 1 ? oversFormatted : (match?.overs1 || '0.0')} ov)</span>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                 <span className="text-[10px] text-slate-500 block uppercase font-bold">{teamB}</span>
-                <strong className="text-white text-base">
+                <strong className="text-slate-900 dark:text-white text-base">
                   {currentInnings === 2 ? runs : 0}/{currentInnings === 2 ? wickets : 0}
                 </strong>
                 <span className="block text-[10px] text-slate-500">({currentInnings === 2 ? oversFormatted : '0.0'} ov)</span>
@@ -1390,13 +1390,13 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setShowFullScorecard(true)}
-                  className="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition cursor-pointer"
+                  className="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs border border-slate-300 dark:border-slate-700 transition cursor-pointer"
                 >
                   View Scorecard
                 </button>
                 <button
                   onClick={handleFinishMatchNow}
-                  className="py-2.5 rounded-xl bg-slate-100 hover:bg-white text-slate-950 font-black text-xs transition cursor-pointer"
+                  className="py-2.5 rounded-xl bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-white text-white dark:text-slate-950 font-black text-xs transition cursor-pointer"
                 >
                   Complete & Exit
                 </button>
@@ -1428,27 +1428,27 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
 
       {/* TACTICAL SUBSTITUTE MODAL */}
       {substituteModalOpen && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md font-sans">
-          <div className="w-full max-w-md bg-[#0B1120] text-white rounded-3xl border border-slate-800 p-6 space-y-4 shadow-2xl">
-            <h3 className="text-lg font-black text-cyan-400 flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-cyan-400" /> Tactical Player Substitution
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/90 backdrop-blur-md font-sans">
+          <div className="w-full max-w-md bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-2xl transition-colors">
+            <h3 className="text-lg font-black text-cyan-600 dark:text-cyan-400 flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-cyan-600 dark:text-cyan-400" /> Tactical Player Substitution
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               Substitute an on-field player with a bench/substitute player.
             </p>
 
             <div className="space-y-3.5 text-xs">
               {/* Select Team */}
               <div>
-                <label className="block font-bold text-slate-400 uppercase mb-1">Select Team</label>
+                <label className="block font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">Select Team</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setSubstituteDetails({ ...substituteDetails, team: 'batting', outgoingPlayer: '', incomingPlayer: '' })}
                     className={`py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer ${
                       substituteDetails.team === 'batting'
-                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50'
-                        : 'bg-slate-900 text-slate-400 border-slate-800'
+                        ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/50'
+                        : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-800'
                     }`}
                   >
                     Batting: {battingTeam}
@@ -1459,8 +1459,8 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
                     onClick={() => setSubstituteDetails({ ...substituteDetails, team: 'bowling', outgoingPlayer: '', incomingPlayer: '' })}
                     className={`py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer ${
                       substituteDetails.team === 'bowling'
-                        ? 'bg-amber-500/20 text-amber-400 border-amber-500/50'
-                        : 'bg-slate-900 text-slate-400 border-slate-800'
+                        ? 'bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/50'
+                        : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-800'
                     }`}
                   >
                     Bowling: {bowlingTeam}
@@ -1470,11 +1470,11 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
 
               {/* Select Outgoing Player */}
               <div>
-                <label className="block font-bold text-slate-400 uppercase mb-1">Outgoing Player (Off Field)</label>
+                <label className="block font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">Outgoing Player (Off Field)</label>
                 <select
                   value={substituteDetails.outgoingPlayer}
                   onChange={(e) => setSubstituteDetails({ ...substituteDetails, outgoingPlayer: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-rose-400 font-bold text-xs"
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-rose-600 dark:text-rose-400 font-bold text-xs"
                 >
                   <option value="">-- Select Outgoing Player --</option>
                   {(substituteDetails.team === 'batting' ? currentBattingSquad : currentBowlingSquad).map((p) => (
@@ -1487,11 +1487,11 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
 
               {/* Select Incoming Substitute Player */}
               <div>
-                <label className="block font-bold text-slate-400 uppercase mb-1">Incoming Substitute Player (On Field)</label>
+                <label className="block font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">Incoming Substitute Player (On Field)</label>
                 <select
                   value={substituteDetails.incomingPlayer}
                   onChange={(e) => setSubstituteDetails({ ...substituteDetails, incomingPlayer: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-cyan-400 font-bold text-xs mb-1.5"
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-cyan-600 dark:text-cyan-400 font-bold text-xs mb-1.5"
                 >
                   <option value="">-- Select Substitute from Bench --</option>
                   {(substituteDetails.team === 'batting' ? currentBattingSubs : currentBowlingSubs).map((s, idx) => {
@@ -1509,15 +1509,15 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
                   value={substituteDetails.customSubName}
                   onChange={(e) => setSubstituteDetails({ ...substituteDetails, customSubName: e.target.value })}
                   placeholder="Or type custom substitute player name..."
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-semibold"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-semibold"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
               <button
                 onClick={() => setSubstituteModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-300 dark:border-slate-700 cursor-pointer"
               >
                 Cancel
               </button>

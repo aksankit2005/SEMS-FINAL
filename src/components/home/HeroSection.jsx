@@ -17,59 +17,59 @@ export const HeroSection = () => {
       />
       {/* Gradients */}
       <div className="absolute inset-0 bg-gradient-to-t from-white via-white/85 dark:from-slate-950 dark:via-slate-950/80 to-transparent" />
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-gradient-to-r from-blue-600/20 via-orange-500/20 to-indigo-600/20 blur-3xl rounded-full pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[300px] sm:w-[600px] h-[250px] sm:h-[300px] bg-gradient-to-r from-blue-600/20 via-orange-500/20 to-indigo-600/20 blur-3xl rounded-full pointer-events-none" />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 relative z-10 text-center">
         
         {/* Championship Badge */}
-        <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 backdrop-blur-md mb-8 shadow-xl animate-float">
+        <div className="inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 backdrop-blur-md mb-6 sm:mb-8 shadow-xl max-w-full">
           <img 
             src="/logo-dark.png" 
             alt="APEX Logo" 
-            className="hidden dark:block h-5 w-auto object-contain"
+            className="hidden dark:block h-4 sm:h-5 w-auto object-contain"
           />
           <img 
             src="/logo-light.png" 
             alt="APEX Logo" 
-            className="block dark:hidden h-5 w-auto object-contain"
+            className="block dark:hidden h-4 sm:h-5 w-auto object-contain"
           />
-          <span className="flex h-2 w-2 relative">
+          <span className="flex h-2 w-2 relative shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
           </span>
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-            APEX 2026 Inter-College Championship
+          <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+            APEX 2026 Championship
           </span>
-          <span className="text-slate-300 dark:text-slate-600">|</span>
-          <span className="text-xs text-slate-500 dark:text-slate-300">Jul 28 - Aug 02</span>
+          <span className="text-slate-300 dark:text-slate-600 hidden sm:inline">|</span>
+          <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-300">Jul 28 - Aug 02</span>
         </div>
 
         {/* Hero Title */}
-        <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-tight max-w-4xl mx-auto text-slate-900 dark:text-white">
+        <h1 className="text-3xl sm:text-6xl md:text-7xl font-black tracking-tight leading-tight max-w-4xl mx-auto text-slate-900 dark:text-white">
           WHERE <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">LEGENDS</span> ARE BORN.
         </h1>
 
         {/* Subtitle */}
-        <p className="mt-6 text-base sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto font-normal leading-relaxed">
-          The ultimate inter-college sports management platform. 11 dynamic sports, real-time live scoreboards, multi-step athlete registration, and live leaderboard tracking.
+        <p className="mt-4 sm:mt-6 text-sm sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto font-normal leading-relaxed px-2">
+          The ultimate inter-college sports management platform. 12 dynamic sports, real-time live scoreboards, multi-step athlete registration, and live leaderboard tracking.
         </p>
 
         {/* Action Buttons */}
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+        <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full max-w-xs sm:max-w-none mx-auto">
           <Link
             to="/registration"
-            className="group px-8 py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 hover:from-blue-500 hover:to-orange-400 text-white font-extrabold text-base shadow-2xl shadow-blue-600/30 transition-all flex items-center gap-3 transform hover:-translate-y-0.5"
+            className="group w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 hover:from-blue-500 hover:to-orange-400 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2.5 transform hover:-translate-y-0.5"
           >
-            <Trophy className="w-5 h-5 text-white group-hover:rotate-12 transition-transform" />
+            <Trophy className="w-5 h-5 text-white group-hover:rotate-12 transition-transform shrink-0" />
             <span>Register Your Team</span>
-            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform shrink-0" />
           </Link>
 
           <Link
             to="/live"
-            className="px-8 py-4 rounded-2xl bg-white hover:bg-slate-50 dark:bg-slate-800/90 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white font-bold text-base backdrop-blur-md transition flex items-center gap-3 shadow-xl"
+            className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-white hover:bg-slate-50 dark:bg-slate-800/90 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white font-bold text-sm sm:text-base backdrop-blur-md transition flex items-center justify-center gap-2.5 shadow-lg"
           >
-            <PlayCircle className="w-5 h-5 text-rose-500 animate-pulse" />
+            <PlayCircle className="w-5 h-5 text-rose-500 animate-pulse shrink-0" />
             <span>Watch Live Scoreboard</span>
           </Link>
         </div>

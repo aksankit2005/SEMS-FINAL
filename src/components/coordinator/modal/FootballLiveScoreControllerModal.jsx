@@ -297,22 +297,22 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
   };
 
   const modalContent = (
-    <div className="fixed inset-0 z-[999999] bg-slate-950/95 flex flex-col font-sans text-slate-100 select-none overflow-hidden animate-fade-in">
+    <div className="fixed inset-0 z-[999999] bg-slate-50 dark:bg-slate-950 flex flex-col font-sans text-slate-900 dark:text-slate-100 select-none overflow-hidden animate-fade-in transition-colors">
       
       {/* Top Header Bar */}
-      <div className="px-6 py-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+      <div className="px-6 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between transition-colors">
         <div className="flex items-center gap-3">
-          <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-mono font-black flex items-center gap-1.5 animate-pulse">
+          <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-mono font-black flex items-center gap-1.5 animate-pulse">
             <span className="w-2 h-2 rounded-full bg-emerald-500" /> 🔴 LIVE FOOTBALL CONTROLLER
           </span>
-          <span className="text-xs font-mono text-slate-400">Venue: <b className="text-white">{venueName}</b></span>
+          <span className="text-xs font-mono text-slate-500 dark:text-slate-400">Venue: <b className="text-slate-900 dark:text-white">{venueName}</b></span>
         </div>
 
         <div className="flex items-center gap-3">
           {historyStack.length > 0 && (
             <button
               onClick={handleUndo}
-              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-xs border border-amber-500/30 flex items-center gap-1 transition"
+              className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-xs border border-amber-500/30 flex items-center gap-1 transition cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" /> Undo ({historyStack.length})
             </button>
@@ -320,14 +320,14 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
 
           <button
             onClick={toggleBrowserFullscreen}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition cursor-pointer"
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -335,11 +335,11 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
       </div>
 
       {/* Main Scoreboard Display Banner */}
-      <div className="p-6 bg-gradient-to-b from-slate-900 to-[#0B1120] border-b border-slate-800 text-center space-y-3">
+      <div className="p-6 bg-gradient-to-b from-slate-100 to-white dark:from-slate-900 dark:to-[#0B1120] border-b border-slate-200 dark:border-slate-800 text-center space-y-3 transition-colors">
         <div className="flex items-center justify-center gap-3">
           <button
             onClick={handleNextHalf}
-            className="px-4 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-mono font-bold text-xs hover:bg-emerald-500/20 transition cursor-pointer"
+            className="px-4 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-mono font-bold text-xs hover:bg-emerald-500/20 transition cursor-pointer"
           >
             {quarter} ➔ Next Half
           </button>
@@ -348,8 +348,8 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
         <div className="flex items-center justify-center gap-8">
           {/* Team 1 Score */}
           <div className="text-right space-y-1">
-            <h3 className="text-2xl font-black text-white tracking-tight">{team1Name}</h3>
-            <div className="text-6xl font-black text-emerald-400 font-mono tracking-tighter">
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{team1Name}</h3>
+            <div className="text-6xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tighter">
               {calculatedScore1}
             </div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">
@@ -357,12 +357,12 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
             </span>
           </div>
 
-          <div className="text-3xl font-black text-slate-600 font-mono uppercase">VS</div>
+          <div className="text-3xl font-black text-slate-400 dark:text-slate-600 font-mono uppercase">VS</div>
 
           {/* Team 2 Score */}
           <div className="text-left space-y-1">
-            <h3 className="text-2xl font-black text-white tracking-tight">{team2Name}</h3>
-            <div className="text-6xl font-black text-teal-400 font-mono tracking-tighter">
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{team2Name}</h3>
+            <div className="text-6xl font-black text-teal-600 dark:text-teal-400 font-mono tracking-tighter">
               {calculatedScore2}
             </div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">
@@ -376,20 +376,20 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
       <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* TEAM 1 PLAYERS LIST */}
-        <div className="p-5 rounded-3xl bg-[#0F172A] border border-slate-800 space-y-4 flex flex-col justify-between">
+        <div className="p-5 rounded-3xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 space-y-4 flex flex-col justify-between shadow-xl transition-colors">
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h4 className="text-base font-black text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <h4 className="text-base font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-2">
                 <span>{team1Name} Squad Players</span>
               </h4>
-              <span className="text-xs font-mono font-bold text-slate-400">
+              <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
                 {roster1.filter((p) => p.onCourt).length} On Pitch
               </span>
             </div>
 
             {/* Active Players On Pitch */}
             <div className="space-y-2.5">
-              <span className="text-[10px] font-bold uppercase text-emerald-500 tracking-wider font-mono">
+              <span className="text-[10px] font-bold uppercase text-emerald-600 dark:text-emerald-500 tracking-wider font-mono">
                 ON PITCH PLAYERS
               </span>
 
@@ -401,16 +401,16 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
                     key={p.id}
                     className={`p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 ${
                       p.redCard
-                        ? 'bg-rose-950/40 border-rose-600/40 opacity-60'
-                        : 'bg-slate-900/90 border-slate-800 hover:border-emerald-500/40'
+                        ? 'bg-rose-500/10 border-rose-500/40 opacity-60'
+                        : 'bg-slate-50 dark:bg-slate-900/90 border-slate-200 dark:border-slate-800 hover:border-emerald-500/40'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-mono font-black text-xs">
+                      <span className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-mono font-black text-xs">
                         #{p.jersey}
                       </span>
                       <div>
-                        <div className="font-bold text-white text-xs flex items-center gap-1.5">
+                        <div className="font-bold text-slate-900 dark:text-white text-xs flex items-center gap-1.5">
                           <span>{p.name}</span>
                           {p.yellowCards > 0 && (
                             <span className="text-[10px]" title={`${p.yellowCards} Yellow Card(s)`}>🟨</span>
@@ -421,7 +421,7 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
                             </span>
                           )}
                         </div>
-                        <div className="text-[11px] font-mono text-emerald-400 font-bold">
+                        <div className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
                           Goals: {pGoals}
                         </div>
                       </div>
@@ -443,7 +443,7 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
                       <button
                         onClick={() => handleAwardYellowCard(1, p.id)}
                         disabled={p.redCard}
-                        className="p-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 text-xs font-bold transition cursor-pointer"
+                        className="p-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold transition cursor-pointer"
                         title="Give Yellow Card (🟨)"
                       >
                         🟨
@@ -453,7 +453,7 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
                       <button
                         onClick={() => handleAwardRedCard(1, p.id)}
                         disabled={p.redCard}
-                        className="p-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 text-xs font-bold transition cursor-pointer"
+                        className="p-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-xs font-bold transition cursor-pointer"
                         title="Give Red Card (🟥)"
                       >
                         🟥
@@ -463,7 +463,7 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
                       <button
                         onClick={() => setSubModal({ teamNum: 1, outPlayer: p })}
                         disabled={p.redCard}
-                        className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold transition cursor-pointer"
+                        className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700 text-xs font-bold transition cursor-pointer"
                         title="Substitute Player"
                       >
                         🔄
@@ -476,15 +476,15 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
 
             {/* Bench Players */}
             {roster1.filter((p) => !p.onCourt).length > 0 && (
-              <div className="space-y-2 pt-2 border-t border-slate-800/80">
+              <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800/80">
                 <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider font-mono">
                   BENCH SUBS
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {roster1.filter((p) => !p.onCourt).map((p) => (
-                    <div key={p.id} className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-800 text-xs flex items-center justify-between">
-                      <span className="font-semibold text-slate-400 truncate">#{p.jersey} {p.name}</span>
-                      <span className="text-[10px] font-mono text-emerald-400 font-bold">{p.goals || 0} G</span>
+                    <div key={p.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 text-xs flex items-center justify-between">
+                      <span className="font-semibold text-slate-600 dark:text-slate-400 truncate">#{p.jersey} {p.name}</span>
+                      <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">{p.goals || 0} G</span>
                     </div>
                   ))}
                 </div>
@@ -494,20 +494,20 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
         </div>
 
         {/* TEAM 2 PLAYERS LIST */}
-        <div className="p-5 rounded-3xl bg-[#0F172A] border border-slate-800 space-y-4 flex flex-col justify-between">
+        <div className="p-5 rounded-3xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 space-y-4 flex flex-col justify-between shadow-xl transition-colors">
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h4 className="text-base font-black text-teal-400 uppercase tracking-wider flex items-center gap-2">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <h4 className="text-base font-black text-teal-600 dark:text-teal-400 uppercase tracking-wider flex items-center gap-2">
                 <span>{team2Name} Squad Players</span>
               </h4>
-              <span className="text-xs font-mono font-bold text-slate-400">
+              <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
                 {roster2.filter((p) => p.onCourt).length} On Pitch
               </span>
             </div>
 
             {/* Active Players On Pitch */}
             <div className="space-y-2.5">
-              <span className="text-[10px] font-bold uppercase text-teal-500 tracking-wider font-mono">
+              <span className="text-[10px] font-bold uppercase text-teal-600 dark:text-teal-500 tracking-wider font-mono">
                 ON PITCH PLAYERS
               </span>
 
@@ -519,16 +519,16 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
                     key={p.id}
                     className={`p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 ${
                       p.redCard
-                        ? 'bg-rose-950/40 border-rose-600/40 opacity-60'
-                        : 'bg-slate-900/90 border-slate-800 hover:border-teal-500/40'
+                        ? 'bg-rose-500/10 border-rose-500/40 opacity-60'
+                        : 'bg-slate-50 dark:bg-slate-900/90 border-slate-200 dark:border-slate-800 hover:border-teal-500/40'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-400 border border-teal-500/30 flex items-center justify-center font-mono font-black text-xs">
+                      <span className="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-600 dark:text-teal-400 border border-teal-500/30 flex items-center justify-center font-mono font-black text-xs">
                         #{p.jersey}
                       </span>
                       <div>
-                        <div className="font-bold text-white text-xs flex items-center gap-1.5">
+                        <div className="font-bold text-slate-900 dark:text-white text-xs flex items-center gap-1.5">
                           <span>{p.name}</span>
                           {p.yellowCards > 0 && (
                             <span className="text-[10px]" title={`${p.yellowCards} Yellow Card(s)`}>🟨</span>
@@ -539,7 +539,7 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
                             </span>
                           )}
                         </div>
-                        <div className="text-[11px] font-mono text-teal-400 font-bold">
+                        <div className="text-[11px] font-mono text-teal-600 dark:text-teal-400 font-bold">
                           Goals: {pGoals}
                         </div>
                       </div>
@@ -561,7 +561,7 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
                       <button
                         onClick={() => handleAwardYellowCard(2, p.id)}
                         disabled={p.redCard}
-                        className="p-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 text-xs font-bold transition cursor-pointer"
+                        className="p-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold transition cursor-pointer"
                         title="Give Yellow Card (🟨)"
                       >
                         🟨
@@ -571,7 +571,7 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
                       <button
                         onClick={() => handleAwardRedCard(2, p.id)}
                         disabled={p.redCard}
-                        className="p-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 text-xs font-bold transition cursor-pointer"
+                        className="p-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-xs font-bold transition cursor-pointer"
                         title="Give Red Card (🟥)"
                       >
                         🟥
@@ -581,7 +581,7 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
                       <button
                         onClick={() => setSubModal({ teamNum: 2, outPlayer: p })}
                         disabled={p.redCard}
-                        className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold transition cursor-pointer"
+                        className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700 text-xs font-bold transition cursor-pointer"
                         title="Substitute Player"
                       >
                         🔄
@@ -594,15 +594,15 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
 
             {/* Bench Players */}
             {roster2.filter((p) => !p.onCourt).length > 0 && (
-              <div className="space-y-2 pt-2 border-t border-slate-800/80">
+              <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800/80">
                 <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider font-mono">
                   BENCH SUBS
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {roster2.filter((p) => !p.onCourt).map((p) => (
-                    <div key={p.id} className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-800 text-xs flex items-center justify-between">
-                      <span className="font-semibold text-slate-400 truncate">#{p.jersey} {p.name}</span>
-                      <span className="text-[10px] font-mono text-teal-400 font-bold">{p.goals || 0} G</span>
+                    <div key={p.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 text-xs flex items-center justify-between">
+                      <span className="font-semibold text-slate-600 dark:text-slate-400 truncate">#{p.jersey} {p.name}</span>
+                      <span className="text-[10px] font-mono text-teal-600 dark:text-teal-400 font-bold">{p.goals || 0} G</span>
                     </div>
                   ))}
                 </div>
@@ -614,10 +614,10 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
       </div>
 
       {/* Bottom Footer Actions */}
-      <div className="px-6 py-4 bg-slate-900 border-t border-slate-800 flex items-center justify-between">
+      <div className="px-6 py-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between transition-colors">
         <button
           onClick={onClose}
-          className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition cursor-pointer"
+          className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-200 dark:border-slate-700 transition cursor-pointer"
         >
           Close Controller
         </button>
@@ -634,17 +634,17 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
       {/* Substitution Drawer / Modal */}
       {subModal && (
         <div className="fixed inset-0 z-[9999999] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h4 className="font-black text-white text-sm">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-3xl p-6 space-y-4 shadow-2xl transition-colors">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <h4 className="font-black text-slate-900 dark:text-white text-sm">
                 Substitute #{subModal.outPlayer.jersey} {subModal.outPlayer.name} OUT
               </h4>
-              <button onClick={() => setSubModal(null)} className="p-1 rounded-lg bg-slate-800 text-slate-400">
+              <button onClick={() => setSubModal(null)} className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-400">Select a bench player to Sub IN onto the pitch:</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Select a bench player to Sub IN onto the pitch:</p>
 
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {(subModal.teamNum === 1 ? roster1 : roster2)
@@ -653,10 +653,10 @@ export const FootballLiveScoreControllerModal = ({ match, venueName, onClose, on
                   <button
                     key={benchP.id}
                     onClick={() => handleExecuteSub(subModal.teamNum, subModal.outPlayer.id, benchP.id)}
-                    className="w-full p-3 rounded-xl bg-slate-800 hover:bg-emerald-600/30 border border-slate-700 hover:border-emerald-500 text-left text-xs font-bold text-white flex items-center justify-between transition cursor-pointer"
+                    className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-emerald-500/10 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 text-left text-xs font-bold text-slate-900 dark:text-white flex items-center justify-between transition cursor-pointer"
                   >
                     <span>#{benchP.jersey} {benchP.name}</span>
-                    <span className="text-[10px] font-mono text-emerald-400 font-bold">Sub IN ➔</span>
+                    <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">Sub IN ➔</span>
                   </button>
                 ))}
             </div>

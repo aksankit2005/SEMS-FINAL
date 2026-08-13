@@ -50,6 +50,44 @@ export const SportsDataProvider = ({ children }) => {
     setLeaderboard(standings);
   };
 
+  const syncAnnouncements = () => {
+    let adminList = [];
+    try {
+      const stored = localStorage.getItem('sems_admin_announcements');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          adminList = parsed.filter((a) => a && (a.isPublished !== false));
+        }
+      }
+    } catch (e) {}
+
+    const formattedAdminList = adminList.map((a) => ({
+      id: a.id,
+      title: a.title,
+      summary: a.description || a.summary || 'Official announcement notice',
+      content: a.description || a.content || 'Official announcement notice',
+      category: a.category || 'Rules & Guidelines',
+      date: a.date || a.publishDate || new Date().toISOString().split('T')[0],
+      time: a.time || '10:00 AM',
+      author: 'System Administrator (Admin)',
+      isImportant: Boolean(a.isImportant || a.important || true),
+      attachments: a.attachments || []
+    }));
+
+    const combined = [...formattedAdminList, ...ANNOUNCEMENTS_DATA];
+    const seen = new Set();
+    const unique = [];
+    combined.forEach((item) => {
+      if (item && item.id && !seen.has(item.id)) {
+        seen.add(item.id);
+        unique.push(item);
+      }
+    });
+
+    setAnnouncements(unique);
+  };
+
   useEffect(() => {
     const syncLiveMatches = () => {
       let activeList = [];
@@ -100,7 +138,15 @@ export const SportsDataProvider = ({ children }) => {
     };
   }, []);
 
-
+  useEffect(() => {
+    syncAnnouncements();
+    window.addEventListener('sems_announcements_updated', syncAnnouncements);
+    window.addEventListener('storage', syncAnnouncements);
+    return () => {
+      window.removeEventListener('sems_announcements_updated', syncAnnouncements);
+      window.removeEventListener('storage', syncAnnouncements);
+    };
+  }, []);
 
   const updateLiveMatchScore = (matchId, team1Score, team2Score, statusInfo) => {
     setLiveMatches((prev) =>

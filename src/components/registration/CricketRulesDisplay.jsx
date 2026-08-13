@@ -55,22 +55,22 @@ const renderFormattedText = (text) => {
 
 export const CricketRulesDisplay = () => {
   return (
-    <div className="space-y-8 text-slate-100 font-sans">
+    <div className="space-y-8 text-slate-800 dark:text-slate-100 font-sans">
       
       {/* Top Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-500/20 pb-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-2xl shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-2xl shrink-0">
             🏏
           </div>
           <div>
-            <h4 className="font-black text-base sm:text-lg uppercase tracking-wider text-emerald-400">
+            <h4 className="font-black text-base sm:text-lg uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
               Official Cricket Tournament Rulebook
             </h4>
-            <p className="text-xs text-slate-400">Complete 8-Over & 10-Over Format Rules & Match Guidelines</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">Complete 8-Over & 10-Over Format Rules & Match Guidelines</p>
           </div>
         </div>
-        <span className="px-3.5 py-1.5 rounded-full text-xs font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 self-start sm:self-auto font-mono">
+        <span className="px-3.5 py-1.5 rounded-full text-xs font-black uppercase bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 self-start sm:self-auto font-mono">
           ⚡ 8 & 10 Over Rules
         </span>
       </div>
@@ -78,26 +78,26 @@ export const CricketRulesDisplay = () => {
       {/* 1. 8-Over Cricket Rules */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h5 className="font-black text-sm sm:text-base text-emerald-300 flex items-center gap-2">
+          <h5 className="font-black text-sm sm:text-base text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
             <span>🏏</span>
             <span>8-Over Cricket Rules</span>
           </h5>
-          <span className="px-2.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-mono font-bold">
+          <span className="px-2.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-mono font-bold">
             8 Overs / Innings
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs sm:text-sm bg-slate-950/80 p-5 rounded-2xl border border-emerald-500/20 shadow-inner">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs sm:text-sm bg-slate-50 dark:bg-slate-950/80 p-5 rounded-2xl border border-emerald-500/20 shadow-sm dark:shadow-inner">
           {CRICKET_8OVER_RULES_DATA.map((rule, idx) => (
-            <div key={idx} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-900/50 border border-slate-800/80">
-              <span className="font-mono font-black text-emerald-400 shrink-0 text-xs bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+            <div key={idx} className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/80">
+              <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 shrink-0 text-xs bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                 •
               </span>
               <div className="leading-relaxed">
-                <strong className="font-bold text-emerald-300 mr-1.5 uppercase text-[11px] font-mono tracking-wider block sm:inline">
+                <strong className="font-bold text-emerald-700 dark:text-emerald-300 mr-1.5 uppercase text-[11px] font-mono tracking-wider block sm:inline">
                   {rule.label}:
                 </strong>
-                <span className="text-slate-200">{renderFormattedText(rule.text)}</span>
+                <span className="text-slate-700 dark:text-slate-200">{renderFormattedText(rule.text)}</span>
               </div>
             </div>
           ))}
@@ -107,26 +107,26 @@ export const CricketRulesDisplay = () => {
       {/* 2. 10-Over Cricket Rules */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h5 className="font-black text-sm sm:text-base text-amber-300 flex items-center gap-2">
+          <h5 className="font-black text-sm sm:text-base text-amber-700 dark:text-amber-300 flex items-center gap-2">
             <span>🏏</span>
             <span>10-Over Cricket Rules</span>
           </h5>
-          <span className="px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[11px] font-mono font-bold">
+          <span className="px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[11px] font-mono font-bold">
             10 Overs / Innings
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs sm:text-sm bg-slate-950/80 p-5 rounded-2xl border border-amber-500/20 shadow-inner">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs sm:text-sm bg-slate-50 dark:bg-slate-950/80 p-5 rounded-2xl border border-amber-500/20 shadow-sm dark:shadow-inner">
           {CRICKET_10OVER_RULES_DATA.map((rule, idx) => (
-            <div key={idx} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-900/50 border border-slate-800/80">
-              <span className="font-mono font-black text-amber-400 shrink-0 text-xs bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+            <div key={idx} className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/80">
+              <span className="font-mono font-black text-amber-600 dark:text-amber-400 shrink-0 text-xs bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
                 •
               </span>
               <div className="leading-relaxed">
-                <strong className="font-bold text-amber-300 mr-1.5 uppercase text-[11px] font-mono tracking-wider block sm:inline">
+                <strong className="font-bold text-amber-700 dark:text-amber-300 mr-1.5 uppercase text-[11px] font-mono tracking-wider block sm:inline">
                   {rule.label}:
                 </strong>
-                <span className="text-slate-200">{renderFormattedText(rule.text)}</span>
+                <span className="text-slate-700 dark:text-slate-200">{renderFormattedText(rule.text)}</span>
               </div>
             </div>
           ))}
@@ -135,32 +135,32 @@ export const CricketRulesDisplay = () => {
 
       {/* 3. Suggested Tournament Format Comparison Table */}
       <div className="space-y-4">
-        <h5 className="font-black text-sm sm:text-base text-cyan-300 flex items-center gap-2">
+        <h5 className="font-black text-sm sm:text-base text-cyan-600 dark:text-cyan-300 flex items-center gap-2">
           <span>⚡</span>
           <span>Suggested Tournament Format Comparison</span>
         </h5>
 
-        <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/90 shadow-xl">
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/90 shadow-xl">
           <table className="w-full text-left text-xs sm:text-sm border-collapse font-sans">
             <thead>
-              <tr className="bg-slate-900 border-b border-slate-800 text-slate-300 font-mono uppercase text-[11px]">
-                <th className="p-3.5 font-black text-slate-200">Rule</th>
-                <th className="p-3.5 font-black text-emerald-400 bg-emerald-500/10 border-x border-slate-800 text-center">
+              <tr className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-mono uppercase text-[11px]">
+                <th className="p-3.5 font-black text-slate-900 dark:text-slate-200">Rule</th>
+                <th className="p-3.5 font-black text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border-x border-slate-200 dark:border-slate-800 text-center">
                   🏏 8 Overs Format
                 </th>
-                <th className="p-3.5 font-black text-amber-400 bg-amber-500/10 text-center">
+                <th className="p-3.5 font-black text-amber-700 dark:text-amber-400 bg-amber-500/10 text-center">
                   🏏 10 Overs Format
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 font-mono">
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-mono">
               {CRICKET_COMPARISON_TABLE.map((row, idx) => (
-                <tr key={idx} className="hover:bg-slate-900/40 transition">
-                  <td className="p-3.5 font-bold text-slate-200 font-sans">{row.rule}</td>
-                  <td className="p-3.5 text-emerald-300 font-black bg-emerald-500/5 border-x border-slate-800/60 text-center">
+                <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition">
+                  <td className="p-3.5 font-bold text-slate-800 dark:text-slate-200 font-sans">{row.rule}</td>
+                  <td className="p-3.5 text-emerald-700 dark:text-emerald-300 font-black bg-emerald-500/5 border-x border-slate-200 dark:border-slate-800/60 text-center">
                     {row.over8}
                   </td>
-                  <td className="p-3.5 text-amber-300 font-black bg-amber-500/5 text-center">
+                  <td className="p-3.5 text-amber-700 dark:text-amber-300 font-black bg-amber-500/5 text-center">
                     {row.over10}
                   </td>
                 </tr>
@@ -178,31 +178,31 @@ export const CricketRulesModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/95 backdrop-blur-xl p-3 sm:p-6 animate-fade-in flex flex-col items-center justify-center font-sans">
-      <div className="w-full max-w-5xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh]">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 dark:bg-slate-950/95 backdrop-blur-xl p-3 sm:p-6 animate-fade-in flex flex-col items-center justify-center font-sans">
+      <div className="w-full max-w-5xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh] text-slate-900 dark:text-white">
         
         {/* Sticky Header */}
-        <div className="sticky top-0 z-20 bg-slate-950/90 backdrop-blur-md px-5 py-4 border-b border-slate-800 flex items-center justify-between gap-4">
+        <div className="sticky top-0 z-20 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-2 transition border border-slate-700 active:scale-95 shadow-md shrink-0 cursor-pointer"
+            className="px-4 py-2 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-bold text-xs flex items-center gap-2 transition border border-slate-200 dark:border-slate-700 active:scale-95 shadow-md shrink-0 cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4 text-emerald-400" />
+            <ArrowLeft className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>Go Back</span>
           </button>
 
           <div className="text-center truncate">
-            <span className="text-[10px] font-mono uppercase tracking-widest block font-bold text-emerald-400">
+            <span className="text-[10px] font-mono uppercase tracking-widest block font-bold text-emerald-600 dark:text-emerald-400">
               Official Cricket Tournament Rulebook
             </span>
-            <h2 className="text-sm sm:text-lg font-black text-white flex items-center gap-1.5 justify-center truncate">
+            <h2 className="text-sm sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-1.5 justify-center truncate">
               <span>🏏</span> Cricket Tournament Rules
             </h2>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white rounded-full bg-slate-800/80 transition shrink-0 cursor-pointer"
+            className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-full bg-slate-100 dark:bg-slate-800/80 transition shrink-0 cursor-pointer"
             title="Close Rules"
           >
             <X className="w-5 h-5" />
@@ -215,8 +215,8 @@ export const CricketRulesModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* Sticky Footer */}
-        <div className="bg-slate-950 px-5 py-4 border-t border-slate-800 flex items-center justify-between gap-4">
-          <span className="text-xs text-slate-400 italic hidden sm:inline">
+        <div className="bg-slate-50 dark:bg-slate-950 px-5 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4">
+          <span className="text-xs text-slate-500 dark:text-slate-400 italic hidden sm:inline">
             Official 8-Over & 10-Over Cricket Tournament Regulations
           </span>
           <button

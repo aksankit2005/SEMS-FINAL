@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, Lock, User, Building2, AlertCircle, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { collegeHeadApi } from '../../services/collegeHeadApi';
 import { useToast } from '../../context/ToastContext';
+import { ThemeToggle } from '../../components/common/ThemeToggle';
 
 export const CollegeHeadLoginPage = () => {
   const navigate = useNavigate();
@@ -38,7 +39,11 @@ export const CollegeHeadLoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col justify-center py-12 sm:px-6 lg:px-8 transition-colors">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col justify-center py-12 sm:px-6 lg:px-8 transition-colors relative">
+      {/* Top right theme toggle */}
+      <div className="absolute top-4 right-4 z-20">
+        <ThemeToggle />
+      </div>
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         {/* APEX Brand Logos */}
         <div className="flex justify-center mb-4">

@@ -1,7 +1,17 @@
 import React, { useEffect } from 'react';
-import { Flame, Check, User } from 'lucide-react';
+import { Flame, Check, User, Users } from 'lucide-react';
 import { InputField, SelectField, PlayerDetailsCard } from './SharedFormComponents';
 import { collegeCourses } from '../../data/collegeCourses';
+
+export const OFFICIAL_ATHLETICS_EVENTS = [
+  '100m Race',
+  '200m Race',
+  '4*100m relay Race',
+  'Long Jump',
+  'Javelin Throw',
+  'Shot Put',
+  'Discus Throw'
+];
 
 export const AthleticsRegistration = ({
   step,
@@ -15,35 +25,35 @@ export const AthleticsRegistration = ({
     ...Object.keys(collegeCourses).map((c) => ({ value: c, label: c }))
   ];
 
-  const athleticsEvents = [
-    '100m Race',
-    '200m Race',
-    '400m Race',
-    'Long Jump',
-    'High Jump',
-    'Javelin Throw',
-    'Shot Put',
-    'Discus Throw'
-  ];
+  const selectedEvent = (formData.selectedEvents && formData.selectedEvents[0]) || '';
+  const isRelay = selectedEvent === '4*100m relay Race';
 
-  // Initialize roster with exactly 1 player and selectedEvents if empty
+  // Ensure roster size matches selected event (4 for Relay, 1 for Individual)
   useEffect(() => {
+    const requiredSize = isRelay ? 4 : 1;
     const currentRoster = formData.roster || [];
     let updatedRoster = [...currentRoster];
-    
-    if (updatedRoster.length !== 1) {
-      updatedRoster = [{
-        name: formData.captainName || '',
-        rollNo: '',
-        branch: '',
-        semester: '',
-        phone: formData.captainPhone || '',
-        email: formData.captainEmail || '',
-        gender: ''
-      }];
+
+    if (updatedRoster.length !== requiredSize) {
+      if (updatedRoster.length < requiredSize) {
+        while (updatedRoster.length < requiredSize) {
+          const idx = updatedRoster.length;
+          updatedRoster.push({
+            name: idx === 0 ? (formData.captainName || '') : '',
+            rollNo: '',
+            branch: '',
+            semester: '',
+            phone: idx === 0 ? (formData.captainPhone || '') : '',
+            email: idx === 0 ? (formData.captainEmail || '') : '',
+            gender: ''
+          });
+        }
+      } else {
+        updatedRoster = updatedRoster.slice(0, requiredSize);
+      }
     }
 
-    // Sync first player with captain details if captain details are entered
+    // Sync first player with captain details
     if (updatedRoster[0]) {
       if (formData.captainName && !updatedRoster[0].name) {
         updatedRoster[0].name = formData.captainName;
@@ -56,19 +66,11 @@ export const AthleticsRegistration = ({
       }
     }
 
-    if (!formData.selectedEvents) {
-      setFormData((prev) => ({
-        ...prev,
-        roster: updatedRoster,
-        selectedEvents: []
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        roster: updatedRoster
-      }));
-    }
-  }, [formData.captainName, formData.captainPhone, formData.captainEmail, setFormData]);
+    setFormData((prev) => ({
+      ...prev,
+      roster: updatedRoster
+    }));
+  }, [selectedEvent, isRelay, formData.captainName, formData.captainPhone, formData.captainEmail, setFormData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -87,24 +89,16 @@ export const AthleticsRegistration = ({
       }
       return updated;
     });
-    // Clear validation error
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
     }
   };
 
-  const handleEventToggle = (eventName) => {
-    const currentSelected = formData.selectedEvents || [];
-    let updated;
-    if (currentSelected.includes(eventName)) {
-      updated = currentSelected.filter((e) => e !== eventName);
-    } else {
-      updated = [...currentSelected, eventName];
-    }
-
+  // Strictly single event selection
+  const handleSingleEventSelect = (eventName) => {
     setFormData((prev) => ({
       ...prev,
-      selectedEvents: updated
+      selectedEvents: [eventName]
     }));
 
     if (errors.selectedEvents) {
@@ -119,7 +113,6 @@ export const AthleticsRegistration = ({
       [field]: value
     };
 
-    // Sync with captain fields to maintain consistency
     const syncUpdates = {};
     if (index === 0) {
       if (field === 'name') syncUpdates.captainName = value;
@@ -133,7 +126,6 @@ export const AthleticsRegistration = ({
       roster: updatedRoster
     }));
 
-    // Clear validation error
     const errorKey = `player_${index}_${field}`;
     if (errors[errorKey]) {
       setErrors((prev) => ({ ...prev, [errorKey]: null }));
@@ -141,7 +133,6 @@ export const AthleticsRegistration = ({
   };
 
   if (step === 2) {
-    const selectedList = formData.selectedEvents || [];
     return (
       <div className="space-y-6 animate-fade-in">
         <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
@@ -150,30 +141,37 @@ export const AthleticsRegistration = ({
 
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-            Select Track & Field Events <span className="text-rose-500">*</span>
+            Select Athletics Sub-Event (Choose Exactly 1 Game) <span className="text-rose-500">*</span>
           </label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {athleticsEvents.map((evt) => {
-              const isSelected = selectedList.includes(evt);
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {OFFICIAL_ATHLETICS_EVENTS.map((evt) => {
+              const isSelected = selectedEvent === evt;
+              const isRelayEvt = evt === '4*100m relay Race';
               return (
                 <button
                   key={evt}
                   type="button"
-                  onClick={() => handleEventToggle(evt)}
-                  className={`p-3 rounded-xl border flex items-center gap-2 font-bold text-xs transition duration-200 text-left ${
+                  onClick={() => handleSingleEventSelect(evt)}
+                  className={`p-3.5 rounded-2xl border flex items-center justify-between font-bold text-xs transition duration-200 text-left cursor-pointer ${
                     isSelected
-                      ? 'border-blue-600 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-extrabold shadow-sm'
+                      ? 'border-blue-600 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-black shadow-md ring-2 ring-blue-500/20'
                       : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                   }`}
                 >
-                  <div className={`w-4 h-4 rounded flex items-center justify-center border ${
-                    isSelected 
-                      ? 'bg-blue-600 border-blue-600 text-white' 
-                      : 'border-slate-300 dark:border-slate-700'
-                  }`}>
-                    {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center border ${
+                      isSelected 
+                        ? 'bg-blue-600 border-blue-600 text-white' 
+                        : 'border-slate-300 dark:border-slate-700'
+                    }`}>
+                      {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                    </div>
+                    <span>{evt}</span>
                   </div>
-                  <span>{evt}</span>
+
+                  <span className="text-[10px] font-mono font-normal px-2 py-0.5 rounded bg-slate-200/60 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                    {isRelayEvt ? '4 Players Team' : 'Individual'}
+                  </span>
                 </button>
               );
             })}
@@ -197,17 +195,17 @@ export const AthleticsRegistration = ({
           </div>
 
           <InputField
-            label="Participant Name"
+            label={isRelay ? 'Relay Team Captain Name' : 'Participant Name'}
             name="captainName"
             value={formData.captainName || ''}
             onChange={handleInputChange}
-            placeholder="e.g. Usain Bolt"
+            placeholder={isRelay ? 'e.g. Captain Name' : 'e.g. Athlete Name'}
             required
             error={errors.captainName}
           />
 
           <InputField
-            label="Participant Mobile Number"
+            label="Mobile Number"
             name="captainPhone"
             type="tel"
             value={formData.captainPhone || ''}
@@ -219,12 +217,12 @@ export const AthleticsRegistration = ({
 
           <div className="sm:col-span-2">
             <InputField
-              label="Participant Email Address"
+              label="Email Address"
               name="captainEmail"
               type="email"
               value={formData.captainEmail || ''}
               onChange={handleInputChange}
-              placeholder="e.g. bolt@college.edu"
+              placeholder="e.g. athlete@college.edu"
               required
               error={errors.captainEmail}
             />
@@ -235,42 +233,41 @@ export const AthleticsRegistration = ({
   }
 
   if (step === 3) {
-    const selectedList = formData.selectedEvents || [];
     return (
       <div className="space-y-6 animate-fade-in">
         <div>
           <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
-            <User className="w-5 h-5 text-blue-600 dark:text-blue-400" /> Athletics Participant Profile
+            {isRelay ? <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" /> : <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
+            {isRelay ? '4*100m Relay Team Roster (4 Members)' : 'Athletics Participant Profile'}
           </h2>
-          <div className="mt-2.5 flex flex-wrap gap-1.5 items-center">
-            <span className="text-[10px] uppercase font-bold text-slate-400 mr-1">Events Selected:</span>
-            {selectedList.map((evt) => (
-              <span key={evt} className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300">
-                {evt}
-              </span>
-            ))}
+          <div className="mt-2.5 flex items-center gap-2">
+            <span className="text-[10px] uppercase font-bold text-slate-400">Chosen Sub-Event:</span>
+            <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-mono font-black">
+              {selectedEvent || 'None Selected'}
+            </span>
           </div>
         </div>
 
         <div className="space-y-6">
-          {formData.roster && formData.roster[0] && (
+          {(formData.roster || []).map((player, index) => (
             <PlayerDetailsCard
-              index={0}
-              player={formData.roster[0]}
+              key={index}
+              index={index}
+              player={player}
               onChange={handlePlayerChange}
               showRemove={false}
               errors={{
-                name: errors.player_0_name,
-                rollNo: errors.player_0_rollNo,
-                branch: errors.player_0_branch,
-                semester: errors.player_0_semester,
-                phone: errors.player_0_phone,
-                email: errors.player_0_email,
-                gender: errors.player_0_gender
+                name: errors[`player_${index}_name`],
+                rollNo: errors[`player_${index}_rollNo`],
+                branch: errors[`player_${index}_branch`],
+                semester: errors[`player_${index}_semester`],
+                phone: errors[`player_${index}_phone`],
+                email: errors[`player_${index}_email`],
+                gender: errors[`player_${index}_gender`]
               }}
               availableCourses={collegeCourses[formData.collegeName] || []}
             />
-          )}
+          ))}
         </div>
       </div>
     );
@@ -284,28 +281,26 @@ export const validateAthletics = (step, formData) => {
 
   if (step === 2) {
     const selectedList = formData.selectedEvents || [];
-    if (selectedList.length === 0) {
-      errors.selectedEvents = 'Please select at least one athletics event';
+    if (selectedList.length !== 1) {
+      errors.selectedEvents = 'Please select exactly one Athletics sub-event';
     }
     if (!formData.collegeName) {
       errors.collegeName = 'Please select a college';
     }
     if (!formData.captainName?.trim()) {
-      errors.captainName = 'Participant Name is required';
+      errors.captainName = 'Participant / Captain Name is required';
     }
 
-    // Phone Validation
     const phone = formData.captainPhone?.trim();
     if (!phone) {
-      errors.captainPhone = 'Participant Mobile Number is required';
+      errors.captainPhone = 'Mobile Number is required';
     } else if (!/^[6-9]\d{9}$/.test(phone)) {
       errors.captainPhone = 'Enter a valid 10-digit Indian mobile number';
     }
 
-    // Email Validation
     const email = formData.captainEmail?.trim();
     if (!email) {
-      errors.captainEmail = 'Participant Email is required';
+      errors.captainEmail = 'Email Address is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errors.captainEmail = 'Enter a valid email address';
     }
@@ -313,40 +308,38 @@ export const validateAthletics = (step, formData) => {
 
   if (step === 3) {
     const roster = formData.roster || [];
-    const player = roster[0];
-    
-    if (player) {
+    roster.forEach((player, index) => {
       if (!player.name?.trim()) {
-        errors.player_0_name = 'Full Name is required';
+        errors[`player_${index}_name`] = 'Full Name is required';
       }
       if (!player.rollNo?.trim()) {
-        errors.player_0_rollNo = 'Roll Number is required';
+        errors[`player_${index}_rollNo`] = 'Roll Number is required';
       }
       if (!player.branch?.trim()) {
-        errors.player_0_branch = 'Course/Branch is required';
+        errors[`player_${index}_branch`] = 'Course/Branch is required';
       }
       if (!player.semester) {
-        errors.player_0_semester = 'Semester/Year is required';
+        errors[`player_${index}_semester`] = 'Semester/Year is required';
       }
 
       const pPhone = player.phone?.trim();
       if (!pPhone) {
-        errors.player_0_phone = 'Mobile Number is required';
+        errors[`player_${index}_phone`] = 'Mobile Number is required';
       } else if (!/^[6-9]\d{9}$/.test(pPhone)) {
-        errors.player_0_phone = 'Enter a valid 10-digit mobile number';
+        errors[`player_${index}_phone`] = 'Enter a valid 10-digit mobile number';
       }
 
       const pEmail = player.email?.trim();
       if (!pEmail) {
-        errors.player_0_email = 'Email Address is required';
+        errors[`player_${index}_email`] = 'Email Address is required';
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pEmail)) {
-        errors.player_0_email = 'Enter a valid email address';
+        errors[`player_${index}_email`] = 'Enter a valid email address';
       }
 
       if (!player.gender) {
-        errors.player_0_gender = 'Gender is required';
+        errors[`player_${index}_gender`] = 'Gender is required';
       }
-    }
+    });
   }
 
   return errors;

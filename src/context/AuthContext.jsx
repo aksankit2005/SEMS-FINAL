@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
+import { coordinatorApi } from '../services/coordinatorApi';
 
 const AuthContext = createContext();
 
@@ -52,9 +53,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const addRegistration = (registrationData) => {
-    const updated = [registrationData, ...userRegistrations];
+    const updated = [registrationData, ...userRegistrations.filter(r => r.id !== registrationData.id)];
     setUserRegistrations(updated);
     localStorage.setItem('sems_registrations', JSON.stringify(updated));
+
+    try {
+      coordinatorApi.createRegistration(registrationData);
+    } catch (e) {}
   };
 
   return (
