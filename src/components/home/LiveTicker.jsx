@@ -7,12 +7,12 @@ export const LiveTicker = () => {
   const { liveMatches } = useSportsData();
 
   return (
-    <div className="bg-slate-100 dark:bg-slate-900 border-y border-slate-200 dark:border-slate-800 text-slate-850 dark:text-white py-3 overflow-hidden shadow-inner transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-4 flex items-center gap-4">
+    <div className="bg-slate-100 dark:bg-slate-900 border-y border-slate-200 dark:border-slate-800 text-slate-850 dark:text-white py-2.5 sm:py-3 overflow-hidden shadow-inner transition-colors duration-200">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 flex items-center gap-2 sm:gap-4">
         {/* Live Badge */}
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 text-rose-550 dark:text-rose-400 border border-rose-500/40 text-xs font-black shrink-0">
-          <Radio className="w-4 h-4 animate-pulse" />
-          <span>LIVE TICKER</span>
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-550 dark:text-rose-400 border border-rose-500/40 text-[10px] sm:text-xs font-black shrink-0">
+          <Radio className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-pulse shrink-0" />
+          <span>LIVE</span>
         </div>
 
         {/* Ticker marquee */}
@@ -28,13 +28,17 @@ export const LiveTicker = () => {
                 to="/live"
                 className="flex items-center gap-3 bg-white dark:bg-slate-950/90 px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-blue-500/50 transition shrink-0 group shadow-sm"
               >
-                <span className="font-bold text-blue-600 dark:text-blue-400">{match.sport}</span>
+                <span className="font-bold text-blue-600 dark:text-blue-400">{match.sportName || match.sport || 'Match'}</span>
                 <span className="text-slate-300 dark:text-slate-600">|</span>
-                <span className="font-semibold text-slate-950 dark:text-white">{match.team1.name} ({match.team1.score})</span>
+                <span className="font-semibold text-slate-950 dark:text-white">
+                  {typeof match.team1 === 'object' ? match.team1?.name : match.team1} {match.team1?.score !== undefined ? `(${match.team1.score})` : ''}
+                </span>
                 <span className="text-slate-400">vs</span>
-                <span className="font-semibold text-slate-950 dark:text-white">{match.team2.name} ({match.team2.score})</span>
+                <span className="font-semibold text-slate-950 dark:text-white">
+                  {typeof match.team2 === 'object' ? match.team2?.name : match.team2} {match.team2?.score !== undefined ? `(${match.team2.score})` : ''}
+                </span>
                 <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
-                  {match.currentInfo}
+                  {match.currentInfo || match.status}
                 </span>
               </Link>
             ))

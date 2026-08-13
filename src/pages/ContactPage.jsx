@@ -29,9 +29,9 @@ const ContactCardItem = ({ icon: Icon, title, iconBg, iconColor, hoverColor, lab
       <div>
         <h3 className="font-extrabold text-base">{title}</h3>
         {show ? (
-          <div className="space-y-0.5 mt-0.5">
+          <div className="space-y-0.5 mt-0.5 min-w-0">
             {values.map((v, i) => (
-              <a key={i} href={v.href} className={`block text-xs text-slate-600 dark:text-slate-400 ${hoverColor}`}>{v.text}</a>
+              <a key={i} href={v.href} className={`block text-xs text-slate-600 dark:text-slate-400 break-all sm:break-normal ${hoverColor}`}>{v.text}</a>
             ))}
           </div>
         ) : (

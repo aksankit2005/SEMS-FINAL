@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trophy, Lock, User, ShieldCheck, ArrowRight, Eye, EyeOff, Activity } from 'lucide-react';
-import { coordinatorApi } from '../../services/coordinatorApi';
+import { coordinatorApi, getSportRoute } from '../../services/coordinatorApi';
 import { useToast } from '../../context/ToastContext';
+import { ThemeToggle } from '../../components/common/ThemeToggle';
+
 
 export const CoordinatorLoginPage = () => {
   const navigate = useNavigate();
@@ -24,8 +26,9 @@ export const CoordinatorLoginPage = () => {
     try {
       const res = await coordinatorApi.login(username, password);
       if (res.success) {
+        const route = getSportRoute(res.user.assignedSport);
         addToast(`Welcome, ${res.user.coordinatorName}! Managing ${res.user.sportName}.`, 'success');
-        navigate('/coordinator/dashboard');
+        navigate(route);
       }
     } catch (err) {
       addToast(err.message || 'Invalid Sport Coordinator credentials', 'error');
@@ -36,6 +39,10 @@ export const CoordinatorLoginPage = () => {
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-200 relative overflow-hidden">
+      {/* Top right theme toggle */}
+      <div className="absolute top-4 right-4 z-20">
+        <ThemeToggle />
+      </div>
       {/* Ambient Background Glow */}
       <div className="absolute top-1/4 -left-20 w-80 h-80 bg-blue-500/10 dark:bg-blue-500/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-indigo-500/10 dark:bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />

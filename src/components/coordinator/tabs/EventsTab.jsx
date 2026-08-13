@@ -9,6 +9,8 @@ import { ImageCropperModal } from '../../common/ImageCropperModal';
 import { useToast } from '../../../context/ToastContext';
 import { exportToPDF, exportToCSV } from '../../../utils/pdfExporter';
 
+import { SPORT_PLAYER_BOUNDS, resolveSportKey } from '../../../data/sportsConfig';
+
 export const EventsTab = ({ user }) => {
   const { addToast } = useToast();
 
@@ -26,11 +28,16 @@ export const EventsTab = ({ user }) => {
   const [showCropper, setShowCropper] = useState(false);
   const [cropperRawSrc, setCropperRawSrc] = useState(null);
 
+  const defaultSportKey = resolveSportKey(user?.assignedSport || user?.sportName);
+  const defaultBounds = SPORT_PLAYER_BOUNDS[defaultSportKey] || { min: 1, max: 10 };
+  const isTableTennis = defaultSportKey === 'table-tennis';
+  const isBadminton = defaultSportKey === 'badminton';
+
   // Form State
   const [formData, setFormData] = useState({
     title: '',
-    sportName: user?.sportName || 'Badminton',
-    coverImage: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80',
+    sportName: user?.sportName || 'Sports',
+    coverImage: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80',
     description: '',
     regStartDate: new Date().toISOString().split('T')[0],
     regEndDate: '2026-08-25',
@@ -39,7 +46,9 @@ export const EventsTab = ({ user }) => {
     entryFee: 400,
     singlesFee: 300,
     doublesFee: 600,
-    teamSize: '1 - 2 Players',
+    minPlayers: defaultBounds.min,
+    maxPlayers: defaultBounds.max,
+    teamSize: `${defaultBounds.min} - ${defaultBounds.max} Players`,
     maxRegistrations: 64,
 
     registeredCount: 0,
@@ -52,9 +61,9 @@ export const EventsTab = ({ user }) => {
       'Sports jersey and proper shoes required.'
     ],
     requiredDocuments: ['College Student ID', 'Aadhaar Card / Govt ID'],
-    contactName: user?.coordinatorName || 'Sport Coordinator',
-    contactEmail: user?.email || `${user?.assignedSport || 'badminton'}.coord@sems.edu`,
-    contactPhone: '+91 98765 43210'
+    contactName: user?.coordinatorName || '',
+    contactEmail: user?.email || '',
+    contactPhone: ''
   });
 
   const [rulesInput, setRulesInput] = useState('');
@@ -79,6 +88,11 @@ export const EventsTab = ({ user }) => {
   // Preset form on edit
   const handleOpenEdit = (eventObj) => {
     setEditingEvent(eventObj);
+    const sKey = resolveSportKey(user?.assignedSport || eventObj.sportName || eventObj.title);
+    const bounds = SPORT_PLAYER_BOUNDS[sKey] || { min: 1, max: 10 };
+    const minP = eventObj.minPlayers !== undefined ? Number(eventObj.minPlayers) : bounds.min;
+    const maxP = eventObj.maxPlayers !== undefined ? Number(eventObj.maxPlayers) : bounds.max;
+
     setFormData({
       title: eventObj.title || '',
       sportName: user?.sportName || eventObj.sportName,
@@ -91,7 +105,9 @@ export const EventsTab = ({ user }) => {
       entryFee: eventObj.entryFee !== undefined ? eventObj.entryFee : 400,
       singlesFee: eventObj.singlesFee !== undefined ? eventObj.singlesFee : 300,
       doublesFee: eventObj.doublesFee !== undefined ? eventObj.doublesFee : 600,
-      teamSize: eventObj.teamSize || '1 - 2 Players',
+      minPlayers: minP,
+      maxPlayers: maxP,
+      teamSize: eventObj.teamSize || `${minP} - ${maxP} Players`,
       maxRegistrations: eventObj.maxRegistrations || 64,
       registeredCount: eventObj.registeredCount || 0,
       venue: eventObj.venue || 'Indoor Sports Complex',
@@ -110,10 +126,13 @@ export const EventsTab = ({ user }) => {
 
   const handleOpenCreate = () => {
     setEditingEvent(null);
+    const sKey = resolveSportKey(user?.assignedSport || user?.sportName);
+    const bounds = SPORT_PLAYER_BOUNDS[sKey] || { min: 1, max: 10 };
+
     setFormData({
       title: `${user?.sportName || 'Sports'} Championship 2026`,
-      sportName: user?.sportName || 'Badminton',
-      coverImage: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80',
+      sportName: user?.sportName || 'Sports',
+      coverImage: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80',
       description: `Official inter-college ${user?.sportName} tournament. Register your entries today!`,
       regStartDate: new Date().toISOString().split('T')[0],
       regEndDate: '2026-08-25',
@@ -122,20 +141,58 @@ export const EventsTab = ({ user }) => {
       entryFee: 400,
       singlesFee: 300,
       doublesFee: 600,
-      teamSize: '1 - 2 Players',
+      minPlayers: bounds.min,
+      maxPlayers: bounds.max,
+      teamSize: `${bounds.min} - ${bounds.max} Players`,
       maxRegistrations: 64,
 
       registeredCount: 0,
       venue: 'Main Sports Complex',
       category: 'Open',
       status: 'Published',
-      rules: ['Official ITTF/BWF rules apply.', 'College ID mandatory.'],
+      rules: isTableTennis ? [
+        '1. GAMES ARE PLAYED TO 11 POINTS (Must win by 2 points. Best 3 of 5 Games).',
+        '2. ALTERNATE SERVES EVERY TWO POINTS (Deuce at 10-10 alternates every point).',
+        '3. TOSS THE BALL STRAIGHT UP AT LEAST 6" WHEN SERVING.',
+        '4. THE SERVE CAN LAND ANYWHERE IN SINGLES.',
+        '5. DOUBLES SERVES MUST GO RIGHT COURT TO RIGHT COURT.',
+        '6. A SERVE THAT TOUCHES THE NET ON THE WAY OVER IS A "LET" (Replayed).',
+        '7. ALTERNATE HITTING IN A DOUBLES RALLY.',
+        '8. VOLLEYS ARE NOT ALLOWED (Ball must bounce on your side first).',
+        '9. IF YOUR HIT BOUNCES BACK OVER THE NET BY ITSELF IT IS YOUR POINT.',
+        '10. TOUCHING THE BALL WITH YOUR PADDLE HAND IS ALLOWED.',
+        '11. YOU MAY NOT TOUCH THE TABLE WITH YOUR NON-PADDLE HAND.',
+        '12. AN "EDGE" BALL BOUNCING OFF THE HORIZONTAL TABLE TOP SURFACE IS GOOD.',
+        '13. HONOR SYSTEM APPLIES TO DISAGREEMENTS.'
+      ] : isBadminton ? [
+        '1. Matches are played best of 3 sets of 21 points each.',
+        '2. BWF standard laws of badminton apply.',
+        '3. Service must be delivered diagonally into opponent court below waist level.',
+        '4. Non-marking shoes and official sports kit mandatory.',
+        '5. College ID card must be presented prior to match time.'
+      ] : ['Official tournament rules apply.', 'College ID mandatory.'],
       requiredDocuments: ['College Student ID Card', 'Aadhaar Card'],
-      contactName: user?.coordinatorName || 'Sport Coordinator',
-      contactEmail: user?.email || `${user?.assignedSport}.coord@sems.edu`,
-      contactPhone: '+91 98765 43210'
+      contactName: user?.coordinatorName || '',
+      contactEmail: user?.email || '',
+      contactPhone: ''
     });
-    setRulesInput('Official tournament rules apply.\nCollege Student ID & Pass mandatory.');
+    setRulesInput(isTableTennis ? `1. GAMES ARE PLAYED TO 11 POINTS (Must win by 2 points. Best 3 of 5 Games).
+2. ALTERNATE SERVES EVERY TWO POINTS (Deuce at 10-10 alternates every point).
+3. TOSS THE BALL STRAIGHT UP AT LEAST 6" WHEN SERVING.
+4. THE SERVE CAN LAND ANYWHERE IN SINGLES.
+5. DOUBLES SERVES MUST GO RIGHT COURT TO RIGHT COURT.
+6. A SERVE THAT TOUCHES THE NET ON THE WAY OVER IS A "LET" (Replayed).
+7. ALTERNATE HITTING IN A DOUBLES RALLY.
+8. VOLLEYS ARE NOT ALLOWED (Ball must bounce on your side first).
+9. IF YOUR HIT BOUNCES BACK OVER THE NET BY ITSELF IT IS YOUR POINT.
+10. TOUCHING THE BALL WITH YOUR PADDLE HAND IS ALLOWED.
+11. YOU MAY NOT TOUCH THE TABLE WITH YOUR NON-PADDLE HAND.
+12. AN "EDGE" BALL BOUNCING OFF THE HORIZONTAL TABLE TOP SURFACE IS GOOD.
+13. HONOR SYSTEM APPLIES TO DISAGREEMENTS.` : isBadminton ? `1. Matches are played best of 3 sets of 21 points each.
+2. BWF standard laws of badminton apply.
+3. Service must be delivered diagonally into opponent court below waist level.
+4. Non-marking shoes and official sports kit mandatory.
+5. College ID card must be presented prior to match time.` : 'Official tournament rules apply.\nCollege Student ID & Pass mandatory.');
     setDocInput('College Student ID Card\nAadhaar Card / Govt ID');
     setShowCreateModal(true);
   };
@@ -175,8 +232,18 @@ export const EventsTab = ({ user }) => {
     const rulesArr = rulesInput.split('\n').map((r) => r.trim()).filter(Boolean);
     const docsArr = docInput.split('\n').map((d) => d.trim()).filter(Boolean);
 
+    const sKey = resolveSportKey(user?.assignedSport || formData.sportName);
+    const bounds = SPORT_PLAYER_BOUNDS[sKey] || { min: 1, max: 10 };
+    const minP = formData.minPlayers !== undefined ? Number(formData.minPlayers) : bounds.min;
+    const maxP = formData.maxPlayers !== undefined ? Number(formData.maxPlayers) : bounds.max;
+
     const eventPayload = {
       ...formData,
+      sportId: user?.assignedSport || defaultSportKey,
+      sportName: user?.sportName || formData.sportName,
+      minPlayers: minP,
+      maxPlayers: maxP,
+      teamSize: formData.teamSize || `${minP} - ${maxP} Players`,
       rules: rulesArr,
       requiredDocuments: docsArr,
       contactInfo: {
@@ -217,7 +284,13 @@ export const EventsTab = ({ user }) => {
   };
 
   const handleToggleStatus = async (eventObj) => {
-    const nextStatus = eventObj.status === 'Published' ? 'Closed' : eventObj.status === 'Closed' ? 'Draft' : 'Published';
+    const statusCycle = {
+      'Draft': 'Upcoming',
+      'Upcoming': 'Published',
+      'Published': 'Closed',
+      'Closed': 'Draft'
+    };
+    const nextStatus = statusCycle[eventObj.status] || 'Published';
     try {
       const updated = await coordinatorApi.updateEvent(eventObj.id, { status: nextStatus });
       setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? updated : item)));
@@ -230,7 +303,10 @@ export const EventsTab = ({ user }) => {
   const handleViewParticipants = async (eventObj) => {
     setSelectedEventForParticipants(eventObj);
     const allRegs = await coordinatorApi.getRegistrations();
-    setParticipants(allRegs);
+    const eventRegs = allRegs.filter(
+      (r) => r.eventId === eventObj.id || r.sportId === eventObj.sportId || r.sport === eventObj.sportName
+    );
+    setParticipants(eventRegs.length > 0 ? eventRegs : allRegs);
   };
 
   // Dashboard Stats calculation
@@ -350,6 +426,8 @@ export const EventsTab = ({ user }) => {
                       <span className={`px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase border shadow-md ${
                         event.status === 'Published'
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                          : event.status === 'Upcoming'
+                          ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
                           : event.status === 'Closed'
                           ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
                           : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
@@ -678,6 +756,7 @@ export const EventsTab = ({ user }) => {
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-emerald-600 dark:text-emerald-400"
                   >
                     <option value="Draft">Draft (Hidden)</option>
+                    <option value="Upcoming">Upcoming (Scheduled)</option>
                     <option value="Published">Published (Open)</option>
                     <option value="Closed">Closed</option>
                   </select>
@@ -724,33 +803,7 @@ export const EventsTab = ({ user }) => {
                 />
               </div>
 
-              {/* Contact Information */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3">
-                <span className="text-xs font-bold uppercase text-blue-600 dark:text-indigo-400 block">Coordinator Contact Information</span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <input
-                    type="text"
-                    placeholder="Contact Name"
-                    value={formData.contactName}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, contactName: e.target.value }))}
-                    className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs text-slate-900 dark:text-white"
-                  />
-                  <input
-                    type="email"
-                    placeholder="Contact Email"
-                    value={formData.contactEmail}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, contactEmail: e.target.value }))}
-                    className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs text-slate-900 dark:text-white"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Contact Phone"
-                    value={formData.contactPhone}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, contactPhone: e.target.value }))}
-                    className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs text-slate-900 dark:text-white"
-                  />
-                </div>
-              </div>
+
 
               {/* Modal Buttons */}
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">

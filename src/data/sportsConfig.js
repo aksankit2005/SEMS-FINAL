@@ -1,10 +1,62 @@
+export const SPORT_PLAYER_BOUNDS = {
+  'badminton': { min: 1, max: 2 },
+  'table-tennis': { min: 1, max: 2 },
+  'chess': { min: 1, max: 1 },
+  'cricket': { min: 11, max: 15 },
+  'football': { min: 5, max: 11 },
+  'basketball': { min: 5, max: 10 },
+  'volleyball': { min: 6, max: 10 },
+  'kabaddi': { min: 7, max: 12 },
+  'kho-kho': { min: 9, max: 12 },
+  'athletics': { min: 1, max: 4 },
+  'tug-of-war': { min: 8, max: 10 },
+  'gully-cricket': { min: 5, max: 8 }
+};
+
+export const resolveSportKey = (sportOrEvent) => {
+  if (!sportOrEvent) return 'badminton';
+  
+  let str = '';
+  if (typeof sportOrEvent === 'string') {
+    str = sportOrEvent.toLowerCase();
+  } else if (typeof sportOrEvent === 'object') {
+    str = [
+      sportOrEvent.sportId,
+      sportOrEvent.id,
+      sportOrEvent.sportName,
+      sportOrEvent.name,
+      sportOrEvent.title,
+      sportOrEvent.eventName,
+      sportOrEvent.eventTitle,
+      sportOrEvent.matchTitle
+    ].filter(Boolean).join(' ').toLowerCase();
+  }
+
+  if (str.includes('badminton')) return 'badminton';
+  if (str.includes('cricket') && !str.includes('gully')) return 'cricket';
+  if (str.includes('gully')) return 'gully-cricket';
+  if (str.includes('football') || str.includes('soccer')) return 'football';
+  if (str.includes('basketball')) return 'basketball';
+  if (str.includes('volleyball')) return 'volleyball';
+  if (str.includes('chess')) return 'chess';
+  if (str.includes('kabaddi')) return 'kabaddi';
+  if (str.includes('kho')) return 'kho-kho';
+  if (str.includes('athletic')) return 'athletics';
+  if (str.includes('tug')) return 'tug-of-war';
+  if (str.includes('table') || str.includes('tt') || str.includes('ping')) return 'table-tennis';
+
+  return 'badminton';
+};
+
 export const SPORTS_CONFIG = {
   'table-tennis': {
     id: 'table-tennis',
     name: 'Table Tennis',
     icon: '🏓',
+    minPlayers: 1,
+    maxPlayers: 2,
     venueLabel: 'Table Number',
-    venueOptions: ['Table 1 (Main Court)', 'Table 2 (Hall A)', 'Table 3 (Hall A)', 'Table 4 (Practice Arena)'],
+    venueOptions: ['Table 1', 'Table 2', 'Table 3', 'Table 4'],
     formats: ['Singles', 'Doubles'],
     rounds: ['Round of 32', 'Round of 16', 'Quarter Final', 'Semi Final', 'Final'],
     setMode: true,
@@ -18,6 +70,8 @@ export const SPORTS_CONFIG = {
     id: 'badminton',
     name: 'Badminton',
     icon: '🏸',
+    minPlayers: 1,
+    maxPlayers: 2,
     venueLabel: 'Court Number',
     venueOptions: ['Badminton Court 1', 'Badminton Court 2', 'Badminton Court 3', 'Badminton Court 4'],
     formats: ['Singles', 'Doubles', 'Mixed Doubles'],
@@ -33,11 +87,27 @@ export const SPORTS_CONFIG = {
     id: 'football',
     name: 'Football',
     icon: '⚽',
-    venueLabel: 'Ground Pitch',
-    venueOptions: ['Central Stadium Pitch 1', 'Ground 2 Outdoor Field'],
-    formats: ['11-a-side', '7-a-side'],
+    minPlayers: 5,
+    maxPlayers: 8,
+    venueLabel: 'Football Turf / Ground',
+    venueOptions: ['Ground 1', 'Ground 2'],
+    formats: ['5v5 Mini Football'],
     rounds: ['Group Stage', 'Quarter Final', 'Semi Final', 'Final'],
     setMode: false,
+    rules: [
+      "1. Team Composition: 5 players on field (1 Goalkeeper + 4 Outfield players). Up to 3 rolling/flying substitutes. At least 4 players required to start/continue a match.",
+      "2. Match Duration: 2 halves × 10 minutes each with a 5-minute half-time interval. Tied knockout matches go to penalty shootout (3 penalties per team, then sudden death).",
+      "3. Kick-Off: Starts from center circle. Opponents must remain outside required distance. Goal can be scored directly from kick-off.",
+      "4. Ball Out of Play: Sideline restarts via kick-in or throw-in. Goal line restarts via goal kick or corner kick. Ball must completely cross the line.",
+      "5. Goalkeeper Rules: Goalkeeper can only handle ball inside penalty area. Cannot handle deliberate back-passes by foot. Must release ball within standard time limits.",
+      "6. Fouls & Penalties: Penalty kick awarded for direct fouls inside defending penalty area. Includes kicking, tripping, pushing, holding, handball, or unsporting behavior.",
+      "7. Cards & Suspension: 🟨 Yellow Card (warning/caution) | 🟥 Red Card (player sent off and cannot return). 2 Yellow Cards = 🟥 Red Card.",
+      "8. Offside Rule: ❌ No Offside Rule in 5v5 mini-football format to keep play fast and dynamic.",
+      "9. Free Kicks: Direct or indirect free kicks based on foul severity. Opponents must maintain required wall distance.",
+      "10. Corner Kick: Awarded when defender last touches ball before crossing goal line. Taken from corner area.",
+      "11. Penalty Kick: Awarded for direct fouls inside defending team's penalty area. Only goalkeeper defends; all other players remain behind penalty line.",
+      "12. Discipline & Fair Play: Proper sports shoes and team jerseys mandatory. No jewelry or dangerous accessories. Abusive behavior or fighting results in disqualification."
+    ],
     liveControls: [
       { id: 'goal_a', team: 1, label: '⚽ Goal Team A (+1)', delta: 1, variant: 'success' },
       { id: 'goal_b', team: 2, label: '⚽ Goal Team B (+1)', delta: 1, variant: 'success' },
@@ -52,8 +122,10 @@ export const SPORTS_CONFIG = {
     id: 'cricket',
     name: 'Cricket',
     icon: '🏏',
+    minPlayers: 11,
+    maxPlayers: 15,
     venueLabel: 'Cricket Pitch',
-    venueOptions: ['Main University Stadium Oval', 'Ground 2 Cricket Pitch'],
+    venueOptions: ['Cricket Ground 1'],
     formats: ['T20 Knockout', '15-Overs Limited'],
     rounds: ['Pool Stage', 'Quarter Final', 'Semi Final', 'Final'],
     setMode: false,
@@ -70,6 +142,8 @@ export const SPORTS_CONFIG = {
     id: 'basketball',
     name: 'Basketball',
     icon: '🏀',
+    minPlayers: 5,
+    maxPlayers: 10,
     venueLabel: 'Basketball Court',
     venueOptions: ['Indoor Arena Court 1', 'Outdoor Court 2'],
     formats: ['5v5 Standard', '3v3 Half-Court'],
@@ -87,6 +161,8 @@ export const SPORTS_CONFIG = {
     id: 'kabaddi',
     name: 'Kabaddi',
     icon: '🤼',
+    minPlayers: 7,
+    maxPlayers: 12,
     venueLabel: 'Kabaddi Mat Arena',
     venueOptions: ['Indoor Arena Mat 1', 'Mat 2'],
     formats: ['Pro Style (7 Players)', 'Open Category'],
@@ -104,6 +180,8 @@ export const SPORTS_CONFIG = {
     id: 'chess',
     name: 'Chess',
     icon: '♟️',
+    minPlayers: 1,
+    maxPlayers: 1,
     venueLabel: 'Board Table',
     venueOptions: ['Board 1 (Hall B)', 'Board 2 (Hall B)', 'Board 3 (Hall B)'],
     formats: ['Individual Rapid', 'Blitz 5-min'],
@@ -120,6 +198,8 @@ export const SPORTS_CONFIG = {
     id: 'athletics',
     name: 'Athletics',
     icon: '🏃',
+    minPlayers: 1,
+    maxPlayers: 4,
     venueLabel: 'Track & Lane',
     venueOptions: ['Main Track Lane 1-8', 'Long Jump Pit A', 'Shotput Circle B'],
     formats: ['100m Sprint', '400m Relay', 'Long Jump', 'Shotput'],
@@ -135,6 +215,8 @@ export const SPORTS_CONFIG = {
     id: 'volleyball',
     name: 'Volleyball',
     icon: '🏐',
+    minPlayers: 6,
+    maxPlayers: 10,
     venueLabel: 'Volleyball Court',
     venueOptions: ['Outdoor Volley Court 1', 'Indoor Arena Court A'],
     formats: ['Standard 6v6'],
@@ -150,21 +232,26 @@ export const SPORTS_CONFIG = {
     id: 'kho-kho',
     name: 'Kho-Kho',
     icon: '🏃‍♂️',
+    minPlayers: 9,
+    maxPlayers: 12,
     venueLabel: 'Kho-Kho Field',
-    venueOptions: ['Ground 2 Kho-Kho Field 1', 'Field 2'],
-    formats: ['Standard 9 Players'],
+    venueOptions: ['Ground 2 Kho-Kho Field 1', 'Ground 2 Kho-Kho Field 2'],
+    formats: ['2 Innings / 2 Sets (Standard 9v9)', '2 Innings (Knockout)'],
     rounds: ['Pool Stage', 'Quarter Final', 'Semi Final', 'Final'],
-    setMode: false,
+    setMode: true,
+    maxSets: 2,
     liveControls: [
       { id: 'defender_out_a', team: 1, label: 'Defender Out Team A (+1)', delta: 1, variant: 'primary' },
       { id: 'defender_out_b', team: 2, label: 'Defender Out Team B (+1)', delta: 1, variant: 'primary' },
     ],
-    declarations: ['Innings Turn Switch', 'Early Pole Touch', 'Walkover'],
+    declarations: ['Inning 1 Switch', 'Inning 2 Switch', 'Early Pole Touch', 'Walkover'],
   },
   'tug-of-war': {
     id: 'tug-of-war',
     name: 'Tug of War',
     icon: '🪢',
+    minPlayers: 8,
+    maxPlayers: 10,
     venueLabel: 'Rope Arena Ground',
     venueOptions: ['Central Ground Tug Pit 1'],
     formats: ['Weight Category 600kg', 'Open Category'],
@@ -180,6 +267,8 @@ export const SPORTS_CONFIG = {
     id: 'gully-cricket',
     name: 'Gully Cricket',
     icon: '🏏',
+    minPlayers: 5,
+    maxPlayers: 8,
     venueLabel: 'Street Pitch Area',
     venueOptions: ['Street Pitch Ground 1'],
     formats: ['6-Overs Fast Box'],
@@ -196,40 +285,13 @@ export const SPORTS_CONFIG = {
 };
 
 export const getSportConfig = (sportId) => {
-  const normalized = (sportId || 'table-tennis').toLowerCase().trim();
-  return SPORTS_CONFIG[normalized] || SPORTS_CONFIG['table-tennis'];
+  const key = resolveSportKey(sportId);
+  return SPORTS_CONFIG[key] || SPORTS_CONFIG['table-tennis'];
 };
 
 export const resolveSportConfig = (sportOrMatch) => {
-  if (!sportOrMatch) return SPORTS_CONFIG['table-tennis'];
-  
-  let targetStr = '';
-  if (typeof sportOrMatch === 'string') {
-    targetStr = sportOrMatch;
-  } else if (typeof sportOrMatch === 'object') {
-    targetStr = [
-      sportOrMatch.sportId,
-      sportOrMatch.sportName,
-      sportOrMatch.sport,
-      sportOrMatch.eventTitle,
-      sportOrMatch.matchTitle
-    ].filter(Boolean).join(' ');
-  }
-
-  const str = targetStr.toLowerCase();
-  if (str.includes('badminton')) return SPORTS_CONFIG['badminton'];
-  if (str.includes('cricket') && !str.includes('gully')) return SPORTS_CONFIG['cricket'];
-  if (str.includes('gully')) return SPORTS_CONFIG['gully-cricket'];
-  if (str.includes('football') || str.includes('soccer')) return SPORTS_CONFIG['football'];
-  if (str.includes('basketball')) return SPORTS_CONFIG['basketball'];
-  if (str.includes('volleyball')) return SPORTS_CONFIG['volleyball'];
-  if (str.includes('chess')) return SPORTS_CONFIG['chess'];
-  if (str.includes('kabaddi')) return SPORTS_CONFIG['kabaddi'];
-  if (str.includes('kho')) return SPORTS_CONFIG['kho-kho'];
-  if (str.includes('athletic')) return SPORTS_CONFIG['athletics'];
-  if (str.includes('table') || str.includes('tt') || str.includes('ping')) return SPORTS_CONFIG['table-tennis'];
-
-  const normalized = targetStr.toLowerCase().trim();
-  return SPORTS_CONFIG[normalized] || SPORTS_CONFIG['table-tennis'];
+  const key = resolveSportKey(sportOrMatch);
+  return SPORTS_CONFIG[key] || SPORTS_CONFIG['table-tennis'];
 };
+
 

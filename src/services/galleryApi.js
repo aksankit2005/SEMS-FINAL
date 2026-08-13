@@ -21,9 +21,11 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Initial empty fallback events & media
-const INITIAL_FALLBACK_EVENTS = [];
-const INITIAL_FALLBACK_MEDIA = [];
+import { GALLERY_EVENTS, GALLERY_MEDIA } from '../data/galleryData';
+
+// Initial rich fallback events & media
+const INITIAL_FALLBACK_EVENTS = GALLERY_EVENTS;
+const INITIAL_FALLBACK_MEDIA = GALLERY_MEDIA;
 
 // Helper to manage localStorage mock state when API server is not running
 const getLocalEvents = () => {
@@ -57,6 +59,7 @@ export const galleryApi = {
       if (res.data && res.data.token) {
         localStorage.setItem('pr_auth_token', res.data.token);
         localStorage.setItem('pr_user', JSON.stringify(res.data.user || { username, role: 'pr_coordinator' }));
+        window.dispatchEvent(new Event('sems-auth-change'));
       }
       return res.data;
     } catch (err) {
@@ -66,6 +69,7 @@ export const galleryApi = {
         const mockUser = { username: PR_ADMIN_USER, role: 'pr_coordinator' };
         localStorage.setItem('pr_auth_token', mockToken);
         localStorage.setItem('pr_user', JSON.stringify(mockUser));
+        window.dispatchEvent(new Event('sems-auth-change'));
         return { success: true, token: mockToken, user: mockUser };
       }
       throw new Error(err.response?.data?.message || 'Invalid PR Coordinator Credentials');
@@ -76,6 +80,7 @@ export const galleryApi = {
   logoutPR() {
     localStorage.removeItem('pr_auth_token');
     localStorage.removeItem('pr_user');
+    window.dispatchEvent(new Event('sems-auth-change'));
   },
 
   // Check PR Auth status
@@ -186,9 +191,10 @@ export const galleryApi = {
 
   // POST /api/media/upload - Upload media item
   async uploadMedia(mediaData) {
+    let result;
     try {
       const res = await api.post('/media/upload', mediaData);
-      return res.data;
+      result = res.data;
     } catch (err) {
       const media = getLocalMedia();
       const newMedia = {
@@ -202,8 +208,11 @@ export const galleryApi = {
       };
       const updated = [newMedia, ...media];
       saveLocalMedia(updated);
-      return newMedia;
+      result = newMedia;
     }
+    window.dispatchEvent(new Event('sems_events_updated'));
+    window.dispatchEvent(new Event('sems_media_updated'));
+    return result;
   },
 
   // GET /api/media/event/:eventId - Get media for event

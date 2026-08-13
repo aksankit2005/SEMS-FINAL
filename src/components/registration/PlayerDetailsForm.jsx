@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
-import { User, Flame, Crown, Check } from 'lucide-react';
+import { User, Flame, Crown, Check, Users } from 'lucide-react';
 import { InputField, SelectField, PlayerDetailsCard } from './SharedFormComponents';
 import { collegeCourses } from '../../data/collegeCourses';
+import { OFFICIAL_ATHLETICS_EVENTS } from './AthleticsRegistration';
 
 export const PlayerDetailsForm = ({
   sport,
@@ -15,47 +16,59 @@ export const PlayerDetailsForm = ({
     ...Object.keys(collegeCourses).map((c) => ({ value: c, label: c }))
   ];
 
-  const athleticsEvents = [
-    '100m',
-    '200m',
-    '400m',
-    'Long Jump',
-    'High Jump',
-    'Javelin Throw',
-    'Shot Put',
-    'Discus Throw'
-  ];
+  const selectedEvent = (formData.selectedEvents && formData.selectedEvents[0]) || '';
+  const isRelay = selectedEvent === '4*100m relay Race';
 
-  // Initialize roster with exactly 1 player
+  // Initialize roster size
   useEffect(() => {
+    if (sport.id !== 'athletics') {
+      const currentRoster = formData.roster || [];
+      if (currentRoster.length !== 1) {
+        setFormData((prev) => ({
+          ...prev,
+          roster: [{
+            name: prev.captainName || '',
+            rollNo: '',
+            branch: '',
+            semester: '',
+            phone: prev.captainPhone || '',
+            email: prev.captainEmail || '',
+            gender: ''
+          }]
+        }));
+      }
+      return;
+    }
+
+    // For Athletics: 4 players if Relay, 1 player if individual
+    const requiredSize = isRelay ? 4 : 1;
     const currentRoster = formData.roster || [];
     let updatedRoster = [...currentRoster];
 
-    if (updatedRoster.length !== 1) {
-      updatedRoster = [{
-        name: '',
-        rollNo: '',
-        branch: '',
-        semester: '',
-        phone: '',
-        email: '',
-        gender: ''
-      }];
-    }
+    if (updatedRoster.length !== requiredSize) {
+      if (updatedRoster.length < requiredSize) {
+        while (updatedRoster.length < requiredSize) {
+          const idx = updatedRoster.length;
+          updatedRoster.push({
+            name: idx === 0 ? (formData.captainName || '') : '',
+            rollNo: '',
+            branch: '',
+            semester: '',
+            phone: idx === 0 ? (formData.captainPhone || '') : '',
+            email: idx === 0 ? (formData.captainEmail || '') : '',
+            gender: ''
+          });
+        }
+      } else {
+        updatedRoster = updatedRoster.slice(0, requiredSize);
+      }
 
-    if (sport.id === 'athletics' && !formData.selectedEvents) {
-      setFormData((prev) => ({
-        ...prev,
-        roster: updatedRoster,
-        selectedEvents: []
-      }));
-    } else {
       setFormData((prev) => ({
         ...prev,
         roster: updatedRoster
       }));
     }
-  }, [setFormData, sport.id]);
+  }, [sport.id, selectedEvent, isRelay, setFormData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -68,7 +81,7 @@ export const PlayerDetailsForm = ({
         if (prev.roster) {
           updated.roster = prev.roster.map((player) => ({
             ...player,
-            branch: '' // clear course selection
+            branch: ''
           }));
         }
       }
@@ -80,18 +93,11 @@ export const PlayerDetailsForm = ({
     }
   };
 
-  const handleEventToggle = (eventName) => {
-    const currentSelected = formData.selectedEvents || [];
-    let updated;
-    if (currentSelected.includes(eventName)) {
-      updated = currentSelected.filter((e) => e !== eventName);
-    } else {
-      updated = [...currentSelected, eventName];
-    }
-
+  // Strictly SINGLE event selection
+  const handleSingleEventSelect = (eventName) => {
     setFormData((prev) => ({
       ...prev,
-      selectedEvents: updated
+      selectedEvents: [eventName]
     }));
 
     if (errors.selectedEvents) {
@@ -100,13 +106,14 @@ export const PlayerDetailsForm = ({
   };
 
   const handlePlayerChange = (index, field, value) => {
-    const updatedRoster = [...formData.roster];
+    const updatedRoster = [...(formData.roster || [])];
+    if (!updatedRoster[index]) return;
+
     updatedRoster[index] = {
       ...updatedRoster[index],
       [field]: value
     };
 
-    // Always sync for Singles so receipt gets the athlete's credentials
     const syncUpdates = {};
     if (index === 0) {
       if (field === 'name') syncUpdates.captainName = value;
@@ -129,7 +136,7 @@ export const PlayerDetailsForm = ({
   const availableCourses = collegeCourses[formData.collegeName] || [];
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in font-sans">
       
       {/* Sport Title & Icon */}
       <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
@@ -138,44 +145,55 @@ export const PlayerDetailsForm = ({
         </div>
         <div>
           <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase">{sport.name} Details</h2>
-          <p className="text-xs text-slate-400 font-bold">Individual Athlete Profile Registration</p>
+          <p className="text-xs text-slate-400 font-bold">
+            {sport.id === 'athletics'
+              ? (isRelay ? '4*100m Relay Team Registration (4 Members)' : 'Individual Athletics Game Registration (Choose 1 Game)')
+              : 'Individual Athlete Profile Registration'}
+          </p>
         </div>
       </div>
 
-      {/* Athletics event checklist */}
+      {/* Athletics Single Event Selector */}
       {sport.id === 'athletics' && (
         <div className="p-5 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3">
-          <label className="block text-xs font-black uppercase tracking-wider text-slate-550 dark:text-slate-400 mb-1">
-            Select Track & Field Events <span className="text-rose-500">*</span>
+          <label className="block text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+            Select Athletics Sub-Event (Select Exactly 1 Game) <span className="text-rose-500">*</span>
           </label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {athleticsEvents.map((evt) => {
-              const isSelected = (formData.selectedEvents || []).includes(evt);
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {OFFICIAL_ATHLETICS_EVENTS.map((evt) => {
+              const isSelected = selectedEvent === evt;
+              const isRelayEvt = evt === '4*100m relay Race';
               return (
                 <button
                   key={evt}
                   type="button"
-                  onClick={() => handleEventToggle(evt)}
-                  className={`p-3 rounded-xl border flex items-center gap-2 font-bold text-xs transition duration-200 text-left ${
+                  onClick={() => handleSingleEventSelect(evt)}
+                  className={`p-3.5 rounded-2xl border flex items-center justify-between font-bold text-xs transition duration-200 text-left cursor-pointer ${
                     isSelected
-                      ? 'border-blue-600 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-extrabold shadow-sm'
+                      ? 'border-blue-600 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-black shadow-md ring-2 ring-blue-500/20'
                       : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                   }`}
                 >
-                  <div className={`w-4 h-4 rounded flex items-center justify-center border ${
-                    isSelected 
-                      ? 'bg-blue-600 border-blue-600 text-white' 
-                      : 'border-slate-300 dark:border-slate-700'
-                  }`}>
-                    {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center border ${
+                      isSelected 
+                        ? 'bg-blue-600 border-blue-600 text-white' 
+                        : 'border-slate-300 dark:border-slate-700'
+                    }`}>
+                      {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                    </div>
+                    <span>{evt}</span>
                   </div>
-                  <span>{evt}</span>
+
+                  <span className="text-[10px] font-mono font-normal px-2 py-0.5 rounded bg-slate-200/60 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                    {isRelayEvt ? '4 Players' : 'Individual'}
+                  </span>
                 </button>
               );
             })}
           </div>
           {errors.selectedEvents && (
-            <p className="text-[11px] text-rose-500 font-semibold">{errors.selectedEvents}</p>
+            <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.selectedEvents}</p>
           )}
         </div>
       )}
@@ -194,30 +212,35 @@ export const PlayerDetailsForm = ({
         />
       </div>
 
-      {/* Player details profile card */}
+      {/* Player details profile card(s) */}
       <div className="space-y-4">
-        <h4 className="text-xs font-black uppercase text-blue-600 dark:text-blue-400">2. Participant Profile Details</h4>
-        {formData.roster && formData.roster[0] && (
+        <h4 className="text-xs font-black uppercase text-blue-600 dark:text-blue-400">
+          {sport.id === 'athletics' && isRelay
+            ? '2. 4*100m Relay Team Members (4 Players)'
+            : '2. Participant Profile Details'}
+        </h4>
+        {(formData.roster || []).map((player, idx) => (
           <PlayerDetailsCard
-            index={0}
-            player={formData.roster[0]}
+            key={idx}
+            index={idx}
+            player={player}
             onChange={handlePlayerChange}
             showRemove={false}
             errors={{
-              name: errors.player_0_name,
-              rollNo: errors.player_0_rollNo,
-              branch: errors.player_0_branch,
-              semester: errors.player_0_semester,
-              phone: errors.player_0_phone,
-              email: errors.player_0_email,
-              gender: errors.player_0_gender
+              name: errors[`player_${idx}_name`],
+              rollNo: errors[`player_${idx}_rollNo`],
+              branch: errors[`player_${idx}_branch`],
+              semester: errors[`player_${idx}_semester`],
+              phone: errors[`player_${idx}_phone`],
+              email: errors[`player_${idx}_email`],
+              gender: errors[`player_${idx}_gender`]
             }}
             availableCourses={availableCourses}
-            isFirstPlayer={false}
+            isFirstPlayer={idx === 0}
             sameAsCaptain={false}
             onToggleSameAsCaptain={null}
           />
-        )}
+        ))}
       </div>
     </div>
   );
@@ -227,11 +250,10 @@ export const PlayerDetailsForm = ({
 export const validateIndividualForm = (sport, formData) => {
   const errors = {};
 
-  // Check Athletics Event selection
   if (sport.id === 'athletics') {
     const selectedList = formData.selectedEvents || [];
-    if (selectedList.length === 0) {
-      errors.selectedEvents = 'Please select at least one Athletics event';
+    if (selectedList.length !== 1) {
+      errors.selectedEvents = 'Please select exactly one Athletics sub-event';
     }
   }
 
@@ -240,41 +262,43 @@ export const validateIndividualForm = (sport, formData) => {
   }
 
   const roster = formData.roster || [];
-  const player = roster[0];
-  if (player) {
+  if (roster.length === 0) {
+    errors.rosterError = 'Participant Profile is missing';
+    return errors;
+  }
+
+  roster.forEach((player, index) => {
     if (!player.name?.trim()) {
-      errors.player_0_name = 'Full Name is required';
+      errors[`player_${index}_name`] = 'Full Name is required';
     }
     if (!player.rollNo?.trim()) {
-      errors.player_0_rollNo = 'Roll Number is required';
+      errors[`player_${index}_rollNo`] = 'Roll Number is required';
     }
     if (!player.branch?.trim()) {
-      errors.player_0_branch = 'Course is required';
+      errors[`player_${index}_branch`] = 'Course is required';
     }
     if (!player.semester) {
-      errors.player_0_semester = 'Semester/Year is required';
+      errors[`player_${index}_semester`] = 'Semester/Year is required';
     }
 
     const pPhone = player.phone?.trim();
     if (!pPhone) {
-      errors.player_0_phone = 'Mobile Number is required';
+      errors[`player_${index}_phone`] = 'Mobile Number is required';
     } else if (!/^[6-9]\d{9}$/.test(pPhone)) {
-      errors.player_0_phone = 'Enter a valid 10-digit mobile number';
+      errors[`player_${index}_phone`] = 'Enter a valid 10-digit mobile number';
     }
 
     const pEmail = player.email?.trim();
     if (!pEmail) {
-      errors.player_0_email = 'Email Address is required';
+      errors[`player_${index}_email`] = 'Email Address is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pEmail)) {
-      errors.player_0_email = 'Enter a valid email address';
+      errors[`player_${index}_email`] = 'Enter a valid email address';
     }
 
     if (!player.gender) {
-      errors.player_0_gender = 'Gender is required';
+      errors[`player_${index}_gender`] = 'Gender is required';
     }
-  } else {
-    errors.rosterError = 'Participant Profile is missing';
-  }
+  });
 
   return errors;
 };

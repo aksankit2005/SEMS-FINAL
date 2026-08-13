@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Building2, Trophy, Camera, ShieldCheck, Info } from 'lucide-react';
+import { X, Building2, Trophy, Camera, Info, Crown, Shield } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -54,6 +54,38 @@ export const AuthModal = () => {
 
         {/* Portal Links List */}
         <div className="space-y-3">
+          <button
+            onClick={() => handleNavigate('/admin/login')}
+            className="w-full p-3.5 text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:border-indigo-500/50 hover:bg-indigo-500/5 transition group cursor-pointer flex items-center gap-3.5"
+          >
+            <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition">
+              <Shield className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
+                Admin Portal
+              </h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Master control for sports events, coordinators & central administration
+              </p>
+            </div>
+          </button>
+          <button
+            onClick={() => handleNavigate('/super-coordinator/login')}
+            className="w-full p-3.5 text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:border-amber-500/50 hover:bg-amber-500/5 transition group cursor-pointer flex items-center gap-3.5"
+          >
+            <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:bg-amber-500 group-hover:text-slate-950 transition">
+              <Crown className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition">
+                Super Coordinator Portal
+              </h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                President & overall host console for master records & leaderboard
+              </p>
+            </div>
+          </button>
           <button
             onClick={() => handleNavigate('/college-head/login')}
             className="w-full p-3.5 text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition group cursor-pointer flex items-center gap-3.5"

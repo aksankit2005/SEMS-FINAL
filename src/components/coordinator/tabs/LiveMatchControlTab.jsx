@@ -14,19 +14,26 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
   const { addToast } = useToast();
   const sportConfig = getSportConfig(user?.assignedSport);
 
-  const assignedSport = (user?.assignedSport || 'badminton').toLowerCase();
-  const venueType = ['table-tennis'].includes(assignedSport)
+  const assignedSport = (user?.assignedSport || 'sports').toLowerCase();
+  const isChess = assignedSport === 'chess';
+  const venueType = ['table-tennis', 'chess'].includes(assignedSport)
     ? 'Table'
     : ['cricket', 'football'].includes(assignedSport)
       ? 'Ground'
       : 'Court';
 
-  const venueCards = [
-    `${venueType} 1`,
-    `${venueType} 2`,
-    `${venueType} 3`,
-    `${venueType} 4`,
-  ];
+  const venueCards = isChess
+    ? Array.from({ length: 10 }, (_, i) => `Table ${i + 1}`)
+    : assignedSport === 'basketball'
+    ? ['Basketball Court 1', 'Basketball Court 2']
+    : assignedSport === 'cricket'
+    ? ['Cricket Ground 1']
+    : [
+        `${venueType} 1`,
+        `${venueType} 2`,
+        `${venueType} 3`,
+        `${venueType} 4`,
+      ];
 
   // Initial state loads active live assignments from storage or database
   const [liveAssignments, setLiveAssignments] = useState(() => {
@@ -93,6 +100,8 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
     const liveObj = {
       ...match,
       id: match.id || `M${Math.floor(100000 + Math.random() * 900000)}`,
+      sportId: match.sportId || assignedSport || 'badminton',
+      sportName: match.sportName || user?.sportName || 'Badminton',
       format: match.format || 'Best of 5 Sets',
       score1: match.score1 || 0,
       score2: match.score2 || 0,
@@ -211,6 +220,17 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
 
     await coordinatorApi.completeMatch(active.id, completedObj);
 
+    // Save directly to sems_completed_results key in localStorage
+    const resultsKey = `sems_completed_results_${assignedSport}`;
+    const existingStr = localStorage.getItem(resultsKey);
+    let existingList = [];
+    if (existingStr) {
+      try { existingList = JSON.parse(existingStr); } catch (e) {}
+    }
+    existingList = [completedObj, ...existingList.filter((item) => item.id !== completedObj.id)];
+    localStorage.setItem(resultsKey, JSON.stringify(existingList));
+    window.dispatchEvent(new Event('sems_results_updated'));
+
     onUpdateMatchScore(active.id, { status: 'COMPLETED', score1: active.score1, score2: active.score2 });
     setLiveAssignments((prev) => {
       const copy = { ...prev };
@@ -221,7 +241,7 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
     // Automatically generate and download match result PDF
     generateMatchResultPDF(completedObj, user?.sportName || user?.assignedSport);
 
-    addToast(`Match on ${venue} completed! Result PDF generated & downloaded.`, 'success');
+    addToast(`Match on ${venue} completed! Saved to Results section.`, 'success');
   };
 
 
@@ -291,7 +311,7 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
                   {/* Teams & Subtext */}
                   <div className="text-center space-y-0.5">
                     <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                      {activeLive.team1} <span className="text-slate-400 text-sm font-normal">vs</span> {activeLive.team2}
+                      {activeLive.team1 ? activeLive.team1.replace(/\s*\(.*?\)/, '') : ''} <span className="text-slate-400 text-sm font-normal">vs</span> {activeLive.team2 ? activeLive.team2.replace(/\s*\(.*?\)/, '') : ''}
                     </h2>
                     <p className="text-xs font-mono text-slate-500 dark:text-slate-400">
                       #{activeLive.id} · {activeLive.format || 'singles'} · {venueName}
@@ -423,7 +443,9 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {upcomingMatchesToPromote.map((m) => {
-                  const displayVenue = (m.tableNumber || `${venueType} 1`).replace(/Table/gi, venueType);
+                  const displayVenue = assignedSport === 'basketball'
+                    ? (m.tableNumber && m.tableNumber.includes('Court') ? m.tableNumber : `Basketball Court ${m.tableNumber?.replace(/\D/g, '') || '1'}`)
+                    : (m.tableNumber || `${venueType} 1`).replace(/Table/gi, venueType);
 
                   return (
                     <div
@@ -434,7 +456,9 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
                         <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-50 dark:bg-indigo-500/20 text-blue-600 dark:text-indigo-300 border border-blue-200 dark:border-indigo-500/30 uppercase">
                           {m.format || 'SINGLES'}
                         </span>
-                        <h4 className="text-sm font-black text-slate-900 dark:text-white">{m.team1} vs {m.team2}</h4>
+                        <h4 className="text-sm font-black text-slate-900 dark:text-white">
+                          {(m.team1 || '').replace(/\s*\(.*?\)/, '')} vs {(m.team2 || '').replace(/\s*\(.*?\)/, '')}
+                        </h4>
                         <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
                           📍 {displayVenue} | Slot: {m.time || '05:40 PM'}
                         </p>
@@ -489,10 +513,28 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
           venueName={activeControllerVenue}
           onClose={() => setActiveControllerVenue(null)}
           onMatchUpdated={(id, payload) => {
-            setLiveAssignments((prev) => ({
-              ...prev,
-              [activeControllerVenue]: { ...prev[activeControllerVenue], ...payload }
-            }));
+            if (payload?.status === 'COMPLETED' || payload?.status === 'FINISHED') {
+              setLiveAssignments((prev) => {
+                const copy = { ...prev };
+                delete copy[activeControllerVenue];
+                return copy;
+              });
+              // Purge from active live matches key in localStorage
+              const savedActiveStr = localStorage.getItem('sems_active_live_matches');
+              if (savedActiveStr) {
+                try {
+                  const activeMap = JSON.parse(savedActiveStr);
+                  delete activeMap[activeControllerVenue];
+                  localStorage.setItem('sems_active_live_matches', JSON.stringify(activeMap));
+                } catch (e) {}
+              }
+              onUpdateMatchScore(id, payload);
+            } else {
+              setLiveAssignments((prev) => ({
+                ...prev,
+                [activeControllerVenue]: { ...prev[activeControllerVenue], ...payload }
+              }));
+            }
           }}
         />
       )}

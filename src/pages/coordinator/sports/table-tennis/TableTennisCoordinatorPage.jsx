@@ -1,22 +1,33 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { coordinatorApi } from '../../services/coordinatorApi';
-import { CoordinatorHeader } from '../../components/coordinator/CoordinatorHeader';
-import { EventsTab } from '../../components/coordinator/tabs/EventsTab';
-import { MatchScheduleTab } from '../../components/coordinator/tabs/MatchScheduleTab';
-import { LiveMatchControlTab } from '../../components/coordinator/tabs/LiveMatchControlTab';
-import { ResultManagementTab } from '../../components/coordinator/tabs/ResultManagementTab';
-import { TotalParticipationTab } from '../../components/coordinator/tabs/TotalParticipationTab';
-import { useToast } from '../../context/ToastContext';
+import { coordinatorApi } from '../../../../services/coordinatorApi';
+import { CoordinatorHeader } from '../../../../components/coordinator/CoordinatorHeader';
+import { ProfileTab } from '../../../../components/coordinator/tabs/ProfileTab';
+import { EventsTab } from '../../../../components/coordinator/tabs/EventsTab';
+import { MatchScheduleTab } from '../../../../components/coordinator/tabs/MatchScheduleTab';
+import { LiveMatchControlTab } from '../../../../components/coordinator/tabs/LiveMatchControlTab';
+import { ResultManagementTab } from '../../../../components/coordinator/tabs/ResultManagementTab';
+import { TotalParticipationTab } from '../../../../components/coordinator/tabs/TotalParticipationTab';
+import { useToast } from '../../../../context/ToastContext';
 
-export const CoordinatorDashboardPage = () => {
+export const TableTennisCoordinatorPage = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
 
-  const [user, setUser] = useState(() => coordinatorApi.getCurrentUser());
-  const [activeTab, setActiveTab] = useState('events');
+  const [user, setUser] = useState(() => {
+    const current = coordinatorApi.getCurrentUser();
+    if (current && (current.assignedSport === 'table-tennis' || current.assignedSport === 'tabletennis')) return current;
+    const preset = coordinatorApi.getPresetAccount ? coordinatorApi.getPresetAccount('table-tennis') : null;
+    return preset || {
+      username: 'coord_table_tennis',
+      assignedSport: 'table-tennis',
+      sportName: 'Table Tennis',
+      coordinatorName: 'Rohan Mehta',
+      email: 'tt.coord@sems.edu'
+    };
+  });
 
+  const [activeTab, setActiveTab] = useState('events');
   const [globalSearch, setGlobalSearch] = useState('');
 
   // Dynamic Data States
@@ -84,9 +95,8 @@ export const CoordinatorDashboardPage = () => {
     }
   };
 
-
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#090D16] text-slate-900 dark:text-white flex flex-col font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-150">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#090D16] text-slate-900 dark:text-white flex flex-col font-sans selection:bg-cyan-500 selection:text-white transition-colors duration-150">
 
       {/* Top Header & Horizontal Tabs Navigation Bar */}
       <CoordinatorHeader
@@ -103,11 +113,20 @@ export const CoordinatorDashboardPage = () => {
 
         {loading ? (
           <div className="py-20 text-center space-y-2">
-            <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-xs font-mono text-slate-400">Loading {user?.sportName || 'Sports'} operations console...</p>
+            <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-xs font-mono text-cyan-600 dark:text-cyan-400">Loading {user?.sportName || 'Table Tennis'} operations console...</p>
           </div>
         ) : (
           <>
+            {activeTab === 'profile' && (
+              <ProfileTab
+                user={user}
+                matches={matches}
+                registrations={registrations}
+                onLogout={handleLogout}
+              />
+            )}
+
             {activeTab === 'events' && (
               <EventsTab user={user} />
             )}
@@ -123,7 +142,6 @@ export const CoordinatorDashboardPage = () => {
                 globalSearch={globalSearch}
               />
             )}
-
 
             {activeTab === 'live-control' && (
               <LiveMatchControlTab
@@ -157,3 +175,4 @@ export const CoordinatorDashboardPage = () => {
     </div>
   );
 };
+
