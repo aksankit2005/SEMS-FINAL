@@ -1211,15 +1211,21 @@ app.get('/api/coordinator/dashboard-stats', verifyCoordinatorToken, async (req, 
 // GET /api/coordinator/registrations - Strictly assigned sport from PostgreSQL via Prisma
 app.get('/api/coordinator/registrations', verifyCoordinatorToken, async (req, res) => {
   try {
-    const sportId = (req.user.assignedSport || '').toLowerCase();
+    const rawSport = (req.user.assignedSport || '').toLowerCase();
+    const normalizedSportId = rawSport.replace(/_/g, '-');
+    const underscoreSportId = rawSport.replace(/-/g, '_');
+    const spaceSportId = rawSport.replace(/[-_]/g, ' ');
 
     // Query live registrations from PostgreSQL via Prisma
     const registrations = await prisma.collegeRegistration.findMany({
       where: {
-        sportId: {
-          contains: sportId,
-          mode: 'insensitive'
-        }
+        OR: [
+          { sportId: { contains: rawSport, mode: 'insensitive' } },
+          { sportId: { contains: normalizedSportId, mode: 'insensitive' } },
+          { sportId: { contains: underscoreSportId, mode: 'insensitive' } },
+          { sportId: { contains: spaceSportId, mode: 'insensitive' } },
+          ...(rawSport.includes('table') || rawSport.includes('tt') ? [{ sportId: { contains: 'tt', mode: 'insensitive' } }] : [])
+        ]
       },
       orderBy: {
         createdAt: 'desc'
