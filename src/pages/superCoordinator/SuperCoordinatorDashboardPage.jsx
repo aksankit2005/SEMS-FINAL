@@ -7,11 +7,13 @@ import {
 
 import { superCoordinatorApi, ALL_12_SPORTS, ALL_COLLEGES } from '../../services/superCoordinatorApi';
 import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
 import { exportToCSV, exportToPDF } from '../../utils/pdfExporter';
 import { GoogleDriveImage } from '../../components/common/GoogleDriveImage';
 
 export const SuperCoordinatorDashboardPage = () => {
   const { addToast } = useToast();
+  const { confirmDelete } = useConfirm();
 
   const [loading, setLoading] = useState(true);
   const [coordinatorEvents, setCoordinatorEvents] = useState([]);
@@ -279,6 +281,11 @@ export const SuperCoordinatorDashboardPage = () => {
   };
 
   const handleDeleteLeaderboardEntry = async (id) => {
+    const isConfirmed = await confirmDelete({
+      title: 'Delete Leaderboard Entry',
+      message: 'Are you sure you want to delete this leaderboard result entry?'
+    });
+    if (!isConfirmed) return;
     const updated = leaderboardEntries.filter((e) => e.id !== id);
     setLeaderboardEntries(updated);
     await superCoordinatorApi.saveLeaderboardEntries(updated);

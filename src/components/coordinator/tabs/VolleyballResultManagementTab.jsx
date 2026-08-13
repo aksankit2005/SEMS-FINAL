@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Trash2, Download, Filter, RefreshCw, FileSpreadsheet } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
+import { useConfirm } from '../../../context/ConfirmContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { generateMatchResultPDF, exportToCSV } from '../../../utils/pdfExporter';
 
 export const VolleyballResultManagementTab = ({ user }) => {
   const { addToast } = useToast();
+  const { confirmDelete } = useConfirm();
   const [resultsList, setResultsList] = useState([]);
   
   // Filter States
@@ -77,15 +79,24 @@ export const VolleyballResultManagementTab = ({ user }) => {
     }
   };
 
-  const handleDeleteResult = (id) => {
+  const handleDeleteResult = async (id) => {
+    const isConfirmed = await confirmDelete({
+      title: 'Delete Result Entry',
+      message: 'Are you sure you want to delete this Volleyball match result entry?'
+    });
+    if (!isConfirmed) return;
     const updated = resultsList.filter((r) => r.id !== id);
     setResultsList(updated);
     localStorage.setItem(resultsKey, JSON.stringify(updated));
     addToast('Result entry deleted', 'info');
   };
 
-  const handleClearResults = () => {
-    if (window.confirm('Clear all declared results data from storage?')) {
+  const handleClearResults = async () => {
+    const isConfirmed = await confirmDelete({
+      title: 'Clear All Results',
+      message: 'Clear all declared Volleyball results data from storage?'
+    });
+    if (isConfirmed) {
       setResultsList([]);
       localStorage.removeItem(resultsKey);
       addToast('All declared results cleared', 'info');

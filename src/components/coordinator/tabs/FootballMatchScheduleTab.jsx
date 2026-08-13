@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Users, Trash2, Edit2, Clock, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
+import { useConfirm } from '../../../context/ConfirmContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 
 export const FootballMatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch }) => {
   const { addToast } = useToast();
+  const { confirmDelete } = useConfirm();
 
   const assignedSport = 'football';
   const sportName = 'Football';
@@ -88,7 +90,11 @@ export const FootballMatchScheduleTab = ({ matches, user, onUpdateMatches, globa
   };
 
   const handleClearAll = async () => {
-    if (window.confirm('Are you sure you want to clear all scheduled Football matches?')) {
+    const isConfirmed = await confirmDelete({
+      title: 'Clear All Football Matches',
+      message: 'Are you sure you want to clear all scheduled Football matches? This action cannot be undone.'
+    });
+    if (isConfirmed) {
       await coordinatorApi.clearAllSchedules();
       onUpdateMatches([]);
       addToast('All Football match schedules cleared', 'warning');
@@ -172,6 +178,11 @@ export const FootballMatchScheduleTab = ({ matches, user, onUpdateMatches, globa
   };
 
   const handleDeleteSlot = async (id) => {
+    const isConfirmed = await confirmDelete({
+      title: 'Delete Football Match',
+      message: 'Are you sure you want to delete this scheduled Football match fixture?'
+    });
+    if (!isConfirmed) return;
     await coordinatorApi.deleteMatch(id);
     onUpdateMatches(matches.filter((m) => m.id !== id));
     addToast('Football match fixture deleted', 'info');

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit2, CheckCircle2 } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
+import { useConfirm } from '../../../context/ConfirmContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 
 export const KhoKhoMatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch }) => {
   const { addToast } = useToast();
+  const { confirmDelete } = useConfirm();
 
   const assignedSport = 'kho-kho';
   const sportName = 'Kho-Kho';
@@ -86,7 +88,11 @@ export const KhoKhoMatchScheduleTab = ({ matches, user, onUpdateMatches, globalS
   };
 
   const handleClearAll = async () => {
-    if (window.confirm('Are you sure you want to clear all scheduled Kho-Kho matches?')) {
+    const isConfirmed = await confirmDelete({
+      title: 'Clear All Kho-Kho Matches',
+      message: 'Are you sure you want to clear all scheduled Kho-Kho matches? This action cannot be undone.'
+    });
+    if (isConfirmed) {
       await coordinatorApi.clearAllSchedules();
       onUpdateMatches([]);
       addToast('All Kho-Kho match schedules cleared', 'warning');
@@ -174,6 +180,11 @@ export const KhoKhoMatchScheduleTab = ({ matches, user, onUpdateMatches, globalS
   };
 
   const handleDeleteSlot = async (id) => {
+    const isConfirmed = await confirmDelete({
+      title: 'Delete Kho-Kho Match',
+      message: 'Are you sure you want to delete this scheduled Kho-Kho match fixture?'
+    });
+    if (!isConfirmed) return;
     await coordinatorApi.deleteMatch(id);
     onUpdateMatches(matches.filter((m) => m.id !== id));
     addToast('Kho-Kho match fixture deleted', 'info');
