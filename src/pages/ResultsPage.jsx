@@ -24,7 +24,8 @@ export const ResultsPage = () => {
               '1', '2', 'a', 'b', 'player 1', 'player 2', 'player 3', 'player 4', 'team 1', 'team 2', 'team a', 'team b', 'albert', 'romi',
               'aarav sharma (mpec)', 'rohan gupta (mips)', 'ankur dixit (mpcps)', 'aditya singh (mpec)',
               'aagaz khan (mpcps kn142)', 'shiv prakash (mpcps kn142)', 'kapil verma (mpcps kn142)', 'anubhav sachan (mpcps kn142)',
-              'kapil verma', 'anubhav sachan', 'team a', 'team b', 'team 1', 'team 2', 'player / team a', 'player / team b'
+              'kapil verma', 'anubhav sachan', 'team a', 'team b', 'team 1', 'team 2', 'player / team a', 'player / team b',
+              'athletes track a', 'athletes track b'
             ];
             parsed.forEach((item) => {
               if (!item) return;
@@ -35,14 +36,21 @@ export const ResultsPage = () => {
               if (mockNames.includes(t1) || mockNames.includes(t2) || mockNames.includes(w)) return;
 
               if (!list.some((r) => r.id === item.id)) {
+                const isAth = (item.sportName || sportName || '').toLowerCase().includes('athletics');
+                const cleanScoreSummary = (item.scoreSummary || '')
+                  .replace(/Athletes Track [AB]:? ?\d*/gi, '')
+                  .replace(/\|\s*\|/g, '|').trim();
+
                 list.push({
                   id: item.id || `RES-${Math.random()}`,
                   sport: item.sportName || sportName,
                   event: item.eventTitle || item.title || `${sportName} Final`,
-                  winner: item.winner || item.team1 || 'Declared Winner',
-                  scoreSummary: item.scoreSummary || (item.score1 !== undefined ? `${item.team1}: ${item.score1} | ${item.team2}: ${item.score2}` : 'Match Completed'),
+                  winner: item.winner || (item.medals?.gold) || 'Declared Winner',
+                  scoreSummary: isAth 
+                    ? (cleanScoreSummary || `🥇 Winner: ${item.winner || 'Gold Medalist'}`)
+                    : (item.scoreSummary || (item.score1 !== undefined ? `${item.team1}: ${item.score1} | ${item.team2}: ${item.score2}` : 'Match Completed')),
                   date: item.completedAt ? item.completedAt.split('T')[0] : '2026-08-04',
-                  mvp: item.mvp || item.winner || item.team1 || 'Top Performer'
+                  mvp: item.mvp || item.winner || 'Top Performer'
                 });
               }
             });

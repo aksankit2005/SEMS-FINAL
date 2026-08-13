@@ -65,6 +65,7 @@ function readAllCoordinatorMatches() {
           const isMixed = title.toLowerCase().includes('mix');
           const gender = m.gender || m.category || (isGirls ? 'Girls' : isMixed ? 'Mixed' : 'Boys');
 
+          const isAth = rawSportId === 'athletics';
           results.push({
             id: m.id,
             sportId: rawSportId,
@@ -73,14 +74,14 @@ function readAllCoordinatorMatches() {
             eventTitle: title,
             format: m.format || m.matchFormat || 'Match',
             gender,
-            team1: m.team1 || 'Player / Team A',
-            team2: m.team2 || 'Player / Team B',
-            score1: m.score1,
-            score2: m.score2,
-            scoreSummary: m.scoreSummary || m.scoreText || '',
-            winner: m.winner || m.team1 || 'Declared',
+            team1: isAth ? (m.subEvent || 'Track & Field') : (m.team1 || 'Player / Team A'),
+            team2: isAth ? '' : (m.team2 || 'Player / Team B'),
+            score1: isAth ? undefined : m.score1,
+            score2: isAth ? undefined : m.score2,
+            scoreSummary: (m.scoreSummary || m.scoreText || '').replace(/Athletes Track [AB]:? ?\d*/gi, '').trim(),
+            winner: m.winner || (m.medals?.gold) || 'Declared Winner',
             winnerCollege: m.winnerCollege || '',
-            runnerUp: m.runnerUp || (m.winner === m.team1 ? m.team2 : m.team1) || '',
+            runnerUp: isAth ? (m.medals?.silver || '') : (m.runnerUp || (m.winner === m.team1 ? m.team2 : m.team1) || ''),
             runnerUpCollege: m.runnerUpCollege || '',
             venue: m.venue || m.tableNumber || '',
             completedAt: m.completedAt || m.updatedAt || '',
@@ -101,6 +102,7 @@ function readAllCoordinatorMatches() {
         const sport = ALL_12_SPORTS.find(s => s.id === rawSportId || s.id === rawSportId.replace('_', '-'));
         const sportName = sport?.name || (rawSportId.charAt(0).toUpperCase() + rawSportId.slice(1).replace(/-/g, ' '));
         const sportIcon = sport?.icon || '🏅';
+        const isAth = rawSportId === 'athletics';
 
         list.forEach(m => {
           if (!m || !m.id || seenIds.has(m.id)) return;
@@ -121,14 +123,14 @@ function readAllCoordinatorMatches() {
             eventTitle: title,
             format: m.format || 'Match',
             gender,
-            team1: m.team1 || m.player1 || 'Team A',
-            team2: m.team2 || m.player2 || 'Team B',
-            score1: m.score1,
-            score2: m.score2,
-            scoreSummary: m.scoreSummary || m.scoreText || `${m.score1 ?? '-'} - ${m.score2 ?? '-'}`,
-            winner: m.winner || m.team1 || 'Declared',
+            team1: isAth ? (m.subEvent || 'Track & Field') : (m.team1 || m.player1 || 'Team A'),
+            team2: isAth ? '' : (m.team2 || m.player2 || 'Team B'),
+            score1: isAth ? undefined : m.score1,
+            score2: isAth ? undefined : m.score2,
+            scoreSummary: (m.scoreSummary || m.scoreText || '').replace(/Athletes Track [AB]:? ?\d*/gi, '').trim(),
+            winner: m.winner || (m.medals?.gold) || 'Declared Winner',
             winnerCollege: m.winnerCollege || '',
-            runnerUp: m.runnerUp || (m.winner === m.team1 ? m.team2 : m.team1) || '',
+            runnerUp: isAth ? (m.medals?.silver || '') : (m.runnerUp || (m.winner === m.team1 ? m.team2 : m.team1) || ''),
             runnerUpCollege: m.runnerUpCollege || '',
             venue: m.venue || m.tableNumber || m.court || '',
             completedAt: m.completedAt || m.endedAt || '',

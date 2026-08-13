@@ -30,6 +30,8 @@ export const EventsTab = ({ user }) => {
 
   const defaultSportKey = resolveSportKey(user?.assignedSport || user?.sportName);
   const defaultBounds = SPORT_PLAYER_BOUNDS[defaultSportKey] || { min: 1, max: 10 };
+  const isTableTennis = defaultSportKey === 'table-tennis';
+  const isBadminton = defaultSportKey === 'badminton';
 
   // Form State
   const [formData, setFormData] = useState({
@@ -162,7 +164,13 @@ export const EventsTab = ({ user }) => {
         '11. YOU MAY NOT TOUCH THE TABLE WITH YOUR NON-PADDLE HAND.',
         '12. AN "EDGE" BALL BOUNCING OFF THE HORIZONTAL TABLE TOP SURFACE IS GOOD.',
         '13. HONOR SYSTEM APPLIES TO DISAGREEMENTS.'
-      ] : ['Official ITTF/BWF rules apply.', 'College ID mandatory.'],
+      ] : isBadminton ? [
+        '1. Matches are played best of 3 sets of 21 points each.',
+        '2. BWF standard laws of badminton apply.',
+        '3. Service must be delivered diagonally into opponent court below waist level.',
+        '4. Non-marking shoes and official sports kit mandatory.',
+        '5. College ID card must be presented prior to match time.'
+      ] : ['Official tournament rules apply.', 'College ID mandatory.'],
       requiredDocuments: ['College Student ID Card', 'Aadhaar Card'],
       contactName: user?.coordinatorName || '',
       contactEmail: user?.email || '',
@@ -180,7 +188,11 @@ export const EventsTab = ({ user }) => {
 10. TOUCHING THE BALL WITH YOUR PADDLE HAND IS ALLOWED.
 11. YOU MAY NOT TOUCH THE TABLE WITH YOUR NON-PADDLE HAND.
 12. AN "EDGE" BALL BOUNCING OFF THE HORIZONTAL TABLE TOP SURFACE IS GOOD.
-13. HONOR SYSTEM APPLIES TO DISAGREEMENTS.` : 'Official tournament rules apply.\nCollege Student ID & Pass mandatory.');
+13. HONOR SYSTEM APPLIES TO DISAGREEMENTS.` : isBadminton ? `1. Matches are played best of 3 sets of 21 points each.
+2. BWF standard laws of badminton apply.
+3. Service must be delivered diagonally into opponent court below waist level.
+4. Non-marking shoes and official sports kit mandatory.
+5. College ID card must be presented prior to match time.` : 'Official tournament rules apply.\nCollege Student ID & Pass mandatory.');
     setDocInput('College Student ID Card\nAadhaar Card / Govt ID');
     setShowCreateModal(true);
   };
@@ -227,6 +239,8 @@ export const EventsTab = ({ user }) => {
 
     const eventPayload = {
       ...formData,
+      sportId: user?.assignedSport || defaultSportKey,
+      sportName: user?.sportName || formData.sportName,
       minPlayers: minP,
       maxPlayers: maxP,
       teamSize: formData.teamSize || `${minP} - ${maxP} Players`,
@@ -289,7 +303,10 @@ export const EventsTab = ({ user }) => {
   const handleViewParticipants = async (eventObj) => {
     setSelectedEventForParticipants(eventObj);
     const allRegs = await coordinatorApi.getRegistrations();
-    setParticipants(allRegs);
+    const eventRegs = allRegs.filter(
+      (r) => r.eventId === eventObj.id || r.sportId === eventObj.sportId || r.sport === eventObj.sportName
+    );
+    setParticipants(eventRegs.length > 0 ? eventRegs : allRegs);
   };
 
   // Dashboard Stats calculation
