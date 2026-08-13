@@ -167,19 +167,19 @@ export const SportsDataProvider = ({ children }) => {
     setAnnouncements((prev) => [newAnn, ...prev]);
   };
 
+  const contextValue = React.useMemo(() => ({
+    sports,
+    liveMatches,
+    schedule,
+    results,
+    leaderboard,
+    announcements,
+    updateLiveMatchScore,
+    addAnnouncement
+  }), [sports, liveMatches, schedule, results, leaderboard, announcements]);
+
   return (
-    <SportsDataContext.Provider
-      value={{
-        sports,
-        liveMatches,
-        schedule,
-        results,
-        leaderboard,
-        announcements,
-        updateLiveMatchScore,
-        addAnnouncement
-      }}
-    >
+    <SportsDataContext.Provider value={contextValue}>
       {children}
     </SportsDataContext.Provider>
   );
