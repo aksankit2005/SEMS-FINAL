@@ -23,8 +23,7 @@ export const prLogin = async (req, res) => {
     let isValid = false;
     if (user.password_hash) {
       isValid = await bcrypt.compare(password, user.password_hash);
-    }
-    if (!isValid && envConfig.passPrAdmin) {
+    } else if (envConfig.passPrAdmin) {
       isValid = (password === envConfig.passPrAdmin);
     }
     if (isValid) {

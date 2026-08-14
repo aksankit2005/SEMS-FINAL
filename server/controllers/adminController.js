@@ -619,7 +619,7 @@ export const saveCoordinatorDB = async (req, res) => {
     const isPR = role === 'PR Member' || role === 'pr_coordinator';
 
     if (isCollegeHead) {
-      if (id && id.toString().length > 5) {
+      if (id) {
         let updateQuery = `UPDATE college_head_users SET faculty_name = $1, username = $2, email = $3, phone = $4, college = $5, status = $6, updated_at = CURRENT_TIMESTAMP`;
         const params = [name, cleanUser, email || '', phone || '', college || 'MPEC', accStatus];
         if (passHash) {
@@ -639,7 +639,7 @@ export const saveCoordinatorDB = async (req, res) => {
         );
       }
     } else if (isPR) {
-      if (id && id.toString().length > 5) {
+      if (id) {
         let updateQuery = `UPDATE pr_users SET name = $1, username = $2, email = $3, status = $4, updated_at = CURRENT_TIMESTAMP`;
         const params = [name, cleanUser, email || '', accStatus];
         if (passHash) {
@@ -662,7 +662,7 @@ export const saveCoordinatorDB = async (req, res) => {
       const sportSlug = (assignedSport || 'cricket').toLowerCase().replace(/[^a-z0-9]/g, '-');
       const sportTitle = sportName || (assignedSport || 'Cricket').replace(/-/g, ' ').toUpperCase();
 
-      if (id && id.toString().length > 5) {
+      if (id) {
         let updateQuery = `UPDATE sport_coordinators SET coordinator_name = $1, username = $2, email = $3, phone = $4, assigned_sport = $5, sport_name = $6, status = $7, updated_at = CURRENT_TIMESTAMP`;
         const params = [name, cleanUser, email || '', phone || '', sportSlug, sportTitle, accStatus];
         if (passHash) {
@@ -712,7 +712,7 @@ export const toggleCoordinatorStatusDB = async (req, res) => {
       return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
     }
 
-    return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
+    return res.status(404).json({ message: 'Coordinator account not found in database.' });
   } catch (err) {
     console.error('Error toggling coordinator status in DB:', err.message);
     return res.status(500).json({ message: 'Failed to update status in database' });
@@ -742,7 +742,7 @@ export const resetCoordinatorPasswordDB = async (req, res) => {
       return res.json({ success: true, message: 'Password reset in database successfully.' });
     }
 
-    return res.json({ success: true, message: 'Password reset in database successfully.' });
+    return res.status(404).json({ message: 'Coordinator account not found in database.' });
   } catch (err) {
     console.error('Error resetting coordinator password in DB:', err.message);
     return res.status(500).json({ message: 'Failed to reset password in database' });

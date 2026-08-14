@@ -1,8 +1,9 @@
 import jwt from 'jsonwebtoken';
 import { envConfig } from '../config/env.js';
+import { queryDb } from '../config/db.js';
 
 // PR Coordinator Auth Middleware
-export const verifyPRToken = (req, res, next) => {
+export const verifyPRToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'Unauthorized. PR Coordinator token required.' });
@@ -11,6 +12,14 @@ export const verifyPRToken = (req, res, next) => {
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, envConfig.jwtSecret);
+    if (decoded.username) {
+      try {
+        const dbRes = await queryDb('SELECT status FROM pr_users WHERE LOWER(username) = $1', [decoded.username.toLowerCase()]);
+        if (dbRes && dbRes.rows.length > 0 && dbRes.rows[0].status && dbRes.rows[0].status.toLowerCase() === 'inactive') {
+          return res.status(403).json({ message: 'Account is deactivated. Access denied.' });
+        }
+      } catch (e) {}
+    }
     req.user = decoded;
     next();
   } catch (err) {
@@ -19,7 +28,7 @@ export const verifyPRToken = (req, res, next) => {
 };
 
 // College Head Auth Middleware
-export const verifyCollegeHeadToken = (req, res, next) => {
+export const verifyCollegeHeadToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'Unauthorized. College Head token required.' });
@@ -31,6 +40,15 @@ export const verifyCollegeHeadToken = (req, res, next) => {
     if (decoded.role !== 'college_head') {
       return res.status(403).json({ message: 'Access denied. College Head role required.' });
     }
+    if (decoded.username) {
+      try {
+        const userKey = decoded.username.toLowerCase();
+        const dbRes = await queryDb('SELECT status FROM college_head_users WHERE LOWER(username) = $1', [userKey]);
+        if (dbRes && dbRes.rows.length > 0 && dbRes.rows[0].status && dbRes.rows[0].status.toLowerCase() === 'inactive') {
+          return res.status(403).json({ message: 'Account is deactivated. Access denied.' });
+        }
+      } catch (e) {}
+    }
     req.user = decoded;
     next();
   } catch (err) {
@@ -39,7 +57,7 @@ export const verifyCollegeHeadToken = (req, res, next) => {
 };
 
 // Sport Coordinator Auth Middleware
-export const verifyCoordinatorToken = (req, res, next) => {
+export const verifyCoordinatorToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'Unauthorized. Sport Coordinator token required.' });
@@ -50,6 +68,15 @@ export const verifyCoordinatorToken = (req, res, next) => {
     const decoded = jwt.verify(token, envConfig.jwtSecret);
     if (decoded.role !== 'sport_coordinator') {
       return res.status(403).json({ message: 'Access denied. Sport Coordinator role required.' });
+    }
+    if (decoded.username) {
+      try {
+        const userKey = decoded.username.toLowerCase().replace(/-/g, '_');
+        const dbRes = await queryDb('SELECT status FROM sport_coordinators WHERE LOWER(username) = $1', [userKey]);
+        if (dbRes && dbRes.rows.length > 0 && dbRes.rows[0].status && dbRes.rows[0].status.toLowerCase() === 'inactive') {
+          return res.status(403).json({ message: 'Account is deactivated. Access denied.' });
+        }
+      } catch (e) {}
     }
     req.user = decoded;
     next();

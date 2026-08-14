@@ -40,8 +40,7 @@ export const coordinatorLogin = async (req, res) => {
     let isValid = false;
     if (user.password_hash) {
       isValid = await bcrypt.compare(password, user.password_hash);
-    }
-    if (!isValid) {
+    } else {
       const expectedPassword = coordinatorPasswords[userKey];
       isValid = expectedPassword && password === expectedPassword;
     }
@@ -77,39 +76,44 @@ export const coordinatorLogin = async (req, res) => {
     }
   }
 
-  const expectedPassword = coordinatorPasswords[userKey];
-  const isValidPassword = expectedPassword && password === expectedPassword;
-
   const coord = inMemorySportCoordinators.find(
     (c) => c.username.toLowerCase() === userKey || c.assignedSport.toLowerCase() === userKey
   );
 
-  if (coord && isValidPassword) {
-    const token = jwt.sign(
-      {
-        id: coord.id,
-        username: coord.username,
-        assignedSport: coord.assignedSport,
-        sportName: coord.sportName,
-        coordinatorName: coord.coordinatorName,
-        email: coord.email,
-        role: 'sport_coordinator',
-      },
-      envConfig.jwtSecret,
-      { expiresIn: '24h' }
-    );
-    return res.json({
-      success: true,
-      token,
-      user: {
-        username: coord.username,
-        assignedSport: coord.assignedSport,
-        sportName: coord.sportName,
-        coordinatorName: coord.coordinatorName,
-        email: coord.email,
-        role: 'sport_coordinator',
-      },
-    });
+  if (coord) {
+    if (coord.status && coord.status.toLowerCase() === 'inactive') {
+      return res.status(403).json({ message: 'Account is deactivated. Access denied.' });
+    }
+    const expectedPassword = coordinatorPasswords[userKey];
+    const isValidPassword = expectedPassword && password === expectedPassword;
+
+    if (isValidPassword) {
+      const token = jwt.sign(
+        {
+          id: coord.id,
+          username: coord.username,
+          assignedSport: coord.assignedSport,
+          sportName: coord.sportName,
+          coordinatorName: coord.coordinatorName,
+          email: coord.email,
+          role: 'sport_coordinator',
+        },
+        envConfig.jwtSecret,
+        { expiresIn: '24h' }
+      );
+      return res.json({
+        success: true,
+        token,
+        user: {
+          username: coord.username,
+          assignedSport: coord.assignedSport,
+          sportName: coord.sportName,
+          coordinatorName: coord.coordinatorName,
+          email: coord.email,
+          role: 'sport_coordinator',
+        },
+      });
+    }
   }
 
   return res.status(401).json({ message: 'Invalid Sport Coordinator credentials. Access denied.' });

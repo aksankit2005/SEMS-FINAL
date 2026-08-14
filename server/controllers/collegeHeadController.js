@@ -63,8 +63,7 @@ export const collegeHeadLogin = async (req, res) => {
     let isValid = false;
     if (user.password_hash) {
       isValid = await bcrypt.compare(password, user.password_hash);
-    }
-    if (!isValid && expectedPassword) {
+    } else if (expectedPassword) {
       isValid = (password === expectedPassword);
     }
     if (isValid) {
@@ -85,6 +84,9 @@ export const collegeHeadLogin = async (req, res) => {
 
   const memoryUser = inMemoryCollegeHeadUsers.find((u) => u.username.toLowerCase() === userKey);
   if (memoryUser) {
+    if (memoryUser.status && memoryUser.status.toLowerCase() === 'inactive') {
+      return res.status(403).json({ message: 'Account is deactivated. Access denied.' });
+    }
     const isValid = expectedPassword && password === expectedPassword;
     if (isValid) {
       const token = jwt.sign(
