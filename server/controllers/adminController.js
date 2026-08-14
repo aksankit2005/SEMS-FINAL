@@ -735,44 +735,61 @@ export const toggleCoordinatorStatusDB = async (req, res) => {
 
   try {
     const newStatus = (status && status.toLowerCase() === 'inactive') ? 'inactive' : 'active';
+    const targetUser = (username || id || '').trim().toLowerCase();
     const numId = !isNaN(Number(id)) ? Number(id) : null;
-    const targetUser = username || id;
-    const targetSport = assignedSport || id;
 
-    // 1. Try sport_coordinators
-    const sc = await queryDb(
-      `UPDATE sport_coordinators 
-       SET status = $1, updated_at = CURRENT_TIMESTAMP 
-       WHERE (id = $2 AND $2 IS NOT NULL) OR LOWER(username) = LOWER($3) OR LOWER(assigned_sport) = LOWER($4) 
-       RETURNING id`,
-      [newStatus, numId, targetUser, targetSport]
-    );
-    if (sc && sc.rows && sc.rows.length > 0) {
-      return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
+    // 1. Try matching by username first (prevents ID collisions across tables)
+    if (targetUser) {
+      const prByUsername = await queryDb(
+        `UPDATE pr_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`,
+        [newStatus, targetUser]
+      );
+      if (prByUsername && prByUsername.rows && prByUsername.rows.length > 0) {
+        return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
+      }
+
+      const chByUsername = await queryDb(
+        `UPDATE college_head_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`,
+        [newStatus, targetUser]
+      );
+      if (chByUsername && chByUsername.rows && chByUsername.rows.length > 0) {
+        return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
+      }
+
+      const scByUsername = await queryDb(
+        `UPDATE sport_coordinators SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 OR LOWER(assigned_sport) = $2 RETURNING id`,
+        [newStatus, targetUser]
+      );
+      if (scByUsername && scByUsername.rows && scByUsername.rows.length > 0) {
+        return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
+      }
     }
 
-    // 2. Try college_head_users
-    const ch = await queryDb(
-      `UPDATE college_head_users 
-       SET status = $1, updated_at = CURRENT_TIMESTAMP 
-       WHERE (id = $2 AND $2 IS NOT NULL) OR LOWER(username) = LOWER($3) OR LOWER(college) = LOWER($4) 
-       RETURNING id`,
-      [newStatus, numId, targetUser, targetSport]
-    );
-    if (ch && ch.rows && ch.rows.length > 0) {
-      return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
-    }
+    // 2. Fallback to ID match if username match yielded 0 rows
+    if (numId !== null) {
+      const prById = await queryDb(
+        `UPDATE pr_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`,
+        [newStatus, numId]
+      );
+      if (prById && prById.rows && prById.rows.length > 0) {
+        return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
+      }
 
-    // 3. Try pr_users
-    const pr = await queryDb(
-      `UPDATE pr_users 
-       SET status = $1, updated_at = CURRENT_TIMESTAMP 
-       WHERE (id = $2 AND $2 IS NOT NULL) OR LOWER(username) = LOWER($3) 
-       RETURNING id`,
-      [newStatus, numId, targetUser]
-    );
-    if (pr && pr.rows && pr.rows.length > 0) {
-      return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
+      const chById = await queryDb(
+        `UPDATE college_head_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`,
+        [newStatus, numId]
+      );
+      if (chById && chById.rows && chById.rows.length > 0) {
+        return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
+      }
+
+      const scById = await queryDb(
+        `UPDATE sport_coordinators SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`,
+        [newStatus, numId]
+      );
+      if (scById && scById.rows && scById.rows.length > 0) {
+        return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
+      }
     }
 
     return res.status(404).json({ message: 'Coordinator account not found in database.' });
@@ -788,42 +805,60 @@ export const resetCoordinatorPasswordDB = async (req, res) => {
 
   const passToSet = newPassword && newPassword.trim().length >= 6 ? newPassword.trim() : 'Password@123';
   const hashed = await bcrypt.hash(passToSet, 10);
+  const targetUser = (username || id || '').trim().toLowerCase();
   const numId = !isNaN(Number(id)) ? Number(id) : null;
-  const targetUser = username || id;
-  const targetSport = assignedSport || id;
 
   try {
-    const sc = await queryDb(
-      `UPDATE sport_coordinators 
-       SET password_hash = $1, updated_at = CURRENT_TIMESTAMP 
-       WHERE (id = $2 AND $2 IS NOT NULL) OR LOWER(username) = LOWER($3) OR LOWER(assigned_sport) = LOWER($4) 
-       RETURNING id`,
-      [hashed, numId, targetUser, targetSport]
-    );
-    if (sc && sc.rows && sc.rows.length > 0) {
-      return res.json({ success: true, message: 'Password reset in database successfully.' });
+    if (targetUser) {
+      const prByUsername = await queryDb(
+        `UPDATE pr_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`,
+        [hashed, targetUser]
+      );
+      if (prByUsername && prByUsername.rows && prByUsername.rows.length > 0) {
+        return res.json({ success: true, message: 'Password reset in database successfully.' });
+      }
+
+      const chByUsername = await queryDb(
+        `UPDATE college_head_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`,
+        [hashed, targetUser]
+      );
+      if (chByUsername && chByUsername.rows && chByUsername.rows.length > 0) {
+        return res.json({ success: true, message: 'Password reset in database successfully.' });
+      }
+
+      const scByUsername = await queryDb(
+        `UPDATE sport_coordinators SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 OR LOWER(assigned_sport) = $2 RETURNING id`,
+        [hashed, targetUser]
+      );
+      if (scByUsername && scByUsername.rows && scByUsername.rows.length > 0) {
+        return res.json({ success: true, message: 'Password reset in database successfully.' });
+      }
     }
 
-    const ch = await queryDb(
-      `UPDATE college_head_users 
-       SET password_hash = $1, updated_at = CURRENT_TIMESTAMP 
-       WHERE (id = $2 AND $2 IS NOT NULL) OR LOWER(username) = LOWER($3) OR LOWER(college) = LOWER($4) 
-       RETURNING id`,
-      [hashed, numId, targetUser, targetSport]
-    );
-    if (ch && ch.rows && ch.rows.length > 0) {
-      return res.json({ success: true, message: 'Password reset in database successfully.' });
-    }
+    if (numId !== null) {
+      const prById = await queryDb(
+        `UPDATE pr_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`,
+        [hashed, numId]
+      );
+      if (prById && prById.rows && prById.rows.length > 0) {
+        return res.json({ success: true, message: 'Password reset in database successfully.' });
+      }
 
-    const pr = await queryDb(
-      `UPDATE pr_users 
-       SET password_hash = $1, updated_at = CURRENT_TIMESTAMP 
-       WHERE (id = $2 AND $2 IS NOT NULL) OR LOWER(username) = LOWER($3) 
-       RETURNING id`,
-      [hashed, numId, targetUser]
-    );
-    if (pr && pr.rows && pr.rows.length > 0) {
-      return res.json({ success: true, message: 'Password reset in database successfully.' });
+      const chById = await queryDb(
+        `UPDATE college_head_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`,
+        [hashed, numId]
+      );
+      if (chById && chById.rows && chById.rows.length > 0) {
+        return res.json({ success: true, message: 'Password reset in database successfully.' });
+      }
+
+      const scById = await queryDb(
+        `UPDATE sport_coordinators SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`,
+        [hashed, numId]
+      );
+      if (scById && scById.rows && scById.rows.length > 0) {
+        return res.json({ success: true, message: 'Password reset in database successfully.' });
+      }
     }
 
     return res.status(404).json({ message: 'Coordinator account not found in database.' });
@@ -835,24 +870,19 @@ export const resetCoordinatorPasswordDB = async (req, res) => {
 
 export const deleteCoordinatorDB = async (req, res) => {
   const { id } = req.params;
+  const targetUser = (id || '').trim().toLowerCase();
   const numId = !isNaN(Number(id)) ? Number(id) : null;
 
   try {
-    await queryDb(
-      `DELETE FROM sport_coordinators 
-       WHERE (id = $1 AND $1 IS NOT NULL) OR LOWER(username) = LOWER($2) OR LOWER(assigned_sport) = LOWER($2)`,
-      [numId, id]
-    );
-    await queryDb(
-      `DELETE FROM college_head_users 
-       WHERE (id = $1 AND $1 IS NOT NULL) OR LOWER(username) = LOWER($2) OR LOWER(college) = LOWER($2)`,
-      [numId, id]
-    );
-    await queryDb(
-      `DELETE FROM pr_users 
-       WHERE (id = $1 AND $1 IS NOT NULL) OR LOWER(username) = LOWER($2)`,
-      [numId, id]
-    );
+    if (targetUser && isNaN(Number(id))) {
+      await queryDb('DELETE FROM pr_users WHERE LOWER(username) = $1', [targetUser]);
+      await queryDb('DELETE FROM college_head_users WHERE LOWER(username) = $1', [targetUser]);
+      await queryDb('DELETE FROM sport_coordinators WHERE LOWER(username) = $1 OR LOWER(assigned_sport) = $1', [targetUser]);
+    } else if (numId !== null) {
+      await queryDb('DELETE FROM pr_users WHERE id = $1', [numId]);
+      await queryDb('DELETE FROM college_head_users WHERE id = $1', [numId]);
+      await queryDb('DELETE FROM sport_coordinators WHERE id = $1', [numId]);
+    }
     return res.json({ success: true, message: 'Coordinator deleted from database successfully.' });
   } catch (err) {
     console.error('Error deleting coordinator from DB:', err.message);
