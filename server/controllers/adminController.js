@@ -16,11 +16,14 @@ export const adminLogin = async (req, res) => {
   const dbResult = await queryDb('SELECT * FROM pr_users WHERE LOWER(username) = $1', [normalizedUser]);
   if (dbResult && dbResult.rows.length > 0) {
     const user = dbResult.rows[0];
+    if (user.status && user.status.toLowerCase() === 'inactive') {
+      return res.status(403).json({ message: 'Account is deactivated. Access denied.' });
+    }
     let isValid = false;
     if (user.password_hash) {
       isValid = await bcrypt.compare(password, user.password_hash);
     }
-    if (isValid) {
+    if (isValid && (user.role === 'ADMIN' || user.role === 'admin')) {
       const token = jwt.sign(
         { id: user.id, username: user.username, role: 'ADMIN' },
         envConfig.jwtSecret,
@@ -34,19 +37,15 @@ export const adminLogin = async (req, res) => {
     }
   }
 
-  // 2. Admin credential check via hashed or env config
-  const validAdminUser = envConfig.adminUsername.toLowerCase();
+  // 2. Admin credential check strictly via hashed or env config
+  const validAdminUser = (envConfig.adminUsername || 'admin').trim().toLowerCase();
   let isValidAdmin = false;
 
-  if (normalizedUser === validAdminUser || normalizedUser === 'admin' || normalizedUser === 'superadmin') {
+  if (normalizedUser === validAdminUser) {
     if (envConfig.adminPasswordHash) {
       isValidAdmin = await bcrypt.compare(password, envConfig.adminPasswordHash);
     } else {
-      isValidAdmin =
-        (envConfig.passAdmin && password === envConfig.passAdmin) ||
-        (envConfig.passPrAdmin && password === envConfig.passPrAdmin) ||
-        (envConfig.commonPassword && password === envConfig.commonPassword) ||
-        password === 'admin123';
+      isValidAdmin = Boolean(envConfig.passAdmin && password === envConfig.passAdmin);
     }
   }
 
@@ -90,8 +89,8 @@ export const superCoordinatorLogin = async (req, res) => {
     }
   } catch (e) {}
 
-  const isUserValid = cleanUser === expectedUser || cleanUser === 'supercoordinator' || cleanUser === 'supercoord';
-  const isPassValid = (password === expectedPassword) || (password === 'super#2026') || (envConfig.commonPassword && password === envConfig.commonPassword);
+  const isUserValid = (cleanUser === expectedUser);
+  const isPassValid = Boolean(expectedPassword && password === expectedPassword);
 
   if (!isUserValid) {
     return res.status(401).json({ message: 'Invalid Super Coordinator username.' });

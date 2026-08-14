@@ -43,8 +43,8 @@ export const SuperCoordinatorLoginPage = () => {
     } catch (err) {
       // Offline mode validation fallback if backend server is not running
       const cleanUser = username.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-      const isUserValid = cleanUser === 'supercoordinator' || cleanUser === 'supercoord';
-      const isPassValid = password.trim() === 'super#2026' || password.trim() === 'admin123' || password.trim() === 'sems#2026';
+      const isUserValid = cleanUser === 'supercoordinator' || cleanUser === 'super_coordinator';
+      const isPassValid = password.trim() === 'super#2026';
 
       if (!err.response && isUserValid && isPassValid) {
         const userObj = { username: username.trim(), name: 'Super Coordinator (President)', role: 'super_coordinator' };
