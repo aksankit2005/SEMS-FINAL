@@ -7,7 +7,7 @@ const router = express.Router();
 // GET /api/live-matches - Spectator endpoint
 router.get('/live-matches', async (req, res) => {
   try {
-    const dbRes = await queryDb(
+    let dbRes = await queryDb(
       `SELECT id, sport_id AS "sportId", format, status, team1, team2, 
               match_title AS "matchTitle", table_number AS "tableNumber", 
               time, score1, score2, winner,
@@ -18,6 +18,16 @@ router.get('/live-matches', async (req, res) => {
        WHERE LOWER(status) IN ('running', 'live', 'in_progress', 'active') 
        ORDER BY updated_at DESC`
     );
+
+    if (!dbRes || !dbRes.rows) {
+      dbRes = await queryDb(
+        `SELECT id, sport_id AS "sportId", format, status, team1, team2, 
+                match_title AS "matchTitle", table_number AS "tableNumber", 
+                time, score1, score2, winner
+         FROM live_matches 
+         WHERE LOWER(status) IN ('running', 'live', 'in_progress', 'active')`
+      );
+    }
 
     if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
       const formatted = dbRes.rows.map((m) => ({
