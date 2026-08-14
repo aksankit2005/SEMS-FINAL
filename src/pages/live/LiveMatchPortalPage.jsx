@@ -4,6 +4,7 @@ import { LiveMatchViewerModal } from '../../components/live/LiveMatchViewerModal
 import { coordinatorApi, mergeMatchState } from '../../services/coordinatorApi';
 import { getSportConfig, SPORTS_CONFIG } from '../../data/sportsConfig';
 import { SPORTS_DATA } from '../../data/sportsData';
+import { extractYouTubeVideoId } from '../../utils/youtube';
 
 import { LIVE_MATCHES_DATA } from '../../data/liveMatchesData';
 
@@ -108,6 +109,7 @@ export const LiveMatchPortalPage = () => {
           const inferredSportId = (m.sportId || m.sport || (m.sportName ? m.sportName.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'badminton')).toLowerCase();
           const inferredSportName = m.sportName || m.sport || (inferredSportId.charAt(0).toUpperCase() + inferredSportId.slice(1).replace('-', ' '));
 
+          const videoId = m.youtubeVideoId || extractYouTubeVideoId(m.streamUrl);
           const formatted = {
             ...m,
             sportId: inferredSportId,
@@ -115,6 +117,8 @@ export const LiveMatchPortalPage = () => {
             tableNumber: m.tableNumber || m.venue || 'Court 1',
             matchTitle: m.matchTitle || `${typeof m.team1 === 'object' ? (m.team1?.name || 'Team 1') : (m.team1 || 'Team 1')} vs ${typeof m.team2 === 'object' ? (m.team2?.name || 'Team 2') : (m.team2 || 'Team 2')}`,
             liveTimer: m.liveTimer || '14:32',
+            youtubeVideoId: videoId || m.youtubeVideoId,
+            isLiveStreaming: Boolean(videoId || m.isLiveStreaming || m.streamUrl),
           };
           incomingMap[m.id] = incomingMap[m.id] ? mergeMatchState(incomingMap[m.id], formatted) : formatted;
         }
@@ -375,6 +379,8 @@ export const LiveMatchPortalPage = () => {
                   ? battingTeamStr.includes(t2Name.trim().toLowerCase())
                   : currentInnings === 2;
 
+                const hasLiveStream = Boolean(m.youtubeVideoId || m.streamUrl || m.isLiveStreaming || extractYouTubeVideoId(m.streamUrl));
+
                 return (
                   <div
                     key={m.id}
@@ -393,7 +399,7 @@ export const LiveMatchPortalPage = () => {
                             🔴 LIVE
                           </span>
                         )}
-                        {m.youtubeVideoId && (
+                        {hasLiveStream && (
                           <span className="px-2.5 py-1 rounded-full text-[9px] font-mono font-black bg-rose-600 text-white flex items-center gap-1 shadow-xs">
                             <Video className="w-2.5 h-2.5" /> STREAM
                           </span>
@@ -594,8 +600,8 @@ export const LiveMatchPortalPage = () => {
                         onClick={() => setSelectedMatch(m)}
                         className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0"
                       >
-                        {m.youtubeVideoId ? <Tv className="w-3.5 h-3.5 text-rose-300" /> : <Play className="w-3.5 h-3.5" />}
-                        <span>{m.youtubeVideoId ? 'Watch Stream' : isAthleticsMatch ? 'View Event Details' : 'View Scoreboard'}</span>
+                        {hasLiveStream ? <Tv className="w-3.5 h-3.5 text-rose-300" /> : <Play className="w-3.5 h-3.5" />}
+                        <span>{hasLiveStream ? 'Watch Stream' : isAthleticsMatch ? 'View Event Details' : 'View Scoreboard'}</span>
                       </button>
                     </div>
 
