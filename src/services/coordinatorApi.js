@@ -413,7 +413,7 @@ export const coordinatorApi = {
           delete activeMap[id];
           localStorage.setItem('sems_active_live_matches', JSON.stringify(activeMap));
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     window.dispatchEvent(new Event('storage'));
@@ -495,7 +495,7 @@ export const coordinatorApi = {
           });
           localStorage.setItem('sems_active_live_matches', JSON.stringify(cleaned));
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     window.dispatchEvent(new Event('storage'));
@@ -553,7 +553,7 @@ export const coordinatorApi = {
             }
           });
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const s = (updatedMatch.status || '').toLowerCase();
@@ -837,7 +837,7 @@ export const coordinatorApi = {
             liveMap[m.id] = mergeMatchState(liveMap[m.id], m);
           }
         });
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // 3. Merge sems_coord_matches_* keys from localStorage
@@ -854,7 +854,7 @@ export const coordinatorApi = {
               }
             });
           }
-        } catch (e) {}
+        } catch (e) { }
       }
     }
 

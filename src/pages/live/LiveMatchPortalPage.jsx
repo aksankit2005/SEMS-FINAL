@@ -454,8 +454,8 @@ export const LiveMatchPortalPage = () => {
                         <div className="grid grid-cols-2 gap-3 items-stretch pt-0.5">
                           {/* Team 1 Score Card */}
                           <div className={`p-3 rounded-xl border transition-all flex flex-col justify-between ${!isT2Batting
-                              ? 'bg-emerald-950/60 border-emerald-500/50 shadow-sm'
-                              : 'bg-slate-900/80 border-slate-800/80 opacity-90'
+                            ? 'bg-emerald-950/60 border-emerald-500/50 shadow-sm'
+                            : 'bg-slate-900/80 border-slate-800/80 opacity-90'
                             }`}>
                             <div className="flex items-center justify-between gap-1 mb-1.5">
                               <span className="text-xs sm:text-sm font-black text-white truncate" title={t1Name}>
@@ -487,8 +487,8 @@ export const LiveMatchPortalPage = () => {
 
                           {/* Team 2 Score Card */}
                           <div className={`p-3 rounded-xl border transition-all flex flex-col justify-between ${isT2Batting
-                              ? 'bg-emerald-950/60 border-emerald-500/50 shadow-sm'
-                              : 'bg-slate-900/80 border-slate-800/80 opacity-90'
+                            ? 'bg-emerald-950/60 border-emerald-500/50 shadow-sm'
+                            : 'bg-slate-900/80 border-slate-800/80 opacity-90'
                             }`}>
                             <div className="flex items-center justify-between gap-1 mb-1.5">
                               <span className="text-xs sm:text-sm font-black text-white truncate" title={t2Name}>
