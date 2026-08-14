@@ -653,7 +653,11 @@ export const adminApi = {
       const res = await fetch(apiUrl(`/admin/coordinators/${id}/status`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({
+          status: newStatus,
+          username: target?.username,
+          assignedSport: target?.assignedSport || target?.college
+        })
       });
       if (res.ok) {
         adminApi.addAuditLog({
@@ -674,11 +678,18 @@ export const adminApi = {
   },
 
   resetCoordinatorPassword: async (id, newPassword = 'Password@123') => {
+    const list = await adminApi.getCoordinators();
+    const target = list.find(c => c.id === id);
+
     try {
       const res = await fetch(apiUrl(`/admin/coordinators/${id}/reset-password`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newPassword })
+        body: JSON.stringify({
+          newPassword,
+          username: target?.username,
+          assignedSport: target?.assignedSport || target?.college
+        })
       });
       if (res.ok) {
         adminApi.addAuditLog({
