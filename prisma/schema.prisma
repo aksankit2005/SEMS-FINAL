@@ -332,7 +332,7 @@ model RegistrationMember {
 // college-head/coordinator queries, which use sport slugs and receipt IDs.
 model CollegeRegistration {
   id               String   @id
-  registrationId   String?  @db.Uuid
+  registrationId   String?  @map("registration_id") @db.Uuid
   eventId          String   @map("event_id")
   sportId          String   @map("sport_id")
   studentName      String   @map("student_name")

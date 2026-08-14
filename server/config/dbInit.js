@@ -68,6 +68,7 @@ export const seedInitialAccountHashes = async () => {
     // 4. Ensure college_registrations table has required columns for Prisma
     try {
       await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS registration_id UUID;`);
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS "registrationId" UUID;`);
       await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS participant_data JSONB;`);
     } catch (e) {}
 
