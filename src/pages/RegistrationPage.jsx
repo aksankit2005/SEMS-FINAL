@@ -514,13 +514,22 @@ export const RegistrationPage = () => {
             },
             theme: {
               color: '#2563eb'
+            },
+            modal: {
+              ondismiss: function () {
+                // If user closes/cancels Razorpay popup without paying, unlock background screen
+                setIsProcessingPayment(false);
+              }
             }
           };
 
+          // Lock screen immediately when Razorpay checkout opens
+          setIsProcessingPayment(true);
           const rzp = new window.Razorpay(options);
           rzp.open();
           return;
         } catch (err) {
+          setIsProcessingPayment(false);
           console.warn('Razorpay SDK failed, opening checkout modal', err);
         }
       }
