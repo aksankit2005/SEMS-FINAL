@@ -36,6 +36,31 @@ export const initDatabaseSchema = async () => {
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won2 INT DEFAULT 0;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`);
 
+    // Backfill details JSONB for pre-existing rows where details IS NULL
+    await queryDb(`
+      UPDATE live_matches 
+      SET details = jsonb_build_object(
+        'setsHistory', jsonb_build_array(
+          jsonb_build_object('set', 1, 'score1', COALESCE(score1, 0), 'score2', COALESCE(score2, 0), 'isLocked', false, 'winner', null),
+          jsonb_build_object('set', 2, 'score1', 0, 'score2', 0, 'isLocked', false, 'winner', null),
+          jsonb_build_object('set', 3, 'score1', 0, 'score2', 0, 'isLocked', false, 'winner', null),
+          jsonb_build_object('set', 4, 'score1', 0, 'score2', 0, 'isLocked', false, 'winner', null),
+          jsonb_build_object('set', 5, 'score1', 0, 'score2', 0, 'isLocked', false, 'winner', null)
+        ),
+        'currentSet', COALESCE(current_set, 1),
+        'setsWon1', COALESCE(sets_won1, 0),
+        'setsWon2', COALESCE(sets_won2, 0)
+      ),
+      sets_history = jsonb_build_array(
+        jsonb_build_object('set', 1, 'score1', COALESCE(score1, 0), 'score2', COALESCE(score2, 0), 'isLocked', false, 'winner', null),
+        jsonb_build_object('set', 2, 'score1', 0, 'score2', 0, 'isLocked', false, 'winner', null),
+        jsonb_build_object('set', 3, 'score1', 0, 'score2', 0, 'isLocked', false, 'winner', null),
+        jsonb_build_object('set', 4, 'score1', 0, 'score2', 0, 'isLocked', false, 'winner', null),
+        jsonb_build_object('set', 5, 'score1', 0, 'score2', 0, 'isLocked', false, 'winner', null)
+      )::text
+      WHERE details IS NULL OR details = 'null'::jsonb;
+    `);
+
     // 2. Ensure media table exists for PR media uploads
     await queryDb(`
       CREATE TABLE IF NOT EXISTS media (
