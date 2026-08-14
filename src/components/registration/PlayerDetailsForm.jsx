@@ -22,40 +22,47 @@ export const PlayerDetailsForm = ({
   // Initialize roster size
   useEffect(() => {
     if (sport.id !== 'athletics') {
-      const currentRoster = formData.roster || [];
-      if (currentRoster.length !== 1) {
-        setFormData((prev) => ({
+      setFormData((prev) => {
+        const currentRoster = prev.roster || [];
+        if (currentRoster.length === 1) return prev;
+        
+        const firstPlayer = currentRoster[0] || {};
+        return {
           ...prev,
           roster: [{
-            name: prev.captainName || '',
-            rollNo: '',
-            branch: '',
-            semester: '',
-            phone: prev.captainPhone || '',
-            email: prev.captainEmail || '',
-            gender: ''
+            name: firstPlayer.name || prev.captainName || '',
+            rollNo: firstPlayer.rollNo || '',
+            branch: firstPlayer.branch || '',
+            semester: firstPlayer.semester || '',
+            phone: firstPlayer.phone || prev.captainPhone || '',
+            email: firstPlayer.email || prev.captainEmail || '',
+            fatherName: firstPlayer.fatherName || '',
+            dob: firstPlayer.dob || '',
+            college: firstPlayer.college || prev.collegeName || '',
+            gender: firstPlayer.gender || prev.gender || ''
           }]
-        }));
-      }
+        };
+      });
       return;
     }
 
     // For Athletics: 4 players if Relay, 1 player if individual
     const requiredSize = isRelay ? 4 : 1;
-    const currentRoster = formData.roster || [];
-    let updatedRoster = [...currentRoster];
+    setFormData((prev) => {
+      const currentRoster = prev.roster || [];
+      if (currentRoster.length === requiredSize) return prev;
 
-    if (updatedRoster.length !== requiredSize) {
+      let updatedRoster = [...currentRoster];
       if (updatedRoster.length < requiredSize) {
         while (updatedRoster.length < requiredSize) {
           const idx = updatedRoster.length;
           updatedRoster.push({
-            name: idx === 0 ? (formData.captainName || '') : '',
+            name: idx === 0 ? (prev.captainName || '') : '',
             rollNo: '',
             branch: '',
             semester: '',
-            phone: idx === 0 ? (formData.captainPhone || '') : '',
-            email: idx === 0 ? (formData.captainEmail || '') : '',
+            phone: idx === 0 ? (prev.captainPhone || '') : '',
+            email: idx === 0 ? (prev.captainEmail || '') : '',
             gender: ''
           });
         }
@@ -63,11 +70,11 @@ export const PlayerDetailsForm = ({
         updatedRoster = updatedRoster.slice(0, requiredSize);
       }
 
-      setFormData((prev) => ({
+      return {
         ...prev,
         roster: updatedRoster
-      }));
-    }
+      };
+    });
   }, [sport.id, selectedEvent, isRelay, setFormData]);
 
   const handleInputChange = (e) => {

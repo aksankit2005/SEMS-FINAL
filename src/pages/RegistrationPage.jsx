@@ -519,26 +519,42 @@ export const RegistrationPage = () => {
     const isDoubles = type === 'Doubles';
     const targetSize = isDoubles ? 2 : 1;
 
-    // Create initial roster strictly bounded to targetSize (1 for Singles, 2 for Doubles)
-    const initialRoster = Array.from({ length: targetSize }, (_, i) => ({
-      name: i === 0 ? (formData.captainName || '') : '',
-      rollNo: '',
-      branch: '',
-      semester: '',
-      phone: i === 0 ? (formData.captainPhone || '') : '',
-      email: i === 0 ? (formData.captainEmail || '') : '',
-      fatherName: '',
-      dob: '',
-      college: formData.collegeName || '',
-      gender: formData.gender || ''
-    }));
+    setFormData((prev) => {
+      const currentRoster = prev.roster || [];
+      let updatedRoster = [];
 
-    setFormData((prev) => ({
-      ...prev,
-      eventType: type,
-      teamName: type === 'Singles' ? '' : (prev.teamName || `${prev.captainName || 'Badminton'} Duo`),
-      roster: initialRoster
-    }));
+      for (let i = 0; i < targetSize; i++) {
+        if (currentRoster[i]) {
+          updatedRoster.push({
+            ...currentRoster[i],
+            name: i === 0 ? (currentRoster[0].name || prev.captainName || '') : (currentRoster[i].name || ''),
+            phone: i === 0 ? (currentRoster[0].phone || prev.captainPhone || '') : (currentRoster[i].phone || ''),
+            email: i === 0 ? (currentRoster[0].email || prev.captainEmail || '') : (currentRoster[i].email || ''),
+            college: currentRoster[i].college || prev.collegeName || ''
+          });
+        } else {
+          updatedRoster.push({
+            name: i === 0 ? (prev.captainName || '') : '',
+            rollNo: '',
+            branch: '',
+            semester: '',
+            phone: i === 0 ? (prev.captainPhone || '') : '',
+            email: i === 0 ? (prev.captainEmail || '') : '',
+            fatherName: '',
+            dob: '',
+            college: prev.collegeName || '',
+            gender: prev.gender || ''
+          });
+        }
+      }
+
+      return {
+        ...prev,
+        eventType: type,
+        teamName: type === 'Singles' ? '' : (prev.teamName || `${prev.captainName || 'Badminton'} Duo`),
+        roster: updatedRoster
+      };
+    });
 
     if (activeSport) {
       const sFee = activeSport.singlesFee !== undefined ? activeSport.singlesFee : 300;
@@ -605,6 +621,7 @@ export const RegistrationPage = () => {
         {isRacketSport ? (
           formData.eventType === 'Singles' ? (
             <PlayerDetailsForm
+              key={`racket-singles-${activeSport.id}-${formData.eventType}`}
               sport={activeSport}
               formData={formData}
               setFormData={setFormData}
@@ -613,6 +630,7 @@ export const RegistrationPage = () => {
             />
           ) : (
             <TeamDetailsForm
+              key={`racket-doubles-${activeSport.id}-${formData.eventType}`}
               sport={{
                 ...activeSport,
                 teamSize: '2 Players (Doubles)',
@@ -628,6 +646,7 @@ export const RegistrationPage = () => {
           )
         ) : ['chess', 'athletics'].includes(resolveSportKey(activeSport)) ? (
           <PlayerDetailsForm
+            key={`player-form-${activeSport.id}`}
             sport={activeSport}
             formData={formData}
             setFormData={setFormData}
@@ -636,6 +655,7 @@ export const RegistrationPage = () => {
           />
         ) : (
           <TeamDetailsForm
+            key={`team-form-${activeSport.id}`}
             sport={activeSport}
             formData={formData}
             setFormData={setFormData}
