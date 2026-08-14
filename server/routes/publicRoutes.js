@@ -6,23 +6,33 @@ const router = express.Router();
 
 // GET /api/live-matches - Spectator endpoint
 router.get('/live-matches', async (req, res) => {
-  const dbRes = await queryDb(
-    `SELECT id, sport_id AS "sportId", format, status, team1, team2, 
-            match_title AS "matchTitle", table_number AS "tableNumber", 
-            time, score1, score2, winner 
-     FROM live_matches 
-     WHERE LOWER(status) IN ('running', 'live') 
-     ORDER BY updated_at DESC`
-  );
+  try {
+    const dbRes = await queryDb(
+      `SELECT id, sport_id AS "sportId", format, status, team1, team2, 
+              match_title AS "matchTitle", table_number AS "tableNumber", 
+              time, score1, score2, winner,
+              youtube_video_id AS "youtubeVideoId",
+              stream_url AS "streamUrl",
+              is_live_streaming AS "isLiveStreaming"
+       FROM live_matches 
+       WHERE LOWER(status) IN ('running', 'live', 'in_progress', 'active') 
+       ORDER BY updated_at DESC`
+    );
 
-  if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
-    const formatted = dbRes.rows.map((m) => ({
-      ...m,
-      sportId: m.sportId,
-      sportName: (m.sportId || '').replace(/-/g, ' ').toUpperCase(),
-      liveTimer: m.time || '14:32',
-    }));
-    return res.json(formatted);
+    if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+      const formatted = dbRes.rows.map((m) => ({
+        ...m,
+        sportId: m.sportId,
+        sportName: (m.sportId || '').replace(/-/g, ' ').toUpperCase(),
+        liveTimer: m.time || '14:32',
+        youtubeVideoId: m.youtubeVideoId || m.youtube_video_id || null,
+        streamUrl: m.streamUrl || m.stream_url || null,
+        isLiveStreaming: Boolean(m.isLiveStreaming || m.youtubeVideoId || m.streamUrl)
+      }));
+      return res.json(formatted);
+    }
+  } catch (err) {
+    console.error('Error in GET /api/live-matches route:', err);
   }
 
   return res.json([]);
