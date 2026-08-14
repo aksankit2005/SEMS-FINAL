@@ -5,6 +5,7 @@ import { SCHEDULE_DATA } from '../data/scheduleData';
 import { RESULTS_DATA } from '../data/resultsData';
 import { ANNOUNCEMENTS_DATA } from '../data/announcementsData';
 import { ALL_COLLEGES } from '../services/superCoordinatorApi';
+import { mergeMatchState } from '../services/coordinatorApi';
 
 const SportsDataContext = createContext();
 
@@ -21,7 +22,7 @@ export const SportsDataProvider = ({ children }) => {
     try {
       const stored = localStorage.getItem('sems_super_coord_leaderboard');
       if (stored) entries = JSON.parse(stored);
-    } catch (e) {}
+    } catch (e) { }
     const tally = {};
     entries.forEach((entry) => {
       if (entry.winnerCollege) {
@@ -60,7 +61,7 @@ export const SportsDataProvider = ({ children }) => {
           adminList = parsed.filter((a) => a && (a.isPublished !== false));
         }
       }
-    } catch (e) {}
+    } catch (e) { }
 
     const formattedAdminList = adminList.map((a) => ({
       id: a.id,
@@ -96,9 +97,9 @@ export const SportsDataProvider = ({ children }) => {
         try {
           const parsed = JSON.parse(saved);
           activeList = Object.values(parsed).filter(
-            (m) => m && m.id !== 'M595473' && (m.status === 'running' || m.status === 'live' || m.status === 'in_progress')
+            (m) => m && m.id && m.id !== 'M595473' && (m.status === 'running' || m.status === 'live' || m.status === 'in_progress' || m.status === 'active')
           );
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const hasTTLive = activeList.some(
@@ -111,12 +112,32 @@ export const SportsDataProvider = ({ children }) => {
         return true;
       });
 
-      const combined = [...activeList, ...filteredFallback];
-      const uniqueMap = {};
-      combined.forEach((m) => {
-        if (m && m.id) uniqueMap[m.id] = m;
+      setLiveMatches((prevLiveMatches) => {
+        const prevMap = {};
+        (prevLiveMatches || []).forEach((m) => {
+          if (m && m.id) prevMap[m.id] = m;
+        });
+
+        const newMap = { ...prevMap };
+
+        // Process activeList first so live updates take precedence
+        activeList.forEach((m) => {
+          if (m && m.id) {
+            newMap[m.id] = mergeMatchState(newMap[m.id], m);
+          }
+        });
+
+        // Add fallbacks if not already present
+        filteredFallback.forEach((m) => {
+          if (m && m.id && !newMap[m.id]) {
+            newMap[m.id] = m;
+          }
+        });
+
+        return Object.values(newMap).filter(
+          (m) => m && m.id !== 'M595473' && (m.status === 'running' || m.status === 'live' || m.status === 'in_progress' || m.status === 'active')
+        );
       });
-      setLiveMatches(Object.values(uniqueMap));
     };
 
     syncLiveMatches();
@@ -149,17 +170,25 @@ export const SportsDataProvider = ({ children }) => {
   }, []);
 
   const updateLiveMatchScore = (matchId, team1Score, team2Score, statusInfo) => {
+    if (!matchId) return;
     setLiveMatches((prev) =>
-      prev.map((m) =>
-        m.id === matchId
-          ? {
-              ...m,
-              team1: { ...m.team1, score: team1Score },
-              team2: { ...m.team2, score: team2Score },
-              currentInfo: statusInfo
-            }
-          : m
-      )
+      prev.map((m) => {
+        if (m.id !== matchId) return m;
+        const curS1 = m.score1 !== undefined ? Number(m.score1) : (m.team1?.score !== undefined ? Number(m.team1.score) : 0);
+        const curS2 = m.score2 !== undefined ? Number(m.score2) : (m.team2?.score !== undefined ? Number(m.team2.score) : 0);
+        const newS1 = Math.max(curS1, Number(team1Score) || 0);
+        const newS2 = Math.max(curS2, Number(team2Score) || 0);
+
+        return {
+          ...m,
+          score1: newS1,
+          score2: newS2,
+          team1: typeof m.team1 === 'object' ? { ...m.team1, score: newS1 } : m.team1,
+          team2: typeof m.team2 === 'object' ? { ...m.team2, score: newS2 } : m.team2,
+          currentInfo: statusInfo || m.currentInfo,
+          updatedAt: new Date().toISOString()
+        };
+      })
     );
   };
 

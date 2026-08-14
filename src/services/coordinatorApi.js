@@ -18,37 +18,98 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Helper to safely merge live match states without score regressions or field loss
+export const mergeMatchState = (existing, incoming) => {
+  if (!existing) return incoming;
+  if (!incoming) return existing;
+
+  const incStatus = (incoming.status || '').toLowerCase();
+  const extStatus = (existing.status || '').toLowerCase();
+
+  // If status is completed/finished, prioritize completed state
+  if (incStatus === 'completed' || incStatus === 'finished') return { ...existing, ...incoming };
+  if (extStatus === 'completed' || extStatus === 'finished') return existing;
+
+  // Check explicit timestamps if both have valid dates
+  const incTime = new Date(incoming.updatedAt || incoming.timestamp || 0).getTime();
+  const extTime = new Date(existing.updatedAt || existing.timestamp || 0).getTime();
+
+  if (incTime > 0 && extTime > 0 && incTime !== extTime) {
+    return incTime > extTime ? { ...existing, ...incoming } : { ...incoming, ...existing };
+  }
+
+  // Score extraction helpers
+  const getS1 = (m) => {
+    if (m.score1 !== undefined && m.score1 !== null) return Number(m.score1) || 0;
+    if (typeof m.team1 === 'object' && m.team1?.score !== undefined) return Number(m.team1.score) || 0;
+    return 0;
+  };
+
+  const getS2 = (m) => {
+    if (m.score2 !== undefined && m.score2 !== null) return Number(m.score2) || 0;
+    if (typeof m.team2 === 'object' && m.team2?.score !== undefined) return Number(m.team2.score) || 0;
+    return 0;
+  };
+
+  const extS1 = getS1(existing);
+  const extS2 = getS2(existing);
+  const incS1 = getS1(incoming);
+  const incS2 = getS2(incoming);
+
+  // Preserve highest non-decreasing score for active live matches
+  const finalS1 = Math.max(extS1, incS1);
+  const finalS2 = Math.max(extS2, incS2);
+
+  const team1Merged = typeof incoming.team1 === 'object'
+    ? { ...incoming.team1, score: finalS1 }
+    : (typeof existing.team1 === 'object' ? { ...existing.team1, score: finalS1 } : (incoming.team1 || existing.team1));
+
+  const team2Merged = typeof incoming.team2 === 'object'
+    ? { ...incoming.team2, score: finalS2 }
+    : (typeof existing.team2 === 'object' ? { ...existing.team2, score: finalS2 } : (incoming.team2 || existing.team2));
+
+  return {
+    ...existing,
+    ...incoming,
+    score1: finalS1,
+    score2: finalS2,
+    team1: team1Merged,
+    team2: team2Merged,
+    updatedAt: new Date().toISOString()
+  };
+};
+
 // Password pattern: {sport_key}#2026  (e.g. cricket#2026, table_tennis#2026)
 // NOTE: Passwords are NOT stored here — authentication is handled by the backend.
 export const COORDINATOR_ACCOUNTS = [
-  { assignedSport: 'cricket',       sportName: 'Cricket',       username: 'coord_cricket',       coordinatorName: 'Vikramaditya Sharma',    email: 'cricket.coord@sems.edu' },
-  { assignedSport: 'table-tennis',  sportName: 'Table Tennis',  username: 'coord_table_tennis',  coordinatorName: 'Rohan Mehta',            email: 'tt.coord@sems.edu' },
-  { assignedSport: 'badminton',     sportName: 'Badminton',     username: 'coord_badminton',     coordinatorName: 'Badminton Coordinator',  email: '' },
-  { assignedSport: 'chess',         sportName: 'Chess',         username: 'coord_chess',         coordinatorName: 'Grandmaster Anand Verma',email: 'chess.coord@sems.edu' },
-  { assignedSport: 'football',      sportName: 'Football',      username: 'coord_football',      coordinatorName: 'Carlos Rodriguez',       email: 'football.coord@sems.edu' },
-  { assignedSport: 'basketball',    sportName: 'Basketball',    username: 'coord_basketball',    coordinatorName: 'Michael Jordan Singh',   email: 'basketball.coord@sems.edu' },
-  { assignedSport: 'volleyball',    sportName: 'Volleyball',    username: 'coord_volleyball',    coordinatorName: 'Siddharth Rao',          email: 'volleyball.coord@sems.edu' },
-  { assignedSport: 'kabaddi',       sportName: 'Kabaddi',       username: 'coord_kabaddi',       coordinatorName: 'Pradeep Narwal Kumar',   email: 'kabaddi.coord@sems.edu' },
-  { assignedSport: 'kho-kho',       sportName: 'Kho-Kho',       username: 'coord_kho_kho',       coordinatorName: 'Sunita Jadhav',          email: 'khokho.coord@sems.edu' },
-  { assignedSport: 'athletics',     sportName: 'Athletics',     username: 'coord_athletics',     coordinatorName: 'PT Usha Pillai',         email: 'athletics.coord@sems.edu' },
-  { assignedSport: 'tug-of-war',    sportName: 'Tug of War',    username: 'coord_tug_of_war',    coordinatorName: 'Bheem Singh Power',      email: 'tugofwar.coord@sems.edu' },
-  { assignedSport: 'gully-cricket', sportName: 'Gully Cricket', username: 'coord_gully_cricket', coordinatorName: 'Chiku Bhai',             email: 'gullycricket.coord@sems.edu' },
+  { assignedSport: 'cricket', sportName: 'Cricket', username: 'coord_cricket', coordinatorName: 'Vikramaditya Sharma', email: 'cricket.coord@sems.edu' },
+  { assignedSport: 'table-tennis', sportName: 'Table Tennis', username: 'coord_table_tennis', coordinatorName: 'Rohan Mehta', email: 'tt.coord@sems.edu' },
+  { assignedSport: 'badminton', sportName: 'Badminton', username: 'coord_badminton', coordinatorName: 'Badminton Coordinator', email: '' },
+  { assignedSport: 'chess', sportName: 'Chess', username: 'coord_chess', coordinatorName: 'Grandmaster Anand Verma', email: 'chess.coord@sems.edu' },
+  { assignedSport: 'football', sportName: 'Football', username: 'coord_football', coordinatorName: 'Carlos Rodriguez', email: 'football.coord@sems.edu' },
+  { assignedSport: 'basketball', sportName: 'Basketball', username: 'coord_basketball', coordinatorName: 'Michael Jordan Singh', email: 'basketball.coord@sems.edu' },
+  { assignedSport: 'volleyball', sportName: 'Volleyball', username: 'coord_volleyball', coordinatorName: 'Siddharth Rao', email: 'volleyball.coord@sems.edu' },
+  { assignedSport: 'kabaddi', sportName: 'Kabaddi', username: 'coord_kabaddi', coordinatorName: 'Pradeep Narwal Kumar', email: 'kabaddi.coord@sems.edu' },
+  { assignedSport: 'kho-kho', sportName: 'Kho-Kho', username: 'coord_kho_kho', coordinatorName: 'Sunita Jadhav', email: 'khokho.coord@sems.edu' },
+  { assignedSport: 'athletics', sportName: 'Athletics', username: 'coord_athletics', coordinatorName: 'PT Usha Pillai', email: 'athletics.coord@sems.edu' },
+  { assignedSport: 'tug-of-war', sportName: 'Tug of War', username: 'coord_tug_of_war', coordinatorName: 'Bheem Singh Power', email: 'tugofwar.coord@sems.edu' },
+  { assignedSport: 'gully-cricket', sportName: 'Gully Cricket', username: 'coord_gully_cricket', coordinatorName: 'Chiku Bhai', email: 'gullycricket.coord@sems.edu' },
 ];
 
 export const getSportRoute = (assignedSport) => {
   const normalized = (assignedSport || '').toLowerCase().trim().replace(/_/g, '-');
   const routes = {
-    'badminton':     '/coordinator/badminton',
-    'cricket':       '/coordinator/cricket',
-    'football':      '/coordinator/football',
-    'basketball':    '/coordinator/basketball',
-    'volleyball':    '/coordinator/volleyball',
-    'table-tennis':  '/coordinator/table-tennis',
-    'chess':         '/coordinator/chess',
-    'kabaddi':       '/coordinator/kabaddi',
-    'kho-kho':       '/coordinator/kho-kho',
-    'athletics':     '/coordinator/athletics',
-    'tug-of-war':    '/coordinator/tug-of-war',
+    'badminton': '/coordinator/badminton',
+    'cricket': '/coordinator/cricket',
+    'football': '/coordinator/football',
+    'basketball': '/coordinator/basketball',
+    'volleyball': '/coordinator/volleyball',
+    'table-tennis': '/coordinator/table-tennis',
+    'chess': '/coordinator/chess',
+    'kabaddi': '/coordinator/kabaddi',
+    'kho-kho': '/coordinator/kho-kho',
+    'athletics': '/coordinator/athletics',
+    'tug-of-war': '/coordinator/tug-of-war',
     'gully-cricket': '/coordinator/gully-cricket',
   };
   return routes[normalized] || (normalized ? `/coordinator/${normalized}` : '/coordinator/badminton');
@@ -102,7 +163,7 @@ export const coordinatorApi = {
     if (saved) {
       try {
         return JSON.parse(saved);
-      } catch (e) {}
+      } catch (e) { }
     }
     return null;
   },
@@ -132,7 +193,7 @@ export const coordinatorApi = {
             return !mSport || mSport === sportKey;
           });
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     try {
@@ -266,7 +327,7 @@ export const coordinatorApi = {
             });
           }
         }
-      } catch (err) {}
+      } catch (err) { }
     });
     return publicMatches;
   },
@@ -419,17 +480,31 @@ export const coordinatorApi = {
     const updatedList = matches.map((m) => (m.id === matchId ? updatedMatch : m));
     this.saveMatches(updatedList);
 
-    // Update active live assignments key in localStorage
+    // Update active live assignments key in localStorage strictly by matchId
     const savedActiveStr = localStorage.getItem('sems_active_live_matches');
-    let activeMap = savedActiveStr ? JSON.parse(savedActiveStr) : {};
+    let activeMap = {};
+    if (savedActiveStr) {
+      try {
+        const parsed = JSON.parse(savedActiveStr);
+        if (parsed && typeof parsed === 'object') {
+          Object.values(parsed).forEach((m) => {
+            if (m && m.id) {
+              activeMap[m.id] = activeMap[m.id] ? mergeMatchState(activeMap[m.id], m) : m;
+            }
+          });
+        }
+      } catch (e) {}
+    }
 
-    if (updatedMatch.status === 'running' || updatedMatch.status === 'live') {
-      const tableKey = updatedMatch.tableNumber || 'Table 1';
-      activeMap[tableKey] = updatedMatch;
-      if (matchId) activeMap[matchId] = updatedMatch;
-    } else if (updatedMatch.status === 'COMPLETED' || updatedMatch.status === 'DEMOTED' || updatedMatch.status === 'SCHEDULED') {
-      Object.keys(activeMap).forEach((key) => {
-        if (activeMap[key]?.id === matchId || key === matchId) delete activeMap[key];
+    const s = (updatedMatch.status || '').toLowerCase();
+    if (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active') {
+      if (matchId) {
+        activeMap[matchId] = mergeMatchState(activeMap[matchId], updatedMatch);
+      }
+    } else {
+      if (matchId) delete activeMap[matchId];
+      Object.keys(activeMap).forEach((k) => {
+        if (activeMap[k]?.id === matchId) delete activeMap[k];
       });
     }
 
@@ -484,7 +559,7 @@ export const coordinatorApi = {
               localStorage.setItem(key, JSON.stringify(activeMap));
             }
           }
-        } catch (e) {}
+        } catch (e) { }
       }
     }
 
@@ -514,7 +589,7 @@ export const coordinatorApi = {
     try {
       const deletedArr = JSON.parse(localStorage.getItem('sems_deleted_registration_ids') || '[]');
       deletedSet = new Set(deletedArr);
-    } catch (e) {}
+    } catch (e) { }
 
     let serverRegs = [];
     try {
@@ -535,13 +610,13 @@ export const coordinatorApi = {
     try {
       const saved = localStorage.getItem(key);
       if (saved) localParticipantRegs = JSON.parse(saved);
-    } catch (e) {}
+    } catch (e) { }
 
     let userGlobalRegs = [];
     try {
       const savedUserRegs = localStorage.getItem('sems_registrations');
       if (savedUserRegs) userGlobalRegs = JSON.parse(savedUserRegs);
-    } catch (e) {}
+    } catch (e) { }
 
     const filteredUserRegs = userGlobalRegs.filter(r => {
       if (!r) return false;
@@ -605,7 +680,7 @@ export const coordinatorApi = {
     try {
       const saved = localStorage.getItem(key);
       if (saved) currentParticipants = JSON.parse(saved);
-    } catch (e) {}
+    } catch (e) { }
 
     const updatedParticipants = [regData, ...currentParticipants.filter(r => r.id !== regData.id)];
     localStorage.setItem(key, JSON.stringify(updatedParticipants));
@@ -633,7 +708,7 @@ export const coordinatorApi = {
         deletedArr.push(id);
         localStorage.setItem('sems_deleted_registration_ids', JSON.stringify(deletedArr));
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // Remove from sems_participants_${sportKey}
     if (sportKey) {
@@ -645,7 +720,7 @@ export const coordinatorApi = {
           const filtered = parsed.filter(r => r.id !== id);
           localStorage.setItem(key, JSON.stringify(filtered));
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // Remove from sems_registrations
@@ -656,7 +731,7 @@ export const coordinatorApi = {
         const filtered = parsed.filter(r => r.id !== id);
         localStorage.setItem('sems_registrations', JSON.stringify(filtered));
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // Backend server call
     try {
@@ -681,24 +756,31 @@ export const coordinatorApi = {
       console.warn('Backend live matches API fallback:', e);
     }
 
-    const activeList = [...serverLive];
+    const liveMap = {};
 
+    // 1. Process server live matches
+    serverLive.forEach((m) => {
+      const s = (m?.status || '').toLowerCase();
+      if (m && m.id && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active')) {
+        liveMap[m.id] = m;
+      }
+    });
+
+    // 2. Merge sems_active_live_matches from localStorage
     const savedActiveStr = localStorage.getItem('sems_active_live_matches');
     if (savedActiveStr) {
       try {
         const activeMap = JSON.parse(savedActiveStr);
         Object.values(activeMap).forEach((m) => {
           const s = (m?.status || '').toLowerCase();
-          if (m && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active')) {
-            if (!activeList.some((a) => a.id === m.id)) {
-              activeList.push(m);
-            }
+          if (m && m.id && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active')) {
+            liveMap[m.id] = mergeMatchState(liveMap[m.id], m);
           }
         });
       } catch (e) {}
     }
 
-    // Also scan all sems_coord_matches_* keys in localStorage
+    // 3. Merge sems_coord_matches_* keys from localStorage
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.startsWith('sems_coord_matches_')) {
@@ -707,10 +789,8 @@ export const coordinatorApi = {
           if (Array.isArray(list)) {
             list.forEach((m) => {
               const s = (m?.status || '').toLowerCase();
-              if (m && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active')) {
-                if (!activeList.some((a) => a.id === m.id)) {
-                  activeList.push(m);
-                }
+              if (m && m.id && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active')) {
+                liveMap[m.id] = mergeMatchState(liveMap[m.id], m);
               }
             });
           }
@@ -718,7 +798,7 @@ export const coordinatorApi = {
       }
     }
 
-    return activeList;
+    return Object.values(liveMap);
   },
 
   // --- COORDINATOR EVENT MANAGEMENT API METHODS ---
@@ -732,7 +812,7 @@ export const coordinatorApi = {
     try {
       const deletedArr = JSON.parse(localStorage.getItem('sems_deleted_event_ids') || '[]');
       deletedSet = new Set(deletedArr);
-    } catch (e) {}
+    } catch (e) { }
 
     const assignedKey = resolveSportKey(user.assignedSport || '');
 
@@ -748,7 +828,7 @@ export const coordinatorApi = {
 
     const key = `sems_coord_events_${assignedKey}`;
     const keyUnderscore = `sems_coord_events_${assignedKey.replace(/-/g, '_')}`;
-    
+
     let combinedLocal = [];
     [key, keyUnderscore].forEach((k) => {
       const saved = localStorage.getItem(k);
@@ -758,7 +838,7 @@ export const coordinatorApi = {
           if (Array.isArray(parsed)) {
             combinedLocal.push(...parsed);
           }
-        } catch (err) {}
+        } catch (err) { }
       }
     });
 
@@ -806,7 +886,7 @@ export const coordinatorApi = {
       if (updatedDeleted) {
         localStorage.setItem('sems_deleted_event_ids', JSON.stringify(deletedArr));
       }
-    } catch (e) {}
+    } catch (e) { }
 
     localStorage.setItem(key, JSON.stringify(events || []));
     window.dispatchEvent(new Event('sems_events_updated'));
@@ -927,7 +1007,7 @@ export const coordinatorApi = {
         deletedArr.push(id);
         localStorage.setItem('sems_deleted_event_ids', JSON.stringify(deletedArr));
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // Purge event safely from ALL sems_coord_events_* keys in localStorage
     try {
@@ -939,9 +1019,9 @@ export const coordinatorApi = {
             const filtered = list.filter((e) => e && e.id !== id);
             localStorage.setItem(key, JSON.stringify(filtered));
           }
-        } catch (e) {}
+        } catch (e) { }
       });
-    } catch (e) {}
+    } catch (e) { }
 
     window.dispatchEvent(new Event('sems_events_updated'));
     window.dispatchEvent(new Event('storage'));
@@ -961,13 +1041,13 @@ export const coordinatorApi = {
             });
           }
           localStorage.removeItem(key);
-        } catch (e) {}
+        } catch (e) { }
       });
 
       const existingDeleted = JSON.parse(localStorage.getItem('sems_deleted_event_ids') || '[]');
       const combinedDeleted = Array.from(new Set([...existingDeleted, ...deletedArr]));
       localStorage.setItem('sems_deleted_event_ids', JSON.stringify(combinedDeleted));
-    } catch (e) {}
+    } catch (e) { }
 
     window.dispatchEvent(new Event('sems_events_updated'));
     window.dispatchEvent(new Event('storage'));
@@ -985,13 +1065,13 @@ export const coordinatorApi = {
   async getPublicEvents() {
     try {
       this.purgeOldTestEvents();
-    } catch (e) {}
+    } catch (e) { }
 
     let deletedSet = new Set();
     try {
       const deletedArr = JSON.parse(localStorage.getItem('sems_deleted_event_ids') || '[]');
       deletedSet = new Set(deletedArr);
-    } catch (e) {}
+    } catch (e) { }
 
     let serverEvents = [];
     try {
@@ -1031,9 +1111,9 @@ export const coordinatorApi = {
               }
             });
           }
-        } catch (err) {}
+        } catch (err) { }
       });
-    } catch (e) {}
+    } catch (e) { }
 
     return publicList;
   },
@@ -1069,7 +1149,7 @@ export const coordinatorApi = {
           event = events[idx];
           localStorage.setItem(key, JSON.stringify(events));
         }
-      } catch (err) {}
+      } catch (err) { }
     }
 
     // Save to participants list

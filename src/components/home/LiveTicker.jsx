@@ -31,11 +31,11 @@ export const LiveTicker = () => {
                 <span className="font-bold text-blue-600 dark:text-blue-400">{match.sportName || match.sport || 'Match'}</span>
                 <span className="text-slate-300 dark:text-slate-600">|</span>
                 <span className="font-semibold text-slate-950 dark:text-white">
-                  {typeof match.team1 === 'object' ? match.team1?.name : match.team1} {match.team1?.score !== undefined ? `(${match.team1.score})` : ''}
+                  {typeof match.team1 === 'object' ? match.team1?.name : match.team1} {match.score1 !== undefined && match.score1 !== null ? `(${match.score1})` : (match.team1?.score !== undefined ? `(${match.team1.score})` : '')}
                 </span>
                 <span className="text-slate-400">vs</span>
                 <span className="font-semibold text-slate-950 dark:text-white">
-                  {typeof match.team2 === 'object' ? match.team2?.name : match.team2} {match.team2?.score !== undefined ? `(${match.team2.score})` : ''}
+                  {typeof match.team2 === 'object' ? match.team2?.name : match.team2} {match.score2 !== undefined && match.score2 !== null ? `(${match.score2})` : (match.team2?.score !== undefined ? `(${match.team2.score})` : '')}
                 </span>
                 <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
                   {match.currentInfo || match.status}
