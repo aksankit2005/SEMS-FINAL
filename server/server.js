@@ -22,6 +22,7 @@ const __dirname = path.dirname(__filename);
 const distPath = path.join(__dirname, '../dist');
 
 const app = express();
+app.set('trust proxy', 1);
 
 // ─── SECURITY HEADERS (Helmet.js) ───────────────────────────────────────────
 app.use(helmet({

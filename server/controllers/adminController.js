@@ -618,14 +618,20 @@ export const saveCoordinatorDB = async (req, res) => {
     const isPR = role === 'PR Member' || role === 'pr_coordinator';
 
     if (isCollegeHead) {
-      if (id) {
+      if (id && (!isNaN(Number(id)) || typeof id === 'string')) {
         let updateQuery = `UPDATE college_head_users SET faculty_name = $1, username = $2, email = $3, phone = $4, college = $5, status = $6, updated_at = CURRENT_TIMESTAMP`;
         const params = [name, cleanUser, email || '', phone || '', college || 'MPEC', accStatus];
         if (passHash) {
-          updateQuery += `, password_hash = $7 WHERE id = $8`;
-          params.push(passHash, id);
+          updateQuery += `, password_hash = $7 WHERE `;
+          params.push(passHash);
         } else {
-          updateQuery += ` WHERE id = $7`;
+          updateQuery += ` WHERE `;
+        }
+        if (!isNaN(Number(id))) {
+          updateQuery += `id = $${params.length + 1}`;
+          params.push(Number(id));
+        } else {
+          updateQuery += `LOWER(username) = LOWER($${params.length + 1})`;
           params.push(id);
         }
         await queryDb(updateQuery, params);
@@ -638,14 +644,20 @@ export const saveCoordinatorDB = async (req, res) => {
         );
       }
     } else if (isPR) {
-      if (id) {
+      if (id && (!isNaN(Number(id)) || typeof id === 'string')) {
         let updateQuery = `UPDATE pr_users SET name = $1, username = $2, email = $3, status = $4, updated_at = CURRENT_TIMESTAMP`;
         const params = [name, cleanUser, email || '', accStatus];
         if (passHash) {
-          updateQuery += `, password_hash = $5 WHERE id = $6`;
-          params.push(passHash, id);
+          updateQuery += `, password_hash = $5 WHERE `;
+          params.push(passHash);
         } else {
-          updateQuery += ` WHERE id = $5`;
+          updateQuery += ` WHERE `;
+        }
+        if (!isNaN(Number(id))) {
+          updateQuery += `id = $${params.length + 1}`;
+          params.push(Number(id));
+        } else {
+          updateQuery += `LOWER(username) = LOWER($${params.length + 1})`;
           params.push(id);
         }
         await queryDb(updateQuery, params);
@@ -661,14 +673,20 @@ export const saveCoordinatorDB = async (req, res) => {
       const sportSlug = (assignedSport || 'cricket').toLowerCase().replace(/[^a-z0-9]/g, '-');
       const sportTitle = sportName || (assignedSport || 'Cricket').replace(/-/g, ' ').toUpperCase();
 
-      if (id) {
+      if (id && (!isNaN(Number(id)) || typeof id === 'string')) {
         let updateQuery = `UPDATE sport_coordinators SET coordinator_name = $1, username = $2, email = $3, phone = $4, assigned_sport = $5, sport_name = $6, status = $7, updated_at = CURRENT_TIMESTAMP`;
         const params = [name, cleanUser, email || '', phone || '', sportSlug, sportTitle, accStatus];
         if (passHash) {
-          updateQuery += `, password_hash = $8 WHERE id = $9`;
-          params.push(passHash, id);
+          updateQuery += `, password_hash = $8 WHERE `;
+          params.push(passHash);
         } else {
-          updateQuery += ` WHERE id = $8`;
+          updateQuery += ` WHERE `;
+        }
+        if (!isNaN(Number(id))) {
+          updateQuery += `id = $${params.length + 1}`;
+          params.push(Number(id));
+        } else {
+          updateQuery += `LOWER(username) = LOWER($${params.length + 1}) OR assigned_sport = LOWER($${params.length + 1})`;
           params.push(id);
         }
         await queryDb(updateQuery, params);
@@ -695,18 +713,28 @@ export const toggleCoordinatorStatusDB = async (req, res) => {
 
   try {
     const newStatus = (status && status.toLowerCase() === 'inactive') ? 'inactive' : 'active';
+    const isNum = !isNaN(Number(id));
 
-    const sc = await queryDb('UPDATE sport_coordinators SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id', [newStatus, id]);
+    const scQuery = isNum
+      ? 'UPDATE sport_coordinators SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id'
+      : 'UPDATE sport_coordinators SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = LOWER($2) OR assigned_sport = LOWER($2) RETURNING id';
+    const sc = await queryDb(scQuery, [newStatus, isNum ? Number(id) : id]);
     if (sc && sc.rows && sc.rows.length > 0) {
       return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
     }
 
-    const ch = await queryDb('UPDATE college_head_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id', [newStatus, id]);
+    const chQuery = isNum
+      ? 'UPDATE college_head_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id'
+      : 'UPDATE college_head_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = LOWER($2) OR LOWER(college) = LOWER($2) RETURNING id';
+    const ch = await queryDb(chQuery, [newStatus, isNum ? Number(id) : id]);
     if (ch && ch.rows && ch.rows.length > 0) {
       return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
     }
 
-    const pr = await queryDb('UPDATE pr_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id', [newStatus, id]);
+    const prQuery = isNum
+      ? 'UPDATE pr_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id'
+      : 'UPDATE pr_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = LOWER($2) RETURNING id';
+    const pr = await queryDb(prQuery, [newStatus, isNum ? Number(id) : id]);
     if (pr && pr.rows && pr.rows.length > 0) {
       return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
     }
@@ -724,19 +752,29 @@ export const resetCoordinatorPasswordDB = async (req, res) => {
 
   const passToSet = newPassword && newPassword.trim().length >= 6 ? newPassword.trim() : 'Password@123';
   const hashed = await bcrypt.hash(passToSet, 10);
+  const isNum = !isNaN(Number(id));
 
   try {
-    const sc = await queryDb('UPDATE sport_coordinators SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id', [hashed, id]);
+    const scQuery = isNum
+      ? 'UPDATE sport_coordinators SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id'
+      : 'UPDATE sport_coordinators SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = LOWER($2) OR assigned_sport = LOWER($2) RETURNING id';
+    const sc = await queryDb(scQuery, [hashed, isNum ? Number(id) : id]);
     if (sc && sc.rows && sc.rows.length > 0) {
       return res.json({ success: true, message: 'Password reset in database successfully.' });
     }
 
-    const ch = await queryDb('UPDATE college_head_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id', [hashed, id]);
+    const chQuery = isNum
+      ? 'UPDATE college_head_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id'
+      : 'UPDATE college_head_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = LOWER($2) OR LOWER(college) = LOWER($2) RETURNING id';
+    const ch = await queryDb(chQuery, [hashed, isNum ? Number(id) : id]);
     if (ch && ch.rows && ch.rows.length > 0) {
       return res.json({ success: true, message: 'Password reset in database successfully.' });
     }
 
-    const pr = await queryDb('UPDATE pr_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id', [hashed, id]);
+    const prQuery = isNum
+      ? 'UPDATE pr_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id'
+      : 'UPDATE pr_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = LOWER($2) RETURNING id';
+    const pr = await queryDb(prQuery, [hashed, isNum ? Number(id) : id]);
     if (pr && pr.rows && pr.rows.length > 0) {
       return res.json({ success: true, message: 'Password reset in database successfully.' });
     }
@@ -750,11 +788,19 @@ export const resetCoordinatorPasswordDB = async (req, res) => {
 
 export const deleteCoordinatorDB = async (req, res) => {
   const { id } = req.params;
+  const isNum = !isNaN(Number(id));
 
   try {
-    await queryDb('DELETE FROM sport_coordinators WHERE id = $1', [id]);
-    await queryDb('DELETE FROM college_head_users WHERE id = $1', [id]);
-    await queryDb('DELETE FROM pr_users WHERE id = $1', [id]);
+    if (isNum) {
+      const numId = Number(id);
+      await queryDb('DELETE FROM sport_coordinators WHERE id = $1', [numId]);
+      await queryDb('DELETE FROM college_head_users WHERE id = $1', [numId]);
+      await queryDb('DELETE FROM pr_users WHERE id = $1', [numId]);
+    } else {
+      await queryDb('DELETE FROM sport_coordinators WHERE LOWER(username) = LOWER($1) OR assigned_sport = LOWER($1)', [id]);
+      await queryDb('DELETE FROM college_head_users WHERE LOWER(username) = LOWER($1) OR LOWER(college) = LOWER($1)', [id]);
+      await queryDb('DELETE FROM pr_users WHERE LOWER(username) = LOWER($1)', [id]);
+    }
     return res.json({ success: true, message: 'Coordinator deleted from database successfully.' });
   } catch (err) {
     console.error('Error deleting coordinator from DB:', err.message);

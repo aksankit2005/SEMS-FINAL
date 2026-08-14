@@ -4,7 +4,7 @@ import { envConfig, coordinatorPasswords, headPasswords } from './env.js';
 
 export const seedInitialAccountHashes = async () => {
   try {
-    // 1. Ensure sport_coordinators table exists
+    // 1. Ensure sport_coordinators table exists and has required columns
     await queryDb(`
       CREATE TABLE IF NOT EXISTS sport_coordinators (
         id SERIAL PRIMARY KEY,
@@ -21,8 +21,10 @@ export const seedInitialAccountHashes = async () => {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    await queryDb(`ALTER TABLE sport_coordinators ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT '';`);
+    await queryDb(`ALTER TABLE sport_coordinators ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active';`);
 
-    // 2. Ensure college_head_users table exists
+    // 2. Ensure college_head_users table exists and has required columns
     await queryDb(`
       CREATE TABLE IF NOT EXISTS college_head_users (
         id SERIAL PRIMARY KEY,
@@ -38,8 +40,11 @@ export const seedInitialAccountHashes = async () => {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    await queryDb(`ALTER TABLE college_head_users ADD COLUMN IF NOT EXISTS email VARCHAR(150) DEFAULT '';`);
+    await queryDb(`ALTER TABLE college_head_users ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT '';`);
+    await queryDb(`ALTER TABLE college_head_users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active';`);
 
-    // 3. Ensure pr_users table exists
+    // 3. Ensure pr_users table exists and has required columns
     await queryDb(`
       CREATE TABLE IF NOT EXISTS pr_users (
         id SERIAL PRIMARY KEY,
@@ -53,6 +58,15 @@ export const seedInitialAccountHashes = async () => {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    await queryDb(`ALTER TABLE pr_users ADD COLUMN IF NOT EXISTS name VARCHAR(150);`);
+    await queryDb(`ALTER TABLE pr_users ADD COLUMN IF NOT EXISTS email VARCHAR(150);`);
+    await queryDb(`ALTER TABLE pr_users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active';`);
+
+    // 4. Ensure college_registrations table has required columns for Prisma
+    try {
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS registration_id UUID;`);
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS participant_data JSONB;`);
+    } catch (e) {}
 
     // 4. Seed Initial Sport Coordinators
     const defaultSports = [
