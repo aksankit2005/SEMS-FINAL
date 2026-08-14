@@ -68,6 +68,11 @@ export const mergeMatchState = (existing, incoming) => {
     ? { ...incoming.team2, score: finalS2 }
     : (typeof existing.team2 === 'object' ? { ...existing.team2, score: finalS2 } : (incoming.team2 || existing.team2));
 
+  // Stream properties preservation
+  const mergedYoutubeVideoId = incoming.youtubeVideoId || existing.youtubeVideoId || null;
+  const mergedStreamUrl = incoming.streamUrl || existing.streamUrl || null;
+  const mergedIsLiveStreaming = incoming.isLiveStreaming !== undefined ? incoming.isLiveStreaming : (existing.isLiveStreaming ?? Boolean(mergedYoutubeVideoId || mergedStreamUrl));
+
   return {
     ...existing,
     ...incoming,
@@ -75,6 +80,9 @@ export const mergeMatchState = (existing, incoming) => {
     score2: finalS2,
     team1: team1Merged,
     team2: team2Merged,
+    youtubeVideoId: mergedYoutubeVideoId,
+    streamUrl: mergedStreamUrl,
+    isLiveStreaming: mergedIsLiveStreaming,
     updatedAt: new Date().toISOString()
   };
 };
