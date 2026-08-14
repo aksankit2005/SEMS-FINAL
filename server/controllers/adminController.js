@@ -556,27 +556,31 @@ export const getCoordinatorsDB = async (req, res) => {
       }));
     }
 
-    // 3. Fetch PR Users
+    // 3. Fetch PR & Super Coordinator Users
     const prRes = await queryDb(`
       SELECT 
         id,
         username,
         COALESCE(name, username) AS name,
         email,
-        'PR Member' AS role,
+        role,
         status,
         created_at AS "createdAt"
       FROM pr_users
       ORDER BY created_at DESC
     `);
     if (prRes && prRes.rows) {
-      prRes.rows.forEach(r => list.push({
-        ...r,
-        assignedSport: 'media',
-        sportName: 'Media / PR Team',
-        status: r.status ? (r.status.toLowerCase() === 'inactive' ? 'Inactive' : 'Active') : 'Active',
-        createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString()
-      }));
+      prRes.rows.forEach(r => {
+        const isSuper = r.role === 'super_coordinator' || r.role === 'Super Coordinator';
+        list.push({
+          ...r,
+          role: isSuper ? 'Super Coordinator' : 'PR Member',
+          assignedSport: isSuper ? 'all' : 'media',
+          sportName: isSuper ? 'All Sports (Fest President)' : 'Media / PR Team',
+          status: r.status ? (r.status.toLowerCase() === 'inactive' ? 'Inactive' : 'Active') : 'Active',
+          createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString()
+        });
+      });
     }
 
     return res.json(list);
@@ -614,10 +618,37 @@ export const saveCoordinatorDB = async (req, res) => {
   }
 
   try {
+    const isSuperCoord = role === 'Super Coordinator' || role === 'super_coordinator' || (role && role.toLowerCase().includes('super coordinator'));
     const isCollegeHead = role === 'Head Coordinator' || role === 'college_head';
     const isPR = role === 'PR Member' || role === 'pr_coordinator';
 
-    if (isCollegeHead) {
+    if (isSuperCoord) {
+      if (id && (!isNaN(Number(id)) || typeof id === 'string')) {
+        let updateQuery = `UPDATE pr_users SET name = $1, username = $2, email = $3, role = 'super_coordinator', status = $4, updated_at = CURRENT_TIMESTAMP`;
+        const params = [name, cleanUser, email || '', accStatus];
+        if (passHash) {
+          updateQuery += `, password_hash = $5 WHERE `;
+          params.push(passHash);
+        } else {
+          updateQuery += ` WHERE `;
+        }
+        if (!isNaN(Number(id))) {
+          updateQuery += `id = $${params.length + 1}`;
+          params.push(Number(id));
+        } else {
+          updateQuery += `LOWER(username) = LOWER($${params.length + 1})`;
+          params.push(id);
+        }
+        await queryDb(updateQuery, params);
+      } else {
+        const initialPass = passHash || await bcrypt.hash('Super@2026', 10);
+        await queryDb(
+          `INSERT INTO pr_users (username, password_hash, role, name, email, status, created_at, updated_at)
+           VALUES ($1, $2, 'super_coordinator', $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+          [cleanUser, initialPass, name, email || '', accStatus]
+        );
+      }
+    } else if (isCollegeHead) {
       if (id && (!isNaN(Number(id)) || typeof id === 'string')) {
         let updateQuery = `UPDATE college_head_users SET faculty_name = $1, username = $2, email = $3, phone = $4, college = $5, status = $6, updated_at = CURRENT_TIMESTAMP`;
         const params = [name, cleanUser, email || '', phone || '', college || 'MPEC', accStatus];

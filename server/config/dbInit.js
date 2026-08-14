@@ -145,6 +145,21 @@ export const seedInitialAccountHashes = async () => {
       await queryDb('UPDATE pr_users SET password_hash = $1 WHERE id = $2', [hash, existingPR.rows[0].id]);
     }
 
+    // 7. Seed Initial Super Coordinator User
+    const superCoordPass = envConfig.passSuperCoord || 'super#2026';
+    const existingSuper = await queryDb('SELECT id, password_hash FROM pr_users WHERE username = $1', ['super_coordinator']);
+    if (!existingSuper || existingSuper.rows.length === 0) {
+      const hash = await bcrypt.hash(superCoordPass, 10);
+      await queryDb(
+        `INSERT INTO pr_users (username, password_hash, role, name, email, status)
+         VALUES ('super_coordinator', $1, 'super_coordinator', 'Super Coordinator (President)', 'president.sports@mpec.ac.in', 'active')`,
+        [hash]
+      );
+    } else if (!existingSuper.rows[0].password_hash) {
+      const hash = await bcrypt.hash(superCoordPass, 10);
+      await queryDb('UPDATE pr_users SET password_hash = $1 WHERE id = $2', [hash, existingSuper.rows[0].id]);
+    }
+
     console.log('✅ [Database Seed] Initial bcrypt password hashes seeded successfully for all accounts.');
   } catch (err) {
     console.warn('⚠️ [Database Seed Warning] Failed to seed initial password hashes:', err.message);
