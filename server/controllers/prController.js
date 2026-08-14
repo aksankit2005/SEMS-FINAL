@@ -17,6 +17,9 @@ export const prLogin = async (req, res) => {
   const dbResult = await queryDb('SELECT * FROM pr_users WHERE username = $1', [username]);
   if (dbResult && dbResult.rows.length > 0) {
     const user = dbResult.rows[0];
+    if (user.status && user.status.toLowerCase() === 'inactive') {
+      return res.status(403).json({ message: 'Account is deactivated. Access denied.' });
+    }
     let isValid = false;
     if (user.password_hash) {
       isValid = await bcrypt.compare(password, user.password_hash);

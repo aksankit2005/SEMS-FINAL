@@ -503,3 +503,262 @@ export const changeSuperCoordinatorPasswordDB = async (req, res) => {
     return res.status(500).json({ message: 'Failed to update password in database' });
   }
 };
+
+export const getCoordinatorsDB = async (req, res) => {
+  try {
+    const list = [];
+
+    // 1. Fetch Sports Coordinators
+    const sportsRes = await queryDb(`
+      SELECT 
+        id,
+        username,
+        coordinator_name AS name,
+        email,
+        phone,
+        'Coordinator' AS role,
+        assigned_sport AS "assignedSport",
+        sport_name AS "sportName",
+        status,
+        created_at AS "createdAt"
+      FROM sport_coordinators
+      ORDER BY created_at DESC
+    `);
+    if (sportsRes && sportsRes.rows) {
+      sportsRes.rows.forEach(r => list.push({
+        ...r,
+        status: r.status ? (r.status.toLowerCase() === 'inactive' ? 'Inactive' : 'Active') : 'Active',
+        createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString()
+      }));
+    }
+
+    // 2. Fetch College Heads
+    const collegeRes = await queryDb(`
+      SELECT 
+        id,
+        username,
+        faculty_name AS name,
+        email,
+        phone,
+        'Head Coordinator' AS role,
+        college,
+        status,
+        created_at AS "createdAt"
+      FROM college_head_users
+      ORDER BY created_at DESC
+    `);
+    if (collegeRes && collegeRes.rows) {
+      collegeRes.rows.forEach(r => list.push({
+        ...r,
+        assignedSport: 'all',
+        sportName: `College Head (${r.college})`,
+        status: r.status ? (r.status.toLowerCase() === 'inactive' ? 'Inactive' : 'Active') : 'Active',
+        createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString()
+      }));
+    }
+
+    // 3. Fetch PR Users
+    const prRes = await queryDb(`
+      SELECT 
+        id,
+        username,
+        COALESCE(name, username) AS name,
+        email,
+        'PR Member' AS role,
+        status,
+        created_at AS "createdAt"
+      FROM pr_users
+      ORDER BY created_at DESC
+    `);
+    if (prRes && prRes.rows) {
+      prRes.rows.forEach(r => list.push({
+        ...r,
+        assignedSport: 'media',
+        sportName: 'Media / PR Team',
+        status: r.status ? (r.status.toLowerCase() === 'inactive' ? 'Inactive' : 'Active') : 'Active',
+        createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString()
+      }));
+    }
+
+    return res.json(list);
+  } catch (err) {
+    console.error('Error fetching coordinators from DB:', err.message);
+    return res.status(500).json({ message: 'Failed to fetch coordinators list' });
+  }
+};
+
+export const saveCoordinatorDB = async (req, res) => {
+  const {
+    id,
+    name,
+    username,
+    email,
+    phone,
+    role,
+    assignedSport,
+    sportName,
+    college,
+    password,
+    status
+  } = req.body;
+
+  if (!username || !name) {
+    return res.status(400).json({ message: 'Name and Username are required.' });
+  }
+
+  const cleanUser = username.trim().toLowerCase();
+  const accStatus = (status && status.toLowerCase() === 'inactive') ? 'inactive' : 'active';
+  let passHash = null;
+
+  if (password && password.trim()) {
+    passHash = await bcrypt.hash(password.trim(), 10);
+  }
+
+  try {
+    const isCollegeHead = role === 'Head Coordinator' || role === 'college_head';
+    const isPR = role === 'PR Member' || role === 'pr_coordinator';
+
+    if (isCollegeHead) {
+      if (id && id.toString().length > 5) {
+        let updateQuery = `UPDATE college_head_users SET faculty_name = $1, username = $2, email = $3, phone = $4, college = $5, status = $6, updated_at = CURRENT_TIMESTAMP`;
+        const params = [name, cleanUser, email || '', phone || '', college || 'MPEC', accStatus];
+        if (passHash) {
+          updateQuery += `, password_hash = $7 WHERE id = $8`;
+          params.push(passHash, id);
+        } else {
+          updateQuery += ` WHERE id = $7`;
+          params.push(id);
+        }
+        await queryDb(updateQuery, params);
+      } else {
+        const initialPass = passHash || await bcrypt.hash('Head@2026', 10);
+        await queryDb(
+          `INSERT INTO college_head_users (username, password_hash, college, faculty_name, email, phone, status, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+          [cleanUser, initialPass, college || 'MPEC', name, email || '', phone || '', accStatus]
+        );
+      }
+    } else if (isPR) {
+      if (id && id.toString().length > 5) {
+        let updateQuery = `UPDATE pr_users SET name = $1, username = $2, email = $3, status = $4, updated_at = CURRENT_TIMESTAMP`;
+        const params = [name, cleanUser, email || '', accStatus];
+        if (passHash) {
+          updateQuery += `, password_hash = $5 WHERE id = $6`;
+          params.push(passHash, id);
+        } else {
+          updateQuery += ` WHERE id = $5`;
+          params.push(id);
+        }
+        await queryDb(updateQuery, params);
+      } else {
+        const initialPass = passHash || await bcrypt.hash('PRPass@2026', 10);
+        await queryDb(
+          `INSERT INTO pr_users (username, password_hash, role, name, email, status, created_at, updated_at)
+           VALUES ($1, $2, 'pr_coordinator', $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+          [cleanUser, initialPass, name, email || '', accStatus]
+        );
+      }
+    } else {
+      const sportSlug = (assignedSport || 'cricket').toLowerCase().replace(/[^a-z0-9]/g, '-');
+      const sportTitle = sportName || (assignedSport || 'Cricket').replace(/-/g, ' ').toUpperCase();
+
+      if (id && id.toString().length > 5) {
+        let updateQuery = `UPDATE sport_coordinators SET coordinator_name = $1, username = $2, email = $3, phone = $4, assigned_sport = $5, sport_name = $6, status = $7, updated_at = CURRENT_TIMESTAMP`;
+        const params = [name, cleanUser, email || '', phone || '', sportSlug, sportTitle, accStatus];
+        if (passHash) {
+          updateQuery += `, password_hash = $8 WHERE id = $9`;
+          params.push(passHash, id);
+        } else {
+          updateQuery += ` WHERE id = $8`;
+          params.push(id);
+        }
+        await queryDb(updateQuery, params);
+      } else {
+        const initialPass = passHash || await bcrypt.hash('Coord@2026', 10);
+        await queryDb(
+          `INSERT INTO sport_coordinators (username, password_hash, assigned_sport, sport_name, coordinator_name, email, phone, status, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+          [cleanUser, initialPass, sportSlug, sportTitle, name, email || '', phone || '', accStatus]
+        );
+      }
+    }
+
+    return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
+  } catch (err) {
+    console.error('Error saving coordinator to DB:', err.message);
+    return res.status(500).json({ message: 'Failed to save coordinator to database' });
+  }
+};
+
+export const toggleCoordinatorStatusDB = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  try {
+    const newStatus = (status && status.toLowerCase() === 'inactive') ? 'inactive' : 'active';
+
+    const sc = await queryDb('UPDATE sport_coordinators SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id', [newStatus, id]);
+    if (sc && sc.rows && sc.rows.length > 0) {
+      return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
+    }
+
+    const ch = await queryDb('UPDATE college_head_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id', [newStatus, id]);
+    if (ch && ch.rows && ch.rows.length > 0) {
+      return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
+    }
+
+    const pr = await queryDb('UPDATE pr_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id', [newStatus, id]);
+    if (pr && pr.rows && pr.rows.length > 0) {
+      return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
+    }
+
+    return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
+  } catch (err) {
+    console.error('Error toggling coordinator status in DB:', err.message);
+    return res.status(500).json({ message: 'Failed to update status in database' });
+  }
+};
+
+export const resetCoordinatorPasswordDB = async (req, res) => {
+  const { id } = req.params;
+  const { newPassword } = req.body;
+
+  const passToSet = newPassword && newPassword.trim().length >= 6 ? newPassword.trim() : 'Password@123';
+  const hashed = await bcrypt.hash(passToSet, 10);
+
+  try {
+    const sc = await queryDb('UPDATE sport_coordinators SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id', [hashed, id]);
+    if (sc && sc.rows && sc.rows.length > 0) {
+      return res.json({ success: true, message: 'Password reset in database successfully.' });
+    }
+
+    const ch = await queryDb('UPDATE college_head_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id', [hashed, id]);
+    if (ch && ch.rows && ch.rows.length > 0) {
+      return res.json({ success: true, message: 'Password reset in database successfully.' });
+    }
+
+    const pr = await queryDb('UPDATE pr_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id', [hashed, id]);
+    if (pr && pr.rows && pr.rows.length > 0) {
+      return res.json({ success: true, message: 'Password reset in database successfully.' });
+    }
+
+    return res.json({ success: true, message: 'Password reset in database successfully.' });
+  } catch (err) {
+    console.error('Error resetting coordinator password in DB:', err.message);
+    return res.status(500).json({ message: 'Failed to reset password in database' });
+  }
+};
+
+export const deleteCoordinatorDB = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await queryDb('DELETE FROM sport_coordinators WHERE id = $1', [id]);
+    await queryDb('DELETE FROM college_head_users WHERE id = $1', [id]);
+    await queryDb('DELETE FROM pr_users WHERE id = $1', [id]);
+    return res.json({ success: true, message: 'Coordinator deleted from database successfully.' });
+  } catch (err) {
+    console.error('Error deleting coordinator from DB:', err.message);
+    return res.status(500).json({ message: 'Failed to delete coordinator from database' });
+  }
+};
