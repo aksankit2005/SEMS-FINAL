@@ -80,7 +80,7 @@ export const superCoordinatorLogin = async (req, res) => {
 
   const normalizedUser = username.trim().toLowerCase();
 
-  // 1. Check PostgreSQL pr_users table for Super Coordinator accounts
+  // Strictly check PostgreSQL pr_users table for Super Coordinator accounts managed by Admin
   try {
     const dbResult = await queryDb(
       `SELECT * FROM pr_users WHERE LOWER(username) = $1 AND (role = 'super_coordinator' OR role = 'Super Coordinator')`,
@@ -118,52 +118,13 @@ export const superCoordinatorLogin = async (req, res) => {
             role: 'super_coordinator'
           }
         });
-      } else {
-        return res.status(401).json({ message: 'Invalid Super Coordinator password. Access denied.' });
       }
     }
   } catch (e) {
     console.error('Error during super coordinator DB login check:', e);
   }
 
-  // 2. Environment / DB SystemSetting Fallback check
-  const cleanUser = normalizedUser.replace(/[^a-z0-9]/g, '');
-  const expectedUser = (envConfig.superCoordUsername || 'super_coordinator').toLowerCase().replace(/[^a-z0-9]/g, '');
-  
-  let expectedPassword = envConfig.passSuperCoord || 'super#2026';
-  try {
-    const dbPassSetting = await prisma.systemSetting.findUnique({ where: { key: 'super_coordinator_pass' } });
-    if (dbPassSetting && dbPassSetting.value && dbPassSetting.value.password) {
-      expectedPassword = dbPassSetting.value.password;
-    }
-  } catch (e) {}
-
-  const isUserValid = (cleanUser === expectedUser);
-  const isPassValid = Boolean(expectedPassword && password === expectedPassword);
-
-  if (!isUserValid) {
-    return res.status(401).json({ message: 'Invalid Super Coordinator username.' });
-  }
-
-  if (!isPassValid) {
-    return res.status(401).json({ message: 'Invalid Super Coordinator password. Access denied.' });
-  }
-
-  const token = jwt.sign(
-    { username: username.trim(), role: 'super_coordinator' },
-    envConfig.jwtSecret,
-    { expiresIn: '24h' }
-  );
-
-  return res.json({
-    success: true,
-    token,
-    user: {
-      username: username.trim(),
-      name: 'Super Coordinator (President)',
-      role: 'super_coordinator'
-    }
-  });
+  return res.status(401).json({ message: 'Invalid Super Coordinator username or password. Access denied.' });
 };
 
 export const getAdminProfile = async (req, res) => {

@@ -40,33 +40,11 @@ export const SuperCoordinatorLoginPage = () => {
         return;
       }
       throw new Error('Invalid authentication response.');
-    } catch (err) {
-      // Offline mode validation fallback if backend server is not running
-      const cleanUser = username.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-      const isUserValid = cleanUser === 'supercoordinator' || cleanUser === 'super_coordinator';
-      const isPassValid = password.trim() === 'super#2026';
-
-      if (!err.response && isUserValid && isPassValid) {
-        const userObj = { username: username.trim(), name: 'Super Coordinator (President)', role: 'super_coordinator' };
-        localStorage.setItem('sems_super_coord_token', 'mock_jwt_super_coord_token_2026');
-        localStorage.setItem('sems_super_coord_user', JSON.stringify(userObj));
-        window.dispatchEvent(new Event('sems-auth-change'));
-        addToast('Super Coordinator Login Successful! (Offline Mode)', 'success');
-        navigate('/super-coordinator/dashboard');
-        return;
-      }
-
       setError(err.response?.data?.message || err.message || 'Invalid Super Coordinator credentials.');
       addToast('Login Failed. Please check your credentials.', 'error');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDemoFill = () => {
-    setUsername('super_coordinator');
-    setPassword('super#2026');
-    setError('');
   };
 
   return (
@@ -134,15 +112,6 @@ export const SuperCoordinatorLoginPage = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-1">
-            <button
-              type="button"
-              onClick={handleDemoFill}
-              className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer flex items-center gap-1"
-            >
-              <Sparkles className="w-3.5 h-3.5" /> Auto-fill Demo Credentials
-            </button>
-          </div>
 
           <button
             type="submit"
