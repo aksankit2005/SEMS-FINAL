@@ -65,12 +65,32 @@ export const seedInitialAccountHashes = async () => {
     await queryDb(`ALTER TABLE pr_users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active';`);
     await queryDb(`ALTER TABLE pr_users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;`);
 
-    // 4. Ensure college_registrations table has required columns for Prisma
+    // 4. Ensure college_registrations table has all required columns for Prisma
     try {
       await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS registration_id UUID;`);
       await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS "registrationId" UUID;`);
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS event_id VARCHAR(100) DEFAULT '';`);
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS sport_id VARCHAR(100) DEFAULT '';`);
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS student_name VARCHAR(255) DEFAULT '';`);
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS team_name VARCHAR(255) DEFAULT '';`);
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS college VARCHAR(255) DEFAULT '';`);
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS department VARCHAR(255) DEFAULT '';`);
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS enrollment_no VARCHAR(100) DEFAULT '';`);
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS email VARCHAR(255) DEFAULT '';`);
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS phone VARCHAR(100) DEFAULT '';`);
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS gender VARCHAR(50) DEFAULT '';`);
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS emergency_contact VARCHAR(100) DEFAULT '';`);
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'PENDING';`);
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS fee_paid DECIMAL(10, 2) DEFAULT 0;`);
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS payment_id VARCHAR(255) DEFAULT '';`);
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS payment_status VARCHAR(50) DEFAULT 'PENDING';`);
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS members_count INT DEFAULT 1;`);
       await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS participant_data JSONB;`);
-    } catch (e) {}
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;`);
+      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;`);
+    } catch (e) {
+      console.warn('Migration warning for college_registrations:', e.message);
+    }
 
     // 4. Seed Initial Sport Coordinators
     const defaultSports = [
