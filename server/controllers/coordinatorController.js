@@ -371,7 +371,7 @@ export const deleteAllMatches = async (req, res) => {
   return res.json({ success: true, message: `All matches cleared for ${sportId}` });
 };
 
-export const updateMatchScore = (req, res) => {
+export const updateMatchScore = async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
   const { id } = req.params;
 
@@ -397,8 +397,8 @@ export const updateMatchScore = (req, res) => {
     list.unshift(match);
   }
 
-  if (req.body.score1 !== undefined) match.score1 = req.body.score1;
-  if (req.body.score2 !== undefined) match.score2 = req.body.score2;
+  if (req.body.score1 !== undefined) match.score1 = Number(req.body.score1);
+  if (req.body.score2 !== undefined) match.score2 = Number(req.body.score2);
   if (req.body.status !== undefined) match.status = req.body.status;
   if (req.body.venue !== undefined) match.tableNumber = req.body.venue;
   if (req.body.tableNumber !== undefined) match.tableNumber = req.body.tableNumber;
@@ -406,10 +406,55 @@ export const updateMatchScore = (req, res) => {
   if (req.body.team2 !== undefined) match.team2 = req.body.team2;
   if (req.body.matchTitle !== undefined) match.matchTitle = req.body.matchTitle;
 
+  const rawSetsHistory = req.body.setsHistory || match.setsHistory;
+  const setsHistoryArr = Array.isArray(rawSetsHistory)
+    ? rawSetsHistory
+    : (typeof rawSetsHistory === 'string' ? JSON.parse(rawSetsHistory) : [
+        { set: 1, score1: match.score1, score2: match.score2, isLocked: false, winner: null },
+        { set: 2, score1: 0, score2: 0, isLocked: false, winner: null },
+        { set: 3, score1: 0, score2: 0, isLocked: false, winner: null },
+        { set: 4, score1: 0, score2: 0, isLocked: false, winner: null },
+        { set: 5, score1: 0, score2: 0, isLocked: false, winner: null }
+      ]);
+
+  const currentSetVal = req.body.currentSet || req.body.currentSetIndex || match.currentSet || 1;
+  const setsWon1Val = req.body.setsWon1 !== undefined ? Number(req.body.setsWon1) : (match.setsWon1 || 0);
+  const setsWon2Val = req.body.setsWon2 !== undefined ? Number(req.body.setsWon2) : (match.setsWon2 || 0);
+
+  const detailsObj = {
+    setsHistory: setsHistoryArr,
+    currentSet: currentSetVal,
+    setsWon1: setsWon1Val,
+    setsWon2: setsWon2Val
+  };
+
+  try {
+    await queryDb(
+      `UPDATE live_matches 
+       SET score1 = $1, score2 = $2, status = $3, table_number = $4,
+           details = $5, sets_history = $6, current_set = $7, sets_won1 = $8, sets_won2 = $9, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $10`,
+      [
+        match.score1,
+        match.score2,
+        match.status,
+        match.tableNumber || 'Table 1',
+        JSON.stringify(detailsObj),
+        JSON.stringify(setsHistoryArr),
+        currentSetVal,
+        setsWon1Val,
+        setsWon2Val,
+        id
+      ]
+    );
+  } catch (e) {
+    console.warn('updateMatchScore DB update error:', e.message);
+  }
+
   return res.json({ success: true, match });
 };
 
-export const completeMatch = (req, res) => {
+export const completeMatch = async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
   const { id } = req.params;
 
@@ -435,6 +480,35 @@ export const completeMatch = (req, res) => {
   match.isLiveStreaming = false;
   match.winner = req.body.winner || (match.score1 >= match.score2 ? match.team1 : match.team2);
   match.completedAt = new Date().toISOString();
+
+  const rawSetsHistory = req.body.setsHistory || match.setsHistory;
+  const setsHistoryArr = Array.isArray(rawSetsHistory)
+    ? rawSetsHistory
+    : (typeof rawSetsHistory === 'string' ? JSON.parse(rawSetsHistory) : null);
+
+  const detailsObj = {
+    setsHistory: setsHistoryArr,
+    currentSet: match.currentSet || 1,
+    setsWon1: match.setsWon1 || 0,
+    setsWon2: match.setsWon2 || 0
+  };
+
+  try {
+    await queryDb(
+      `UPDATE live_matches 
+       SET status = 'COMPLETED', table_number = NULL, is_live_streaming = FALSE, winner = $1,
+           details = COALESCE($2, details), sets_history = COALESCE($3, sets_history), updated_at = CURRENT_TIMESTAMP
+       WHERE id = $4`,
+      [
+        match.winner,
+        setsHistoryArr ? JSON.stringify(detailsObj) : null,
+        setsHistoryArr ? JSON.stringify(setsHistoryArr) : null,
+        id
+      ]
+    );
+  } catch (e) {
+    console.warn('completeMatch DB update error:', e.message);
+  }
 
   return res.json({ success: true, match });
 };

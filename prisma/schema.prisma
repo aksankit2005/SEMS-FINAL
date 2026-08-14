@@ -576,21 +576,28 @@ model CollegeRegistration {
 }
 
 model LiveMatch {
-  id          String   @id @db.VarChar(100)
-  sportId     String   @map("sport_id") @db.VarChar(50)
-  format      String?  @db.VarChar(50)
-  status      String?  @db.VarChar(50)
-  team1       String?  @db.VarChar(255)
-  team2       String?  @db.VarChar(255)
-  matchTitle  String?  @map("match_title") @db.VarChar(255)
-  tableNumber String?  @map("table_number") @db.VarChar(100)
-  time        String?  @db.VarChar(100)
-  score1      Int?     @default(0)
-  score2      Int?     @default(0)
-  winner      String?  @db.VarChar(255)
-  details     Json?
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  id              String   @id @db.VarChar(100)
+  sportId         String   @map("sport_id") @db.VarChar(50)
+  format          String?  @db.VarChar(50)
+  status          String?  @db.VarChar(50)
+  team1           String?  @db.VarChar(255)
+  team2           String?  @db.VarChar(255)
+  matchTitle      String?  @map("match_title") @db.VarChar(255)
+  tableNumber     String?  @map("table_number") @db.VarChar(100)
+  time            String?  @db.VarChar(100)
+  score1          Int?     @default(0)
+  score2          Int?     @default(0)
+  winner          String?  @db.VarChar(255)
+  youtubeVideoId  String?  @map("youtube_video_id") @db.Text
+  streamUrl       String?  @map("stream_url") @db.Text
+  isLiveStreaming Boolean? @default(false) @map("is_live_streaming")
+  details         Json?
+  setsHistory     String?  @map("sets_history") @db.Text
+  currentSet      Int?     @default(1) @map("current_set")
+  setsWon1        Int?     @default(0) @map("sets_won1")
+  setsWon2        Int?     @default(0) @map("sets_won2")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   @@map("live_matches")
 }
