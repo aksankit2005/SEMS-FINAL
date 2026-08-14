@@ -13,8 +13,8 @@ export const HomeAnnouncementsSection = () => {
     : (ANNOUNCEMENTS_DATA || []).slice(0, 3);
 
   return (
-    <section className="py-12 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 transition-colors">
-      <div className="w-full px-2 sm:px-4 lg:px-6 mx-auto">
+    <section className="py-10 sm:py-12 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 transition-colors">
+      <div className="w-full max-w-[1440px] px-3 sm:px-5 lg:px-6 xl:px-8 mx-auto">
         
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-8 pb-4 border-b border-slate-200 dark:border-slate-800 gap-4">

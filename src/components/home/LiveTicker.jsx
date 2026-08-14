@@ -68,7 +68,7 @@ export const LiveTicker = () => {
 
   return (
     <div className="pt-1 pb-6 sm:py-8 bg-slate-100/60 dark:bg-slate-950/60 transition-colors duration-200">
-      <div className="w-full px-2 sm:px-4 lg:px-6 mx-auto">
+      <div className="w-full max-w-[1440px] px-3 sm:px-5 lg:px-6 xl:px-8 mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* Div 1: Live Games */}

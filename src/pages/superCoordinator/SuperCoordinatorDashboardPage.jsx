@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { 
   Users, Trophy, Layers, Filter, Search, Download, Calendar, MapPin, DollarSign, 
   CheckCircle2, Image as ImageIcon, ShieldAlert, Sparkles, RefreshCw, Eye, UserCheck, Phone, Mail, Award, BookOpen,
-  FolderOpen, Folder, ArrowLeft, Camera, Film, X, Maximize2, Key, EyeOff, User, Lock, Building2, Crown
+  FolderOpen, Folder, ArrowLeft, Camera, Film, X, Maximize2, Key, EyeOff, User, Lock, Building2, Crown, Upload
 } from 'lucide-react';
 
 import { superCoordinatorApi, ALL_12_SPORTS, ALL_COLLEGES } from '../../services/superCoordinatorApi';
+import { SuperCoordinatorNavbar } from '../../components/superCoordinator/SuperCoordinatorNavbar';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { exportToCSV, exportToPDF } from '../../utils/pdfExporter';
@@ -466,8 +467,9 @@ export const SuperCoordinatorDashboardPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] text-slate-900 dark:text-slate-200 transition-colors font-sans pb-16">
       
-      {/* HEADER */}
-      <Header
+      {/* HEADER NAVBAR */}
+      <SuperCoordinatorNavbar
+        onRefresh={fetchDashboardData}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onOpenPasswordModal={() => setShowPasswordModal(true)}
@@ -617,8 +619,8 @@ export const SuperCoordinatorDashboardPage = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <img src={slide.image} alt={slide.title} className="w-12 h-8 rounded-lg object-cover border border-slate-700" />
-                      <span className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-amber-500 font-mono text-[10px] font-bold border border-slate-200 dark:border-slate-700">
-                        {slide.badge || `${idx + 1} of 5`}
+                      <span className="px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-500 font-mono text-[10px] font-bold border border-amber-500/20">
+                        Slide #{idx + 1}
                       </span>
                     </div>
                   </div>
@@ -638,18 +640,42 @@ export const SuperCoordinatorDashboardPage = () => {
                       />
                     </div>
 
-                    {/* Image URL */}
+                    {/* Image URL & File Upload */}
                     <div className="space-y-1">
                       <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
-                        Background Image URL <span className="text-rose-500">*</span>
+                        Background Image (URL or Local File Upload) <span className="text-rose-500">*</span>
                       </label>
-                      <input
-                        type="text"
-                        value={slide.image || ''}
-                        onChange={(e) => handleUpdateSlideField(idx, 'image', e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        placeholder="https://images.unsplash.com/..."
-                      />
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                        <input
+                          type="text"
+                          value={slide.image || ''}
+                          onChange={(e) => handleUpdateSlideField(idx, 'image', e.target.value)}
+                          className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                          placeholder="Paste image URL or click upload..."
+                        />
+                        <label className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs cursor-pointer flex items-center justify-center gap-1.5 shrink-0 transition active:scale-95 shadow-sm">
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>Upload File</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (uploadEvt) => {
+                                  if (uploadEvt.target?.result) {
+                                    handleUpdateSlideField(idx, 'image', uploadEvt.target.result);
+                                    addToast(`Uploaded custom image for Slide ${idx + 1}!`, 'success');
+                                  }
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
                     </div>
 
                     {/* Description */}

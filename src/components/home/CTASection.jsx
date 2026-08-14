@@ -8,7 +8,7 @@ export const CTASection = () => {
       {/* Ambient background glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[700px] h-[350px] bg-gradient-to-r from-blue-500/15 via-indigo-500/10 to-orange-500/15 dark:from-blue-600/20 dark:to-orange-500/20 blur-3xl pointer-events-none z-0" />
 
-      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center space-y-4 sm:space-y-6">
+      <div className="w-full max-w-[1280px] mx-auto px-3 sm:px-5 lg:px-6 xl:px-8 relative z-10 text-center space-y-4 sm:space-y-6">
         
         {/* Main Heading */}
         <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight text-slate-900 dark:text-white">
