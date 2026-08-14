@@ -13,7 +13,12 @@ router.get('/live-matches', async (req, res) => {
               time, score1, score2, winner,
               youtube_video_id AS "youtubeVideoId",
               stream_url AS "streamUrl",
-              is_live_streaming AS "isLiveStreaming"
+              is_live_streaming AS "isLiveStreaming",
+              sets_history AS "setsHistory",
+              current_set AS "currentSet",
+              sets_won1 AS "setsWon1",
+              sets_won2 AS "setsWon2",
+              updated_at AS "updatedAt"
        FROM live_matches 
        WHERE LOWER(status) IN ('running', 'live', 'in_progress', 'active') 
        ORDER BY updated_at DESC`
@@ -30,15 +35,28 @@ router.get('/live-matches', async (req, res) => {
     }
 
     if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
-      const formatted = dbRes.rows.map((m) => ({
-        ...m,
-        sportId: m.sportId,
-        sportName: (m.sportId || '').replace(/-/g, ' ').toUpperCase(),
-        liveTimer: m.time || '14:32',
-        youtubeVideoId: m.youtubeVideoId || m.youtube_video_id || null,
-        streamUrl: m.streamUrl || m.stream_url || null,
-        isLiveStreaming: Boolean(m.isLiveStreaming || m.youtubeVideoId || m.streamUrl)
-      }));
+      const formatted = dbRes.rows.map((m) => {
+        let parsedSetsHistory = m.setsHistory || null;
+        if (typeof parsedSetsHistory === 'string' && parsedSetsHistory.trim()) {
+          try {
+            parsedSetsHistory = JSON.parse(parsedSetsHistory);
+          } catch (e) {}
+        }
+        return {
+          ...m,
+          sportId: m.sportId,
+          sportName: (m.sportId || '').replace(/-/g, ' ').toUpperCase(),
+          liveTimer: m.time || '14:32',
+          youtubeVideoId: m.youtubeVideoId || m.youtube_video_id || null,
+          streamUrl: m.streamUrl || m.stream_url || null,
+          isLiveStreaming: Boolean(m.isLiveStreaming || m.youtubeVideoId || m.streamUrl),
+          setsHistory: Array.isArray(parsedSetsHistory) ? parsedSetsHistory : null,
+          currentSet: m.currentSet || 1,
+          setsWon1: m.setsWon1 || 0,
+          setsWon2: m.setsWon2 || 0,
+          updatedAt: m.updatedAt || new Date().toISOString()
+        };
+      });
       return res.json(formatted);
     }
   } catch (err) {
