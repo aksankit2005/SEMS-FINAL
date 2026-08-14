@@ -23,6 +23,7 @@ export const seedInitialAccountHashes = async () => {
     `);
     await queryDb(`ALTER TABLE sport_coordinators ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT '';`);
     await queryDb(`ALTER TABLE sport_coordinators ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active';`);
+    await queryDb(`ALTER TABLE sport_coordinators ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;`);
 
     // 2. Ensure college_head_users table exists and has required columns
     await queryDb(`
@@ -43,6 +44,7 @@ export const seedInitialAccountHashes = async () => {
     await queryDb(`ALTER TABLE college_head_users ADD COLUMN IF NOT EXISTS email VARCHAR(150) DEFAULT '';`);
     await queryDb(`ALTER TABLE college_head_users ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT '';`);
     await queryDb(`ALTER TABLE college_head_users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active';`);
+    await queryDb(`ALTER TABLE college_head_users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;`);
 
     // 3. Ensure pr_users table exists and has required columns
     await queryDb(`
@@ -61,6 +63,7 @@ export const seedInitialAccountHashes = async () => {
     await queryDb(`ALTER TABLE pr_users ADD COLUMN IF NOT EXISTS name VARCHAR(150);`);
     await queryDb(`ALTER TABLE pr_users ADD COLUMN IF NOT EXISTS email VARCHAR(150);`);
     await queryDb(`ALTER TABLE pr_users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active';`);
+    await queryDb(`ALTER TABLE pr_users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;`);
 
     // 4. Ensure college_registrations table has required columns for Prisma
     try {
