@@ -160,13 +160,25 @@ export const createMatch = async (req, res) => {
   }
   inMemoryCoordinatorMatches[sportId].unshift(newMatch);
 
+  // Ensure table columns exist
+  try {
+    await queryDb(`
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS stream_url TEXT;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS is_live_streaming BOOLEAN DEFAULT FALSE;
+    `);
+  } catch (e) {}
+
   await queryDb(
-    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
      ON CONFLICT (id) DO UPDATE SET
        format = EXCLUDED.format, status = EXCLUDED.status, team1 = EXCLUDED.team1, team2 = EXCLUDED.team2,
        match_title = EXCLUDED.match_title, table_number = EXCLUDED.table_number, time = EXCLUDED.time,
-       score1 = EXCLUDED.score1, score2 = EXCLUDED.score2, winner = EXCLUDED.winner`,
+       score1 = EXCLUDED.score1, score2 = EXCLUDED.score2, winner = EXCLUDED.winner,
+       youtube_video_id = COALESCE(EXCLUDED.youtube_video_id, live_matches.youtube_video_id),
+       stream_url = COALESCE(EXCLUDED.stream_url, live_matches.stream_url),
+       is_live_streaming = COALESCE(EXCLUDED.is_live_streaming, live_matches.is_live_streaming)`,
     [
       newMatch.id,
       newMatch.sportId,
@@ -179,7 +191,10 @@ export const createMatch = async (req, res) => {
       newMatch.time,
       newMatch.score1,
       newMatch.score2,
-      newMatch.winner
+      newMatch.winner,
+      newMatch.youtubeVideoId || newMatch.youtube_video_id || null,
+      newMatch.streamUrl || newMatch.stream_url || null,
+      Boolean(newMatch.isLiveStreaming || newMatch.youtubeVideoId || newMatch.streamUrl)
     ]
   );
 
@@ -194,13 +209,25 @@ export const updateMatch = async (req, res) => {
   const index = list.findIndex((m) => m.id === id);
   if (index !== -1) {
     list[index] = { ...list[index], ...req.body };
+  } else {
+    if (!inMemoryCoordinatorMatches[sportId]) inMemoryCoordinatorMatches[sportId] = [];
+    inMemoryCoordinatorMatches[sportId].unshift({ id, sportId, ...req.body });
   }
 
   const updatedMatch = index !== -1 ? list[index] : { id, sportId, ...req.body };
 
+  // Ensure table columns exist
+  try {
+    await queryDb(`
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS stream_url TEXT;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS is_live_streaming BOOLEAN DEFAULT FALSE;
+    `);
+  } catch (e) {}
+
   await queryDb(
-    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
      ON CONFLICT (id) DO UPDATE SET
        status = COALESCE(EXCLUDED.status, live_matches.status),
        team1 = COALESCE(EXCLUDED.team1, live_matches.team1),
@@ -210,7 +237,10 @@ export const updateMatch = async (req, res) => {
        time = COALESCE(EXCLUDED.time, live_matches.time),
        score1 = COALESCE(EXCLUDED.score1, live_matches.score1),
        score2 = COALESCE(EXCLUDED.score2, live_matches.score2),
-       winner = COALESCE(EXCLUDED.winner, live_matches.winner)`,
+       winner = COALESCE(EXCLUDED.winner, live_matches.winner),
+       youtube_video_id = COALESCE(EXCLUDED.youtube_video_id, live_matches.youtube_video_id),
+       stream_url = COALESCE(EXCLUDED.stream_url, live_matches.stream_url),
+       is_live_streaming = COALESCE(EXCLUDED.is_live_streaming, live_matches.is_live_streaming)`,
     [
       id,
       sportId,
@@ -223,7 +253,10 @@ export const updateMatch = async (req, res) => {
       req.body.time || updatedMatch.time || '05:30 PM',
       req.body.score1 !== undefined ? Number(req.body.score1) : (updatedMatch.score1 || 0),
       req.body.score2 !== undefined ? Number(req.body.score2) : (updatedMatch.score2 || 0),
-      req.body.winner || updatedMatch.winner || null
+      req.body.winner || updatedMatch.winner || null,
+      req.body.youtubeVideoId || req.body.youtube_video_id || updatedMatch.youtubeVideoId || null,
+      req.body.streamUrl || req.body.stream_url || updatedMatch.streamUrl || null,
+      Boolean(req.body.isLiveStreaming ?? updatedMatch.isLiveStreaming ?? req.body.youtubeVideoId ?? req.body.streamUrl)
     ]
   );
 
