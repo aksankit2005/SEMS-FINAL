@@ -273,7 +273,7 @@ export const SuperCoordinatorDashboardPage = () => {
 
     const updated = [newEntry, ...leaderboardEntries];
     setLeaderboardEntries(updated);
-    await superCoordinatorApi.saveLeaderboardEntries(updated);
+    await superCoordinatorApi.saveLeaderboardEntries(updated, newEntry);
     addToast(`Result Saved! Winner: ${wName} (${winnerObj.id}) [+2 Pts] & Runner-Up: ${rName} (${runnerObj.id}) [+1 Pt]`, 'success');
 
     // Reset input fields
@@ -292,6 +292,7 @@ export const SuperCoordinatorDashboardPage = () => {
     const updated = leaderboardEntries.filter((e) => e.id !== id);
     setLeaderboardEntries(updated);
     await superCoordinatorApi.saveLeaderboardEntries(updated);
+    await superCoordinatorApi.deleteLeaderboardEntry(id);
     addToast('Leaderboard entry removed', 'info');
   };
 

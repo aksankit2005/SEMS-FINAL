@@ -1,5 +1,15 @@
 import express from 'express';
-import { adminLogin, superCoordinatorLogin, getAdminProfile } from '../controllers/adminController.js';
+import {
+  adminLogin,
+  superCoordinatorLogin,
+  getAdminProfile,
+  getMasterParticipants,
+  getSuperCoordinatorEvents,
+  getSuperCoordinatorCoordinators,
+  getLeaderboardEntries,
+  saveLeaderboardEntry,
+  deleteLeaderboardEntry
+} from '../controllers/adminController.js';
 import { verifyAdminToken } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimiters.js';
 
@@ -8,5 +18,13 @@ const router = express.Router();
 router.post('/admin/login', authLimiter, adminLogin);
 router.post('/super-coordinator/login', authLimiter, superCoordinatorLogin);
 router.get('/admin/profile', verifyAdminToken, getAdminProfile);
+
+// SuperCoordinator Data & Leaderboard endpoints
+router.get('/super-coordinator/participants', getMasterParticipants);
+router.get('/super-coordinator/events', getSuperCoordinatorEvents);
+router.get('/super-coordinator/coordinators', getSuperCoordinatorCoordinators);
+router.get('/super-coordinator/leaderboard', getLeaderboardEntries);
+router.post('/super-coordinator/leaderboard', saveLeaderboardEntry);
+router.delete('/super-coordinator/leaderboard/:id', deleteLeaderboardEntry);
 
 export default router;

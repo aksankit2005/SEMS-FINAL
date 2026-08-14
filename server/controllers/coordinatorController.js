@@ -166,19 +166,45 @@ export const createMatch = async (req, res) => {
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS stream_url TEXT;
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS is_live_streaming BOOLEAN DEFAULT FALSE;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS details JSONB;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_history TEXT;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS current_set INT DEFAULT 1;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won1 INT DEFAULT 0;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won2 INT DEFAULT 0;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
     `);
   } catch (e) {}
 
+  const defaultSetsHistory = newMatch.setsHistory || [
+    { set: 1, score1: 0, score2: 0, isLocked: false, winner: null },
+    { set: 2, score1: 0, score2: 0, isLocked: false, winner: null },
+    { set: 3, score1: 0, score2: 0, isLocked: false, winner: null },
+    { set: 4, score1: 0, score2: 0, isLocked: false, winner: null },
+    { set: 5, score1: 0, score2: 0, isLocked: false, winner: null }
+  ];
+
+  const detailsObj = {
+    setsHistory: defaultSetsHistory,
+    currentSet: newMatch.currentSet || 1,
+    setsWon1: newMatch.setsWon1 || 0,
+    setsWon2: newMatch.setsWon2 || 0
+  };
+
   await queryDb(
-    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, details, sets_history, current_set, sets_won1, sets_won2)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
      ON CONFLICT (id) DO UPDATE SET
        format = EXCLUDED.format, status = EXCLUDED.status, team1 = EXCLUDED.team1, team2 = EXCLUDED.team2,
        match_title = EXCLUDED.match_title, table_number = EXCLUDED.table_number, time = EXCLUDED.time,
        score1 = EXCLUDED.score1, score2 = EXCLUDED.score2, winner = EXCLUDED.winner,
        youtube_video_id = COALESCE(EXCLUDED.youtube_video_id, live_matches.youtube_video_id),
        stream_url = COALESCE(EXCLUDED.stream_url, live_matches.stream_url),
-       is_live_streaming = COALESCE(EXCLUDED.is_live_streaming, live_matches.is_live_streaming)`,
+       is_live_streaming = COALESCE(EXCLUDED.is_live_streaming, live_matches.is_live_streaming),
+       details = EXCLUDED.details,
+       sets_history = EXCLUDED.sets_history,
+       current_set = EXCLUDED.current_set,
+       sets_won1 = EXCLUDED.sets_won1,
+       sets_won2 = EXCLUDED.sets_won2`,
     [
       newMatch.id,
       newMatch.sportId,
@@ -194,7 +220,12 @@ export const createMatch = async (req, res) => {
       newMatch.winner,
       newMatch.youtubeVideoId || newMatch.youtube_video_id || null,
       newMatch.streamUrl || newMatch.stream_url || null,
-      Boolean(newMatch.isLiveStreaming || newMatch.youtubeVideoId || newMatch.streamUrl)
+      Boolean(newMatch.isLiveStreaming || newMatch.youtubeVideoId || newMatch.streamUrl),
+      JSON.stringify(detailsObj),
+      JSON.stringify(defaultSetsHistory),
+      newMatch.currentSet || 1,
+      newMatch.setsWon1 || 0,
+      newMatch.setsWon2 || 0
     ]
   );
 
@@ -206,15 +237,30 @@ export const updateMatch = async (req, res) => {
   const { id } = req.params;
   const list = inMemoryCoordinatorMatches[sportId] || [];
 
-  const index = list.findIndex((m) => m.id === id);
-  if (index !== -1) {
-    list[index] = { ...list[index], ...req.body };
-  } else {
-    if (!inMemoryCoordinatorMatches[sportId]) inMemoryCoordinatorMatches[sportId] = [];
-    inMemoryCoordinatorMatches[sportId].unshift({ id, sportId, ...req.body });
+  const rawStreamUrl = req.body.streamUrl || req.body.stream_url || req.body.liveStreamUrl || '';
+  let extractedVideoId = req.body.youtubeVideoId || req.body.youtube_video_id || '';
+
+  if (!extractedVideoId && rawStreamUrl) {
+    const match = rawStreamUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|live\/|shorts\/))([\w-]{11})/);
+    if (match && match[1]) extractedVideoId = match[1];
   }
 
-  const updatedMatch = index !== -1 ? list[index] : { id, sportId, ...req.body };
+  const payloadWithStream = {
+    ...req.body,
+    youtubeVideoId: extractedVideoId || req.body.youtubeVideoId || null,
+    streamUrl: rawStreamUrl || req.body.streamUrl || null,
+    isLiveStreaming: Boolean(req.body.isLiveStreaming || extractedVideoId || rawStreamUrl)
+  };
+
+  const index = list.findIndex((m) => m.id === id);
+  if (index !== -1) {
+    list[index] = { ...list[index], ...payloadWithStream };
+  } else {
+    if (!inMemoryCoordinatorMatches[sportId]) inMemoryCoordinatorMatches[sportId] = [];
+    inMemoryCoordinatorMatches[sportId].unshift({ id, sportId, ...payloadWithStream });
+  }
+
+  const updatedMatch = index !== -1 ? list[index] : { id, sportId, ...payloadWithStream };
 
   // Ensure table columns exist
   try {
@@ -222,12 +268,37 @@ export const updateMatch = async (req, res) => {
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS stream_url TEXT;
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS is_live_streaming BOOLEAN DEFAULT FALSE;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS details JSONB;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_history TEXT;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS current_set INT DEFAULT 1;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won1 INT DEFAULT 0;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won2 INT DEFAULT 0;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
     `);
   } catch (e) {}
 
+  const rawSetsHistory = req.body.setsHistory || updatedMatch.setsHistory;
+  const setsHistoryArr = Array.isArray(rawSetsHistory) 
+    ? rawSetsHistory 
+    : (typeof rawSetsHistory === 'string' ? JSON.parse(rawSetsHistory) : null);
+
+  const setsHistoryStr = setsHistoryArr ? JSON.stringify(setsHistoryArr) : null;
+  const currentSetVal = req.body.currentSet || req.body.currentSetIndex || updatedMatch.currentSet || 1;
+  const setsWon1Val = req.body.setsWon1 !== undefined ? Number(req.body.setsWon1) : (updatedMatch.setsWon1 || 0);
+  const setsWon2Val = req.body.setsWon2 !== undefined ? Number(req.body.setsWon2) : (updatedMatch.setsWon2 || 0);
+
+  const detailsObj = {
+    setsHistory: setsHistoryArr,
+    currentSet: currentSetVal,
+    setsWon1: setsWon1Val,
+    setsWon2: setsWon2Val,
+    playerStats1: req.body.playerStats1 || updatedMatch.playerStats1 || null,
+    playerStats2: req.body.playerStats2 || updatedMatch.playerStats2 || null
+  };
+
   await queryDb(
-    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, details, sets_history, current_set, sets_won1, sets_won2, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, CURRENT_TIMESTAMP)
      ON CONFLICT (id) DO UPDATE SET
        status = COALESCE(EXCLUDED.status, live_matches.status),
        team1 = COALESCE(EXCLUDED.team1, live_matches.team1),
@@ -235,12 +306,18 @@ export const updateMatch = async (req, res) => {
        match_title = COALESCE(EXCLUDED.match_title, live_matches.match_title),
        table_number = COALESCE(EXCLUDED.table_number, live_matches.table_number),
        time = COALESCE(EXCLUDED.time, live_matches.time),
-       score1 = COALESCE(EXCLUDED.score1, live_matches.score1),
-       score2 = COALESCE(EXCLUDED.score2, live_matches.score2),
+       score1 = EXCLUDED.score1,
+       score2 = EXCLUDED.score2,
        winner = COALESCE(EXCLUDED.winner, live_matches.winner),
-       youtube_video_id = COALESCE(EXCLUDED.youtube_video_id, live_matches.youtube_video_id),
-       stream_url = COALESCE(EXCLUDED.stream_url, live_matches.stream_url),
-       is_live_streaming = COALESCE(EXCLUDED.is_live_streaming, live_matches.is_live_streaming)`,
+       youtube_video_id = CASE WHEN EXCLUDED.youtube_video_id IS NOT NULL AND EXCLUDED.youtube_video_id != '' THEN EXCLUDED.youtube_video_id ELSE live_matches.youtube_video_id END,
+       stream_url = CASE WHEN EXCLUDED.stream_url IS NOT NULL AND EXCLUDED.stream_url != '' THEN EXCLUDED.stream_url ELSE live_matches.stream_url END,
+       is_live_streaming = COALESCE(EXCLUDED.is_live_streaming, live_matches.is_live_streaming),
+       details = CASE WHEN EXCLUDED.details IS NOT NULL THEN EXCLUDED.details ELSE live_matches.details END,
+       sets_history = CASE WHEN EXCLUDED.sets_history IS NOT NULL AND EXCLUDED.sets_history != '' THEN EXCLUDED.sets_history ELSE live_matches.sets_history END,
+       current_set = COALESCE(EXCLUDED.current_set, live_matches.current_set),
+       sets_won1 = COALESCE(EXCLUDED.sets_won1, live_matches.sets_won1),
+       sets_won2 = COALESCE(EXCLUDED.sets_won2, live_matches.sets_won2),
+       updated_at = CURRENT_TIMESTAMP`,
     [
       id,
       sportId,
@@ -254,9 +331,14 @@ export const updateMatch = async (req, res) => {
       req.body.score1 !== undefined ? Number(req.body.score1) : (updatedMatch.score1 || 0),
       req.body.score2 !== undefined ? Number(req.body.score2) : (updatedMatch.score2 || 0),
       req.body.winner || updatedMatch.winner || null,
-      req.body.youtubeVideoId || req.body.youtube_video_id || updatedMatch.youtubeVideoId || null,
-      req.body.streamUrl || req.body.stream_url || updatedMatch.streamUrl || null,
-      Boolean(req.body.isLiveStreaming ?? updatedMatch.isLiveStreaming ?? req.body.youtubeVideoId ?? req.body.streamUrl)
+      updatedMatch.youtubeVideoId || null,
+      updatedMatch.streamUrl || null,
+      Boolean(updatedMatch.isLiveStreaming || updatedMatch.youtubeVideoId || updatedMatch.streamUrl),
+      JSON.stringify(detailsObj),
+      setsHistoryStr,
+      currentSetVal,
+      setsWon1Val,
+      setsWon2Val
     ]
   );
 
@@ -289,7 +371,7 @@ export const deleteAllMatches = async (req, res) => {
   return res.json({ success: true, message: `All matches cleared for ${sportId}` });
 };
 
-export const updateMatchScore = (req, res) => {
+export const updateMatchScore = async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
   const { id } = req.params;
 
@@ -315,8 +397,8 @@ export const updateMatchScore = (req, res) => {
     list.unshift(match);
   }
 
-  if (req.body.score1 !== undefined) match.score1 = req.body.score1;
-  if (req.body.score2 !== undefined) match.score2 = req.body.score2;
+  if (req.body.score1 !== undefined) match.score1 = Number(req.body.score1);
+  if (req.body.score2 !== undefined) match.score2 = Number(req.body.score2);
   if (req.body.status !== undefined) match.status = req.body.status;
   if (req.body.venue !== undefined) match.tableNumber = req.body.venue;
   if (req.body.tableNumber !== undefined) match.tableNumber = req.body.tableNumber;
@@ -324,10 +406,55 @@ export const updateMatchScore = (req, res) => {
   if (req.body.team2 !== undefined) match.team2 = req.body.team2;
   if (req.body.matchTitle !== undefined) match.matchTitle = req.body.matchTitle;
 
+  const rawSetsHistory = req.body.setsHistory || match.setsHistory;
+  const setsHistoryArr = Array.isArray(rawSetsHistory)
+    ? rawSetsHistory
+    : (typeof rawSetsHistory === 'string' ? JSON.parse(rawSetsHistory) : [
+        { set: 1, score1: match.score1, score2: match.score2, isLocked: false, winner: null },
+        { set: 2, score1: 0, score2: 0, isLocked: false, winner: null },
+        { set: 3, score1: 0, score2: 0, isLocked: false, winner: null },
+        { set: 4, score1: 0, score2: 0, isLocked: false, winner: null },
+        { set: 5, score1: 0, score2: 0, isLocked: false, winner: null }
+      ]);
+
+  const currentSetVal = req.body.currentSet || req.body.currentSetIndex || match.currentSet || 1;
+  const setsWon1Val = req.body.setsWon1 !== undefined ? Number(req.body.setsWon1) : (match.setsWon1 || 0);
+  const setsWon2Val = req.body.setsWon2 !== undefined ? Number(req.body.setsWon2) : (match.setsWon2 || 0);
+
+  const detailsObj = {
+    setsHistory: setsHistoryArr,
+    currentSet: currentSetVal,
+    setsWon1: setsWon1Val,
+    setsWon2: setsWon2Val
+  };
+
+  try {
+    await queryDb(
+      `UPDATE live_matches 
+       SET score1 = $1, score2 = $2, status = $3, table_number = $4,
+           details = $5, sets_history = $6, current_set = $7, sets_won1 = $8, sets_won2 = $9, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $10`,
+      [
+        match.score1,
+        match.score2,
+        match.status,
+        match.tableNumber || 'Table 1',
+        JSON.stringify(detailsObj),
+        JSON.stringify(setsHistoryArr),
+        currentSetVal,
+        setsWon1Val,
+        setsWon2Val,
+        id
+      ]
+    );
+  } catch (e) {
+    console.warn('updateMatchScore DB update error:', e.message);
+  }
+
   return res.json({ success: true, match });
 };
 
-export const completeMatch = (req, res) => {
+export const completeMatch = async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
   const { id } = req.params;
 
@@ -353,6 +480,35 @@ export const completeMatch = (req, res) => {
   match.isLiveStreaming = false;
   match.winner = req.body.winner || (match.score1 >= match.score2 ? match.team1 : match.team2);
   match.completedAt = new Date().toISOString();
+
+  const rawSetsHistory = req.body.setsHistory || match.setsHistory;
+  const setsHistoryArr = Array.isArray(rawSetsHistory)
+    ? rawSetsHistory
+    : (typeof rawSetsHistory === 'string' ? JSON.parse(rawSetsHistory) : null);
+
+  const detailsObj = {
+    setsHistory: setsHistoryArr,
+    currentSet: match.currentSet || 1,
+    setsWon1: match.setsWon1 || 0,
+    setsWon2: match.setsWon2 || 0
+  };
+
+  try {
+    await queryDb(
+      `UPDATE live_matches 
+       SET status = 'COMPLETED', table_number = NULL, is_live_streaming = FALSE, winner = $1,
+           details = COALESCE($2, details), sets_history = COALESCE($3, sets_history), updated_at = CURRENT_TIMESTAMP
+       WHERE id = $4`,
+      [
+        match.winner,
+        setsHistoryArr ? JSON.stringify(detailsObj) : null,
+        setsHistoryArr ? JSON.stringify(setsHistoryArr) : null,
+        id
+      ]
+    );
+  } catch (e) {
+    console.warn('completeMatch DB update error:', e.message);
+  }
 
   return res.json({ success: true, match });
 };

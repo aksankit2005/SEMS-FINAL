@@ -56,9 +56,17 @@ export const mergeMatchState = (existing, incoming) => {
   const incS1 = getS1(incoming);
   const incS2 = getS2(incoming);
 
-  // Preserve highest non-decreasing score for active live matches
-  const finalS1 = Math.max(extS1, incS1);
-  const finalS2 = Math.max(extS2, incS2);
+  const incSet = incoming.currentSet || incoming.currentSetIndex || 1;
+  const extSet = existing.currentSet || existing.currentSetIndex || 1;
+
+  const incLockedCount = Array.isArray(incoming.setsHistory) ? incoming.setsHistory.filter((s) => s.isLocked).length : 0;
+  const extLockedCount = Array.isArray(existing.setsHistory) ? existing.setsHistory.filter((s) => s.isLocked).length : 0;
+
+  // If incoming has newer timestamp, new set index, or newly locked set, trust incoming score directly
+  const isSetTransitionOrNewer = incSet !== extSet || incLockedCount !== extLockedCount || (incTime > 0 && incTime >= extTime);
+
+  const finalS1 = isSetTransitionOrNewer ? incS1 : Math.max(extS1, incS1);
+  const finalS2 = isSetTransitionOrNewer ? incS2 : Math.max(extS2, incS2);
 
   const team1Merged = typeof incoming.team1 === 'object'
     ? { ...incoming.team1, score: finalS1 }
@@ -73,6 +81,11 @@ export const mergeMatchState = (existing, incoming) => {
   const mergedStreamUrl = incoming.streamUrl || existing.streamUrl || null;
   const mergedIsLiveStreaming = incoming.isLiveStreaming !== undefined ? incoming.isLiveStreaming : (existing.isLiveStreaming ?? Boolean(mergedYoutubeVideoId || mergedStreamUrl));
 
+  // Sets History preservation
+  const mergedSetsHistory = (Array.isArray(incoming.setsHistory) && incoming.setsHistory.length > 0)
+    ? incoming.setsHistory
+    : (Array.isArray(existing.setsHistory) ? existing.setsHistory : null);
+
   return {
     ...existing,
     ...incoming,
@@ -80,6 +93,8 @@ export const mergeMatchState = (existing, incoming) => {
     score2: finalS2,
     team1: team1Merged,
     team2: team2Merged,
+    currentSet: incSet || extSet,
+    setsHistory: mergedSetsHistory,
     youtubeVideoId: mergedYoutubeVideoId,
     streamUrl: mergedStreamUrl,
     isLiveStreaming: mergedIsLiveStreaming,
@@ -432,7 +447,7 @@ export const coordinatorApi = {
           delete activeMap[id];
           localStorage.setItem('sems_active_live_matches', JSON.stringify(activeMap));
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     window.dispatchEvent(new Event('storage'));
@@ -514,7 +529,7 @@ export const coordinatorApi = {
           });
           localStorage.setItem('sems_active_live_matches', JSON.stringify(cleaned));
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     window.dispatchEvent(new Event('storage'));
@@ -572,7 +587,7 @@ export const coordinatorApi = {
             }
           });
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const s = (updatedMatch.status || '').toLowerCase();
@@ -856,7 +871,7 @@ export const coordinatorApi = {
             liveMap[m.id] = mergeMatchState(liveMap[m.id], m);
           }
         });
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // 3. Merge sems_coord_matches_* keys from localStorage
@@ -873,7 +888,7 @@ export const coordinatorApi = {
               }
             });
           }
-        } catch (e) {}
+        } catch (e) { }
       }
     }
 

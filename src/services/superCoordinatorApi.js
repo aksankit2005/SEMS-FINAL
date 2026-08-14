@@ -203,8 +203,28 @@ const MOCK_MASTER_PARTICIPANTS = [
 ];
 
 export const superCoordinatorApi = {
-  // Get Coordinator Event Creation History — from localStorage only (real data)
+  // Get Sports & Assigned Coordinators from Backend
+  getCoordinators: async () => {
+    try {
+      const res = await fetch('/api/super-coordinator/coordinators');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) return data;
+      }
+    } catch (e) {}
+    return ALL_12_SPORTS;
+  },
+
+  // Get Coordinator Event Creation History — from Backend with localStorage fallback
   getCoordinatorEvents: async () => {
+    try {
+      const res = await fetch('/api/super-coordinator/events');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) return data;
+      }
+    } catch (e) {}
+
     const eventsList = [];
     const seenIds = new Set();
 
@@ -247,8 +267,16 @@ export const superCoordinatorApi = {
     return eventsList;
   },
 
-  // Get Master Participants — from localStorage with rich mock fallback
+  // Get Master Participants — from Backend with localStorage and mock fallback
   getMasterParticipants: async () => {
+    try {
+      const res = await fetch('/api/super-coordinator/participants');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) return data;
+      }
+    } catch (e) {}
+
     const list = [];
     const seenIds = new Set();
 
@@ -344,8 +372,16 @@ export const superCoordinatorApi = {
     }
   },
 
-  // Get Inter-College Leaderboard Entries (localStorage only — no mock defaults)
+  // Get Inter-College Leaderboard Entries (from Backend with localStorage fallback)
   getLeaderboardEntries: async () => {
+    try {
+      const res = await fetch('/api/super-coordinator/leaderboard');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) return data;
+      }
+    } catch (e) {}
+
     try {
       const stored = localStorage.getItem('sems_super_coord_leaderboard');
       if (stored) return JSON.parse(stored);
@@ -353,14 +389,35 @@ export const superCoordinatorApi = {
     return [];
   },
 
-  // Save Inter-College Leaderboard Entries
-  saveLeaderboardEntries: async (entries) => {
+  // Save Inter-College Leaderboard Entry (to Backend with localStorage fallback)
+  saveLeaderboardEntries: async (entries, latestEntry) => {
     try {
       localStorage.setItem('sems_super_coord_leaderboard', JSON.stringify(entries));
       window.dispatchEvent(new Event('sems_leaderboard_updated'));
-      return true;
-    } catch (e) {
-      return false;
+    } catch (e) {}
+
+    if (latestEntry) {
+      try {
+        const res = await fetch('/api/super-coordinator/leaderboard', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(latestEntry)
+        });
+        if (res.ok) return true;
+      } catch (e) {}
     }
+
+    return true;
+  },
+
+  // Delete Inter-College Leaderboard Entry
+  deleteLeaderboardEntry: async (entryId) => {
+    try {
+      const res = await fetch(`/api/super-coordinator/leaderboard/${entryId}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) return true;
+    } catch (e) {}
+    return true;
   }
 };
