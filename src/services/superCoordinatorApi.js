@@ -1,5 +1,6 @@
 // Frontend Service for Super Coordinator (President / Event Host Portal)
 import { galleryApi } from './galleryApi';
+import { apiUrl } from './apiConfig';
 
 export const ALL_12_SPORTS = [
   { id: 'table-tennis', name: 'Table Tennis', icon: '🏓', coordinator: 'Amit Sharma', coordinatorEmail: 'tt.coord@sems.edu', category: 'Indoor', squadSize: '1 - 2 Players' },
@@ -33,7 +34,7 @@ export const superCoordinatorApi = {
   // Get Sports & Assigned Coordinators from Backend
   getCoordinators: async () => {
     try {
-      const res = await fetch('/api/super-coordinator/coordinators');
+      const res = await fetch(apiUrl('/super-coordinator/coordinators'));
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) return data;
@@ -45,7 +46,7 @@ export const superCoordinatorApi = {
   // Get Coordinator Event Creation History — strictly from real database API
   getCoordinatorEvents: async () => {
     try {
-      const res = await fetch('/api/super-coordinator/events');
+      const res = await fetch(apiUrl('/super-coordinator/events'));
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) return data;
@@ -57,7 +58,7 @@ export const superCoordinatorApi = {
   // Get Master Participants — strictly from real PostgreSQL database API
   getMasterParticipants: async () => {
     try {
-      const res = await fetch('/api/super-coordinator/participants');
+      const res = await fetch(apiUrl('/super-coordinator/participants'));
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) return data;
@@ -117,7 +118,7 @@ export const superCoordinatorApi = {
   // Get Inter-College Leaderboard Entries (from Backend with localStorage fallback)
   getLeaderboardEntries: async () => {
     try {
-      const res = await fetch('/api/super-coordinator/leaderboard');
+      const res = await fetch(apiUrl('/super-coordinator/leaderboard'));
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) return data;
@@ -140,7 +141,7 @@ export const superCoordinatorApi = {
 
     if (latestEntry) {
       try {
-        const res = await fetch('/api/super-coordinator/leaderboard', {
+        const res = await fetch(apiUrl('/super-coordinator/leaderboard'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(latestEntry)
@@ -155,7 +156,7 @@ export const superCoordinatorApi = {
   // Delete Inter-College Leaderboard Entry
   deleteLeaderboardEntry: async (entryId) => {
     try {
-      const res = await fetch(`/api/super-coordinator/leaderboard/${entryId}`, {
+      const res = await fetch(apiUrl(`/super-coordinator/leaderboard/${entryId}`), {
         method: 'DELETE'
       });
       if (res.ok) return true;

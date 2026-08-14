@@ -4,8 +4,7 @@ import { Crown, Lock, User, ArrowRight, ShieldCheck, Sparkles, CheckCircle2 } fr
 import { useToast } from '../../context/ToastContext';
 
 import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { API_BASE_URL } from '../../services/apiConfig';
 
 export const SuperCoordinatorLoginPage = () => {
   const [username, setUsername] = useState('');

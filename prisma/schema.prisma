@@ -6,55 +6,22 @@ datasource db {
   provider = "postgresql"
 }
 
-enum CoordinatorRole {
-  SUPER_ADMIN
-  COLLEGE_COORDINATOR
+// Values submitted by the current portals are intentionally represented by
+// strings in the legacy-facing models below.  This keeps existing UI values
+// such as "Approved", "PAID", and sport slugs compatible during migration.
+enum UserRole {
+  ADMIN
+  SUPER_COORDINATOR
+  COLLEGE_HEAD
   SPORTS_COORDINATOR
-}
-
-enum EventStatus {
-  DRAFT
-  REGISTRATION_OPEN
-  REGISTRATION_CLOSED
-  LIVE
-  COMPLETED
-  CANCELLED
-}
-
-enum CompetitionStatus {
-  DRAFT
-  OPEN
-  CLOSED
-  LIVE
-  COMPLETED
-}
-
-enum MatchType {
-  SINGLES
-  DOUBLES
-  TEAM
-}
-
-enum GenderCategory {
-  MALE
-  FEMALE
-  MIXED
-}
-
-enum RegistrationType {
-  INDIVIDUAL
-  TEAM
+  PR_COORDINATOR
 }
 
 enum RegistrationStatus {
   PENDING
   VERIFIED
+  REJECTED
   CANCELLED
-}
-
-enum PaymentMethod {
-  ONLINE
-  OFFLINE
 }
 
 enum PaymentStatus {
@@ -71,564 +38,685 @@ enum MatchStatus {
   CANCELLED
 }
 
-enum RankingType {
-  INDIVIDUAL
-  TEAM
+enum MediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
 }
+
+enum CommitteeMemberType {
+  EXECUTIVE
+  ADVISOR
+}
+
+// --- Shared master data ----------------------------------------------------
 
 model College {
   id        String   @id @default(uuid()) @db.Uuid
   code      String   @unique
   name      String   @unique
-
+  address   String?
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  coordinators Coordinator[]
-  teams Team[]
-  collegeRankings CollegeRanking[]
+  students      Student[]
+  registrations Registration[]
+  teams         Team[]
+  collegeHeads  CollegeHeadAccount[]
 
   @@map("colleges")
 }
 
 model Sport {
-  id           String   @id @default(uuid()) @db.Uuid
-  name         String   @unique
-  isTeamSport  Boolean  @default(false)
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique
+  name        String   @unique
+  isTeamSport Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
+  rules        SportRegistrationRule[]
   competitions Competition[]
-  registrations Registration[]
-  teams Team[]
 
   @@map("sports")
 }
 
-model Venue {
-  id          String   @id @default(uuid()) @db.Uuid
-  name        String
-  location    String?
+model Tournament {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String
+  year      Int
+  status    String    @default("DRAFT")
+  startDate DateTime?
+  endDate   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  competitions  Competition[]
+  registrations Registration[]
+
+  @@unique([name, year])
+  @@index([status])
+  @@map("tournaments")
+}
+
+model Event {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  year      Int
+  status    String   @default("DRAFT")
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, year])
+  @@index([status])
+  @@map("tournament_events")
+}
+
+model Competition {
+  id                String    @id @default(uuid()) @db.Uuid
+  tournamentId      String    @db.Uuid
+  sportId           String    @db.Uuid
+  title             String
+  gender            String?
+  matchType         String?
+  registrationFee   Decimal   @default(0) @db.Decimal(10, 2)
+  registrationStart DateTime?
+  registrationEnd   DateTime?
+  maxParticipants   Int?
+  status            String    @default("DRAFT")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  sport      Sport      @relation(fields: [sportId], references: [id], onDelete: Restrict)
+  matches    Match[]
+
+  @@unique([tournamentId, sportId, title])
+  @@index([sportId, status])
+  @@map("competitions")
+}
+
+model Venue {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  location  String?
+  capacity  Int?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   matches Match[]
 
   @@map("venues")
 }
 
-model Event {
-  id          String      @id @default(uuid()) @db.Uuid
-  name        String
-  year        Int
-  status      EventStatus @default(DRAFT)
-
-  startDate   DateTime
-  endDate     DateTime
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  competitions Competition[]
-  registrations Registration[]
-  teams Team[]
-  announcements Announcement[]
-
-  gallery Gallery[]
-
-  @@unique([name, year])
-  @@map("events")
-}
-
-model Competition {
-  id                  String            @id @default(uuid()) @db.Uuid
-  title               String
-  registrationFee     Decimal           @db.Decimal(10,2)
-  registrationStart   DateTime
-  registrationEnd     DateTime
-  status              CompetitionStatus @default(DRAFT)
-  gender              GenderCategory
-  matchType           MatchType
-  maxParticipants     Int?
-
-  eventId             String            @db.Uuid
-  sportId             String            @db.Uuid
-
-  event               Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  sport               Sport             @relation(fields: [sportId], references: [id], onDelete: Restrict)
-
-  coordinatorAssignments CoordinatorAssignment[]
-  matches Match[]
-  individualRankings IndividualRanking[]
-  collegeRankings CollegeRanking[]
-  gallery Gallery[]
-
+model Official {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  role      String
+  phone     String?
+  email     String?
+  sportSlug String?
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([eventId])
-  @@index([sportId])
-  @@unique([eventId, sportId, title])
-  @@map("competitions")
+  @@index([sportSlug])
+  @@map("officials")
 }
 
-model Coordinator {
-  id          String @id @default(uuid()) @db.Uuid
-  name        String
-  email       String @unique
-  phone       String @unique
-  password    String
-  role        CoordinatorRole
+// --- Accounts and access ---------------------------------------------------
 
-  collegeId   String? @db.Uuid
-  college     College? @relation(fields: [collegeId], references: [id], onDelete: SetNull)
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  username     String    @unique
+  passwordHash String    @map("password_hash")
+  name         String
+  email        String?   @unique
+  phone        String?
+  role         UserRole
+  collegeCode  String?
+  sportSlug    String?
+  status       String    @default("ACTIVE")
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  assignments CoordinatorAssignment[]
   auditLogs AuditLog[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([collegeId])
-  @@map("coordinators")
+  @@index([role, status])
+  @@index([collegeCode])
+  @@index([sportSlug])
+  @@map("users")
 }
 
-model CoordinatorAssignment {
-  id String @id @default(uuid()) @db.Uuid
-  coordinatorId String @db.Uuid
-  competitionId String @db.Uuid
+// Existing controller-facing account tables. They are kept separate from
+// User until authentication routes are migrated to one account source.
+model SportCoordinatorAccount {
+  id              String   @id @default(uuid())
+  username        String   @unique
+  passwordHash    String   @map("password_hash")
+  assignedSport   String   @map("assigned_sport")
+  sportName       String   @map("sport_name")
+  coordinatorName String   @map("coordinator_name")
+  email           String?
+  phone           String?
+  status          String   @default("active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
-  coordinator Coordinator @relation(fields: [coordinatorId], references: [id], onDelete: Cascade)
-  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  @@index([assignedSport, status])
+  @@map("sport_coordinators")
+}
 
-  assignedAt DateTime @default(now())
+model CollegeHeadAccount {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  passwordHash String   @map("password_hash")
+  college      String
+  collegeId    String?  @map("college_id") @db.Uuid
+  facultyName  String   @map("faculty_name")
+  email        String?
+  phone        String?
+  status       String   @default("active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  @@unique([coordinatorId, competitionId])
-  @@index([competitionId])
-  @@map("coordinator_assignments")
+  collegeRecord College? @relation(fields: [collegeId], references: [id], onDelete: SetNull)
+
+  @@index([college, status])
+  @@index([collegeId])
+  @@map("college_head_users")
+}
+
+model PrUser {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  passwordHash String   @map("password_hash")
+  role         String   @default("pr_coordinator")
+  name         String?
+  email        String?
+  status       String   @default("active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("pr_users")
+}
+
+// --- Registration and payment ---------------------------------------------
+
+model Student {
+  id           String    @id @default(uuid()) @db.Uuid
+  collegeId    String?   @db.Uuid
+  fullName     String
+  rollNo       String?
+  enrollmentNo String?
+  email        String?
+  mobile       String?
+  gender       String?
+  course       String?
+  branch       String?
+  yearSemester String?
+  section      String?
+  dateOfBirth  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  college College? @relation(fields: [collegeId], references: [id], onDelete: SetNull)
+
+  @@index([collegeId, enrollmentNo])
+  @@index([rollNo])
+  @@map("students")
 }
 
 model Registration {
-  id String @id @default(uuid()) @db.Uuid
+  id               String             @id @default(uuid()) @db.Uuid
+  eventId          String?            @db.Uuid
+  tournamentId     String?            @db.Uuid
+  collegeId        String?            @db.Uuid
+  sportId          String?
+  competitionId    String?            @db.Uuid
+  registrationType String
+  status           RegistrationStatus @default(PENDING)
+  teamName         String?
+  amount           Decimal            @default(0) @db.Decimal(10, 2)
+  submittedData    Json?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 
-  members RegistrationMember[]
+  tournament           Tournament?           @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  college              College?              @relation(fields: [collegeId], references: [id], onDelete: SetNull)
+  members              RegistrationMember[]
+  payment              Payment?
+  team                 Team?
+  collegeRegistrations CollegeRegistration[]
 
-  eventId String @db.Uuid
-  event Event @relation(fields: [eventId], references: [id])
-
-  sportId String @db.Uuid
-  sport Sport @relation(fields: [sportId], references: [id])
-
-  registrationType RegistrationType
-  status RegistrationStatus @default(PENDING)
-  amount Decimal @db.Decimal(10,2)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  payment Payment?
-  teamMember TeamMember?
-  individualRanking IndividualRanking?
-
-  captainOf Team? @relation("TeamCaptain")
-
-  @@unique([eventId, sportId, createdAt])
-  @@index([eventId])
-  @@index([sportId])
+  @@index([sportId, status])
+  @@index([collegeId, createdAt])
   @@map("registrations")
 }
 
-model Payment {
-  id String @id @default(uuid()) @db.Uuid
+model RegistrationMember {
+  id               String    @id @default(uuid()) @db.Uuid
+  registrationId   String    @db.Uuid
+  fullName         String
+  fatherMotherName String?   @map("father_mother_name")
+  rollNo           String?
+  enrollmentNo     String?
+  email            String?
+  mobile           String?
+  alternateMobile  String?   @map("alternate_mobile")
+  gender           String?
+  course           String?
+  branch           String?
+  yearSemester     String?   @map("year_semester")
+  section          String?
+  dateOfBirth      DateTime?
+  aadhaarNumber    String?
+  isCaptain        Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  registrationId String @unique @db.Uuid
-  registration Registration @relation(fields: [registrationId], references: [id])
-
-  amount Decimal @db.Decimal(10,2)
-  method PaymentMethod
-  status PaymentStatus @default(PENDING)
-
-  transactionId String?
-  gatewayOrderId String?
-  gatewayPaymentId String?
-
-  paidAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  receipt Receipt?
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
 
   @@index([registrationId])
-  @@index([status])
-  @@index([transactionId])
+  @@index([enrollmentNo])
+  @@map("registration_members")
+}
+
+// This deliberately mirrors the public registration payload and the current
+// college-head/coordinator queries, which use sport slugs and receipt IDs.
+model CollegeRegistration {
+  id               String   @id
+  registrationId   String?  @db.Uuid
+  eventId          String   @map("event_id")
+  sportId          String   @map("sport_id")
+  studentName      String   @map("student_name")
+  teamName         String?  @map("team_name")
+  college          String
+  department       String?
+  enrollmentNo     String?  @map("enrollment_no")
+  email            String?
+  phone            String?
+  gender           String
+  emergencyContact String?  @map("emergency_contact")
+  status           String   @default("PENDING")
+  feePaid          Decimal  @default(0) @map("fee_paid") @db.Decimal(10, 2)
+  paymentId        String?  @map("payment_id")
+  paymentStatus    String   @default("PENDING") @map("payment_status")
+  membersCount     Int      @default(1) @map("members_count")
+  participantData  Json?    @map("participant_data")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  registration Registration? @relation(fields: [registrationId], references: [id], onDelete: SetNull)
+
+  @@index([college, sportId])
+  @@index([status, paymentStatus])
+  @@map("college_registrations")
+}
+
+model Payment {
+  id               String        @id @default(uuid()) @db.Uuid
+  registrationId   String        @unique @db.Uuid
+  amount           Decimal       @db.Decimal(10, 2)
+  method           String        @default("ONLINE")
+  status           PaymentStatus @default(PENDING)
+  transactionId    String?       @map("transaction_id")
+  paymentId        String?       @map("payment_id")
+  gatewayPaymentId String?       @map("gateway_payment_id")
+  orderId          String?       @map("order_id")
+  paidAt           DateTime?     @map("paid_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  receipt      Receipt?
+
+  @@index([status, createdAt])
   @@map("payments")
 }
 
 model Receipt {
-  id String @id @default(uuid()) @db.Uuid
+  id            String   @id @default(uuid()) @db.Uuid
+  paymentId     String   @unique @db.Uuid
+  receiptNumber String   @unique @map("receipt_number")
+  issuedAt      DateTime @default(now()) @map("issued_at")
 
-  paymentId String @unique @db.Uuid
-  payment Payment @relation(fields: [paymentId], references: [id])
-
-  receiptNumber String @unique
-  receiptUrl String?
-  generatedAt DateTime @default(now())
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
 
   @@map("receipts")
 }
 
 model Team {
-  id String @id @default(uuid()) @db.Uuid
+  id                    String   @id @default(uuid()) @db.Uuid
+  registrationId        String?  @unique @db.Uuid
+  eventId               String?  @db.Uuid
+  collegeId             String?  @db.Uuid
+  sportId               String?
+  name                  String
+  captainName           String?
+  captainRegistrationId String?  @db.Uuid
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
-  eventId String @db.Uuid
-  event Event @relation(fields: [eventId], references: [id])
+  registration Registration? @relation(fields: [registrationId], references: [id], onDelete: SetNull)
+  college      College?      @relation(fields: [collegeId], references: [id], onDelete: SetNull)
+  members      TeamMember[]
 
-  sportId String @db.Uuid
-  sport Sport @relation(fields: [sportId], references: [id])
-
-  collegeId String @db.Uuid
-  college College @relation(fields: [collegeId], references: [id])
-
-  name String
-
-  captainRegistrationId String? @unique @db.Uuid
-  captainRegistration Registration? @relation("TeamCaptain", fields: [captainRegistrationId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  members TeamMember[]
-  matches MatchParticipant[]
-  wonMatches Match[] @relation("WinnerTeam")
-
-  @@unique([eventId, sportId, collegeId, name])
-  @@index([eventId, collegeId])
-  @@index([sportId])
-  @@index([collegeId])
+  @@index([collegeId, sportId])
   @@map("teams")
 }
 
 model TeamMember {
-  id String @id @default(uuid()) @db.Uuid
+  id                   String   @id @default(uuid()) @db.Uuid
+  teamId               String   @db.Uuid
+  registrationMemberId String?  @db.Uuid
+  registrationId       String?  @db.Uuid
+  name                 String?
+  rollNo               String?
+  enrollmentNo         String?
+  phone                String?
+  email                String?
+  gender               String?
+  isCaptain            Boolean  @default(false)
+  createdAt            DateTime @default(now())
 
-  teamId String @db.Uuid
-  team Team @relation(fields: [teamId], references: [id])
-
-  registrationId String @unique @db.Uuid
-  registration Registration @relation(fields: [registrationId], references: [id])
-
-  joinedAt DateTime @default(now())
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   @@index([teamId])
   @@map("team_members")
 }
 
+model SportRegistrationRule {
+  id               String   @id @default(uuid()) @db.Uuid
+  sportId          String   @db.Uuid
+  registrationType String
+  gender           String?
+  minMembers       Int      @default(1)
+  maxMembers       Int      @default(1)
+  eligibility      Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  sport Sport @relation(fields: [sportId], references: [id], onDelete: Cascade)
+
+  @@unique([sportId, registrationType, gender])
+  @@map("sports_registration_rules")
+}
+
+// --- Scheduling, scoring, results -----------------------------------------
+
 model Match {
-  id String @id @default(uuid()) @db.Uuid
+  id            String      @id @default(uuid()) @db.Uuid
+  competitionId String      @db.Uuid
+  venueId       String?     @db.Uuid
+  round         String?
+  matchNumber   Int?
+  scheduledAt   DateTime?
+  status        MatchStatus @default(SCHEDULED)
+  homeTeamName  String?
+  awayTeamName  String?
+  winnerName    String?
+  scoreSummary  String?
+  metadata      Json?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
-  competitionId String @db.Uuid
-  competition Competition @relation(fields: [competitionId], references: [id])
+  competition Competition  @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  venue       Venue?       @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  scores      MatchScore[]
+  result      MatchResult?
 
-  venueId String @db.Uuid
-  venue Venue @relation(fields: [venueId], references: [id])
-
-  scheduledAt DateTime
-  round String
-  status MatchStatus @default(SCHEDULED)
-
-  winnerTeamId String? @db.Uuid
-  winnerTeam Team? @relation("WinnerTeam", fields: [winnerTeamId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  participants MatchParticipant[]
-  score MatchScore?
-
-  @@index([competitionId])
-  @@index([venueId])
+  @@index([competitionId, status])
   @@index([scheduledAt])
-  @@index([status])
   @@map("matches")
 }
 
-model MatchParticipant {
-  id String @id @default(uuid()) @db.Uuid
-
-  matchId String @db.Uuid
-  match Match @relation(fields: [matchId], references: [id])
-
-  teamId String @db.Uuid
-  team Team @relation(fields: [teamId], references: [id])
-
-  side Int
-
-  @@unique([matchId, side])
-  @@index([teamId])
-  @@map("match_participants")
-}
-
 model MatchScore {
-  id String @id @default(uuid()) @db.Uuid
-
-  matchId String @unique @db.Uuid
-  match Match @relation(fields: [matchId], references: [id])
-
-  team1Score Int
-  team2Score Int
-  remarks String?
-
+  id        String   @id @default(uuid()) @db.Uuid
+  matchId   String   @db.Uuid
+  period    Int?
+  homeScore Int      @default(0)
+  awayScore Int      @default(0)
+  details   Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@index([matchId])
   @@map("match_scores")
 }
 
-model IndividualRanking {
-  id String @id @default(uuid()) @db.Uuid
+model MatchResult {
+  id            String   @id @default(uuid()) @db.Uuid
+  matchId       String   @unique @db.Uuid
+  winnerName    String?
+  runnerUpName  String?
+  winnerScore   String?
+  runnerUpScore String?
+  notes         String?
+  declaredBy    String?
+  declaredAt    DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  competitionId String @db.Uuid
-  competition Competition @relation(fields: [competitionId], references: [id])
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
 
-  registrationId String @unique @db.Uuid
-  registration Registration @relation(fields: [registrationId], references: [id])
-
-  rank Int
-  points Int
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([competitionId, rank])
-  @@index([competitionId])
-  @@map("individual_rankings")
+  @@map("match_results")
 }
 
-model CollegeRanking {
-  id String @id @default(uuid()) @db.Uuid
-
-  competitionId String @db.Uuid
-  competition Competition @relation(fields: [competitionId], references: [id])
-
-  collegeId String @db.Uuid
-  college College @relation(fields: [collegeId], references: [id])
-
-  rank Int
-  points Int
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([competitionId, collegeId])
-  @@unique([competitionId, rank])
-  @@index([competitionId])
-  @@index([collegeId])
-  @@map("college_rankings")
-}
-
-model Announcement {
-  id String @id @default(uuid()) @db.Uuid
-
-  eventId String @db.Uuid
-  event Event @relation(fields: [eventId], references: [id])
-
-  title String
-  description String @db.Text
-
-  isPublished Boolean @default(false)
-  publishedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([eventId])
-  @@index([publishedAt])
-  @@map("announcements")
-}
-
-model Gallery {
-  id String @id @default(uuid()) @db.Uuid
-
-  eventId String @db.Uuid
-  event Event @relation(fields: [eventId], references: [id])
-
-  competitionId String? @db.Uuid
-  competition Competition? @relation(fields: [competitionId], references: [id])
-
-  title String?
-  imageUrl String
-  uploadedBy String?
-
-  createdAt DateTime @default(now())
-
-  @@index([eventId])
-  @@index([competitionId])
-  @@map("gallery")
-}
-
-model AuditLog {
-  id String @id @default(uuid()) @db.Uuid
-
-  coordinatorId String? @db.Uuid
-  coordinator Coordinator? @relation(fields: [coordinatorId], references: [id])
-
-  action String
-  entity String
-  entityId String?
-  metadata Json?
-
-  createdAt DateTime @default(now())
-
-  @@index([coordinatorId])
-  @@index([entity])
-  @@index([createdAt])
-  @@map("audit_logs")
-}
-
-model RegistrationMember {
-  id String @id @default(uuid()) @db.Uuid
-
-  registrationId String @db.Uuid
-  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
-
-  fullName String
-  fatherMotherName String
-  rollNo String
-
-  dateOfBirth DateTime?
-  mobile String
-  alternateMobile String?
-  email String
-  aadhaarNumber String? 
-  course String
-  yearSemester String
-
-  gender GenderCategory
-  isCaptain Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([registrationId])
-  @@index([rollNo])
-
-  @@map("registration_members")
-}
-
-model PrUser {
-  id           Int      @id @default(autoincrement())
-  username     String   @unique @db.VarChar(100)
-  passwordHash String   @map("password_hash") @db.Text
-  role         String?  @default("pr_coordinator") @db.VarChar(50)
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
-
-  @@map("pr_users")
-}
-
-model CollegeHeadUser {
-  id           Int      @id @default(autoincrement())
-  username     String   @unique @db.VarChar(100)
-  passwordHash String   @map("password_hash") @db.Text
-  college      String   @db.VarChar(100)
-  facultyName  String   @map("faculty_name") @db.VarChar(150)
-  role         String?  @default("college_head") @db.VarChar(50)
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
-
-  @@map("college_head_users")
-}
-
-model SportCoordinator {
-  id              Int      @id @default(autoincrement())
-  username        String   @unique @db.VarChar(100)
-  passwordHash    String   @map("password_hash") @db.Text
-  assignedSport   String   @map("assigned_sport") @db.VarChar(50)
-  sportName       String   @map("sport_name") @db.VarChar(100)
-  coordinatorName String   @map("coordinator_name") @db.VarChar(150)
-  email           String   @db.VarChar(150)
-  role            String?  @default("sport_coordinator") @db.VarChar(50)
-  status          String?  @default("active") @db.VarChar(20)
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
-
-  @@map("sport_coordinators")
-}
-
-model CollegeRegistration {
-  id               String   @id @db.VarChar(50)
-  eventId          String   @default("DEFAULT") @map("event_id") @db.VarChar(100)
-  sportId          String   @default("general") @map("sport_id") @db.VarChar(100)
-  studentName      String   @map("student_name") @db.VarChar(255)
-  teamName         String?  @map("team_name") @db.VarChar(255)
-  college          String   @default("MPEC") @db.VarChar(255)
-  department       String?  @map("department") @db.VarChar(255)
-  enrollmentNo     String?  @map("enrollment_no") @db.VarChar(100)
-  email            String?  @db.VarChar(255)
-  phone            String?  @db.VarChar(50)
-  gender           String?  @default("Male") @db.VarChar(20)
-  emergencyContact String?  @map("emergency_contact") @db.VarChar(50)
-  status           String?  @default("Approved") @db.VarChar(50)
-  feePaid          Decimal? @default(0) @map("fee_paid") @db.Decimal(10, 2)
-  paymentId        String?  @map("payment_id") @db.VarChar(255)
-  paymentStatus    String?  @default("PAID") @map("payment_status") @db.VarChar(50)
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
-
-  @@map("college_registrations")
-}
-
+// This is the exact live-scoring document used by the current public and
+// coordinator routes. `details` stores sport-specific scorecards safely.
 model LiveMatch {
-  id              String   @id @db.VarChar(100)
-  sportId         String   @map("sport_id") @db.VarChar(50)
-  format          String?  @db.VarChar(50)
-  status          String?  @db.VarChar(50)
-  team1           String?  @db.VarChar(255)
-  team2           String?  @db.VarChar(255)
-  matchTitle      String?  @map("match_title") @db.VarChar(255)
-  tableNumber     String?  @map("table_number") @db.VarChar(100)
-  time            String?  @db.VarChar(100)
-  score1          Int?     @default(0)
-  score2          Int?     @default(0)
-  winner          String?  @db.VarChar(255)
-  youtubeVideoId  String?  @map("youtube_video_id") @db.Text
-  streamUrl       String?  @map("stream_url") @db.Text
-  isLiveStreaming Boolean? @default(false) @map("is_live_streaming")
+  id              String   @id
+  sportId         String?  @map("sport_id")
+  format          String?
+  status          String?
+  team1           String?
+  team2           String?
+  matchTitle      String?  @map("match_title")
+  tableNumber     String?  @map("table_number")
+  time            String?
+  score1          Int      @default(0)
+  score2          Int      @default(0)
+  winner          String?
+  youtubeVideoId  String?  @map("youtube_video_id")
+  streamUrl       String?  @map("stream_url")
+  isLiveStreaming Boolean  @default(false) @map("is_live_streaming")
   details         Json?
-  setsHistory     String?  @map("sets_history") @db.Text
-  currentSet      Int?     @default(1) @map("current_set")
-  setsWon1        Int?     @default(0) @map("sets_won1")
-  setsWon2        Int?     @default(0) @map("sets_won2")
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  setsHistory     String?  @map("sets_history")
+  currentSet      Int      @default(1) @map("current_set")
+  setsWon1        Int      @default(0) @map("sets_won1")
+  setsWon2        Int      @default(0) @map("sets_won2")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
+  @@index([sportId, status])
+  @@index([updatedAt])
   @@map("live_matches")
 }
 
-model CoordinatorEventItem {
-  id               String   @id @db.VarChar(100)
-  sportId          String   @map("sport_id") @db.VarChar(50)
-  sportName        String?  @map("sport_name") @db.VarChar(100)
-  title            String   @db.VarChar(255)
-  coverImage       String?  @map("cover_image") @db.Text
-  description      String?  @db.Text
-  regStartDate     String?  @map("reg_start_date") @db.VarChar(50)
-  regEndDate       String?  @map("reg_end_date") @db.VarChar(50)
-  tournStartDate   String?  @map("tourn_start_date") @db.VarChar(50)
-  tournEndDate     String?  @map("tourn_end_date") @db.VarChar(50)
-  entryFee         Decimal? @default(0) @map("entry_fee") @db.Decimal(10, 2)
-  singlesFee       Decimal? @default(0) @map("singles_fee") @db.Decimal(10, 2)
-  doublesFee       Decimal? @default(0) @map("doubles_fee") @db.Decimal(10, 2)
-  teamSize         String?  @map("team_size") @db.VarChar(100)
-  maxRegistrations Int?     @default(64) @map("max_registrations")
-  registeredCount  Int?     @default(0) @map("registered_count")
-  venue            String?  @db.VarChar(255)
-  category         String?  @db.VarChar(100)
-  status           String?  @default("Draft") @db.VarChar(50)
-  rules            Json?
-  requiredDocuments Json?   @map("required_documents")
-  contactInfo      Json?    @map("contact_info")
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+model LeaderboardEntry {
+  id              Int      @id @default(autoincrement())
+  sportId         String?  @map("sport_id")
+  matchFormat     String?  @map("match_format")
+  gender          String?
+  subEvent        String?  @map("sub_event")
+  winnerName      String?  @map("winner_name")
+  winnerTeam      String?  @map("winner_team")
+  winnerCollege   String?  @map("winner_college")
+  runnerUpName    String?  @map("runner_up_name")
+  runnerUpTeam    String?  @map("runner_up_team")
+  runnerUpCollege String?  @map("runner_up_college")
+  points          Int      @default(10)
+  declaredAt      DateTime @default(now()) @map("declared_at")
 
-  @@map("coordinator_event_items")
+  @@index([sportId, declaredAt])
+  @@map("leaderboard_entries")
 }
 
+// --- Public communications, PR and administration ------------------------
 
+model Announcement {
+  id          String    @id @default(uuid()) @db.Uuid
+  title       String
+  description String
+  audience    String?   @default("PUBLIC")
+  sportSlug   String?
+  publishDate DateTime?
+  expiryDate  DateTime?
+  isPublished Boolean   @default(false)
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  attachments AnnouncementAttachment[]
+
+  @@index([isPublished, publishDate])
+  @@map("announcements")
+}
+
+model AnnouncementAttachment {
+  id             String   @id @default(uuid()) @db.Uuid
+  announcementId String   @db.Uuid
+  name           String
+  url            String
+  mimeType       String?
+  sizeBytes      Int?
+  createdAt      DateTime @default(now())
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  @@index([announcementId])
+  @@map("announcement_attachments")
+}
+
+// PR routes use `events` and `media`; tournament data stays in `tournaments`.
+model MediaEvent {
+  id          Int      @id @default(autoincrement())
+  eventName   String   @map("event_name")
+  eventDate   DateTime @map("event_date")
+  coverImage  String   @map("cover_image")
+  description String?  @default("")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  media Media[]
+
+  @@index([eventDate])
+  @@map("events")
+}
+
+model Media {
+  id         Int       @id @default(autoincrement())
+  eventId    Int?      @map("event_id")
+  mediaType  MediaType @map("media_type")
+  title      String
+  mediaUrl   String    @map("media_url")
+  uploadedBy String?   @map("uploaded_by")
+  uploadedAt DateTime  @default(now()) @map("uploaded_at")
+
+  event MediaEvent? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, uploadedAt])
+  @@map("media")
+}
+
+model CommitteeSession {
+  id        String   @id @default(uuid()) @db.Uuid
+  label     String   @unique
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members CommitteeMember[]
+
+  @@map("committee_sessions")
+}
+
+model CommitteeMember {
+  id        String              @id @default(uuid()) @db.Uuid
+  sessionId String              @db.Uuid
+  type      CommitteeMemberType
+  name      String
+  role      String
+  photoUrl  String?             @map("photo_url")
+  email     String?
+  phone     String?
+  sortOrder Int                 @default(0) @map("sort_order")
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  session CommitteeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, type, sortOrder])
+  @@map("committee_members")
+}
+
+model SystemSetting {
+  key       String   @id
+  value     Json
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @db.Uuid
+  actorName String?  @map("actor_name")
+  role      String?
+  action    String
+  entity    String?
+  entityId  String?  @map("entity_id")
+  details   Json?
+  ipAddress String?  @map("ip_address")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}
+
+// Full coordinator-created event payload. JSON is intentional for rules,
+// documents and contacts because their fields differ by sport and UI version.
+model CoordinatorEventItem {
+  id                String   @id
+  sportId           String   @map("sport_id")
+  sportName         String?  @map("sport_name")
+  title             String
+  coverImage        String?  @map("cover_image")
+  description       String?
+  regStartDate      String?  @map("reg_start_date")
+  regEndDate        String?  @map("reg_end_date")
+  tournStartDate    String?  @map("tourn_start_date")
+  tournEndDate      String?  @map("tourn_end_date")
+  entryFee          Decimal  @default(0) @map("entry_fee") @db.Decimal(10, 2)
+  singlesFee        Decimal? @map("singles_fee") @db.Decimal(10, 2)
+  doublesFee        Decimal? @map("doubles_fee") @db.Decimal(10, 2)
+  teamSize          String?  @map("team_size")
+  maxRegistrations  Int      @default(64) @map("max_registrations")
+  registeredCount   Int      @default(0) @map("registered_count")
+  venue             String?
+  category          String?
+  status            String   @default("Draft")
+  rules             Json?
+  requiredDocuments Json?    @map("required_documents")
+  contactInfo       Json?    @map("contact_info")
+  createdBy         String?  @map("created_by")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@index([sportId, status])
+  @@index([createdAt])
+  @@map("coordinator_event_items")
+}

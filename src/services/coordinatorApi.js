@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { SPORT_PLAYER_BOUNDS, resolveSportKey } from '../data/sportsConfig';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { API_BASE_URL } from './apiConfig';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

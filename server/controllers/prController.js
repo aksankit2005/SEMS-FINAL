@@ -52,8 +52,8 @@ export const prLogin = async (req, res) => {
 export const getEvents = async (req, res) => {
   const dbResult = await queryDb(`
     SELECT e.*,
-      COUNT(CASE WHEN m.media_type = 'image' THEN 1 END)::int AS photos_count,
-      COUNT(CASE WHEN m.media_type = 'video' THEN 1 END)::int AS videos_count
+      COUNT(CASE WHEN LOWER(m.media_type::text) = 'image' THEN 1 END)::int AS photos_count,
+      COUNT(CASE WHEN LOWER(m.media_type::text) = 'video' THEN 1 END)::int AS videos_count
     FROM events e
     LEFT JOIN media m ON e.id = m.event_id
     GROUP BY e.id
@@ -190,7 +190,7 @@ export const uploadMedia = async (req, res) => {
 
   const dbResult = await queryDb(
     'INSERT INTO media (event_id, media_type, title, media_url, uploaded_by) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-    [event_id, media_type, title, media_url, req.user?.username || 'PR Coordinator']
+    [event_id, media_type.toUpperCase(), title, media_url, req.user?.username || 'PR Coordinator']
   );
 
   if (dbResult && dbResult.rows.length > 0) {
