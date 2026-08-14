@@ -533,25 +533,6 @@ export const saveHeroSlidesDB = async (req, res) => {
   }
 };
 
-export const changeSuperCoordinatorPasswordDB = async (req, res) => {
-  const { newPass } = req.body;
-  if (!newPass || newPass.trim().length < 6) {
-    return res.status(400).json({ message: 'New password must be at least 6 characters long.' });
-  }
-
-  try {
-    await prisma.systemSetting.upsert({
-      where: { key: 'super_coordinator_pass' },
-      update: { value: { password: newPass.trim() }, updatedAt: new Date() },
-      create: { key: 'super_coordinator_pass', value: { password: newPass.trim() } }
-    });
-    return res.json({ success: true, message: 'Super Coordinator password updated in database successfully!' });
-  } catch (err) {
-    console.error('Error updating super coordinator password in DB:', err.message);
-    return res.status(500).json({ message: 'Failed to update password in database' });
-  }
-};
-
 export const getCoordinatorsDB = async (req, res) => {
   try {
     const list = [];
