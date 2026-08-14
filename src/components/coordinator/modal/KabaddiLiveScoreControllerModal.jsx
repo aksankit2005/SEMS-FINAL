@@ -310,7 +310,7 @@ export const KabaddiLiveScoreControllerModal = ({ match, venueName, onClose, onM
         <div className="flex items-center justify-between bg-slate-50 dark:bg-[#0B1120] px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs transition-colors">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
-            <span className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">{venueName || 'Kabaddi Mat Arena 1'}</span>
+            <span className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">{match?.venue || match?.tableNumber || venueName || 'Kabaddi Venue'}</span>
             <span className="hidden sm:inline-block text-slate-500 dark:text-slate-400 font-mono text-xs">| Official Match Console</span>
           </div>
 

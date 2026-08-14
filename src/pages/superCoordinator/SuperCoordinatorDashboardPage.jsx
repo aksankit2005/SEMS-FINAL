@@ -10,6 +10,7 @@ import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { exportToCSV, exportToPDF } from '../../utils/pdfExporter';
 import { GoogleDriveImage } from '../../components/common/GoogleDriveImage';
+import { getHeroSlides, saveHeroSlides, DEFAULT_HERO_SLIDES } from '../../data/heroSlidesData';
 
 export const SuperCoordinatorDashboardPage = () => {
   const { addToast } = useToast();
@@ -20,6 +21,7 @@ export const SuperCoordinatorDashboardPage = () => {
   const [masterParticipants, setMasterParticipants] = useState([]);
   const [prPhotos, setPrPhotos] = useState([]);
   const [leaderboardEntries, setLeaderboardEntries] = useState([]);
+  const [editableHeroSlides, setEditableHeroSlides] = useState(() => getHeroSlides());
 
   // PR Media Folders & Folder Details State
   const [prFolders, setPrFolders] = useState([]);
@@ -443,17 +445,37 @@ export const SuperCoordinatorDashboardPage = () => {
     addToast(`Exported ${filteredParticipants.length} filtered participant records to Excel (CSV)`, 'success');
   };
 
+  const handleUpdateSlideField = (idx, field, value) => {
+    const updated = editableHeroSlides.map((s, i) => (i === idx ? { ...s, [field]: value } : s));
+    setEditableHeroSlides(updated);
+  };
+
+  const handleSaveHeroSlides = () => {
+    saveHeroSlides(editableHeroSlides);
+    addToast('Hero 5-Slide Carousel updated! Home Page updated live in real time.', 'success');
+  };
+
+  const handleResetHeroSlides = () => {
+    if (window.confirm('Reset all 5 slides to default configuration?')) {
+      setEditableHeroSlides(DEFAULT_HERO_SLIDES);
+      saveHeroSlides(DEFAULT_HERO_SLIDES);
+      addToast('Reset Hero Slides to default!', 'info');
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans pb-16 transition-colors duration-200">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] text-slate-900 dark:text-slate-200 transition-colors font-sans pb-16">
       
+      {/* HEADER */}
+      <Header
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onOpenPasswordModal={() => setShowPasswordModal(true)}
+      />
 
-
-      {/* Main Content Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
         
-
-
-        {/* Tab Switcher Bar */}
+        {/* Navigation Tabs Bar */}
         <div className="flex flex-wrap items-center gap-2 p-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
           <button
             onClick={() => setActiveTab('leaderboard')}
@@ -465,6 +487,18 @@ export const SuperCoordinatorDashboardPage = () => {
           >
             <Trophy className="w-4 h-4" />
             <span>🏆 Leaderboard & Winner Entry</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('hero_slider')}
+            className={`px-4 py-2.5 rounded-xl font-extrabold text-xs transition flex items-center gap-2 cursor-pointer ${
+              activeTab === 'hero_slider'
+                ? 'bg-amber-500 text-slate-950 shadow-md'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>🎨 Home Hero Slider (5 Slides)</span>
           </button>
 
           <button
@@ -527,6 +561,172 @@ export const SuperCoordinatorDashboardPage = () => {
             <span>👤 Profile & Security</span>
           </button>
         </div>
+
+        {/* SECTION: HOME HERO SLIDER MANAGEMENT */}
+        {activeTab === 'hero_slider' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-mono font-bold uppercase">
+                    SUPER COORDINATOR CONTROL
+                  </span>
+                  <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                    Home Hero 5-Slide Carousel Management
+                  </h2>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Update Title, Description, Image URL, and Buttons for each of the 5 Home Page Hero Slides.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleResetHeroSlides}
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs transition border border-slate-200 dark:border-slate-700 cursor-pointer"
+                >
+                  Reset Defaults
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveHeroSlides}
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 transition flex items-center gap-2 cursor-pointer active:scale-95"
+                >
+                  <Sparkles className="w-4 h-4 text-slate-950" />
+                  <span>Save All 5 Slides</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 5 Slide Edit Forms */}
+            <div className="space-y-6">
+              {editableHeroSlides.map((slide, idx) => (
+                <div
+                  key={slide.id || idx}
+                  className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4"
+                >
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <span className="w-7 h-7 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 font-black text-xs flex items-center justify-center">
+                        {idx + 1}
+                      </span>
+                      <h3 className="font-black text-sm text-slate-900 dark:text-white uppercase tracking-wide">
+                        Slide {idx + 1} Settings
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <img src={slide.image} alt={slide.title} className="w-12 h-8 rounded-lg object-cover border border-slate-700" />
+                      <span className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-amber-500 font-mono text-[10px] font-bold border border-slate-200 dark:border-slate-700">
+                        {slide.badge || `${idx + 1} of 5`}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Title / Heading */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                        Heading Title <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={slide.title || ''}
+                        onChange={(e) => handleUpdateSlideField(idx, 'title', e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        placeholder="Slide Heading..."
+                      />
+                    </div>
+
+                    {/* Image URL */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                        Background Image URL <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={slide.image || ''}
+                        onChange={(e) => handleUpdateSlideField(idx, 'image', e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        placeholder="https://images.unsplash.com/..."
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div className="space-y-1 md:col-span-2">
+                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                        Subtitle / Description Text <span className="text-rose-500">*</span>
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={slide.description || ''}
+                        onChange={(e) => handleUpdateSlideField(idx, 'description', e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        placeholder="Slide description text..."
+                      />
+                    </div>
+
+                    {/* Primary Button Text */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                        Primary Button Text
+                      </label>
+                      <input
+                        type="text"
+                        value={slide.primaryBtnText || ''}
+                        onChange={(e) => handleUpdateSlideField(idx, 'primaryBtnText', e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white"
+                        placeholder="e.g. REGISTER YOUR TEAM"
+                      />
+                    </div>
+
+                    {/* Primary Button Link */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                        Primary Button Route/Link
+                      </label>
+                      <input
+                        type="text"
+                        value={slide.primaryBtnLink || ''}
+                        onChange={(e) => handleUpdateSlideField(idx, 'primaryBtnLink', e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
+                        placeholder="e.g. /registration"
+                      />
+                    </div>
+
+                    {/* Secondary Button Text */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                        Secondary Button Text
+                      </label>
+                      <input
+                        type="text"
+                        value={slide.secondaryBtnText || ''}
+                        onChange={(e) => handleUpdateSlideField(idx, 'secondaryBtnText', e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white"
+                        placeholder="e.g. Watch Live Scoreboard"
+                      />
+                    </div>
+
+                    {/* Secondary Button Link */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                        Secondary Button Route/Link
+                      </label>
+                      <input
+                        type="text"
+                        value={slide.secondaryBtnLink || ''}
+                        onChange={(e) => handleUpdateSlideField(idx, 'secondaryBtnLink', e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
+                        placeholder="e.g. /live"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* SECTION 0: INTER-COLLEGE CHAMPIONSHIP LEADERBOARD */}
         {(activeTab === 'leaderboard' || activeTab === 'dashboard') && (
