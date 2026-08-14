@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { ConfirmProvider } from './context/ConfirmContext';
 import { SportsDataProvider } from './context/SportsDataContext';
 
 import { DashboardLayout } from './components/layout/DashboardLayout';
@@ -80,7 +81,8 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <ToastProvider>
-          <SportsDataProvider>
+          <ConfirmProvider>
+            <SportsDataProvider>
             <Router>
               <ScrollToTop />
               <Routes>
@@ -214,7 +216,8 @@ function App() {
               <AuthModal />
             </Router>
           </SportsDataProvider>
-        </ToastProvider>
+        </ConfirmProvider>
+      </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
   );

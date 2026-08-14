@@ -78,14 +78,14 @@ export const LiveMatchesPage = () => {
                 <div className="grid grid-cols-3 gap-1 sm:gap-4 items-center my-4 text-center">
                   {/* Team 1 */}
                   <div className="space-y-1 sm:space-y-2 min-w-0">
-                    <div className="text-3xl sm:text-4xl">{match.team1.logo}</div>
+                    <div className="text-3xl sm:text-4xl">{typeof match.team1 === 'object' ? (match.team1?.logo || '🏆') : '🏆'}</div>
                     <h3 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white leading-tight truncate">
-                      {match.team1.name}
+                      {typeof match.team1 === 'object' ? match.team1?.name : match.team1}
                     </h3>
                     <div className="text-xl sm:text-3xl font-black text-blue-600 dark:text-blue-400">
-                      {match.team1.score}
+                      {match.score1 !== undefined && match.score1 !== null ? match.score1 : (typeof match.team1 === 'object' ? match.team1?.score : 0)}
                     </div>
-                    {match.team1.overs && (
+                    {typeof match.team1 === 'object' && match.team1?.overs && (
                       <div className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">{match.team1.overs}</div>
                     )}
                   </div>
@@ -102,14 +102,14 @@ export const LiveMatchesPage = () => {
 
                   {/* Team 2 */}
                   <div className="space-y-1 sm:space-y-2 min-w-0">
-                    <div className="text-3xl sm:text-4xl">{match.team2.logo}</div>
+                    <div className="text-3xl sm:text-4xl">{typeof match.team2 === 'object' ? (match.team2?.logo || '🏆') : '🏆'}</div>
                     <h3 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white leading-tight truncate">
-                      {match.team2.name}
+                      {typeof match.team2 === 'object' ? match.team2?.name : match.team2}
                     </h3>
                     <div className="text-xl sm:text-3xl font-black text-rose-500">
-                      {match.team2.score}
+                      {match.score2 !== undefined && match.score2 !== null ? match.score2 : (typeof match.team2 === 'object' ? match.team2?.score : 0)}
                     </div>
-                    {match.team2.overs && (
+                    {typeof match.team2 === 'object' && match.team2?.overs && (
                       <div className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">{match.team2.overs}</div>
                     )}
                   </div>

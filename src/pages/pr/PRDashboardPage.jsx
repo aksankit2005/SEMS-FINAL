@@ -18,8 +18,10 @@ import {
 import { galleryApi } from '../../services/galleryApi';
 import { getMediaPreviewUrl, triggerMediaDownload } from '../../utils/googleDriveHelper';
 import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
 
 export const PRDashboardPage = () => {
+  const { confirmDelete } = useConfirm();
   const [stats, setStats] = useState({
     totalEvents: 0,
     totalPhotos: 0,
@@ -62,7 +64,11 @@ export const PRDashboardPage = () => {
   };
 
   const handleDeleteMedia = async (mediaId) => {
-    if (!window.confirm('Are you sure you want to delete this media item?')) return;
+    const isConfirmed = await confirmDelete({
+      title: 'Delete Media Item',
+      message: 'Are you sure you want to delete this media item? This action cannot be undone.'
+    });
+    if (!isConfirmed) return;
 
     try {
       await galleryApi.deleteMedia(mediaId);

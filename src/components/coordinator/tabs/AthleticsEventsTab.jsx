@@ -7,6 +7,7 @@ import {
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { ImageCropperModal } from '../../common/ImageCropperModal';
 import { useToast } from '../../../context/ToastContext';
+import { useConfirm } from '../../../context/ConfirmContext';
 import { exportToCSV } from '../../../utils/pdfExporter';
 import { OFFICIAL_ATHLETICS_EVENTS } from '../../registration/AthleticsRegistration';
 
@@ -22,6 +23,7 @@ const DEFAULT_SUB_EVENTS_CONFIG = [
 
 export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
   const { addToast } = useToast();
+  const { confirmDelete } = useConfirm();
 
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -265,7 +267,11 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
   };
 
   const handleDeleteEvent = async (eventId) => {
-    if (!window.confirm('Are you sure you want to delete this Athletics event? It will be removed from user registration.')) return;
+    const isConfirmed = await confirmDelete({
+      title: 'Delete Athletics Event',
+      message: 'Are you sure you want to delete this Athletics event? It will be removed from user registration.'
+    });
+    if (!isConfirmed) return;
     try {
       await coordinatorApi.deleteEvent(eventId);
       addToast('Athletics event deleted', 'info');

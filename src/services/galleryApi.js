@@ -1,9 +1,7 @@
 import axios from 'axios';
 
-// API Base URL & Fallback Credentials
+// API Base URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-const PR_ADMIN_USER = import.meta.env.VITE_PR_ADMIN_USERNAME || 'pr_admin';
-const PR_ADMIN_PASS = import.meta.env.VITE_PR_ADMIN_PASSWORD || 'password123';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -63,15 +61,6 @@ export const galleryApi = {
       }
       return res.data;
     } catch (err) {
-      // Local fallback auth check
-      if (username === PR_ADMIN_USER && password === PR_ADMIN_PASS) {
-        const mockToken = 'mock_jwt_token_pr_coordinator_2026';
-        const mockUser = { username: PR_ADMIN_USER, role: 'pr_coordinator' };
-        localStorage.setItem('pr_auth_token', mockToken);
-        localStorage.setItem('pr_user', JSON.stringify(mockUser));
-        window.dispatchEvent(new Event('sems-auth-change'));
-        return { success: true, token: mockToken, user: mockUser };
-      }
       throw new Error(err.response?.data?.message || 'Invalid PR Coordinator Credentials');
     }
   },

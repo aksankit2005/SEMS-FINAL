@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Award, Tv, VideoOff, Users, ShieldAlert, AlertCircle, Download, Maximize, Minimize } from 'lucide-react';
 import { resolveSportConfig } from '../../data/sportsConfig';
-import { getYouTubeEmbedUrl } from '../../utils/youtube';
+import { getYouTubeEmbedUrl, extractYouTubeVideoId } from '../../utils/youtube';
+import { mergeMatchState } from '../../services/coordinatorApi';
 import { generateMatchResultPDF } from '../../utils/pdfExporter';
 
 const getShortCollege = (name) => {
@@ -202,7 +203,7 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
       if (updated && isSubscribed) {
         setMatch((prev) => {
           if (!prev) return updated;
-          return { ...prev, ...updated };
+          return mergeMatchState(prev, updated);
         });
       }
     };
@@ -221,7 +222,7 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
       window.removeEventListener('storage', handleUpdate);
       clearInterval(interval);
     };
-  }, [initialMatch?.id, initialMatch?.matchId, match?.id]);
+  }, [initialMatch?.id, initialMatch?.matchId]);
 
   if (!match) return null;
 
@@ -324,13 +325,13 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
       <div className="w-full max-w-4xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-[#1E293B] rounded-3xl shadow-2xl overflow-hidden my-auto space-y-0 text-slate-900 dark:text-slate-200">
 
         {/* Modal Header */}
-        <div className="p-4 sm:p-6 bg-white dark:bg-[#0F172A] border-b border-slate-200 dark:border-[#1E293B] flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="p-4 sm:p-6 bg-white dark:bg-[#0F172A] border-b border-slate-200 dark:border-[#1E293B] flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="w-11 h-11 rounded-2xl bg-blue-600/10 dark:bg-indigo-600/20 text-blue-600 dark:text-indigo-400 flex items-center justify-center text-2xl font-black shrink-0">
               {sportConfig.icon}
             </div>
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
                 {isFinished ? (
                   <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 text-[10px] font-mono font-bold uppercase">
                     🏁 Finished
@@ -342,11 +343,13 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
                 )}
                 <span className="text-xs font-mono text-slate-400 dark:text-slate-500">#{match.id}</span>
               </div>
-              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">{match.matchTitle || `${team1Name} vs ${team2Name}`}</h3>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white truncate">
+                {isAthletics ? (match.matchTitle || `Athletics Meet — ${match.activeSubEvent || '4*100m relay Race'}`) : (match.matchTitle || `${team1Name} vs ${team2Name}`)}
+              </h3>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => {
                 generateMatchResultPDF({
@@ -362,10 +365,10 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
                   setsHistory
                 }, sportConfig.name || match.sportName);
               }}
-              className="px-3 py-1.5 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30 font-bold text-xs transition flex items-center gap-2 cursor-pointer shadow-xs"
               title="Download Official Score Sheet PDF"
             >
-              <Download className="w-3.5 h-3.5 text-orange-500" />
+              <Download className="w-4 h-4 text-orange-500" />
               <span className="hidden sm:inline">Download Score Sheet PDF</span>
             </button>
 
@@ -379,148 +382,194 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
         </div>
 
         {/* Video Player Stream */}
-        {match.youtubeVideoId ? (
-          <YouTubePlayer youtubeVideoId={match.youtubeVideoId} match={match} isCricket={isCricket} />
-        ) : (
-          <div className="p-6 bg-slate-50 dark:bg-[#090D16] text-center border-b border-slate-200 dark:border-[#1E293B] space-y-2">
-            <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center mx-auto text-xl">
-              <VideoOff className="w-6 h-6 text-slate-500" />
+        {(() => {
+          const activeVideoId = extractYouTubeVideoId(match.youtubeVideoId) || extractYouTubeVideoId(match.streamUrl);
+          if (activeVideoId) {
+            return <YouTubePlayer youtubeVideoId={activeVideoId} match={match} isCricket={isCricket} />;
+          }
+          return (
+            <div className="p-5 sm:p-6 bg-gradient-to-r from-slate-50 via-blue-50/20 to-slate-50 dark:from-[#090D16] dark:via-[#0E1626] dark:to-[#090D16] text-center border-b border-slate-200 dark:border-[#1E293B] space-y-2">
+              <div className="w-11 h-11 rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 flex items-center justify-center mx-auto shadow-inner">
+                <VideoOff className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+              </div>
+              <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest">
+                Live video is not available
+              </h4>
+              <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 max-w-lg mx-auto">
+                {isChess ? 'Showing real-time chess board status updates from official tournament table.' : isAthletics ? 'Showing real-time live event status updates from official track & field table.' : 'Showing real-time live score updates from official tournament scoring table.'}
+              </p>
             </div>
-            <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Live video is not available</h4>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              {isChess ? 'Showing real-time chess board status updates from official tournament table.' : 'Showing real-time live score updates from official tournament scoring table.'}
-            </p>
-          </div>
-        )}
-
+          );
+        })()}
 
         {/* Large Spectator Scoreboard Section */}
         <div className="p-6 bg-slate-50 dark:bg-gradient-to-b dark:from-[#0B1120] dark:to-[#0F172A] border-b border-slate-200 dark:border-[#1E293B] space-y-6">
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+          {isAthletics ? (
+            <div className="bg-white dark:bg-[#090D16] p-6 sm:p-8 rounded-3xl border border-blue-500/30 shadow-xl space-y-6 text-center">
+              
+              {/* Event Badge Header */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800/80">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-mono font-bold uppercase tracking-wider border border-blue-500/20">
+                  🏃 ATHLETICS MEET — {match.activeSubEvent || match.subEvent || '4*100m relay Race'}
+                </div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-mono font-bold border border-emerald-500/20">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                  <span>LIVE TRACK & FIELD EVENT IN PROGRESS</span>
+                </div>
+              </div>
 
-            {/* Player / Team A */}
-            <div className="text-center md:text-left space-y-2">
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{team1Name}</h2>
-              {!isChess && (
-                <div className="flex items-center justify-center md:justify-start gap-2 text-xs text-slate-500 dark:text-slate-400">
-                  <span>Sets / Quarters Won:</span>
-                  <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-indigo-600/20 text-blue-700 dark:text-indigo-300 font-mono font-bold">
-                    {setsWonA}
+              {/* Main Status Display / Live Ticker */}
+              {(match.winner || match.medals?.gold) ? (
+                <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/10 to-emerald-500/5 border border-emerald-500/30 space-y-3 shadow-md">
+                  <span className="text-xs font-mono font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest block">
+                    🏆 OFFICIAL WINNER & MEDAL DECLARATION
                   </span>
+                  <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                    {match.winner || match.medals?.gold}
+                  </div>
+                  {match.medals?.silver && (
+                    <div className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300 pt-2 flex flex-wrap items-center justify-center gap-3">
+                      <span className="bg-amber-400/20 text-amber-600 dark:text-amber-300 px-3 py-1 rounded-lg border border-amber-400/30">🥇 Gold: {match.medals.gold}</span>
+                      <span className="bg-slate-300/20 text-slate-700 dark:text-slate-200 px-3 py-1 rounded-lg border border-slate-300/30">🥈 Silver: {match.medals.silver}</span>
+                      {match.medals.bronze && (
+                        <span className="bg-amber-700/20 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-lg border border-amber-700/30">🥉 Bronze: {match.medals.bronze}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-6 rounded-2xl bg-slate-900 dark:bg-black/80 border border-blue-500/30 space-y-3 shadow-inner">
+                  <div className="text-[10px] font-mono font-bold text-blue-400 uppercase tracking-widest">
+                    OFFICIAL TRACK SCORING TABLE LIVE STATUS
+                  </div>
+                  <div className="text-lg sm:text-2xl font-black text-white font-mono tracking-wide px-4 py-3.5 rounded-xl bg-blue-950/60 border border-blue-500/20">
+                    {match.scoreSummary || match.liveNotes || `Live Sub-Event: ${match.activeSubEvent || '4*100m relay Race'}`}
+                  </div>
+                  <p className="text-xs text-slate-400 font-mono">
+                    Real-time status updates broadcasted directly from official referee & track judge table.
+                  </p>
                 </div>
               )}
             </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
 
-            {/* Middle Box - Custom for Cricket vs Chess vs Point Sports */}
-            {isCricket ? (
-              <div className="text-center bg-white dark:bg-[#090D16] p-4 sm:p-5 rounded-2xl border border-emerald-500/30 shadow-md space-y-2">
-                <span className="text-[10px] font-mono uppercase font-bold text-emerald-500 tracking-widest block">
-                  🏏 {match.currentInnings === 2 ? '2ND INNINGS' : '1ST INNINGS'}
-                </span>
-                
-                <div className="flex items-baseline justify-center gap-1.5 font-mono">
-                  <span className="text-4xl sm:text-5xl font-black text-emerald-500">{match.currentInnings === 2 ? (match.score2 ?? score2Val) : (match.score1 ?? score1Val)}</span>
-                  <span className="text-2xl text-slate-400 font-bold">/</span>
-                  <span className="text-2xl sm:text-3xl font-black text-rose-500">{match.currentInnings === 2 ? (match.wickets2 ?? 0) : (match.wickets1 ?? 0)}</span>
-                </div>
-
-                <div className="text-xs font-mono text-slate-400">
-                  Overs: <strong className="text-white">{match.currentInnings === 2 ? (match.overs2 || '0.0') : (match.overs1 || '0.0')}</strong> / {match.totalOversMax || 20}
-                </div>
-              </div>
-            ) : isChess ? (
-              <div className="text-center bg-white dark:bg-[#090D16] p-5 rounded-2xl border border-purple-500/30 shadow-md space-y-3">
-                <span className="text-[10px] font-mono uppercase font-bold text-purple-600 dark:text-purple-400 tracking-widest block">
-                  ♟️ CHESS MATCH {isFinished ? 'VERDICT & WINNER' : 'IN PROGRESS'}
-                </span>
-
-                {isFinished ? (
-                  <div className="space-y-1.5 py-1">
-                    <div className="text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1.5 text-base font-black">
-                      <Award className="w-5 h-5 text-amber-400" />
-                      <span>Winner: {match.winner || (score1Val > score2Val ? team1Name : score2Val > score1Val ? team2Name : 'Draw (½ - ½)')}</span>
-                    </div>
-                    <p className="text-xs font-mono text-purple-600 dark:text-purple-300 font-bold bg-purple-500/10 py-1 px-3 rounded-full inline-block">
-                      {match.scoreText || match.scoreSummary || (score1Val === 1 ? 'Result: 1 - 0 (White Wins)' : score2Val === 1 ? 'Result: 0 - 1 (Black Wins)' : 'Result: ½ - ½ (Draw)')}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-2 py-1">
-                    <div className="text-base font-black text-slate-900 dark:text-white flex items-center justify-center gap-2">
-                      <span className="text-purple-600 dark:text-purple-400">{team1Name}</span>
-                      <span className="text-xs font-mono text-slate-400 dark:text-slate-500 font-bold">VS</span>
-                      <span className="text-purple-600 dark:text-purple-400">{team2Name}</span>
-                    </div>
-                    <div className="flex items-center justify-center gap-2 text-xs font-mono text-emerald-600 dark:text-emerald-400">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                      <span className="font-bold">REAL-TIME CHESS MATCH IN PROGRESS</span>
-                    </div>
+              {/* Player / Team A */}
+              <div className="text-center md:text-left space-y-2">
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{team1Name}</h2>
+                {!isChess && (
+                  <div className="flex items-center justify-center md:justify-start gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <span>Sets / Quarters Won:</span>
+                    <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-indigo-600/20 text-blue-700 dark:text-indigo-300 font-mono font-bold">
+                      {setsWonA}
+                    </span>
                   </div>
                 )}
               </div>
-            ) : isAthletics ? (
-              <div className="text-center bg-white dark:bg-[#090D16] p-5 rounded-2xl border border-blue-500/30 shadow-md space-y-2">
-                <span className="text-[10px] font-mono uppercase font-bold text-blue-600 dark:text-blue-400 tracking-widest block">
-                  🏃 ATHLETICS MEET — {match.activeSubEvent || '100m Race'} LIVE
-                </span>
-                <div className="text-sm font-black text-slate-900 dark:text-white py-1">
-                  {match.scoreSummary || `Live Sub-Event: ${match.activeSubEvent || '100m Race'}`}
-                </div>
-                <div className="flex items-center justify-center gap-2 text-xs font-mono text-emerald-600 dark:text-emerald-400">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                  <span className="font-bold">LIVE BROADCAST ACTIVE</span>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center bg-white dark:bg-[#090D16] p-5 rounded-2xl border border-slate-200 dark:border-[#1E293B] shadow-sm dark:shadow-inner space-y-2">
-                <span className="text-[10px] font-mono uppercase font-bold text-slate-500 dark:text-slate-400 tracking-widest block">
-                  {sportConfig.name} {isFinished ? 'Final Score' : 'Live Points'}
-                </span>
 
-                <div className="flex items-center justify-center gap-4 text-5xl font-black font-mono text-slate-900 dark:text-white">
-                  <span className="text-blue-600 dark:text-indigo-400">{score1Val}</span>
-                  <span className="text-slate-400 dark:text-slate-600 text-3xl">:</span>
-                  <span className="text-blue-600 dark:text-indigo-400">{score2Val}</span>
-                </div>
-
-                <div className="pt-2 flex items-center justify-center gap-2 text-xs font-mono text-emerald-600 dark:text-emerald-400">
-                  {!isFinished && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />}
-                  <span className="font-bold">{isFinished ? 'MATCH FINISHED' : 'REAL-TIME LIVE SCORE'}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Player / Team B */}
-            <div className="text-center md:text-right space-y-2">
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{team2Name}</h2>
-              {!isChess && !isCricket && (
-                <div className="flex items-center justify-center md:justify-end gap-2 text-xs text-slate-500 dark:text-slate-400">
-                  <span>Sets / Quarters Won:</span>
-                  <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-indigo-600/20 text-blue-700 dark:text-indigo-300 font-mono font-bold">
-                    {setsWonB}
+              {/* Middle Box - Custom for Cricket vs Chess vs Point Sports */}
+              {isCricket ? (
+                <div className="text-center bg-white dark:bg-[#090D16] p-4 sm:p-5 rounded-2xl border border-emerald-500/30 shadow-md space-y-2">
+                  <span className="text-[10px] font-mono uppercase font-bold text-emerald-500 tracking-widest block">
+                    🏏 {match.currentInnings === 2 ? '2ND INNINGS' : '1ST INNINGS'}
                   </span>
+                  
+                  <div className="flex items-baseline justify-center gap-1.5 font-mono">
+                    <span className="text-4xl sm:text-5xl font-black text-emerald-500">{match.currentInnings === 2 ? (match.score2 ?? score2Val) : (match.score1 ?? score1Val)}</span>
+                    <span className="text-2xl text-slate-400 font-bold">/</span>
+                    <span className="text-2xl sm:text-3xl font-black text-rose-500">{match.currentInnings === 2 ? (match.wickets2 ?? 0) : (match.wickets1 ?? 0)}</span>
+                  </div>
+
+                  <div className="text-xs font-mono text-slate-400">
+                    Overs: <strong className="text-white">{match.currentInnings === 2 ? (match.overs2 || '0.0') : (match.overs1 || '0.0')}</strong> / {match.totalOversMax || 20}
+                  </div>
+                </div>
+              ) : isChess ? (
+                <div className="text-center bg-white dark:bg-[#090D16] p-5 rounded-2xl border border-purple-500/30 shadow-md space-y-3">
+                  <span className="text-[10px] font-mono uppercase font-bold text-purple-600 dark:text-purple-400 tracking-widest block">
+                    ♟️ CHESS MATCH {isFinished ? 'VERDICT & WINNER' : 'IN PROGRESS'}
+                  </span>
+
+                  {isFinished ? (
+                    <div className="space-y-1.5 py-1">
+                      <div className="text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1.5 text-base font-black">
+                        <Award className="w-5 h-5 text-amber-400" />
+                        <span>Winner: {match.winner || (score1Val > score2Val ? team1Name : score2Val > score1Val ? team2Name : 'Draw (½ - ½)')}</span>
+                      </div>
+                      <p className="text-xs font-mono text-purple-600 dark:text-purple-300 font-bold bg-purple-500/10 py-1 px-3 rounded-full inline-block">
+                        {match.scoreText || match.scoreSummary || (score1Val === 1 ? 'Result: 1 - 0 (White Wins)' : score2Val === 1 ? 'Result: 0 - 1 (Black Wins)' : 'Result: ½ - ½ (Draw)')}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 py-1">
+                      <div className="text-base font-black text-slate-900 dark:text-white flex items-center justify-center gap-2">
+                        <span className="text-purple-600 dark:text-purple-400">{team1Name}</span>
+                        <span className="text-xs font-mono text-slate-400 dark:text-slate-500 font-bold">VS</span>
+                        <span className="text-purple-600 dark:text-purple-400">{team2Name}</span>
+                      </div>
+                      <div className="flex items-center justify-center gap-2 text-xs font-mono text-emerald-600 dark:text-emerald-400">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                        <span className="font-bold">REAL-TIME CHESS MATCH IN PROGRESS</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center bg-white dark:bg-[#090D16] p-5 rounded-2xl border border-slate-200 dark:border-[#1E293B] shadow-sm dark:shadow-inner space-y-2">
+                  <span className="text-[10px] font-mono uppercase font-bold text-slate-500 dark:text-slate-400 tracking-widest block">
+                    {sportConfig.name} {isFinished ? 'Final Score' : 'Live Points'}
+                  </span>
+
+                  <div className="flex items-center justify-center gap-4 text-5xl font-black font-mono text-slate-900 dark:text-white">
+                    <span className="text-blue-600 dark:text-indigo-400">{score1Val}</span>
+                    <span className="text-slate-400 dark:text-slate-600 text-3xl">:</span>
+                    <span className="text-blue-600 dark:text-indigo-400">{score2Val}</span>
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-center gap-2 text-xs font-mono text-emerald-600 dark:text-emerald-400">
+                    {!isFinished && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />}
+                    <span className="font-bold">{isFinished ? 'MATCH FINISHED' : 'REAL-TIME LIVE SCORE'}</span>
+                  </div>
                 </div>
               )}
-            </div>
 
-          </div>
+              {/* Player / Team B */}
+              <div className="text-center md:text-right space-y-2">
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{team2Name}</h2>
+                {!isChess && !isCricket && (
+                  <div className="flex items-center justify-center md:justify-end gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <span>Sets / Quarters Won:</span>
+                    <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-indigo-600/20 text-blue-700 dark:text-indigo-300 font-mono font-bold">
+                      {setsWonB}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+            </div>
+          )}
 
           {/* Match Metadata Bar */}
-          <div className="grid grid-cols-3 gap-3 text-center bg-white dark:bg-[#090D16]/60 p-3.5 rounded-2xl border border-slate-200 dark:border-[#1E293B] text-xs shadow-xs">
+          <div className="grid grid-cols-3 gap-3 text-center bg-white dark:bg-[#090D16]/80 p-4 rounded-2xl border border-slate-200 dark:border-[#1E293B] text-xs shadow-xs">
             <div>
-              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Sport</span>
-              <span className="font-extrabold text-slate-900 dark:text-white flex items-center justify-center gap-1.5">
-                <span>{sportConfig.icon}</span> <span>{sportConfig.name}</span>
+              <span className="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase block tracking-wider">Sport</span>
+              <span className="font-extrabold text-slate-900 dark:text-white flex items-center justify-center gap-1.5 pt-0.5">
+                <span>{sportConfig.icon || '🏃'}</span>
+                <span>{sportConfig.name || match.sportName || 'Athletics'}</span>
               </span>
             </div>
             <div>
-              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Venue / Court</span>
-              <span className="font-extrabold text-amber-600 dark:text-amber-400 truncate block">{match.venue || match.tableNumber || sportConfig.venueOptions[0]}</span>
+              <span className="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase block tracking-wider">Venue / Court</span>
+              <span className="font-extrabold text-amber-600 dark:text-amber-400 truncate block pt-0.5">
+                {match.venue || match.tableNumber || (sportConfig.venueOptions && sportConfig.venueOptions[0]) || 'Main Stadium Track'}
+              </span>
             </div>
             <div>
-              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Category Format</span>
-              <span className="font-extrabold text-blue-600 dark:text-indigo-400">{match.format || 'Standard'}</span>
+              <span className="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase block tracking-wider">Category Format</span>
+              <span className="font-extrabold text-blue-600 dark:text-indigo-400 truncate block pt-0.5">
+                {match.format || match.activeSubEvent || (sportConfig.formats && sportConfig.formats[0]) || 'Standard Track & Field'}
+              </span>
             </div>
           </div>
 

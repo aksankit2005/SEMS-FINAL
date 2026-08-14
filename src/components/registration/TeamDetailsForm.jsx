@@ -28,8 +28,10 @@ export const TeamDetailsForm = ({
 
   // Initialize roster with the correct size if empty or incorrect
   useEffect(() => {
-    const currentRoster = formData.roster || [];
-    if (currentRoster.length < minPlayers) {
+    setFormData((prev) => {
+      const currentRoster = prev.roster || [];
+      if (currentRoster.length >= minPlayers) return prev;
+
       const needed = minPlayers - currentRoster.length;
       const newPlayers = Array.from({ length: needed }, () => ({
         name: '',
@@ -40,38 +42,40 @@ export const TeamDetailsForm = ({
         email: '',
         fatherName: '',
         dob: '',
-        college: formData.collegeName || '',
-        gender: formData.gender || ''
+        college: prev.collegeName || '',
+        gender: prev.gender || ''
       }));
-      setFormData((prev) => ({
+      return {
         ...prev,
         roster: [...currentRoster, ...newPlayers]
-      }));
-    }
-  }, [minPlayers, formData.roster, formData.collegeName, formData.gender, setFormData]);
+      };
+    });
+  }, [minPlayers, setFormData]);
 
   // Keep captain details in roster player #1 updated
   useEffect(() => {
-    if (formData.sameAsCaptain !== false && formData.roster && formData.roster[0]) {
-      const updatedRoster = [...formData.roster];
+    setFormData((prev) => {
+      if (prev.sameAsCaptain === false || !prev.roster || !prev.roster[0]) return prev;
+
+      const updatedRoster = [...prev.roster];
       let changed = false;
-      if (formData.captainName && updatedRoster[0].name !== formData.captainName) {
-        updatedRoster[0].name = formData.captainName;
+      if (prev.captainName && updatedRoster[0].name !== prev.captainName) {
+        updatedRoster[0].name = prev.captainName;
         changed = true;
       }
-      if (formData.captainPhone && updatedRoster[0].phone !== formData.captainPhone) {
-        updatedRoster[0].phone = formData.captainPhone;
+      if (prev.captainPhone && updatedRoster[0].phone !== prev.captainPhone) {
+        updatedRoster[0].phone = prev.captainPhone;
         changed = true;
       }
-      if (formData.captainEmail && updatedRoster[0].email !== formData.captainEmail) {
-        updatedRoster[0].email = formData.captainEmail;
+      if (prev.captainEmail && updatedRoster[0].email !== prev.captainEmail) {
+        updatedRoster[0].email = prev.captainEmail;
         changed = true;
       }
-      if (changed) {
-        setFormData((prev) => ({ ...prev, roster: updatedRoster }));
-      }
-    }
-  }, [formData.captainName, formData.captainPhone, formData.captainEmail, formData.roster, formData.sameAsCaptain, setFormData]);
+
+      if (!changed) return prev;
+      return { ...prev, roster: updatedRoster };
+    });
+  }, [formData.captainName, formData.captainPhone, formData.captainEmail, formData.sameAsCaptain, setFormData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -105,8 +109,29 @@ export const TeamDetailsForm = ({
     }
   };
 
+  const currentRoster = formData.roster || [];
+  let effectiveRoster = [...currentRoster];
+  if (effectiveRoster.length < minPlayers) {
+    const needed = minPlayers - effectiveRoster.length;
+    for (let i = 0; i < needed; i++) {
+      const idx = effectiveRoster.length;
+      effectiveRoster.push({
+        name: idx === 0 ? (formData.captainName || '') : '',
+        rollNo: '',
+        branch: '',
+        semester: '',
+        phone: idx === 0 ? (formData.captainPhone || '') : '',
+        email: idx === 0 ? (formData.captainEmail || '') : '',
+        fatherName: '',
+        dob: '',
+        college: formData.collegeName || '',
+        gender: formData.gender || ''
+      });
+    }
+  }
+
   const handlePlayerChange = (index, field, value) => {
-    const updatedRoster = [...formData.roster];
+    const updatedRoster = [...effectiveRoster];
     updatedRoster[index] = {
       ...updatedRoster[index],
       [field]: value
@@ -164,7 +189,7 @@ export const TeamDetailsForm = ({
     setErrors({});
   };
 
-  const currentRosterSize = formData.roster ? formData.roster.length : 0;
+  const currentRosterSize = effectiveRoster.length;
   const availableCourses = collegeCourses[formData.collegeName] || [];
 
   return (
@@ -277,8 +302,7 @@ export const TeamDetailsForm = ({
         )}
 
         <div className="space-y-5">
-          {formData.roster &&
-            formData.roster.map((player, idx) => {
+          {effectiveRoster.map((player, idx) => {
               const playerErrors = {};
               const fields = ['name', 'rollNo', 'aadhaar', 'branch', 'semester', 'phone', 'email'];
               fields.forEach((field) => {
