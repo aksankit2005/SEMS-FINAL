@@ -296,7 +296,20 @@ export const RegistrationPage = () => {
           captainEmail: '',
           eventType: isRacket ? 'Singles' : 'Individual',
           selectedEvents: [],
-          roster: [],
+          roster: [
+            {
+              name: '',
+              rollNo: '',
+              branch: '',
+              semester: '',
+              phone: '',
+              email: '',
+              fatherName: '',
+              dob: '',
+              college: '',
+              gender: ''
+            }
+          ],
           paymentMethod: 'upi',
           upiId: '',
           cardNumber: '',

@@ -75,7 +75,7 @@ export const PlayerDetailsForm = ({
         roster: updatedRoster
       };
     });
-  }, [sport.id, selectedEvent, isRelay, setFormData]);
+  }, [sport.id, selectedEvent, isRelay, formData.roster?.length, setFormData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
