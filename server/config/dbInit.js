@@ -29,6 +29,7 @@ export const initDatabaseSchema = async () => {
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS stream_url TEXT;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS is_live_streaming BOOLEAN DEFAULT FALSE;`);
+    await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS details JSONB;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_history TEXT;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS current_set INT DEFAULT 1;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won1 INT DEFAULT 0;`);
