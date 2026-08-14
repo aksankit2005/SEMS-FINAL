@@ -206,15 +206,30 @@ export const updateMatch = async (req, res) => {
   const { id } = req.params;
   const list = inMemoryCoordinatorMatches[sportId] || [];
 
-  const index = list.findIndex((m) => m.id === id);
-  if (index !== -1) {
-    list[index] = { ...list[index], ...req.body };
-  } else {
-    if (!inMemoryCoordinatorMatches[sportId]) inMemoryCoordinatorMatches[sportId] = [];
-    inMemoryCoordinatorMatches[sportId].unshift({ id, sportId, ...req.body });
+  const rawStreamUrl = req.body.streamUrl || req.body.stream_url || req.body.liveStreamUrl || '';
+  let extractedVideoId = req.body.youtubeVideoId || req.body.youtube_video_id || '';
+
+  if (!extractedVideoId && rawStreamUrl) {
+    const match = rawStreamUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|live\/|shorts\/))([\w-]{11})/);
+    if (match && match[1]) extractedVideoId = match[1];
   }
 
-  const updatedMatch = index !== -1 ? list[index] : { id, sportId, ...req.body };
+  const payloadWithStream = {
+    ...req.body,
+    youtubeVideoId: extractedVideoId || req.body.youtubeVideoId || null,
+    streamUrl: rawStreamUrl || req.body.streamUrl || null,
+    isLiveStreaming: Boolean(req.body.isLiveStreaming || extractedVideoId || rawStreamUrl)
+  };
+
+  const index = list.findIndex((m) => m.id === id);
+  if (index !== -1) {
+    list[index] = { ...list[index], ...payloadWithStream };
+  } else {
+    if (!inMemoryCoordinatorMatches[sportId]) inMemoryCoordinatorMatches[sportId] = [];
+    inMemoryCoordinatorMatches[sportId].unshift({ id, sportId, ...payloadWithStream });
+  }
+
+  const updatedMatch = index !== -1 ? list[index] : { id, sportId, ...payloadWithStream };
 
   // Ensure table columns exist
   try {
@@ -238,8 +253,8 @@ export const updateMatch = async (req, res) => {
        score1 = COALESCE(EXCLUDED.score1, live_matches.score1),
        score2 = COALESCE(EXCLUDED.score2, live_matches.score2),
        winner = COALESCE(EXCLUDED.winner, live_matches.winner),
-       youtube_video_id = COALESCE(EXCLUDED.youtube_video_id, live_matches.youtube_video_id),
-       stream_url = COALESCE(EXCLUDED.stream_url, live_matches.stream_url),
+       youtube_video_id = CASE WHEN EXCLUDED.youtube_video_id IS NOT NULL AND EXCLUDED.youtube_video_id != '' THEN EXCLUDED.youtube_video_id ELSE live_matches.youtube_video_id END,
+       stream_url = CASE WHEN EXCLUDED.stream_url IS NOT NULL AND EXCLUDED.stream_url != '' THEN EXCLUDED.stream_url ELSE live_matches.stream_url END,
        is_live_streaming = COALESCE(EXCLUDED.is_live_streaming, live_matches.is_live_streaming)`,
     [
       id,
@@ -254,9 +269,9 @@ export const updateMatch = async (req, res) => {
       req.body.score1 !== undefined ? Number(req.body.score1) : (updatedMatch.score1 || 0),
       req.body.score2 !== undefined ? Number(req.body.score2) : (updatedMatch.score2 || 0),
       req.body.winner || updatedMatch.winner || null,
-      req.body.youtubeVideoId || req.body.youtube_video_id || updatedMatch.youtubeVideoId || null,
-      req.body.streamUrl || req.body.stream_url || updatedMatch.streamUrl || null,
-      Boolean(req.body.isLiveStreaming ?? updatedMatch.isLiveStreaming ?? req.body.youtubeVideoId ?? req.body.streamUrl)
+      updatedMatch.youtubeVideoId || null,
+      updatedMatch.streamUrl || null,
+      Boolean(updatedMatch.isLiveStreaming || updatedMatch.youtubeVideoId || updatedMatch.streamUrl)
     ]
   );
 
