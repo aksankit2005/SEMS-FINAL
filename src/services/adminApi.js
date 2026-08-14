@@ -644,18 +644,28 @@ export const adminApi = {
     return updated;
   },
 
-  toggleCoordinatorStatus: async (id) => {
+  toggleCoordinatorStatus: async (coordInput) => {
+    const coordId = typeof coordInput === 'object' ? coordInput.id : coordInput;
+    const coordUser = typeof coordInput === 'object' ? coordInput.username : null;
     const list = await adminApi.getCoordinators();
-    const target = list.find(c => c.id === id);
+    
+    const target = list.find(c => 
+      String(c.id) === String(coordId) || 
+      (coordUser && c.username?.toLowerCase() === coordUser.toLowerCase()) ||
+      (c.username && c.username?.toLowerCase() === String(coordId).toLowerCase())
+    ) || (typeof coordInput === 'object' ? coordInput : null);
+
+    const targetUsername = target?.username || coordUser || (typeof coordInput === 'string' && isNaN(Number(coordInput)) ? coordInput : null);
     const newStatus = target?.status === 'Active' ? 'Inactive' : 'Active';
+    const fetchId = targetUsername || coordId;
 
     try {
-      const res = await fetch(apiUrl(`/admin/coordinators/${id}/status`), {
+      const res = await fetch(apiUrl(`/admin/coordinators/${fetchId}/status`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status: newStatus,
-          username: target?.username,
+          username: targetUsername,
           assignedSport: target?.assignedSport || target?.college
         })
       });
@@ -664,30 +674,38 @@ export const adminApi = {
           user: 'System Administrator',
           role: 'ADMIN',
           action: newStatus === 'Inactive' ? 'Coordinator Deactivated' : 'Coordinator Activated',
-          target: `Changed account status of ${target?.name || id} to ${newStatus}`
+          target: `Changed account status of ${target?.name || fetchId} to ${newStatus}`
         });
         return await adminApi.getCoordinators();
       }
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Server failed to update coordinator status');
     } catch (e) {
       console.error('Error toggling coordinator status in DB:', e);
+      throw e;
     }
-
-    const updated = list.map(c => c.id === id ? { ...c, status: newStatus } : c);
-    setStorageItem(STORAGE_KEYS.COORDINATORS, updated);
-    return updated;
   },
 
-  resetCoordinatorPassword: async (id, newPassword = 'Password@123') => {
+  resetCoordinatorPassword: async (coordInput, newPassword = 'Password@123') => {
+    const coordId = typeof coordInput === 'object' ? coordInput.id : coordInput;
+    const coordUser = typeof coordInput === 'object' ? coordInput.username : null;
     const list = await adminApi.getCoordinators();
-    const target = list.find(c => c.id === id);
+    
+    const target = list.find(c => 
+      String(c.id) === String(coordId) || 
+      (coordUser && c.username?.toLowerCase() === coordUser.toLowerCase())
+    ) || (typeof coordInput === 'object' ? coordInput : null);
+
+    const targetUsername = target?.username || coordUser || (typeof coordInput === 'string' && isNaN(Number(coordInput)) ? coordInput : null);
+    const fetchId = targetUsername || coordId;
 
     try {
-      const res = await fetch(apiUrl(`/admin/coordinators/${id}/reset-password`), {
+      const res = await fetch(apiUrl(`/admin/coordinators/${fetchId}/reset-password`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           newPassword,
-          username: target?.username,
+          username: targetUsername,
           assignedSport: target?.assignedSport || target?.college
         })
       });
@@ -696,14 +714,16 @@ export const adminApi = {
           user: 'System Administrator',
           role: 'ADMIN',
           action: 'Password Reset',
-          target: `Reset password for coordinator account ID ${id}`
+          target: `Reset password for coordinator account ${targetUsername || fetchId}`
         });
         return true;
       }
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Server failed to reset password');
     } catch (e) {
       console.error('Error resetting password in DB:', e);
+      throw e;
     }
-    return true;
   },
 
   // ── Announcements Management ──────────────────────────────────────────────
