@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Users, Trash2, Edit2, Clock, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
+import { useConfirm } from '../../../context/ConfirmContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 
 export const TableTennisMatchScheduleTab = ({ matches, user, onUpdateMatches, onNavigateToLive, globalSearch }) => {
   const { addToast } = useToast();
+  const { confirmDelete } = useConfirm();
 
   const assignedSport = 'table-tennis';
   const sportName = 'Table Tennis';
@@ -65,7 +67,11 @@ export const TableTennisMatchScheduleTab = ({ matches, user, onUpdateMatches, on
   };
 
   const handleClearAll = async () => {
-    if (window.confirm('Are you sure you want to clear all scheduled Table Tennis matches from the database?')) {
+    const isConfirmed = await confirmDelete({
+      title: 'Clear All Table Tennis Matches',
+      message: 'Are you sure you want to clear all scheduled Table Tennis matches from the database? This action cannot be undone.'
+    });
+    if (isConfirmed) {
       await coordinatorApi.clearAllSchedules();
       onUpdateMatches([]);
       addToast('All match schedules cleared from database', 'warning');
@@ -197,6 +203,11 @@ export const TableTennisMatchScheduleTab = ({ matches, user, onUpdateMatches, on
   };
 
   const handleDeleteSlot = async (id) => {
+    const isConfirmed = await confirmDelete({
+      title: 'Delete Table Tennis Match',
+      message: 'Are you sure you want to delete this scheduled Table Tennis match fixture from the database?'
+    });
+    if (!isConfirmed) return;
     await coordinatorApi.deleteMatch(id);
     onUpdateMatches(matches.filter((m) => m.id !== id));
     addToast('Match fixture deleted from database', 'info');

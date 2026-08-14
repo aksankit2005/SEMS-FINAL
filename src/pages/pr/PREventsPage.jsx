@@ -23,8 +23,10 @@ import { uploadFileToCloudinary } from '../../services/cloudinaryService';
 import { GoogleDriveImage } from '../../components/common/GoogleDriveImage';
 import { getMediaPreviewUrl, getVideoThumbnailUrl } from '../../utils/googleDriveHelper';
 import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
 
 export const PREventsPage = () => {
+  const { confirmDelete } = useConfirm();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeModal, setActiveModal] = useState(null); // 'create' | 'edit' | 'manage_media' | null
@@ -123,9 +125,11 @@ export const PREventsPage = () => {
 
   // Delete Individual Photo or Video from Event
   const handleDeleteMediaItem = async (mediaId, title) => {
-    if (!window.confirm(`Are you sure you want to delete "${title || 'this media item'}"?`)) {
-      return;
-    }
+    const isConfirmed = await confirmDelete({
+      title: 'Delete Media Item',
+      message: `Are you sure you want to delete "${title || 'this media item'}"? This action cannot be undone.`
+    });
+    if (!isConfirmed) return;
 
     try {
       await galleryApi.deleteMedia(mediaId);
@@ -175,9 +179,11 @@ export const PREventsPage = () => {
   };
 
   const handleDeleteEvent = async (eventId, name) => {
-    if (!window.confirm(`Are you sure you want to delete "${name}"? All associated media will also be removed.`)) {
-      return;
-    }
+    const isConfirmed = await confirmDelete({
+      title: 'Delete Event Album',
+      message: `Are you sure you want to delete "${name}"? All associated media will also be permanently removed.`
+    });
+    if (!isConfirmed) return;
 
     try {
       await galleryApi.deleteEvent(eventId);
