@@ -6,6 +6,7 @@ import {
   createMatch,
   updateMatch,
   deleteMatch,
+  deleteAllMatches,
   updateMatchScore,
   completeMatch,
   getDashboardStats,
@@ -28,6 +29,7 @@ router.get('/coordinator/matches', verifyCoordinatorToken, getMatches);
 router.post('/coordinator/matches', verifyCoordinatorToken, createMatch);
 router.put('/coordinator/matches/:id', verifyCoordinatorToken, updateMatch);
 router.delete('/coordinator/matches/:id', verifyCoordinatorToken, deleteMatch);
+router.delete('/coordinator/matches', verifyCoordinatorToken, deleteAllMatches);
 router.post('/coordinator/matches/:id/score', verifyCoordinatorToken, updateMatchScore);
 router.post('/coordinator/matches/:id/complete', verifyCoordinatorToken, completeMatch);
 
