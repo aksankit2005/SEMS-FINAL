@@ -73,6 +73,25 @@ export const initDatabaseSchema = async () => {
       );
     `);
 
+    // 3. Ensure leaderboard_entries table exists for SuperCoordinator declared points
+    await queryDb(`
+      CREATE TABLE IF NOT EXISTS leaderboard_entries (
+        id SERIAL PRIMARY KEY,
+        sport_id VARCHAR(50),
+        match_format VARCHAR(50),
+        gender VARCHAR(20),
+        sub_event VARCHAR(100),
+        winner_name VARCHAR(255),
+        winner_team VARCHAR(255),
+        winner_college VARCHAR(100),
+        runner_up_name VARCHAR(255),
+        runner_up_team VARCHAR(255),
+        runner_up_college VARCHAR(100),
+        points INT DEFAULT 10,
+        declared_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
   } catch (err) {
     console.warn('Database schema auto-init error:', err.message);
   }

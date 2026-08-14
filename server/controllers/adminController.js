@@ -115,9 +115,234 @@ export const getAdminProfile = async (req, res) => {
   return res.json({
     id: 'ADM-1001',
     name: 'System Administrator',
-    username: req.user.username || 'admin',
+    username: req.user?.username || 'admin',
     email: 'admin.sports@mpec.ac.in',
     role: 'ADMIN',
     status: 'ACTIVE'
   });
+};
+
+export const getMasterParticipants = async (req, res) => {
+  try {
+    const dbRes = await queryDb(`
+      SELECT 
+        id,
+        TO_CHAR(created_at, 'HH:MI AM') AS time,
+        sport_id AS "sportId",
+        student_name AS "name",
+        team_name AS "teamName",
+        college,
+        department AS branch,
+        enrollment_no AS "rollNo",
+        email,
+        phone AS mobile,
+        gender,
+        status,
+        fee_paid AS "feePaid",
+        created_at
+      FROM college_registrations
+      ORDER BY created_at DESC
+    `);
+
+    if (dbRes && dbRes.rows) {
+      const list = dbRes.rows.map((row) => ({
+        id: row.id,
+        time: row.time || '10:00 AM',
+        sportId: (row.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        sportName: (row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
+        eventTitle: `${(row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase()} Event`,
+        teamName: row.teamName || row.name || 'Participant',
+        college: row.college || 'MPEC',
+        name: row.name || 'Student',
+        mobile: row.mobile || '',
+        email: row.email || '',
+        gender: row.gender || 'Boys',
+        rollNo: row.rollNo || 'N/A',
+        branch: row.branch || 'CSE',
+        year: '3rd Year',
+        status: row.status || 'VERIFIED',
+        feePaid: Number(row.feePaid || 0)
+      }));
+
+      return res.json(list);
+    }
+  } catch (err) {
+    console.error('Error fetching master participants from DB:', err.message);
+  }
+
+  return res.json([]);
+};
+
+export const getSuperCoordinatorEvents = async (req, res) => {
+  try {
+    const dbRes = await queryDb(`
+      SELECT 
+        id,
+        sport_id AS "sportId",
+        sport_name AS "sportName",
+        title AS "eventTitle",
+        venue,
+        entry_fee AS "teamFee",
+        max_registrations AS "maxRegistrations",
+        registered_count AS "registeredCount",
+        status,
+        reg_start_date AS "regStartDate",
+        reg_end_date AS "regEndDate",
+        tourn_start_date AS "tournStartDate",
+        tourn_end_date AS "tournEndDate",
+        category,
+        contact_info AS "contactInfo",
+        created_at AS "createdAt"
+      FROM coordinator_event_items
+      ORDER BY created_at DESC
+    `);
+
+    if (dbRes && dbRes.rows) {
+      const events = dbRes.rows.map((e) => {
+        let contact = e.contactInfo;
+        if (typeof contact === 'string') {
+          try { contact = JSON.parse(contact); } catch (err) {}
+        }
+        return {
+          id: e.id,
+          sportId: e.sportId,
+          sportName: e.sportName || (e.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
+          eventTitle: e.eventTitle || 'Tournament Event',
+          coordinatorName: (contact && contact.name) || 'Coordinator',
+          coordinatorEmail: (contact && contact.email) || '',
+          createdDate: e.createdAt ? new Date(e.createdAt).toLocaleDateString() : (e.regStartDate || ''),
+          regStartDate: e.regStartDate || '',
+          regEndDate: e.regEndDate || '',
+          tournStartDate: e.tournStartDate || '',
+          tournEndDate: e.tournEndDate || '',
+          venue: e.venue || 'Main Stadium',
+          teamFee: Number(e.teamFee || 0),
+          minPlayers: 1,
+          maxPlayers: 1,
+          category: e.category || 'Open',
+          status: e.status || 'Published',
+          registeredCount: Number(e.registeredCount || 0),
+          maxRegistrations: Number(e.maxRegistrations || 64)
+        };
+      });
+      return res.json(events);
+    }
+  } catch (err) {
+    console.error('Error fetching coordinator events for SuperCoordinator:', err.message);
+  }
+
+  return res.json([]);
+};
+
+export const getSuperCoordinatorCoordinators = async (req, res) => {
+  try {
+    const dbRes = await queryDb(`
+      SELECT 
+        assigned_sport AS "id",
+        sport_name AS "name",
+        coordinator_name AS "coordinator",
+        email AS "coordinatorEmail",
+        status
+      FROM sport_coordinators
+      ORDER BY sport_name ASC
+    `);
+
+    if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+      return res.json(dbRes.rows);
+    }
+  } catch (err) {
+    console.error('Error fetching sport coordinators:', err.message);
+  }
+
+  return res.json([]);
+};
+
+export const getLeaderboardEntries = async (req, res) => {
+  try {
+    const dbRes = await queryDb(`
+      SELECT 
+        id,
+        sport_id AS "sportId",
+        match_format AS "matchFormat",
+        gender,
+        sub_event AS "subEvent",
+        winner_name AS "winnerName",
+        winner_team AS "winnerTeam",
+        winner_college AS "winnerCollege",
+        runner_up_name AS "runnerUpName",
+        runner_up_team AS "runnerUpTeam",
+        runner_up_college AS "runnerUpCollege",
+        points,
+        declared_at AS "declaredAt"
+      FROM leaderboard_entries
+      ORDER BY declared_at DESC
+    `);
+
+    if (dbRes && dbRes.rows) {
+      return res.json(dbRes.rows);
+    }
+  } catch (err) {
+    console.error('Error fetching leaderboard entries from DB:', err.message);
+  }
+
+  return res.json([]);
+};
+
+export const saveLeaderboardEntry = async (req, res) => {
+  const {
+    sportId,
+    matchFormat,
+    gender,
+    subEvent,
+    winnerName,
+    winnerTeamName,
+    winnerCollegeId,
+    runnerUpName,
+    runnerUpTeamName,
+    runnerUpCollegeId,
+    points
+  } = req.body;
+
+  try {
+    const dbRes = await queryDb(
+      `INSERT INTO leaderboard_entries 
+        (sport_id, match_format, gender, sub_event, winner_name, winner_team, winner_college, runner_up_name, runner_up_team, runner_up_college, points, declared_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
+       RETURNING *`,
+      [
+        sportId || 'general',
+        matchFormat || 'Team',
+        gender || 'Boys',
+        subEvent || null,
+        winnerName || '',
+        winnerTeamName || '',
+        winnerCollegeId || 'MPEC',
+        runnerUpName || '',
+        runnerUpTeamName || '',
+        runnerUpCollegeId || 'MIPS',
+        Number(points || 10)
+      ]
+    );
+
+    if (dbRes && dbRes.rows.length > 0) {
+      return res.status(201).json({ success: true, entry: dbRes.rows[0] });
+    }
+  } catch (err) {
+    console.error('Error saving leaderboard entry to DB:', err.message);
+    return res.status(500).json({ message: 'Failed to save leaderboard entry to database' });
+  }
+
+  return res.json({ success: true });
+};
+
+export const deleteLeaderboardEntry = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await queryDb('DELETE FROM leaderboard_entries WHERE id = $1', [id]);
+    return res.json({ success: true, message: 'Leaderboard result deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting leaderboard entry:', err.message);
+    return res.status(500).json({ message: 'Failed to delete leaderboard entry' });
+  }
 };
