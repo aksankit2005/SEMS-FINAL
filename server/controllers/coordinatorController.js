@@ -237,12 +237,19 @@ export const updateMatch = async (req, res) => {
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS stream_url TEXT;
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS is_live_streaming BOOLEAN DEFAULT FALSE;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_history TEXT;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS current_set INT DEFAULT 1;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won1 INT DEFAULT 0;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won2 INT DEFAULT 0;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
     `);
   } catch (e) {}
 
+  const setsHistoryStr = req.body.setsHistory ? (typeof req.body.setsHistory === 'string' ? req.body.setsHistory : JSON.stringify(req.body.setsHistory)) : (updatedMatch.setsHistory ? JSON.stringify(updatedMatch.setsHistory) : null);
+
   await queryDb(
-    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, sets_history, current_set, sets_won1, sets_won2, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, CURRENT_TIMESTAMP)
      ON CONFLICT (id) DO UPDATE SET
        status = COALESCE(EXCLUDED.status, live_matches.status),
        team1 = COALESCE(EXCLUDED.team1, live_matches.team1),
@@ -250,12 +257,17 @@ export const updateMatch = async (req, res) => {
        match_title = COALESCE(EXCLUDED.match_title, live_matches.match_title),
        table_number = COALESCE(EXCLUDED.table_number, live_matches.table_number),
        time = COALESCE(EXCLUDED.time, live_matches.time),
-       score1 = COALESCE(EXCLUDED.score1, live_matches.score1),
-       score2 = COALESCE(EXCLUDED.score2, live_matches.score2),
+       score1 = EXCLUDED.score1,
+       score2 = EXCLUDED.score2,
        winner = COALESCE(EXCLUDED.winner, live_matches.winner),
        youtube_video_id = CASE WHEN EXCLUDED.youtube_video_id IS NOT NULL AND EXCLUDED.youtube_video_id != '' THEN EXCLUDED.youtube_video_id ELSE live_matches.youtube_video_id END,
        stream_url = CASE WHEN EXCLUDED.stream_url IS NOT NULL AND EXCLUDED.stream_url != '' THEN EXCLUDED.stream_url ELSE live_matches.stream_url END,
-       is_live_streaming = COALESCE(EXCLUDED.is_live_streaming, live_matches.is_live_streaming)`,
+       is_live_streaming = COALESCE(EXCLUDED.is_live_streaming, live_matches.is_live_streaming),
+       sets_history = CASE WHEN EXCLUDED.sets_history IS NOT NULL AND EXCLUDED.sets_history != '' THEN EXCLUDED.sets_history ELSE live_matches.sets_history END,
+       current_set = COALESCE(EXCLUDED.current_set, live_matches.current_set),
+       sets_won1 = COALESCE(EXCLUDED.sets_won1, live_matches.sets_won1),
+       sets_won2 = COALESCE(EXCLUDED.sets_won2, live_matches.sets_won2),
+       updated_at = CURRENT_TIMESTAMP`,
     [
       id,
       sportId,
@@ -271,7 +283,11 @@ export const updateMatch = async (req, res) => {
       req.body.winner || updatedMatch.winner || null,
       updatedMatch.youtubeVideoId || null,
       updatedMatch.streamUrl || null,
-      Boolean(updatedMatch.isLiveStreaming || updatedMatch.youtubeVideoId || updatedMatch.streamUrl)
+      Boolean(updatedMatch.isLiveStreaming || updatedMatch.youtubeVideoId || updatedMatch.streamUrl),
+      setsHistoryStr,
+      req.body.currentSet || req.body.currentSetIndex || updatedMatch.currentSet || 1,
+      req.body.setsWon1 !== undefined ? Number(req.body.setsWon1) : (updatedMatch.setsWon1 || 0),
+      req.body.setsWon2 !== undefined ? Number(req.body.setsWon2) : (updatedMatch.setsWon2 || 0)
     ]
   );
 
