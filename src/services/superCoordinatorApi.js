@@ -29,179 +29,6 @@ export const ALL_COLLEGES = [
   { id: 'EXTERNAL', name: 'EXTERNAL' }
 ];
 
-const MOCK_MASTER_PARTICIPANTS = [
-  {
-    id: 'REG-2026-101',
-    time: '09:30 AM',
-    sportId: 'cricket',
-    sportName: 'Cricket',
-    eventTitle: 'Cricket Mens Premier League 2026',
-    teamName: 'MPEC Strikers 11',
-    college: 'MPEC',
-    name: 'Aarav Sharma (Captain)',
-    mobile: '+91 98765 10101',
-    email: 'aarav.sharma@mpec.ac.in',
-    gender: 'Boys',
-    rollNo: '2101430100012',
-    branch: 'CSE',
-    year: '3rd Year',
-    status: 'VERIFIED'
-  },
-  {
-    id: 'REG-2026-102',
-    time: '10:15 AM',
-    sportId: 'badminton',
-    sportName: 'Badminton',
-    eventTitle: 'Badminton Girls Singles Cup 2026',
-    teamName: 'Ananya Verma',
-    college: 'MIPS',
-    name: 'Ananya Verma',
-    mobile: '+91 98765 10102',
-    email: 'ananya.v@mips.ac.in',
-    gender: 'Girls',
-    rollNo: '2101430100045',
-    branch: 'IT',
-    year: '2nd Year',
-    status: 'VERIFIED'
-  },
-  {
-    id: 'REG-2026-103',
-    time: '11:00 AM',
-    sportId: 'table-tennis',
-    sportName: 'Table Tennis',
-    eventTitle: 'Table Tennis Open Championship',
-    teamName: 'Rohan Gupta',
-    college: 'MPCPS (KN142)',
-    name: 'Rohan Gupta',
-    mobile: '+91 98765 10103',
-    email: 'rohan.g@mpcp.ac.in',
-    gender: 'Boys',
-    rollNo: '2201430100089',
-    branch: 'Pharmacy',
-    year: '1st Year',
-    status: 'VERIFIED'
-  },
-  {
-    id: 'REG-2026-104',
-    time: '11:45 AM',
-    sportId: 'football',
-    sportName: 'Football',
-    eventTitle: 'Inter-College Football Fest 2026',
-    teamName: 'MIPS Warriors FC',
-    college: 'MIPS',
-    name: 'Kunal Patel (Captain)',
-    mobile: '+91 98765 10104',
-    email: 'kunal.patel@mips.ac.in',
-    gender: 'Boys',
-    rollNo: '2101430100099',
-    branch: 'ECE',
-    year: '3rd Year',
-    status: 'VERIFIED'
-  },
-  {
-    id: 'REG-2026-105',
-    time: '12:30 PM',
-    sportId: 'basketball',
-    sportName: 'Basketball',
-    eventTitle: 'Basketball 3v3 Shootout 2026',
-    teamName: 'MPEC Hoopers',
-    college: 'MPEC',
-    name: 'Sneha Roy',
-    mobile: '+91 98765 10105',
-    email: 'sneha.roy@mpec.ac.in',
-    gender: 'Girls',
-    rollNo: '2001430100034',
-    branch: 'ME',
-    year: '4th Year',
-    status: 'VERIFIED'
-  },
-  {
-    id: 'REG-2026-106',
-    time: '01:15 PM',
-    sportId: 'chess',
-    sportName: 'Chess',
-    eventTitle: 'Rapid Chess Grandmaster Cup',
-    teamName: 'Vikramaditya Rao',
-    college: 'MPCP',
-    name: 'Vikramaditya Rao',
-    mobile: '+91 98765 10106',
-    email: 'vikram.rao@mpcp.ac.in',
-    gender: 'Boys',
-    rollNo: '2201430100055',
-    branch: 'BPharmacy',
-    year: '2nd Year',
-    status: 'VERIFIED'
-  },
-  {
-    id: 'REG-2026-107',
-    time: '02:00 PM',
-    sportId: 'kabaddi',
-    sportName: 'Kabaddi',
-    eventTitle: 'Pro Kabaddi Inter-College Trophy',
-    teamName: 'MPDC Raiders 7',
-    college: 'MPDC',
-    name: 'Deepak Kumar (Captain)',
-    mobile: '+91 98765 10107',
-    email: 'deepak.k@mpdc.ac.in',
-    gender: 'Boys',
-    rollNo: '2101430100077',
-    branch: 'Dental',
-    year: '3rd Year',
-    status: 'VERIFIED'
-  },
-  {
-    id: 'REG-2026-108',
-    time: '02:45 PM',
-    sportId: 'volleyball',
-    sportName: 'Volleyball',
-    eventTitle: 'Smash Volleyball Championship',
-    teamName: 'MPCPS Spikers',
-    college: 'MPCPS (KN142)',
-    name: 'Pooja Pandey',
-    mobile: '+91 98765 10108',
-    email: 'pooja.p@mpcps.ac.in',
-    gender: 'Girls',
-    rollNo: '2201430100018',
-    branch: 'CSE',
-    year: '1st Year',
-    status: 'VERIFIED'
-  },
-  {
-    id: 'REG-2026-109',
-    time: '03:30 PM',
-    sportId: 'athletics',
-    sportName: 'Athletics',
-    eventTitle: '100m Sprint & Track Event 2026',
-    teamName: 'Aditya Singh',
-    college: 'MPEC',
-    name: 'Aditya Singh',
-    mobile: '+91 98765 10109',
-    email: 'aditya.s@mpec.ac.in',
-    gender: 'Boys',
-    rollNo: '2101430100023',
-    branch: 'CSE',
-    year: '3rd Year',
-    status: 'VERIFIED'
-  },
-  {
-    id: 'REG-2026-110',
-    time: '04:15 PM',
-    sportId: 'tug-of-war',
-    sportName: 'Tug of War',
-    eventTitle: 'Power Tug of War Challenge',
-    teamName: 'MPCN Titans 8',
-    college: 'MPCN&PS',
-    name: 'Saurabh Mishra',
-    mobile: '+91 98765 10110',
-    email: 'saurabh.m@mpcn.ac.in',
-    gender: 'Boys',
-    rollNo: '2001430100067',
-    branch: 'Nursing',
-    year: '4th Year',
-    status: 'VERIFIED'
-  }
-];
-
 export const superCoordinatorApi = {
   // Get Sports & Assigned Coordinators from Backend
   getCoordinators: async () => {
@@ -215,113 +42,28 @@ export const superCoordinatorApi = {
     return ALL_12_SPORTS;
   },
 
-  // Get Coordinator Event Creation History — from Backend with localStorage fallback
+  // Get Coordinator Event Creation History — strictly from real database API
   getCoordinatorEvents: async () => {
     try {
       const res = await fetch('/api/super-coordinator/events');
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) return data;
+        if (Array.isArray(data)) return data;
       }
     } catch (e) {}
-
-    const eventsList = [];
-    const seenIds = new Set();
-
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('sems_coord_events_')) {
-        try {
-          const list = JSON.parse(localStorage.getItem(key));
-          if (Array.isArray(list)) {
-            list.forEach((item) => {
-              if (item && item.id && !seenIds.has(item.id)) {
-                seenIds.add(item.id);
-                eventsList.push({
-                  id: item.id,
-                  sportId: item.sportId || item.sportName?.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'sport',
-                  sportName: item.sportName || 'Sport',
-                  eventTitle: item.title || item.eventTitle || 'Tournament Event',
-                  coordinatorName: item.contactInfo?.name || item.contactName || 'Coordinator',
-                  coordinatorEmail: item.contactInfo?.email || item.contactEmail || '',
-                  createdDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : (item.regStartDate || ''),
-                  regStartDate: item.regStartDate || '',
-                  regEndDate: item.regEndDate || '',
-                  tournStartDate: item.tournStartDate || '',
-                  tournEndDate: item.tournEndDate || '',
-                  venue: item.venue || '',
-                  teamFee: item.entryFee || item.teamFee || 0,
-                  minPlayers: item.minPlayers || 1,
-                  maxPlayers: item.maxPlayers || 1,
-                  category: item.category || 'Open',
-                  status: item.status || 'Published',
-                  registeredCount: item.registeredCount || 0,
-                  maxRegistrations: item.maxRegistrations || 64
-                });
-              }
-            });
-          }
-        } catch (e) {}
-      }
-    }
-    return eventsList;
+    return [];
   },
 
-  // Get Master Participants — from Backend with localStorage and mock fallback
+  // Get Master Participants — strictly from real PostgreSQL database API
   getMasterParticipants: async () => {
     try {
       const res = await fetch('/api/super-coordinator/participants');
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) return data;
+        if (Array.isArray(data)) return data;
       }
     } catch (e) {}
-
-    const list = [];
-    const seenIds = new Set();
-
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && (key.startsWith('sems_registrations') || key.startsWith('sems_total_participation_') || key === 'sems_admin_registrations')) {
-        try {
-          const storedList = JSON.parse(localStorage.getItem(key));
-          if (Array.isArray(storedList)) {
-            storedList.forEach((p) => {
-              if (p && p.id && !seenIds.has(p.id)) {
-                seenIds.add(p.id);
-                list.push({
-                  id: p.id,
-                  time: p.registrationTime || p.time || '10:00 AM',
-                  sportId: (p.gameSport || p.sportName || p.sport || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
-                  sportName: p.gameSport || p.sportName || p.sport || 'Sport',
-                  eventTitle: p.eventTitle || p.eventName || p.title || `${p.gameSport || p.sportName || 'Sport'} Event`,
-                  teamName: p.teamName || p.participantName || p.name || 'Participant',
-                  college: p.collegeName || p.college || 'MPEC',
-                  name: p.participantName || p.studentName || p.name || 'Student',
-                  mobile: p.mobileNo || p.mobile || '',
-                  email: p.email || '',
-                  gender: p.gender || 'Boys',
-                  rollNo: p.rollNumber || p.rollNo || '2101430100012',
-                  branch: p.branch || p.department || 'CSE',
-                  year: p.year || '3rd Year',
-                  status: p.registrationStatus || p.status || 'VERIFIED',
-                  feePaid: p.feePaid || p.entryFee || p.amount || 0
-                });
-              }
-            });
-          }
-        } catch (e) {}
-      }
-    }
-
-    if (list.length === 0) {
-      try {
-        localStorage.setItem('sems_admin_registrations', JSON.stringify(MOCK_MASTER_PARTICIPANTS));
-      } catch (e) {}
-      return MOCK_MASTER_PARTICIPANTS;
-    }
-
-    return list;
+    return [];
   },
 
   // Get PR Event Folders (Created by PR Members)
