@@ -196,13 +196,13 @@ export const superCoordinatorApi = {
     return null;
   },
 
-  // Update Super Coordinator Password in Backend PostgreSQL DB
   changePassword: async (newPass) => {
     try {
+      const user = JSON.parse(localStorage.getItem('sems_super_coord_user') || '{}');
       const res = await fetch(apiUrl('/super-coordinator/change-password'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newPass })
+        body: JSON.stringify({ newPass, username: user.username })
       });
       const data = await res.json();
       return { ok: res.ok, message: data.message || 'Password update completed' };

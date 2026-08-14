@@ -78,7 +78,56 @@ export const superCoordinatorLogin = async (req, res) => {
     return res.status(400).json({ message: 'Username and password are required.' });
   }
 
-  const cleanUser = username.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  const normalizedUser = username.trim().toLowerCase();
+
+  // 1. Check PostgreSQL pr_users table for Super Coordinator accounts
+  try {
+    const dbResult = await queryDb(
+      `SELECT * FROM pr_users WHERE LOWER(username) = $1 AND (role = 'super_coordinator' OR role = 'Super Coordinator')`,
+      [normalizedUser]
+    );
+
+    if (dbResult && dbResult.rows.length > 0) {
+      const user = dbResult.rows[0];
+
+      // Check account status
+      if (user.status && user.status.toLowerCase() === 'inactive') {
+        return res.status(403).json({ message: 'Super Coordinator account is deactivated. Access denied.' });
+      }
+
+      // Check hashed password
+      let isValidPass = false;
+      if (user.password_hash) {
+        isValidPass = await bcrypt.compare(password, user.password_hash);
+      }
+
+      if (isValidPass) {
+        const token = jwt.sign(
+          { id: user.id, username: user.username, role: 'super_coordinator' },
+          envConfig.jwtSecret,
+          { expiresIn: '24h' }
+        );
+
+        return res.json({
+          success: true,
+          token,
+          user: {
+            id: user.id,
+            username: user.username,
+            name: user.name || 'Super Coordinator (President)',
+            role: 'super_coordinator'
+          }
+        });
+      } else {
+        return res.status(401).json({ message: 'Invalid Super Coordinator password. Access denied.' });
+      }
+    }
+  } catch (e) {
+    console.error('Error during super coordinator DB login check:', e);
+  }
+
+  // 2. Environment / DB SystemSetting Fallback check
+  const cleanUser = normalizedUser.replace(/[^a-z0-9]/g, '');
   const expectedUser = (envConfig.superCoordUsername || 'super_coordinator').toLowerCase().replace(/[^a-z0-9]/g, '');
   
   let expectedPassword = envConfig.passSuperCoord || 'super#2026';
@@ -866,5 +915,40 @@ export const deleteCoordinatorDB = async (req, res) => {
   } catch (err) {
     console.error('Error deleting coordinator from DB:', err.message);
     return res.status(500).json({ message: 'Failed to delete coordinator from database' });
+  }
+};
+
+export const changeSuperCoordinatorPasswordDB = async (req, res) => {
+  const { newPass, username } = req.body;
+  const targetUser = (username || req.user?.username || 'super_coordinator').trim().toLowerCase();
+
+  if (!newPass || newPass.trim().length < 6) {
+    return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+  }
+
+  try {
+    const hashed = await bcrypt.hash(newPass.trim(), 10);
+    
+    // Update password_hash in PostgreSQL pr_users table
+    await queryDb(
+      `UPDATE pr_users 
+       SET password_hash = $1, updated_at = CURRENT_TIMESTAMP 
+       WHERE LOWER(username) = LOWER($2) OR role = 'super_coordinator' OR role = 'Super Coordinator'`,
+      [hashed, targetUser]
+    );
+
+    // Also update prisma system setting fallback
+    try {
+      await prisma.systemSetting.upsert({
+        where: { key: 'super_coordinator_pass' },
+        update: { value: { password: newPass.trim() } },
+        create: { key: 'super_coordinator_pass', value: { password: newPass.trim() } }
+      });
+    } catch (e) {}
+
+    return res.json({ success: true, message: 'Super Coordinator password updated successfully in database.' });
+  } catch (err) {
+    console.error('Error changing super coordinator password:', err.message);
+    return res.status(500).json({ message: 'Failed to change password in database.' });
   }
 };
