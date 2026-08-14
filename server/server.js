@@ -90,8 +90,11 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
+import { initDatabaseSchema } from './config/dbInit.js';
+
 // ─── START SERVER ────────────────────────────────────────────────────────────
-app.listen(envConfig.port, () => {
+app.listen(envConfig.port, async () => {
   console.log(`🚀 SEMS API Server running on port ${envConfig.port}`);
   console.log(`🔒 NODE_ENV: ${envConfig.nodeEnv}`);
+  await initDatabaseSchema();
 });
