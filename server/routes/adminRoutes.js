@@ -8,7 +8,10 @@ import {
   getSuperCoordinatorCoordinators,
   getLeaderboardEntries,
   saveLeaderboardEntry,
-  deleteLeaderboardEntry
+  deleteLeaderboardEntry,
+  getHeroSlidesDB,
+  saveHeroSlidesDB,
+  changeSuperCoordinatorPasswordDB
 } from '../controllers/adminController.js';
 import { verifyAdminToken } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimiters.js';
@@ -26,5 +29,8 @@ router.get('/super-coordinator/coordinators', getSuperCoordinatorCoordinators);
 router.get('/super-coordinator/leaderboard', getLeaderboardEntries);
 router.post('/super-coordinator/leaderboard', saveLeaderboardEntry);
 router.delete('/super-coordinator/leaderboard/:id', deleteLeaderboardEntry);
+router.get('/super-coordinator/hero-slides', getHeroSlidesDB);
+router.post('/super-coordinator/hero-slides', saveHeroSlidesDB);
+router.post('/super-coordinator/change-password', changeSuperCoordinatorPasswordDB);
 
 export default router;

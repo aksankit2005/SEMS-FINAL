@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { SPORT_PLAYER_BOUNDS, resolveSportKey } from '../data/sportsConfig';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { API_BASE_URL } from './apiConfig';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -311,20 +310,36 @@ export const coordinatorApi = {
 
   // Get all public match schedules across all sports
   async getPublicMatches() {
+    let serverMatches = [];
     try {
       const res = await api.get('/coordinator/matches');
-      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-        return res.data;
+      if (res.data && Array.isArray(res.data)) {
+        serverMatches = res.data;
       }
     } catch (e) {
       console.warn('Public matches endpoint fallback to scanning localStorage keys', e);
     }
 
-    const publicMatches = [];
+    const matchMap = new Map();
+
+    // 1. Add server matches
+    serverMatches.forEach((m) => {
+      if (m && m.id) {
+        const mSport = (m.sport || m.sportId || 'badminton').toLowerCase();
+        matchMap.set(m.id, {
+          ...m,
+          sport: mSport,
+          sportId: mSport,
+          sportName: m.sportName || (mSport.charAt(0).toUpperCase() + mSport.slice(1).replace('-', ' '))
+        });
+      }
+    });
+
+    // 2. Scan all localStorage match schedule keys across Kabaddi, Kho-Kho, Athletics, etc.
     const keysToCheck = ['basketballMatchSchedules', 'volleyballMatchSchedules'];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && (key.startsWith('sems_coord_matches_') || key.endsWith('MatchSchedules'))) {
+      if (key && (key.startsWith('sems_coord_matches_') || key.endsWith('MatchSchedules') || key.startsWith('sems_matches_'))) {
         keysToCheck.push(key);
       }
     }
@@ -336,11 +351,13 @@ export const coordinatorApi = {
         if (raw) {
           const list = JSON.parse(raw);
           if (Array.isArray(list)) {
-            const sportId = key.replace('sems_coord_matches_', '').replace('MatchSchedules', '').toLowerCase();
+            const derivedSport = key.replace('sems_coord_matches_', '').replace('MatchSchedules', '').replace('sems_matches_', '').toLowerCase();
             list.forEach((m) => {
-              if (m) {
-                const mSport = m.sport || m.sportId || sportId;
-                publicMatches.push({
+              if (m && m.id) {
+                const mSport = (m.sport || m.sportId || derivedSport || 'badminton').toLowerCase();
+                const existing = matchMap.get(m.id) || {};
+                matchMap.set(m.id, {
+                  ...existing,
                   ...m,
                   sport: mSport,
                   sportId: mSport,
@@ -352,7 +369,8 @@ export const coordinatorApi = {
         }
       } catch (err) { }
     });
-    return publicMatches;
+
+    return Array.from(matchMap.values());
   },
 
   // Create match & persist to Backend API & localStorage

@@ -81,7 +81,14 @@ export const superCoordinatorLogin = async (req, res) => {
 
   const cleanUser = username.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
   const expectedUser = (envConfig.superCoordUsername || 'super_coordinator').toLowerCase().replace(/[^a-z0-9]/g, '');
-  const expectedPassword = envConfig.passSuperCoord || 'super#2026';
+  
+  let expectedPassword = envConfig.passSuperCoord || 'super#2026';
+  try {
+    const dbPassSetting = await prisma.systemSetting.findUnique({ where: { key: 'super_coordinator_pass' } });
+    if (dbPassSetting && dbPassSetting.value && dbPassSetting.value.password) {
+      expectedPassword = dbPassSetting.value.password;
+    }
+  } catch (e) {}
 
   const isUserValid = cleanUser === expectedUser || cleanUser === 'supercoordinator' || cleanUser === 'supercoord';
   const isPassValid = (password === expectedPassword) || (password === 'super#2026') || (envConfig.commonPassword && password === envConfig.commonPassword);
@@ -328,7 +335,28 @@ export const getLeaderboardEntries = async (req, res) => {
     `);
 
     if (dbRes && dbRes.rows) {
-      return res.json(dbRes.rows);
+      const formatted = dbRes.rows.map((row) => ({
+        id: row.id,
+        sportId: row.sportId,
+        sportName: (row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
+        matchFormat: row.matchFormat || 'Team',
+        gender: row.gender || 'Boys',
+        subEvent: row.subEvent,
+        athleticsSubEvent: row.subEvent,
+        winnerName: row.winnerName || '',
+        winnerTeamName: row.winnerTeam || row.winnerName || '',
+        winnerCollege: row.winnerCollege || 'MPEC',
+        winnerCollegeName: row.winnerCollege || 'MPEC',
+        winnerPoints: 2,
+        runnerUpName: row.runnerUpName || '',
+        runnerUpTeamName: row.runnerUpTeam || row.runnerUpName || '',
+        runnerUpCollege: row.runnerUpCollege || 'MIPS',
+        runnerUpCollegeName: row.runnerUpCollege || 'MIPS',
+        runnerUpPoints: 1,
+        points: Number(row.points || 10),
+        date: row.declaredAt ? new Date(row.declaredAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }) : new Date().toLocaleString()
+      }));
+      return res.json(formatted);
     }
   } catch (err) {
     console.error('Error fetching leaderboard entries from DB:', err.message);
@@ -339,18 +367,26 @@ export const getLeaderboardEntries = async (req, res) => {
 
 export const saveLeaderboardEntry = async (req, res) => {
   const {
+    id,
     sportId,
     matchFormat,
     gender,
     subEvent,
+    athleticsSubEvent,
     winnerName,
     winnerTeamName,
+    winnerCollege,
     winnerCollegeId,
     runnerUpName,
     runnerUpTeamName,
+    runnerUpCollege,
     runnerUpCollegeId,
     points
   } = req.body;
+
+  const finalSubEvent = athleticsSubEvent || subEvent || null;
+  const wCollege = winnerCollege || winnerCollegeId || 'MPEC';
+  const rCollege = runnerUpCollege || runnerUpCollegeId || 'MIPS';
 
   try {
     const dbRes = await queryDb(
@@ -362,19 +398,41 @@ export const saveLeaderboardEntry = async (req, res) => {
         sportId || 'general',
         matchFormat || 'Team',
         gender || 'Boys',
-        subEvent || null,
+        finalSubEvent,
         winnerName || '',
-        winnerTeamName || '',
-        winnerCollegeId || 'MPEC',
+        winnerTeamName || winnerName || '',
+        wCollege,
         runnerUpName || '',
-        runnerUpTeamName || '',
-        runnerUpCollegeId || 'MIPS',
+        runnerUpTeamName || runnerUpName || '',
+        rCollege,
         Number(points || 10)
       ]
     );
 
     if (dbRes && dbRes.rows.length > 0) {
-      return res.status(201).json({ success: true, entry: dbRes.rows[0] });
+      const row = dbRes.rows[0];
+      const entry = {
+        id: row.id,
+        sportId: row.sport_id,
+        sportName: (row.sport_id || 'Sport').replace(/-/g, ' ').toUpperCase(),
+        matchFormat: row.match_format,
+        gender: row.gender,
+        subEvent: row.sub_event,
+        athleticsSubEvent: row.sub_event,
+        winnerName: row.winner_name,
+        winnerTeamName: row.winner_team,
+        winnerCollege: row.winner_college,
+        winnerCollegeName: row.winner_college,
+        winnerPoints: 2,
+        runnerUpName: row.runner_up_name,
+        runnerUpTeamName: row.runner_up_team,
+        runnerUpCollege: row.runner_up_college,
+        runnerUpCollegeName: row.runner_up_college,
+        runnerUpPoints: 1,
+        points: Number(row.points || 10),
+        date: new Date(row.declared_at).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
+      };
+      return res.status(201).json({ success: true, entry });
     }
   } catch (err) {
     console.error('Error saving leaderboard entry to DB:', err.message);
@@ -393,5 +451,55 @@ export const deleteLeaderboardEntry = async (req, res) => {
   } catch (err) {
     console.error('Error deleting leaderboard entry:', err.message);
     return res.status(500).json({ message: 'Failed to delete leaderboard entry' });
+  }
+};
+
+export const getHeroSlidesDB = async (req, res) => {
+  try {
+    const setting = await prisma.systemSetting.findUnique({ where: { key: 'hero_slides' } });
+    if (setting && Array.isArray(setting.value)) {
+      return res.json(setting.value);
+    }
+  } catch (err) {
+    console.error('Error fetching hero slides from DB:', err.message);
+  }
+  return res.json([]);
+};
+
+export const saveHeroSlidesDB = async (req, res) => {
+  const slides = req.body;
+  if (!Array.isArray(slides)) {
+    return res.status(400).json({ message: 'Slides must be an array.' });
+  }
+
+  try {
+    const updated = await prisma.systemSetting.upsert({
+      where: { key: 'hero_slides' },
+      update: { value: slides, updatedAt: new Date() },
+      create: { key: 'hero_slides', value: slides }
+    });
+    return res.json({ success: true, slides: updated.value });
+  } catch (err) {
+    console.error('Error saving hero slides to DB:', err.message);
+    return res.status(500).json({ message: 'Failed to save hero slides to database' });
+  }
+};
+
+export const changeSuperCoordinatorPasswordDB = async (req, res) => {
+  const { newPass } = req.body;
+  if (!newPass || newPass.trim().length < 6) {
+    return res.status(400).json({ message: 'New password must be at least 6 characters long.' });
+  }
+
+  try {
+    await prisma.systemSetting.upsert({
+      where: { key: 'super_coordinator_pass' },
+      update: { value: { password: newPass.trim() }, updatedAt: new Date() },
+      create: { key: 'super_coordinator_pass', value: { password: newPass.trim() } }
+    });
+    return res.json({ success: true, message: 'Super Coordinator password updated in database successfully!' });
+  } catch (err) {
+    console.error('Error updating super coordinator password in DB:', err.message);
+    return res.status(500).json({ message: 'Failed to update password in database' });
   }
 };

@@ -170,6 +170,40 @@ export const ResultManagementTab = ({ user }) => {
         }
       ];
     }
+    if (assignedSport === 'kabaddi') {
+      return [
+        {
+          id: 'M-KBD-101',
+          eventTitle: 'APEX Inter-College Kabaddi Championship 2026',
+          format: 'Pro Style (7 Players)',
+          category: 'Open',
+          team1: 'MPEC Raid Stars',
+          team2: 'MIPS Defenders',
+          score1: 38,
+          score2: 32,
+          scoreSummary: 'MPEC Raid Stars won 38 - 32 (Full Time)',
+          winner: 'MPEC Raid Stars',
+          tableNumber: 'Kabaddi Court 1',
+          venue: 'Indoor Sports Complex',
+          completedAt: new Date(Date.now() - 3600000).toISOString()
+        },
+        {
+          id: 'M-KBD-102',
+          eventTitle: 'APEX Inter-College Kabaddi Championship 2026',
+          format: 'Pro Style (7 Players)',
+          category: 'Boys',
+          team1: 'MPCP Warriors',
+          team2: 'MPCPS Strikers',
+          score1: 42,
+          score2: 39,
+          scoreSummary: 'MPCP Warriors won 42 - 39 (Full Time)',
+          winner: 'MPCP Warriors',
+          tableNumber: 'Kabaddi Court 2',
+          venue: 'Indoor Sports Complex',
+          completedAt: new Date(Date.now() - 7200000).toISOString()
+        }
+      ];
+    }
     return [
       {
         id: 'M-BADM-101',
@@ -267,6 +301,10 @@ export const ResultManagementTab = ({ user }) => {
           })
         : [];
 
+      if (cleaned.length === 0) {
+        cleaned = getMockResultsData();
+      }
+
       setResultsList(cleaned);
       localStorage.setItem(resultsKey, JSON.stringify(cleaned));
     };
@@ -288,8 +326,8 @@ export const ResultManagementTab = ({ user }) => {
     const matchObj = resultsList.find((item) => item.id === id);
     if (!matchObj) return;
 
-    const p1 = matchObj.team1 || 'Player 1 (White)';
-    const p2 = matchObj.team2 || 'Player 2 (Black)';
+    const p1 = matchObj.team1 || (isChess ? 'Player 1 (White)' : 'Team 1');
+    const p2 = matchObj.team2 || (isChess ? 'Player 2 (Black)' : 'Team 2');
 
     let newWinner = currentWinner;
     let newScoreText = matchObj.scoreText || matchObj.scoreSummary || '';
@@ -594,7 +632,7 @@ export const ResultManagementTab = ({ user }) => {
                         </span>
                       </div>
                       <p className="font-bold text-slate-900 dark:text-white text-sm">
-                        {r.team1 || 'White Player'} <span className="text-slate-400 text-xs font-normal">vs</span> {r.team2 || 'Black Player'}
+                        {r.team1 || (isChess ? 'White Player' : 'Team 1')} <span className="text-slate-400 text-xs font-normal">vs</span> {r.team2 || (isChess ? 'Black Player' : 'Team 2')}
                       </p>
                     </td>
 

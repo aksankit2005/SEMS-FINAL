@@ -1,3 +1,6 @@
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -12,6 +15,11 @@ import prRoutes from './routes/prRoutes.js';
 import collegeHeadRoutes from './routes/collegeHeadRoutes.js';
 import coordinatorRoutes from './routes/coordinatorRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
+import { initDatabaseSchema } from './config/dbInit.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const distPath = path.join(__dirname, '../dist');
 
 const app = express();
 
@@ -76,6 +84,15 @@ app.use('/api', collegeHeadRoutes);
 app.use('/api', coordinatorRoutes);
 app.use('/api', publicRoutes);
 
+// ─── STATIC ASSETS & SPA SERVING (Production Full-Stack) ─────────────────────
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
+
 // ─── ERROR HANDLING ──────────────────────────────────────────────────────────
 app.use('/api/*', notFoundHandler);
 app.use(globalErrorHandler);
@@ -89,8 +106,6 @@ process.on('uncaughtException', (err) => {
   console.error('[UncaughtException]', err.message);
   process.exit(1);
 });
-
-import { initDatabaseSchema } from './config/dbInit.js';
 
 // ─── START SERVER ────────────────────────────────────────────────────────────
 app.listen(envConfig.port, async () => {

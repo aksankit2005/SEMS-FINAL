@@ -2,14 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { 
   Users, Trophy, Layers, Filter, Search, Download, Calendar, MapPin, DollarSign, 
   CheckCircle2, Image as ImageIcon, ShieldAlert, Sparkles, RefreshCw, Eye, UserCheck, Phone, Mail, Award, BookOpen,
-  FolderOpen, Folder, ArrowLeft, Camera, Film, X, Maximize2, Key, EyeOff, User, Lock, Building2, Crown
+  FolderOpen, Folder, ArrowLeft, Camera, Film, X, Maximize2, Key, EyeOff, User, Lock, Building2, Crown, Upload
 } from 'lucide-react';
 
 import { superCoordinatorApi, ALL_12_SPORTS, ALL_COLLEGES } from '../../services/superCoordinatorApi';
+import { SuperCoordinatorNavbar } from '../../components/superCoordinator/SuperCoordinatorNavbar';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { exportToCSV, exportToPDF } from '../../utils/pdfExporter';
 import { GoogleDriveImage } from '../../components/common/GoogleDriveImage';
+import { getHeroSlides, saveHeroSlides, DEFAULT_HERO_SLIDES } from '../../data/heroSlidesData';
 
 export const SuperCoordinatorDashboardPage = () => {
   const { addToast } = useToast();
@@ -20,6 +22,7 @@ export const SuperCoordinatorDashboardPage = () => {
   const [masterParticipants, setMasterParticipants] = useState([]);
   const [prPhotos, setPrPhotos] = useState([]);
   const [leaderboardEntries, setLeaderboardEntries] = useState([]);
+  const [editableHeroSlides, setEditableHeroSlides] = useState(() => getHeroSlides());
 
   // PR Media Folders & Folder Details State
   const [prFolders, setPrFolders] = useState([]);
@@ -105,7 +108,7 @@ export const SuperCoordinatorDashboardPage = () => {
   // Active Tab View: 'leaderboard' | 'coordinator_creations' | 'participants' | 'pr_gallery' | 'profile'
   const [activeTab, setActiveTab] = useState('leaderboard');
 
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = async (e) => {
     e.preventDefault();
     if (passwordForm.newPass !== passwordForm.confirm) {
       addToast('New password and confirm password do not match', 'error');
@@ -116,10 +119,14 @@ export const SuperCoordinatorDashboardPage = () => {
       return;
     }
 
-    localStorage.setItem('sems_super_coord_password', passwordForm.newPass);
-    addToast('Super Coordinator Password updated successfully!', 'success');
-    setShowPasswordModal(false);
-    setPasswordForm({ current: '', newPass: '', confirm: '' });
+    const res = await superCoordinatorApi.changePassword(passwordForm.newPass);
+    if (res.ok) {
+      addToast('Super Coordinator Password updated in database successfully!', 'success');
+      setShowPasswordModal(false);
+      setPasswordForm({ current: '', newPass: '', confirm: '' });
+    } else {
+      addToast(res.message || 'Failed to update password in database', 'error');
+    }
   };
 
   useEffect(() => {
@@ -268,9 +275,13 @@ export const SuperCoordinatorDashboardPage = () => {
       date: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
     };
 
-    const updated = [newEntry, ...leaderboardEntries];
-    setLeaderboardEntries(updated);
-    await superCoordinatorApi.saveLeaderboardEntries(updated, newEntry);
+    const res = await superCoordinatorApi.saveLeaderboardEntries(leaderboardEntries, newEntry);
+    if (res && res.entry) {
+      setLeaderboardEntries([res.entry, ...leaderboardEntries]);
+    } else {
+      const freshEntries = await superCoordinatorApi.getLeaderboardEntries();
+      setLeaderboardEntries(freshEntries);
+    }
     addToast(`Result Saved! Winner: ${wName} (${winnerObj.id}) [+2 Pts] & Runner-Up: ${rName} (${runnerObj.id}) [+1 Pt]`, 'success');
 
     // Reset input fields
@@ -286,11 +297,10 @@ export const SuperCoordinatorDashboardPage = () => {
       message: 'Are you sure you want to delete this leaderboard result entry?'
     });
     if (!isConfirmed) return;
-    const updated = leaderboardEntries.filter((e) => e.id !== id);
-    setLeaderboardEntries(updated);
-    await superCoordinatorApi.saveLeaderboardEntries(updated);
     await superCoordinatorApi.deleteLeaderboardEntry(id);
-    addToast('Leaderboard entry removed', 'info');
+    const freshEntries = await superCoordinatorApi.getLeaderboardEntries();
+    setLeaderboardEntries(freshEntries);
+    addToast('Leaderboard entry removed from database', 'info');
   };
 
   // Handle Export Leaderboard Standings PDF Report
@@ -444,17 +454,38 @@ export const SuperCoordinatorDashboardPage = () => {
     addToast(`Exported ${filteredParticipants.length} filtered participant records to Excel (CSV)`, 'success');
   };
 
+  const handleUpdateSlideField = (idx, field, value) => {
+    const updated = editableHeroSlides.map((s, i) => (i === idx ? { ...s, [field]: value } : s));
+    setEditableHeroSlides(updated);
+  };
+
+  const handleSaveHeroSlides = () => {
+    saveHeroSlides(editableHeroSlides);
+    addToast('Hero 5-Slide Carousel updated! Home Page updated live in real time.', 'success');
+  };
+
+  const handleResetHeroSlides = () => {
+    if (window.confirm('Reset all 5 slides to default configuration?')) {
+      setEditableHeroSlides(DEFAULT_HERO_SLIDES);
+      saveHeroSlides(DEFAULT_HERO_SLIDES);
+      addToast('Reset Hero Slides to default!', 'info');
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans pb-16 transition-colors duration-200">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] text-slate-900 dark:text-slate-200 transition-colors font-sans pb-16">
       
+      {/* HEADER NAVBAR */}
+      <SuperCoordinatorNavbar
+        onRefresh={fetchDashboardData}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onOpenPasswordModal={() => setShowPasswordModal(true)}
+      />
 
-
-      {/* Main Content Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
         
-
-
-        {/* Tab Switcher Bar */}
+        {/* Navigation Tabs Bar */}
         <div className="flex flex-wrap items-center gap-2 p-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
           <button
             onClick={() => setActiveTab('leaderboard')}
@@ -466,6 +497,18 @@ export const SuperCoordinatorDashboardPage = () => {
           >
             <Trophy className="w-4 h-4" />
             <span>🏆 Leaderboard & Winner Entry</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('hero_slider')}
+            className={`px-4 py-2.5 rounded-xl font-extrabold text-xs transition flex items-center gap-2 cursor-pointer ${
+              activeTab === 'hero_slider'
+                ? 'bg-amber-500 text-slate-950 shadow-md'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>🎨 Home Hero Slider (5 Slides)</span>
           </button>
 
           <button
@@ -528,6 +571,196 @@ export const SuperCoordinatorDashboardPage = () => {
             <span>👤 Profile & Security</span>
           </button>
         </div>
+
+        {/* SECTION: HOME HERO SLIDER MANAGEMENT */}
+        {activeTab === 'hero_slider' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-mono font-bold uppercase">
+                    SUPER COORDINATOR CONTROL
+                  </span>
+                  <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                    Home Hero 5-Slide Carousel Management
+                  </h2>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Update Title, Description, Image URL, and Buttons for each of the 5 Home Page Hero Slides.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleResetHeroSlides}
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs transition border border-slate-200 dark:border-slate-700 cursor-pointer"
+                >
+                  Reset Defaults
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveHeroSlides}
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 transition flex items-center gap-2 cursor-pointer active:scale-95"
+                >
+                  <Sparkles className="w-4 h-4 text-slate-950" />
+                  <span>Save All 5 Slides</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 5 Slide Edit Forms */}
+            <div className="space-y-6">
+              {editableHeroSlides.map((slide, idx) => (
+                <div
+                  key={slide.id || idx}
+                  className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4"
+                >
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <span className="w-7 h-7 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 font-black text-xs flex items-center justify-center">
+                        {idx + 1}
+                      </span>
+                      <h3 className="font-black text-sm text-slate-900 dark:text-white uppercase tracking-wide">
+                        Slide {idx + 1} Settings
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <img src={slide.image} alt={slide.title} className="w-12 h-8 rounded-lg object-cover border border-slate-700" />
+                      <span className="px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-500 font-mono text-[10px] font-bold border border-amber-500/20">
+                        Slide #{idx + 1}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Title / Heading */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                        Heading Title <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={slide.title || ''}
+                        onChange={(e) => handleUpdateSlideField(idx, 'title', e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        placeholder="Slide Heading..."
+                      />
+                    </div>
+
+                    {/* Image URL & File Upload */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                        Background Image (URL or Local File Upload) <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                        <input
+                          type="text"
+                          value={slide.image || ''}
+                          onChange={(e) => handleUpdateSlideField(idx, 'image', e.target.value)}
+                          className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                          placeholder="Paste image URL or click upload..."
+                        />
+                        <label className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs cursor-pointer flex items-center justify-center gap-1.5 shrink-0 transition active:scale-95 shadow-sm">
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>Upload File</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (uploadEvt) => {
+                                  if (uploadEvt.target?.result) {
+                                    handleUpdateSlideField(idx, 'image', uploadEvt.target.result);
+                                    addToast(`Uploaded custom image for Slide ${idx + 1}!`, 'success');
+                                  }
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    <div className="space-y-1 md:col-span-2">
+                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                        Subtitle / Description Text <span className="text-rose-500">*</span>
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={slide.description || ''}
+                        onChange={(e) => handleUpdateSlideField(idx, 'description', e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        placeholder="Slide description text..."
+                      />
+                    </div>
+
+                    {/* Primary Button Text */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                        Primary Button Text
+                      </label>
+                      <input
+                        type="text"
+                        value={slide.primaryBtnText || ''}
+                        onChange={(e) => handleUpdateSlideField(idx, 'primaryBtnText', e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white"
+                        placeholder="e.g. REGISTER YOUR TEAM"
+                      />
+                    </div>
+
+                    {/* Primary Button Link */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                        Primary Button Route/Link
+                      </label>
+                      <input
+                        type="text"
+                        value={slide.primaryBtnLink || ''}
+                        onChange={(e) => handleUpdateSlideField(idx, 'primaryBtnLink', e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
+                        placeholder="e.g. /registration"
+                      />
+                    </div>
+
+                    {/* Secondary Button Text */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                        Secondary Button Text
+                      </label>
+                      <input
+                        type="text"
+                        value={slide.secondaryBtnText || ''}
+                        onChange={(e) => handleUpdateSlideField(idx, 'secondaryBtnText', e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white"
+                        placeholder="e.g. Watch Live Scoreboard"
+                      />
+                    </div>
+
+                    {/* Secondary Button Link */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                        Secondary Button Route/Link
+                      </label>
+                      <input
+                        type="text"
+                        value={slide.secondaryBtnLink || ''}
+                        onChange={(e) => handleUpdateSlideField(idx, 'secondaryBtnLink', e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
+                        placeholder="e.g. /live"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* SECTION 0: INTER-COLLEGE CHAMPIONSHIP LEADERBOARD */}
         {(activeTab === 'leaderboard' || activeTab === 'dashboard') && (

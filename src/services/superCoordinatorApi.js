@@ -1,5 +1,6 @@
 // Frontend Service for Super Coordinator (President / Event Host Portal)
 import { galleryApi } from './galleryApi';
+import { apiUrl } from './apiConfig';
 
 export const ALL_12_SPORTS = [
   { id: 'table-tennis', name: 'Table Tennis', icon: '🏓', coordinator: 'Amit Sharma', coordinatorEmail: 'tt.coord@sems.edu', category: 'Indoor', squadSize: '1 - 2 Players' },
@@ -33,7 +34,7 @@ export const superCoordinatorApi = {
   // Get Sports & Assigned Coordinators from Backend
   getCoordinators: async () => {
     try {
-      const res = await fetch('/api/super-coordinator/coordinators');
+      const res = await fetch(apiUrl('/super-coordinator/coordinators'));
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) return data;
@@ -45,7 +46,7 @@ export const superCoordinatorApi = {
   // Get Coordinator Event Creation History — strictly from real database API
   getCoordinatorEvents: async () => {
     try {
-      const res = await fetch('/api/super-coordinator/events');
+      const res = await fetch(apiUrl('/super-coordinator/events'));
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) return data;
@@ -57,7 +58,7 @@ export const superCoordinatorApi = {
   // Get Master Participants — strictly from real PostgreSQL database API
   getMasterParticipants: async () => {
     try {
-      const res = await fetch('/api/super-coordinator/participants');
+      const res = await fetch(apiUrl('/super-coordinator/participants'));
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) return data;
@@ -114,52 +115,100 @@ export const superCoordinatorApi = {
     }
   },
 
-  // Get Inter-College Leaderboard Entries (from Backend with localStorage fallback)
+  // Get Inter-College Leaderboard Entries strictly from Backend PostgreSQL DB
   getLeaderboardEntries: async () => {
     try {
-      const res = await fetch('/api/super-coordinator/leaderboard');
+      const res = await fetch(apiUrl('/super-coordinator/leaderboard'));
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) return data;
       }
-    } catch (e) {}
-
-    try {
-      const stored = localStorage.getItem('sems_super_coord_leaderboard');
-      if (stored) return JSON.parse(stored);
-    } catch (e) {}
+    } catch (e) {
+      console.error('Error fetching leaderboard entries:', e);
+    }
     return [];
   },
 
-  // Save Inter-College Leaderboard Entry (to Backend with localStorage fallback)
+  // Save Inter-College Leaderboard Entry to Backend PostgreSQL DB
   saveLeaderboardEntries: async (entries, latestEntry) => {
+    if (!latestEntry) return true;
     try {
-      localStorage.setItem('sems_super_coord_leaderboard', JSON.stringify(entries));
-      window.dispatchEvent(new Event('sems_leaderboard_updated'));
-    } catch (e) {}
-
-    if (latestEntry) {
-      try {
-        const res = await fetch('/api/super-coordinator/leaderboard', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(latestEntry)
-        });
-        if (res.ok) return true;
-      } catch (e) {}
+      const res = await fetch(apiUrl('/super-coordinator/leaderboard'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(latestEntry)
+      });
+      if (res.ok) {
+        window.dispatchEvent(new Event('sems_leaderboard_updated'));
+        return await res.json();
+      }
+    } catch (e) {
+      console.error('Error saving leaderboard entry to DB:', e);
     }
-
-    return true;
+    return null;
   },
 
-  // Delete Inter-College Leaderboard Entry
+  // Delete Inter-College Leaderboard Entry from Backend PostgreSQL DB
   deleteLeaderboardEntry: async (entryId) => {
     try {
-      const res = await fetch(`/api/super-coordinator/leaderboard/${entryId}`, {
+      const res = await fetch(apiUrl(`/super-coordinator/leaderboard/${entryId}`), {
         method: 'DELETE'
       });
-      if (res.ok) return true;
-    } catch (e) {}
-    return true;
+      if (res.ok) {
+        window.dispatchEvent(new Event('sems_leaderboard_updated'));
+        return true;
+      }
+    } catch (e) {
+      console.error('Error deleting leaderboard entry:', e);
+    }
+    return false;
+  },
+
+  // Get Hero Slides from Backend PostgreSQL DB
+  getHeroSlides: async () => {
+    try {
+      const res = await fetch(apiUrl('/super-coordinator/hero-slides'));
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) return data;
+      }
+    } catch (e) {
+      console.error('Error fetching hero slides from DB:', e);
+    }
+    return null;
+  },
+
+  // Save Hero Slides to Backend PostgreSQL DB
+  saveHeroSlides: async (slides) => {
+    try {
+      const res = await fetch(apiUrl('/super-coordinator/hero-slides'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(slides)
+      });
+      if (res.ok) {
+        window.dispatchEvent(new Event('sems_slides_updated'));
+        return await res.json();
+      }
+    } catch (e) {
+      console.error('Error saving hero slides to DB:', e);
+    }
+    return null;
+  },
+
+  // Update Super Coordinator Password in Backend PostgreSQL DB
+  changePassword: async (newPass) => {
+    try {
+      const res = await fetch(apiUrl('/super-coordinator/change-password'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPass })
+      });
+      const data = await res.json();
+      return { ok: res.ok, message: data.message || 'Password update completed' };
+    } catch (e) {
+      console.error('Error updating password in DB:', e);
+      return { ok: false, message: 'Server connection failed while updating password' };
+    }
   }
 };

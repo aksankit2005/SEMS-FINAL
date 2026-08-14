@@ -12,9 +12,6 @@ export const KabaddiLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
   const sportConfig = getSportConfig('kabaddi');
   const assignedSport = 'kabaddi';
 
-  // Strictly 2 Kabaddi Mat Arenas
-  const venueCards = ['Kabaddi Mat Arena 1', 'Kabaddi Mat Arena 2'];
-
   const [liveAssignments, setLiveAssignments] = useState(() => {
     const cacheKey = `sems_active_live_matches_${assignedSport}`;
     const saved = localStorage.getItem(cacheKey) || localStorage.getItem('sems_active_live_matches');
@@ -28,6 +25,13 @@ export const KabaddiLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
     }
     return {};
   });
+
+  // Always show 2 venue cards (defaulting to Kabaddi Mat Arena 1 & 2 or active match venues)
+  const defaultVenues = ['Kabaddi Mat Arena 1', 'Kabaddi Mat Arena 2'];
+  const activeVenues = Object.keys(liveAssignments).filter((k) => liveAssignments[k]);
+  const venueCards = activeVenues.length > 0
+    ? Array.from(new Set([...activeVenues, ...defaultVenues])).slice(0, 2)
+    : defaultVenues;
 
   const [activeControllerVenue, setActiveControllerVenue] = useState(null);
   const [streamInputMap, setStreamInputMap] = useState({});
@@ -52,7 +56,7 @@ export const KabaddiLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
           await coordinatorApi.updateMatchScoring(matchItem.id, {
             ...matchItem,
             status: 'running',
-            venue: matchItem.tableNumber || 'Kabaddi Mat Arena 1',
+            venue: matchItem.tableNumber || matchItem.venue || 'Venue 1',
           });
         } catch (err) {}
       }
@@ -65,6 +69,7 @@ export const KabaddiLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
   };
 
   const executePromoteGoLive = async (matchItem, targetVenue) => {
+    const venueName = matchItem.tableNumber || matchItem.venue || targetVenue || 'Venue 1';
     const zeroKabaddiStats = { raid: 0, tackle: 0, bonus: 0, superTackle: 0, superRaid: 0 };
     const liveObj = {
       ...matchItem,
@@ -72,14 +77,14 @@ export const KabaddiLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
       sportId: 'kabaddi',
       sportName: 'Kabaddi',
       format: 'Pro Style (7 Players)',
-      tableNumber: targetVenue,
-      venue: targetVenue,
+      tableNumber: venueName,
+      venue: venueName,
       status: 'running',
-      score1: 0,
-      score2: 0,
-      kabaddiStats1: zeroKabaddiStats,
-      kabaddiStats2: zeroKabaddiStats,
-      half: 1,
+      score1: matchItem.score1 || 0,
+      score2: matchItem.score2 || 0,
+      kabaddiStats1: matchItem.kabaddiStats1 || zeroKabaddiStats,
+      kabaddiStats2: matchItem.kabaddiStats2 || zeroKabaddiStats,
+      half: matchItem.half || 1,
       isLiveStreaming: true,
       streamStartedAt: new Date().toISOString(),
     };
@@ -87,13 +92,14 @@ export const KabaddiLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
     await coordinatorApi.updateMatchScoring(liveObj.id, {
       ...liveObj,
       status: 'running',
-      venue: targetVenue,
+      venue: venueName,
+      tableNumber: venueName,
       isLiveStreaming: true,
       streamStartedAt: new Date().toISOString(),
     });
 
-    setLiveAssignments((prev) => ({ ...prev, [targetVenue]: liveObj }));
-    addToast(`🤼 Kabaddi Match "${liveObj.team1} vs ${liveObj.team2}" is LIVE on ${targetVenue}!`, 'success');
+    setLiveAssignments((prev) => ({ ...prev, [venueName]: liveObj }));
+    addToast(`🤼 Kabaddi Match "${liveObj.team1} vs ${liveObj.team2}" is LIVE on ${venueName}!`, 'success');
   };
 
   const handleSaveStreamUrl = async (venue) => {
@@ -222,7 +228,7 @@ export const KabaddiLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
 
                 /* Empty State Card */
                 <div className="my-auto text-center space-y-3 py-6">
-                  <div className="w-14 h-14 rounded-2xl bg-orange-500/10 text-orange-500 border border-orange-500/20 flex items-center justify-center mx-auto text-2xl shadow-inner">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center justify-center mx-auto text-2xl shadow-inner">
                     🤼
                   </div>
 
@@ -242,7 +248,7 @@ export const KabaddiLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
 
                   {/* Top Bar */}
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400 font-mono">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-mono">
                       KABADDI LIVE CENTER
                     </span>
 
@@ -253,13 +259,13 @@ export const KabaddiLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
 
                   {/* Teams & Score Display */}
                   <div className="text-center space-y-1">
-                    <div className="text-xs font-mono font-bold text-orange-500 uppercase">
+                    <div className="text-xs font-mono font-bold text-emerald-500 uppercase">
                       Pro Kabaddi Mat Rules
                     </div>
                     <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                      {activeLive.team1} <span className="text-orange-500 font-mono font-black">{activeLive.score1 || 0}</span>
+                      {activeLive.team1} <span className="text-emerald-500 font-mono font-black">{activeLive.score1 || 0}</span>
                       <span className="text-slate-400 font-normal text-sm px-2">VS</span>
-                      <span className="text-orange-500 font-mono font-black">{activeLive.score2 || 0}</span> {activeLive.team2}
+                      <span className="text-emerald-500 font-mono font-black">{activeLive.score2 || 0}</span> {activeLive.team2}
                     </h2>
                     <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
                       #{activeLive.id} · {activeLive.eventTitle || 'Kabaddi Tournament'}
@@ -285,12 +291,12 @@ export const KabaddiLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
                         value={streamInputMap[venueName] !== undefined ? streamInputMap[venueName] : (activeLive.liveStreamUrl || '')}
                         onChange={(e) => setStreamInputMap({ ...streamInputMap, [venueName]: e.target.value })}
                         placeholder="https://www.youtube.com/watch?v=VIDEO_ID"
-                        className="flex-1 px-3 py-1.5 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-orange-500 font-mono"
+                        className="flex-1 px-3 py-1.5 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 font-mono"
                       />
 
                       <button
                         onClick={() => handleSaveStreamUrl(venueName)}
-                        className="px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs shadow-sm transition flex items-center gap-1 shrink-0 cursor-pointer"
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition flex items-center gap-1 shrink-0 cursor-pointer"
                       >
                         <Save className="w-3.5 h-3.5" /> Save
                       </button>
@@ -303,7 +309,7 @@ export const KabaddiLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
                             onClick={() => setPreviewVideoId(activeLive.youtubeVideoId)}
                             className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
                           >
-                            <Eye className="w-3 h-3 text-orange-400" /> Preview
+                            <Eye className="w-3 h-3 text-emerald-400" /> Preview
                           </button>
                         )}
                       </div>
@@ -331,7 +337,7 @@ export const KabaddiLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
                   {/* Open Match Score Controller Button */}
                   <button
                     onClick={() => setActiveControllerVenue(venueName)}
-                    className="w-full py-3 rounded-2xl bg-orange-600 hover:bg-orange-500 text-white font-black text-xs shadow-xl shadow-orange-600/30 transition flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-xl shadow-emerald-600/30 transition flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <span>🎮 Open Kabaddi Score & Raid Controller</span>
                   </button>
@@ -367,7 +373,7 @@ export const KabaddiLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
           <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-wider">
             Promote Scheduled Match to Live
           </h3>
-          <span className="text-xs font-mono text-slate-400">Target Arenas: Kabaddi Mat Arena 1 or Arena 2</span>
+          <span className="text-xs font-mono text-slate-400">Target Venues: As configured in fixture schedule</span>
         </div>
 
         {scheduledKabaddiMatches.length === 0 ? (
@@ -377,9 +383,7 @@ export const KabaddiLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {scheduledKabaddiMatches.map((m) => {
-              const targetVenue = m.tableNumber && m.tableNumber.includes('Mat')
-                ? m.tableNumber
-                : 'Kabaddi Mat Arena 1';
+              const targetVenue = m.tableNumber || m.venue || 'Venue 1';
 
               return (
                 <div

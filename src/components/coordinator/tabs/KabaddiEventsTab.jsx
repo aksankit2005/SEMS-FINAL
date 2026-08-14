@@ -285,13 +285,13 @@ export const KabaddiEventsTab = ({ user }) => {
         </div>
 
         <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-[#1E293B] p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-orange-600 dark:text-orange-400">Registered Teams</span>
-          <p className="text-2xl font-black text-orange-600 dark:text-orange-400 tracking-tight">{totalRegCount}</p>
+          <span className="text-[10px] font-mono font-bold uppercase text-emerald-600 dark:text-emerald-400">Registered Teams</span>
+          <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">{totalRegCount}</p>
         </div>
 
         <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-[#1E293B] p-4 rounded-2xl col-span-2 sm:col-span-1 space-y-1 shadow-sm">
           <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Team Revenue</span>
-          <p className="text-xl font-black text-orange-600 dark:text-orange-400 truncate">₹{totalRevenue.toLocaleString()}</p>
+          <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 truncate">₹{totalRevenue.toLocaleString()}</p>
         </div>
       </div>
 
@@ -299,7 +299,7 @@ export const KabaddiEventsTab = ({ user }) => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-[#0F172A] p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-[#1E293B] shadow-sm">
         <div>
           <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 font-bold text-sm">🤼</span>
+            <span className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-sm">🤼</span>
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
               Kabaddi Event Management
             </h2>
@@ -314,7 +314,7 @@ export const KabaddiEventsTab = ({ user }) => {
             handleResetForm();
             setShowCreateModal(true);
           }}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs shadow-lg shadow-orange-600/20 transition-all cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/20 transition-all cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Publish New Kabaddi Event
         </button>
@@ -352,13 +352,13 @@ export const KabaddiEventsTab = ({ user }) => {
                         ? 'bg-emerald-500 text-white' 
                         : evt.status === 'Closed' 
                         ? 'bg-rose-500 text-white' 
-                        : 'bg-orange-500 text-white'
+                        : 'bg-emerald-500 text-white'
                     }`}>
                       {evt.status || 'Published'}
                     </span>
                   </div>
                   <div className="absolute bottom-3 left-3 right-3 text-white">
-                    <span className="px-2 py-0.5 rounded bg-black/60 backdrop-blur-md text-[10px] font-bold uppercase tracking-wider text-orange-300">
+                    <span className="px-2 py-0.5 rounded bg-black/60 backdrop-blur-md text-[10px] font-bold uppercase tracking-wider text-emerald-300">
                       Kabaddi • {evt.category || 'Open'}
                     </span>
                     <h3 className="text-base font-bold truncate mt-1">{evt.title}</h3>
@@ -370,7 +370,7 @@ export const KabaddiEventsTab = ({ user }) => {
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-100 dark:border-[#1E293B]">
                       <span className="text-[10px] text-slate-400 font-bold uppercase block">Team Fee</span>
-                      <span className="font-bold text-orange-600 dark:text-orange-400">
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400">
                         ₹{evt.entryFee || evt.teamFee || 1500}
                       </span>
                     </div>
@@ -412,7 +412,7 @@ export const KabaddiEventsTab = ({ user }) => {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => handleOpenEdit(evt)}
-                    className="p-2 rounded-xl bg-slate-200 dark:bg-[#1E293B] hover:bg-orange-500 hover:text-white text-slate-600 dark:text-slate-300 transition"
+                    className="p-2 rounded-xl bg-slate-200 dark:bg-[#1E293B] hover:bg-emerald-500 hover:text-white text-slate-600 dark:text-slate-300 transition"
                     title="Edit Event"
                   >
                     <Edit className="w-4 h-4" />
@@ -447,7 +447,7 @@ export const KabaddiEventsTab = ({ user }) => {
             
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-[#1E293B]">
               <div className="flex items-center gap-2">
-                <span className="p-2 rounded-xl bg-orange-500/10 text-orange-500 font-bold">🤼</span>
+                <span className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 font-bold">🤼</span>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   {editingEvent ? 'Edit Kabaddi Event Details' : 'Publish New Kabaddi Event'}
                 </h3>
@@ -474,7 +474,7 @@ export const KabaddiEventsTab = ({ user }) => {
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   placeholder="e.g. APEX Inter-College Kabaddi Championship 2026"
-                  className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-[#1E293B] text-xs focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                  className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-[#1E293B] text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 />
               </div>
 
@@ -487,7 +487,7 @@ export const KabaddiEventsTab = ({ user }) => {
                     <img src={formData.coverImage} alt="Preview" className="w-full h-full object-cover" />
                   </div>
                   <label className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-[#1E293B] hover:bg-slate-200 text-xs font-bold cursor-pointer transition">
-                    <Upload className="w-4 h-4 text-orange-500" /> Choose & Crop Photo
+                    <Upload className="w-4 h-4 text-emerald-500" /> Choose & Crop Photo
                     <input type="file" accept="image/*" className="hidden" onChange={handleSelectRawImageFile} />
                   </label>
                 </div>
@@ -501,7 +501,7 @@ export const KabaddiEventsTab = ({ user }) => {
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-[#1E293B] text-xs focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-[#1E293B] text-xs focus:ring-2 focus:ring-emerald-500"
                   >
                     <option value="Open">Open Category</option>
                     <option value="Boys">Boys Tournament</option>
@@ -511,16 +511,15 @@ export const KabaddiEventsTab = ({ user }) => {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                    Assigned Mat / Arena
+                    Venue
                   </label>
-                  <select
+                  <input
+                    type="text"
                     value={formData.venue}
                     onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
-                    className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-[#1E293B] text-xs focus:ring-2 focus:ring-orange-500"
-                  >
-                    <option value="Kabaddi Mat Arena 1">Kabaddi Mat Arena 1</option>
-                    <option value="Kabaddi Mat Arena 2">Kabaddi Mat Arena 2</option>
-                  </select>
+                    placeholder="e.g. Kabaddi Mat Arena 1"
+                    className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-[#1E293B] text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  />
                 </div>
               </div>
 
@@ -533,7 +532,7 @@ export const KabaddiEventsTab = ({ user }) => {
                     type="number"
                     value={formData.teamFee}
                     onChange={(e) => setFormData({ ...formData, teamFee: Number(e.target.value) })}
-                    className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-[#1E293B] text-xs font-bold text-orange-500 focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-[#1E293B] text-xs font-bold text-emerald-500 focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
 
@@ -545,7 +544,7 @@ export const KabaddiEventsTab = ({ user }) => {
                     type="number"
                     value={formData.minPlayers}
                     onChange={(e) => setFormData({ ...formData, minPlayers: Number(e.target.value) })}
-                    className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-[#1E293B] text-xs focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-[#1E293B] text-xs focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
 
@@ -557,7 +556,7 @@ export const KabaddiEventsTab = ({ user }) => {
                     type="number"
                     value={formData.maxPlayers}
                     onChange={(e) => setFormData({ ...formData, maxPlayers: Number(e.target.value) })}
-                    className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-[#1E293B] text-xs focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-[#1E293B] text-xs focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
               </div>
@@ -626,7 +625,7 @@ export const KabaddiEventsTab = ({ user }) => {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold shadow-lg shadow-orange-600/20"
+                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20"
                 >
                   {editingEvent ? 'Save Changes' : 'Publish Kabaddi Event'}
                 </button>
@@ -674,7 +673,7 @@ export const KabaddiEventsTab = ({ user }) => {
                     .map((team, idx) => (
                       <div key={idx} className="p-3 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-[#1E293B] space-y-1.5 text-xs">
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-orange-500">{team.teamName || `Team #${idx + 1}`}</span>
+                          <span className="font-bold text-emerald-500">{team.teamName || `Team #${idx + 1}`}</span>
                           <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-bold text-[10px]">
                             {team.status || 'Verified'}
                           </span>
@@ -689,7 +688,7 @@ export const KabaddiEventsTab = ({ user }) => {
 
             <button
               onClick={() => exportToCSV(participants, `${selectedEventForParticipants.title}_Roster`)}
-              className="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-orange-600/20"
+              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
             >
               <Download className="w-4 h-4" /> Download Kabaddi Squads CSV
             </button>

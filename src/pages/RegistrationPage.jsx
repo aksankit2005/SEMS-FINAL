@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
-import { Trophy, ArrowLeft, User, Users, Info, ShieldCheck, Sparkles, Calendar, MapPin, Clock } from 'lucide-react';
+import { Trophy, ArrowLeft, User, Users, Info, ShieldCheck, Sparkles, Calendar, MapPin, Clock, Loader2, Lock } from 'lucide-react';
 import { SPORTS_DATA } from '../data/sportsData';
 import { SPORTS_CONFIG, SPORT_PLAYER_BOUNDS, resolveSportKey } from '../data/sportsConfig';
 import { useAuth } from '../context/AuthContext';
@@ -202,6 +202,18 @@ export const RegistrationPage = () => {
       }
     };
   }, []);
+
+  // Prevent user from closing tab or refreshing while payment & DB registration is processing
+  useEffect(() => {
+    if (!isProcessingPayment) return;
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = 'Payment verification in progress. Please do not leave or refresh.';
+      return e.returnValue;
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isProcessingPayment]);
 
 
 
@@ -482,6 +494,7 @@ export const RegistrationPage = () => {
             key: razorpayKey,
             amount: activeSport.entryFee * 100, // Amount in paise
             currency: 'INR',
+            payment_capture: 1, // Auto-capture payment immediately upon authorization
             name: import.meta.env.VITE_RAZORPAY_MERCHANT_NAME || 'SEMS APEX Championship 2026',
             description: `Entry Registration Fee for ${activeSport.name}`,
             handler: function (response) {
@@ -501,13 +514,22 @@ export const RegistrationPage = () => {
             },
             theme: {
               color: '#2563eb'
+            },
+            modal: {
+              ondismiss: function () {
+                // If user closes/cancels Razorpay popup without paying, unlock background screen
+                setIsProcessingPayment(false);
+              }
             }
           };
 
+          // Lock screen immediately when Razorpay checkout opens
+          setIsProcessingPayment(true);
           const rzp = new window.Razorpay(options);
           rzp.open();
           return;
         } catch (err) {
+          setIsProcessingPayment(false);
           console.warn('Razorpay SDK failed, opening checkout modal', err);
         }
       }
@@ -1048,6 +1070,32 @@ export const RegistrationPage = () => {
           sportName={typeof rulesModalSport === 'object' ? rulesModalSport?.sportName : (rulesModalSport || activeSport?.name || 'Badminton')}
           rules={typeof rulesModalSport === 'object' ? rulesModalSport?.rules : (activeSport?.rules || [])}
         />
+
+        {/* FULL SCREEN PAYMENT & DATABASE PROCESSING LOCK OVERLAY */}
+        {isProcessingPayment && (
+          <div className="fixed inset-0 z-[99999] bg-slate-950/95 backdrop-blur-xl flex flex-col items-center justify-center p-6 text-center text-white select-none animate-in fade-in duration-300">
+            <div className="relative mb-8">
+              <div className="w-24 h-24 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+              <ShieldCheck className="w-10 h-10 text-blue-500 absolute inset-0 m-auto" />
+            </div>
+            
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold uppercase tracking-wider mb-4">
+              <Lock className="w-3.5 h-3.5" /> Secure Transaction Lock
+            </div>
+
+            <h2 className="text-2xl sm:text-3xl font-black mb-3 tracking-tight text-white">
+              Verifying Payment & Updating Database...
+            </h2>
+            <p className="text-slate-400 max-w-md text-sm leading-relaxed mb-6">
+              Please wait while we record your payment, reserve your event slot, and generate your official pass code.
+            </p>
+
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-xs font-semibold text-amber-300 shadow-lg">
+              <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+              Do not press Back, Refresh, or Close this window.
+            </div>
+          </div>
+        )}
 
       </div>
     </div>
