@@ -144,7 +144,7 @@ export const getMasterParticipants = async (req, res) => {
       ORDER BY created_at DESC
     `);
 
-    if (dbRes && dbRes.rows) {
+    if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
       const list = dbRes.rows.map((row) => ({
         id: row.id,
         time: row.time || '10:00 AM',
@@ -166,6 +166,55 @@ export const getMasterParticipants = async (req, res) => {
 
       return res.json(list);
     }
+
+    // Secondary DB query for Prisma registration_members table
+    try {
+      const membersDb = await queryDb(`
+        SELECT 
+          m.id,
+          TO_CHAR(m.created_at, 'HH:MI AM') AS time,
+          s.name AS "sportName",
+          m.full_name AS name,
+          m.roll_no AS "rollNo",
+          m.email,
+          m.mobile,
+          m.gender,
+          m.course AS branch,
+          m.year_semester AS year,
+          c.code AS college,
+          r.status,
+          r.amount AS "feePaid"
+        FROM registration_members m
+        JOIN registrations r ON m.registration_id = r.id
+        LEFT JOIN sports s ON r.sport_id = s.id
+        LEFT JOIN teams t ON t.captain_registration_id = r.id
+        LEFT JOIN colleges c ON t.college_id = c.id
+        ORDER BY m.created_at DESC
+      `);
+
+      if (membersDb && membersDb.rows && membersDb.rows.length > 0) {
+        const list = membersDb.rows.map((row) => ({
+          id: row.id,
+          time: row.time || '10:00 AM',
+          sportId: (row.sportName || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
+          sportName: row.sportName || 'Sport',
+          eventTitle: `${row.sportName || 'Sport'} Event`,
+          teamName: row.name,
+          college: row.college || 'MPEC',
+          name: row.name,
+          mobile: row.mobile || '',
+          email: row.email || '',
+          gender: row.gender || 'Boys',
+          rollNo: row.rollNo || 'N/A',
+          branch: row.branch || 'CSE',
+          year: row.year || '3rd Year',
+          status: row.status || 'VERIFIED',
+          feePaid: Number(row.feePaid || 0)
+        }));
+
+        return res.json(list);
+      }
+    } catch (e) {}
   } catch (err) {
     console.error('Error fetching master participants from DB:', err.message);
   }
