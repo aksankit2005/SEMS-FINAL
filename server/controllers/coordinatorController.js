@@ -275,6 +275,20 @@ export const deleteMatch = async (req, res) => {
   return res.json({ success: true, message: 'Match deleted successfully' });
 };
 
+export const deleteAllMatches = async (req, res) => {
+  const sportId = req.user.assignedSport.toLowerCase();
+
+  inMemoryCoordinatorMatches[sportId] = [];
+
+  try {
+    await queryDb('DELETE FROM live_matches WHERE LOWER(sport_id) = $1', [sportId]);
+  } catch (e) {
+    console.warn('Backend deleteAllMatches query error:', e);
+  }
+
+  return res.json({ success: true, message: `All matches cleared for ${sportId}` });
+};
+
 export const updateMatchScore = (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
   const { id } = req.params;

@@ -403,6 +403,21 @@ export const coordinatorApi = {
     const matches = await this.getMatches();
     const updated = matches.filter((m) => m.id !== id);
     this.saveMatches(updated);
+
+    // Remove from active live assignments in localStorage
+    const savedActiveStr = localStorage.getItem('sems_active_live_matches');
+    if (savedActiveStr) {
+      try {
+        const activeMap = JSON.parse(savedActiveStr);
+        if (activeMap && activeMap[id]) {
+          delete activeMap[id];
+          localStorage.setItem('sems_active_live_matches', JSON.stringify(activeMap));
+        }
+      } catch (e) {}
+    }
+
+    window.dispatchEvent(new Event('storage'));
+    window.dispatchEvent(new CustomEvent('sems_matches_updated', { detail: { matchId: id } }));
   },
 
   // Auto-generate fixtures & persist to localStorage
@@ -445,9 +460,46 @@ export const coordinatorApi = {
     return updated;
   },
 
-  // Clear all schedules in localStorage
+  // Clear all schedules & live matches in localStorage and backend server
   async clearAllSchedules() {
+    try {
+      await api.delete('/coordinator/matches');
+    } catch (e) {
+      console.warn('Backend clearAllSchedules fallback:', e);
+    }
+
     this.saveMatches([]);
+
+    // Clear active live assignments from localStorage
+    const user = this.getCurrentUser();
+    const assignedSport = (user?.assignedSport || '').toLowerCase();
+
+    if (assignedSport) {
+      localStorage.removeItem(`sems_active_live_matches_${assignedSport}`);
+    }
+
+    const savedActiveStr = localStorage.getItem('sems_active_live_matches');
+    if (savedActiveStr) {
+      try {
+        const activeMap = JSON.parse(savedActiveStr);
+        if (activeMap && typeof activeMap === 'object') {
+          const cleaned = {};
+          Object.keys(activeMap).forEach((id) => {
+            const m = activeMap[id];
+            const mSport = (m?.sportId || m?.sportName || '').toLowerCase();
+            if (mSport && assignedSport && mSport.includes(assignedSport)) {
+              // Delete match for assigned sport
+            } else {
+              cleaned[id] = m;
+            }
+          });
+          localStorage.setItem('sems_active_live_matches', JSON.stringify(cleaned));
+        }
+      } catch (e) {}
+    }
+
+    window.dispatchEvent(new Event('storage'));
+    window.dispatchEvent(new Event('sems_matches_updated'));
   },
 
   // Update live match score & persist active live matches to Backend API & localStorage
