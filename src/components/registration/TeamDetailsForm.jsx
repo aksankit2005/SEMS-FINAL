@@ -109,8 +109,29 @@ export const TeamDetailsForm = ({
     }
   };
 
+  const currentRoster = formData.roster || [];
+  let effectiveRoster = [...currentRoster];
+  if (effectiveRoster.length < minPlayers) {
+    const needed = minPlayers - effectiveRoster.length;
+    for (let i = 0; i < needed; i++) {
+      const idx = effectiveRoster.length;
+      effectiveRoster.push({
+        name: idx === 0 ? (formData.captainName || '') : '',
+        rollNo: '',
+        branch: '',
+        semester: '',
+        phone: idx === 0 ? (formData.captainPhone || '') : '',
+        email: idx === 0 ? (formData.captainEmail || '') : '',
+        fatherName: '',
+        dob: '',
+        college: formData.collegeName || '',
+        gender: formData.gender || ''
+      });
+    }
+  }
+
   const handlePlayerChange = (index, field, value) => {
-    const updatedRoster = [...formData.roster];
+    const updatedRoster = [...effectiveRoster];
     updatedRoster[index] = {
       ...updatedRoster[index],
       [field]: value
@@ -168,7 +189,7 @@ export const TeamDetailsForm = ({
     setErrors({});
   };
 
-  const currentRosterSize = formData.roster ? formData.roster.length : 0;
+  const currentRosterSize = effectiveRoster.length;
   const availableCourses = collegeCourses[formData.collegeName] || [];
 
   return (
@@ -281,8 +302,7 @@ export const TeamDetailsForm = ({
         )}
 
         <div className="space-y-5">
-          {formData.roster &&
-            formData.roster.map((player, idx) => {
+          {effectiveRoster.map((player, idx) => {
               const playerErrors = {};
               const fields = ['name', 'rollNo', 'aadhaar', 'branch', 'semester', 'phone', 'email'];
               fields.forEach((field) => {

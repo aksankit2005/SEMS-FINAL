@@ -112,10 +112,30 @@ export const PlayerDetailsForm = ({
     }
   };
 
-  const handlePlayerChange = (index, field, value) => {
-    const updatedRoster = [...(formData.roster || [])];
-    if (!updatedRoster[index]) return;
+  const currentRoster = formData.roster || [];
+  const requiredSize = (sport.id === 'athletics' && isRelay) ? 4 : 1;
+  let effectiveRoster = [...currentRoster];
+  if (effectiveRoster.length < requiredSize) {
+    const needed = requiredSize - effectiveRoster.length;
+    for (let i = 0; i < needed; i++) {
+      const idx = effectiveRoster.length;
+      effectiveRoster.push({
+        name: idx === 0 ? (formData.captainName || '') : '',
+        rollNo: '',
+        branch: '',
+        semester: '',
+        phone: idx === 0 ? (formData.captainPhone || '') : '',
+        email: idx === 0 ? (formData.captainEmail || '') : '',
+        fatherName: '',
+        dob: '',
+        college: formData.collegeName || '',
+        gender: formData.gender || ''
+      });
+    }
+  }
 
+  const handlePlayerChange = (index, field, value) => {
+    const updatedRoster = [...effectiveRoster];
     updatedRoster[index] = {
       ...updatedRoster[index],
       [field]: value
@@ -166,41 +186,28 @@ export const PlayerDetailsForm = ({
           <label className="block text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
             Select Athletics Sub-Event (Select Exactly 1 Game) <span className="text-rose-500">*</span>
           </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {OFFICIAL_ATHLETICS_EVENTS.map((evt) => {
-              const isSelected = selectedEvent === evt;
-              const isRelayEvt = evt === '4*100m relay Race';
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-56 overflow-y-auto pr-1">
+            {OFFICIAL_ATHLETICS_EVENTS.map((eventItem) => {
+              const isSelected = selectedEvent === eventItem.name;
               return (
                 <button
-                  key={evt}
+                  key={eventItem.id}
                   type="button"
-                  onClick={() => handleSingleEventSelect(evt)}
-                  className={`p-3.5 rounded-2xl border flex items-center justify-between font-bold text-xs transition duration-200 text-left cursor-pointer ${
+                  onClick={() => handleSingleEventSelect(eventItem.name)}
+                  className={`p-3 rounded-xl border text-left flex items-center justify-between transition ${
                     isSelected
-                      ? 'border-blue-600 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-black shadow-md ring-2 ring-blue-500/20'
-                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
+                      ? 'border-blue-600 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold'
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-300'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <div className={`w-4 h-4 rounded-full flex items-center justify-center border ${
-                      isSelected 
-                        ? 'bg-blue-600 border-blue-600 text-white' 
-                        : 'border-slate-300 dark:border-slate-700'
-                    }`}>
-                      {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
-                    </div>
-                    <span>{evt}</span>
-                  </div>
-
-                  <span className="text-[10px] font-mono font-normal px-2 py-0.5 rounded bg-slate-200/60 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                    {isRelayEvt ? '4 Players' : 'Individual'}
-                  </span>
+                  <span className="text-xs font-bold">{eventItem.name}</span>
+                  {isSelected && <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />}
                 </button>
               );
             })}
           </div>
           {errors.selectedEvents && (
-            <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.selectedEvents}</p>
+            <p className="text-[11px] text-rose-500 mt-1 font-semibold">{errors.selectedEvents}</p>
           )}
         </div>
       )}
@@ -226,7 +233,7 @@ export const PlayerDetailsForm = ({
             ? '2. 4*100m Relay Team Members (4 Players)'
             : '2. Participant Profile Details'}
         </h4>
-        {(formData.roster || []).map((player, idx) => (
+        {effectiveRoster.map((player, idx) => (
           <PlayerDetailsCard
             key={idx}
             index={idx}
