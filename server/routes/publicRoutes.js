@@ -14,6 +14,7 @@ router.get('/live-matches', async (req, res) => {
               youtube_video_id AS "youtubeVideoId",
               stream_url AS "streamUrl",
               is_live_streaming AS "isLiveStreaming",
+              details,
               sets_history AS "setsHistory",
               current_set AS "currentSet",
               sets_won1 AS "setsWon1",
@@ -36,7 +37,12 @@ router.get('/live-matches', async (req, res) => {
 
     if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
       const formatted = dbRes.rows.map((m) => {
-        let parsedSetsHistory = m.setsHistory || null;
+        let detailsObj = m.details;
+        if (typeof detailsObj === 'string') {
+          try { detailsObj = JSON.parse(detailsObj); } catch (e) {}
+        }
+
+        let parsedSetsHistory = m.setsHistory || (detailsObj && detailsObj.setsHistory) || null;
         if (typeof parsedSetsHistory === 'string' && parsedSetsHistory.trim()) {
           try {
             parsedSetsHistory = JSON.parse(parsedSetsHistory);
@@ -51,9 +57,9 @@ router.get('/live-matches', async (req, res) => {
           streamUrl: m.streamUrl || m.stream_url || null,
           isLiveStreaming: Boolean(m.isLiveStreaming || m.youtubeVideoId || m.streamUrl),
           setsHistory: Array.isArray(parsedSetsHistory) ? parsedSetsHistory : null,
-          currentSet: m.currentSet || 1,
-          setsWon1: m.setsWon1 || 0,
-          setsWon2: m.setsWon2 || 0,
+          currentSet: m.currentSet || (detailsObj && detailsObj.currentSet) || 1,
+          setsWon1: m.setsWon1 || (detailsObj && detailsObj.setsWon1) || 0,
+          setsWon2: m.setsWon2 || (detailsObj && detailsObj.setsWon2) || 0,
           updatedAt: m.updatedAt || new Date().toISOString()
         };
       });

@@ -166,19 +166,45 @@ export const createMatch = async (req, res) => {
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS stream_url TEXT;
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS is_live_streaming BOOLEAN DEFAULT FALSE;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS details JSONB;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_history TEXT;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS current_set INT DEFAULT 1;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won1 INT DEFAULT 0;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won2 INT DEFAULT 0;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
     `);
   } catch (e) {}
 
+  const defaultSetsHistory = newMatch.setsHistory || [
+    { set: 1, score1: 0, score2: 0, isLocked: false, winner: null },
+    { set: 2, score1: 0, score2: 0, isLocked: false, winner: null },
+    { set: 3, score1: 0, score2: 0, isLocked: false, winner: null },
+    { set: 4, score1: 0, score2: 0, isLocked: false, winner: null },
+    { set: 5, score1: 0, score2: 0, isLocked: false, winner: null }
+  ];
+
+  const detailsObj = {
+    setsHistory: defaultSetsHistory,
+    currentSet: newMatch.currentSet || 1,
+    setsWon1: newMatch.setsWon1 || 0,
+    setsWon2: newMatch.setsWon2 || 0
+  };
+
   await queryDb(
-    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, details, sets_history, current_set, sets_won1, sets_won2)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
      ON CONFLICT (id) DO UPDATE SET
        format = EXCLUDED.format, status = EXCLUDED.status, team1 = EXCLUDED.team1, team2 = EXCLUDED.team2,
        match_title = EXCLUDED.match_title, table_number = EXCLUDED.table_number, time = EXCLUDED.time,
        score1 = EXCLUDED.score1, score2 = EXCLUDED.score2, winner = EXCLUDED.winner,
        youtube_video_id = COALESCE(EXCLUDED.youtube_video_id, live_matches.youtube_video_id),
        stream_url = COALESCE(EXCLUDED.stream_url, live_matches.stream_url),
-       is_live_streaming = COALESCE(EXCLUDED.is_live_streaming, live_matches.is_live_streaming)`,
+       is_live_streaming = COALESCE(EXCLUDED.is_live_streaming, live_matches.is_live_streaming),
+       details = EXCLUDED.details,
+       sets_history = EXCLUDED.sets_history,
+       current_set = EXCLUDED.current_set,
+       sets_won1 = EXCLUDED.sets_won1,
+       sets_won2 = EXCLUDED.sets_won2`,
     [
       newMatch.id,
       newMatch.sportId,
@@ -194,7 +220,12 @@ export const createMatch = async (req, res) => {
       newMatch.winner,
       newMatch.youtubeVideoId || newMatch.youtube_video_id || null,
       newMatch.streamUrl || newMatch.stream_url || null,
-      Boolean(newMatch.isLiveStreaming || newMatch.youtubeVideoId || newMatch.streamUrl)
+      Boolean(newMatch.isLiveStreaming || newMatch.youtubeVideoId || newMatch.streamUrl),
+      JSON.stringify(detailsObj),
+      JSON.stringify(defaultSetsHistory),
+      newMatch.currentSet || 1,
+      newMatch.setsWon1 || 0,
+      newMatch.setsWon2 || 0
     ]
   );
 
@@ -237,6 +268,7 @@ export const updateMatch = async (req, res) => {
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS stream_url TEXT;
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS is_live_streaming BOOLEAN DEFAULT FALSE;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS details JSONB;
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_history TEXT;
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS current_set INT DEFAULT 1;
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won1 INT DEFAULT 0;
@@ -245,11 +277,28 @@ export const updateMatch = async (req, res) => {
     `);
   } catch (e) {}
 
-  const setsHistoryStr = req.body.setsHistory ? (typeof req.body.setsHistory === 'string' ? req.body.setsHistory : JSON.stringify(req.body.setsHistory)) : (updatedMatch.setsHistory ? JSON.stringify(updatedMatch.setsHistory) : null);
+  const rawSetsHistory = req.body.setsHistory || updatedMatch.setsHistory;
+  const setsHistoryArr = Array.isArray(rawSetsHistory) 
+    ? rawSetsHistory 
+    : (typeof rawSetsHistory === 'string' ? JSON.parse(rawSetsHistory) : null);
+
+  const setsHistoryStr = setsHistoryArr ? JSON.stringify(setsHistoryArr) : null;
+  const currentSetVal = req.body.currentSet || req.body.currentSetIndex || updatedMatch.currentSet || 1;
+  const setsWon1Val = req.body.setsWon1 !== undefined ? Number(req.body.setsWon1) : (updatedMatch.setsWon1 || 0);
+  const setsWon2Val = req.body.setsWon2 !== undefined ? Number(req.body.setsWon2) : (updatedMatch.setsWon2 || 0);
+
+  const detailsObj = {
+    setsHistory: setsHistoryArr,
+    currentSet: currentSetVal,
+    setsWon1: setsWon1Val,
+    setsWon2: setsWon2Val,
+    playerStats1: req.body.playerStats1 || updatedMatch.playerStats1 || null,
+    playerStats2: req.body.playerStats2 || updatedMatch.playerStats2 || null
+  };
 
   await queryDb(
-    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, sets_history, current_set, sets_won1, sets_won2, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, CURRENT_TIMESTAMP)
+    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, details, sets_history, current_set, sets_won1, sets_won2, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, CURRENT_TIMESTAMP)
      ON CONFLICT (id) DO UPDATE SET
        status = COALESCE(EXCLUDED.status, live_matches.status),
        team1 = COALESCE(EXCLUDED.team1, live_matches.team1),
@@ -263,6 +312,7 @@ export const updateMatch = async (req, res) => {
        youtube_video_id = CASE WHEN EXCLUDED.youtube_video_id IS NOT NULL AND EXCLUDED.youtube_video_id != '' THEN EXCLUDED.youtube_video_id ELSE live_matches.youtube_video_id END,
        stream_url = CASE WHEN EXCLUDED.stream_url IS NOT NULL AND EXCLUDED.stream_url != '' THEN EXCLUDED.stream_url ELSE live_matches.stream_url END,
        is_live_streaming = COALESCE(EXCLUDED.is_live_streaming, live_matches.is_live_streaming),
+       details = CASE WHEN EXCLUDED.details IS NOT NULL THEN EXCLUDED.details ELSE live_matches.details END,
        sets_history = CASE WHEN EXCLUDED.sets_history IS NOT NULL AND EXCLUDED.sets_history != '' THEN EXCLUDED.sets_history ELSE live_matches.sets_history END,
        current_set = COALESCE(EXCLUDED.current_set, live_matches.current_set),
        sets_won1 = COALESCE(EXCLUDED.sets_won1, live_matches.sets_won1),
@@ -284,10 +334,11 @@ export const updateMatch = async (req, res) => {
       updatedMatch.youtubeVideoId || null,
       updatedMatch.streamUrl || null,
       Boolean(updatedMatch.isLiveStreaming || updatedMatch.youtubeVideoId || updatedMatch.streamUrl),
+      JSON.stringify(detailsObj),
       setsHistoryStr,
-      req.body.currentSet || req.body.currentSetIndex || updatedMatch.currentSet || 1,
-      req.body.setsWon1 !== undefined ? Number(req.body.setsWon1) : (updatedMatch.setsWon1 || 0),
-      req.body.setsWon2 !== undefined ? Number(req.body.setsWon2) : (updatedMatch.setsWon2 || 0)
+      currentSetVal,
+      setsWon1Val,
+      setsWon2Val
     ]
   );
 
