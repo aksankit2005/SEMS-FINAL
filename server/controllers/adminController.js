@@ -517,6 +517,9 @@ export const getCoordinatorsDB = async (req, res) => {
     if (sportsRes && sportsRes.rows) {
       sportsRes.rows.forEach(r => list.push({
         ...r,
+        id: `sc_${r.id}`,
+        dbId: r.id,
+        role: 'Coordinator',
         status: r.status ? (r.status.toLowerCase() === 'inactive' ? 'Inactive' : 'Active') : 'Active',
         createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString()
       }));
@@ -540,6 +543,9 @@ export const getCoordinatorsDB = async (req, res) => {
     if (collegeRes && collegeRes.rows) {
       collegeRes.rows.forEach(r => list.push({
         ...r,
+        id: `ch_${r.id}`,
+        dbId: r.id,
+        role: 'Head Coordinator',
         assignedSport: 'all',
         sportName: `College Head (${r.college})`,
         status: r.status ? (r.status.toLowerCase() === 'inactive' ? 'Inactive' : 'Active') : 'Active',
@@ -565,6 +571,8 @@ export const getCoordinatorsDB = async (req, res) => {
         const isSuper = r.role === 'super_coordinator' || r.role === 'Super Coordinator';
         list.push({
           ...r,
+          id: `pr_${r.id}`,
+          dbId: r.id,
           role: isSuper ? 'Super Coordinator' : 'PR Member',
           assignedSport: isSuper ? 'all' : 'media',
           sportName: isSuper ? 'All Sports (Fest President)' : 'Media / PR Team',
@@ -608,13 +616,16 @@ export const saveCoordinatorDB = async (req, res) => {
     passHash = await bcrypt.hash(password.trim(), 10);
   }
 
+  const cleanId = (id && typeof id === 'string') ? id.replace(/^(pr_|ch_|sc_)/, '') : id;
+  const numId = (cleanId && !isNaN(Number(cleanId))) ? Number(cleanId) : null;
+
   try {
     const isSuperCoord = role === 'Super Coordinator' || role === 'super_coordinator' || (role && role.toLowerCase().includes('super coordinator'));
     const isCollegeHead = role === 'Head Coordinator' || role === 'college_head';
     const isPR = role === 'PR Member' || role === 'pr_coordinator';
 
     if (isSuperCoord) {
-      if (id && (!isNaN(Number(id)) || typeof id === 'string')) {
+      if (numId !== null || cleanUser) {
         let updateQuery = `UPDATE pr_users SET name = $1, username = $2, email = $3, role = 'super_coordinator', status = $4, updated_at = CURRENT_TIMESTAMP`;
         const params = [name, cleanUser, email || '', accStatus];
         if (passHash) {
@@ -623,24 +634,27 @@ export const saveCoordinatorDB = async (req, res) => {
         } else {
           updateQuery += ` WHERE `;
         }
-        if (!isNaN(Number(id))) {
+        if (numId !== null) {
           updateQuery += `id = $${params.length + 1}`;
-          params.push(Number(id));
+          params.push(numId);
         } else {
           updateQuery += `LOWER(username) = LOWER($${params.length + 1})`;
-          params.push(id);
+          params.push(cleanUser);
         }
-        await queryDb(updateQuery, params);
-      } else {
-        const initialPass = passHash || await bcrypt.hash('Super@2026', 10);
-        await queryDb(
-          `INSERT INTO pr_users (username, password_hash, role, name, email, status, created_at, updated_at)
-           VALUES ($1, $2, 'super_coordinator', $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-          [cleanUser, initialPass, name, email || '', accStatus]
-        );
+        const updated = await queryDb(updateQuery, params);
+        if (updated && updated.rowCount > 0) {
+          return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
+        }
       }
+      
+      const initialPass = passHash || await bcrypt.hash('Super@2026', 10);
+      await queryDb(
+        `INSERT INTO pr_users (username, password_hash, role, name, email, status, created_at, updated_at)
+         VALUES ($1, $2, 'super_coordinator', $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        [cleanUser, initialPass, name, email || '', accStatus]
+      );
     } else if (isCollegeHead) {
-      if (id && (!isNaN(Number(id)) || typeof id === 'string')) {
+      if (numId !== null || cleanUser) {
         let updateQuery = `UPDATE college_head_users SET faculty_name = $1, username = $2, email = $3, phone = $4, college = $5, status = $6, updated_at = CURRENT_TIMESTAMP`;
         const params = [name, cleanUser, email || '', phone || '', college || 'MPEC', accStatus];
         if (passHash) {
@@ -649,24 +663,27 @@ export const saveCoordinatorDB = async (req, res) => {
         } else {
           updateQuery += ` WHERE `;
         }
-        if (!isNaN(Number(id))) {
+        if (numId !== null) {
           updateQuery += `id = $${params.length + 1}`;
-          params.push(Number(id));
+          params.push(numId);
         } else {
           updateQuery += `LOWER(username) = LOWER($${params.length + 1})`;
-          params.push(id);
+          params.push(cleanUser);
         }
-        await queryDb(updateQuery, params);
-      } else {
-        const initialPass = passHash || await bcrypt.hash('Head@2026', 10);
-        await queryDb(
-          `INSERT INTO college_head_users (username, password_hash, college, faculty_name, email, phone, status, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-          [cleanUser, initialPass, college || 'MPEC', name, email || '', phone || '', accStatus]
-        );
+        const updated = await queryDb(updateQuery, params);
+        if (updated && updated.rowCount > 0) {
+          return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
+        }
       }
+      
+      const initialPass = passHash || await bcrypt.hash('Head@2026', 10);
+      await queryDb(
+        `INSERT INTO college_head_users (username, password_hash, college, faculty_name, email, phone, status, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        [cleanUser, initialPass, college || 'MPEC', name, email || '', phone || '', accStatus]
+      );
     } else if (isPR) {
-      if (id && (!isNaN(Number(id)) || typeof id === 'string')) {
+      if (numId !== null || cleanUser) {
         let updateQuery = `UPDATE pr_users SET name = $1, username = $2, email = $3, status = $4, updated_at = CURRENT_TIMESTAMP`;
         const params = [name, cleanUser, email || '', accStatus];
         if (passHash) {
@@ -675,27 +692,30 @@ export const saveCoordinatorDB = async (req, res) => {
         } else {
           updateQuery += ` WHERE `;
         }
-        if (!isNaN(Number(id))) {
+        if (numId !== null) {
           updateQuery += `id = $${params.length + 1}`;
-          params.push(Number(id));
+          params.push(numId);
         } else {
           updateQuery += `LOWER(username) = LOWER($${params.length + 1})`;
-          params.push(id);
+          params.push(cleanUser);
         }
-        await queryDb(updateQuery, params);
-      } else {
-        const initialPass = passHash || await bcrypt.hash('PRPass@2026', 10);
-        await queryDb(
-          `INSERT INTO pr_users (username, password_hash, role, name, email, status, created_at, updated_at)
-           VALUES ($1, $2, 'pr_coordinator', $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-          [cleanUser, initialPass, name, email || '', accStatus]
-        );
+        const updated = await queryDb(updateQuery, params);
+        if (updated && updated.rowCount > 0) {
+          return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
+        }
       }
+      
+      const initialPass = passHash || await bcrypt.hash('PRPass@2026', 10);
+      await queryDb(
+        `INSERT INTO pr_users (username, password_hash, role, name, email, status, created_at, updated_at)
+         VALUES ($1, $2, 'pr_coordinator', $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        [cleanUser, initialPass, name, email || '', accStatus]
+      );
     } else {
       const sportSlug = (assignedSport || 'cricket').toLowerCase().replace(/[^a-z0-9]/g, '-');
       const sportTitle = sportName || (assignedSport || 'Cricket').replace(/-/g, ' ').toUpperCase();
 
-      if (id && (!isNaN(Number(id)) || typeof id === 'string')) {
+      if (numId !== null || cleanUser) {
         let updateQuery = `UPDATE sport_coordinators SET coordinator_name = $1, username = $2, email = $3, phone = $4, assigned_sport = $5, sport_name = $6, status = $7, updated_at = CURRENT_TIMESTAMP`;
         const params = [name, cleanUser, email || '', phone || '', sportSlug, sportTitle, accStatus];
         if (passHash) {
@@ -704,22 +724,25 @@ export const saveCoordinatorDB = async (req, res) => {
         } else {
           updateQuery += ` WHERE `;
         }
-        if (!isNaN(Number(id))) {
+        if (numId !== null) {
           updateQuery += `id = $${params.length + 1}`;
-          params.push(Number(id));
+          params.push(numId);
         } else {
           updateQuery += `LOWER(username) = LOWER($${params.length + 1}) OR assigned_sport = LOWER($${params.length + 1})`;
-          params.push(id);
+          params.push(cleanUser);
         }
-        await queryDb(updateQuery, params);
-      } else {
-        const initialPass = passHash || await bcrypt.hash('Coord@2026', 10);
-        await queryDb(
-          `INSERT INTO sport_coordinators (username, password_hash, assigned_sport, sport_name, coordinator_name, email, phone, status, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-          [cleanUser, initialPass, sportSlug, sportTitle, name, email || '', phone || '', accStatus]
-        );
+        const updated = await queryDb(updateQuery, params);
+        if (updated && updated.rowCount > 0) {
+          return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
+        }
       }
+      
+      const initialPass = passHash || await bcrypt.hash('Coord@2026', 10);
+      await queryDb(
+        `INSERT INTO sport_coordinators (username, password_hash, assigned_sport, sport_name, coordinator_name, email, phone, status, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        [cleanUser, initialPass, sportSlug, sportTitle, name, email || '', phone || '', accStatus]
+      );
     }
 
     return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
@@ -731,63 +754,49 @@ export const saveCoordinatorDB = async (req, res) => {
 
 export const toggleCoordinatorStatusDB = async (req, res) => {
   const { id } = req.params;
-  const { status, username, assignedSport } = req.body;
+  const { status, username } = req.body;
 
   try {
     const newStatus = (status && status.toLowerCase() === 'inactive') ? 'inactive' : 'active';
-    const targetUser = (username || id || '').trim().toLowerCase();
-    const numId = !isNaN(Number(id)) ? Number(id) : null;
+    const cleanUser = (username || '').trim().toLowerCase();
 
-    // 1. Try matching by username first (prevents ID collisions across tables)
-    if (targetUser) {
-      const prByUsername = await queryDb(
-        `UPDATE pr_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`,
-        [newStatus, targetUser]
-      );
-      if (prByUsername && prByUsername.rows && prByUsername.rows.length > 0) {
+    // 1. Check table prefix first
+    if (typeof id === 'string' && id.startsWith('pr_')) {
+      const rawId = Number(id.replace('pr_', ''));
+      const pr = await queryDb(`UPDATE pr_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`, [newStatus, rawId]);
+      if (pr && pr.rows && pr.rows.length > 0) {
         return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
       }
-
-      const chByUsername = await queryDb(
-        `UPDATE college_head_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`,
-        [newStatus, targetUser]
-      );
-      if (chByUsername && chByUsername.rows && chByUsername.rows.length > 0) {
+    }
+    if (typeof id === 'string' && id.startsWith('ch_')) {
+      const rawId = Number(id.replace('ch_', ''));
+      const ch = await queryDb(`UPDATE college_head_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`, [newStatus, rawId]);
+      if (ch && ch.rows && ch.rows.length > 0) {
         return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
       }
-
-      const scByUsername = await queryDb(
-        `UPDATE sport_coordinators SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 OR LOWER(assigned_sport) = $2 RETURNING id`,
-        [newStatus, targetUser]
-      );
-      if (scByUsername && scByUsername.rows && scByUsername.rows.length > 0) {
+    }
+    if (typeof id === 'string' && id.startsWith('sc_')) {
+      const rawId = Number(id.replace('sc_', ''));
+      const sc = await queryDb(`UPDATE sport_coordinators SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`, [newStatus, rawId]);
+      if (sc && sc.rows && sc.rows.length > 0) {
         return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
       }
     }
 
-    // 2. Fallback to ID match if username match yielded 0 rows
-    if (numId !== null) {
-      const prById = await queryDb(
-        `UPDATE pr_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`,
-        [newStatus, numId]
-      );
-      if (prById && prById.rows && prById.rows.length > 0) {
+    // 2. Check exact username match
+    if (cleanUser) {
+      const pr = await queryDb(`UPDATE pr_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`, [newStatus, cleanUser]);
+      if (pr && pr.rows && pr.rows.length > 0) {
         return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
       }
 
-      const chById = await queryDb(
-        `UPDATE college_head_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`,
-        [newStatus, numId]
-      );
-      if (chById && chById.rows && chById.rows.length > 0) {
+      const ch = await queryDb(`UPDATE college_head_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`, [newStatus, cleanUser]);
+      if (ch && ch.rows && ch.rows.length > 0) {
         return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
       }
 
-      const scById = await queryDb(
-        `UPDATE sport_coordinators SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`,
-        [newStatus, numId]
-      );
-      if (scById && scById.rows && scById.rows.length > 0) {
+      const sc = await queryDb(`UPDATE sport_coordinators SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`, [newStatus, cleanUser]);
+      if (sc && sc.rows && sc.rows.length > 0) {
         return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
       }
     }
@@ -801,64 +810,38 @@ export const toggleCoordinatorStatusDB = async (req, res) => {
 
 export const resetCoordinatorPasswordDB = async (req, res) => {
   const { id } = req.params;
-  const { newPassword, username, assignedSport } = req.body;
+  const { newPassword, username } = req.body;
 
   const passToSet = newPassword && newPassword.trim().length >= 6 ? newPassword.trim() : 'Password@123';
   const hashed = await bcrypt.hash(passToSet, 10);
-  const targetUser = (username || id || '').trim().toLowerCase();
-  const numId = !isNaN(Number(id)) ? Number(id) : null;
+  const cleanUser = (username || '').trim().toLowerCase();
 
   try {
-    if (targetUser) {
-      const prByUsername = await queryDb(
-        `UPDATE pr_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`,
-        [hashed, targetUser]
-      );
-      if (prByUsername && prByUsername.rows && prByUsername.rows.length > 0) {
-        return res.json({ success: true, message: 'Password reset in database successfully.' });
-      }
-
-      const chByUsername = await queryDb(
-        `UPDATE college_head_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`,
-        [hashed, targetUser]
-      );
-      if (chByUsername && chByUsername.rows && chByUsername.rows.length > 0) {
-        return res.json({ success: true, message: 'Password reset in database successfully.' });
-      }
-
-      const scByUsername = await queryDb(
-        `UPDATE sport_coordinators SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 OR LOWER(assigned_sport) = $2 RETURNING id`,
-        [hashed, targetUser]
-      );
-      if (scByUsername && scByUsername.rows && scByUsername.rows.length > 0) {
-        return res.json({ success: true, message: 'Password reset in database successfully.' });
-      }
+    if (typeof id === 'string' && id.startsWith('pr_')) {
+      const rawId = Number(id.replace('pr_', ''));
+      const pr = await queryDb(`UPDATE pr_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`, [hashed, rawId]);
+      if (pr && pr.rows && pr.rows.length > 0) return res.json({ success: true, message: 'Password reset successfully.' });
+    }
+    if (typeof id === 'string' && id.startsWith('ch_')) {
+      const rawId = Number(id.replace('ch_', ''));
+      const ch = await queryDb(`UPDATE college_head_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`, [hashed, rawId]);
+      if (ch && ch.rows && ch.rows.length > 0) return res.json({ success: true, message: 'Password reset successfully.' });
+    }
+    if (typeof id === 'string' && id.startsWith('sc_')) {
+      const rawId = Number(id.replace('sc_', ''));
+      const sc = await queryDb(`UPDATE sport_coordinators SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`, [hashed, rawId]);
+      if (sc && sc.rows && sc.rows.length > 0) return res.json({ success: true, message: 'Password reset successfully.' });
     }
 
-    if (numId !== null) {
-      const prById = await queryDb(
-        `UPDATE pr_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`,
-        [hashed, numId]
-      );
-      if (prById && prById.rows && prById.rows.length > 0) {
-        return res.json({ success: true, message: 'Password reset in database successfully.' });
-      }
+    if (cleanUser) {
+      const pr = await queryDb(`UPDATE pr_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`, [hashed, cleanUser]);
+      if (pr && pr.rows && pr.rows.length > 0) return res.json({ success: true, message: 'Password reset successfully.' });
 
-      const chById = await queryDb(
-        `UPDATE college_head_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`,
-        [hashed, numId]
-      );
-      if (chById && chById.rows && chById.rows.length > 0) {
-        return res.json({ success: true, message: 'Password reset in database successfully.' });
-      }
+      const ch = await queryDb(`UPDATE college_head_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`, [hashed, cleanUser]);
+      if (ch && ch.rows && ch.rows.length > 0) return res.json({ success: true, message: 'Password reset successfully.' });
 
-      const scById = await queryDb(
-        `UPDATE sport_coordinators SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`,
-        [hashed, numId]
-      );
-      if (scById && scById.rows && scById.rows.length > 0) {
-        return res.json({ success: true, message: 'Password reset in database successfully.' });
-      }
+      const sc = await queryDb(`UPDATE sport_coordinators SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`, [hashed, cleanUser]);
+      if (sc && sc.rows && sc.rows.length > 0) return res.json({ success: true, message: 'Password reset successfully.' });
     }
 
     return res.status(404).json({ message: 'Coordinator account not found in database.' });
@@ -870,19 +853,31 @@ export const resetCoordinatorPasswordDB = async (req, res) => {
 
 export const deleteCoordinatorDB = async (req, res) => {
   const { id } = req.params;
-  const targetUser = (id || '').trim().toLowerCase();
-  const numId = !isNaN(Number(id)) ? Number(id) : null;
 
   try {
-    if (targetUser && isNaN(Number(id))) {
-      await queryDb('DELETE FROM pr_users WHERE LOWER(username) = $1', [targetUser]);
-      await queryDb('DELETE FROM college_head_users WHERE LOWER(username) = $1', [targetUser]);
-      await queryDb('DELETE FROM sport_coordinators WHERE LOWER(username) = $1 OR LOWER(assigned_sport) = $1', [targetUser]);
-    } else if (numId !== null) {
-      await queryDb('DELETE FROM pr_users WHERE id = $1', [numId]);
-      await queryDb('DELETE FROM college_head_users WHERE id = $1', [numId]);
-      await queryDb('DELETE FROM sport_coordinators WHERE id = $1', [numId]);
+    if (typeof id === 'string' && id.startsWith('pr_')) {
+      const rawId = Number(id.replace('pr_', ''));
+      await queryDb('DELETE FROM pr_users WHERE id = $1', [rawId]);
+      return res.json({ success: true, message: 'Coordinator deleted from database successfully.' });
     }
+    if (typeof id === 'string' && id.startsWith('ch_')) {
+      const rawId = Number(id.replace('ch_', ''));
+      await queryDb('DELETE FROM college_head_users WHERE id = $1', [rawId]);
+      return res.json({ success: true, message: 'Coordinator deleted from database successfully.' });
+    }
+    if (typeof id === 'string' && id.startsWith('sc_')) {
+      const rawId = Number(id.replace('sc_', ''));
+      await queryDb('DELETE FROM sport_coordinators WHERE id = $1', [rawId]);
+      return res.json({ success: true, message: 'Coordinator deleted from database successfully.' });
+    }
+
+    const cleanUser = (id || '').trim().toLowerCase();
+    if (cleanUser) {
+      await queryDb('DELETE FROM pr_users WHERE LOWER(username) = $1', [cleanUser]);
+      await queryDb('DELETE FROM college_head_users WHERE LOWER(username) = $1', [cleanUser]);
+      await queryDb('DELETE FROM sport_coordinators WHERE LOWER(username) = $1', [cleanUser]);
+    }
+
     return res.json({ success: true, message: 'Coordinator deleted from database successfully.' });
   } catch (err) {
     console.error('Error deleting coordinator from DB:', err.message);
