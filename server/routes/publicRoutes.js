@@ -162,24 +162,51 @@ router.get('/results', async (req, res) => {
       const formatted = dbRes.rows.map((m) => {
         const sportId = m.sportId || 'badminton';
         const sportName = (m.sportId || '').replace(/-/g, ' ').toUpperCase();
-        const scoreSummary = m.score1 !== undefined && m.score2 !== undefined
-          ? `${m.team1}: ${m.score1} | ${m.team2}: ${m.score2}`
-          : 'Match Completed';
+
+        let detailsObj = {};
+        if (m.details) {
+          try {
+            detailsObj = typeof m.details === 'object' ? m.details : JSON.parse(m.details);
+          } catch (e) {}
+        }
+
+        let formattedSetsStr = '';
+        const setsArr = (detailsObj && Array.isArray(detailsObj.setsHistory)) ? detailsObj.setsHistory : null;
+        if (setsArr && setsArr.length > 0) {
+          formattedSetsStr = setsArr
+            .map((s, idx) => `Set ${idx + 1}: ${s.score1 || s.team1Score || 0}-${s.score2 || s.team2Score || 0}`)
+            .join(', ');
+        } else if (m.setsHistory) {
+          try {
+            const parsed = typeof m.setsHistory === 'string' ? JSON.parse(m.setsHistory) : m.setsHistory;
+            if (Array.isArray(parsed)) {
+              formattedSetsStr = parsed.map((s, idx) => `Set ${idx + 1}: ${s.score1 || 0}-${s.score2 || 0}`).join(', ');
+            }
+          } catch (e) {}
+        }
+
+        const winnerStr = m.winner || (m.score1 >= m.score2 ? m.team1 : m.team2) || 'Winner';
+        const scoreSummary = formattedSetsStr
+          ? `Sets (${formattedSetsStr}) | Winner: ${winnerStr}`
+          : (m.score1 !== undefined && m.score2 !== undefined
+              ? `${m.team1}: ${m.score1} | ${m.team2}: ${m.score2} (Winner: ${winnerStr})`
+              : `Winner: ${winnerStr}`);
 
         return {
           id: m.id,
           sport: sportName,
           sportId: sportId,
           event: m.matchTitle || `${m.team1} vs ${m.team2}`,
-          winner: m.winner || (m.score1 >= m.score2 ? m.team1 : m.team2) || 'Declared Winner',
+          winner: winnerStr,
           scoreSummary,
+          setsDetail: formattedSetsStr,
           date: m.updatedAt ? new Date(m.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           completedAt: m.updatedAt,
           score1: m.score1,
           score2: m.score2,
           team1: m.team1,
           team2: m.team2,
-          mvp: m.winner || 'Top Performer',
+          mvp: winnerStr,
           rawMatch: m
         };
       });

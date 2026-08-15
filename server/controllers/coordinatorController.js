@@ -935,6 +935,26 @@ export const getRegistrations = async (req, res) => {
   }
 };
 
+export const deleteRegistration = async (req, res) => {
+  const { id } = req.params;
+  try {
+    await queryDb('DELETE FROM registration_members WHERE registration_id = $1 OR id = $1', [id]);
+    await queryDb('DELETE FROM college_registrations WHERE id = $1 OR registration_id = $1', [id]);
+    try {
+      await queryDb('DELETE FROM registrations WHERE id = $1', [id]);
+    } catch (e) {}
+
+    try {
+      await prisma.collegeRegistration.deleteMany({ where: { id } });
+    } catch (e) {}
+
+    return res.json({ success: true, message: 'Registration deleted successfully from database' });
+  } catch (err) {
+    console.error('Error deleting registration from DB:', err.message);
+    return res.status(500).json({ message: 'Failed to delete registration from database' });
+  }
+};
+
 export const toggleRegistrationStatus = (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
   const { status, deadline } = req.body;

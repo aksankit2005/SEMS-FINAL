@@ -13,6 +13,7 @@ import {
   getBasketballMatchPlayersDB,
   getDashboardStats,
   getRegistrations,
+  deleteRegistration,
   toggleRegistrationStatus,
   getEvents,
   createEvent,
@@ -39,6 +40,7 @@ router.get('/coordinator/matches/:id/players', getBasketballMatchPlayersDB);
 
 router.get('/coordinator/dashboard-stats', verifyCoordinatorToken, getDashboardStats);
 router.get('/coordinator/registrations', verifyCoordinatorToken, getRegistrations);
+router.delete('/coordinator/registrations/:id', verifyCoordinatorToken, deleteRegistration);
 router.post('/coordinator/registrations/toggle-status', verifyCoordinatorToken, toggleRegistrationStatus);
 
 router.get('/coordinator/events', verifyCoordinatorToken, getEvents);

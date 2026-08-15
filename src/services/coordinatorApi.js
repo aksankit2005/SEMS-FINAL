@@ -317,6 +317,15 @@ export const coordinatorApi = {
   // Get all public match schedules across all sports
   async getPublicMatches() {
     let serverMatches = [];
+  // Get all matches across backend server & localStorage
+  async getMatches() {
+    const deletedSet = new Set();
+    try {
+      const deletedArr = JSON.parse(localStorage.getItem('sems_deleted_match_ids') || '[]');
+      deletedArr.forEach((id) => deletedSet.add(id));
+    } catch (e) {}
+
+    let serverMatches = [];
     try {
       const user = this.getCurrentUser();
       if (user && user.token) {
@@ -332,26 +341,11 @@ export const coordinatorApi = {
       if (pubRes.data && Array.isArray(pubRes.data)) {
         serverMatches = [...serverMatches, ...pubRes.data];
       }
-    } catch (e) {
-      console.warn('Public matches endpoint fallback to scanning localStorage keys', e);
-    }
+    } catch (e) {}
 
     const matchMap = new Map();
 
-    // 1. Add server matches
-    serverMatches.forEach((m) => {
-      if (m && m.id) {
-        const mSport = (m.sport || m.sportId || 'badminton').toLowerCase();
-        matchMap.set(m.id, {
-          ...m,
-          sport: mSport,
-          sportId: mSport,
-          sportName: m.sportName || (mSport.charAt(0).toUpperCase() + mSport.slice(1).replace('-', ' '))
-        });
-      }
-    });
-
-    // 2. Scan all localStorage match schedule keys across Kabaddi, Kho-Kho, Athletics, etc.
+    // 1. Scan localStorage match schedule keys first
     const keysToCheck = ['basketballMatchSchedules', 'volleyballMatchSchedules'];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -369,11 +363,9 @@ export const coordinatorApi = {
           if (Array.isArray(list)) {
             const derivedSport = key.replace('sems_coord_matches_', '').replace('MatchSchedules', '').replace('sems_matches_', '').toLowerCase();
             list.forEach((m) => {
-              if (m && m.id) {
+              if (m && m.id && !deletedSet.has(m.id)) {
                 const mSport = (m.sport || m.sportId || derivedSport || 'badminton').toLowerCase();
-                const existing = matchMap.get(m.id) || {};
                 matchMap.set(m.id, {
-                  ...existing,
                   ...m,
                   sport: mSport,
                   sportId: mSport,
@@ -384,6 +376,21 @@ export const coordinatorApi = {
           }
         }
       } catch (err) { }
+    });
+
+    // 2. Add server matches ON TOP so server data ALWAYS takes precedence over localStorage
+    serverMatches.forEach((m) => {
+      if (m && m.id && !deletedSet.has(m.id)) {
+        const mSport = (m.sport || m.sportId || 'badminton').toLowerCase();
+        const existing = matchMap.get(m.id) || {};
+        matchMap.set(m.id, {
+          ...existing,
+          ...m,
+          sport: mSport,
+          sportId: mSport,
+          sportName: m.sportName || (mSport.charAt(0).toUpperCase() + mSport.slice(1).replace('-', ' '))
+        });
+      }
     });
 
     return Array.from(matchMap.values());
@@ -444,14 +451,34 @@ export const coordinatorApi = {
   // Delete match & persist to Backend API & localStorage
   async deleteMatch(id) {
     try {
+      const deletedArr = JSON.parse(localStorage.getItem('sems_deleted_match_ids') || '[]');
+      if (!deletedArr.includes(id)) {
+        deletedArr.push(id);
+        localStorage.setItem('sems_deleted_match_ids', JSON.stringify(deletedArr));
+      }
+    } catch (e) {}
+
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('sems_coord_matches_') || key.endsWith('MatchSchedules') || key.startsWith('sems_matches_'))) {
+          const raw = localStorage.getItem(key);
+          if (raw) {
+            const list = JSON.parse(raw);
+            if (Array.isArray(list)) {
+              const updated = list.filter((m) => m && m.id !== id);
+              localStorage.setItem(key, JSON.stringify(updated));
+            }
+          }
+        }
+      }
+    } catch (e) {}
+
+    try {
       await api.delete(`/coordinator/matches/${id}`);
     } catch (e) {
       console.warn('Backend delete match fallback:', e);
     }
-
-    const matches = await this.getMatches();
-    const updated = matches.filter((m) => m.id !== id);
-    this.saveMatches(updated);
 
     // Remove from active live assignments in localStorage
     const savedActiveStr = localStorage.getItem('sems_active_live_matches');
