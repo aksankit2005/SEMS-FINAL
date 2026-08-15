@@ -236,6 +236,42 @@ export const createMatch = async (req, res) => {
     ]
   );
 
+  try {
+    await queryDb(
+      `INSERT INTO matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, details, sets_history, current_set, sets_won1, sets_won2, "homeTeamName", "awayTeamName", "winnerName", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $5, $6, $12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+       ON CONFLICT (id) DO UPDATE SET
+         format = EXCLUDED.format, status = EXCLUDED.status, team1 = EXCLUDED.team1, team2 = EXCLUDED.team2,
+         match_title = EXCLUDED.match_title, table_number = EXCLUDED.table_number, time = EXCLUDED.time,
+         score1 = EXCLUDED.score1, score2 = EXCLUDED.score2, winner = EXCLUDED.winner,
+         details = EXCLUDED.details, "homeTeamName" = EXCLUDED.team1, "awayTeamName" = EXCLUDED.team2, "winnerName" = EXCLUDED.winner, "updatedAt" = CURRENT_TIMESTAMP`,
+      [
+        newMatch.id,
+        newMatch.sportId,
+        newMatch.format,
+        newMatch.status,
+        newMatch.team1,
+        newMatch.team2,
+        newMatch.matchTitle,
+        newMatch.tableNumber,
+        newMatch.time,
+        newMatch.score1,
+        newMatch.score2,
+        newMatch.winner,
+        newMatch.youtubeVideoId || newMatch.youtube_video_id || null,
+        newMatch.streamUrl || newMatch.stream_url || null,
+        Boolean(newMatch.isLiveStreaming || newMatch.youtubeVideoId || newMatch.streamUrl),
+        JSON.stringify(detailsObj),
+        JSON.stringify(defaultSetsHistory),
+        newMatch.currentSet || 1,
+        newMatch.setsWon1 || 0,
+        newMatch.setsWon2 || 0
+      ]
+    );
+  } catch (e) {
+    console.warn('Dual write to matches table warning:', e.message);
+  }
+
   return res.status(201).json({ success: true, match: newMatch });
 };
 
@@ -340,6 +376,53 @@ export const batchSaveMatches = async (req, res) => {
           m.setsWon2 || 0
         ]
       );
+
+      try {
+        await queryDb(
+          `INSERT INTO matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, details, sets_history, current_set, sets_won1, sets_won2, "homeTeamName", "awayTeamName", "winnerName", "createdAt", "updatedAt")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $5, $6, $12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+           ON CONFLICT (id) DO UPDATE SET
+             sport_id = EXCLUDED.sport_id,
+             format = EXCLUDED.format,
+             status = EXCLUDED.status,
+             team1 = EXCLUDED.team1,
+             team2 = EXCLUDED.team2,
+             match_title = EXCLUDED.match_title,
+             table_number = EXCLUDED.table_number,
+             time = EXCLUDED.time,
+             score1 = EXCLUDED.score1,
+             score2 = EXCLUDED.score2,
+             winner = COALESCE(EXCLUDED.winner, matches.winner),
+             details = EXCLUDED.details,
+             "homeTeamName" = EXCLUDED.team1,
+             "awayTeamName" = EXCLUDED.team2,
+             "winnerName" = EXCLUDED.winner,
+             "updatedAt" = CURRENT_TIMESTAMP`,
+          [
+            matchId,
+            mSportId,
+            formatVal,
+            statusVal,
+            team1Val,
+            team2Val,
+            matchTitleVal,
+            tableNumberVal,
+            timeVal,
+            score1Val,
+            score2Val,
+            winnerVal,
+            m.youtubeVideoId || m.youtube_video_id || null,
+            m.streamUrl || m.stream_url || null,
+            Boolean(m.isLiveStreaming || m.youtubeVideoId || m.streamUrl),
+            JSON.stringify(detailsObj),
+            m.setsHistory ? (typeof m.setsHistory === 'string' ? m.setsHistory : JSON.stringify(m.setsHistory)) : null,
+            m.currentSet || 1,
+            m.setsWon1 || 0,
+            m.setsWon2 || 0
+          ]
+        );
+      } catch (err) {}
+
       savedMatches.push({ ...m, id: matchId, sportId: mSportId });
     } catch (err) {
       console.error('Error batch saving match ID:', matchId, err.message);
@@ -543,6 +626,51 @@ export const updateMatch = async (req, res) => {
     ]
   );
 
+  try {
+    await queryDb(
+      `INSERT INTO matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, details, sets_history, current_set, sets_won1, sets_won2, current_quarter, "homeTeamName", "awayTeamName", "winnerName", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $5, $6, $12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+       ON CONFLICT (id) DO UPDATE SET
+         status = COALESCE(EXCLUDED.status, matches.status),
+         team1 = COALESCE(EXCLUDED.team1, matches.team1),
+         team2 = COALESCE(EXCLUDED.team2, matches.team2),
+         match_title = COALESCE(EXCLUDED.match_title, matches.match_title),
+         table_number = COALESCE(EXCLUDED.table_number, matches.table_number),
+         time = COALESCE(EXCLUDED.time, matches.time),
+         score1 = EXCLUDED.score1,
+         score2 = EXCLUDED.score2,
+         winner = COALESCE(EXCLUDED.winner, matches.winner),
+         details = CASE WHEN EXCLUDED.details IS NOT NULL THEN EXCLUDED.details ELSE matches.details END,
+         "homeTeamName" = COALESCE(EXCLUDED.team1, matches."homeTeamName"),
+         "awayTeamName" = COALESCE(EXCLUDED.team2, matches."awayTeamName"),
+         "winnerName" = COALESCE(EXCLUDED.winner, matches."winnerName"),
+         "updatedAt" = CURRENT_TIMESTAMP`,
+      [
+        id,
+        sportId,
+        (req.body.format || updatedMatch.format || 'SINGLES').toUpperCase(),
+        req.body.status || updatedMatch.status || 'SCHEDULED',
+        t1Name,
+        t2Name,
+        req.body.matchTitle || updatedMatch.matchTitle || `${t1Name} vs ${t2Name}`,
+        req.body.tableNumber || updatedMatch.tableNumber || 'Table 1',
+        req.body.time || updatedMatch.time || '05:30 PM',
+        req.body.score1 !== undefined ? Number(req.body.score1) : (updatedMatch.score1 || 0),
+        req.body.score2 !== undefined ? Number(req.body.score2) : (updatedMatch.score2 || 0),
+        req.body.winner || updatedMatch.winner || null,
+        updatedMatch.youtubeVideoId || null,
+        updatedMatch.streamUrl || null,
+        Boolean(updatedMatch.isLiveStreaming || updatedMatch.youtubeVideoId || updatedMatch.streamUrl),
+        JSON.stringify(detailsObj),
+        setsHistoryStr,
+        currentSetVal,
+        setsWon1Val,
+        setsWon2Val,
+        currentQuarterVal
+      ]
+    );
+  } catch (e) {}
+
   return res.json({ success: true, match: { ...updatedMatch, quarter: currentQuarterVal } });
 };
 
@@ -576,6 +704,7 @@ export const deleteMatch = async (req, res) => {
   }
 
   await queryDb('DELETE FROM live_matches WHERE id = $1', [id]);
+  try { await queryDb('DELETE FROM matches WHERE id = $1', [id]); } catch(e){}
   return res.json({ success: true, message: 'Match deleted successfully' });
 };
 
@@ -586,6 +715,7 @@ export const deleteAllMatches = async (req, res) => {
 
   try {
     await queryDb('DELETE FROM live_matches WHERE LOWER(sport_id) = $1', [sportId]);
+    await queryDb('DELETE FROM matches WHERE LOWER(sport_id) = $1', [sportId]);
   } catch (e) {
     console.warn('Backend deleteAllMatches query error:', e);
   }
@@ -669,6 +799,27 @@ export const updateMatchScore = async (req, res) => {
         id
       ]
     );
+
+    try {
+      await queryDb(
+        `UPDATE matches 
+         SET score1 = $1, score2 = $2, status = $3, table_number = $4,
+             details = $5, sets_history = $6, current_set = $7, sets_won1 = $8, sets_won2 = $9, "updatedAt" = CURRENT_TIMESTAMP
+         WHERE id = $10`,
+        [
+          match.score1,
+          match.score2,
+          match.status,
+          match.tableNumber || 'Table 1',
+          JSON.stringify(detailsObj),
+          JSON.stringify(setsHistoryArr),
+          currentSetVal,
+          setsWon1Val,
+          setsWon2Val,
+          id
+        ]
+      );
+    } catch (e) {}
   } catch (e) {
     console.warn('updateMatchScore DB update error:', e.message);
   }
@@ -728,6 +879,21 @@ export const completeMatch = async (req, res) => {
         id
       ]
     );
+
+    try {
+      await queryDb(
+        `UPDATE matches 
+         SET status = 'COMPLETED', table_number = NULL, is_live_streaming = FALSE, winner = $1, "winnerName" = $1,
+             details = COALESCE($2, details), sets_history = COALESCE($3, sets_history), "updatedAt" = CURRENT_TIMESTAMP
+         WHERE id = $4`,
+        [
+          match.winner,
+          setsHistoryArr ? JSON.stringify(detailsObj) : null,
+          setsHistoryArr ? JSON.stringify(setsHistoryArr) : null,
+          id
+        ]
+      );
+    } catch (e) {}
   } catch (e) {
     console.warn('completeMatch DB update error:', e.message);
   }
