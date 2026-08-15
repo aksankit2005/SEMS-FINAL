@@ -281,8 +281,8 @@ export const coordinatorApi = {
     }));
   },
 
-  // Save matches array to localStorage
-  saveMatches(matches) {
+  // Save matches array to localStorage & sync to Backend PostgreSQL DB
+  async saveMatches(matches) {
     const user = this.getCurrentUser();
     if (!user) return;
     const sportKey = (user.assignedSport || '').toLowerCase();
@@ -306,15 +306,31 @@ export const coordinatorApi = {
     localStorage.setItem(cacheKey, JSON.stringify(filtered));
     window.dispatchEvent(new Event('storage'));
     window.dispatchEvent(new CustomEvent('sems_matches_updated', { detail: { sportId: sportKey } }));
+
+    try {
+      await api.post('/coordinator/matches/batch', { matches: filtered, sportId: sportKey });
+    } catch (e) {
+      console.warn('Backend saveMatches batch sync warning:', e?.message || e);
+    }
   },
 
   // Get all public match schedules across all sports
   async getPublicMatches() {
     let serverMatches = [];
     try {
-      const res = await api.get('/coordinator/matches');
-      if (res.data && Array.isArray(res.data)) {
-        serverMatches = res.data;
+      const user = this.getCurrentUser();
+      if (user && user.token) {
+        const res = await api.get('/coordinator/matches');
+        if (res.data && Array.isArray(res.data)) {
+          serverMatches = res.data;
+        }
+      }
+    } catch (e) {}
+
+    try {
+      const pubRes = await api.get('/schedules');
+      if (pubRes.data && Array.isArray(pubRes.data)) {
+        serverMatches = [...serverMatches, ...pubRes.data];
       }
     } catch (e) {
       console.warn('Public matches endpoint fallback to scanning localStorage keys', e);

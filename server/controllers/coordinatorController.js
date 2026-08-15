@@ -239,6 +239,128 @@ export const createMatch = async (req, res) => {
   return res.status(201).json({ success: true, match: newMatch });
 };
 
+export const batchSaveMatches = async (req, res) => {
+  const sportId = (req.user?.assignedSport || req.body.sportId || 'badminton').toLowerCase();
+  const matches = req.body.matches;
+
+  if (!Array.isArray(matches)) {
+    return res.status(400).json({ message: 'matches must be an array' });
+  }
+
+  // Ensure table columns exist
+  try {
+    await queryDb(`
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS stream_url TEXT;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS is_live_streaming BOOLEAN DEFAULT FALSE;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS details JSONB;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_history TEXT;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS current_set INT DEFAULT 1;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won1 INT DEFAULT 0;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won2 INT DEFAULT 0;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS current_quarter TEXT;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+    `);
+  } catch (e) {}
+
+  const savedMatches = [];
+
+  for (const m of matches) {
+    if (!m) continue;
+    const matchId = String(m.id || `M${Math.floor(100000 + Math.random() * 900000)}`);
+    const mSportId = (m.sportId || m.sport || sportId).toLowerCase();
+
+    const t1 = typeof m.team1 === 'object' ? (m.team1?.name || '') : String(m.team1 || '').trim();
+    const t2 = typeof m.team2 === 'object' ? (m.team2?.name || '') : String(m.team2 || '').trim();
+
+    const team1Val = t1 || m.team1Name || m.subEvent || m.eventTitle || 'TBD';
+    const team2Val = t2 || m.team2Name || (m.subEvent ? '' : 'TBD');
+
+    const matchTitleVal = m.eventTitle || m.matchTitle || m.title || `${team1Val} vs ${team2Val}`;
+    const tableNumberVal = m.tableNumber || m.venue || 'Table 1';
+    const timeVal = m.time || m.scheduledTime || '05:30 PM';
+    const statusVal = m.status || 'SCHEDULED';
+    const formatVal = (m.format || 'SINGLES').toUpperCase();
+    const score1Val = Number(m.score1 || 0);
+    const score2Val = Number(m.score2 || 0);
+    const winnerVal = m.winner || null;
+
+    const detailsObj = {
+      category: m.category || m.gender || 'Open',
+      date: m.date || new Date().toISOString().split('T')[0],
+      eventTitle: matchTitleVal,
+      format: formatVal,
+      team1Name: team1Val,
+      team2Name: team2Val,
+      team1Player1: m.team1Player1 || null,
+      team1Player2: m.team1Player2 || null,
+      team2Player1: m.team2Player1 || null,
+      team2Player2: m.team2Player2 || null,
+      ...(m.details && typeof m.details === 'object' ? m.details : {})
+    };
+
+    try {
+      await queryDb(
+        `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, details, sets_history, current_set, sets_won1, sets_won2, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, CURRENT_TIMESTAMP)
+         ON CONFLICT (id) DO UPDATE SET
+           sport_id = EXCLUDED.sport_id,
+           format = EXCLUDED.format,
+           status = EXCLUDED.status,
+           team1 = EXCLUDED.team1,
+           team2 = EXCLUDED.team2,
+           match_title = EXCLUDED.match_title,
+           table_number = EXCLUDED.table_number,
+           time = EXCLUDED.time,
+           score1 = EXCLUDED.score1,
+           score2 = EXCLUDED.score2,
+           winner = COALESCE(EXCLUDED.winner, live_matches.winner),
+           details = EXCLUDED.details,
+           updated_at = CURRENT_TIMESTAMP`,
+        [
+          matchId,
+          mSportId,
+          formatVal,
+          statusVal,
+          team1Val,
+          team2Val,
+          matchTitleVal,
+          tableNumberVal,
+          timeVal,
+          score1Val,
+          score2Val,
+          winnerVal,
+          m.youtubeVideoId || m.youtube_video_id || null,
+          m.streamUrl || m.stream_url || null,
+          Boolean(m.isLiveStreaming || m.youtubeVideoId || m.streamUrl),
+          JSON.stringify(detailsObj),
+          m.setsHistory ? (typeof m.setsHistory === 'string' ? m.setsHistory : JSON.stringify(m.setsHistory)) : null,
+          m.currentSet || 1,
+          m.setsWon1 || 0,
+          m.setsWon2 || 0
+        ]
+      );
+      savedMatches.push({ ...m, id: matchId, sportId: mSportId });
+    } catch (err) {
+      console.error('Error batch saving match ID:', matchId, err.message);
+    }
+  }
+
+  if (!inMemoryCoordinatorMatches[sportId]) {
+    inMemoryCoordinatorMatches[sportId] = [];
+  }
+  savedMatches.forEach(sm => {
+    const idx = inMemoryCoordinatorMatches[sportId].findIndex(x => x.id === sm.id);
+    if (idx !== -1) {
+      inMemoryCoordinatorMatches[sportId][idx] = sm;
+    } else {
+      inMemoryCoordinatorMatches[sportId].push(sm);
+    }
+  });
+
+  return res.json({ success: true, count: savedMatches.length, matches: savedMatches });
+};
+
 export const updateMatch = async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
   const { id } = req.params;

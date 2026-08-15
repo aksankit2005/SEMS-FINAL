@@ -199,7 +199,7 @@ router.get('/schedules', async (req, res) => {
               match_title AS "matchTitle", table_number AS "tableNumber", 
               time, score1, score2, details, updated_at AS "updatedAt", created_at AS "createdAt"
        FROM live_matches 
-       WHERE LOWER(status) IN ('scheduled', 'upcoming')
+       WHERE LOWER(status) IN ('scheduled', 'upcoming', 'draft')
        ORDER BY created_at DESC`
     );
 
@@ -208,19 +208,37 @@ router.get('/schedules', async (req, res) => {
         const sportId = (m.sportId || 'badminton').toLowerCase();
         const rawSportName = (sportId.charAt(0).toUpperCase() + sportId.slice(1).replace('-', ' '));
 
+        let detailsObj = {};
+        if (m.details) {
+          try {
+            detailsObj = typeof m.details === 'object' ? m.details : JSON.parse(m.details);
+          } catch (e) {}
+        }
+
+        const t1 = m.team1 || detailsObj.team1Name || 'TBD';
+        const t2 = m.team2 || detailsObj.team2Name || 'TBD';
+        const matchTitle = m.matchTitle || detailsObj.eventTitle || `${t1} vs ${t2}`;
+        const matchDate = detailsObj.date || (m.createdAt ? new Date(m.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+        const matchCategory = detailsObj.category || 'Open';
+        const matchVenue = m.tableNumber || detailsObj.venue || 'Arena 1';
+
         return {
           id: m.id,
-          event: m.matchTitle || `${m.team1} vs ${m.team2}`,
+          event: matchTitle,
+          matchTitle: matchTitle,
           sport: rawSportName,
           sportId: sportId,
-          gender: 'Open',
-          team1: m.team1 || 'TBD',
-          team2: m.team2 || 'TBD',
-          venue: m.tableNumber || 'Arena 1',
-          date: m.createdAt ? new Date(m.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          gender: matchCategory,
+          category: matchCategory,
+          team1: t1,
+          team2: t2,
+          venue: matchVenue,
+          tableNumber: matchVenue,
+          date: matchDate,
           time: m.time || '10:00 AM',
           format: m.format || 'STANDARD',
-          status: m.status || 'SCHEDULED'
+          status: m.status || 'SCHEDULED',
+          details: detailsObj
         };
       });
       return res.json(formatted);

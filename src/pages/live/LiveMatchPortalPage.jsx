@@ -124,30 +124,10 @@ export const LiveMatchPortalPage = () => {
         }
       });
 
-      setLiveMatches((prevLiveMatches) => {
-        const prevMap = {};
-        (prevLiveMatches || []).forEach((m) => {
-          if (m && m.id) prevMap[m.id] = m;
-        });
-
-        const newMap = { ...prevMap };
-
-        // Remove completed matches
-        completedMatchIds.forEach((id) => {
-          delete newMap[id];
-        });
-
-        // Merge incoming active matches
-        Object.values(incomingMap).forEach((m) => {
-          if (m && m.id) {
-            newMap[m.id] = mergeMatchState(newMap[m.id], m);
-          }
-        });
-
-        // Filter out completed or invalid matches
-        const activeMatchesList = Object.values(newMap).filter((m) => {
+      setLiveMatches(() => {
+        const activeMatchesList = Object.values(incomingMap).filter((m) => {
           const s = (m?.status || '').toLowerCase();
-          return m && m.id && m.id !== 'M595473' && !completedMatchIds.has(m.id) && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active');
+          return m && m.id && m.id !== 'M595473' && !completedMatchIds.has(m.id) && s !== 'completed' && s !== 'finished' && s !== 'scheduled' && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active');
         });
 
         return activeMatchesList;

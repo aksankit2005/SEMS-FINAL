@@ -4,6 +4,7 @@ import {
   getProfile,
   getMatches,
   createMatch,
+  batchSaveMatches,
   updateMatch,
   deleteMatch,
   deleteAllMatches,
@@ -28,6 +29,7 @@ router.get('/coordinator/profile', verifyCoordinatorToken, getProfile);
 
 router.get('/coordinator/matches', verifyCoordinatorToken, getMatches);
 router.post('/coordinator/matches', verifyCoordinatorToken, createMatch);
+router.post('/coordinator/matches/batch', verifyCoordinatorToken, batchSaveMatches);
 router.put('/coordinator/matches/:id', verifyCoordinatorToken, updateMatch);
 router.delete('/coordinator/matches/:id', verifyCoordinatorToken, deleteMatch);
 router.delete('/coordinator/matches', verifyCoordinatorToken, deleteAllMatches);
