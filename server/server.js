@@ -108,9 +108,14 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-// ─── START SERVER ────────────────────────────────────────────────────────────
-app.listen(envConfig.port, async () => {
-  console.log(`🚀 SEMS API Server running on port ${envConfig.port}`);
-  console.log(`🔒 NODE_ENV: ${envConfig.nodeEnv}`);
-  await initDatabaseSchema();
-});
+// ─── START SERVER / EXPORT ───────────────────────────────────────────────────
+if (process.env.VERCEL !== '1') {
+  app.listen(envConfig.port, async () => {
+    console.log(`🚀 SEMS API Server running on port ${envConfig.port}`);
+    console.log(`🔒 NODE_ENV: ${envConfig.nodeEnv}`);
+    await initDatabaseSchema();
+  });
+}
+
+export default app;
+

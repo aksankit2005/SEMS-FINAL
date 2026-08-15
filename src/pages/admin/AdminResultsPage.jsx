@@ -105,9 +105,11 @@ export const AdminResultsPage = () => {
 
   const handleSaveResult = async (formData) => {
     try {
-      const updated = await adminApi.saveResult(formData);
-      setResults((updated || []).map(normalizeDeclaredResult));
+      await adminApi.saveResult(formData);
+      await fetchResultsData();
       addToast('Match result & Inter-College leaderboard updated successfully!', 'success');
+      setIsEditOpen(false);
+      setSelectedResult(null);
     } catch (err) {
       addToast(err.message || 'Failed to update result', 'error');
     }
@@ -118,8 +120,8 @@ export const AdminResultsPage = () => {
       return;
     }
     try {
-      const updated = await adminApi.deleteResult(id);
-      setResults((updated || []).map(normalizeDeclaredResult));
+      await adminApi.deleteResult(id);
+      await fetchResultsData();
       addToast('Declared result & leaderboard entry removed', 'success');
     } catch (err) {
       addToast(err.message || 'Failed to delete result', 'error');

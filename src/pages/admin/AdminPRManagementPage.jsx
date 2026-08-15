@@ -50,7 +50,7 @@ export const AdminPRManagementPage = () => {
       setMediaFiles(filesList || []);
     } catch (err) {
       addToast('Failed to load PR media management items', 'error');
-    } fontally: {
+    } finally {
       setLoading(false);
     }
   };
@@ -62,11 +62,11 @@ export const AdminPRManagementPage = () => {
     try {
       if (deletingItem.type === 'file') {
         await adminApi.deletePRMediaFile(deletingItem.id);
-        setMediaFiles(prev => prev.filter(f => f.id !== deletingItem.id));
+        await fetchPRData();
         addToast('PR file deleted successfully', 'success');
       } else if (deletingItem.type === 'folder') {
         await adminApi.deletePRFolder(deletingItem.id);
-        setFolders(prev => prev.filter(f => f.id !== deletingItem.id));
+        await fetchPRData();
         setSelectedFolder(null);
         addToast('PR Event Folder deleted successfully', 'success');
       }

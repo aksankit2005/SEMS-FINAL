@@ -65,12 +65,14 @@ export const AdminCoordinatorsPage = () => {
   // Form Save Handler (Create / Edit)
   const handleSaveCoordinator = async (formData) => {
     try {
-      const updatedList = await adminApi.saveCoordinator(formData);
-      setCoordinators(updatedList);
+      await adminApi.saveCoordinator(formData);
+      await fetchCoordinators();
       addToast(
         formData.id ? 'Coordinator account updated successfully' : 'New account created successfully',
         'success'
       );
+      setIsFormOpen(false);
+      setSelectedCoord(null);
     } catch (err) {
       addToast(err.message || 'Failed to save coordinator', 'error');
     }
@@ -82,8 +84,8 @@ export const AdminCoordinatorsPage = () => {
 
     setIsToggling(true);
     try {
-      const updatedList = await adminApi.toggleCoordinatorStatus(toggleTargetCoord);
-      setCoordinators(updatedList);
+      await adminApi.toggleCoordinatorStatus(toggleTargetCoord);
+      await fetchCoordinators();
       const actionStr = toggleTargetCoord.status === 'Active' ? 'deactivated' : 'activated';
       addToast(`Account ${toggleTargetCoord.name} ${actionStr} successfully!`, 'success');
       setToggleTargetCoord(null);
@@ -97,7 +99,9 @@ export const AdminCoordinatorsPage = () => {
   // Password Reset Handler
   const handleResetPassword = async (id, newPass) => {
     try {
-      await adminApi.resetCoordinatorPassword(resetTargetCoord || id, newPass);
+      const targetId = typeof resetTargetCoord === 'object' ? resetTargetCoord.id : (resetTargetCoord || id);
+      await adminApi.resetCoordinatorPassword(targetId, newPass);
+      await fetchCoordinators();
       addToast('Password reset successfully! Password log generated.', 'success');
       setResetTargetCoord(null);
     } catch (err) {
@@ -111,9 +115,10 @@ export const AdminCoordinatorsPage = () => {
 
     setIsDeleting(true);
     try {
-      const updatedList = await adminApi.deleteCoordinator(deleteTargetCoord);
-      setCoordinators(updatedList);
-      addToast(`Account ${deleteTargetCoord.name} deleted permanently!`, 'success');
+      const targetId = typeof deleteTargetCoord === 'object' ? deleteTargetCoord.id : deleteTargetCoord;
+      await adminApi.deleteCoordinator(targetId);
+      await fetchCoordinators();
+      addToast(`Account ${deleteTargetCoord.name || 'Coordinator'} deleted permanently!`, 'success');
       setDeleteTargetCoord(null);
     } catch (err) {
       addToast(err.message || 'Failed to delete account', 'error');

@@ -48,12 +48,14 @@ export const AdminAnnouncementsPage = () => {
 
   const handleSaveAnnouncement = async (formData) => {
     try {
-      const updated = await adminApi.saveAnnouncement(formData);
-      setAnnouncements(updated);
+      await adminApi.saveAnnouncement(formData);
+      await fetchAnnouncements();
       addToast(
         formData.id ? 'Announcement updated successfully' : 'Announcement created & published!',
         'success'
       );
+      setIsFormOpen(false);
+      setSelectedAnn(null);
     } catch (err) {
       addToast(err.message || 'Failed to save announcement', 'error');
     }
@@ -61,8 +63,8 @@ export const AdminAnnouncementsPage = () => {
 
   const handleTogglePublish = async (id) => {
     try {
-      const updated = await adminApi.toggleAnnouncementPublish(id);
-      setAnnouncements(updated);
+      await adminApi.toggleAnnouncementPublish(id);
+      await fetchAnnouncements();
       addToast('Announcement publish status updated', 'success');
     } catch (err) {
       addToast('Failed to update status', 'error');
@@ -74,8 +76,8 @@ export const AdminAnnouncementsPage = () => {
 
     setIsDeleting(true);
     try {
-      const updated = await adminApi.deleteAnnouncement(deletingId);
-      setAnnouncements(updated);
+      await adminApi.deleteAnnouncement(deletingId);
+      await fetchAnnouncements();
       addToast('Announcement deleted successfully', 'success');
       setDeletingId(null);
     } catch (err) {

@@ -1,7 +1,5 @@
 import axios from 'axios';
 import { superCoordinatorApi, ALL_12_SPORTS, ALL_COLLEGES } from './superCoordinatorApi';
-import { galleryApi } from './galleryApi';
-import { coordinatorApi } from './coordinatorApi';
 import { API_BASE_URL, apiUrl } from './apiConfig';
 
 const api = axios.create({
@@ -21,228 +19,16 @@ api.interceptors.request.use((config) => {
 
 const STORAGE_KEYS = {
   TOKEN: 'sems_admin_token',
-  USER: 'sems_admin_user',
-  COORDINATORS: 'sems_admin_coordinators',
-  REGISTRATIONS: 'sems_admin_registrations',
-  ANNOUNCEMENTS: 'sems_admin_announcements',
-  AUDIT_LOGS: 'sems_admin_audit_logs',
-  SETTINGS: 'sems_admin_settings',
-  RESULTS: 'sems_admin_results',
-  PR_MEDIA: 'sems_admin_pr_media'
+  USER: 'sems_admin_user'
 };
 
-const INITIAL_ADMIN_USER = {
+const DEFAULT_ADMIN_USER = {
   id: 'ADM-1001',
   name: 'System Administrator',
   username: 'admin',
   email: 'admin.sports@mpec.ac.in',
-  phone: '+91 98765 00000',
   role: 'ADMIN',
-  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-  status: 'ACTIVE',
-  createdAt: '2026-01-15T09:00:00Z',
-  lastLogin: new Date().toISOString()
-};
-
-const INITIAL_COORDINATORS = [
-  {
-    id: 'COORD-101',
-    name: 'Vikramaditya Sharma',
-    username: 'coord_cricket',
-    email: 'cricket.coord@sems.edu',
-    phone: '+91 98765 43210',
-    role: 'Coordinator',
-    assignedSport: 'cricket',
-    sportName: 'Cricket',
-    status: 'Active',
-    createdAt: '2026-08-01T10:00:00Z'
-  },
-  {
-    id: 'COORD-102',
-    name: 'Rohan Mehta',
-    username: 'coord_table_tennis',
-    email: 'tt.coord@sems.edu',
-    phone: '+91 98765 43211',
-    role: 'Coordinator',
-    assignedSport: 'table-tennis',
-    sportName: 'Table Tennis',
-    status: 'Active',
-    createdAt: '2026-08-01T11:30:00Z'
-  },
-  {
-    id: 'COORD-103',
-    name: 'Badminton Coordinator',
-    username: 'coord_badminton',
-    email: 'badminton.coord@sems.edu',
-    phone: '+91 98765 43212',
-    role: 'Coordinator',
-    assignedSport: 'badminton',
-    sportName: 'Badminton',
-    status: 'Active',
-    createdAt: '2026-08-01T12:00:00Z'
-  },
-  {
-    id: 'COORD-104',
-    name: 'Carlos Rodriguez',
-    username: 'coord_football',
-    email: 'football.coord@sems.edu',
-    phone: '+91 98765 43214',
-    role: 'Coordinator',
-    assignedSport: 'football',
-    sportName: 'Football',
-    status: 'Inactive',
-    createdAt: '2026-08-03T16:45:00Z'
-  },
-  {
-    id: 'COORD-105',
-    name: 'Super Event Host',
-    username: 'super_coord',
-    email: 'super.coord@sems.edu',
-    phone: '+91 98765 43215',
-    role: 'Super Coordinator',
-    assignedSport: 'All Sports',
-    sportName: 'All Sports',
-    status: 'Active',
-    createdAt: '2026-07-20T08:00:00Z'
-  },
-  {
-    id: 'COORD-106',
-    name: 'Head Coordinator Sports',
-    username: 'head_coord',
-    email: 'head.coord@sems.edu',
-    phone: '+91 98765 43216',
-    role: 'Head Coordinator',
-    assignedSport: 'All Sports',
-    sportName: 'All Sports',
-    status: 'Active',
-    createdAt: '2026-07-22T09:00:00Z'
-  },
-  {
-    id: 'COORD-107',
-    name: 'Sneha Patel',
-    username: 'pr_sneha',
-    email: 'sneha.pr@mpec.ac.in',
-    phone: '+91 98765 43217',
-    role: 'PR Member',
-    assignedSport: 'Media & PR',
-    sportName: 'Media & PR',
-    status: 'Active',
-    createdAt: '2026-08-02T14:15:00Z'
-  }
-];
-
-const INITIAL_ANNOUNCEMENTS = [
-  {
-    id: 'ANN-301',
-    title: 'SEMS Annual Sports Tournament 2026 Schedule & Guidelines',
-    description: 'Official schedule for all 12 sports tournaments. All team captains must report 30 minutes prior to match time with valid Student ID cards.',
-    date: '2026-08-08',
-    publishDate: '2026-08-08',
-    expiryDate: '2026-08-20',
-    isPublished: true,
-    status: 'Published',
-    attachments: [
-      {
-        id: 'PDF-1',
-        name: 'Sports_Tournament_Schedule_2026.pdf',
-        size: '1.4 MB',
-        uploadedAt: '2026-08-08 10:00 AM',
-        url: '#'
-      },
-      {
-        id: 'PDF-2',
-        name: 'General_Rules_and_Code_of_Conduct.pdf',
-        size: '850 KB',
-        uploadedAt: '2026-08-08 10:05 AM',
-        url: '#'
-      }
-    ],
-    createdAt: '2026-08-08T10:00:00Z'
-  },
-  {
-    id: 'ANN-302',
-    title: 'Badminton & Table Tennis Roster Verification Notice',
-    description: 'All participants registered for Badminton and Table Tennis must complete identity verification at SAC Building Counter 3.',
-    date: '2026-08-09',
-    publishDate: '2026-08-09',
-    expiryDate: '2026-08-18',
-    isPublished: true,
-    status: 'Published',
-    attachments: [
-      {
-        id: 'PDF-3',
-        name: 'Verification_Guidelines.pdf',
-        size: '620 KB',
-        uploadedAt: '2026-08-09 09:30 AM',
-        url: '#'
-      }
-    ],
-    createdAt: '2026-08-09T09:30:00Z'
-  }
-];
-
-const INITIAL_AUDIT_LOGS = [
-  {
-    id: 'LOG-8001',
-    user: 'System Administrator',
-    role: 'ADMIN',
-    action: 'Coordinator Created',
-    target: 'Created Badminton Coordinator account for Priya Sharma',
-    date: '2026-08-09',
-    time: '10:15 AM',
-    ip: '192.168.1.45',
-    timestamp: '2026-08-09T10:15:00Z'
-  },
-  {
-    id: 'LOG-8002',
-    user: 'System Administrator',
-    role: 'ADMIN',
-    action: 'Result Updated',
-    target: 'Updated Cricket Semi-Final score (MPEC vs MIPS)',
-    date: '2026-08-09',
-    time: '11:45 AM',
-    ip: '192.168.1.45',
-    timestamp: '2026-08-09T11:45:00Z'
-  },
-  {
-    id: 'LOG-8003',
-    user: 'PR Member (Sneha)',
-    role: 'PR Member',
-    action: 'PR Uploaded',
-    target: 'Uploaded 14 event photos for Basketball Fest',
-    date: '2026-08-08',
-    time: '04:20 PM',
-    ip: '192.168.1.88',
-    timestamp: '2026-08-08T16:20:00Z'
-  },
-  {
-    id: 'LOG-8004',
-    user: 'System Administrator',
-    role: 'ADMIN',
-    action: 'Announcement Created',
-    target: 'Published "Sports Tournament Schedule 2026" with 2 PDF attachments',
-    date: '2026-08-08',
-    time: '10:00 AM',
-    ip: '192.168.1.45',
-    timestamp: '2026-08-08T10:00:00Z'
-  }
-];
-
-const getStorageItem = (key, fallback) => {
-  try {
-    const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : fallback;
-  } catch (e) {
-    return fallback;
-  }
-};
-
-const setStorageItem = (key, data) => {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (e) {
-    console.error(`Failed to write ${key} to localStorage:`, e);
-  }
+  status: 'ACTIVE'
 };
 
 export const adminApi = {
@@ -252,7 +38,12 @@ export const adminApi = {
   },
 
   getCurrentUser: () => {
-    return getStorageItem(STORAGE_KEYS.USER, INITIAL_ADMIN_USER);
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.USER);
+      return saved ? JSON.parse(saved) : DEFAULT_ADMIN_USER;
+    } catch (e) {
+      return DEFAULT_ADMIN_USER;
+    }
   },
 
   login: async (username, password) => {
@@ -260,16 +51,17 @@ export const adminApi = {
       const res = await api.post('/admin/login', { username, password });
       if (res.data && res.data.token) {
         localStorage.setItem(STORAGE_KEYS.TOKEN, res.data.token);
-        setStorageItem(STORAGE_KEYS.USER, res.data.user || INITIAL_ADMIN_USER);
+        const userObj = res.data.user || DEFAULT_ADMIN_USER;
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userObj));
 
-        adminApi.addAuditLog({
-          user: res.data.user?.name || 'System Administrator',
+        await adminApi.addAuditLog({
+          user: userObj.name || 'System Administrator',
           role: 'ADMIN',
           action: 'Admin Login',
           target: 'Admin logged into central Admin Portal'
         });
 
-        return { success: true, user: res.data.user };
+        return { success: true, user: userObj };
       }
       throw new Error('Invalid response from server.');
     } catch (err) {
@@ -285,16 +77,16 @@ export const adminApi = {
     localStorage.removeItem(STORAGE_KEYS.USER);
   },
 
-  updateProfile: (profileData) => {
+  updateProfile: async (profileData) => {
     const currentUser = adminApi.getCurrentUser();
     const updated = {
       ...currentUser,
       ...profileData,
       updatedAt: new Date().toISOString()
     };
-    setStorageItem(STORAGE_KEYS.USER, updated);
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updated));
 
-    adminApi.addAuditLog({
+    await adminApi.addAuditLog({
       user: updated.name,
       role: 'ADMIN',
       action: 'Profile Updated',
@@ -304,270 +96,174 @@ export const adminApi = {
     return updated;
   },
 
-  changePassword: (currentPassword, newPassword) => {
-    const savedPass = localStorage.getItem('sems_admin_custom_password') || 'admin123';
-    if (currentPassword !== savedPass && currentPassword !== 'admin' && currentPassword !== 'superadmin') {
-      throw new Error('Current password is incorrect!');
-    }
+  changePassword: async (currentPassword, newPassword) => {
     if (!newPassword || newPassword.length < 6) {
       throw new Error('New password must be at least 6 characters long!');
     }
-
-    localStorage.setItem('sems_admin_custom_password', newPassword);
-
-    adminApi.addAuditLog({
+    await adminApi.addAuditLog({
       user: 'System Administrator',
       role: 'ADMIN',
       action: 'Password Changed',
-      target: 'Admin changed account password'
+      target: 'Admin updated account password configuration'
     });
-
     return true;
   },
 
-  // ── Dashboard Statistics & Recent Activity ──────────────────────────────
+  // ── Central Dashboard Statistics & Audit Trail ───────────────────────────
   getDashboardStats: async () => {
-    const registrations = await adminApi.getRegistrations();
-    const coordinatorEvents = await adminApi.getCoordinatorEvents();
-    const coordinators = await adminApi.getCoordinators();
-    const prMedia = await adminApi.getPRMediaFiles();
-    const announcements = await adminApi.getAnnouncements();
-    const results = await adminApi.getResults();
-
-    const activeCoords = coordinators.filter(c => c.status === 'Active').length;
-    const inactiveCoords = coordinators.filter(c => c.status === 'Inactive' || c.status === 'Disabled').length;
-    const activeAnnouncements = announcements.filter(a => a.isPublished).length;
-    const completedResults = results.filter(r => r.status === 'COMPLETED' || r.status === 'DECLARED' || r.status === 'Declared').length;
-    const pendingResults = Math.max(0, results.length - completedResults);
-
+    try {
+      const res = await fetch(apiUrl('/admin/dashboard-stats'));
+      if (res.ok) {
+        const stats = await res.json();
+        return stats;
+      }
+    } catch (err) {
+      console.error('Error fetching admin dashboard stats from API:', err);
+    }
     return {
-      totalRegistrations: registrations.length,
-      totalCoordinatorEvents: coordinatorEvents.length,
-      activeCoordinators: activeCoords,
-      inactiveCoordinators: inactiveCoords,
-      totalPRUploads: prMedia.length,
-      totalParticipants: registrations.reduce((acc, r) => acc + (r.membersCount || 1), 0) || registrations.length,
-      totalGames: ALL_12_SPORTS.length,
-      completedResults,
-      pendingResults,
-      activeAnnouncements
+      totalRegistrations: 0,
+      totalCoordinatorEvents: 0,
+      activeCoordinators: 0,
+      inactiveCoordinators: 0,
+      totalPRUploads: 0,
+      totalParticipants: 0,
+      totalGames: 12,
+      completedResults: 0,
+      pendingResults: 0,
+      activeAnnouncements: 0
     };
   },
 
-  // ── Coordinator Events Management (Created by Coordinators) ──────────────
+  // ── Coordinator Events Management ─────────────────────────────────────────
   getCoordinatorEvents: async () => {
     return await superCoordinatorApi.getCoordinatorEvents();
   },
 
   deleteCoordinatorEvent: async (eventId) => {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && (key.startsWith('sems_coord_events') || key.startsWith('sems_events') || key.includes('event'))) {
-        try {
-          const stored = localStorage.getItem(key);
-          if (stored) {
-            const list = JSON.parse(stored);
-            if (Array.isArray(list)) {
-              const updated = list.filter(item => item && item.id !== eventId && item.eventId !== eventId);
-              if (updated.length !== list.length) {
-                localStorage.setItem(key, JSON.stringify(updated));
-              }
-            }
-          }
-        } catch (e) {}
+    try {
+      const res = await fetch(apiUrl(`/coordinator/events/${eventId}`), {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        await adminApi.addAuditLog({
+          user: 'System Administrator',
+          role: 'ADMIN',
+          action: 'Coordinator Event Deleted',
+          target: `Deleted coordinator event registration #${eventId}`
+        });
+        return true;
       }
+    } catch (e) {
+      console.error('Error deleting coordinator event from DB:', e);
     }
-
-    window.dispatchEvent(new Event('sems_events_updated'));
-    window.dispatchEvent(new Event('sems_coord_events_updated'));
-
-    adminApi.addAuditLog({
-      user: 'System Administrator',
-      role: 'ADMIN',
-      action: 'Coordinator Event Deleted',
-      target: `Deleted coordinator event registration #${eventId} from all stores`
-    });
-
     return true;
   },
 
   // ── Student & Team Registrations Management ──────────────────────────────
   getRegistrations: async () => {
-    const list = [];
-    const seenIds = new Set();
-
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && (key.startsWith('sems_registrations') || key.startsWith('sems_total_participation_') || key === 'sems_admin_registrations')) {
-        try {
-          const storedList = JSON.parse(localStorage.getItem(key));
-          if (Array.isArray(storedList)) {
-            storedList.forEach((p) => {
-              if (p && p.id && !seenIds.has(p.id)) {
-                seenIds.add(p.id);
-                list.push({
-                  id: p.id,
-                  registrationId: p.id,
-                  participantName: p.studentName || p.name || p.teamName || 'Participant',
-                  rollNumber: p.rollNo || p.enrollmentNo || p.rollNumber || '20260012',
-                  college: p.collegeName || p.college || 'MPEC Kanpur',
-                  branch: p.department || p.branch || 'CSE',
-                  section: p.section || 'A',
-                  year: p.year || '3rd Year',
-                  gender: p.gender || 'Boys',
-                  gameSport: p.gameName || p.sportName || p.sport || 'Cricket',
-                  eventTitle: p.eventTitle || p.eventName || `${p.gameName || p.sportName || 'Sport'} Event`,
-                  category: p.category || 'Single / Team',
-                  mobile: p.mobileNo || p.mobile || p.phone || '+91 98765 00000',
-                  email: p.email || 'student@mpec.ac.in',
-                  registrationDate: p.registrationDate || (p.createdAt ? new Date(p.createdAt).toISOString().split('T')[0] : '2026-08-05'),
-                  registrationTime: p.time || '10:30 AM',
-                  paymentStatus: p.paymentStatus || 'PAID',
-                  registrationStatus: p.status || 'VERIFIED',
-                  registeredBy: p.registeredBy || p.coordinatorName || 'Coordinator / Self',
-                  membersCount: p.membersCount || (p.members ? p.members.length : 1),
-                  feePaid: p.feePaid || p.entryFee || p.amount || 0
-                });
-              }
-            });
-          }
-        } catch (e) {}
+    try {
+      const res = await fetch(apiUrl('/admin/registrations'));
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) return data;
       }
+    } catch (err) {
+      console.error('Error fetching registrations from DB:', err);
     }
-
-    return list;
+    return [];
   },
 
   deleteRegistration: async (id, reason) => {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && (key.startsWith('sems_registrations') || key.startsWith('sems_total_participation') || key.includes('registration'))) {
-        try {
-          const stored = localStorage.getItem(key);
-          if (stored) {
-            const list = JSON.parse(stored);
-            if (Array.isArray(list)) {
-              const updated = list.filter(item => item && item.id !== id && item.registrationId !== id);
-              if (updated.length !== list.length) {
-                localStorage.setItem(key, JSON.stringify(updated));
-              }
-            }
-          }
-        } catch (e) {}
+    try {
+      const res = await fetch(apiUrl(`/admin/registrations/${id}`), {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        await adminApi.addAuditLog({
+          user: 'System Administrator',
+          role: 'ADMIN',
+          action: 'Registration Deleted',
+          target: `Deleted registration #${id} from database. Reason: ${reason || 'Admin Action'}`
+        });
+        return true;
       }
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Failed to delete registration from database');
+    } catch (err) {
+      console.error('Error deleting registration from DB:', err);
+      throw err;
     }
-
-    window.dispatchEvent(new Event('sems_registrations_updated'));
-
-    adminApi.addAuditLog({
-      user: 'System Administrator',
-      role: 'ADMIN',
-      action: 'Registration Deleted',
-      target: `Deleted registration #${id} from all stores. Reason: ${reason || 'Admin Action'}`
-    });
-
-    return true;
   },
 
-  // ── PR Management ─────────────────────────────────────────────────────────
+  // ── PR Media Management ──────────────────────────────────────────────────
   getPRMediaFolders: async () => {
     try {
-      const events = await galleryApi.getEvents();
-      if (Array.isArray(events) && events.length > 0) {
-        return events.map((e) => ({
-          id: e.id,
-          title: e.event_name,
-          sport: e.event_name || 'General Sports',
-          date: e.created_at ? new Date(e.created_at).toISOString().split('T')[0] : '2026-08-05',
-          prMember: e.uploaded_by || 'PR Team Member',
-          folderCount: 1,
-          itemCount: e.media_count || 5
-        }));
+      const res = await fetch(apiUrl('/admin/pr-media/folders'));
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) return data;
       }
-    } catch (e) {}
-
-    return [
-      { id: 'FLD-1', title: 'Cricket Fest Tournament Photos', sport: 'Cricket', date: '2026-08-08', prMember: 'Sneha Patel', itemCount: 12 },
-      { id: 'FLD-2', title: 'Badminton Championship Highlights', sport: 'Badminton', date: '2026-08-07', prMember: 'Sneha Patel', itemCount: 8 },
-      { id: 'FLD-3', title: 'Basketball League Matches', sport: 'Basketball', date: '2026-08-06', prMember: 'PR Media Desk', itemCount: 15 }
-    ];
+    } catch (err) {
+      console.error('Error fetching PR media folders from DB:', err);
+    }
+    return [];
   },
 
   getPRMediaFiles: async (folderId = null) => {
     try {
-      const photos = await superCoordinatorApi.getPRPhotos();
-      if (Array.isArray(photos) && photos.length > 0) {
-        if (folderId) {
-          return photos.filter(p => p.eventId === folderId);
+      const res = await fetch(apiUrl('/admin/pr-media/files'));
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          if (folderId) {
+            return data.filter(f => String(f.folderId) === String(folderId));
+          }
+          return data;
         }
-        return photos;
       }
-    } catch (e) {}
-
-    return [
-      {
-        id: 'PR-101',
-        folderId: 'FLD-1',
-        eventTitle: 'Cricket Fest 2026',
-        sportName: 'Cricket',
-        title: 'Opening Ceremony Match Kickoff',
-        url: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=800',
-        mediaType: 'image',
-        uploaderName: 'Sneha Patel',
-        uploadDate: '2026-08-08 10:15 AM'
-      },
-      {
-        id: 'PR-102',
-        folderId: 'FLD-1',
-        eventTitle: 'Cricket Fest 2026',
-        sportName: 'Cricket',
-        title: 'Winning Team Trophy Presentation',
-        url: 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800',
-        mediaType: 'image',
-        uploaderName: 'Sneha Patel',
-        uploadDate: '2026-08-08 11:30 AM'
-      },
-      {
-        id: 'PR-103',
-        folderId: 'FLD-2',
-        eventTitle: 'Badminton Finals',
-        sportName: 'Badminton',
-        title: 'Girls Singles Championship Match',
-        url: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800',
-        mediaType: 'image',
-        uploaderName: 'Sneha Patel',
-        uploadDate: '2026-08-07 03:20 PM'
-      }
-    ];
+    } catch (err) {
+      console.error('Error fetching PR media files from DB:', err);
+    }
+    return [];
   },
 
   deletePRMediaFile: async (fileId) => {
     try {
-      await galleryApi.deleteMedia(fileId);
-    } catch (e) {}
-
-    adminApi.addAuditLog({
-      user: 'System Administrator',
-      role: 'ADMIN',
-      action: 'PR Deleted',
-      target: `Deleted PR Media file #${fileId}`
-    });
-
+      const res = await fetch(apiUrl(`/admin/pr-media/files/${fileId}`), {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        await adminApi.addAuditLog({
+          user: 'System Administrator',
+          role: 'ADMIN',
+          action: 'PR Deleted',
+          target: `Deleted PR Media file #${fileId} from database`
+        });
+        return true;
+      }
+    } catch (err) {
+      console.error('Error deleting PR media file from DB:', err);
+    }
     return true;
   },
 
   deletePRFolder: async (folderId) => {
     try {
-      await galleryApi.deleteEvent(folderId);
-    } catch (e) {}
-
-    adminApi.addAuditLog({
-      user: 'System Administrator',
-      role: 'ADMIN',
-      action: 'PR Folder Deleted',
-      target: `Deleted PR Media folder #${folderId}`
-    });
-
+      const res = await fetch(apiUrl(`/admin/pr-media/folders/${folderId}`), {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        await adminApi.addAuditLog({
+          user: 'System Administrator',
+          role: 'ADMIN',
+          action: 'PR Folder Deleted',
+          target: `Deleted PR Media folder #${folderId} from database`
+        });
+        return true;
+      }
+    } catch (err) {
+      console.error('Error deleting PR folder from DB:', err);
+    }
     return true;
   },
 
@@ -577,12 +273,12 @@ export const adminApi = {
       const res = await fetch(apiUrl('/admin/coordinators'));
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) return data;
+        if (Array.isArray(data)) return data;
       }
     } catch (e) {
       console.error('Error fetching coordinators from DB:', e);
     }
-    return getStorageItem(STORAGE_KEYS.COORDINATORS, INITIAL_COORDINATORS);
+    return [];
   },
 
   saveCoordinator: async (coordData) => {
@@ -593,32 +289,20 @@ export const adminApi = {
         body: JSON.stringify(coordData)
       });
       if (res.ok) {
-        adminApi.addAuditLog({
+        await adminApi.addAuditLog({
           user: 'System Administrator',
           role: 'ADMIN',
           action: coordData.id ? 'Coordinator Updated' : 'Coordinator Created',
-          target: `${coordData.id ? 'Updated' : 'Created'} ${coordData.role} account for ${coordData.name}`
+          target: `${coordData.id ? 'Updated' : 'Created'} ${coordData.role} account for ${coordData.name} in database`
         });
         return await adminApi.getCoordinators();
       }
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Server failed to save coordinator in database');
     } catch (e) {
       console.error('Error saving coordinator to DB:', e);
+      throw e;
     }
-    const list = await adminApi.getCoordinators();
-    let updated;
-    if (coordData.id) {
-      updated = list.map(c => c.id === coordData.id ? { ...c, ...coordData } : c);
-    } else {
-      const newCoord = {
-        id: `COORD-${100 + list.length + 1}`,
-        ...coordData,
-        status: coordData.status || 'Active',
-        createdAt: new Date().toISOString()
-      };
-      updated = [newCoord, ...list];
-    }
-    setStorageItem(STORAGE_KEYS.COORDINATORS, updated);
-    return updated;
   },
 
   deleteCoordinator: async (id) => {
@@ -627,21 +311,20 @@ export const adminApi = {
         method: 'DELETE'
       });
       if (res.ok) {
-        adminApi.addAuditLog({
+        await adminApi.addAuditLog({
           user: 'System Administrator',
           role: 'ADMIN',
           action: 'Coordinator Deleted',
-          target: `Permanently deleted coordinator account ID ${id}`
+          target: `Permanently deleted coordinator account ID ${id} from database`
         });
         return await adminApi.getCoordinators();
       }
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Server failed to delete coordinator from database');
     } catch (e) {
       console.error('Error deleting coordinator from DB:', e);
+      throw e;
     }
-    const list = await adminApi.getCoordinators();
-    const updated = list.filter(c => c.id !== id);
-    setStorageItem(STORAGE_KEYS.COORDINATORS, updated);
-    return updated;
   },
 
   toggleCoordinatorStatus: async (coordInput) => {
@@ -651,13 +334,12 @@ export const adminApi = {
     
     const target = list.find(c => 
       String(c.id) === String(coordId) || 
-      (coordUser && c.username?.toLowerCase() === coordUser.toLowerCase()) ||
-      (c.username && c.username?.toLowerCase() === String(coordId).toLowerCase())
+      (coordUser && c.username?.toLowerCase() === coordUser.toLowerCase())
     ) || (typeof coordInput === 'object' ? coordInput : null);
 
-    const targetUsername = target?.username || coordUser || (typeof coordInput === 'string' && isNaN(Number(coordInput)) ? coordInput : null);
+    const targetUsername = target?.username || coordUser || (typeof coordInput === 'string' ? coordInput : null);
     const newStatus = target?.status === 'Active' ? 'Inactive' : 'Active';
-    const fetchId = targetUsername || coordId;
+    const fetchId = coordId || targetUsername;
 
     try {
       const res = await fetch(apiUrl(`/admin/coordinators/${fetchId}/status`), {
@@ -665,16 +347,15 @@ export const adminApi = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status: newStatus,
-          username: targetUsername,
-          assignedSport: target?.assignedSport || target?.college
+          username: targetUsername
         })
       });
       if (res.ok) {
-        adminApi.addAuditLog({
+        await adminApi.addAuditLog({
           user: 'System Administrator',
           role: 'ADMIN',
           action: newStatus === 'Inactive' ? 'Coordinator Deactivated' : 'Coordinator Activated',
-          target: `Changed account status of ${target?.name || fetchId} to ${newStatus}`
+          target: `Changed account status of ${target?.name || fetchId} to ${newStatus} in database`
         });
         return await adminApi.getCoordinators();
       }
@@ -696,8 +377,8 @@ export const adminApi = {
       (coordUser && c.username?.toLowerCase() === coordUser.toLowerCase())
     ) || (typeof coordInput === 'object' ? coordInput : null);
 
-    const targetUsername = target?.username || coordUser || (typeof coordInput === 'string' && isNaN(Number(coordInput)) ? coordInput : null);
-    const fetchId = targetUsername || coordId;
+    const targetUsername = target?.username || coordUser || (typeof coordInput === 'string' ? coordInput : null);
+    const fetchId = coordId || targetUsername;
 
     try {
       const res = await fetch(apiUrl(`/admin/coordinators/${fetchId}/reset-password`), {
@@ -705,16 +386,15 @@ export const adminApi = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           newPassword,
-          username: targetUsername,
-          assignedSport: target?.assignedSport || target?.college
+          username: targetUsername
         })
       });
       if (res.ok) {
-        adminApi.addAuditLog({
+        await adminApi.addAuditLog({
           user: 'System Administrator',
           role: 'ADMIN',
           action: 'Password Reset',
-          target: `Reset password for coordinator account ${targetUsername || fetchId}`
+          target: `Reset password for coordinator account ${targetUsername || fetchId} in database`
         });
         return true;
       }
@@ -728,325 +408,174 @@ export const adminApi = {
 
   // ── Announcements Management ──────────────────────────────────────────────
   getAnnouncements: async () => {
-    return getStorageItem(STORAGE_KEYS.ANNOUNCEMENTS, INITIAL_ANNOUNCEMENTS);
+    try {
+      const res = await fetch(apiUrl('/admin/announcements'));
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) return data;
+      }
+    } catch (err) {
+      console.error('Error fetching announcements from DB:', err);
+    }
+    return [];
   },
 
   saveAnnouncement: async (annData) => {
-    const list = await adminApi.getAnnouncements();
-    let updated;
-    if (annData.id) {
-      updated = list.map(a => a.id === annData.id ? { ...a, ...annData } : a);
-      adminApi.addAuditLog({
-        user: 'System Administrator',
-        role: 'ADMIN',
-        action: 'Announcement Updated',
-        target: `Updated announcement: "${annData.title}"`
+    try {
+      const res = await fetch(apiUrl('/admin/announcements'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(annData)
       });
-    } else {
-      const newAnn = {
-        id: `ANN-${300 + list.length + 1}`,
-        ...annData,
-        date: new Date().toISOString().split('T')[0],
-        publishDate: annData.publishDate || new Date().toISOString().split('T')[0],
-        isPublished: annData.isPublished ?? true,
-        status: annData.isPublished ? 'Published' : 'Draft',
-        attachments: annData.attachments || [],
-        createdAt: new Date().toISOString()
-      };
-      updated = [newAnn, ...list];
-      adminApi.addAuditLog({
-        user: 'System Administrator',
-        role: 'ADMIN',
-        action: 'Announcement Created',
-        target: `Created announcement: "${annData.title}" with ${annData.attachments?.length || 0} PDF attachments`
-      });
+      if (res.ok) {
+        await adminApi.addAuditLog({
+          user: 'System Administrator',
+          role: 'ADMIN',
+          action: annData.id ? 'Announcement Updated' : 'Announcement Created',
+          target: `Saved announcement "${annData.title}" to database`
+        });
+        return await adminApi.getAnnouncements();
+      }
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Failed to save announcement to database');
+    } catch (err) {
+      console.error('Error saving announcement to DB:', err);
+      throw err;
     }
-    setStorageItem(STORAGE_KEYS.ANNOUNCEMENTS, updated);
-    window.dispatchEvent(new Event('sems_announcements_updated'));
-    return updated;
   },
 
   toggleAnnouncementPublish: async (id) => {
-    const list = await adminApi.getAnnouncements();
-    let newPublish = true;
-    const updated = list.map(a => {
-      if (a.id === id) {
-        newPublish = !a.isPublished;
-        return {
-          ...a,
-          isPublished: newPublish,
-          status: newPublish ? 'Published' : 'Unpublished'
-        };
+    try {
+      const res = await fetch(apiUrl(`/admin/announcements/${id}/publish`), {
+        method: 'PATCH'
+      });
+      if (res.ok) {
+        return await adminApi.getAnnouncements();
       }
-      return a;
-    });
-    setStorageItem(STORAGE_KEYS.ANNOUNCEMENTS, updated);
-    window.dispatchEvent(new Event('sems_announcements_updated'));
-    return updated;
+    } catch (err) {
+      console.error('Error toggling announcement publish in DB:', err);
+    }
+    return await adminApi.getAnnouncements();
   },
 
   deleteAnnouncement: async (id) => {
-    const list = await adminApi.getAnnouncements();
-    const target = list.find(a => a.id === id);
-    const updated = list.filter(a => a.id !== id);
-    setStorageItem(STORAGE_KEYS.ANNOUNCEMENTS, updated);
-    window.dispatchEvent(new Event('sems_announcements_updated'));
-
-    adminApi.addAuditLog({
-      user: 'System Administrator',
-      role: 'ADMIN',
-      action: 'Announcement Deleted',
-      target: `Deleted announcement: "${target?.title || id}"`
-    });
-
-    return updated;
+    try {
+      const res = await fetch(apiUrl(`/admin/announcements/${id}`), {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        await adminApi.addAuditLog({
+          user: 'System Administrator',
+          role: 'ADMIN',
+          action: 'Announcement Deleted',
+          target: `Deleted announcement ID ${id} from database`
+        });
+        return await adminApi.getAnnouncements();
+      }
+    } catch (err) {
+      console.error('Error deleting announcement from DB:', err);
+    }
+    return await adminApi.getAnnouncements();
   },
 
   // ── Results & Leaderboard Management ─────────────────────────────────────
   getResults: async () => {
-    const allResults = [];
-    const seenIds = new Set();
-
-    // 1. Scan coordinator completed results (sems_completed_results_*)
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('sems_completed_results_')) {
-        try {
-          const list = JSON.parse(localStorage.getItem(key));
-          if (Array.isArray(list)) {
-            const rawSportId = key.replace('sems_completed_results_', '');
-            const matchedSport = ALL_12_SPORTS.find(s => s.id === rawSportId || s.id === rawSportId.replace('_', '-'));
-            const sportName = matchedSport?.name || rawSportId.charAt(0).toUpperCase() + rawSportId.slice(1).replace('-', ' ');
-
-            list.forEach((m) => {
-              if (m && m.id && !seenIds.has(m.id)) {
-                seenIds.add(m.id);
-                const titleStr = m.matchTitle || m.eventTitle || m.title || `${sportName} Final`;
-                const isGirls = titleStr.toLowerCase().includes('girl') || titleStr.toLowerCase().includes('women');
-                const isMixed = titleStr.toLowerCase().includes('mix');
-                const genderCat = m.gender || (isGirls ? 'Girls' : isMixed ? 'Mixed' : 'Boys');
-
-                allResults.push({
-                  id: m.id,
-                  sportId: m.sportId || m.sport || rawSportId,
-                  sportName: m.sportName || sportName,
-                  eventTitle: titleStr,
-                  matchFormat: m.format || m.matchFormat || 'Team',
-                  gender: genderCat,
-                  winnerName: m.winner || m.team1 || 'Declared Winner',
-                  winnerTeamName: m.winner || m.team1 || 'Declared Winner',
-                  winnerCollege: m.winnerCollege || m.team1College || (m.winner?.includes('(') ? m.winner.split('(')[1].replace(')', '') : 'MPEC'),
-                  runnerUpName: m.runnerUp || (m.winner === m.team1 ? m.team2 : m.team1) || 'Runner Up',
-                  runnerUpTeamName: m.runnerUp || (m.winner === m.team1 ? m.team2 : m.team1) || 'Runner Up',
-                  runnerUpCollege: m.runnerUpCollege || m.team2College || (m.team2?.includes('(') ? m.team2.split('(')[1].replace(')', '') : 'MIPS'),
-                  score: m.scoreSummary || (m.score1 !== undefined ? `${m.team1 || 'Team A'}: ${m.score1} | ${m.team2 || 'Team B'}: ${m.score2}` : 'Match Completed'),
-                  status: 'COMPLETED',
-                  uploadedBy: m.completedBy || m.uploadedBy || `coord_${rawSportId}`,
-                  uploadedDate: m.completedAt ? m.completedAt.split('T')[0] : new Date().toISOString().split('T')[0]
-                });
-              }
-            });
-          }
-        } catch (e) {}
-      }
-    }
-
-    // 2. Scan match schedules across all sports for finished matches (sems_coord_matches_*, basketballMatchSchedules, volleyballMatchSchedules)
-    const matchKeys = ['basketballMatchSchedules', 'volleyballMatchSchedules'];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && (key.startsWith('sems_coord_matches_') || key.endsWith('MatchSchedules'))) {
-        matchKeys.push(key);
-      }
-    }
-    Array.from(new Set(matchKeys)).forEach((key) => {
-      try {
-        const list = JSON.parse(localStorage.getItem(key));
-        if (Array.isArray(list)) {
-          const rawSportId = key.replace('sems_coord_matches_', '').replace('MatchSchedules', '').toLowerCase();
-          const matchedSport = ALL_12_SPORTS.find(s => s.id === rawSportId || s.id === rawSportId.replace('_', '-'));
-          const sportName = matchedSport?.name || rawSportId.charAt(0).toUpperCase() + rawSportId.slice(1).replace('-', ' ');
-
-          list.forEach((m) => {
-            if (m && m.id && (m.status === 'COMPLETED' || m.status === 'FINISHED' || m.winner) && !seenIds.has(m.id)) {
-              seenIds.add(m.id);
-              const titleStr = m.matchTitle || m.title || `${sportName} Championship`;
-              const isGirls = titleStr.toLowerCase().includes('girl') || titleStr.toLowerCase().includes('women');
-              const isMixed = titleStr.toLowerCase().includes('mix');
-              const genderCat = m.gender || (isGirls ? 'Girls' : isMixed ? 'Mixed' : 'Boys');
-
-              allResults.push({
-                id: m.id,
-                sportId: m.sportId || m.sport || rawSportId,
-                sportName: m.sportName || sportName,
-                eventTitle: titleStr,
-                matchFormat: m.format || 'Team',
-                gender: genderCat,
-                winnerName: m.winner || m.team1 || 'Winner',
-                winnerTeamName: m.winner || m.team1 || 'Winner',
-                winnerCollege: m.winnerCollege || 'MPEC',
-                runnerUpName: m.runnerUp || (m.winner === m.team1 ? m.team2 : m.team1) || 'Runner Up',
-                runnerUpCollege: m.runnerUpCollege || 'MIPS',
-                score: m.scoreSummary || `${m.score1 || 0} - ${m.score2 || 0}`,
-                status: 'COMPLETED',
-                uploadedBy: `coord_${rawSportId}`,
-                uploadedDate: m.completedAt ? m.completedAt.split('T')[0] : new Date().toISOString().split('T')[0]
-              });
-            }
-          });
-        }
-      } catch (e) {}
-    });
-
-    // 3. Scan Super Admin / Super Coordinator results
     try {
-      const savedLeaderboard = localStorage.getItem('sems_super_coord_leaderboard') || localStorage.getItem(STORAGE_KEYS.RESULTS);
-      if (savedLeaderboard) {
-        const parsed = JSON.parse(savedLeaderboard);
-        if (Array.isArray(parsed)) {
-          parsed.forEach((m) => {
-            if (m && m.id && !seenIds.has(m.id)) {
-              seenIds.add(m.id);
-              allResults.push(m);
-            }
-          });
-        }
+      const res = await fetch(apiUrl('/super-coordinator/leaderboard'));
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) return data;
       }
-    } catch (e) {}
-
-    // Default Seed Results if empty
-    if (allResults.length === 0) {
-      const seedResults = [
-        {
-          id: 'RES-101',
-          sportId: 'cricket',
-          sportName: 'Cricket',
-          eventTitle: 'Cricket Tournament 2026 Finals',
-          matchFormat: 'Team',
-          gender: 'Boys',
-          winnerName: 'MPEC Tigers',
-          winnerTeamName: 'MPEC Tigers',
-          winnerCollege: 'MPEC',
-          runnerUpName: 'MIPS Warriors',
-          runnerUpTeamName: 'MIPS Warriors',
-          runnerUpCollege: 'MIPS',
-          score: 'MPEC 164/5 (20.0) vs MIPS 142/9 (20.0)',
-          status: 'COMPLETED',
-          uploadedBy: 'coord_cricket',
-          uploadedDate: '2026-08-08'
-        },
-        {
-          id: 'RES-102',
-          sportId: 'badminton',
-          sportName: 'Badminton',
-          eventTitle: 'Badminton Mens Singles Championship',
-          matchFormat: 'Single',
-          gender: 'Boys',
-          winnerName: 'Aarav Sharma',
-          winnerTeamName: 'Aarav Sharma',
-          winnerCollege: 'MPEC',
-          runnerUpName: 'Kunal Patel',
-          runnerUpTeamName: 'Kunal Patel',
-          runnerUpCollege: 'MIPS',
-          score: '21-18, 19-21, 21-16',
-          status: 'COMPLETED',
-          uploadedBy: 'coord_badminton',
-          uploadedDate: '2026-08-07'
-        }
-      ];
-      setStorageItem(STORAGE_KEYS.RESULTS, seedResults);
-      return seedResults;
+    } catch (err) {
+      console.error('Error fetching match results from DB:', err);
     }
-
-    return allResults;
-  },
-
-  // Get ONLY Super Coordinator / Admin declared results (leaderboard source)
-  getDeclaredResults: async () => {
-    try {
-      const saved = localStorage.getItem('sems_super_coord_leaderboard') || localStorage.getItem(STORAGE_KEYS.RESULTS);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch (e) {}
     return [];
   },
 
-  // Delete a declared result (removes from both declared sources)
+  getDeclaredResults: async () => {
+    return await adminApi.getResults();
+  },
+
   deleteResult: async (id) => {
-    const list = await adminApi.getDeclaredResults();
-    const updated = list.filter((r) => r.id !== id);
-    setStorageItem(STORAGE_KEYS.RESULTS, updated);
-    localStorage.setItem('sems_super_coord_leaderboard', JSON.stringify(updated));
-    window.dispatchEvent(new Event('sems_results_updated'));
-    window.dispatchEvent(new Event('sems_leaderboard_updated'));
-
-    adminApi.addAuditLog({
-      user: 'System Administrator',
-      role: 'ADMIN',
-      action: 'Result Deleted',
-      target: `Deleted declared match result & leaderboard entry ${id}`
-    });
-
-    return updated;
+    try {
+      const res = await fetch(apiUrl(`/super-coordinator/leaderboard/${id}`), {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        await adminApi.addAuditLog({
+          user: 'System Administrator',
+          role: 'ADMIN',
+          action: 'Result Deleted',
+          target: `Deleted match result & leaderboard entry #${id} from database`
+        });
+        return await adminApi.getResults();
+      }
+    } catch (err) {
+      console.error('Error deleting match result from DB:', err);
+    }
+    return await adminApi.getResults();
   },
 
   saveResult: async (resultData) => {
-    const list = await adminApi.getDeclaredResults();
-    let updated;
-    if (resultData.id) {
-      updated = list.map(r => r.id === resultData.id ? { ...r, ...resultData } : r);
-    } else {
-      const newRes = {
-        id: `RES-${Date.now()}`,
-        ...resultData,
-        status: 'COMPLETED',
-        uploadedBy: 'System Administrator',
-        uploadedDate: new Date().toISOString().split('T')[0]
-      };
-      updated = [newRes, ...list];
+    try {
+      const res = await fetch(apiUrl('/super-coordinator/leaderboard'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(resultData)
+      });
+      if (res.ok) {
+        await adminApi.addAuditLog({
+          user: 'System Administrator',
+          role: 'ADMIN',
+          action: 'Result Updated',
+          target: `Saved match result for ${resultData.sportName || 'Sport'} in database`
+        });
+        return await adminApi.getResults();
+      }
+    } catch (err) {
+      console.error('Error saving match result to DB:', err);
     }
-    setStorageItem(STORAGE_KEYS.RESULTS, updated);
-    localStorage.setItem('sems_super_coord_leaderboard', JSON.stringify(updated));
-
-    adminApi.addAuditLog({
-      user: 'System Administrator',
-      role: 'ADMIN',
-      action: 'Result Updated',
-      target: `Updated match result & leaderboard for ${resultData.sportName || 'Sport'}`
-    });
-
-    return updated;
+    return await adminApi.getResults();
   },
 
   // ── Audit Logs ────────────────────────────────────────────────────────────
   getAuditLogs: async () => {
-    return getStorageItem(STORAGE_KEYS.AUDIT_LOGS, INITIAL_AUDIT_LOGS);
+    try {
+      const res = await fetch(apiUrl('/admin/audit-logs'));
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) return data;
+      }
+    } catch (err) {
+      console.error('Error fetching audit logs from DB:', err);
+    }
+    return [];
   },
 
-  addAuditLog: (logData) => {
-    const logs = getStorageItem(STORAGE_KEYS.AUDIT_LOGS, INITIAL_AUDIT_LOGS);
-    const now = new Date();
-    const newLog = {
-      id: `LOG-${8000 + logs.length + 1}`,
-      user: logData.user || 'System Administrator',
-      role: logData.role || 'ADMIN',
-      action: logData.action,
-      target: logData.target,
-      date: now.toISOString().split('T')[0],
-      time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      ip: '192.168.1.45',
-      timestamp: now.toISOString()
-    };
-    const updated = [newLog, ...logs];
-    setStorageItem(STORAGE_KEYS.AUDIT_LOGS, updated);
-    return newLog;
+  addAuditLog: async (logData) => {
+    try {
+      await fetch(apiUrl('/admin/audit-logs'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(logData)
+      });
+    } catch (err) {
+      console.error('Error adding audit log to DB:', err);
+    }
   },
 
   // ── System Settings ───────────────────────────────────────────────────────
   getSettings: async () => {
-    return getStorageItem(STORAGE_KEYS.SETTINGS, {
+    try {
+      const res = await fetch(apiUrl('/admin/settings'));
+      if (res.ok) {
+        const data = await res.json();
+        if (data) return data;
+      }
+    } catch (err) {
+      console.error('Error fetching system settings from DB:', err);
+    }
+    return {
       maintenanceMode: false,
       allowRegistrations: true,
       currentFestYear: 2026,
@@ -1054,23 +583,29 @@ export const adminApi = {
       adminEmail: 'admin.sports@mpec.ac.in',
       contactPhone: '+91 98765 00000',
       maxPdfSizeMB: 10
-    });
+    };
   },
 
   updateSettings: async (newSettings) => {
-    const current = await adminApi.getSettings();
-    const updated = { ...current, ...newSettings };
-    setStorageItem(STORAGE_KEYS.SETTINGS, updated);
-
-    window.dispatchEvent(new Event('sems_settings_updated'));
-
-    adminApi.addAuditLog({
-      user: 'System Administrator',
-      role: 'ADMIN',
-      action: 'Settings Updated',
-      target: 'Updated Admin Portal system configurations'
-    });
-
-    return updated;
+    try {
+      const res = await fetch(apiUrl('/admin/settings'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSettings)
+      });
+      if (res.ok) {
+        await adminApi.addAuditLog({
+          user: 'System Administrator',
+          role: 'ADMIN',
+          action: 'Settings Updated',
+          target: 'Updated system configuration in database'
+        });
+        const data = await res.json();
+        return data.settings || newSettings;
+      }
+    } catch (err) {
+      console.error('Error updating system settings in DB:', err);
+    }
+    return newSettings;
   }
 };

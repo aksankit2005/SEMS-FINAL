@@ -625,7 +625,7 @@ export const saveCoordinatorDB = async (req, res) => {
     const isPR = role === 'PR Member' || role === 'pr_coordinator';
 
     if (isSuperCoord) {
-      if (numId !== null || cleanUser) {
+      if (cleanId || cleanUser) {
         let updateQuery = `UPDATE pr_users SET name = $1, username = $2, email = $3, role = 'super_coordinator', status = $4, updated_at = CURRENT_TIMESTAMP`;
         const params = [name, cleanUser, email || '', accStatus];
         if (passHash) {
@@ -634,13 +634,9 @@ export const saveCoordinatorDB = async (req, res) => {
         } else {
           updateQuery += ` WHERE `;
         }
-        if (numId !== null) {
-          updateQuery += `id = $${params.length + 1}`;
-          params.push(numId);
-        } else {
-          updateQuery += `LOWER(username) = LOWER($${params.length + 1})`;
-          params.push(cleanUser);
-        }
+        updateQuery += `id = $${params.length + 1} OR LOWER(username) = LOWER($${params.length + 1})`;
+        params.push(cleanId || cleanUser);
+
         const updated = await queryDb(updateQuery, params);
         if (updated && updated.rowCount > 0) {
           return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
@@ -649,12 +645,12 @@ export const saveCoordinatorDB = async (req, res) => {
       
       const initialPass = passHash || await bcrypt.hash('Super@2026', 10);
       await queryDb(
-        `INSERT INTO pr_users (username, password_hash, role, name, email, status, created_at, updated_at)
-         VALUES ($1, $2, 'super_coordinator', $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        `INSERT INTO pr_users (id, username, password_hash, role, name, email, status, created_at, updated_at)
+         VALUES (gen_random_uuid(), $1, $2, 'super_coordinator', $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
         [cleanUser, initialPass, name, email || '', accStatus]
       );
     } else if (isCollegeHead) {
-      if (numId !== null || cleanUser) {
+      if (cleanId || cleanUser) {
         let updateQuery = `UPDATE college_head_users SET faculty_name = $1, username = $2, email = $3, phone = $4, college = $5, status = $6, updated_at = CURRENT_TIMESTAMP`;
         const params = [name, cleanUser, email || '', phone || '', college || 'MPEC', accStatus];
         if (passHash) {
@@ -663,13 +659,9 @@ export const saveCoordinatorDB = async (req, res) => {
         } else {
           updateQuery += ` WHERE `;
         }
-        if (numId !== null) {
-          updateQuery += `id = $${params.length + 1}`;
-          params.push(numId);
-        } else {
-          updateQuery += `LOWER(username) = LOWER($${params.length + 1})`;
-          params.push(cleanUser);
-        }
+        updateQuery += `id = $${params.length + 1} OR LOWER(username) = LOWER($${params.length + 1})`;
+        params.push(cleanId || cleanUser);
+
         const updated = await queryDb(updateQuery, params);
         if (updated && updated.rowCount > 0) {
           return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
@@ -678,12 +670,12 @@ export const saveCoordinatorDB = async (req, res) => {
       
       const initialPass = passHash || await bcrypt.hash('Head@2026', 10);
       await queryDb(
-        `INSERT INTO college_head_users (username, password_hash, college, faculty_name, email, phone, status, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        `INSERT INTO college_head_users (id, username, password_hash, college, faculty_name, email, phone, status, created_at, updated_at)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
         [cleanUser, initialPass, college || 'MPEC', name, email || '', phone || '', accStatus]
       );
     } else if (isPR) {
-      if (numId !== null || cleanUser) {
+      if (cleanId || cleanUser) {
         let updateQuery = `UPDATE pr_users SET name = $1, username = $2, email = $3, status = $4, updated_at = CURRENT_TIMESTAMP`;
         const params = [name, cleanUser, email || '', accStatus];
         if (passHash) {
@@ -692,13 +684,9 @@ export const saveCoordinatorDB = async (req, res) => {
         } else {
           updateQuery += ` WHERE `;
         }
-        if (numId !== null) {
-          updateQuery += `id = $${params.length + 1}`;
-          params.push(numId);
-        } else {
-          updateQuery += `LOWER(username) = LOWER($${params.length + 1})`;
-          params.push(cleanUser);
-        }
+        updateQuery += `id = $${params.length + 1} OR LOWER(username) = LOWER($${params.length + 1})`;
+        params.push(cleanId || cleanUser);
+
         const updated = await queryDb(updateQuery, params);
         if (updated && updated.rowCount > 0) {
           return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
@@ -707,15 +695,15 @@ export const saveCoordinatorDB = async (req, res) => {
       
       const initialPass = passHash || await bcrypt.hash('PRPass@2026', 10);
       await queryDb(
-        `INSERT INTO pr_users (username, password_hash, role, name, email, status, created_at, updated_at)
-         VALUES ($1, $2, 'pr_coordinator', $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        `INSERT INTO pr_users (id, username, password_hash, role, name, email, status, created_at, updated_at)
+         VALUES (gen_random_uuid(), $1, $2, 'pr_coordinator', $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
         [cleanUser, initialPass, name, email || '', accStatus]
       );
     } else {
       const sportSlug = (assignedSport || 'cricket').toLowerCase().replace(/[^a-z0-9]/g, '-');
       const sportTitle = sportName || (assignedSport || 'Cricket').replace(/-/g, ' ').toUpperCase();
 
-      if (numId !== null || cleanUser) {
+      if (cleanId || cleanUser) {
         let updateQuery = `UPDATE sport_coordinators SET coordinator_name = $1, username = $2, email = $3, phone = $4, assigned_sport = $5, sport_name = $6, status = $7, updated_at = CURRENT_TIMESTAMP`;
         const params = [name, cleanUser, email || '', phone || '', sportSlug, sportTitle, accStatus];
         if (passHash) {
@@ -724,13 +712,9 @@ export const saveCoordinatorDB = async (req, res) => {
         } else {
           updateQuery += ` WHERE `;
         }
-        if (numId !== null) {
-          updateQuery += `id = $${params.length + 1}`;
-          params.push(numId);
-        } else {
-          updateQuery += `LOWER(username) = LOWER($${params.length + 1}) OR assigned_sport = LOWER($${params.length + 1})`;
-          params.push(cleanUser);
-        }
+        updateQuery += `id = $${params.length + 1} OR LOWER(username) = LOWER($${params.length + 1}) OR assigned_sport = LOWER($${params.length + 1})`;
+        params.push(cleanId || cleanUser);
+
         const updated = await queryDb(updateQuery, params);
         if (updated && updated.rowCount > 0) {
           return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
@@ -739,8 +723,8 @@ export const saveCoordinatorDB = async (req, res) => {
       
       const initialPass = passHash || await bcrypt.hash('Coord@2026', 10);
       await queryDb(
-        `INSERT INTO sport_coordinators (username, password_hash, assigned_sport, sport_name, coordinator_name, email, phone, status, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        `INSERT INTO sport_coordinators (id, username, password_hash, assigned_sport, sport_name, coordinator_name, email, phone, status, created_at, updated_at)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
         [cleanUser, initialPass, sportSlug, sportTitle, name, email || '', phone || '', accStatus]
       );
     }
@@ -759,43 +743,42 @@ export const toggleCoordinatorStatusDB = async (req, res) => {
   try {
     const newStatus = (status && status.toLowerCase() === 'inactive') ? 'inactive' : 'active';
     const cleanUser = (username || '').trim().toLowerCase();
+    const rawId = typeof id === 'string' ? id.replace(/^(pr_|ch_|sc_)/, '') : id;
 
     // 1. Check table prefix first
     if (typeof id === 'string' && id.startsWith('pr_')) {
-      const rawId = Number(id.replace('pr_', ''));
-      const pr = await queryDb(`UPDATE pr_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`, [newStatus, rawId]);
+      const pr = await queryDb(`UPDATE pr_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 OR LOWER(username) = LOWER($2) RETURNING id`, [newStatus, rawId]);
       if (pr && pr.rows && pr.rows.length > 0) {
         return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
       }
     }
     if (typeof id === 'string' && id.startsWith('ch_')) {
-      const rawId = Number(id.replace('ch_', ''));
-      const ch = await queryDb(`UPDATE college_head_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`, [newStatus, rawId]);
+      const ch = await queryDb(`UPDATE college_head_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 OR LOWER(username) = LOWER($2) RETURNING id`, [newStatus, rawId]);
       if (ch && ch.rows && ch.rows.length > 0) {
         return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
       }
     }
     if (typeof id === 'string' && id.startsWith('sc_')) {
-      const rawId = Number(id.replace('sc_', ''));
-      const sc = await queryDb(`UPDATE sport_coordinators SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`, [newStatus, rawId]);
+      const sc = await queryDb(`UPDATE sport_coordinators SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 OR LOWER(username) = LOWER($2) RETURNING id`, [newStatus, rawId]);
       if (sc && sc.rows && sc.rows.length > 0) {
         return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
       }
     }
 
-    // 2. Check exact username match
-    if (cleanUser) {
-      const pr = await queryDb(`UPDATE pr_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`, [newStatus, cleanUser]);
+    // 2. Fallback check across tables by rawId or username
+    const searchVal = rawId || cleanUser;
+    if (searchVal) {
+      const pr = await queryDb(`UPDATE pr_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 OR LOWER(username) = LOWER($2) RETURNING id`, [newStatus, searchVal]);
       if (pr && pr.rows && pr.rows.length > 0) {
         return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
       }
 
-      const ch = await queryDb(`UPDATE college_head_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`, [newStatus, cleanUser]);
+      const ch = await queryDb(`UPDATE college_head_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 OR LOWER(username) = LOWER($2) RETURNING id`, [newStatus, searchVal]);
       if (ch && ch.rows && ch.rows.length > 0) {
         return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
       }
 
-      const sc = await queryDb(`UPDATE sport_coordinators SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`, [newStatus, cleanUser]);
+      const sc = await queryDb(`UPDATE sport_coordinators SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 OR LOWER(username) = LOWER($2) RETURNING id`, [newStatus, searchVal]);
       if (sc && sc.rows && sc.rows.length > 0) {
         return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
       }
@@ -815,32 +798,31 @@ export const resetCoordinatorPasswordDB = async (req, res) => {
   const passToSet = newPassword && newPassword.trim().length >= 6 ? newPassword.trim() : 'Password@123';
   const hashed = await bcrypt.hash(passToSet, 10);
   const cleanUser = (username || '').trim().toLowerCase();
+  const rawId = typeof id === 'string' ? id.replace(/^(pr_|ch_|sc_)/, '') : id;
 
   try {
     if (typeof id === 'string' && id.startsWith('pr_')) {
-      const rawId = Number(id.replace('pr_', ''));
-      const pr = await queryDb(`UPDATE pr_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`, [hashed, rawId]);
+      const pr = await queryDb(`UPDATE pr_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 OR LOWER(username) = LOWER($2) RETURNING id`, [hashed, rawId]);
       if (pr && pr.rows && pr.rows.length > 0) return res.json({ success: true, message: 'Password reset successfully.' });
     }
     if (typeof id === 'string' && id.startsWith('ch_')) {
-      const rawId = Number(id.replace('ch_', ''));
-      const ch = await queryDb(`UPDATE college_head_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`, [hashed, rawId]);
+      const ch = await queryDb(`UPDATE college_head_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 OR LOWER(username) = LOWER($2) RETURNING id`, [hashed, rawId]);
       if (ch && ch.rows && ch.rows.length > 0) return res.json({ success: true, message: 'Password reset successfully.' });
     }
     if (typeof id === 'string' && id.startsWith('sc_')) {
-      const rawId = Number(id.replace('sc_', ''));
-      const sc = await queryDb(`UPDATE sport_coordinators SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`, [hashed, rawId]);
+      const sc = await queryDb(`UPDATE sport_coordinators SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 OR LOWER(username) = LOWER($2) RETURNING id`, [hashed, rawId]);
       if (sc && sc.rows && sc.rows.length > 0) return res.json({ success: true, message: 'Password reset successfully.' });
     }
 
-    if (cleanUser) {
-      const pr = await queryDb(`UPDATE pr_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`, [hashed, cleanUser]);
+    const searchVal = rawId || cleanUser;
+    if (searchVal) {
+      const pr = await queryDb(`UPDATE pr_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 OR LOWER(username) = LOWER($2) RETURNING id`, [hashed, searchVal]);
       if (pr && pr.rows && pr.rows.length > 0) return res.json({ success: true, message: 'Password reset successfully.' });
 
-      const ch = await queryDb(`UPDATE college_head_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`, [hashed, cleanUser]);
+      const ch = await queryDb(`UPDATE college_head_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 OR LOWER(username) = LOWER($2) RETURNING id`, [hashed, searchVal]);
       if (ch && ch.rows && ch.rows.length > 0) return res.json({ success: true, message: 'Password reset successfully.' });
 
-      const sc = await queryDb(`UPDATE sport_coordinators SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`, [hashed, cleanUser]);
+      const sc = await queryDb(`UPDATE sport_coordinators SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 OR LOWER(username) = LOWER($2) RETURNING id`, [hashed, searchVal]);
       if (sc && sc.rows && sc.rows.length > 0) return res.json({ success: true, message: 'Password reset successfully.' });
     }
 
@@ -853,29 +835,26 @@ export const resetCoordinatorPasswordDB = async (req, res) => {
 
 export const deleteCoordinatorDB = async (req, res) => {
   const { id } = req.params;
+  const rawId = typeof id === 'string' ? id.replace(/^(pr_|ch_|sc_)/, '') : id;
 
   try {
     if (typeof id === 'string' && id.startsWith('pr_')) {
-      const rawId = Number(id.replace('pr_', ''));
-      await queryDb('DELETE FROM pr_users WHERE id = $1', [rawId]);
+      await queryDb('DELETE FROM pr_users WHERE id = $1 OR LOWER(username) = LOWER($1)', [rawId]);
       return res.json({ success: true, message: 'Coordinator deleted from database successfully.' });
     }
     if (typeof id === 'string' && id.startsWith('ch_')) {
-      const rawId = Number(id.replace('ch_', ''));
-      await queryDb('DELETE FROM college_head_users WHERE id = $1', [rawId]);
+      await queryDb('DELETE FROM college_head_users WHERE id = $1 OR LOWER(username) = LOWER($1)', [rawId]);
       return res.json({ success: true, message: 'Coordinator deleted from database successfully.' });
     }
     if (typeof id === 'string' && id.startsWith('sc_')) {
-      const rawId = Number(id.replace('sc_', ''));
-      await queryDb('DELETE FROM sport_coordinators WHERE id = $1', [rawId]);
+      await queryDb('DELETE FROM sport_coordinators WHERE id = $1 OR LOWER(username) = LOWER($1)', [rawId]);
       return res.json({ success: true, message: 'Coordinator deleted from database successfully.' });
     }
 
-    const cleanUser = (id || '').trim().toLowerCase();
-    if (cleanUser) {
-      await queryDb('DELETE FROM pr_users WHERE LOWER(username) = $1', [cleanUser]);
-      await queryDb('DELETE FROM college_head_users WHERE LOWER(username) = $1', [cleanUser]);
-      await queryDb('DELETE FROM sport_coordinators WHERE LOWER(username) = $1', [cleanUser]);
+    if (rawId) {
+      await queryDb('DELETE FROM pr_users WHERE id = $1 OR LOWER(username) = LOWER($1)', [rawId]);
+      await queryDb('DELETE FROM college_head_users WHERE id = $1 OR LOWER(username) = LOWER($1)', [rawId]);
+      await queryDb('DELETE FROM sport_coordinators WHERE id = $1 OR LOWER(username) = LOWER($1)', [rawId]);
     }
 
     return res.json({ success: true, message: 'Coordinator deleted from database successfully.' });
@@ -896,7 +875,6 @@ export const changeSuperCoordinatorPasswordDB = async (req, res) => {
   try {
     const hashed = await bcrypt.hash(newPass.trim(), 10);
     
-    // Update password_hash in PostgreSQL pr_users table
     await queryDb(
       `UPDATE pr_users 
        SET password_hash = $1, updated_at = CURRENT_TIMESTAMP 
@@ -904,7 +882,6 @@ export const changeSuperCoordinatorPasswordDB = async (req, res) => {
       [hashed, targetUser]
     );
 
-    // Also update prisma system setting fallback
     try {
       await prisma.systemSetting.upsert({
         where: { key: 'super_coordinator_pass' },
@@ -919,3 +896,537 @@ export const changeSuperCoordinatorPasswordDB = async (req, res) => {
     return res.status(500).json({ message: 'Failed to change password in database.' });
   }
 };
+
+// ── Admin Central Dashboard Stats ──────────────────────────────────────────
+export const getDashboardStatsDB = async (req, res) => {
+  try {
+    const [
+      regRes,
+      coordEventsRes,
+      activeCoordsRes,
+      inactiveCoordsRes,
+      prMediaRes,
+      participantsRes,
+      sportsRes,
+      completedResultsRes,
+      pendingResultsRes,
+      announcementsRes
+    ] = await Promise.all([
+      queryDb('SELECT COUNT(*) FROM college_registrations'),
+      queryDb('SELECT COUNT(*) FROM coordinator_event_items'),
+      queryDb(`
+        SELECT (
+          (SELECT COUNT(*) FROM sport_coordinators WHERE LOWER(status) = 'active') +
+          (SELECT COUNT(*) FROM college_head_users WHERE LOWER(status) = 'active') +
+          (SELECT COUNT(*) FROM pr_users WHERE LOWER(status) = 'active')
+        ) AS total
+      `),
+      queryDb(`
+        SELECT (
+          (SELECT COUNT(*) FROM sport_coordinators WHERE LOWER(status) = 'inactive') +
+          (SELECT COUNT(*) FROM college_head_users WHERE LOWER(status) = 'inactive') +
+          (SELECT COUNT(*) FROM pr_users WHERE LOWER(status) = 'inactive')
+        ) AS total
+      `),
+      queryDb('SELECT COUNT(*) FROM media'),
+      queryDb('SELECT COALESCE(SUM(members_count), COUNT(*)) FROM college_registrations'),
+      queryDb("SELECT COUNT(*) FROM sports WHERE isActive = true OR status = 'active'"),
+      queryDb("SELECT COUNT(*) FROM leaderboard_entries"),
+      queryDb("SELECT COUNT(*) FROM live_matches WHERE LOWER(status) IN ('scheduled', 'live', 'running')"),
+      queryDb('SELECT COUNT(*) FROM announcements WHERE isPublished = true')
+    ]);
+
+    const stats = {
+      totalRegistrations: Number(regRes?.rows[0]?.count || 0),
+      totalCoordinatorEvents: Number(coordEventsRes?.rows[0]?.count || 0),
+      activeCoordinators: Number(activeCoordsRes?.rows[0]?.total || 0),
+      inactiveCoordinators: Number(inactiveCoordsRes?.rows[0]?.total || 0),
+      totalPRUploads: Number(prMediaRes?.rows[0]?.count || 0),
+      totalParticipants: Number(participantsRes?.rows[0]?.coalesce || participantsRes?.rows[0]?.count || 0),
+      totalGames: Number(sportsRes?.rows[0]?.count || 12),
+      completedResults: Number(completedResultsRes?.rows[0]?.count || 0),
+      pendingResults: Number(pendingResultsRes?.rows[0]?.count || 0),
+      activeAnnouncements: Number(announcementsRes?.rows[0]?.count || 0)
+    };
+
+    return res.json(stats);
+  } catch (err) {
+    console.error('Error fetching admin dashboard stats from DB:', err.message);
+    return res.status(500).json({ message: 'Failed to fetch dashboard stats' });
+  }
+};
+
+// ── Admin Audit Logs ───────────────────────────────────────────────────────
+export const getAuditLogsDB = async (req, res) => {
+  try {
+    const dbRes = await queryDb(`
+      SELECT 
+        id,
+        actor_name AS "user",
+        role,
+        action,
+        entity AS target,
+        ip_address AS ip,
+        TO_CHAR(created_at, 'YYYY-MM-DD') AS date,
+        TO_CHAR(created_at, 'HH:MI AM') AS time,
+        created_at AS timestamp
+      FROM audit_logs
+      ORDER BY created_at DESC
+      LIMIT 100
+    `);
+
+    if (dbRes && dbRes.rows) {
+      return res.json(dbRes.rows);
+    }
+  } catch (err) {
+    console.error('Error fetching audit logs from DB:', err.message);
+  }
+  return res.json([]);
+};
+
+export const createAuditLogDB = async (req, res) => {
+  const { user, role, action, target } = req.body;
+  try {
+    const actor = user || req.user?.username || 'System Administrator';
+    const actorRole = role || req.user?.role || 'ADMIN';
+    const clientIp = req.ip || req.headers['x-forwarded-for'] || '127.0.0.1';
+
+    await queryDb(
+      `INSERT INTO audit_logs (id, actor_name, role, action, entity, ip_address, created_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
+      [actor, actorRole, action || 'System Event', target || '', clientIp]
+    );
+
+    return res.status(201).json({ success: true });
+  } catch (err) {
+    console.error('Error creating audit log in DB:', err.message);
+    return res.status(500).json({ message: 'Failed to record audit log' });
+  }
+};
+
+// ── Admin Registrations Management ────────────────────────────────────────
+export const getAdminRegistrationsDB = async (req, res) => {
+  try {
+    const dbRes = await queryDb(`
+      SELECT 
+        id,
+        registration_id AS "registrationId",
+        event_id AS "eventId",
+        sport_id AS "sportId",
+        student_name AS "participantName",
+        team_name AS "teamName",
+        college,
+        department AS branch,
+        enrollment_no AS "rollNumber",
+        email,
+        phone AS mobile,
+        gender,
+        emergency_contact AS "emergencyContact",
+        status AS "registrationStatus",
+        fee_paid AS "feePaid",
+        payment_id AS "paymentId",
+        payment_status AS "paymentStatus",
+        members_count AS "membersCount",
+        participant_data AS "participantData",
+        TO_CHAR(created_at, 'YYYY-MM-DD') AS "registrationDate",
+        TO_CHAR(created_at, 'HH:MI AM') AS "registrationTime",
+        created_at AS "createdAt"
+      FROM college_registrations
+      ORDER BY created_at DESC
+    `);
+
+    if (dbRes && dbRes.rows) {
+      const list = dbRes.rows.map(r => ({
+        ...r,
+        participantName: r.participantName || r.teamName || 'Participant',
+        gameSport: (r.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
+        eventTitle: `${(r.sportId || 'Sport').replace(/-/g, ' ').toUpperCase()} Event`,
+        category: r.membersCount > 1 ? 'Team' : 'Single',
+        feePaid: Number(r.feePaid || 0),
+        membersCount: Number(r.membersCount || 1)
+      }));
+      return res.json(list);
+    }
+  } catch (err) {
+    console.error('Error fetching admin registrations from DB:', err.message);
+  }
+  return res.json([]);
+};
+
+export const deleteRegistrationDB = async (req, res) => {
+  const { id } = req.params;
+  try {
+    await queryDb('DELETE FROM college_registrations WHERE id = $1 OR registration_id = $1::uuid', [id]);
+    await queryDb('DELETE FROM registrations WHERE id = $1::uuid', [id]);
+
+    return res.json({ success: true, message: 'Registration deleted from database successfully.' });
+  } catch (err) {
+    console.error('Error deleting registration from DB:', err.message);
+    return res.status(500).json({ message: 'Failed to delete registration from database' });
+  }
+};
+
+export const updateRegistrationStatusDB = async (req, res) => {
+  const { id } = req.params;
+  const { status, paymentStatus } = req.body;
+  try {
+    if (status) {
+      await queryDb('UPDATE college_registrations SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [status, id]);
+    }
+    if (paymentStatus) {
+      await queryDb('UPDATE college_registrations SET payment_status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [paymentStatus, id]);
+    }
+    return res.json({ success: true, message: 'Registration status updated in database successfully.' });
+  } catch (err) {
+    console.error('Error updating registration status in DB:', err.message);
+    return res.status(500).json({ message: 'Failed to update registration status in database' });
+  }
+};
+
+// ── Admin Announcements Management ───────────────────────────────────────
+export const getAnnouncementsDB = async (req, res) => {
+  try {
+    const dbRes = await queryDb(`
+      SELECT 
+        id,
+        title,
+        description,
+        audience,
+        sportSlug AS "sportSlug",
+        TO_CHAR(publishDate, 'YYYY-MM-DD') AS "publishDate",
+        TO_CHAR(expiryDate, 'YYYY-MM-DD') AS "expiryDate",
+        isPublished AS "isPublished",
+        createdAt AS "createdAt"
+      FROM announcements
+      ORDER BY createdAt DESC
+    `);
+
+    if (dbRes && dbRes.rows) {
+      const announcements = [];
+      for (const ann of dbRes.rows) {
+        const attRes = await queryDb(
+          `SELECT id, name, url, mimeType AS "mimeType", sizeBytes AS "sizeBytes" 
+           FROM announcement_attachments WHERE announcementId = $1::uuid`,
+          [ann.id]
+        );
+        announcements.push({
+          ...ann,
+          date: ann.publishDate || new Date(ann.createdAt).toISOString().split('T')[0],
+          status: ann.isPublished ? 'Published' : 'Draft',
+          attachments: (attRes && attRes.rows) ? attRes.rows.map(att => ({
+            ...att,
+            size: att.sizeBytes ? `${(att.sizeBytes / (1024 * 1024)).toFixed(1)} MB` : '1.0 MB'
+          })) : []
+        });
+      }
+      return res.json(announcements);
+    }
+  } catch (err) {
+    console.error('Error fetching announcements from DB:', err.message);
+  }
+  return res.json([]);
+};
+
+export const saveAnnouncementDB = async (req, res) => {
+  const { id, title, description, audience, publishDate, expiryDate, isPublished, attachments } = req.body;
+
+  if (!title || !description) {
+    return res.status(400).json({ message: 'Title and description are required.' });
+  }
+
+  try {
+    let annId = id;
+    const published = isPublished ?? true;
+    const pDate = publishDate ? new Date(publishDate) : new Date();
+    const eDate = expiryDate ? new Date(expiryDate) : null;
+
+    if (annId) {
+      await queryDb(
+        `UPDATE announcements 
+         SET title = $1, description = $2, audience = $3, publishDate = $4, expiryDate = $5, isPublished = $6, updatedAt = CURRENT_TIMESTAMP 
+         WHERE id = $7::uuid`,
+        [title, description, audience || 'PUBLIC', pDate, eDate, published, annId]
+      );
+    } else {
+      const newAnn = await queryDb(
+        `INSERT INTO announcements (id, title, description, audience, publishDate, expiryDate, isPublished, createdAt, updatedAt)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+         RETURNING id`,
+        [title, description, audience || 'PUBLIC', pDate, eDate, published]
+      );
+      if (newAnn && newAnn.rows && newAnn.rows.length > 0) {
+        annId = newAnn.rows[0].id;
+      }
+    }
+
+    if (annId && Array.isArray(attachments)) {
+      await queryDb('DELETE FROM announcement_attachments WHERE announcementId = $1::uuid', [annId]);
+      for (const att of attachments) {
+        await queryDb(
+          `INSERT INTO announcement_attachments (id, announcementId, name, url, mimeType, sizeBytes, createdAt)
+           VALUES (gen_random_uuid(), $1::uuid, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
+          [annId, att.name || 'Attachment.pdf', att.url || '#', att.mimeType || 'application/pdf', att.sizeBytes || 1024 * 1024]
+        );
+      }
+    }
+
+    return res.json({ success: true, id: annId, message: 'Announcement saved to database successfully.' });
+  } catch (err) {
+    console.error('Error saving announcement to DB:', err.message);
+    return res.status(500).json({ message: 'Failed to save announcement to database' });
+  }
+};
+
+export const toggleAnnouncementPublishDB = async (req, res) => {
+  const { id } = req.params;
+  try {
+    await queryDb(
+      `UPDATE announcements SET isPublished = NOT isPublished, updatedAt = CURRENT_TIMESTAMP WHERE id = $1::uuid`,
+      [id]
+    );
+    return res.json({ success: true, message: 'Announcement publish status toggled.' });
+  } catch (err) {
+    console.error('Error toggling announcement publish in DB:', err.message);
+    return res.status(500).json({ message: 'Failed to toggle announcement publish status' });
+  }
+};
+
+export const deleteAnnouncementDB = async (req, res) => {
+  const { id } = req.params;
+  try {
+    await queryDb('DELETE FROM announcement_attachments WHERE announcementId = $1::uuid', [id]);
+    await queryDb('DELETE FROM announcements WHERE id = $1::uuid', [id]);
+
+    return res.json({ success: true, message: 'Announcement deleted from database successfully.' });
+  } catch (err) {
+    console.error('Error deleting announcement from DB:', err.message);
+    return res.status(500).json({ message: 'Failed to delete announcement from database' });
+  }
+};
+
+// ── Admin PR Media & Folders Management ────────────────────────────────────
+export const getPRMediaFoldersDB = async (req, res) => {
+  try {
+    const dbRes = await queryDb(`
+      SELECT 
+        e.id,
+        e.event_name AS title,
+        e.event_name AS sport,
+        TO_CHAR(e.event_date, 'YYYY-MM-DD') AS date,
+        COUNT(m.id) AS "itemCount"
+      FROM events e
+      LEFT JOIN media m ON m.event_id = e.id
+      GROUP BY e.id, e.event_name, e.event_date
+      ORDER BY e.event_date DESC
+    `);
+
+    if (dbRes && dbRes.rows) {
+      const folders = dbRes.rows.map(r => ({
+        id: String(r.id),
+        title: r.title,
+        sport: r.sport || 'Sports Media',
+        date: r.date || new Date().toISOString().split('T')[0],
+        prMember: 'PR Desk',
+        itemCount: Number(r.itemCount || 0)
+      }));
+      return res.json(folders);
+    }
+  } catch (err) {
+    console.error('Error fetching PR media folders from DB:', err.message);
+  }
+  return res.json([]);
+};
+
+export const getPRMediaFilesDB = async (req, res) => {
+  try {
+    const dbRes = await queryDb(`
+      SELECT 
+        m.id,
+        m.event_id AS "folderId",
+        m.title,
+        m.media_url AS url,
+        m.media_type AS "mediaType",
+        m.uploaded_by AS "uploaderName",
+        TO_CHAR(m.uploaded_at, 'YYYY-MM-DD HH:MI AM') AS "uploadDate",
+        e.event_name AS "eventTitle"
+      FROM media m
+      LEFT JOIN events e ON m.event_id = e.id
+      ORDER BY m.uploaded_at DESC
+    `);
+
+    if (dbRes && dbRes.rows) {
+      const files = dbRes.rows.map(r => ({
+        id: String(r.id),
+        folderId: String(r.folderId || 'general'),
+        eventTitle: r.eventTitle || r.title || 'PR Media',
+        sportName: r.eventTitle || 'PR Media',
+        title: r.title || 'PR Photo',
+        url: r.url,
+        mediaType: r.mediaType ? r.mediaType.toLowerCase() : 'image',
+        uploaderName: r.uploaderName || 'PR Team Member',
+        uploadDate: r.uploadDate || new Date().toLocaleString()
+      }));
+      return res.json(files);
+    }
+  } catch (err) {
+    console.error('Error fetching PR media files from DB:', err.message);
+  }
+  return res.json([]);
+};
+
+export const deletePRMediaFileDB = async (req, res) => {
+  const { id } = req.params;
+  try {
+    await queryDb('DELETE FROM media WHERE id = $1', [Number(id) || 0]);
+    return res.json({ success: true, message: 'PR media file deleted from database successfully.' });
+  } catch (err) {
+    console.error('Error deleting PR media file from DB:', err.message);
+    return res.status(500).json({ message: 'Failed to delete PR media file from database' });
+  }
+};
+
+export const deletePRFolderDB = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const numId = Number(id) || 0;
+    await queryDb('DELETE FROM media WHERE event_id = $1', [numId]);
+    await queryDb('DELETE FROM events WHERE id = $1', [numId]);
+    return res.json({ success: true, message: 'PR folder deleted from database successfully.' });
+  } catch (err) {
+    console.error('Error deleting PR folder from DB:', err.message);
+    return res.status(500).json({ message: 'Failed to delete PR folder from database' });
+  }
+};
+
+// ── Admin System Settings ──────────────────────────────────────────────────
+export const getSettingsDB = async (req, res) => {
+  try {
+    const setting = await prisma.systemSetting.findUnique({ where: { key: 'admin_portal_settings' } });
+    if (setting && setting.value) {
+      return res.json(setting.value);
+    }
+  } catch (err) {
+    console.error('Error fetching system settings from DB:', err.message);
+  }
+  return res.json({
+    maintenanceMode: false,
+    allowRegistrations: true,
+    currentFestYear: 2026,
+    collegeName: 'Maharana Pratap Engineering College (MPEC)',
+    adminEmail: 'admin.sports@mpec.ac.in',
+    contactPhone: '+91 98765 00000',
+    maxPdfSizeMB: 10
+  });
+};
+
+export const updateSettingsDB = async (req, res) => {
+  const newSettings = req.body;
+  try {
+    const updated = await prisma.systemSetting.upsert({
+      where: { key: 'admin_portal_settings' },
+      update: { value: newSettings, updatedAt: new Date() },
+      create: { key: 'admin_portal_settings', value: newSettings }
+    });
+    return res.json({ success: true, settings: updated.value });
+  } catch (err) {
+    console.error('Error updating system settings in DB:', err.message);
+    return res.status(500).json({ message: 'Failed to update system settings in database' });
+  }
+};
+
+// ── Admin Committee Management ────────────────────────────────────────────
+export const getCommitteeDB = async (req, res) => {
+  try {
+    const sessions = await prisma.committeeSession.findMany({
+      include: { members: { orderBy: { sortOrder: 'asc' } } },
+      orderBy: { createdAt: 'desc' }
+    });
+    return res.json(sessions);
+  } catch (err) {
+    console.error('Error fetching committee from DB:', err.message);
+    return res.json([]);
+  }
+};
+
+export const saveCommitteeMemberDB = async (req, res) => {
+  const { id, sessionId, type, name, role, photoUrl, email, phone } = req.body;
+  try {
+    let targetSessionId = sessionId;
+    if (!targetSessionId) {
+      let defaultSession = await prisma.committeeSession.findFirst({ where: { isActive: true } });
+      if (!defaultSession) {
+        defaultSession = await prisma.committeeSession.create({
+          data: { label: 'SEMS 2026 Executive Committee', isActive: true }
+        });
+      }
+      targetSessionId = defaultSession.id;
+    }
+
+    if (id) {
+      const updated = await prisma.committeeMember.update({
+        where: { id },
+        data: { name, role, type: type || 'EXECUTIVE', photoUrl, email, phone }
+      });
+      return res.json({ success: true, member: updated });
+    }
+
+    const created = await prisma.committeeMember.create({
+      data: {
+        sessionId: targetSessionId,
+        type: type || 'EXECUTIVE',
+        name,
+        role,
+        photoUrl,
+        email,
+        phone
+      }
+    });
+    return res.status(201).json({ success: true, member: created });
+  } catch (err) {
+    console.error('Error saving committee member in DB:', err.message);
+    return res.status(500).json({ message: 'Failed to save committee member to database' });
+  }
+};
+
+export const deleteCommitteeMemberDB = async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.committeeMember.delete({ where: { id } });
+    return res.json({ success: true, message: 'Committee member deleted successfully.' });
+  } catch (err) {
+    console.error('Error deleting committee member in DB:', err.message);
+    return res.status(500).json({ message: 'Failed to delete committee member from database' });
+  }
+};
+
+// ── Admin Results Management ──────────────────────────────────────────────
+export const getAdminResultsDB = async (req, res) => {
+  try {
+    const entries = await prisma.leaderboardEntry.findMany({
+      orderBy: { declaredAt: 'desc' }
+    });
+    const results = entries.map(row => ({
+      id: String(row.id),
+      sportId: row.sportId,
+      sportName: (row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
+      eventTitle: row.subEvent || `${(row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase()} Championship`,
+      matchFormat: row.matchFormat || 'Team',
+      gender: row.gender || 'Boys',
+      winnerName: row.winnerName || '',
+      winnerTeamName: row.winnerTeam || row.winnerName || '',
+      winnerCollege: row.winnerCollege || 'MPEC',
+      runnerUpName: row.runnerUpName || '',
+      runnerUpTeamName: row.runnerUpTeam || row.runnerUpName || '',
+      runnerUpCollege: row.runnerUpCollege || 'MIPS',
+      points: Number(row.points || 10),
+      status: 'COMPLETED',
+      uploadedBy: 'Admin',
+      uploadedDate: new Date(row.declaredAt).toISOString().split('T')[0]
+    }));
+    return res.json(results);
+  } catch (err) {
+    console.error('Error fetching admin results from DB:', err.message);
+    return res.json([]);
+  }
+};
+
