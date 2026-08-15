@@ -76,8 +76,10 @@ export const registerPublicEvent = async (req, res) => {
       where: { name: { equals: sportQueryName, mode: 'insensitive' } }
     });
     if (!sportRecord) {
+      const slugVal = (targetSportId || sportId || 'badminton').toLowerCase().replace(/[^a-z0-9]+/g, '-');
       sportRecord = await prisma.sport.create({
         data: {
+          slug: slugVal,
           name: sportQueryName.charAt(0).toUpperCase() + sportQueryName.slice(1),
           isTeamSport: !!newRegRecord.teamName
         }
@@ -101,6 +103,7 @@ export const registerPublicEvent = async (req, res) => {
       const registration = await tx.registration.create({
         data: {
           eventId: primaryEvent.id,
+          collegeId: collegeRecord?.id || null,
           sportId: sportRecord.id,
           registrationType: newRegRecord.teamName ? 'TEAM' : 'INDIVIDUAL',
           status: 'VERIFIED',
@@ -185,26 +188,34 @@ export const registerPublicEvent = async (req, res) => {
       await tx.collegeRegistration.create({
         data: {
           id: receiptId,
-          eventId: newRegRecord.eventId,
-          sportId: newRegRecord.sportId,
+          registrationId: registration.id,
+          eventId: newRegRecord.eventId || 'DEFAULT',
+          sportId: newRegRecord.sportId || 'general',
           studentName: newRegRecord.studentName,
           teamName: newRegRecord.teamName || null,
-          college: newRegRecord.college,
-          department: newRegRecord.department,
-          enrollmentNo: newRegRecord.enrollmentNo,
-          email: newRegRecord.email,
-          phone: newRegRecord.phone,
-          gender: newRegRecord.gender,
-          emergencyContact: newRegRecord.emergencyContact,
-          status: newRegRecord.status,
-          feePaid: newRegRecord.feePaid,
-          paymentId: newRegRecord.paymentId,
-          paymentStatus: newRegRecord.paymentStatus
+          college: newRegRecord.college || 'MPEC',
+          department: newRegRecord.department || 'Engineering',
+          enrollmentNo: newRegRecord.enrollmentNo || '',
+          email: newRegRecord.email || '',
+          phone: newRegRecord.phone || '',
+          gender: newRegRecord.gender || 'Male',
+          emergencyContact: newRegRecord.emergencyContact || '',
+          status: newRegRecord.status || 'Approved',
+          feePaid: newRegRecord.feePaid || 0,
+          paymentId: newRegRecord.paymentId || utrNumber,
+          paymentStatus: newRegRecord.paymentStatus || 'PAID',
+          membersCount: rosterList.length || 1,
+          participantData: participantData || {}
         }
       });
     });
   } catch (dbErr) {
     console.error('PostgreSQL Prisma Registration Insert Error:', dbErr);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to save registration to database.',
+      error: dbErr.message
+    });
   }
 
   return res.status(201).json({
