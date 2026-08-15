@@ -847,7 +847,7 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
               </p>
             </div>
 
-            {participants.length > 0 && (
+            {participants.length > 0 && !isBadminton && (
               <button
                 onClick={handleClearParticipants}
                 className="px-3 py-1 rounded-xl bg-rose-50 dark:bg-rose-600/20 hover:bg-rose-100 dark:hover:bg-rose-600 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ml-2"
@@ -941,13 +941,17 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                           {row.email}
                         </td>
                         <td className="p-4 text-right whitespace-nowrap">
-                          <button
-                            onClick={() => handleDeleteParticipant(p.id, row.teamName || row.name)}
-                            className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition cursor-pointer"
-                            title="Delete Registration"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {!isBadminton ? (
+                            <button
+                              onClick={() => handleDeleteParticipant(p.id, row.teamName || row.name)}
+                              className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition cursor-pointer"
+                              title="Delete Registration"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          ) : (
+                            <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">Read Only</span>
+                          )}
                         </td>
                       </tr>
                     );
@@ -1106,13 +1110,17 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                           </td>
                         )}
                         <td className="p-4 text-right whitespace-nowrap">
-                          <button
-                            onClick={() => handleDeleteParticipant(p.id, p1.name || p.teamName)}
-                            className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition cursor-pointer"
-                            title="Delete Registration"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {!isBadminton ? (
+                            <button
+                              onClick={() => handleDeleteParticipant(p.id, p1.name || p.teamName)}
+                              className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition cursor-pointer"
+                              title="Delete Registration"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          ) : (
+                            <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">Read Only</span>
+                          )}
                         </td>
                       </tr>
                     );
