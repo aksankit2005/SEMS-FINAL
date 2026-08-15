@@ -144,6 +144,79 @@ export const getMatches = async (req, res) => {
   return res.json(memoryList);
 };
 
+const syncMatchToMatchesTable = async (m) => {
+  if (!m || !m.id) return;
+  const statusLower = String(m.status || '').toLowerCase();
+  const isScheduled = statusLower === 'scheduled' || statusLower === 'upcoming' || statusLower === 'draft';
+
+  if (!isScheduled) {
+    // Keep ONLY scheduled matches in matches table; purge live/completed/cancelled
+    try {
+      await queryDb('DELETE FROM matches WHERE id = $1', [String(m.id)]);
+    } catch (e) {}
+    return;
+  }
+
+  const matchId = String(m.id);
+  const mSportId = (m.sportId || m.sport || 'badminton').toLowerCase();
+  const t1 = typeof m.team1 === 'object' ? (m.team1?.name || '') : String(m.team1 || '').trim();
+  const t2 = typeof m.team2 === 'object' ? (m.team2?.name || '') : String(m.team2 || '').trim();
+  const team1Val = t1 || m.team1Name || m.subEvent || m.eventTitle || 'TBD';
+  const team2Val = t2 || m.team2Name || (m.subEvent ? '' : 'TBD');
+  const matchTitleVal = m.eventTitle || m.matchTitle || m.title || `${team1Val} vs ${team2Val}`;
+  const tableNumberVal = m.tableNumber || m.venue || 'Table 1';
+  const timeVal = m.time || m.scheduledTime || '05:30 PM';
+  const statusVal = (m.status || 'SCHEDULED').toUpperCase();
+  const formatVal = (m.format || 'SINGLES').toUpperCase();
+
+  const detailsObj = {
+    category: m.category || m.gender || 'Open',
+    date: m.date || new Date().toISOString().split('T')[0],
+    eventTitle: matchTitleVal,
+    format: formatVal,
+    team1Name: team1Val,
+    team2Name: team2Val,
+    ...(m.details && typeof m.details === 'object' ? m.details : {})
+  };
+
+  try {
+    await queryDb(
+      `INSERT INTO matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, details, "homeTeamName", "awayTeamName", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+       ON CONFLICT (id) DO UPDATE SET
+         sport_id = EXCLUDED.sport_id,
+         format = EXCLUDED.format,
+         status = EXCLUDED.status,
+         team1 = EXCLUDED.team1,
+         team2 = EXCLUDED.team2,
+         match_title = EXCLUDED.match_title,
+         table_number = EXCLUDED.table_number,
+         time = EXCLUDED.time,
+         details = EXCLUDED.details,
+         "homeTeamName" = EXCLUDED.team1,
+         "awayTeamName" = EXCLUDED.team2,
+         "updatedAt" = CURRENT_TIMESTAMP`,
+      [
+        matchId,
+        mSportId,
+        formatVal,
+        statusVal,
+        team1Val,
+        team2Val,
+        matchTitleVal,
+        tableNumberVal,
+        timeVal,
+        Number(m.score1 || 0),
+        Number(m.score2 || 0),
+        m.winner || null,
+        JSON.stringify(detailsObj)
+      ]
+    );
+  } catch (err) {
+    console.warn('Sync to matches table warning:', err.message);
+  }
+};
+
 export const createMatch = async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
   const matchId = req.body.id || `M${Math.floor(100000 + Math.random() * 900000)}`;
@@ -236,41 +309,7 @@ export const createMatch = async (req, res) => {
     ]
   );
 
-  try {
-    await queryDb(
-      `INSERT INTO matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, details, sets_history, current_set, sets_won1, sets_won2, "homeTeamName", "awayTeamName", "winnerName", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $5, $6, $12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-       ON CONFLICT (id) DO UPDATE SET
-         format = EXCLUDED.format, status = EXCLUDED.status, team1 = EXCLUDED.team1, team2 = EXCLUDED.team2,
-         match_title = EXCLUDED.match_title, table_number = EXCLUDED.table_number, time = EXCLUDED.time,
-         score1 = EXCLUDED.score1, score2 = EXCLUDED.score2, winner = EXCLUDED.winner,
-         details = EXCLUDED.details, "homeTeamName" = EXCLUDED.team1, "awayTeamName" = EXCLUDED.team2, "winnerName" = EXCLUDED.winner, "updatedAt" = CURRENT_TIMESTAMP`,
-      [
-        newMatch.id,
-        newMatch.sportId,
-        newMatch.format,
-        newMatch.status,
-        newMatch.team1,
-        newMatch.team2,
-        newMatch.matchTitle,
-        newMatch.tableNumber,
-        newMatch.time,
-        newMatch.score1,
-        newMatch.score2,
-        newMatch.winner,
-        newMatch.youtubeVideoId || newMatch.youtube_video_id || null,
-        newMatch.streamUrl || newMatch.stream_url || null,
-        Boolean(newMatch.isLiveStreaming || newMatch.youtubeVideoId || newMatch.streamUrl),
-        JSON.stringify(detailsObj),
-        JSON.stringify(defaultSetsHistory),
-        newMatch.currentSet || 1,
-        newMatch.setsWon1 || 0,
-        newMatch.setsWon2 || 0
-      ]
-    );
-  } catch (e) {
-    console.warn('Dual write to matches table warning:', e.message);
-  }
+  await syncMatchToMatchesTable(newMatch);
 
   return res.status(201).json({ success: true, match: newMatch });
 };
@@ -377,51 +416,22 @@ export const batchSaveMatches = async (req, res) => {
         ]
       );
 
-      try {
-        await queryDb(
-          `INSERT INTO matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, details, sets_history, current_set, sets_won1, sets_won2, "homeTeamName", "awayTeamName", "winnerName", "createdAt", "updatedAt")
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $5, $6, $12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-           ON CONFLICT (id) DO UPDATE SET
-             sport_id = EXCLUDED.sport_id,
-             format = EXCLUDED.format,
-             status = EXCLUDED.status,
-             team1 = EXCLUDED.team1,
-             team2 = EXCLUDED.team2,
-             match_title = EXCLUDED.match_title,
-             table_number = EXCLUDED.table_number,
-             time = EXCLUDED.time,
-             score1 = EXCLUDED.score1,
-             score2 = EXCLUDED.score2,
-             winner = COALESCE(EXCLUDED.winner, matches.winner),
-             details = EXCLUDED.details,
-             "homeTeamName" = EXCLUDED.team1,
-             "awayTeamName" = EXCLUDED.team2,
-             "winnerName" = EXCLUDED.winner,
-             "updatedAt" = CURRENT_TIMESTAMP`,
-          [
-            matchId,
-            mSportId,
-            formatVal,
-            statusVal,
-            team1Val,
-            team2Val,
-            matchTitleVal,
-            tableNumberVal,
-            timeVal,
-            score1Val,
-            score2Val,
-            winnerVal,
-            m.youtubeVideoId || m.youtube_video_id || null,
-            m.streamUrl || m.stream_url || null,
-            Boolean(m.isLiveStreaming || m.youtubeVideoId || m.streamUrl),
-            JSON.stringify(detailsObj),
-            m.setsHistory ? (typeof m.setsHistory === 'string' ? m.setsHistory : JSON.stringify(m.setsHistory)) : null,
-            m.currentSet || 1,
-            m.setsWon1 || 0,
-            m.setsWon2 || 0
-          ]
-        );
-      } catch (err) {}
+      await syncMatchToMatchesTable({
+        ...m,
+        id: matchId,
+        sportId: mSportId,
+        team1: team1Val,
+        team2: team2Val,
+        matchTitle: matchTitleVal,
+        tableNumber: tableNumberVal,
+        time: timeVal,
+        status: statusVal,
+        format: formatVal,
+        score1: score1Val,
+        score2: score2Val,
+        winner: winnerVal,
+        details: detailsObj
+      });
 
       savedMatches.push({ ...m, id: matchId, sportId: mSportId });
     } catch (err) {
@@ -626,50 +636,7 @@ export const updateMatch = async (req, res) => {
     ]
   );
 
-  try {
-    await queryDb(
-      `INSERT INTO matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, details, sets_history, current_set, sets_won1, sets_won2, current_quarter, "homeTeamName", "awayTeamName", "winnerName", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $5, $6, $12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-       ON CONFLICT (id) DO UPDATE SET
-         status = COALESCE(EXCLUDED.status, matches.status),
-         team1 = COALESCE(EXCLUDED.team1, matches.team1),
-         team2 = COALESCE(EXCLUDED.team2, matches.team2),
-         match_title = COALESCE(EXCLUDED.match_title, matches.match_title),
-         table_number = COALESCE(EXCLUDED.table_number, matches.table_number),
-         time = COALESCE(EXCLUDED.time, matches.time),
-         score1 = EXCLUDED.score1,
-         score2 = EXCLUDED.score2,
-         winner = COALESCE(EXCLUDED.winner, matches.winner),
-         details = CASE WHEN EXCLUDED.details IS NOT NULL THEN EXCLUDED.details ELSE matches.details END,
-         "homeTeamName" = COALESCE(EXCLUDED.team1, matches."homeTeamName"),
-         "awayTeamName" = COALESCE(EXCLUDED.team2, matches."awayTeamName"),
-         "winnerName" = COALESCE(EXCLUDED.winner, matches."winnerName"),
-         "updatedAt" = CURRENT_TIMESTAMP`,
-      [
-        id,
-        sportId,
-        (req.body.format || updatedMatch.format || 'SINGLES').toUpperCase(),
-        req.body.status || updatedMatch.status || 'SCHEDULED',
-        t1Name,
-        t2Name,
-        req.body.matchTitle || updatedMatch.matchTitle || `${t1Name} vs ${t2Name}`,
-        req.body.tableNumber || updatedMatch.tableNumber || 'Table 1',
-        req.body.time || updatedMatch.time || '05:30 PM',
-        req.body.score1 !== undefined ? Number(req.body.score1) : (updatedMatch.score1 || 0),
-        req.body.score2 !== undefined ? Number(req.body.score2) : (updatedMatch.score2 || 0),
-        req.body.winner || updatedMatch.winner || null,
-        updatedMatch.youtubeVideoId || null,
-        updatedMatch.streamUrl || null,
-        Boolean(updatedMatch.isLiveStreaming || updatedMatch.youtubeVideoId || updatedMatch.streamUrl),
-        JSON.stringify(detailsObj),
-        setsHistoryStr,
-        currentSetVal,
-        setsWon1Val,
-        setsWon2Val,
-        currentQuarterVal
-      ]
-    );
-  } catch (e) {}
+  await syncMatchToMatchesTable(updatedMatch);
 
   return res.json({ success: true, match: { ...updatedMatch, quarter: currentQuarterVal } });
 };
@@ -799,30 +766,11 @@ export const updateMatchScore = async (req, res) => {
         id
       ]
     );
-
-    try {
-      await queryDb(
-        `UPDATE matches 
-         SET score1 = $1, score2 = $2, status = $3, table_number = $4,
-             details = $5, sets_history = $6, current_set = $7, sets_won1 = $8, sets_won2 = $9, "updatedAt" = CURRENT_TIMESTAMP
-         WHERE id = $10`,
-        [
-          match.score1,
-          match.score2,
-          match.status,
-          match.tableNumber || 'Table 1',
-          JSON.stringify(detailsObj),
-          JSON.stringify(setsHistoryArr),
-          currentSetVal,
-          setsWon1Val,
-          setsWon2Val,
-          id
-        ]
-      );
-    } catch (e) {}
   } catch (e) {
     console.warn('updateMatchScore DB update error:', e.message);
   }
+
+  await syncMatchToMatchesTable(match);
 
   return res.json({ success: true, match });
 };
@@ -880,20 +828,7 @@ export const completeMatch = async (req, res) => {
       ]
     );
 
-    try {
-      await queryDb(
-        `UPDATE matches 
-         SET status = 'COMPLETED', table_number = NULL, is_live_streaming = FALSE, winner = $1, "winnerName" = $1,
-             details = COALESCE($2, details), sets_history = COALESCE($3, sets_history), "updatedAt" = CURRENT_TIMESTAMP
-         WHERE id = $4`,
-        [
-          match.winner,
-          setsHistoryArr ? JSON.stringify(detailsObj) : null,
-          setsHistoryArr ? JSON.stringify(setsHistoryArr) : null,
-          id
-        ]
-      );
-    } catch (e) {}
+    await syncMatchToMatchesTable(match);
   } catch (e) {
     console.warn('completeMatch DB update error:', e.message);
   }
