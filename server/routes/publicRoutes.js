@@ -254,11 +254,64 @@ router.get('/public/events', async (req, res) => {
   const publishedEvents = [];
   const currentDate = new Date();
 
+  // 1. Raw SQL QueryDb from PostgreSQL
+  try {
+    const dbRes = await queryDb(
+      `SELECT 
+        id, sport_id AS "sportId", sport_name AS "sportName", title, 
+        cover_image AS "coverImage", description, reg_start_date AS "regStartDate", 
+        reg_end_date AS "regEndDate", tourn_start_date AS "tournStartDate", 
+        tourn_end_date AS "tournEndDate", entry_fee AS "entryFee", 
+        singles_fee AS "singlesFee", doubles_fee AS "doublesFee", 
+        team_size AS "teamSize", max_registrations AS "maxRegistrations", 
+        registered_count AS "registeredCount", venue, category, status, 
+        rules, required_documents AS "requiredDocuments", contact_info AS "contactInfo"
+       FROM coordinator_event_items
+       ORDER BY created_at DESC`
+    );
+
+    if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+      dbRes.rows.forEach((e) => {
+        let currentStatus = e.status || 'Published';
+        if (e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) {
+          currentStatus = 'Closed';
+        }
+        if ((Number(e.registeredCount) || 0) >= (Number(e.maxRegistrations) || 64)) {
+          currentStatus = 'Closed';
+        }
+
+        let contact = e.contactInfo;
+        if (typeof contact === 'string') {
+          try { contact = JSON.parse(contact); } catch (err) {}
+        }
+        let rulesObj = e.rules;
+        if (typeof rulesObj === 'string') {
+          try { rulesObj = JSON.parse(rulesObj); } catch (err) {}
+        }
+
+        publishedEvents.push({
+          ...e,
+          entryFee: Number(e.entryFee || 0),
+          teamFee: Number(e.entryFee || 0),
+          singlesFee: Number(e.singlesFee || 0),
+          doublesFee: Number(e.doublesFee || 0),
+          maxRegistrations: Number(e.maxRegistrations || 64),
+          registeredCount: Number(e.registeredCount || 0),
+          status: currentStatus,
+          rules: rulesObj || [],
+          contactInfo: contact,
+          availableSlots: Math.max(0, (Number(e.maxRegistrations) || 64) - (Number(e.registeredCount) || 0))
+        });
+      });
+      return res.json(publishedEvents);
+    }
+  } catch (err) {
+    console.error('Error fetching public events via queryDb:', err.message);
+  }
+
+  // 2. Prisma fallback
   try {
     const dbEvents = await prisma.coordinatorEventItem.findMany({
-      where: {
-        status: { in: ['Published', 'Closed', 'Coming Soon'] }
-      },
       orderBy: { createdAt: 'desc' }
     });
 
@@ -273,6 +326,8 @@ router.get('/public/events', async (req, res) => {
         }
         publishedEvents.push({
           ...e,
+          entryFee: Number(e.entryFee || 0),
+          teamFee: Number(e.entryFee || 0),
           status: currentStatus,
           availableSlots: Math.max(0, (e.maxRegistrations || 64) - (e.registeredCount || 0))
         });

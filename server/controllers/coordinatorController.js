@@ -990,33 +990,55 @@ export const getEvents = async (req, res) => {
 export const createEvent = async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
   const eventId = req.body.id || `EVT-${sportId.toUpperCase()}-${Date.now()}`;
+
+  const title = req.body.title || req.body.eventName || `${req.user.sportName} Championship 2026`;
+  const coverImage = req.body.coverImage || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80';
+  const description = req.body.description || '';
+  const regStartDate = req.body.regStartDate || new Date().toISOString().split('T')[0];
+  const regEndDate = req.body.regEndDate || '2026-08-30';
+  const tournStartDate = req.body.tournStartDate || '2026-09-01';
+  const tournEndDate = req.body.tournEndDate || '2026-09-05';
+  const entryFee = Number(req.body.entryFee !== undefined ? req.body.entryFee : (req.body.teamFee !== undefined ? req.body.teamFee : 0));
+  const singlesFee = req.body.singlesFee !== undefined ? Number(req.body.singlesFee) : Number(entryFee || 300);
+  const doublesFee = req.body.doublesFee !== undefined ? Number(req.body.doublesFee) : (req.body.singlesFee !== undefined ? Number(req.body.singlesFee) * 2 : 600);
+  const teamSize = req.body.teamSize || '1 Player';
+  const maxRegistrations = Number(req.body.maxRegistrations || 64);
+  const registeredCount = Number(req.body.registeredCount || 0);
+  const venue = req.body.venue || 'Central Sports Arena';
+  const category = req.body.category || 'Open';
+  const status = req.body.status || 'Draft';
+  const rules = req.body.rules || [];
+  const requiredDocuments = req.body.requiredDocuments || ['College ID Card', 'Student Aadhaar/Govt ID'];
+  const contactInfo = req.body.contactInfo || {
+    name: req.user.coordinatorName,
+    email: req.user.email || `${sportId}.coord@sems.edu`,
+    phone: '+91 98765 43210'
+  };
+
   const newEvent = {
     id: eventId,
-    title: req.body.title || req.body.eventName || `${req.user.sportName} Championship 2026`,
-    sportId: sportId,
+    sportId,
     sportName: req.user.sportName,
-    coverImage: req.body.coverImage || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80',
-    description: req.body.description || '',
-    regStartDate: req.body.regStartDate || new Date().toISOString().split('T')[0],
-    regEndDate: req.body.regEndDate || '2026-08-30',
-    tournStartDate: req.body.tournStartDate || '2026-09-01',
-    tournEndDate: req.body.tournEndDate || '2026-09-05',
-    entryFee: Number(req.body.entryFee || 0),
-    singlesFee: req.body.singlesFee !== undefined ? Number(req.body.singlesFee) : Number(req.body.entryFee || 300),
-    doublesFee: req.body.doublesFee !== undefined ? Number(req.body.doublesFee) : (req.body.singlesFee !== undefined ? Number(req.body.singlesFee) * 2 : 600),
-    teamSize: req.body.teamSize || '1 Player',
-    maxRegistrations: Number(req.body.maxRegistrations || 64),
-    registeredCount: Number(req.body.registeredCount || 0),
-    venue: req.body.venue || 'Central Sports Arena',
-    category: req.body.category || 'Open',
-    status: req.body.status || 'Draft',
-    rules: req.body.rules || [],
-    requiredDocuments: req.body.requiredDocuments || ['College ID Card', 'Student Aadhaar/Govt ID'],
-    contactInfo: req.body.contactInfo || {
-      name: req.user.coordinatorName,
-      email: req.user.email || `${sportId}.coord@sems.edu`,
-      phone: '+91 98765 43210'
-    },
+    title,
+    coverImage,
+    description,
+    regStartDate,
+    regEndDate,
+    tournStartDate,
+    tournEndDate,
+    entryFee,
+    singlesFee,
+    doublesFee,
+    teamSize,
+    maxRegistrations,
+    registeredCount,
+    venue,
+    category,
+    status,
+    rules,
+    requiredDocuments,
+    contactInfo,
+    createdBy: req.user.username || req.user.coordinatorName
   };
 
   if (!inMemoryCoordinatorEvents[sportId]) {
@@ -1025,13 +1047,58 @@ export const createEvent = async (req, res) => {
   inMemoryCoordinatorEvents[sportId].unshift(newEvent);
 
   try {
-    await prisma.coordinatorEventItem.upsert({
+    await queryDb(
+      `INSERT INTO coordinator_event_items (
+        id, sport_id, sport_name, title, cover_image, description,
+        reg_start_date, reg_end_date, tourn_start_date, tourn_end_date,
+        entry_fee, singles_fee, doubles_fee, team_size, max_registrations,
+        registered_count, venue, category, status, rules, required_documents,
+        contact_info, created_by, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, CURRENT_TIMESTAMP)
+      ON CONFLICT (id) DO UPDATE SET
+        sport_id = EXCLUDED.sport_id,
+        sport_name = COALESCE(EXCLUDED.sport_name, coordinator_event_items.sport_name),
+        title = EXCLUDED.title,
+        cover_image = EXCLUDED.cover_image,
+        description = EXCLUDED.description,
+        reg_start_date = EXCLUDED.reg_start_date,
+        reg_end_date = EXCLUDED.reg_end_date,
+        tourn_start_date = EXCLUDED.tourn_start_date,
+        tourn_end_date = EXCLUDED.tourn_end_date,
+        entry_fee = EXCLUDED.entry_fee,
+        singles_fee = EXCLUDED.singles_fee,
+        doubles_fee = EXCLUDED.doubles_fee,
+        team_size = EXCLUDED.team_size,
+        max_registrations = EXCLUDED.max_registrations,
+        registered_count = EXCLUDED.registered_count,
+        venue = EXCLUDED.venue,
+        category = EXCLUDED.category,
+        status = EXCLUDED.status,
+        rules = EXCLUDED.rules,
+        required_documents = EXCLUDED.required_documents,
+        contact_info = EXCLUDED.contact_info,
+        updated_at = CURRENT_TIMESTAMP`,
+      [
+        eventId, sportId, req.user.sportName, title, coverImage, description,
+        regStartDate, regEndDate, tournStartDate, tournEndDate,
+        entryFee, singlesFee, doublesFee, teamSize, maxRegistrations,
+        registeredCount, venue, category, status, JSON.stringify(rules), JSON.stringify(requiredDocuments),
+        JSON.stringify(contactInfo), req.user.username || req.user.coordinatorName
+      ]
+    );
+  } catch (err) {
+    console.error('Error persisting coordinator event via queryDb:', err.message);
+  }
+
+  try {
+    const dbEvent = await prisma.coordinatorEventItem.upsert({
       where: { id: eventId },
       update: newEvent,
       create: newEvent
     });
+    return res.status(201).json({ success: true, event: dbEvent });
   } catch (err) {
-    console.error('Error persisting coordinator event to DB:', err.message);
+    console.error('Prisma upsert fallback error:', err.message);
   }
 
   return res.status(201).json({ success: true, event: newEvent });
@@ -1041,44 +1108,160 @@ export const updateEvent = async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
   const { id } = req.params;
   const list = inMemoryCoordinatorEvents[sportId] || [];
-
   const index = list.findIndex((e) => e.id === id);
-  let newStatus = req.body.status !== undefined ? req.body.status : (index !== -1 ? list[index].status : 'Draft');
-  if (req.body.registeredCount !== undefined && req.body.registeredCount >= (req.body.maxRegistrations || (index !== -1 ? list[index].maxRegistrations : 64))) {
-    newStatus = 'Closed';
+  const existing = index !== -1 ? list[index] : {};
+
+  const title = req.body.title || req.body.eventName || existing.title || `${req.user.sportName} Event`;
+  const coverImage = req.body.coverImage || existing.coverImage || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80';
+  const description = req.body.description !== undefined ? req.body.description : (existing.description || '');
+  const regStartDate = req.body.regStartDate || existing.regStartDate || new Date().toISOString().split('T')[0];
+  const regEndDate = req.body.regEndDate || existing.regEndDate || '2026-08-30';
+  const tournStartDate = req.body.tournStartDate || existing.tournStartDate || '2026-09-01';
+  const tournEndDate = req.body.tournEndDate || existing.tournEndDate || '2026-09-05';
+  const entryFee = Number(req.body.entryFee !== undefined ? req.body.entryFee : (req.body.teamFee !== undefined ? req.body.teamFee : (existing.entryFee || 0)));
+  const singlesFee = Number(req.body.singlesFee !== undefined ? req.body.singlesFee : (existing.singlesFee || entryFee));
+  const doublesFee = Number(req.body.doublesFee !== undefined ? req.body.doublesFee : (existing.doublesFee || entryFee * 2));
+  const teamSize = req.body.teamSize || existing.teamSize || '1 Player';
+  const maxRegistrations = Number(req.body.maxRegistrations !== undefined ? req.body.maxRegistrations : (existing.maxRegistrations || 64));
+  const registeredCount = Number(req.body.registeredCount !== undefined ? req.body.registeredCount : (existing.registeredCount || 0));
+  const venue = req.body.venue || existing.venue || 'Main Venue';
+  const category = req.body.category || existing.category || 'Open';
+  let status = req.body.status !== undefined ? req.body.status : (existing.status || 'Draft');
+  if (registeredCount >= maxRegistrations) {
+    status = 'Closed';
   }
+  const rules = req.body.rules || existing.rules || [];
+  const requiredDocuments = req.body.requiredDocuments || existing.requiredDocuments || ['College ID Card', 'Student Aadhaar/Govt ID'];
+  const contactInfo = req.body.contactInfo || existing.contactInfo || {
+    name: req.user.coordinatorName,
+    email: req.user.email || `${sportId}.coord@sems.edu`,
+    phone: '+91 98765 43210'
+  };
+
+  const cleanEvent = {
+    id,
+    sportId,
+    sportName: req.user.sportName,
+    title,
+    coverImage,
+    description,
+    regStartDate,
+    regEndDate,
+    tournStartDate,
+    tournEndDate,
+    entryFee,
+    singlesFee,
+    doublesFee,
+    teamSize,
+    maxRegistrations,
+    registeredCount,
+    venue,
+    category,
+    status,
+    rules,
+    requiredDocuments,
+    contactInfo,
+    createdBy: req.user.username || req.user.coordinatorName
+  };
 
   if (index !== -1) {
     list[index] = {
       ...list[index],
-      ...req.body,
-      status: newStatus,
+      ...cleanEvent,
       updatedAt: new Date().toISOString()
     };
+  } else {
+    list.unshift(cleanEvent);
+  }
+  inMemoryCoordinatorEvents[sportId] = list;
+
+  try {
+    const sqlRes = await queryDb(
+      `INSERT INTO coordinator_event_items (
+        id, sport_id, sport_name, title, cover_image, description,
+        reg_start_date, reg_end_date, tourn_start_date, tourn_end_date,
+        entry_fee, singles_fee, doubles_fee, team_size, max_registrations,
+        registered_count, venue, category, status, rules, required_documents,
+        contact_info, created_by, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, CURRENT_TIMESTAMP)
+      ON CONFLICT (id) DO UPDATE SET
+        sport_id = EXCLUDED.sport_id,
+        sport_name = COALESCE(EXCLUDED.sport_name, coordinator_event_items.sport_name),
+        title = EXCLUDED.title,
+        cover_image = EXCLUDED.cover_image,
+        description = EXCLUDED.description,
+        reg_start_date = EXCLUDED.reg_start_date,
+        reg_end_date = EXCLUDED.reg_end_date,
+        tourn_start_date = EXCLUDED.tourn_start_date,
+        tourn_end_date = EXCLUDED.tourn_end_date,
+        entry_fee = EXCLUDED.entry_fee,
+        singles_fee = EXCLUDED.singles_fee,
+        doubles_fee = EXCLUDED.doubles_fee,
+        team_size = EXCLUDED.team_size,
+        max_registrations = EXCLUDED.max_registrations,
+        registered_count = EXCLUDED.registered_count,
+        venue = EXCLUDED.venue,
+        category = EXCLUDED.category,
+        status = EXCLUDED.status,
+        rules = EXCLUDED.rules,
+        required_documents = EXCLUDED.required_documents,
+        contact_info = EXCLUDED.contact_info,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING *`,
+      [
+        id, sportId, req.user.sportName, title, coverImage, description,
+        regStartDate, regEndDate, tournStartDate, tournEndDate,
+        entryFee, singlesFee, doublesFee, teamSize, maxRegistrations,
+        registeredCount, venue, category, status, JSON.stringify(rules), JSON.stringify(requiredDocuments),
+        JSON.stringify(contactInfo), req.user.username || req.user.coordinatorName
+      ]
+    );
+
+    if (sqlRes && sqlRes.rows && sqlRes.rows.length > 0) {
+      const row = sqlRes.rows[0];
+      const resEvent = {
+        id: row.id,
+        sportId: row.sport_id,
+        sportName: row.sport_name,
+        title: row.title,
+        coverImage: row.cover_image,
+        description: row.description,
+        regStartDate: row.reg_start_date,
+        regEndDate: row.reg_end_date,
+        tournStartDate: row.tourn_start_date,
+        tournEndDate: row.tourn_end_date,
+        entryFee: Number(row.entry_fee || 0),
+        singlesFee: Number(row.singles_fee || 0),
+        doublesFee: Number(row.doubles_fee || 0),
+        teamFee: Number(row.entry_fee || 0),
+        teamSize: row.team_size,
+        maxRegistrations: Number(row.max_registrations || 64),
+        registeredCount: Number(row.registered_count || 0),
+        venue: row.venue,
+        category: row.category,
+        status: row.status,
+        rules: row.rules,
+        requiredDocuments: row.required_documents,
+        contactInfo: row.contact_info
+      };
+      return res.json({ success: true, event: resEvent });
+    }
+  } catch (err) {
+    console.error('Error updating event in DB via queryDb:', err.message);
   }
 
   try {
     const updated = await prisma.coordinatorEventItem.upsert({
       where: { id },
-      update: {
-        ...req.body,
-        status: newStatus,
-      },
-      create: {
-        id,
-        sportId,
-        sportName: req.user.sportName,
-        title: req.body.title || req.body.eventName || 'Event',
-        status: newStatus,
-        ...req.body
-      }
+      update: cleanEvent,
+      create: cleanEvent
     });
     return res.json({ success: true, event: updated });
   } catch (err) {
-    console.error('Error updating event in DB:', err.message);
+    console.error('Prisma update error fallback:', err.message);
   }
 
-  return res.json({ success: true, event: index !== -1 ? list[index] : req.body });
+  return res.json({ success: true, event: cleanEvent });
 };
 
 export const deleteEvent = async (req, res) => {
