@@ -316,7 +316,9 @@ export const coordinatorApi = {
 
   // Get all public match schedules across all sports
   async getPublicMatches() {
-    let serverMatches = [];
+    return this.getMatches();
+  },
+
   // Get all matches across backend server & localStorage
   async getMatches() {
     const deletedSet = new Set();
