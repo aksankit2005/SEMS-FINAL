@@ -296,29 +296,8 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
   const playerStats1 = match.playerStats1 && match.playerStats1.length > 0 ? match.playerStats1 : defaultKabaddiTeam1;
   const playerStats2 = match.playerStats2 && match.playerStats2.length > 0 ? match.playerStats2 : defaultKabaddiTeam2;
 
-  const roster1 = match.roster1 && match.roster1.length > 0
-    ? match.roster1
-    : [
-      { id: 'T1-1', name: `${team1Name} Player 1`, jersey: '4', onCourt: true, points: Math.floor(score1Val * 0.4), fouls: 1 },
-      { id: 'T1-2', name: `${team1Name} Player 2`, jersey: '7', onCourt: true, points: Math.floor(score1Val * 0.3), fouls: 2 },
-      { id: 'T1-3', name: `${team1Name} Player 3`, jersey: '10', onCourt: true, points: Math.floor(score1Val * 0.2), fouls: 0 },
-      { id: 'T1-4', name: `${team1Name} Player 4`, jersey: '11', onCourt: true, points: Math.floor(score1Val * 0.1), fouls: 3 },
-      { id: 'T1-5', name: `${team1Name} Player 5`, jersey: '23', onCourt: true, points: 0, fouls: 1 },
-      { id: 'T1-6', name: `${team1Name} Sub 1`, jersey: '30', onCourt: false, points: 0, fouls: 0 },
-      { id: 'T1-7', name: `${team1Name} Sub 2`, jersey: '33', onCourt: false, points: 0, fouls: 0 },
-    ];
-
-  const roster2 = match.roster2 && match.roster2.length > 0
-    ? match.roster2
-    : [
-      { id: 'T2-1', name: `${team2Name} Player 1`, jersey: '4', onCourt: true, points: Math.floor(score2Val * 0.4), fouls: 2 },
-      { id: 'T2-2', name: `${team2Name} Player 2`, jersey: '7', onCourt: true, points: Math.floor(score2Val * 0.3), fouls: 1 },
-      { id: 'T2-3', name: `${team2Name} Player 3`, jersey: '10', onCourt: true, points: Math.floor(score2Val * 0.2), fouls: 0 },
-      { id: 'T2-4', name: `${team2Name} Player 4`, jersey: '11', onCourt: true, points: Math.floor(score2Val * 0.1), fouls: 4 },
-      { id: 'T2-5', name: `${team2Name} Player 5`, jersey: '23', onCourt: true, points: 0, fouls: 2 },
-      { id: 'T2-6', name: `${team2Name} Sub 1`, jersey: '30', onCourt: false, points: 0, fouls: 0 },
-      { id: 'T2-7', name: `${team2Name} Sub 2`, jersey: '33', onCourt: false, points: 0, fouls: 0 },
-    ];
+  const roster1 = Array.isArray(match.roster1) ? match.roster1 : [];
+  const roster2 = Array.isArray(match.roster2) ? match.roster2 : [];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-sm overflow-y-auto animate-fade-in font-sans">

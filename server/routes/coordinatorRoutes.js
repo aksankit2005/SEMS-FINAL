@@ -9,6 +9,7 @@ import {
   deleteAllMatches,
   updateMatchScore,
   completeMatch,
+  getBasketballMatchPlayersDB,
   getDashboardStats,
   getRegistrations,
   toggleRegistrationStatus,
@@ -32,6 +33,7 @@ router.delete('/coordinator/matches/:id', verifyCoordinatorToken, deleteMatch);
 router.delete('/coordinator/matches', verifyCoordinatorToken, deleteAllMatches);
 router.post('/coordinator/matches/:id/score', verifyCoordinatorToken, updateMatchScore);
 router.post('/coordinator/matches/:id/complete', verifyCoordinatorToken, completeMatch);
+router.get('/coordinator/matches/:id/players', getBasketballMatchPlayersDB);
 
 router.get('/coordinator/dashboard-stats', verifyCoordinatorToken, getDashboardStats);
 router.get('/coordinator/registrations', verifyCoordinatorToken, getRegistrations);

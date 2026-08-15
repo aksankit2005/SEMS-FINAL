@@ -541,6 +541,23 @@ model LiveMatch {
   @@map("live_matches")
 }
 
+model BasketballPlayerStat {
+  id        String   @id @default(uuid()) @db.Uuid
+  matchId   String   @map("match_id")
+  teamName  String   @map("team_name")
+  jerseyNo  String   @map("jersey_no")
+  playerName String  @map("player_name")
+  isOnPitch Boolean  @default(true) @map("is_on_pitch")
+  points    Int      @default(0)
+  fouls     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([matchId, teamName, jerseyNo])
+  @@index([matchId, teamName])
+  @@map("basketball_player_stats")
+}
+
 model LeaderboardEntry {
   id              Int      @id @default(autoincrement())
   sportId         String?  @map("sport_id")

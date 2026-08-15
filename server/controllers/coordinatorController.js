@@ -294,18 +294,88 @@ export const updateMatch = async (req, res) => {
   const setsWon1Val = req.body.setsWon1 !== undefined ? Number(req.body.setsWon1) : (updatedMatch.setsWon1 || 0);
   const setsWon2Val = req.body.setsWon2 !== undefined ? Number(req.body.setsWon2) : (updatedMatch.setsWon2 || 0);
 
+  const currentQuarterVal = req.body.quarter || req.body.currentQuarter || updatedMatch.quarter || 'Quarter 1';
+
   const detailsObj = {
     setsHistory: setsHistoryArr,
     currentSet: currentSetVal,
     setsWon1: setsWon1Val,
     setsWon2: setsWon2Val,
+    quarter: currentQuarterVal,
+    roster1: req.body.roster1 || updatedMatch.roster1 || null,
+    roster2: req.body.roster2 || updatedMatch.roster2 || null,
     playerStats1: req.body.playerStats1 || updatedMatch.playerStats1 || null,
     playerStats2: req.body.playerStats2 || updatedMatch.playerStats2 || null
   };
 
+  // Upsert Basketball Player Stats into basketball_player_stats table in Supabase
+  const t1Name = req.body.team1 || updatedMatch.team1 || 'Team 1';
+  const t2Name = req.body.team2 || updatedMatch.team2 || 'Team 2';
+
+  const r1List = req.body.roster1 || updatedMatch.roster1;
+  if (Array.isArray(r1List)) {
+    for (const p of r1List) {
+      if (!p) continue;
+      const jNo = String(p.jersey || p.jerseyNo || p.id || '0');
+      const pName = p.name || p.playerName || `Player #${jNo}`;
+      const onPitch = p.onCourt !== false && p.isOnPitch !== false;
+      const pts = Number(p.points || 0);
+      const fls = Number(p.fouls || 0);
+
+      try {
+        await queryDb(
+          `INSERT INTO basketball_player_stats (id, match_id, team_name, jersey_no, player_name, is_on_pitch, points, fouls, created_at, updated_at)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+           ON CONFLICT (match_id, team_name, jersey_no) DO UPDATE SET
+             player_name = EXCLUDED.player_name,
+             is_on_pitch = EXCLUDED.is_on_pitch,
+             points = EXCLUDED.points,
+             fouls = EXCLUDED.fouls,
+             updated_at = CURRENT_TIMESTAMP`,
+          [id, t1Name, jNo, pName, onPitch, pts, fls]
+        );
+      } catch (err) {
+        console.error('Error upserting basketball_player_stats for team 1:', err.message);
+      }
+    }
+  }
+
+  const r2List = req.body.roster2 || updatedMatch.roster2;
+  if (Array.isArray(r2List)) {
+    for (const p of r2List) {
+      if (!p) continue;
+      const jNo = String(p.jersey || p.jerseyNo || p.id || '0');
+      const pName = p.name || p.playerName || `Player #${jNo}`;
+      const onPitch = p.onCourt !== false && p.isOnPitch !== false;
+      const pts = Number(p.points || 0);
+      const fls = Number(p.fouls || 0);
+
+      try {
+        await queryDb(
+          `INSERT INTO basketball_player_stats (id, match_id, team_name, jersey_no, player_name, is_on_pitch, points, fouls, created_at, updated_at)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+           ON CONFLICT (match_id, team_name, jersey_no) DO UPDATE SET
+             player_name = EXCLUDED.player_name,
+             is_on_pitch = EXCLUDED.is_on_pitch,
+             points = EXCLUDED.points,
+             fouls = EXCLUDED.fouls,
+             updated_at = CURRENT_TIMESTAMP`,
+          [id, t2Name, jNo, pName, onPitch, pts, fls]
+        );
+      } catch (err) {
+        console.error('Error upserting basketball_player_stats for team 2:', err.message);
+      }
+    }
+  }
+
+  // Ensure current_quarter column exists on live_matches
+  try {
+    await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS current_quarter TEXT;`);
+  } catch (e) {}
+
   await queryDb(
-    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, details, sets_history, current_set, sets_won1, sets_won2, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, CURRENT_TIMESTAMP)
+    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, details, sets_history, current_set, sets_won1, sets_won2, current_quarter, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, CURRENT_TIMESTAMP)
      ON CONFLICT (id) DO UPDATE SET
        status = COALESCE(EXCLUDED.status, live_matches.status),
        team1 = COALESCE(EXCLUDED.team1, live_matches.team1),
@@ -324,15 +394,16 @@ export const updateMatch = async (req, res) => {
        current_set = COALESCE(EXCLUDED.current_set, live_matches.current_set),
        sets_won1 = COALESCE(EXCLUDED.sets_won1, live_matches.sets_won1),
        sets_won2 = COALESCE(EXCLUDED.sets_won2, live_matches.sets_won2),
+       current_quarter = COALESCE(EXCLUDED.current_quarter, live_matches.current_quarter),
        updated_at = CURRENT_TIMESTAMP`,
     [
       id,
       sportId,
       (req.body.format || updatedMatch.format || 'SINGLES').toUpperCase(),
       req.body.status || updatedMatch.status || 'SCHEDULED',
-      req.body.team1 || updatedMatch.team1,
-      req.body.team2 || updatedMatch.team2,
-      req.body.matchTitle || updatedMatch.matchTitle || `${req.body.team1} vs ${req.body.team2}`,
+      t1Name,
+      t2Name,
+      req.body.matchTitle || updatedMatch.matchTitle || `${t1Name} vs ${t2Name}`,
       req.body.tableNumber || updatedMatch.tableNumber || 'Table 1',
       req.body.time || updatedMatch.time || '05:30 PM',
       req.body.score1 !== undefined ? Number(req.body.score1) : (updatedMatch.score1 || 0),
@@ -345,11 +416,33 @@ export const updateMatch = async (req, res) => {
       setsHistoryStr,
       currentSetVal,
       setsWon1Val,
-      setsWon2Val
+      setsWon2Val,
+      currentQuarterVal
     ]
   );
 
-  return res.json({ success: true, match: updatedMatch });
+  return res.json({ success: true, match: { ...updatedMatch, quarter: currentQuarterVal } });
+};
+
+export const getBasketballMatchPlayersDB = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const dbRes = await queryDb(
+      `SELECT id, match_id AS "matchId", team_name AS "teamName", 
+              jersey_no AS "jerseyNo", player_name AS "playerName", 
+              is_on_pitch AS "isOnPitch", points, fouls, 
+              created_at AS "createdAt", updated_at AS "updatedAt"
+       FROM basketball_player_stats 
+       WHERE match_id = $1 
+       ORDER BY team_name, jersey_no ASC`,
+      [id]
+    );
+
+    return res.json(dbRes ? dbRes.rows : []);
+  } catch (err) {
+    console.error('Error fetching basketball player stats from DB:', err.message);
+    return res.status(500).json({ message: 'Failed to fetch player statistics' });
+  }
 };
 
 export const deleteMatch = async (req, res) => {

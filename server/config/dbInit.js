@@ -240,7 +240,33 @@ export const initDatabaseSchema = async () => {
       WHERE details IS NULL OR details = 'null'::jsonb;
     `);
 
-    // 2. Ensure media table exists for PR media uploads
+    // 2. Ensure basketball_player_stats table exists
+    await queryDb(`
+      CREATE TABLE IF NOT EXISTS basketball_player_stats (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        match_id TEXT NOT NULL,
+        team_name TEXT NOT NULL,
+        jersey_no TEXT NOT NULL,
+        player_name TEXT NOT NULL,
+        is_on_pitch BOOLEAN DEFAULT TRUE,
+        points INT DEFAULT 0,
+        fouls INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      DO $$ 
+      BEGIN 
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'unique_match_team_jersey'
+        ) THEN 
+          ALTER TABLE basketball_player_stats 
+          ADD CONSTRAINT unique_match_team_jersey UNIQUE (match_id, team_name, jersey_no);
+        END IF;
+      END $$;
+    `);
+
+    // 3. Ensure media table exists for PR media uploads
     await queryDb(`
       CREATE TABLE IF NOT EXISTS media (
         id SERIAL PRIMARY KEY,

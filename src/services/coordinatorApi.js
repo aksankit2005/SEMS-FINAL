@@ -607,6 +607,19 @@ export const coordinatorApi = {
     return updatedMatch;
   },
 
+  // Fetch real basketball player stats from Supabase
+  async getBasketballMatchPlayers(matchId) {
+    try {
+      const res = await api.get(`/coordinator/matches/${matchId}/players`);
+      if (res.data && Array.isArray(res.data)) {
+        return res.data;
+      }
+    } catch (e) {
+      console.warn('Backend getBasketballMatchPlayers fallback:', e);
+    }
+    return [];
+  },
+
   // Complete match, save result, remove from active live assignments
   async completeMatch(matchId, winnerData) {
     const user = this.getCurrentUser();

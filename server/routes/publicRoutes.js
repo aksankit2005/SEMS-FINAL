@@ -39,7 +39,7 @@ router.get('/live-matches', async (req, res) => {
     }
 
     if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
-      const formatted = dbRes.rows.map((m) => {
+      const formatted = await Promise.all(dbRes.rows.map(async (m) => {
         let detailsObj = m.details;
         if (typeof detailsObj === 'string') {
           try { detailsObj = JSON.parse(detailsObj); } catch (e) {}
@@ -51,11 +51,56 @@ router.get('/live-matches', async (req, res) => {
             parsedSetsHistory = JSON.parse(parsedSetsHistory);
           } catch (e) {}
         }
+
+        let roster1 = detailsObj?.roster1 || null;
+        let roster2 = detailsObj?.roster2 || null;
+        let currentQuarter = m.current_quarter || detailsObj?.quarter || 'Quarter 1';
+
+        // Query database table basketball_player_stats for exact DB records
+        try {
+          const statsRes = await queryDb(
+            `SELECT id, match_id AS "matchId", team_name AS "teamName", 
+                    jersey_no AS "jerseyNo", player_name AS "playerName", 
+                    is_on_pitch AS "isOnPitch", points, fouls 
+             FROM basketball_player_stats 
+             WHERE match_id = $1 
+             ORDER BY jersey_no ASC`,
+            [m.id]
+          );
+
+          if (statsRes && statsRes.rows && statsRes.rows.length > 0) {
+            const allPlayers = statsRes.rows.map((p) => ({
+              id: p.id,
+              name: p.playerName,
+              playerName: p.playerName,
+              jersey: p.jerseyNo,
+              jerseyNo: p.jerseyNo,
+              onCourt: Boolean(p.isOnPitch),
+              isOnPitch: Boolean(p.isOnPitch),
+              points: Number(p.points || 0),
+              fouls: Number(p.fouls || 0),
+              teamName: p.teamName
+            }));
+
+            const t1Name = (m.team1 || '').trim().toLowerCase();
+            const t2Name = (m.team2 || '').trim().toLowerCase();
+
+            const r1 = allPlayers.filter((p) => (p.teamName || '').trim().toLowerCase() === t1Name);
+            const r2 = allPlayers.filter((p) => (p.teamName || '').trim().toLowerCase() === t2Name);
+
+            if (r1.length > 0) roster1 = r1;
+            if (r2.length > 0) roster2 = r2;
+          }
+        } catch (err) {
+          console.error('Error fetching player stats for live match:', m.id, err.message);
+        }
+
         return {
           ...m,
           sportId: m.sportId,
           sportName: (m.sportId || '').replace(/-/g, ' ').toUpperCase(),
           liveTimer: m.time || '14:32',
+          quarter: currentQuarter,
           youtubeVideoId: m.youtubeVideoId || m.youtube_video_id || null,
           streamUrl: m.streamUrl || m.stream_url || null,
           isLiveStreaming: Boolean(m.isLiveStreaming || m.youtubeVideoId || m.streamUrl),
@@ -63,9 +108,11 @@ router.get('/live-matches', async (req, res) => {
           currentSet: m.currentSet || (detailsObj && detailsObj.currentSet) || 1,
           setsWon1: m.setsWon1 || (detailsObj && detailsObj.setsWon1) || 0,
           setsWon2: m.setsWon2 || (detailsObj && detailsObj.setsWon2) || 0,
+          roster1,
+          roster2,
           updatedAt: m.updatedAt || new Date().toISOString()
         };
-      });
+      }));
       return res.json(formatted);
     }
   } catch (err) {
@@ -73,6 +120,28 @@ router.get('/live-matches', async (req, res) => {
   }
 
   return res.json([]);
+});
+
+// GET /api/live-matches/:matchId/players - Public Spectator Player Stats endpoint
+router.get('/live-matches/:matchId/players', async (req, res) => {
+  const { matchId } = req.params;
+  try {
+    const statsRes = await queryDb(
+      `SELECT id, match_id AS "matchId", team_name AS "teamName", 
+              jersey_no AS "jerseyNo", player_name AS "playerName", 
+              is_on_pitch AS "isOnPitch", points, fouls, 
+              created_at AS "createdAt", updated_at AS "updatedAt"
+       FROM basketball_player_stats 
+       WHERE match_id = $1 
+       ORDER BY team_name, jersey_no ASC`,
+      [matchId]
+    );
+
+    return res.json(statsRes ? statsRes.rows : []);
+  } catch (err) {
+    console.error('Error fetching public basketball player stats:', err.message);
+    return res.status(500).json({ message: 'Failed to fetch player statistics' });
+  }
 });
 
 // GET /api/public/events - Public event catalog

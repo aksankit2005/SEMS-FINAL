@@ -54,6 +54,53 @@ export const BasketballLiveScoreControllerModal = ({ match, venueName, onClose, 
   const [roster1, setRoster1] = useState(initialRoster1);
   const [roster2, setRoster2] = useState(initialRoster2);
 
+  // Load real basketball player stats from Supabase on mount
+  useEffect(() => {
+    let isSubscribed = true;
+    const loadDbPlayers = async () => {
+      if (!match?.id) return;
+      try {
+        const dbPlayers = await coordinatorApi.getBasketballMatchPlayers(match.id);
+        if (dbPlayers && dbPlayers.length > 0 && isSubscribed) {
+          const t1Clean = team1Name.trim().toLowerCase();
+          const t2Clean = team2Name.trim().toLowerCase();
+
+          const r1 = dbPlayers.filter(p => (p.teamName || '').trim().toLowerCase() === t1Clean).map(p => ({
+            id: p.id,
+            name: p.playerName,
+            playerName: p.playerName,
+            jersey: p.jerseyNo,
+            jerseyNo: p.jerseyNo,
+            onCourt: Boolean(p.isOnPitch),
+            isOnPitch: Boolean(p.isOnPitch),
+            points: Number(p.points || 0),
+            fouls: Number(p.fouls || 0)
+          }));
+
+          const r2 = dbPlayers.filter(p => (p.teamName || '').trim().toLowerCase() === t2Clean).map(p => ({
+            id: p.id,
+            name: p.playerName,
+            playerName: p.playerName,
+            jersey: p.jerseyNo,
+            jerseyNo: p.jerseyNo,
+            onCourt: Boolean(p.isOnPitch),
+            isOnPitch: Boolean(p.isOnPitch),
+            points: Number(p.points || 0),
+            fouls: Number(p.fouls || 0)
+          }));
+
+          if (r1.length > 0) setRoster1(r1);
+          if (r2.length > 0) setRoster2(r2);
+        }
+      } catch (err) {
+        console.warn('Could not load DB basketball player stats:', err);
+      }
+    };
+
+    loadDbPlayers();
+    return () => { isSubscribed = false; };
+  }, [match?.id, team1Name, team2Name]);
+
   // Lock background scrolling and hide global navbar/footer/sidebar
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
