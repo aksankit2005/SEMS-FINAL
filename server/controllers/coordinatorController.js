@@ -886,9 +886,114 @@ export const getDashboardStats = async (req, res) => {
 export const getRegistrations = async (req, res) => {
   try {
     const sportId = (req.user.assignedSport || '').toLowerCase();
+    const cleanSportId = sportId.replace(/_/g, '-');
+    const baseSportId = sportId.split('-')[0].split('_')[0]; // e.g. "badminton"
 
+    // 1. Direct Raw SQL QueryDb from college_registrations
+    try {
+      const sqlRes = await queryDb(
+        `SELECT 
+          id, registration_id AS "registrationId", event_id AS "eventId",
+          sport_id AS "sportId", student_name AS "studentName", team_name AS "teamName",
+          college, department, enrollment_no AS "enrollmentNo", email, phone, gender,
+          emergency_contact AS "emergencyContact", status, fee_paid AS "feePaid",
+          payment_id AS "paymentId", payment_status AS "paymentStatus",
+          created_at AS "createdAt"
+         FROM college_registrations
+         WHERE LOWER(sport_id) LIKE $1 OR LOWER(sport_id) LIKE $2 OR LOWER(sport_id) LIKE $3
+         ORDER BY created_at DESC`,
+        [`%${sportId}%`, `%${cleanSportId}%`, `%${baseSportId}%`]
+      );
+
+      if (sqlRes && sqlRes.rows && sqlRes.rows.length > 0) {
+        const formatted = await Promise.all(
+          sqlRes.rows.map(async (r) => {
+            let members = [];
+            try {
+              const memRes = await queryDb(
+                `SELECT full_name AS "fullName", roll_no AS "rollNo", date_of_birth AS "dateOfBirth",
+                        mobile, email, course, year_semester AS "yearSemester", gender, is_captain AS "isCaptain"
+                 FROM registration_members
+                 WHERE registration_id = $1 OR id = $1`,
+                [r.id]
+              );
+              if (memRes && memRes.rows) members = memRes.rows;
+            } catch (e) {}
+
+            const player1 = members[0] ? {
+              name: members[0].fullName || r.studentName,
+              roll: members[0].rollNo || r.enrollmentNo,
+              college: r.college,
+              year: members[0].yearSemester || r.department,
+              phone: members[0].mobile || r.phone,
+              email: members[0].email || r.email,
+              gender: members[0].gender || r.gender
+            } : {
+              name: r.studentName,
+              roll: r.enrollmentNo,
+              college: r.college,
+              year: r.department,
+              phone: r.phone,
+              email: r.email,
+              gender: r.gender
+            };
+
+            const player2 = members[1] ? {
+              name: members[1].fullName,
+              roll: members[1].rollNo,
+              college: r.college,
+              year: members[1].yearSemester || r.department,
+              phone: members[1].mobile,
+              email: members[1].email,
+              gender: members[1].gender
+            } : null;
+
+            const isDoubles = !!player2 || (r.sportId && r.sportId.toLowerCase().includes('doubles')) || (r.teamName && r.teamName.trim().length > 0);
+
+            return {
+              id: r.id,
+              receiptId: r.id,
+              eventId: r.eventId,
+              sportId: r.sportId,
+              category: isDoubles ? 'DOUBLES' : 'SINGLES',
+              studentName: r.studentName,
+              name: r.studentName,
+              teamName: r.teamName || '',
+              college: r.college,
+              department: r.department,
+              enrollmentNo: r.enrollmentNo,
+              roll: r.enrollmentNo,
+              email: r.email,
+              phone: r.phone,
+              gender: r.gender,
+              emergencyContact: r.emergencyContact,
+              status: r.status || 'Approved',
+              feePaid: Number(r.feePaid || 0),
+              paymentId: r.paymentId,
+              paymentStatus: r.paymentStatus,
+              createdAt: r.createdAt,
+              registeredDate: r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+              player1,
+              player2,
+              members: members || []
+            };
+          })
+        );
+        return res.json(formatted);
+      }
+    } catch (e) {
+      console.error('queryDb getRegistrations fallback error:', e.message);
+    }
+
+    // 2. Prisma fallback
     const registrations = await prisma.collegeRegistration.findMany({
-      where: { sportId: { contains: sportId, mode: 'insensitive' } },
+      where: {
+        OR: [
+          { sportId: { contains: sportId, mode: 'insensitive' } },
+          { sportId: { contains: cleanSportId, mode: 'insensitive' } },
+          { sportId: { contains: baseSportId, mode: 'insensitive' } }
+        ]
+      },
       orderBy: { createdAt: 'desc' }
     });
 
@@ -901,11 +1006,42 @@ export const getRegistrations = async (req, res) => {
           });
         } catch (e) { }
 
+        const player1 = members[0] ? {
+          name: members[0].fullName || r.studentName,
+          roll: members[0].rollNo || r.enrollmentNo,
+          college: r.college,
+          year: members[0].yearSemester || r.department,
+          phone: members[0].mobile || r.phone,
+          email: members[0].email || r.email,
+          gender: members[0].gender || r.gender
+        } : {
+          name: r.studentName,
+          roll: r.enrollmentNo,
+          college: r.college,
+          year: r.department,
+          phone: r.phone,
+          email: r.email,
+          gender: r.gender
+        };
+
+        const player2 = members[1] ? {
+          name: members[1].fullName,
+          roll: members[1].rollNo,
+          college: r.college,
+          year: members[1].yearSemester || r.department,
+          phone: members[1].mobile,
+          email: members[1].email,
+          gender: members[1].gender
+        } : null;
+
+        const isDoubles = !!player2 || (r.sportId && r.sportId.toLowerCase().includes('doubles')) || (r.teamName && r.teamName.trim().length > 0);
+
         return {
           id: r.id,
           receiptId: r.id,
           eventId: r.eventId,
           sportId: r.sportId,
+          category: isDoubles ? 'DOUBLES' : 'SINGLES',
           studentName: r.studentName,
           name: r.studentName,
           teamName: r.teamName || '',
@@ -918,11 +1054,13 @@ export const getRegistrations = async (req, res) => {
           gender: r.gender,
           emergencyContact: r.emergencyContact,
           status: r.status || 'Approved',
-          feePaid: r.feePaid,
+          feePaid: Number(r.feePaid || 0),
           paymentId: r.paymentId,
           paymentStatus: r.paymentStatus,
           createdAt: r.createdAt,
           registeredDate: r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          player1,
+          player2,
           members: members || []
         };
       })

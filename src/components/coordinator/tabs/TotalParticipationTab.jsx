@@ -986,7 +986,8 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                 ) : (
                   filtered.map((p, idx) => {
                     const isRelay = p.category === '4*100m relay Race' || (p.selectedEvents && p.selectedEvents.includes('4*100m relay Race'));
-                    const isDoubles = p.category === 'DOUBLES' || p.format === 'DOUBLES' || p.player2 || isRelay;
+                    const catStr = String(p.category || p.format || p.eventTitle || p.sportId || '').toUpperCase();
+                    const isDoubles = catStr.includes('DOUBLE') || catStr.includes('DOUBLES') || !!p.player2 || (p.members && p.members.length > 1) || (p.roster && p.roster.length > 1) || isRelay;
                     const timestamp = p.timestamp || p.registeredAt || '16 Jul, 10:32 am';
                     const sportDisplay = isAthletics ? 'Athletics' : isChess ? 'Chess' : (p.sport || sportName || 'Badminton');
                     const rawG = String(p.gender || p.player1?.gender || p.category || '').toLowerCase();
@@ -996,7 +997,7 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                       ? ((rawG.includes('female') || rawG.includes('girl') || rawG.includes('women')) ? 'Female' : 'Male')
                       : isAthletics
                       ? subEventName
-                      : (p.category || (isDoubles ? 'DOUBLES' : 'SINGLES'));
+                      : (isDoubles ? 'DOUBLES' : (p.category || 'SINGLES'));
 
                     const p1 = p.player1 || {
                       name: p.captainName || p.name || p.studentName || 'Athlete',
@@ -1008,6 +1009,27 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                     };
 
                     let p2 = p.player2 || null;
+                    if (!p2 && p.members && p.members.length > 1) {
+                      const m2 = p.members[1];
+                      p2 = {
+                        name: m2.fullName || m2.name,
+                        roll: m2.rollNo || m2.roll || 'N/A',
+                        college: p1.college,
+                        year: m2.yearSemester || p1.year,
+                        phone: m2.mobile || m2.phone || '-',
+                        email: m2.email || '-'
+                      };
+                    } else if (!p2 && p.roster && p.roster.length > 1) {
+                      const r2 = p.roster[1];
+                      p2 = {
+                        name: r2.name || r2.fullName,
+                        roll: r2.rollNo || r2.roll || 'N/A',
+                        college: p1.college,
+                        year: r2.year || p1.year,
+                        phone: r2.phone || '-',
+                        email: r2.email || '-'
+                      };
+                    }
                     if (!p2 && isRelay && p.roster && p.roster.length > 1) {
                       const partners = p.roster.slice(1);
                       p2 = {
