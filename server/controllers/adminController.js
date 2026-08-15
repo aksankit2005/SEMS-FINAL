@@ -930,10 +930,10 @@ export const getDashboardStatsDB = async (req, res) => {
       `),
       queryDb('SELECT COUNT(*) FROM media'),
       queryDb('SELECT COALESCE(SUM(members_count), COUNT(*)) FROM college_registrations'),
-      queryDb("SELECT COUNT(*) FROM sports WHERE isActive = true OR status = 'active'"),
-      queryDb("SELECT COUNT(*) FROM leaderboard_entries"),
-      queryDb("SELECT COUNT(*) FROM live_matches WHERE LOWER(status) IN ('scheduled', 'live', 'running')"),
-      queryDb('SELECT COUNT(*) FROM announcements WHERE isPublished = true')
+      queryDb('SELECT COUNT(*) FROM sports WHERE "isActive" = true OR status = \'active\''),
+      queryDb('SELECT COUNT(*) FROM leaderboard_entries'),
+      queryDb('SELECT COUNT(*) FROM live_matches WHERE LOWER(status) IN (\'scheduled\', \'live\', \'running\')'),
+      queryDb('SELECT COUNT(*) FROM announcements WHERE "isPublished" = true')
     ]);
 
     const stats = {
@@ -1056,8 +1056,8 @@ export const getAdminRegistrationsDB = async (req, res) => {
 export const deleteRegistrationDB = async (req, res) => {
   const { id } = req.params;
   try {
-    await queryDb('DELETE FROM college_registrations WHERE id = $1 OR registration_id = $1::uuid', [id]);
-    await queryDb('DELETE FROM registrations WHERE id = $1::uuid', [id]);
+    await queryDb('DELETE FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1', [String(id)]);
+    await queryDb('DELETE FROM registrations WHERE id::text = $1', [String(id)]);
 
     return res.json({ success: true, message: 'Registration deleted from database successfully.' });
   } catch (err) {
@@ -1071,10 +1071,10 @@ export const updateRegistrationStatusDB = async (req, res) => {
   const { status, paymentStatus } = req.body;
   try {
     if (status) {
-      await queryDb('UPDATE college_registrations SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [status, id]);
+      await queryDb('UPDATE college_registrations SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id::text = $2', [status, String(id)]);
     }
     if (paymentStatus) {
-      await queryDb('UPDATE college_registrations SET payment_status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [paymentStatus, id]);
+      await queryDb('UPDATE college_registrations SET payment_status = $1, updated_at = CURRENT_TIMESTAMP WHERE id::text = $2', [paymentStatus, String(id)]);
     }
     return res.json({ success: true, message: 'Registration status updated in database successfully.' });
   } catch (err) {
@@ -1092,26 +1092,26 @@ export const getAnnouncementsDB = async (req, res) => {
         title,
         description,
         audience,
-        sportSlug AS "sportSlug",
-        TO_CHAR(publishDate, 'YYYY-MM-DD') AS "publishDate",
-        TO_CHAR(expiryDate, 'YYYY-MM-DD') AS "expiryDate",
-        isPublished AS "isPublished",
-        createdAt AS "createdAt"
+        "sportSlug" AS "sportSlug",
+        TO_CHAR("publishDate", 'YYYY-MM-DD') AS "publishDate",
+        TO_CHAR("expiryDate", 'YYYY-MM-DD') AS "expiryDate",
+        "isPublished" AS "isPublished",
+        TO_CHAR("createdAt", 'YYYY-MM-DD') AS "createdAt"
       FROM announcements
-      ORDER BY createdAt DESC
+      ORDER BY "createdAt" DESC
     `);
 
     if (dbRes && dbRes.rows) {
       const announcements = [];
       for (const ann of dbRes.rows) {
         const attRes = await queryDb(
-          `SELECT id, name, url, mimeType AS "mimeType", sizeBytes AS "sizeBytes" 
-           FROM announcement_attachments WHERE announcementId = $1::uuid`,
-          [ann.id]
+          `SELECT id, name, url, "mimeType" AS "mimeType", "sizeBytes" AS "sizeBytes" 
+           FROM announcement_attachments WHERE "announcementId"::text = $1`,
+          [String(ann.id)]
         );
         announcements.push({
           ...ann,
-          date: ann.publishDate || new Date(ann.createdAt).toISOString().split('T')[0],
+          date: ann.publishDate || (ann.createdAt ? new Date(ann.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
           status: ann.isPublished ? 'Published' : 'Draft',
           attachments: (attRes && attRes.rows) ? attRes.rows.map(att => ({
             ...att,
@@ -1143,13 +1143,13 @@ export const saveAnnouncementDB = async (req, res) => {
     if (annId) {
       await queryDb(
         `UPDATE announcements 
-         SET title = $1, description = $2, audience = $3, publishDate = $4, expiryDate = $5, isPublished = $6, updatedAt = CURRENT_TIMESTAMP 
-         WHERE id = $7::uuid`,
-        [title, description, audience || 'PUBLIC', pDate, eDate, published, annId]
+         SET title = $1, description = $2, audience = $3, "publishDate" = $4, "expiryDate" = $5, "isPublished" = $6, "updatedAt" = CURRENT_TIMESTAMP 
+         WHERE id::text = $7`,
+        [title, description, audience || 'PUBLIC', pDate, eDate, published, String(annId)]
       );
     } else {
       const newAnn = await queryDb(
-        `INSERT INTO announcements (id, title, description, audience, publishDate, expiryDate, isPublished, createdAt, updatedAt)
+        `INSERT INTO announcements (id, title, description, audience, "publishDate", "expiryDate", "isPublished", "createdAt", "updatedAt")
          VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
          RETURNING id`,
         [title, description, audience || 'PUBLIC', pDate, eDate, published]
@@ -1160,12 +1160,12 @@ export const saveAnnouncementDB = async (req, res) => {
     }
 
     if (annId && Array.isArray(attachments)) {
-      await queryDb('DELETE FROM announcement_attachments WHERE announcementId = $1::uuid', [annId]);
+      await queryDb('DELETE FROM announcement_attachments WHERE "announcementId"::text = $1', [String(annId)]);
       for (const att of attachments) {
         await queryDb(
-          `INSERT INTO announcement_attachments (id, announcementId, name, url, mimeType, sizeBytes, createdAt)
+          `INSERT INTO announcement_attachments (id, "announcementId", name, url, "mimeType", "sizeBytes", "createdAt")
            VALUES (gen_random_uuid(), $1::uuid, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
-          [annId, att.name || 'Attachment.pdf', att.url || '#', att.mimeType || 'application/pdf', att.sizeBytes || 1024 * 1024]
+          [String(annId), att.name || 'Attachment.pdf', att.url || '#', att.mimeType || 'application/pdf', att.sizeBytes || 1024 * 1024]
         );
       }
     }
@@ -1181,8 +1181,8 @@ export const toggleAnnouncementPublishDB = async (req, res) => {
   const { id } = req.params;
   try {
     await queryDb(
-      `UPDATE announcements SET isPublished = NOT isPublished, updatedAt = CURRENT_TIMESTAMP WHERE id = $1::uuid`,
-      [id]
+      `UPDATE announcements SET "isPublished" = NOT "isPublished", "updatedAt" = CURRENT_TIMESTAMP WHERE id::text = $1`,
+      [String(id)]
     );
     return res.json({ success: true, message: 'Announcement publish status toggled.' });
   } catch (err) {
@@ -1194,10 +1194,15 @@ export const toggleAnnouncementPublishDB = async (req, res) => {
 export const deleteAnnouncementDB = async (req, res) => {
   const { id } = req.params;
   try {
-    await queryDb('DELETE FROM announcement_attachments WHERE announcementId = $1::uuid', [id]);
-    await queryDb('DELETE FROM announcements WHERE id = $1::uuid', [id]);
+    await queryDb('DELETE FROM announcement_attachments WHERE "announcementId"::text = $1', [String(id)]);
+    await queryDb('DELETE FROM announcements WHERE id::text = $1', [String(id)]);
 
     return res.json({ success: true, message: 'Announcement deleted from database successfully.' });
+  } catch (err) {
+    console.error('Error deleting announcement from DB:', err.message);
+    return res.status(500).json({ message: 'Failed to delete announcement from database' });
+  }
+};
   } catch (err) {
     console.error('Error deleting announcement from DB:', err.message);
     return res.status(500).json({ message: 'Failed to delete announcement from database' });
