@@ -8,7 +8,9 @@ export const UnifiedSportCard = ({
   isOpen,
   onRulesClick,
   registerLink,
-  onRegisterClick
+  onRegisterClick,
+  showEventDuration = true,
+  showButtons = true
 }) => {
   return (
     <div
@@ -90,21 +92,23 @@ export const UnifiedSportCard = ({
             </div>
 
             {/* Row 3: Event Duration */}
-            <div className="pt-1">
-              <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1 mb-1.5">
-                <span>🏆</span> Event Duration
-              </div>
-              <div className="grid grid-cols-2 gap-2 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
-                <div>
-                  <span className="text-[9px] text-slate-400 block uppercase font-mono">Start Date</span>
-                  <span className="font-bold text-slate-900 dark:text-slate-200 text-xs">{activeEvent.tournStartDate || activeEvent.eventDate || '-'}</span>
+            {showEventDuration && (
+              <div className="pt-1">
+                <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1 mb-1.5">
+                  <span>🏆</span> Event Duration
                 </div>
-                <div>
-                  <span className="text-[9px] text-slate-400 block uppercase font-mono">End Date</span>
-                  <span className="font-bold text-slate-900 dark:text-slate-200 text-xs">{activeEvent.tournEndDate || activeEvent.tournStartDate || activeEvent.eventDate || '-'}</span>
+                <div className="grid grid-cols-2 gap-2 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <div>
+                    <span className="text-[9px] text-slate-400 block uppercase font-mono">Start Date</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-200 text-xs">{activeEvent.tournStartDate || activeEvent.eventDate || '-'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-slate-400 block uppercase font-mono">End Date</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-200 text-xs">{activeEvent.tournEndDate || activeEvent.tournStartDate || activeEvent.eventDate || '-'}</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Row 4: Venue */}
             <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
@@ -119,39 +123,41 @@ export const UnifiedSportCard = ({
         )}
 
         {/* Bottom Buttons */}
-        <div className="grid grid-cols-2 gap-2 pt-2 mt-auto">
-          <button
-            onClick={onRulesClick}
-            className="py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition flex items-center justify-center gap-1"
-          >
-            <Info className="w-3.5 h-3.5" /> Rules & Specs
-          </button>
-          
-          {isOpen && (registerLink || onRegisterClick) ? (
-            onRegisterClick ? (
-              <button
-                onClick={onRegisterClick}
-                className="py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white font-bold text-xs shadow-md shadow-blue-500/20 text-center transition flex items-center justify-center gap-1"
-              >
-                Register <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            ) : (
-              <Link
-                to={registerLink}
-                className="py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white font-bold text-xs shadow-md shadow-blue-500/20 text-center transition flex items-center justify-center gap-1"
-              >
-                Register <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            )
-          ) : (
+        {showButtons && (
+          <div className="grid grid-cols-2 gap-2 pt-2 mt-auto">
             <button
-              disabled
-              className="py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold text-xs text-center cursor-not-allowed flex items-center justify-center gap-1 opacity-75"
+              onClick={onRulesClick}
+              className="py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition flex items-center justify-center gap-1"
             >
-              Registration Closed
+              <Info className="w-3.5 h-3.5" /> Rules & Specs
             </button>
-          )}
-        </div>
+            
+            {isOpen && (registerLink || onRegisterClick) ? (
+              onRegisterClick ? (
+                <button
+                  onClick={onRegisterClick}
+                  className="py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white font-bold text-xs shadow-md shadow-blue-500/20 text-center transition flex items-center justify-center gap-1"
+                >
+                  Register <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              ) : (
+                <Link
+                  to={registerLink}
+                  className="py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white font-bold text-xs shadow-md shadow-blue-500/20 text-center transition flex items-center justify-center gap-1"
+                >
+                  Register <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              )
+            ) : (
+              <button
+                disabled
+                className="py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold text-xs text-center cursor-not-allowed flex items-center justify-center gap-1 opacity-75"
+              >
+                Registration Closed
+              </button>
+            )}
+          </div>
+        )}
 
       </div>
     </div>

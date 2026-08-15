@@ -138,7 +138,9 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
     const updated = {
       ...active,
       liveStreamUrl: rawUrl,
+      streamUrl: rawUrl,
       youtubeVideoId: videoId,
+      isLiveStreaming: Boolean(videoId),
       liveStreamPlatform: 'YouTube',
     };
 
@@ -146,7 +148,9 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
 
     await coordinatorApi.updateMatchScoring(active.id, {
       liveStreamUrl: rawUrl,
+      streamUrl: rawUrl,
       youtubeVideoId: videoId,
+      isLiveStreaming: Boolean(videoId),
       liveStreamPlatform: 'YouTube',
     });
 
@@ -253,17 +257,48 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
         venue: null,
         isLiveStreaming: false,
       });
+      await coordinatorApi.deleteMatch(active.id);
     }
     setLiveAssignments((prev) => {
       const copy = { ...prev };
       delete copy[venue];
       return copy;
     });
+    window.dispatchEvent(new Event('sems_matches_updated'));
+    window.dispatchEvent(new Event('storage'));
     addToast(`Match on ${venue} demoted from live stream`, 'info');
+  };
+
+  const handleClearAllLiveAssignments = async () => {
+    try {
+      await coordinatorApi.clearAllSchedules();
+      setLiveAssignments({});
+      window.dispatchEvent(new Event('sems_matches_updated'));
+      window.dispatchEvent(new Event('storage'));
+      addToast('All live matches and schedules cleared successfully from server and UI!', 'info');
+    } catch (e) {
+      addToast('Error clearing live matches', 'error');
+    }
   };
 
   return (
     <div className="space-y-8 text-slate-900 dark:text-slate-200 animate-fade-in">
+
+      {/* Header Bar with Reset Button */}
+      <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
+        <div>
+          <h2 className="text-lg font-black text-slate-900 dark:text-white">Live Match Control</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Control active live scoreboards and video streams in real-time.</p>
+        </div>
+        <button
+          onClick={handleClearAllLiveAssignments}
+          className="px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+          title="Clear all active live matches from database and spectator view"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          <span>Reset All Live Matches</span>
+        </button>
+      </div>
 
       {/* 2x2 Venue/Table Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

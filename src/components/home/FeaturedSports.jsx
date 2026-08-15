@@ -164,6 +164,8 @@ export const FeaturedSports = () => {
                 sport={sport}
                 activeEvent={activeEvent}
                 isOpen={true}
+                showEventDuration={false}
+                showButtons={false}
                 onRulesClick={() => setActiveModalSport(sport)}
                 registerLink={`/register/${activeEvent.raw?.id || sport.id}`}
               />

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X, FileText, Upload, Trash2, Download, Eye, AlertCircle, CheckCircle2, Loader2, Paperclip } from 'lucide-react';
+import { useConfirm } from '../../context/ConfirmContext';
 
 export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onClose }) => {
+  const { confirmDelete } = useConfirm();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -89,7 +91,12 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
     setErrors({});
   };
 
-  const handleRemoveAttachment = (id) => {
+  const handleRemoveAttachment = async (id) => {
+    const isConfirmed = await confirmDelete({
+      title: 'Remove PDF Attachment',
+      message: 'Are you sure you want to remove this PDF document attachment?'
+    });
+    if (!isConfirmed) return;
     setFormData({
       ...formData,
       attachments: formData.attachments.filter(a => a.id !== id)

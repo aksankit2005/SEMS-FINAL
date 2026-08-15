@@ -82,13 +82,13 @@ export const AdminCoordinatorsPage = () => {
 
     setIsToggling(true);
     try {
-      const updatedList = await adminApi.toggleCoordinatorStatus(toggleTargetCoord.id);
+      const updatedList = await adminApi.toggleCoordinatorStatus(toggleTargetCoord);
       setCoordinators(updatedList);
       const actionStr = toggleTargetCoord.status === 'Active' ? 'deactivated' : 'activated';
       addToast(`Account ${toggleTargetCoord.name} ${actionStr} successfully!`, 'success');
       setToggleTargetCoord(null);
     } catch (err) {
-      addToast('Failed to change status', 'error');
+      addToast(err.message || 'Failed to change status', 'error');
     } finally {
       setIsToggling(false);
     }
@@ -97,7 +97,7 @@ export const AdminCoordinatorsPage = () => {
   // Password Reset Handler
   const handleResetPassword = async (id, newPass) => {
     try {
-      await adminApi.resetCoordinatorPassword(id, newPass);
+      await adminApi.resetCoordinatorPassword(resetTargetCoord || id, newPass);
       addToast('Password reset successfully! Password log generated.', 'success');
       setResetTargetCoord(null);
     } catch (err) {
@@ -111,12 +111,12 @@ export const AdminCoordinatorsPage = () => {
 
     setIsDeleting(true);
     try {
-      const updatedList = await adminApi.deleteCoordinator(deleteTargetCoord.id);
+      const updatedList = await adminApi.deleteCoordinator(deleteTargetCoord);
       setCoordinators(updatedList);
       addToast(`Account ${deleteTargetCoord.name} deleted permanently!`, 'success');
       setDeleteTargetCoord(null);
     } catch (err) {
-      addToast('Failed to delete account', 'error');
+      addToast(err.message || 'Failed to delete account', 'error');
     } finally {
       setIsDeleting(false);
     }

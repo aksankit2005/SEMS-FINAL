@@ -1,0 +1,921 @@
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { envConfig } from '../config/env.js';
+import { queryDb, prisma } from '../config/db.js';
+
+export const adminLogin = async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ message: 'Username and password are required.' });
+  }
+
+  const normalizedUser = username.trim().toLowerCase();
+
+  // 1. Database check (pr_users or coordinators with super/admin role)
+  const dbResult = await queryDb('SELECT * FROM pr_users WHERE LOWER(username) = $1', [normalizedUser]);
+  if (dbResult && dbResult.rows.length > 0) {
+    const user = dbResult.rows[0];
+    if (user.status && user.status.toLowerCase() === 'inactive') {
+      return res.status(403).json({ message: 'Account is deactivated. Access denied.' });
+    }
+    let isValid = false;
+    if (user.password_hash) {
+      isValid = await bcrypt.compare(password, user.password_hash);
+    }
+    if (isValid && (user.role === 'ADMIN' || user.role === 'admin')) {
+      const token = jwt.sign(
+        { id: user.id, username: user.username, role: 'ADMIN' },
+        envConfig.jwtSecret,
+        { expiresIn: '24h' }
+      );
+      return res.json({
+        success: true,
+        token,
+        user: { id: user.id, username: user.username, role: 'ADMIN', name: 'System Administrator' }
+      });
+    }
+  }
+
+  // 2. Admin credential check strictly via hashed or env config
+  const validAdminUser = (envConfig.adminUsername || 'admin').trim().toLowerCase();
+  let isValidAdmin = false;
+
+  if (normalizedUser === validAdminUser) {
+    if (envConfig.adminPasswordHash) {
+      isValidAdmin = await bcrypt.compare(password, envConfig.adminPasswordHash);
+    } else {
+      isValidAdmin = Boolean(envConfig.passAdmin && password === envConfig.passAdmin);
+    }
+  }
+
+  if (isValidAdmin) {
+    const token = jwt.sign(
+      { username: normalizedUser, role: 'ADMIN' },
+      envConfig.jwtSecret,
+      { expiresIn: '24h' }
+    );
+    return res.json({
+      success: true,
+      token,
+      user: {
+        id: 'ADM-1001',
+        name: 'System Administrator',
+        username: normalizedUser,
+        role: 'ADMIN',
+        email: 'admin.sports@mpec.ac.in'
+      }
+    });
+  }
+
+  return res.status(401).json({ message: 'Invalid Admin username or password. Access denied.' });
+};
+
+export const superCoordinatorLogin = async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ message: 'Username and password are required.' });
+  }
+
+  const normalizedUser = username.trim().toLowerCase();
+
+  // Strictly check PostgreSQL pr_users table for Super Coordinator accounts managed by Admin
+  try {
+    const dbResult = await queryDb(
+      `SELECT * FROM pr_users WHERE LOWER(username) = $1 AND (role = 'super_coordinator' OR role = 'Super Coordinator')`,
+      [normalizedUser]
+    );
+
+    if (dbResult && dbResult.rows.length > 0) {
+      const user = dbResult.rows[0];
+
+      // Check account status
+      if (user.status && user.status.toLowerCase() === 'inactive') {
+        return res.status(403).json({ message: 'Super Coordinator account is deactivated. Access denied.' });
+      }
+
+      // Check hashed password
+      let isValidPass = false;
+      if (user.password_hash) {
+        isValidPass = await bcrypt.compare(password, user.password_hash);
+      }
+
+      if (isValidPass) {
+        const token = jwt.sign(
+          { id: user.id, username: user.username, role: 'super_coordinator' },
+          envConfig.jwtSecret,
+          { expiresIn: '24h' }
+        );
+
+        return res.json({
+          success: true,
+          token,
+          user: {
+            id: user.id,
+            username: user.username,
+            name: user.name || 'Super Coordinator (President)',
+            role: 'super_coordinator'
+          }
+        });
+      }
+    }
+  } catch (e) {
+    console.error('Error during super coordinator DB login check:', e);
+  }
+
+  return res.status(401).json({ message: 'Invalid Super Coordinator username or password. Access denied.' });
+};
+
+export const getAdminProfile = async (req, res) => {
+  return res.json({
+    id: 'ADM-1001',
+    name: 'System Administrator',
+    username: req.user?.username || 'admin',
+    email: 'admin.sports@mpec.ac.in',
+    role: 'ADMIN',
+    status: 'ACTIVE'
+  });
+};
+
+export const getMasterParticipants = async (req, res) => {
+  try {
+    const dbRes = await queryDb(`
+      SELECT 
+        id,
+        TO_CHAR(created_at, 'HH:MI AM') AS time,
+        sport_id AS "sportId",
+        student_name AS "name",
+        team_name AS "teamName",
+        college,
+        department AS branch,
+        enrollment_no AS "rollNo",
+        email,
+        phone AS mobile,
+        gender,
+        status,
+        fee_paid AS "feePaid",
+        created_at
+      FROM college_registrations
+      ORDER BY created_at DESC
+    `);
+
+    if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+      const list = dbRes.rows.map((row) => ({
+        id: row.id,
+        time: row.time || '10:00 AM',
+        sportId: (row.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        sportName: (row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
+        eventTitle: `${(row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase()} Event`,
+        teamName: row.teamName || row.name || 'Participant',
+        college: row.college || 'MPEC',
+        name: row.name || 'Student',
+        mobile: row.mobile || '',
+        email: row.email || '',
+        gender: row.gender || 'Boys',
+        rollNo: row.rollNo || 'N/A',
+        branch: row.branch || 'CSE',
+        year: '3rd Year',
+        status: row.status || 'VERIFIED',
+        feePaid: Number(row.feePaid || 0)
+      }));
+
+      return res.json(list);
+    }
+
+    // Secondary DB query for Prisma registration_members table
+    try {
+      const membersDb = await queryDb(`
+        SELECT 
+          m.id,
+          TO_CHAR(m.created_at, 'HH:MI AM') AS time,
+          s.name AS "sportName",
+          m.full_name AS name,
+          m.roll_no AS "rollNo",
+          m.email,
+          m.mobile,
+          m.gender,
+          m.course AS branch,
+          m.year_semester AS year,
+          c.code AS college,
+          r.status,
+          r.amount AS "feePaid"
+        FROM registration_members m
+        JOIN registrations r ON m.registration_id = r.id
+        LEFT JOIN sports s ON r.sport_id = s.id
+        LEFT JOIN teams t ON t.captain_registration_id = r.id
+        LEFT JOIN colleges c ON t.college_id = c.id
+        ORDER BY m.created_at DESC
+      `);
+
+      if (membersDb && membersDb.rows && membersDb.rows.length > 0) {
+        const list = membersDb.rows.map((row) => ({
+          id: row.id,
+          time: row.time || '10:00 AM',
+          sportId: (row.sportName || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
+          sportName: row.sportName || 'Sport',
+          eventTitle: `${row.sportName || 'Sport'} Event`,
+          teamName: row.name,
+          college: row.college || 'MPEC',
+          name: row.name,
+          mobile: row.mobile || '',
+          email: row.email || '',
+          gender: row.gender || 'Boys',
+          rollNo: row.rollNo || 'N/A',
+          branch: row.branch || 'CSE',
+          year: row.year || '3rd Year',
+          status: row.status || 'VERIFIED',
+          feePaid: Number(row.feePaid || 0)
+        }));
+
+        return res.json(list);
+      }
+    } catch (e) {}
+  } catch (err) {
+    console.error('Error fetching master participants from DB:', err.message);
+  }
+
+  return res.json([]);
+};
+
+export const getSuperCoordinatorEvents = async (req, res) => {
+  try {
+    const dbRes = await queryDb(`
+      SELECT 
+        id,
+        sport_id AS "sportId",
+        sport_name AS "sportName",
+        title AS "eventTitle",
+        venue,
+        entry_fee AS "teamFee",
+        max_registrations AS "maxRegistrations",
+        registered_count AS "registeredCount",
+        status,
+        reg_start_date AS "regStartDate",
+        reg_end_date AS "regEndDate",
+        tourn_start_date AS "tournStartDate",
+        tourn_end_date AS "tournEndDate",
+        category,
+        contact_info AS "contactInfo",
+        created_at AS "createdAt"
+      FROM coordinator_event_items
+      ORDER BY created_at DESC
+    `);
+
+    if (dbRes && dbRes.rows) {
+      const events = dbRes.rows.map((e) => {
+        let contact = e.contactInfo;
+        if (typeof contact === 'string') {
+          try { contact = JSON.parse(contact); } catch (err) {}
+        }
+        return {
+          id: e.id,
+          sportId: e.sportId,
+          sportName: e.sportName || (e.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
+          eventTitle: e.eventTitle || 'Tournament Event',
+          coordinatorName: (contact && contact.name) || 'Coordinator',
+          coordinatorEmail: (contact && contact.email) || '',
+          createdDate: e.createdAt ? new Date(e.createdAt).toLocaleDateString() : (e.regStartDate || ''),
+          regStartDate: e.regStartDate || '',
+          regEndDate: e.regEndDate || '',
+          tournStartDate: e.tournStartDate || '',
+          tournEndDate: e.tournEndDate || '',
+          venue: e.venue || 'Main Stadium',
+          teamFee: Number(e.teamFee || 0),
+          minPlayers: 1,
+          maxPlayers: 1,
+          category: e.category || 'Open',
+          status: e.status || 'Published',
+          registeredCount: Number(e.registeredCount || 0),
+          maxRegistrations: Number(e.maxRegistrations || 64)
+        };
+      });
+      return res.json(events);
+    }
+  } catch (err) {
+    console.error('Error fetching coordinator events for SuperCoordinator:', err.message);
+  }
+
+  return res.json([]);
+};
+
+export const getSuperCoordinatorCoordinators = async (req, res) => {
+  try {
+    const dbRes = await queryDb(`
+      SELECT 
+        assigned_sport AS "id",
+        sport_name AS "name",
+        coordinator_name AS "coordinator",
+        email AS "coordinatorEmail",
+        status
+      FROM sport_coordinators
+      ORDER BY sport_name ASC
+    `);
+
+    if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+      return res.json(dbRes.rows);
+    }
+  } catch (err) {
+    console.error('Error fetching sport coordinators:', err.message);
+  }
+
+  return res.json([]);
+};
+
+export const getLeaderboardEntries = async (req, res) => {
+  try {
+    const dbRes = await queryDb(`
+      SELECT 
+        id,
+        sport_id AS "sportId",
+        match_format AS "matchFormat",
+        gender,
+        sub_event AS "subEvent",
+        winner_name AS "winnerName",
+        winner_team AS "winnerTeam",
+        winner_college AS "winnerCollege",
+        runner_up_name AS "runnerUpName",
+        runner_up_team AS "runnerUpTeam",
+        runner_up_college AS "runnerUpCollege",
+        points,
+        declared_at AS "declaredAt"
+      FROM leaderboard_entries
+      ORDER BY declared_at DESC
+    `);
+
+    if (dbRes && dbRes.rows) {
+      const formatted = dbRes.rows.map((row) => ({
+        id: row.id,
+        sportId: row.sportId,
+        sportName: (row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
+        matchFormat: row.matchFormat || 'Team',
+        gender: row.gender || 'Boys',
+        subEvent: row.subEvent,
+        athleticsSubEvent: row.subEvent,
+        winnerName: row.winnerName || '',
+        winnerTeamName: row.winnerTeam || row.winnerName || '',
+        winnerCollege: row.winnerCollege || 'MPEC',
+        winnerCollegeName: row.winnerCollege || 'MPEC',
+        winnerPoints: 2,
+        runnerUpName: row.runnerUpName || '',
+        runnerUpTeamName: row.runnerUpTeam || row.runnerUpName || '',
+        runnerUpCollege: row.runnerUpCollege || 'MIPS',
+        runnerUpCollegeName: row.runnerUpCollege || 'MIPS',
+        runnerUpPoints: 1,
+        points: Number(row.points || 10),
+        date: row.declaredAt ? new Date(row.declaredAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }) : new Date().toLocaleString()
+      }));
+      return res.json(formatted);
+    }
+  } catch (err) {
+    console.error('Error fetching leaderboard entries from DB:', err.message);
+  }
+
+  return res.json([]);
+};
+
+export const saveLeaderboardEntry = async (req, res) => {
+  const {
+    id,
+    sportId,
+    matchFormat,
+    gender,
+    subEvent,
+    athleticsSubEvent,
+    winnerName,
+    winnerTeamName,
+    winnerCollege,
+    winnerCollegeId,
+    runnerUpName,
+    runnerUpTeamName,
+    runnerUpCollege,
+    runnerUpCollegeId,
+    points
+  } = req.body;
+
+  const finalSubEvent = athleticsSubEvent || subEvent || null;
+  const wCollege = winnerCollege || winnerCollegeId || 'MPEC';
+  const rCollege = runnerUpCollege || runnerUpCollegeId || 'MIPS';
+
+  try {
+    const dbRes = await queryDb(
+      `INSERT INTO leaderboard_entries 
+        (sport_id, match_format, gender, sub_event, winner_name, winner_team, winner_college, runner_up_name, runner_up_team, runner_up_college, points, declared_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
+       RETURNING *`,
+      [
+        sportId || 'general',
+        matchFormat || 'Team',
+        gender || 'Boys',
+        finalSubEvent,
+        winnerName || '',
+        winnerTeamName || winnerName || '',
+        wCollege,
+        runnerUpName || '',
+        runnerUpTeamName || runnerUpName || '',
+        rCollege,
+        Number(points || 10)
+      ]
+    );
+
+    if (dbRes && dbRes.rows.length > 0) {
+      const row = dbRes.rows[0];
+      const entry = {
+        id: row.id,
+        sportId: row.sport_id,
+        sportName: (row.sport_id || 'Sport').replace(/-/g, ' ').toUpperCase(),
+        matchFormat: row.match_format,
+        gender: row.gender,
+        subEvent: row.sub_event,
+        athleticsSubEvent: row.sub_event,
+        winnerName: row.winner_name,
+        winnerTeamName: row.winner_team,
+        winnerCollege: row.winner_college,
+        winnerCollegeName: row.winner_college,
+        winnerPoints: 2,
+        runnerUpName: row.runner_up_name,
+        runnerUpTeamName: row.runner_up_team,
+        runnerUpCollege: row.runner_up_college,
+        runnerUpCollegeName: row.runner_up_college,
+        runnerUpPoints: 1,
+        points: Number(row.points || 10),
+        date: new Date(row.declared_at).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
+      };
+      return res.status(201).json({ success: true, entry });
+    }
+  } catch (err) {
+    console.error('Error saving leaderboard entry to DB:', err.message);
+    return res.status(500).json({ message: 'Failed to save leaderboard entry to database' });
+  }
+
+  return res.json({ success: true });
+};
+
+export const deleteLeaderboardEntry = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await queryDb('DELETE FROM leaderboard_entries WHERE id = $1', [id]);
+    return res.json({ success: true, message: 'Leaderboard result deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting leaderboard entry:', err.message);
+    return res.status(500).json({ message: 'Failed to delete leaderboard entry' });
+  }
+};
+
+export const getHeroSlidesDB = async (req, res) => {
+  try {
+    const setting = await prisma.systemSetting.findUnique({ where: { key: 'hero_slides' } });
+    if (setting && Array.isArray(setting.value)) {
+      return res.json(setting.value);
+    }
+  } catch (err) {
+    console.error('Error fetching hero slides from DB:', err.message);
+  }
+  return res.json([]);
+};
+
+export const saveHeroSlidesDB = async (req, res) => {
+  const slides = req.body;
+  if (!Array.isArray(slides)) {
+    return res.status(400).json({ message: 'Slides must be an array.' });
+  }
+
+  try {
+    const updated = await prisma.systemSetting.upsert({
+      where: { key: 'hero_slides' },
+      update: { value: slides, updatedAt: new Date() },
+      create: { key: 'hero_slides', value: slides }
+    });
+    return res.json({ success: true, slides: updated.value });
+  } catch (err) {
+    console.error('Error saving hero slides to DB:', err.message);
+    return res.status(500).json({ message: 'Failed to save hero slides to database' });
+  }
+};
+
+export const getCoordinatorsDB = async (req, res) => {
+  try {
+    const list = [];
+
+    // 1. Fetch Sports Coordinators
+    const sportsRes = await queryDb(`
+      SELECT 
+        id,
+        username,
+        coordinator_name AS name,
+        email,
+        phone,
+        'Coordinator' AS role,
+        assigned_sport AS "assignedSport",
+        sport_name AS "sportName",
+        status,
+        created_at AS "createdAt"
+      FROM sport_coordinators
+      ORDER BY created_at DESC
+    `);
+    if (sportsRes && sportsRes.rows) {
+      sportsRes.rows.forEach(r => list.push({
+        ...r,
+        id: `sc_${r.id}`,
+        dbId: r.id,
+        role: 'Coordinator',
+        status: r.status ? (r.status.toLowerCase() === 'inactive' ? 'Inactive' : 'Active') : 'Active',
+        createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString()
+      }));
+    }
+
+    // 2. Fetch College Heads
+    const collegeRes = await queryDb(`
+      SELECT 
+        id,
+        username,
+        faculty_name AS name,
+        email,
+        phone,
+        'Head Coordinator' AS role,
+        college,
+        status,
+        created_at AS "createdAt"
+      FROM college_head_users
+      ORDER BY created_at DESC
+    `);
+    if (collegeRes && collegeRes.rows) {
+      collegeRes.rows.forEach(r => list.push({
+        ...r,
+        id: `ch_${r.id}`,
+        dbId: r.id,
+        role: 'Head Coordinator',
+        assignedSport: 'all',
+        sportName: `College Head (${r.college})`,
+        status: r.status ? (r.status.toLowerCase() === 'inactive' ? 'Inactive' : 'Active') : 'Active',
+        createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString()
+      }));
+    }
+
+    // 3. Fetch PR & Super Coordinator Users
+    const prRes = await queryDb(`
+      SELECT 
+        id,
+        username,
+        COALESCE(name, username) AS name,
+        email,
+        role,
+        status,
+        created_at AS "createdAt"
+      FROM pr_users
+      ORDER BY created_at DESC
+    `);
+    if (prRes && prRes.rows) {
+      prRes.rows.forEach(r => {
+        const isSuper = r.role === 'super_coordinator' || r.role === 'Super Coordinator';
+        list.push({
+          ...r,
+          id: `pr_${r.id}`,
+          dbId: r.id,
+          role: isSuper ? 'Super Coordinator' : 'PR Member',
+          assignedSport: isSuper ? 'all' : 'media',
+          sportName: isSuper ? 'All Sports (Fest President)' : 'Media / PR Team',
+          status: r.status ? (r.status.toLowerCase() === 'inactive' ? 'Inactive' : 'Active') : 'Active',
+          createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString()
+        });
+      });
+    }
+
+    return res.json(list);
+  } catch (err) {
+    console.error('Error fetching coordinators from DB:', err.message);
+    return res.status(500).json({ message: 'Failed to fetch coordinators list' });
+  }
+};
+
+export const saveCoordinatorDB = async (req, res) => {
+  const {
+    id,
+    name,
+    username,
+    email,
+    phone,
+    role,
+    assignedSport,
+    sportName,
+    college,
+    password,
+    status
+  } = req.body;
+
+  if (!username || !name) {
+    return res.status(400).json({ message: 'Name and Username are required.' });
+  }
+
+  const cleanUser = username.trim().toLowerCase();
+  const accStatus = (status && status.toLowerCase() === 'inactive') ? 'inactive' : 'active';
+  let passHash = null;
+
+  if (password && password.trim()) {
+    passHash = await bcrypt.hash(password.trim(), 10);
+  }
+
+  const cleanId = (id && typeof id === 'string') ? id.replace(/^(pr_|ch_|sc_)/, '') : id;
+  const numId = (cleanId && !isNaN(Number(cleanId))) ? Number(cleanId) : null;
+
+  try {
+    const isSuperCoord = role === 'Super Coordinator' || role === 'super_coordinator' || (role && role.toLowerCase().includes('super coordinator'));
+    const isCollegeHead = role === 'Head Coordinator' || role === 'college_head';
+    const isPR = role === 'PR Member' || role === 'pr_coordinator';
+
+    if (isSuperCoord) {
+      if (numId !== null || cleanUser) {
+        let updateQuery = `UPDATE pr_users SET name = $1, username = $2, email = $3, role = 'super_coordinator', status = $4, updated_at = CURRENT_TIMESTAMP`;
+        const params = [name, cleanUser, email || '', accStatus];
+        if (passHash) {
+          updateQuery += `, password_hash = $5 WHERE `;
+          params.push(passHash);
+        } else {
+          updateQuery += ` WHERE `;
+        }
+        if (numId !== null) {
+          updateQuery += `id = $${params.length + 1}`;
+          params.push(numId);
+        } else {
+          updateQuery += `LOWER(username) = LOWER($${params.length + 1})`;
+          params.push(cleanUser);
+        }
+        const updated = await queryDb(updateQuery, params);
+        if (updated && updated.rowCount > 0) {
+          return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
+        }
+      }
+      
+      const initialPass = passHash || await bcrypt.hash('Super@2026', 10);
+      await queryDb(
+        `INSERT INTO pr_users (username, password_hash, role, name, email, status, created_at, updated_at)
+         VALUES ($1, $2, 'super_coordinator', $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        [cleanUser, initialPass, name, email || '', accStatus]
+      );
+    } else if (isCollegeHead) {
+      if (numId !== null || cleanUser) {
+        let updateQuery = `UPDATE college_head_users SET faculty_name = $1, username = $2, email = $3, phone = $4, college = $5, status = $6, updated_at = CURRENT_TIMESTAMP`;
+        const params = [name, cleanUser, email || '', phone || '', college || 'MPEC', accStatus];
+        if (passHash) {
+          updateQuery += `, password_hash = $7 WHERE `;
+          params.push(passHash);
+        } else {
+          updateQuery += ` WHERE `;
+        }
+        if (numId !== null) {
+          updateQuery += `id = $${params.length + 1}`;
+          params.push(numId);
+        } else {
+          updateQuery += `LOWER(username) = LOWER($${params.length + 1})`;
+          params.push(cleanUser);
+        }
+        const updated = await queryDb(updateQuery, params);
+        if (updated && updated.rowCount > 0) {
+          return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
+        }
+      }
+      
+      const initialPass = passHash || await bcrypt.hash('Head@2026', 10);
+      await queryDb(
+        `INSERT INTO college_head_users (username, password_hash, college, faculty_name, email, phone, status, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        [cleanUser, initialPass, college || 'MPEC', name, email || '', phone || '', accStatus]
+      );
+    } else if (isPR) {
+      if (numId !== null || cleanUser) {
+        let updateQuery = `UPDATE pr_users SET name = $1, username = $2, email = $3, status = $4, updated_at = CURRENT_TIMESTAMP`;
+        const params = [name, cleanUser, email || '', accStatus];
+        if (passHash) {
+          updateQuery += `, password_hash = $5 WHERE `;
+          params.push(passHash);
+        } else {
+          updateQuery += ` WHERE `;
+        }
+        if (numId !== null) {
+          updateQuery += `id = $${params.length + 1}`;
+          params.push(numId);
+        } else {
+          updateQuery += `LOWER(username) = LOWER($${params.length + 1})`;
+          params.push(cleanUser);
+        }
+        const updated = await queryDb(updateQuery, params);
+        if (updated && updated.rowCount > 0) {
+          return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
+        }
+      }
+      
+      const initialPass = passHash || await bcrypt.hash('PRPass@2026', 10);
+      await queryDb(
+        `INSERT INTO pr_users (username, password_hash, role, name, email, status, created_at, updated_at)
+         VALUES ($1, $2, 'pr_coordinator', $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        [cleanUser, initialPass, name, email || '', accStatus]
+      );
+    } else {
+      const sportSlug = (assignedSport || 'cricket').toLowerCase().replace(/[^a-z0-9]/g, '-');
+      const sportTitle = sportName || (assignedSport || 'Cricket').replace(/-/g, ' ').toUpperCase();
+
+      if (numId !== null || cleanUser) {
+        let updateQuery = `UPDATE sport_coordinators SET coordinator_name = $1, username = $2, email = $3, phone = $4, assigned_sport = $5, sport_name = $6, status = $7, updated_at = CURRENT_TIMESTAMP`;
+        const params = [name, cleanUser, email || '', phone || '', sportSlug, sportTitle, accStatus];
+        if (passHash) {
+          updateQuery += `, password_hash = $8 WHERE `;
+          params.push(passHash);
+        } else {
+          updateQuery += ` WHERE `;
+        }
+        if (numId !== null) {
+          updateQuery += `id = $${params.length + 1}`;
+          params.push(numId);
+        } else {
+          updateQuery += `LOWER(username) = LOWER($${params.length + 1}) OR assigned_sport = LOWER($${params.length + 1})`;
+          params.push(cleanUser);
+        }
+        const updated = await queryDb(updateQuery, params);
+        if (updated && updated.rowCount > 0) {
+          return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
+        }
+      }
+      
+      const initialPass = passHash || await bcrypt.hash('Coord@2026', 10);
+      await queryDb(
+        `INSERT INTO sport_coordinators (username, password_hash, assigned_sport, sport_name, coordinator_name, email, phone, status, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        [cleanUser, initialPass, sportSlug, sportTitle, name, email || '', phone || '', accStatus]
+      );
+    }
+
+    return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
+  } catch (err) {
+    console.error('Error saving coordinator to DB:', err.message);
+    return res.status(500).json({ message: 'Failed to save coordinator to database' });
+  }
+};
+
+export const toggleCoordinatorStatusDB = async (req, res) => {
+  const { id } = req.params;
+  const { status, username } = req.body;
+
+  try {
+    const newStatus = (status && status.toLowerCase() === 'inactive') ? 'inactive' : 'active';
+    const cleanUser = (username || '').trim().toLowerCase();
+
+    // 1. Check table prefix first
+    if (typeof id === 'string' && id.startsWith('pr_')) {
+      const rawId = Number(id.replace('pr_', ''));
+      const pr = await queryDb(`UPDATE pr_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`, [newStatus, rawId]);
+      if (pr && pr.rows && pr.rows.length > 0) {
+        return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
+      }
+    }
+    if (typeof id === 'string' && id.startsWith('ch_')) {
+      const rawId = Number(id.replace('ch_', ''));
+      const ch = await queryDb(`UPDATE college_head_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`, [newStatus, rawId]);
+      if (ch && ch.rows && ch.rows.length > 0) {
+        return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
+      }
+    }
+    if (typeof id === 'string' && id.startsWith('sc_')) {
+      const rawId = Number(id.replace('sc_', ''));
+      const sc = await queryDb(`UPDATE sport_coordinators SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`, [newStatus, rawId]);
+      if (sc && sc.rows && sc.rows.length > 0) {
+        return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
+      }
+    }
+
+    // 2. Check exact username match
+    if (cleanUser) {
+      const pr = await queryDb(`UPDATE pr_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`, [newStatus, cleanUser]);
+      if (pr && pr.rows && pr.rows.length > 0) {
+        return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
+      }
+
+      const ch = await queryDb(`UPDATE college_head_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`, [newStatus, cleanUser]);
+      if (ch && ch.rows && ch.rows.length > 0) {
+        return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
+      }
+
+      const sc = await queryDb(`UPDATE sport_coordinators SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`, [newStatus, cleanUser]);
+      if (sc && sc.rows && sc.rows.length > 0) {
+        return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
+      }
+    }
+
+    return res.status(404).json({ message: 'Coordinator account not found in database.' });
+  } catch (err) {
+    console.error('Error toggling coordinator status in DB:', err.message);
+    return res.status(500).json({ message: 'Failed to update status in database' });
+  }
+};
+
+export const resetCoordinatorPasswordDB = async (req, res) => {
+  const { id } = req.params;
+  const { newPassword, username } = req.body;
+
+  const passToSet = newPassword && newPassword.trim().length >= 6 ? newPassword.trim() : 'Password@123';
+  const hashed = await bcrypt.hash(passToSet, 10);
+  const cleanUser = (username || '').trim().toLowerCase();
+
+  try {
+    if (typeof id === 'string' && id.startsWith('pr_')) {
+      const rawId = Number(id.replace('pr_', ''));
+      const pr = await queryDb(`UPDATE pr_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`, [hashed, rawId]);
+      if (pr && pr.rows && pr.rows.length > 0) return res.json({ success: true, message: 'Password reset successfully.' });
+    }
+    if (typeof id === 'string' && id.startsWith('ch_')) {
+      const rawId = Number(id.replace('ch_', ''));
+      const ch = await queryDb(`UPDATE college_head_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`, [hashed, rawId]);
+      if (ch && ch.rows && ch.rows.length > 0) return res.json({ success: true, message: 'Password reset successfully.' });
+    }
+    if (typeof id === 'string' && id.startsWith('sc_')) {
+      const rawId = Number(id.replace('sc_', ''));
+      const sc = await queryDb(`UPDATE sport_coordinators SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`, [hashed, rawId]);
+      if (sc && sc.rows && sc.rows.length > 0) return res.json({ success: true, message: 'Password reset successfully.' });
+    }
+
+    if (cleanUser) {
+      const pr = await queryDb(`UPDATE pr_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`, [hashed, cleanUser]);
+      if (pr && pr.rows && pr.rows.length > 0) return res.json({ success: true, message: 'Password reset successfully.' });
+
+      const ch = await queryDb(`UPDATE college_head_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`, [hashed, cleanUser]);
+      if (ch && ch.rows && ch.rows.length > 0) return res.json({ success: true, message: 'Password reset successfully.' });
+
+      const sc = await queryDb(`UPDATE sport_coordinators SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(username) = $2 RETURNING id`, [hashed, cleanUser]);
+      if (sc && sc.rows && sc.rows.length > 0) return res.json({ success: true, message: 'Password reset successfully.' });
+    }
+
+    return res.status(404).json({ message: 'Coordinator account not found in database.' });
+  } catch (err) {
+    console.error('Error resetting coordinator password in DB:', err.message);
+    return res.status(500).json({ message: 'Failed to reset password in database' });
+  }
+};
+
+export const deleteCoordinatorDB = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    if (typeof id === 'string' && id.startsWith('pr_')) {
+      const rawId = Number(id.replace('pr_', ''));
+      await queryDb('DELETE FROM pr_users WHERE id = $1', [rawId]);
+      return res.json({ success: true, message: 'Coordinator deleted from database successfully.' });
+    }
+    if (typeof id === 'string' && id.startsWith('ch_')) {
+      const rawId = Number(id.replace('ch_', ''));
+      await queryDb('DELETE FROM college_head_users WHERE id = $1', [rawId]);
+      return res.json({ success: true, message: 'Coordinator deleted from database successfully.' });
+    }
+    if (typeof id === 'string' && id.startsWith('sc_')) {
+      const rawId = Number(id.replace('sc_', ''));
+      await queryDb('DELETE FROM sport_coordinators WHERE id = $1', [rawId]);
+      return res.json({ success: true, message: 'Coordinator deleted from database successfully.' });
+    }
+
+    const cleanUser = (id || '').trim().toLowerCase();
+    if (cleanUser) {
+      await queryDb('DELETE FROM pr_users WHERE LOWER(username) = $1', [cleanUser]);
+      await queryDb('DELETE FROM college_head_users WHERE LOWER(username) = $1', [cleanUser]);
+      await queryDb('DELETE FROM sport_coordinators WHERE LOWER(username) = $1', [cleanUser]);
+    }
+
+    return res.json({ success: true, message: 'Coordinator deleted from database successfully.' });
+  } catch (err) {
+    console.error('Error deleting coordinator from DB:', err.message);
+    return res.status(500).json({ message: 'Failed to delete coordinator from database' });
+  }
+};
+
+export const changeSuperCoordinatorPasswordDB = async (req, res) => {
+  const { newPass, username } = req.body;
+  const targetUser = (username || req.user?.username || 'super_coordinator').trim().toLowerCase();
+
+  if (!newPass || newPass.trim().length < 6) {
+    return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+  }
+
+  try {
+    const hashed = await bcrypt.hash(newPass.trim(), 10);
+    
+    // Update password_hash in PostgreSQL pr_users table
+    await queryDb(
+      `UPDATE pr_users 
+       SET password_hash = $1, updated_at = CURRENT_TIMESTAMP 
+       WHERE LOWER(username) = LOWER($2) OR role = 'super_coordinator' OR role = 'Super Coordinator'`,
+      [hashed, targetUser]
+    );
+
+    // Also update prisma system setting fallback
+    try {
+      await prisma.systemSetting.upsert({
+        where: { key: 'super_coordinator_pass' },
+        update: { value: { password: newPass.trim() } },
+        create: { key: 'super_coordinator_pass', value: { password: newPass.trim() } }
+      });
+    } catch (e) {}
+
+    return res.json({ success: true, message: 'Super Coordinator password updated successfully in database.' });
+  } catch (err) {
+    console.error('Error changing super coordinator password:', err.message);
+    return res.status(500).json({ message: 'Failed to change password in database.' });
+  }
+};

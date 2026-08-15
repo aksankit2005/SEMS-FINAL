@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Crown, Lock, User, ArrowRight, ShieldCheck, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 
+import axios from 'axios';
+import { API_BASE_URL } from '../../services/apiConfig';
+
 export const SuperCoordinatorLoginPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -12,7 +15,7 @@ export const SuperCoordinatorLoginPage = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -22,28 +25,26 @@ export const SuperCoordinatorLoginPage = () => {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      // Save Super Coordinator Auth Session
-      const userObj = {
+    try {
+      const res = await axios.post(`${API_BASE_URL}/super-coordinator/login`, {
         username: username.trim(),
-        name: 'Super Coordinator (President)',
-        role: 'super_coordinator'
-      };
+        password: password.trim()
+      });
 
-      localStorage.setItem('sems_super_coord_token', 'mock_jwt_super_coord_token_2026');
-      localStorage.setItem('sems_super_coord_user', JSON.stringify(userObj));
-      window.dispatchEvent(new Event('sems-auth-change'));
-
-      addToast('Super Coordinator Login Successful!', 'success');
+      if (res.data && res.data.token) {
+        localStorage.setItem('sems_super_coord_token', res.data.token);
+        localStorage.setItem('sems_super_coord_user', JSON.stringify(res.data.user));
+        window.dispatchEvent(new Event('sems-auth-change'));
+        addToast('Super Coordinator Login Successful!', 'success');
+        navigate('/super-coordinator/dashboard');
+        return;
+      }
+      throw new Error('Invalid authentication response.');
+      setError(err.response?.data?.message || err.message || 'Invalid Super Coordinator credentials.');
+      addToast('Login Failed. Please check your credentials.', 'error');
+    } finally {
       setLoading(false);
-      navigate('/super-coordinator/dashboard');
-    }, 400);
-  };
-
-  const handleDemoFill = () => {
-    setUsername('super_coordinator');
-    setPassword('super#2026');
-    setError('');
+    }
   };
 
   return (
@@ -111,15 +112,6 @@ export const SuperCoordinatorLoginPage = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-1">
-            <button
-              type="button"
-              onClick={handleDemoFill}
-              className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer flex items-center gap-1"
-            >
-              <Sparkles className="w-3.5 h-3.5" /> Auto-fill Demo Credentials
-            </button>
-          </div>
 
           <button
             type="submit"

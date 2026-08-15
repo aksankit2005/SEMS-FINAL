@@ -11,7 +11,7 @@ export const AdminLoginPage = () => {
   const { addToast } = useToast();
 
   const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -111,9 +111,9 @@ export const AdminLoginPage = () => {
             </div>
           </div>
 
-          {/* Quick Credential Hint */}
+          {/* Security Notice */}
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
-            <span>Default Admin: <strong className="text-amber-600 dark:text-amber-400">admin / admin123</strong></span>
+            <span>Security Notice: <strong className="text-amber-600 dark:text-amber-400">Authorized Admin Access Only</strong></span>
           </div>
 
           <button

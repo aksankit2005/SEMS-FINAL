@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, MapPin, Plus, Trash2, CheckCircle2, Play, RefreshCw, Trophy, Layers } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
+import { useConfirm } from '../../../context/ConfirmContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { OFFICIAL_ATHLETICS_EVENTS } from '../../registration/AthleticsRegistration';
 
 export const AthleticsMatchScheduleTab = ({ user }) => {
   const { addToast } = useToast();
+  const { confirmDelete } = useConfirm();
   const [schedules, setSchedules] = useState([]);
   
   // Form State (NO Player Names!)
@@ -61,8 +63,12 @@ export const AthleticsMatchScheduleTab = ({ user }) => {
     addToast(`📅 ${selectedSubEvent} (${roundTitle}) Scheduled Successfully!`, 'success');
   };
 
-  const handleDeleteSchedule = (id) => {
-    if (!window.confirm('Are you sure you want to remove this scheduled time slot?')) return;
+  const handleDeleteSchedule = async (id) => {
+    const isConfirmed = await confirmDelete({
+      title: 'Delete Time Slot',
+      message: 'Are you sure you want to remove this scheduled time slot?'
+    });
+    if (!isConfirmed) return;
     const updated = schedules.filter((s) => s.id !== id);
     setSchedules(updated);
     coordinatorApi.saveMatches(updated);

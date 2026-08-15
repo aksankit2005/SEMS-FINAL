@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Award, Tv, VideoOff, Users, ShieldAlert, AlertCircle, Download, Maximize, Minimize } from 'lucide-react';
 import { resolveSportConfig } from '../../data/sportsConfig';
-import { getYouTubeEmbedUrl } from '../../utils/youtube';
+import { getYouTubeEmbedUrl, extractYouTubeVideoId } from '../../utils/youtube';
+import { mergeMatchState } from '../../services/coordinatorApi';
 import { generateMatchResultPDF } from '../../utils/pdfExporter';
 
 const getShortCollege = (name) => {
@@ -202,7 +203,7 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
       if (updated && isSubscribed) {
         setMatch((prev) => {
           if (!prev) return updated;
-          return { ...prev, ...updated };
+          return mergeMatchState(prev, updated);
         });
       }
     };
@@ -221,7 +222,7 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
       window.removeEventListener('storage', handleUpdate);
       clearInterval(interval);
     };
-  }, [initialMatch?.id, initialMatch?.matchId, match?.id]);
+  }, [initialMatch?.id, initialMatch?.matchId]);
 
   if (!match) return null;
 
@@ -381,21 +382,25 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
         </div>
 
         {/* Video Player Stream */}
-        {match.youtubeVideoId ? (
-          <YouTubePlayer youtubeVideoId={match.youtubeVideoId} match={match} isCricket={isCricket} />
-        ) : (
-          <div className="p-5 sm:p-6 bg-gradient-to-r from-slate-50 via-blue-50/20 to-slate-50 dark:from-[#090D16] dark:via-[#0E1626] dark:to-[#090D16] text-center border-b border-slate-200 dark:border-[#1E293B] space-y-2">
-            <div className="w-11 h-11 rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 flex items-center justify-center mx-auto shadow-inner">
-              <VideoOff className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+        {(() => {
+          const activeVideoId = extractYouTubeVideoId(match.youtubeVideoId) || extractYouTubeVideoId(match.streamUrl);
+          if (activeVideoId) {
+            return <YouTubePlayer youtubeVideoId={activeVideoId} match={match} isCricket={isCricket} />;
+          }
+          return (
+            <div className="p-5 sm:p-6 bg-gradient-to-r from-slate-50 via-blue-50/20 to-slate-50 dark:from-[#090D16] dark:via-[#0E1626] dark:to-[#090D16] text-center border-b border-slate-200 dark:border-[#1E293B] space-y-2">
+              <div className="w-11 h-11 rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 flex items-center justify-center mx-auto shadow-inner">
+                <VideoOff className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+              </div>
+              <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest">
+                Live video is not available
+              </h4>
+              <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 max-w-lg mx-auto">
+                {isChess ? 'Showing real-time chess board status updates from official tournament table.' : isAthletics ? 'Showing real-time live event status updates from official track & field table.' : 'Showing real-time live score updates from official tournament scoring table.'}
+              </p>
             </div>
-            <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest">
-              Live video is not available
-            </h4>
-            <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 max-w-lg mx-auto">
-              {isChess ? 'Showing real-time chess board status updates from official tournament table.' : isAthletics ? 'Showing real-time live event status updates from official track & field table.' : 'Showing real-time live score updates from official tournament scoring table.'}
-            </p>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Large Spectator Scoreboard Section */}
         <div className="p-6 bg-slate-50 dark:bg-gradient-to-b dark:from-[#0B1120] dark:to-[#0F172A] border-b border-slate-200 dark:border-[#1E293B] space-y-6">

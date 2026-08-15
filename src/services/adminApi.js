@@ -2,8 +2,7 @@ import axios from 'axios';
 import { superCoordinatorApi, ALL_12_SPORTS, ALL_COLLEGES } from './superCoordinatorApi';
 import { galleryApi } from './galleryApi';
 import { coordinatorApi } from './coordinatorApi';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { API_BASE_URL, apiUrl } from './apiConfig';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -257,28 +256,28 @@ export const adminApi = {
   },
 
   login: async (username, password) => {
-    const savedPass = localStorage.getItem('sems_admin_custom_password');
-    const isValidPass = savedPass ? password === savedPass : (password === 'admin123' || password === 'admin' || password === 'superadmin');
+    try {
+      const res = await api.post('/admin/login', { username, password });
+      if (res.data && res.data.token) {
+        localStorage.setItem(STORAGE_KEYS.TOKEN, res.data.token);
+        setStorageItem(STORAGE_KEYS.USER, res.data.user || INITIAL_ADMIN_USER);
 
-    if ((username === 'admin' || username === 'superadmin') && isValidPass) {
-      const user = {
-        ...INITIAL_ADMIN_USER,
-        username,
-        lastLogin: new Date().toISOString()
-      };
-      localStorage.setItem(STORAGE_KEYS.TOKEN, 'sems_admin_token_' + Date.now());
-      setStorageItem(STORAGE_KEYS.USER, user);
+        adminApi.addAuditLog({
+          user: res.data.user?.name || 'System Administrator',
+          role: 'ADMIN',
+          action: 'Admin Login',
+          target: 'Admin logged into central Admin Portal'
+        });
 
-      adminApi.addAuditLog({
-        user: user.name,
-        role: 'ADMIN',
-        action: 'Admin Login',
-        target: 'Admin logged into central Admin Portal'
-      });
-
-      return { success: true, user };
+        return { success: true, user: res.data.user };
+      }
+      throw new Error('Invalid response from server.');
+    } catch (err) {
+      if (err.response) {
+        throw new Error(err.response.data?.message || 'Invalid Admin username or password.');
+      }
+      throw new Error(err.message || 'Cannot connect to server.');
     }
-    throw new Error('Invalid Admin username or password! Default is admin / admin123');
   },
 
   logout: () => {
@@ -436,79 +435,6 @@ export const adminApi = {
       }
     }
 
-    if (list.length === 0) {
-      const fallbackList = [
-        {
-          id: 'REG-2026-101',
-          registrationId: 'REG-2026-101',
-          participantName: 'Aarav Sharma',
-          rollNumber: '2101430100012',
-          college: 'MPEC Kanpur',
-          branch: 'CSE',
-          section: 'A',
-          year: '3rd Year',
-          gender: 'Boys',
-          gameSport: 'Cricket',
-          eventTitle: 'Cricket Mens Championship 2026',
-          category: 'Team Game',
-          mobile: '+91 98765 11111',
-          email: 'aarav.sharma@mpec.ac.in',
-          registrationDate: '2026-08-06',
-          registrationTime: '11:00 AM',
-          paymentStatus: 'PAID',
-          registrationStatus: 'VERIFIED',
-          registeredBy: 'coord_cricket',
-          membersCount: 11
-        },
-        {
-          id: 'REG-2026-102',
-          registrationId: 'REG-2026-102',
-          participantName: 'Ananya Verma',
-          rollNumber: '2101430100045',
-          college: 'MIPS Kanpur',
-          branch: 'IT',
-          section: 'B',
-          year: '2nd Year',
-          gender: 'Girls',
-          gameSport: 'Badminton',
-          eventTitle: 'Badminton Girls Singles 2026',
-          category: 'Singles',
-          mobile: '+91 98765 22222',
-          email: 'ananya.v@mips.ac.in',
-          registrationDate: '2026-08-07',
-          registrationTime: '02:15 PM',
-          paymentStatus: 'PAID',
-          registrationStatus: 'VERIFIED',
-          registeredBy: 'coord_badminton',
-          membersCount: 1
-        },
-        {
-          id: 'REG-2026-103',
-          registrationId: 'REG-2026-103',
-          participantName: 'Rohan Gupta',
-          rollNumber: '2201430100089',
-          college: 'MPCP Kanpur',
-          branch: 'Pharmacy',
-          section: 'A',
-          year: '1st Year',
-          gender: 'Boys',
-          gameSport: 'Table Tennis',
-          eventTitle: 'Table Tennis Singles Tournament',
-          category: 'Singles',
-          mobile: '+91 98765 33333',
-          email: 'rohan.g@mpcp.ac.in',
-          registrationDate: '2026-08-08',
-          registrationTime: '04:30 PM',
-          paymentStatus: 'PAID',
-          registrationStatus: 'VERIFIED',
-          registeredBy: 'coord_table_tennis',
-          membersCount: 1
-        }
-      ];
-      setStorageItem(STORAGE_KEYS.REGISTRATIONS, fallbackList);
-      return fallbackList;
-    }
-
     return list;
   },
 
@@ -647,20 +573,41 @@ export const adminApi = {
 
   // ── Coordinator Management ────────────────────────────────────────────────
   getCoordinators: async () => {
+    try {
+      const res = await fetch(apiUrl('/admin/coordinators'));
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) return data;
+      }
+    } catch (e) {
+      console.error('Error fetching coordinators from DB:', e);
+    }
     return getStorageItem(STORAGE_KEYS.COORDINATORS, INITIAL_COORDINATORS);
   },
 
   saveCoordinator: async (coordData) => {
+    try {
+      const res = await fetch(apiUrl('/admin/coordinators'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(coordData)
+      });
+      if (res.ok) {
+        adminApi.addAuditLog({
+          user: 'System Administrator',
+          role: 'ADMIN',
+          action: coordData.id ? 'Coordinator Updated' : 'Coordinator Created',
+          target: `${coordData.id ? 'Updated' : 'Created'} ${coordData.role} account for ${coordData.name}`
+        });
+        return await adminApi.getCoordinators();
+      }
+    } catch (e) {
+      console.error('Error saving coordinator to DB:', e);
+    }
     const list = await adminApi.getCoordinators();
     let updated;
     if (coordData.id) {
       updated = list.map(c => c.id === coordData.id ? { ...c, ...coordData } : c);
-      adminApi.addAuditLog({
-        user: 'System Administrator',
-        role: 'ADMIN',
-        action: 'Coordinator Updated',
-        target: `Updated ${coordData.role} account details for ${coordData.name}`
-      });
     } else {
       const newCoord = {
         id: `COORD-${100 + list.length + 1}`,
@@ -669,72 +616,114 @@ export const adminApi = {
         createdAt: new Date().toISOString()
       };
       updated = [newCoord, ...list];
-      adminApi.addAuditLog({
-        user: 'System Administrator',
-        role: 'ADMIN',
-        action: 'Coordinator Created',
-        target: `Created new ${coordData.role} account for ${coordData.name} (${coordData.sportName || 'General'})`
-      });
     }
     setStorageItem(STORAGE_KEYS.COORDINATORS, updated);
     return updated;
   },
 
   deleteCoordinator: async (id) => {
+    try {
+      const res = await fetch(apiUrl(`/admin/coordinators/${id}`), {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        adminApi.addAuditLog({
+          user: 'System Administrator',
+          role: 'ADMIN',
+          action: 'Coordinator Deleted',
+          target: `Permanently deleted coordinator account ID ${id}`
+        });
+        return await adminApi.getCoordinators();
+      }
+    } catch (e) {
+      console.error('Error deleting coordinator from DB:', e);
+    }
     const list = await adminApi.getCoordinators();
-    const target = list.find(c => c.id === id);
     const updated = list.filter(c => c.id !== id);
     setStorageItem(STORAGE_KEYS.COORDINATORS, updated);
-
-    adminApi.addAuditLog({
-      user: 'System Administrator',
-      role: 'ADMIN',
-      action: 'Coordinator Deleted',
-      target: `Permanently deleted ${target?.role || 'Coordinator'} account for ${target?.name || id} (${target?.username || ''})`
-    });
-
     return updated;
   },
 
-  toggleCoordinatorStatus: async (id) => {
+  toggleCoordinatorStatus: async (coordInput) => {
+    const coordId = typeof coordInput === 'object' ? coordInput.id : coordInput;
+    const coordUser = typeof coordInput === 'object' ? coordInput.username : null;
     const list = await adminApi.getCoordinators();
-    let newStatus = 'Active';
-    const updated = list.map(c => {
-      if (c.id === id) {
-        newStatus = c.status === 'Active' ? 'Inactive' : 'Active';
-        return { ...c, status: newStatus };
+    
+    const target = list.find(c => 
+      String(c.id) === String(coordId) || 
+      (coordUser && c.username?.toLowerCase() === coordUser.toLowerCase()) ||
+      (c.username && c.username?.toLowerCase() === String(coordId).toLowerCase())
+    ) || (typeof coordInput === 'object' ? coordInput : null);
+
+    const targetUsername = target?.username || coordUser || (typeof coordInput === 'string' && isNaN(Number(coordInput)) ? coordInput : null);
+    const newStatus = target?.status === 'Active' ? 'Inactive' : 'Active';
+    const fetchId = targetUsername || coordId;
+
+    try {
+      const res = await fetch(apiUrl(`/admin/coordinators/${fetchId}/status`), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: newStatus,
+          username: targetUsername,
+          assignedSport: target?.assignedSport || target?.college
+        })
+      });
+      if (res.ok) {
+        adminApi.addAuditLog({
+          user: 'System Administrator',
+          role: 'ADMIN',
+          action: newStatus === 'Inactive' ? 'Coordinator Deactivated' : 'Coordinator Activated',
+          target: `Changed account status of ${target?.name || fetchId} to ${newStatus}`
+        });
+        return await adminApi.getCoordinators();
       }
-      return c;
-    });
-    setStorageItem(STORAGE_KEYS.COORDINATORS, updated);
-
-    const target = list.find(c => c.id === id);
-    adminApi.addAuditLog({
-      user: 'System Administrator',
-      role: 'ADMIN',
-      action: newStatus === 'Inactive' ? 'Coordinator Deactivated' : 'Coordinator Activated',
-      target: `Changed account status of ${target?.name || id} to ${newStatus}`
-    });
-
-    return updated;
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Server failed to update coordinator status');
+    } catch (e) {
+      console.error('Error toggling coordinator status in DB:', e);
+      throw e;
+    }
   },
 
-  resetCoordinatorPassword: async (id, newPassword = 'Password@123') => {
+  resetCoordinatorPassword: async (coordInput, newPassword = 'Password@123') => {
+    const coordId = typeof coordInput === 'object' ? coordInput.id : coordInput;
+    const coordUser = typeof coordInput === 'object' ? coordInput.username : null;
     const list = await adminApi.getCoordinators();
-    const target = list.find(c => c.id === id);
-    if (!target) throw new Error('Coordinator account not found!');
+    
+    const target = list.find(c => 
+      String(c.id) === String(coordId) || 
+      (coordUser && c.username?.toLowerCase() === coordUser.toLowerCase())
+    ) || (typeof coordInput === 'object' ? coordInput : null);
 
-    const updated = list.map(c => c.id === id ? { ...c, password: newPassword } : c);
-    setStorageItem(STORAGE_KEYS.COORDINATORS, updated);
+    const targetUsername = target?.username || coordUser || (typeof coordInput === 'string' && isNaN(Number(coordInput)) ? coordInput : null);
+    const fetchId = targetUsername || coordId;
 
-    adminApi.addAuditLog({
-      user: 'System Administrator',
-      role: 'ADMIN',
-      action: 'Password Reset',
-      target: `Reset password for ${target.name} (${target.username})`
-    });
-
-    return true;
+    try {
+      const res = await fetch(apiUrl(`/admin/coordinators/${fetchId}/reset-password`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          newPassword,
+          username: targetUsername,
+          assignedSport: target?.assignedSport || target?.college
+        })
+      });
+      if (res.ok) {
+        adminApi.addAuditLog({
+          user: 'System Administrator',
+          role: 'ADMIN',
+          action: 'Password Reset',
+          target: `Reset password for coordinator account ${targetUsername || fetchId}`
+        });
+        return true;
+      }
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Server failed to reset password');
+    } catch (e) {
+      console.error('Error resetting password in DB:', e);
+      throw e;
+    }
   },
 
   // ── Announcements Management ──────────────────────────────────────────────

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Trash2, FileDown, Users } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
-import { openSpreadsheetViewer } from '../../../utils/pdfExporter';
+import { openSpreadsheetViewer, exportToCSV } from '../../../utils/pdfExporter';
 
 const DEFAULT_KABADDI_PARTICIPANTS = [
   {
@@ -144,8 +144,9 @@ export const KabaddiTotalParticipationTab = ({ user, globalSearch = '' }) => {
       'Email': p.email || p.player1?.email || 'N/A'
     }));
 
+    exportToCSV(excelData, `Kabaddi_Participant_Database`);
     openSpreadsheetViewer(excelData, `Kabaddi_Participant_Database`);
-    addToast(`Opened Kabaddi participant database in Excel/CSV view tab!`, 'success');
+    addToast(`Exported Kabaddi participant database to CSV file & viewer!`, 'success');
   };
 
   return (

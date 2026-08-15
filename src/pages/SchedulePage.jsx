@@ -44,20 +44,26 @@ export const SchedulePage = () => {
         if (publicMatches && Array.isArray(publicMatches)) {
           publicMatches.forEach((m) => {
             if (m && m.status !== 'COMPLETED' && m.status !== 'FINISHED' && !completedMatchIds.has(m.id)) {
-              const t1 = typeof m.team1 === 'object' ? (m.team1?.name || '') : String(m.team1 || '').trim();
-              const t2 = typeof m.team2 === 'object' ? (m.team2?.name || '') : String(m.team2 || '').trim();
-              if (!t1 || !t2) return;
-
-              const matchKey = `${t1} vs ${t2}`.toLowerCase();
-              if (completedMatchTitles.has(matchKey)) return;
-
               const sportId = (m.sportId || m.sport || 'badminton').toLowerCase();
               const rawSportName = m.sportName || m.sport || (sportId.charAt(0).toUpperCase() + sportId.slice(1).replace('-', ' '));
-              const rawVenue = m.tableNumber || m.venue || 'Table 1';
 
+              const t1 = typeof m.team1 === 'object' ? (m.team1?.name || '') : String(m.team1 || '').trim();
+              const t2 = typeof m.team2 === 'object' ? (m.team2?.name || '') : String(m.team2 || '').trim();
+
+              const eventTitle = m.eventTitle || m.matchTitle || m.title || m.subEvent || `${rawSportName} Championship 2026`;
+              const finalTeam1 = t1 || m.subEvent || eventTitle;
+              const finalTeam2 = t2 || (m.subEvent ? '' : 'TBD');
+
+              if (t1 && t2) {
+                const matchKey = `${t1} vs ${t2}`.toLowerCase();
+                if (completedMatchTitles.has(matchKey)) return;
+              }
+
+              const rawVenue = m.tableNumber || m.venue || 'Arena 1';
               let displayVenue = rawVenue;
               const isChess = sportId.includes('chess') || rawSportName.toLowerCase().includes('chess');
               const isTT = sportId.includes('table-tennis') || rawSportName.toLowerCase().includes('table tennis');
+              const isKabaddi = sportId.includes('kabaddi') || rawSportName.toLowerCase().includes('kabaddi');
 
               if (isChess || isTT) {
                 if (/court/gi.test(rawVenue)) {
@@ -70,7 +76,7 @@ export const SchedulePage = () => {
                 if (/table/gi.test(rawVenue)) {
                   displayVenue = rawVenue.replace(/table/gi, 'Ground');
                 }
-              } else if (sportId.includes('kabaddi')) {
+              } else if (isKabaddi) {
                 if (/table/gi.test(rawVenue)) {
                   displayVenue = rawVenue.replace(/table/gi, 'Mat');
                 }
@@ -82,15 +88,16 @@ export const SchedulePage = () => {
 
               allSchedules.push({
                 id: m.id || `M-${Math.random()}`,
-                event: m.eventTitle || m.title || `${rawSportName} Championship 2026`,
+                event: eventTitle,
                 sport: rawSportName,
+                sportId: sportId,
                 gender: m.category || m.gender || 'Open',
-                team1: t1,
-                team2: t2,
+                team1: finalTeam1,
+                team2: finalTeam2,
                 venue: displayVenue,
-                date: m.date || '2026-08-08',
+                date: m.date || new Date().toISOString().split('T')[0],
                 time: m.time || '10:00 AM',
-                format: m.format || 'SINGLES',
+                format: m.format || 'STANDARD',
                 mapUrl: 'https://maps.google.com'
               });
             }
@@ -143,8 +150,13 @@ export const SchedulePage = () => {
       (item.sport || '').toLowerCase().includes(query.toLowerCase()) ||
       (item.venue || '').toLowerCase().includes(query.toLowerCase());
     
+    const sportKey = (item.sport || item.sportId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const selectedKey = selectedSport.toLowerCase().replace(/[^a-z0-9]/g, '');
+
     const matchesSport = selectedSport === 'All' || 
-      (item.sport || '').toLowerCase().replace(/[^a-z0-9]/g, '') === selectedSport.toLowerCase().replace(/[^a-z0-9]/g, '');
+      sportKey === selectedKey || 
+      (sportKey.length > 2 && selectedKey.includes(sportKey)) || 
+      (selectedKey.length > 2 && sportKey.includes(selectedKey));
     
     return matchesQuery && matchesSport;
   });

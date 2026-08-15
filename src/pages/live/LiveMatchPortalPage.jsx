@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Play, Tv, RefreshCw, Video } from 'lucide-react';
 import { LiveMatchViewerModal } from '../../components/live/LiveMatchViewerModal';
-import { coordinatorApi } from '../../services/coordinatorApi';
+import { coordinatorApi, mergeMatchState } from '../../services/coordinatorApi';
 import { getSportConfig, SPORTS_CONFIG } from '../../data/sportsConfig';
 import { SPORTS_DATA } from '../../data/sportsData';
+import { extractYouTubeVideoId } from '../../utils/youtube';
 
 import { LIVE_MATCHES_DATA } from '../../data/liveMatchesData';
 
@@ -34,7 +35,7 @@ export const LiveMatchPortalPage = () => {
                 }
               });
             }
-          } catch (e) {}
+          } catch (e) { }
         }
       }
 
@@ -43,7 +44,7 @@ export const LiveMatchPortalPage = () => {
           const parsed = JSON.parse(localActiveStr);
           localActiveList = Object.values(parsed).filter((m) => {
             const s = (m?.status || '').toLowerCase();
-            return m && m.id !== 'M595473' && !completedMatchIds.has(m.id) && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active');
+            return m && m.id && m.id !== 'M595473' && !completedMatchIds.has(m.id) && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active');
           });
         } catch (e) { }
       }
@@ -76,7 +77,7 @@ export const LiveMatchPortalPage = () => {
               });
             }
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       // Check if coordinator explicitly launched any live match for Table Tennis
@@ -99,33 +100,63 @@ export const LiveMatchPortalPage = () => {
         return !completedMatchIds.has(m.id);
       });
 
-      // Merge backend matches, local active matches & fallback live matches (removing duplicate IDs)
+      // Safely merge backend matches, local active matches & fallback live matches using functional update & mergeMatchState
+      const incomingMap = {};
       const combined = [...(publicLive || []), ...localActiveList, ...filteredFallbackData];
-      const uniqueMap = {};
       combined.forEach((m) => {
         const s = (m?.status || '').toLowerCase();
         if (m && m.id && m.id !== 'M595473' && !completedMatchIds.has(m.id) && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active')) {
           const inferredSportId = (m.sportId || m.sport || (m.sportName ? m.sportName.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'badminton')).toLowerCase();
           const inferredSportName = m.sportName || m.sport || (inferredSportId.charAt(0).toUpperCase() + inferredSportId.slice(1).replace('-', ' '));
 
-          uniqueMap[m.id] = {
+          const videoId = m.youtubeVideoId || extractYouTubeVideoId(m.streamUrl);
+          const formatted = {
             ...m,
             sportId: inferredSportId,
             sportName: inferredSportName,
             tableNumber: m.tableNumber || m.venue || 'Court 1',
             matchTitle: m.matchTitle || `${typeof m.team1 === 'object' ? (m.team1?.name || 'Team 1') : (m.team1 || 'Team 1')} vs ${typeof m.team2 === 'object' ? (m.team2?.name || 'Team 2') : (m.team2 || 'Team 2')}`,
             liveTimer: m.liveTimer || '14:32',
+            youtubeVideoId: videoId || m.youtubeVideoId,
+            isLiveStreaming: Boolean(videoId || m.isLiveStreaming || m.streamUrl),
           };
+          incomingMap[m.id] = incomingMap[m.id] ? mergeMatchState(incomingMap[m.id], formatted) : formatted;
         }
       });
 
-      const activeMatchesList = Object.values(uniqueMap);
-      setLiveMatches(activeMatchesList);
+      setLiveMatches((prevLiveMatches) => {
+        const prevMap = {};
+        (prevLiveMatches || []).forEach((m) => {
+          if (m && m.id) prevMap[m.id] = m;
+        });
+
+        const newMap = { ...prevMap };
+
+        // Remove completed matches
+        completedMatchIds.forEach((id) => {
+          delete newMap[id];
+        });
+
+        // Merge incoming active matches
+        Object.values(incomingMap).forEach((m) => {
+          if (m && m.id) {
+            newMap[m.id] = mergeMatchState(newMap[m.id], m);
+          }
+        });
+
+        // Filter out completed or invalid matches
+        const activeMatchesList = Object.values(newMap).filter((m) => {
+          const s = (m?.status || '').toLowerCase();
+          return m && m.id && m.id !== 'M595473' && !completedMatchIds.has(m.id) && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active');
+        });
+
+        return activeMatchesList;
+      });
 
       setSelectedMatch((prev) => {
         if (!prev || !prev.id) return prev;
-        const fresh = uniqueMap[prev.id];
-        if (fresh) return { ...prev, ...fresh };
+        const fresh = incomingMap[prev.id];
+        if (fresh) return mergeMatchState(prev, fresh);
         return prev;
       });
 
@@ -306,11 +337,11 @@ export const LiveMatchPortalPage = () => {
                 const statusLower = (m.status || '').toLowerCase();
                 const isFinished = statusLower === 'completed' || statusLower === 'finished' || statusLower === 'ended';
 
-                const isCricketMatch = 
+                const isCricketMatch =
                   (m.sportId || m.sport || m.sportName || '').toLowerCase().includes('cricket') ||
                   (m.matchTitle || m.title || '').toLowerCase().includes('cricket');
 
-                const isAthleticsMatch = 
+                const isAthleticsMatch =
                   (m.sportId || m.sport || m.sportName || '').toLowerCase().includes('athletics') ||
                   (m.matchTitle || m.title || '').toLowerCase().includes('athletics');
 
@@ -348,6 +379,8 @@ export const LiveMatchPortalPage = () => {
                   ? battingTeamStr.includes(t2Name.trim().toLowerCase())
                   : currentInnings === 2;
 
+                const hasLiveStream = Boolean(m.youtubeVideoId || m.streamUrl || m.isLiveStreaming || extractYouTubeVideoId(m.streamUrl));
+
                 return (
                   <div
                     key={m.id}
@@ -366,7 +399,7 @@ export const LiveMatchPortalPage = () => {
                             🔴 LIVE
                           </span>
                         )}
-                        {m.youtubeVideoId && (
+                        {hasLiveStream && (
                           <span className="px-2.5 py-1 rounded-full text-[9px] font-mono font-black bg-rose-600 text-white flex items-center gap-1 shadow-xs">
                             <Video className="w-2.5 h-2.5" /> STREAM
                           </span>
@@ -420,11 +453,10 @@ export const LiveMatchPortalPage = () => {
                         {/* Side-by-Side Scores for Team 1 & Team 2 */}
                         <div className="grid grid-cols-2 gap-3 items-stretch pt-0.5">
                           {/* Team 1 Score Card */}
-                          <div className={`p-3 rounded-xl border transition-all flex flex-col justify-between ${
-                            !isT2Batting
-                              ? 'bg-emerald-950/60 border-emerald-500/50 shadow-sm'
-                              : 'bg-slate-900/80 border-slate-800/80 opacity-90'
-                          }`}>
+                          <div className={`p-3 rounded-xl border transition-all flex flex-col justify-between ${!isT2Batting
+                            ? 'bg-emerald-950/60 border-emerald-500/50 shadow-sm'
+                            : 'bg-slate-900/80 border-slate-800/80 opacity-90'
+                            }`}>
                             <div className="flex items-center justify-between gap-1 mb-1.5">
                               <span className="text-xs sm:text-sm font-black text-white truncate" title={t1Name}>
                                 {t1Name}
@@ -454,11 +486,10 @@ export const LiveMatchPortalPage = () => {
                           </div>
 
                           {/* Team 2 Score Card */}
-                          <div className={`p-3 rounded-xl border transition-all flex flex-col justify-between ${
-                            isT2Batting
-                              ? 'bg-emerald-950/60 border-emerald-500/50 shadow-sm'
-                              : 'bg-slate-900/80 border-slate-800/80 opacity-90'
-                          }`}>
+                          <div className={`p-3 rounded-xl border transition-all flex flex-col justify-between ${isT2Batting
+                            ? 'bg-emerald-950/60 border-emerald-500/50 shadow-sm'
+                            : 'bg-slate-900/80 border-slate-800/80 opacity-90'
+                            }`}>
                             <div className="flex items-center justify-between gap-1 mb-1.5">
                               <span className="text-xs sm:text-sm font-black text-white truncate" title={t2Name}>
                                 {t2Name}
@@ -569,8 +600,8 @@ export const LiveMatchPortalPage = () => {
                         onClick={() => setSelectedMatch(m)}
                         className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0"
                       >
-                        {m.youtubeVideoId ? <Tv className="w-3.5 h-3.5 text-rose-300" /> : <Play className="w-3.5 h-3.5" />}
-                        <span>{m.youtubeVideoId ? 'Watch Stream' : isAthleticsMatch ? 'View Event Details' : 'View Scoreboard'}</span>
+                        {hasLiveStream ? <Tv className="w-3.5 h-3.5 text-rose-300" /> : <Play className="w-3.5 h-3.5" />}
+                        <span>{hasLiveStream ? 'Watch Stream' : isAthleticsMatch ? 'View Event Details' : 'View Scoreboard'}</span>
                       </button>
                     </div>
 
