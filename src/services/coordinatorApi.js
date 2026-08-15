@@ -620,6 +620,45 @@ export const coordinatorApi = {
     return [];
   },
 
+  // Get public completed match results from Supabase database
+  async getPublicResults() {
+    try {
+      const res = await api.get('/results');
+      if (res.data && Array.isArray(res.data)) {
+        return res.data;
+      }
+    } catch (e) {
+      console.warn('getPublicResults endpoint fallback:', e);
+    }
+    return [];
+  },
+
+  // Get public match schedules from Supabase database
+  async getPublicSchedules() {
+    try {
+      const res = await api.get('/schedules');
+      if (res.data && Array.isArray(res.data)) {
+        return res.data;
+      }
+    } catch (e) {
+      console.warn('getPublicSchedules endpoint fallback:', e);
+    }
+    return [];
+  },
+
+  // Get public live matches from Supabase database
+  async getPublicLiveMatches() {
+    try {
+      const res = await api.get('/live-matches');
+      if (res.data && Array.isArray(res.data)) {
+        return res.data;
+      }
+    } catch (e) {
+      console.warn('getPublicLiveMatches endpoint error:', e);
+    }
+    return [];
+  },
+
   // Complete match, save result, remove from active live assignments
   async completeMatch(matchId, winnerData) {
     const user = this.getCurrentUser();

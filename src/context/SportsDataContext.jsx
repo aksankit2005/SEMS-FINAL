@@ -5,7 +5,7 @@ import { SCHEDULE_DATA } from '../data/scheduleData';
 import { RESULTS_DATA } from '../data/resultsData';
 import { ANNOUNCEMENTS_DATA } from '../data/announcementsData';
 import { ALL_COLLEGES } from '../services/superCoordinatorApi';
-import { mergeMatchState } from '../services/coordinatorApi';
+import { coordinatorApi } from '../services/coordinatorApi';
 
 const SportsDataContext = createContext();
 
@@ -90,7 +90,20 @@ export const SportsDataProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    const syncLiveMatches = () => {
+    const syncLiveMatches = async () => {
+      try {
+        const resData = await coordinatorApi.getPublicLiveMatches();
+        if (resData && Array.isArray(resData)) {
+          const dbLive = resData.filter(
+            (m) => m && m.id && (m.status === 'running' || m.status === 'live' || m.status === 'in_progress' || m.status === 'active')
+          );
+          setLiveMatches(dbLive);
+          return;
+        }
+      } catch (e) {
+        console.warn('Live matches API fetch error:', e.message);
+      }
+
       let activeList = [];
       const saved = localStorage.getItem('sems_active_live_matches');
       if (saved) {
@@ -102,48 +115,17 @@ export const SportsDataProvider = ({ children }) => {
         } catch (e) { }
       }
 
-      const hasTTLive = activeList.some(
-        (m) => (m.sportId || m.sportName || '').toLowerCase().includes('table-tennis') || (m.sportId || m.sportName || '').toLowerCase().includes('tt')
-      );
-
-      const filteredFallback = LIVE_MATCHES_DATA.filter((m) => {
-        const isTT = (m.sportId || m.sportName || '').toLowerCase().includes('table-tennis') || (m.sportId || m.sportName || '').toLowerCase().includes('tt');
-        if (isTT && !hasTTLive) return false;
-        return true;
-      });
-
-      setLiveMatches((prevLiveMatches) => {
-        const prevMap = {};
-        (prevLiveMatches || []).forEach((m) => {
-          if (m && m.id) prevMap[m.id] = m;
-        });
-
-        const newMap = { ...prevMap };
-
-        // Process activeList first so live updates take precedence
-        activeList.forEach((m) => {
-          if (m && m.id) {
-            newMap[m.id] = mergeMatchState(newMap[m.id], m);
-          }
-        });
-
-        // Add fallbacks if not already present
-        filteredFallback.forEach((m) => {
-          if (m && m.id && !newMap[m.id]) {
-            newMap[m.id] = m;
-          }
-        });
-
-        return Object.values(newMap).filter(
-          (m) => m && m.id !== 'M595473' && (m.status === 'running' || m.status === 'live' || m.status === 'in_progress' || m.status === 'active')
-        );
-      });
+      setLiveMatches(activeList);
     };
 
     syncLiveMatches();
+    const intervalId = setInterval(syncLiveMatches, 3000);
+
     window.addEventListener('storage', syncLiveMatches);
     window.addEventListener('sems_matches_updated', syncLiveMatches);
+
     return () => {
+      clearInterval(intervalId);
       window.removeEventListener('storage', syncLiveMatches);
       window.removeEventListener('sems_matches_updated', syncLiveMatches);
     };

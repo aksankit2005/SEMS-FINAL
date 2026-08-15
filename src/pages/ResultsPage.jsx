@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Star, Search, Download, Calendar, CheckCircle2, Award } from 'lucide-react';
-import { RESULTS_DATA } from '../data/resultsData';
+import { coordinatorApi } from '../services/coordinatorApi';
 import { generateMatchResultPDF } from '../utils/pdfExporter';
 import { resolveSportConfig } from '../data/sportsConfig';
 
@@ -10,55 +10,73 @@ export const ResultsPage = () => {
   const [dynamicResults, setDynamicResults] = useState([]);
 
   useEffect(() => {
-    const list = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('sems_completed_results_')) {
-        try {
-          const parsed = JSON.parse(localStorage.getItem(key));
-          if (Array.isArray(parsed)) {
-            const sportId = key.replace('sems_completed_results_', '');
-            const sportName = sportId.charAt(0).toUpperCase() + sportId.slice(1).replace('-', ' ');
-            const mockIds = ['M540746', 'M635812', 'M741299', 'M882104', 'M645537'];
-            const mockNames = [
-              '1', '2', 'a', 'b', 'player 1', 'player 2', 'player 3', 'player 4', 'team 1', 'team 2', 'team a', 'team b', 'albert', 'romi',
-              'aarav sharma (mpec)', 'rohan gupta (mips)', 'ankur dixit (mpcps)', 'aditya singh (mpec)',
-              'aagaz khan (mpcps kn142)', 'shiv prakash (mpcps kn142)', 'kapil verma (mpcps kn142)', 'anubhav sachan (mpcps kn142)',
-              'kapil verma', 'anubhav sachan', 'team a', 'team b', 'team 1', 'team 2', 'player / team a', 'player / team b',
-              'athletes track a', 'athletes track b'
-            ];
-            parsed.forEach((item) => {
-              if (!item) return;
-              if (mockIds.includes(item.id)) return;
-              const t1 = (item.team1 || '').trim().toLowerCase();
-              const t2 = (item.team2 || '').trim().toLowerCase();
-              const w = (item.winner || '').trim().toLowerCase();
-              if (mockNames.includes(t1) || mockNames.includes(t2) || mockNames.includes(w)) return;
+    const fetchResults = async () => {
+      const list = [];
+      const seenIds = new Set();
 
-              if (!list.some((r) => r.id === item.id)) {
-                const isAth = (item.sportName || sportName || '').toLowerCase().includes('athletics');
-                const cleanScoreSummary = (item.scoreSummary || '')
-                  .replace(/Athletes Track [AB]:? ?\d*/gi, '')
-                  .replace(/\|\s*\|/g, '|').trim();
+      // 1. Fetch real completed results from Supabase PostgreSQL database
+      try {
+        const dbResults = await coordinatorApi.getPublicResults();
+        if (dbResults && Array.isArray(dbResults)) {
+          dbResults.forEach((item) => {
+            if (!item || !item.id || seenIds.has(item.id)) return;
+            seenIds.add(item.id);
+            list.push({
+              id: item.id,
+              sport: item.sport || 'Sports Event',
+              event: item.event || item.matchTitle || 'Championship Match',
+              winner: item.winner || 'Declared Winner',
+              scoreSummary: item.scoreSummary || (item.score1 !== undefined ? `${item.team1}: ${item.score1} | ${item.team2}: ${item.score2}` : 'Completed'),
+              date: item.date || (item.completedAt ? item.completedAt.split('T')[0] : new Date().toISOString().split('T')[0]),
+              mvp: item.mvp || item.winner || 'Top Performer',
+              rawMatch: item.rawMatch || item
+            });
+          });
+        }
+      } catch (e) {
+        console.warn('Could not fetch DB results:', e);
+      }
 
+      // 2. Merge local storage results if offline
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sems_completed_results_')) {
+          try {
+            const parsed = JSON.parse(localStorage.getItem(key));
+            if (Array.isArray(parsed)) {
+              const sportId = key.replace('sems_completed_results_', '');
+              const sportName = sportId.charAt(0).toUpperCase() + sportId.slice(1).replace('-', ' ');
+              parsed.forEach((item) => {
+                if (!item || !item.id || seenIds.has(item.id)) return;
+                seenIds.add(item.id);
                 list.push({
-                  id: item.id || `RES-${Math.random()}`,
+                  id: item.id,
                   sport: item.sportName || sportName,
                   event: item.eventTitle || item.title || `${sportName} Final`,
-                  winner: item.winner || (item.medals?.gold) || 'Declared Winner',
-                  scoreSummary: isAth 
-                    ? (cleanScoreSummary || `🥇 Winner: ${item.winner || 'Gold Medalist'}`)
-                    : (item.scoreSummary || (item.score1 !== undefined ? `${item.team1}: ${item.score1} | ${item.team2}: ${item.score2}` : 'Match Completed')),
-                  date: item.completedAt ? item.completedAt.split('T')[0] : '2026-08-04',
-                  mvp: item.mvp || item.winner || 'Top Performer'
+                  winner: item.winner || 'Declared Winner',
+                  scoreSummary: item.scoreSummary || (item.score1 !== undefined ? `${item.team1}: ${item.score1} | ${item.team2}: ${item.score2}` : 'Match Completed'),
+                  date: item.completedAt ? item.completedAt.split('T')[0] : new Date().toISOString().split('T')[0],
+                  mvp: item.mvp || item.winner || 'Top Performer',
+                  rawMatch: item
                 });
-              }
-            });
-          }
-        } catch (e) {}
+              });
+            }
+          } catch (e) {}
+        }
       }
-    }
-    setDynamicResults(list);
+
+      setDynamicResults(list);
+    };
+
+    fetchResults();
+
+    window.addEventListener('storage', fetchResults);
+    window.addEventListener('sems_results_updated', fetchResults);
+
+    return () => {
+      window.removeEventListener('storage', fetchResults);
+      window.removeEventListener('sems_results_updated', fetchResults);
+    };
   }, []);
 
   const sportsList = [
@@ -77,7 +95,7 @@ export const ResultsPage = () => {
     'Gully Cricket'
   ];
 
-  const combinedResults = [...dynamicResults, ...RESULTS_DATA];
+  const combinedResults = dynamicResults;
 
   const filteredResults = combinedResults.filter((r) => {
     const matchesQuery =

@@ -40,10 +40,37 @@ export const SchedulePage = () => {
       }
 
       try {
+        const dbSchedules = await coordinatorApi.getPublicSchedules();
+        if (dbSchedules && Array.isArray(dbSchedules)) {
+          dbSchedules.forEach((m) => {
+            if (m && m.id && !completedMatchIds.has(m.id)) {
+              allSchedules.push({
+                id: m.id,
+                event: m.event || m.matchTitle || `${m.sport} Match`,
+                sport: m.sport || 'Sports Event',
+                sportId: m.sportId || 'badminton',
+                gender: m.gender || 'Open',
+                team1: m.team1 || 'TBD',
+                team2: m.team2 || 'TBD',
+                venue: m.venue || m.tableNumber || 'Arena 1',
+                date: m.date || new Date().toISOString().split('T')[0],
+                time: m.time || '10:00 AM',
+                format: m.format || 'STANDARD',
+                mapUrl: 'https://maps.google.com'
+              });
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Could not fetch DB schedules:', e);
+      }
+
+      try {
         const publicMatches = await coordinatorApi.getPublicMatches();
         if (publicMatches && Array.isArray(publicMatches)) {
           publicMatches.forEach((m) => {
             if (m && m.status !== 'COMPLETED' && m.status !== 'FINISHED' && !completedMatchIds.has(m.id)) {
+              if (allSchedules.some((s) => s.id === m.id)) return;
               const sportId = (m.sportId || m.sport || 'badminton').toLowerCase();
               const rawSportName = m.sportName || m.sport || (sportId.charAt(0).toUpperCase() + sportId.slice(1).replace('-', ' '));
 
@@ -61,30 +88,6 @@ export const SchedulePage = () => {
 
               const rawVenue = m.tableNumber || m.venue || 'Arena 1';
               let displayVenue = rawVenue;
-              const isChess = sportId.includes('chess') || rawSportName.toLowerCase().includes('chess');
-              const isTT = sportId.includes('table-tennis') || rawSportName.toLowerCase().includes('table tennis');
-              const isKabaddi = sportId.includes('kabaddi') || rawSportName.toLowerCase().includes('kabaddi');
-
-              if (isChess || isTT) {
-                if (/court/gi.test(rawVenue)) {
-                  displayVenue = rawVenue.replace(/court/gi, 'Table');
-                } else if (!/table/gi.test(rawVenue)) {
-                  const num = rawVenue.replace(/\D/g, '') || '1';
-                  displayVenue = `Table ${num}`;
-                }
-              } else if (sportId.includes('cricket') || sportId.includes('football')) {
-                if (/table/gi.test(rawVenue)) {
-                  displayVenue = rawVenue.replace(/table/gi, 'Ground');
-                }
-              } else if (isKabaddi) {
-                if (/table/gi.test(rawVenue)) {
-                  displayVenue = rawVenue.replace(/table/gi, 'Mat');
-                }
-              } else {
-                if (/table/gi.test(rawVenue)) {
-                  displayVenue = rawVenue.replace(/table/gi, 'Court');
-                }
-              }
 
               allSchedules.push({
                 id: m.id || `M-${Math.random()}`,
@@ -140,7 +143,7 @@ export const SchedulePage = () => {
     'Gully Cricket'
   ];
 
-  const combinedList = [...dynamicSchedules, ...SCHEDULE_DATA];
+  const combinedList = dynamicSchedules;
 
   const filteredFixtures = combinedList.filter((item) => {
     const matchesQuery =

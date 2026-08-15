@@ -144,6 +144,93 @@ router.get('/live-matches/:matchId/players', async (req, res) => {
   }
 });
 
+// GET /api/results - Spectator completed match results endpoint from Supabase
+router.get('/results', async (req, res) => {
+  try {
+    const dbRes = await queryDb(
+      `SELECT id, sport_id AS "sportId", format, status, team1, team2, 
+              match_title AS "matchTitle", table_number AS "tableNumber", 
+              time, score1, score2, winner,
+              details, sets_history AS "setsHistory",
+              updated_at AS "updatedAt"
+       FROM live_matches 
+       WHERE LOWER(status) IN ('completed', 'finished') 
+       ORDER BY updated_at DESC`
+    );
+
+    if (dbRes && dbRes.rows) {
+      const formatted = dbRes.rows.map((m) => {
+        const sportId = m.sportId || 'badminton';
+        const sportName = (m.sportId || '').replace(/-/g, ' ').toUpperCase();
+        const scoreSummary = m.score1 !== undefined && m.score2 !== undefined
+          ? `${m.team1}: ${m.score1} | ${m.team2}: ${m.score2}`
+          : 'Match Completed';
+
+        return {
+          id: m.id,
+          sport: sportName,
+          sportId: sportId,
+          event: m.matchTitle || `${m.team1} vs ${m.team2}`,
+          winner: m.winner || (m.score1 >= m.score2 ? m.team1 : m.team2) || 'Declared Winner',
+          scoreSummary,
+          date: m.updatedAt ? new Date(m.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          completedAt: m.updatedAt,
+          score1: m.score1,
+          score2: m.score2,
+          team1: m.team1,
+          team2: m.team2,
+          mvp: m.winner || 'Top Performer',
+          rawMatch: m
+        };
+      });
+      return res.json(formatted);
+    }
+  } catch (err) {
+    console.error('Error fetching public results from DB:', err);
+  }
+  return res.json([]);
+});
+
+// GET /api/schedules - Spectator match schedules endpoint from Supabase
+router.get('/schedules', async (req, res) => {
+  try {
+    const dbRes = await queryDb(
+      `SELECT id, sport_id AS "sportId", format, status, team1, team2, 
+              match_title AS "matchTitle", table_number AS "tableNumber", 
+              time, score1, score2, details, updated_at AS "updatedAt", created_at AS "createdAt"
+       FROM live_matches 
+       WHERE LOWER(status) IN ('scheduled', 'upcoming')
+       ORDER BY created_at DESC`
+    );
+
+    if (dbRes && dbRes.rows) {
+      const formatted = dbRes.rows.map((m) => {
+        const sportId = (m.sportId || 'badminton').toLowerCase();
+        const rawSportName = (sportId.charAt(0).toUpperCase() + sportId.slice(1).replace('-', ' '));
+
+        return {
+          id: m.id,
+          event: m.matchTitle || `${m.team1} vs ${m.team2}`,
+          sport: rawSportName,
+          sportId: sportId,
+          gender: 'Open',
+          team1: m.team1 || 'TBD',
+          team2: m.team2 || 'TBD',
+          venue: m.tableNumber || 'Arena 1',
+          date: m.createdAt ? new Date(m.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          time: m.time || '10:00 AM',
+          format: m.format || 'STANDARD',
+          status: m.status || 'SCHEDULED'
+        };
+      });
+      return res.json(formatted);
+    }
+  } catch (err) {
+    console.error('Error fetching public schedules from DB:', err);
+  }
+  return res.json([]);
+});
+
 // GET /api/public/events - Public event catalog
 router.get('/public/events', async (req, res) => {
   const publishedEvents = [];
