@@ -1294,6 +1294,12 @@ export const deleteEvent = async (req, res) => {
   });
 
   try {
+    await queryDb('DELETE FROM coordinator_event_items WHERE id = $1', [id]);
+  } catch (err) {
+    console.error('Error deleting event from SQL DB:', err.message);
+  }
+
+  try {
     await prisma.coordinatorEventItem.deleteMany({ where: { id } });
   } catch (err) {
     console.error('Error deleting event from DB:', err.message);
