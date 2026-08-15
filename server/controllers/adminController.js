@@ -1203,11 +1203,6 @@ export const deleteAnnouncementDB = async (req, res) => {
     return res.status(500).json({ message: 'Failed to delete announcement from database' });
   }
 };
-  } catch (err) {
-    console.error('Error deleting announcement from DB:', err.message);
-    return res.status(500).json({ message: 'Failed to delete announcement from database' });
-  }
-};
 
 // ── Admin PR Media & Folders Management ────────────────────────────────────
 export const getPRMediaFoldersDB = async (req, res) => {
