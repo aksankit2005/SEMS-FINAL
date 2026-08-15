@@ -18,6 +18,7 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
   const isCricket = sportId === 'cricket' || sportName.toLowerCase().includes('cricket');
   const isTableTennis = sportId === 'table-tennis' || sportId === 'tabletennis' || sportName.toLowerCase().includes('table tennis');
   const isAthletics = sportId === 'athletics' || sportName.toLowerCase().includes('athletics');
+  const isBadminton = sportId === 'badminton' || sportName.toLowerCase().includes('badminton');
 
   // Initial seed records for Athletics
   const defaultAthleticsParticipants = [
