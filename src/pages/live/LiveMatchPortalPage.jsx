@@ -136,8 +136,14 @@ export const LiveMatchPortalPage = () => {
       setSelectedMatch((prev) => {
         if (!prev || !prev.id) return prev;
         const fresh = incomingMap[prev.id];
-        if (fresh) return mergeMatchState(prev, fresh);
-        return prev;
+        if (fresh) {
+          const s = (fresh.status || '').toLowerCase();
+          if (s === 'completed' || s === 'finished' || s === 'walkover') {
+            return null;
+          }
+          return mergeMatchState(prev, fresh);
+        }
+        return null;
       });
 
       // Dynamic upcoming scheduled matches fetching

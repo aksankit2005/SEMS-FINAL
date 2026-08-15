@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Trash2, Download, Filter, RefreshCw, FileSpreadsheet, PlusCircle } from 'lucide-react';
+import { Trophy, Trash2, Download, Filter, RefreshCw, FileSpreadsheet, Eye, X, Award } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { useConfirm } from '../../../context/ConfirmContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
@@ -9,20 +9,25 @@ export const ResultManagementTab = ({ user }) => {
   const { addToast } = useToast();
   const { confirmDelete } = useConfirm();
   const [resultsList, setResultsList] = useState([]);
+  const [selectedDetailResult, setSelectedDetailResult] = useState(null);
   
   // Filter States
   const [selectedEvent, setSelectedEvent] = useState('ALL');
   const [selectedGender, setSelectedGender] = useState('ALL');
   const [availableEvents, setAvailableEvents] = useState([]);
 
-  const assignedSport = (user?.assignedSport || 'sports').toLowerCase();
+  const assignedSport = (user?.assignedSport || 'badminton').toLowerCase();
   const isChess = assignedSport === 'chess';
+  const isBadminton = assignedSport === 'badminton';
   const sportId = user?.assignedSport || 'badminton';
   const sportName = user?.sportName || (isChess ? 'Chess' : 'Badminton');
   const resultsKey = `sems_completed_results_${sportId}`;
 
   // Helper to generate default mock results
   const getMockResultsData = () => {
+    if (isBadminton) {
+      return []; // No mock data for Badminton
+    }
     if (isChess) {
       return [
         {
@@ -41,205 +46,10 @@ export const ResultManagementTab = ({ user }) => {
           tableNumber: 'Table 1',
           venue: 'Chess Hall A - Main Board Room',
           completedAt: new Date(Date.now() - 3600000).toISOString()
-        },
-        {
-          id: 'M-CHESS-102',
-          eventTitle: 'Inter-College Chess Championship 2026',
-          format: 'INDIVIDUAL',
-          category: 'Open',
-          team1: 'Aditya Raj (PSIT Kanpur)',
-          team2: 'Praggnanandhaa K. (HBTI)',
-          score1: 0,
-          score2: 1,
-          scoreText: 'Result: 0 - 1 (Black Wins)',
-          scoreSummary: 'Result: 0 - 1 (Resignation)',
-          resultNote: 'Resignation (Move 45)',
-          winner: 'Praggnanandhaa K. (HBTI)',
-          tableNumber: 'Table 2',
-          venue: 'Chess Hall A - Main Board Room',
-          completedAt: new Date(Date.now() - 7200000).toISOString()
-        },
-        {
-          id: 'M-CHESS-103',
-          eventTitle: 'All India Rapid Chess League 2026',
-          format: 'INDIVIDUAL',
-          category: 'Rapid',
-          team1: 'Rohan Saxena (MIPS)',
-          team2: 'Kavya Sharma (MPEC)',
-          score1: 0.5,
-          score2: 0.5,
-          scoreText: 'Result: ½ - ½ (Draw)',
-          scoreSummary: 'Result: ½ - ½ (Stalemate)',
-          resultNote: 'Stalemate / Mutual Agreement',
-          winner: 'Draw (½ - ½)',
-          tableNumber: 'Table 3',
-          venue: 'Chess Hall B - Board Room 2',
-          completedAt: new Date(Date.now() - 10800000).toISOString()
-        },
-        {
-          id: 'M-CHESS-104',
-          eventTitle: 'Inter-College Blitz Knockout',
-          format: 'INDIVIDUAL',
-          category: 'Blitz',
-          team1: 'Siddharth Mishra (KNIT Sultanpur)',
-          team2: 'Deepesh Trivedi (MPGI)',
-          score1: 1,
-          score2: 0,
-          scoreText: 'Result: 1 - 0 (White Wins)',
-          scoreSummary: 'Result: 1 - 0 (Clock Flag Fall)',
-          resultNote: 'Clock Flag Fall (Time Out)',
-          winner: 'Siddharth Mishra (KNIT Sultanpur)',
-          tableNumber: 'Table 4',
-          venue: 'Chess Hall B - Board Room 2',
-          completedAt: new Date(Date.now() - 14400000).toISOString()
-        },
-        {
-          id: 'M-CHESS-105',
-          eventTitle: "Women's College Chess Masters",
-          format: 'INDIVIDUAL',
-          category: 'Girls',
-          team1: 'Ananya Gupta (MPEC)',
-          team2: 'Riya Srivastava (IET Lucknow)',
-          score1: 0,
-          score2: 1,
-          scoreText: 'Result: 0 - 1 (Black Wins)',
-          scoreSummary: 'Result: 0 - 1 (Checkmate)',
-          resultNote: 'Checkmate (Move 29)',
-          winner: 'Riya Srivastava (IET Lucknow)',
-          tableNumber: 'Table 5',
-          venue: 'Chess Hall A - Main Board Room',
-          completedAt: new Date(Date.now() - 18000000).toISOString()
         }
       ];
     }
-    if (assignedSport === 'cricket') {
-      return [
-        {
-          id: 'M-CRK-101',
-          eventTitle: 'Inter-College T20 Cricket Championship 2026',
-          format: 'T20',
-          category: 'Men',
-          team1: 'MPEC XI',
-          team2: 'PSIT Super Kings',
-          score1: 145,
-          wickets1: 6,
-          overs1: '20.0',
-          score2: 148,
-          wickets2: 4,
-          overs2: '18.4',
-          scoreSummary: 'PSIT Super Kings won by 6 wickets',
-          resultString: 'PSIT Super Kings won by 6 wickets',
-          winner: 'PSIT Super Kings',
-          tableNumber: 'Cricket Ground 1',
-          venue: 'Cricket Ground 1',
-          completedAt: new Date(Date.now() - 3600000).toISOString()
-        }
-      ];
-    }
-    if (assignedSport === 'football') {
-      return [
-        {
-          id: 'M-FTB-101',
-          eventTitle: 'Inter-College Football Championship 2026',
-          format: 'TEAM',
-          category: 'Boys',
-          team1: 'MPEC FC',
-          team2: 'PSIT Strikers',
-          score1: 2,
-          score2: 1,
-          scoreSummary: 'MPEC FC won 2 - 1',
-          winner: 'MPEC FC',
-          tableNumber: 'Ground 1',
-          venue: 'Ground 1',
-          completedAt: new Date(Date.now() - 3600000).toISOString()
-        },
-        {
-          id: 'M-FTB-102',
-          eventTitle: 'Inter-College Football Championship 2026',
-          format: 'TEAM',
-          category: 'Boys',
-          team1: 'HBTU United',
-          team2: 'KIET Warriors',
-          score1: 3,
-          score2: 0,
-          scoreSummary: 'HBTU United won 3 - 0',
-          winner: 'HBTU United',
-          tableNumber: 'Ground 2',
-          venue: 'Ground 2',
-          completedAt: new Date(Date.now() - 7200000).toISOString()
-        }
-      ];
-    }
-    if (assignedSport === 'kabaddi') {
-      return [
-        {
-          id: 'M-KBD-101',
-          eventTitle: 'APEX Inter-College Kabaddi Championship 2026',
-          format: 'Pro Style (7 Players)',
-          category: 'Open',
-          team1: 'MPEC Raid Stars',
-          team2: 'MIPS Defenders',
-          score1: 38,
-          score2: 32,
-          scoreSummary: 'MPEC Raid Stars won 38 - 32 (Full Time)',
-          winner: 'MPEC Raid Stars',
-          tableNumber: 'Kabaddi Court 1',
-          venue: 'Indoor Sports Complex',
-          completedAt: new Date(Date.now() - 3600000).toISOString()
-        },
-        {
-          id: 'M-KBD-102',
-          eventTitle: 'APEX Inter-College Kabaddi Championship 2026',
-          format: 'Pro Style (7 Players)',
-          category: 'Boys',
-          team1: 'MPCP Warriors',
-          team2: 'MPCPS Strikers',
-          score1: 42,
-          score2: 39,
-          scoreSummary: 'MPCP Warriors won 42 - 39 (Full Time)',
-          winner: 'MPCP Warriors',
-          tableNumber: 'Kabaddi Court 2',
-          venue: 'Indoor Sports Complex',
-          completedAt: new Date(Date.now() - 7200000).toISOString()
-        }
-      ];
-    }
-    return [
-      {
-        id: 'M-BADM-101',
-        eventTitle: 'Inter-College Badminton Championship 2026',
-        format: 'SINGLES',
-        category: 'Boys',
-        team1: 'Aarav Sharma (MPEC)',
-        team2: 'Rohan Gupta (MIPS)',
-        score1: 2,
-        score2: 1,
-        setsWon1: 2,
-        setsWon2: 1,
-        scoreSummary: '2 - 1 Sets (S1: 21-19 | S2: 18-21 | S3: 21-16)',
-        winner: 'Aarav Sharma (MPEC)',
-        tableNumber: 'Court 1',
-        venue: 'Indoor Badminton Stadium',
-        completedAt: new Date(Date.now() - 3600000).toISOString()
-      },
-      {
-        id: 'M-BADM-102',
-        eventTitle: 'Inter-College Badminton Championship 2026',
-        format: 'SINGLES',
-        category: 'Girls',
-        team1: 'Priya Verma (PSIT)',
-        team2: 'Sneha Patel (HBTI)',
-        score1: 2,
-        score2: 0,
-        setsWon1: 2,
-        setsWon2: 0,
-        scoreSummary: '2 - 0 Sets (S1: 21-14 | S2: 21-12)',
-        winner: 'Priya Verma (PSIT)',
-        tableNumber: 'Court 2',
-        venue: 'Indoor Badminton Stadium',
-        completedAt: new Date(Date.now() - 7200000).toISOString()
-      }
-    ];
+    return [];
   };
 
   // Load results & events on mount
@@ -271,7 +81,8 @@ export const ResultManagementTab = ({ user }) => {
       try {
         const apiMatches = await coordinatorApi.getMatches();
         const completedApiMatches = apiMatches.filter((m) =>
-          m.status === 'COMPLETED' || m.status === 'FINISHED' || m.status === 'WALKOVER'
+          (m.status === 'COMPLETED' || m.status === 'FINISHED' || m.status === 'WALKOVER') &&
+          ((m.sport || m.sportId || '').toLowerCase().includes(assignedSport))
         );
 
         completedApiMatches.forEach((apiMatch) => {
@@ -282,12 +93,10 @@ export const ResultManagementTab = ({ user }) => {
       } catch (e) {}
 
       // Purge legacy mock test entries
-      const mockIds = ['M540746', 'M635812', 'M741299', 'M882104', 'M645537', 'M-CHESS-101', 'M-CHESS-102', 'M-CHESS-103', 'M-CHESS-104', 'M-CHESS-105'];
+      const mockIds = ['M540746', 'M635812', 'M741299', 'M882104', 'M645537', 'M-CHESS-101', 'M-CHESS-102', 'M-BADM-101', 'M-BADM-102'];
       const mockNames = [
-        '1', '2', 'a', 'b', 'player 1', 'player 2', 'player 3', 'player 4', 'team 1', 'team 2', 'team a', 'team b', 'albert', 'romi',
-        'aarav sharma (mpec)', 'rohan gupta (mips)', 'ankur dixit (mpcps)', 'aditya singh (mpec)',
-        'aagaz khan (mpcps kn142)', 'shiv prakash (mpcps kn142)', 'kapil verma (mpcps kn142)', 'anubhav sachan (mpcps kn142)',
-        'kapil verma', 'anubhav sachan', 'team a', 'team b', 'team 1', 'team 2', 'player / team a', 'player / team b'
+        '1', '2', 'a', 'b', 'player 1', 'player 2', 'team 1', 'team 2', 'team a', 'team b',
+        'aarav sharma (mpec)', 'rohan gupta (mips)', 'priya verma (psit)', 'sneha patel (hbti)'
       ];
 
       let cleaned = Array.isArray(list)
@@ -301,7 +110,7 @@ export const ResultManagementTab = ({ user }) => {
           })
         : [];
 
-      if (cleaned.length === 0) {
+      if (cleaned.length === 0 && !isBadminton) {
         cleaned = getMockResultsData();
       }
 
@@ -320,7 +129,7 @@ export const ResultManagementTab = ({ user }) => {
       window.removeEventListener('storage', handleSync);
       window.removeEventListener('sems_results_updated', handleSync);
     };
-  }, [resultsKey, sportName]);
+  }, [resultsKey, sportName, assignedSport, isBadminton]);
 
   const handleSetWinner = async (id, currentWinner) => {
     const matchObj = resultsList.find((item) => item.id === id);
@@ -512,10 +321,10 @@ export const ResultManagementTab = ({ user }) => {
           <div>
             <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
               <Trophy className={`w-5 h-5 ${isChess ? 'text-purple-500 dark:text-purple-400' : 'text-amber-500 dark:text-amber-400'}`} />
-              <span>Declare Results & Winner Management</span>
+              <span>{isBadminton ? 'Completed Match Results & Summary' : 'Declare Results & Winner Management'}</span>
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">
-              Showing {filteredResults.length} of {resultsList.length} completed {isChess ? 'chess board' : 'single'} matches
+              Showing {filteredResults.length} of {resultsList.length} completed {isChess ? 'chess board' : 'match'} results
             </p>
           </div>
 
@@ -609,7 +418,7 @@ export const ResultManagementTab = ({ user }) => {
               {filteredResults.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="p-8 text-center text-slate-500 font-mono">
-                    No results match the selected filters ({selectedEvent !== 'ALL' ? `Event: ${selectedEvent}` : ''} {selectedGender !== 'ALL' ? `Gender: ${selectedGender}` : ''}).
+                    No completed match results found for {sportName}.
                   </td>
                 </tr>
               ) : (
@@ -688,16 +497,26 @@ export const ResultManagementTab = ({ user }) => {
                           <span>PDF</span>
                         </button>
 
-                        <button
-                          onClick={() => handleSetWinner(r.id, r.winner || r.team1)}
-                          className={`px-4 py-2 rounded-xl text-white font-bold text-xs shadow-md transition cursor-pointer ${
-                            isChess
-                              ? 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/20'
-                              : 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/20'
-                          }`}
-                        >
-                          Set Winner
-                        </button>
+                        {isBadminton ? (
+                          <button
+                            onClick={() => setSelectedDetailResult(r)}
+                            className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>View Details</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleSetWinner(r.id, r.winner || r.team1)}
+                            className={`px-4 py-2 rounded-xl text-white font-bold text-xs shadow-md transition cursor-pointer ${
+                              isChess
+                                ? 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/20'
+                                : 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/20'
+                            }`}
+                          >
+                            Set Winner
+                          </button>
+                        )}
 
                         <button
                           onClick={() => handleDeleteResult(r.id)}
@@ -716,6 +535,91 @@ export const ResultManagementTab = ({ user }) => {
         </div>
 
       </div>
+
+      {/* View Details Modal for Badminton Match Result */}
+      {selectedDetailResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-6 h-6 text-amber-500" />
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">Match Result Breakdown</h3>
+              </div>
+              <button
+                onClick={() => setSelectedDetailResult(null)}
+                className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-sm">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 space-y-2">
+                <div className="flex justify-between text-xs text-slate-500 font-mono">
+                  <span>Match ID: #{selectedDetailResult.id}</span>
+                  <span>Category: {selectedDetailResult.category || selectedDetailResult.gender || 'Open'}</span>
+                </div>
+                <h4 className="font-bold text-slate-900 dark:text-white text-base">
+                  {selectedDetailResult.eventTitle || 'Badminton Championship'}
+                </h4>
+                <p className="text-xs text-slate-500">📍 Venue: {selectedDetailResult.tableNumber || selectedDetailResult.venue || 'Court 1'}</p>
+              </div>
+
+              {/* Players / Teams Comparison */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className={`p-4 rounded-2xl border ${selectedDetailResult.winner === selectedDetailResult.team1 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800'}`}>
+                  <p className="text-[10px] font-bold uppercase text-slate-400">Player 1</p>
+                  <p className="font-black text-slate-900 dark:text-white text-sm mt-1">{selectedDetailResult.team1 || 'Player A'}</p>
+                  {selectedDetailResult.winner === selectedDetailResult.team1 && (
+                    <span className="inline-flex items-center gap-1 mt-2 text-xs font-black text-emerald-600 dark:text-emerald-400">
+                      <Award className="w-3.5 h-3.5 text-amber-500" /> Winner
+                    </span>
+                  )}
+                </div>
+
+                <div className={`p-4 rounded-2xl border ${selectedDetailResult.winner === selectedDetailResult.team2 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800'}`}>
+                  <p className="text-[10px] font-bold uppercase text-slate-400">Player 2</p>
+                  <p className="font-black text-slate-900 dark:text-white text-sm mt-1">{selectedDetailResult.team2 || 'Player B'}</p>
+                  {selectedDetailResult.winner === selectedDetailResult.team2 && (
+                    <span className="inline-flex items-center gap-1 mt-2 text-xs font-black text-emerald-600 dark:text-emerald-400">
+                      <Award className="w-3.5 h-3.5 text-amber-500" /> Winner
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Set Scores Breakdown */}
+              <div className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/20 space-y-2">
+                <p className="text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider">Set-by-Set Score Breakdown</p>
+                {selectedDetailResult.setsHistory && Array.isArray(selectedDetailResult.setsHistory) && selectedDetailResult.setsHistory.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    {selectedDetailResult.setsHistory.map((s, idx) => (
+                      <div key={idx} className="p-2.5 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-center font-mono">
+                        <p className="text-[10px] text-slate-400 font-bold uppercase">Set {idx + 1}</p>
+                        <p className="font-black text-slate-900 dark:text-white text-sm mt-0.5">{s.score1 || 0} - {s.score2 || 0}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="font-mono text-sm font-bold text-slate-900 dark:text-white pt-1">
+                    {selectedDetailResult.scoreSummary || `${selectedDetailResult.score1 || 0} - ${selectedDetailResult.score2 || 0} Sets`}
+                  </p>
+                )}
+              </div>
+
+              <div className="pt-2 text-center">
+                <button
+                  onClick={() => generateMatchResultPDF(selectedDetailResult, 'Badminton')}
+                  className="w-full py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download Official Result Sheet (PDF)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
