@@ -7,7 +7,8 @@ import pg from "pg";
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required to seed the database.");
 
-const pool = new pg.Pool({ connectionString: databaseUrl, ssl: false });
+const isLocal = databaseUrl.includes('localhost') || databaseUrl.includes('127.0.0.1');
+const pool = new pg.Pool({ connectionString: databaseUrl, ssl: isLocal ? false : { rejectUnauthorized: false } });
 const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 const passwordHash = await bcrypt.hash("test123", 10);
 

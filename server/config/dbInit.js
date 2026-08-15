@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { queryDb } from './db.js';
 import { envConfig, coordinatorPasswords, headPasswords } from './env.js';
 
@@ -7,7 +8,7 @@ export const seedInitialAccountHashes = async () => {
     // 1. Ensure sport_coordinators table exists and has required columns
     await queryDb(`
       CREATE TABLE IF NOT EXISTS sport_coordinators (
-        id SERIAL PRIMARY KEY,
+        id TEXT PRIMARY KEY,
         username VARCHAR(100) UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         assigned_sport VARCHAR(50) NOT NULL,
@@ -28,7 +29,7 @@ export const seedInitialAccountHashes = async () => {
     // 2. Ensure college_head_users table exists and has required columns
     await queryDb(`
       CREATE TABLE IF NOT EXISTS college_head_users (
-        id SERIAL PRIMARY KEY,
+        id TEXT PRIMARY KEY,
         username VARCHAR(100) UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         college VARCHAR(100) NOT NULL,
@@ -49,7 +50,7 @@ export const seedInitialAccountHashes = async () => {
     // 3. Ensure pr_users table exists and has required columns
     await queryDb(`
       CREATE TABLE IF NOT EXISTS pr_users (
-        id SERIAL PRIMARY KEY,
+        id TEXT PRIMARY KEY,
         username VARCHAR(100) UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         name VARCHAR(150),
@@ -92,7 +93,7 @@ export const seedInitialAccountHashes = async () => {
       console.warn('Migration warning for college_registrations:', e.message);
     }
 
-    // 4. Seed Initial Sport Coordinators
+    // 5. Seed Initial Sport Coordinators if not present
     const defaultSports = [
       { username: 'coord_cricket', assignedSport: 'cricket', sportName: 'Cricket', coordinatorName: 'Vikramaditya Sharma', email: 'cricket.coord@sems.edu', pass: coordinatorPasswords['coord_cricket'] || 'cricket#2026' },
       { username: 'coord_table_tennis', assignedSport: 'table-tennis', sportName: 'Table Tennis', coordinatorName: 'Rohan Mehta', email: 'tt.coord@sems.edu', pass: coordinatorPasswords['coord_table_tennis'] || 'table_tennis#2026' },
@@ -109,21 +110,19 @@ export const seedInitialAccountHashes = async () => {
     ];
 
     for (const sc of defaultSports) {
-      const existing = await queryDb('SELECT id, password_hash FROM sport_coordinators WHERE username = $1', [sc.username]);
+      const existing = await queryDb('SELECT id FROM sport_coordinators WHERE username = $1', [sc.username]);
       if (!existing || existing.rows.length === 0) {
         const hash = await bcrypt.hash(sc.pass, 10);
+        const newId = crypto.randomUUID();
         await queryDb(
-          `INSERT INTO sport_coordinators (username, password_hash, assigned_sport, sport_name, coordinator_name, email, status)
-           VALUES ($1, $2, $3, $4, $5, $6, 'active')`,
-          [sc.username, hash, sc.assignedSport, sc.sportName, sc.coordinatorName, sc.email]
+          `INSERT INTO sport_coordinators (id, username, password_hash, assigned_sport, sport_name, coordinator_name, email, status, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', NOW(), NOW())`,
+          [newId, sc.username, hash, sc.assignedSport, sc.sportName, sc.coordinatorName, sc.email]
         );
-      } else if (!existing.rows[0].password_hash) {
-        const hash = await bcrypt.hash(sc.pass, 10);
-        await queryDb('UPDATE sport_coordinators SET password_hash = $1 WHERE id = $2', [hash, existing.rows[0].id]);
       }
     }
 
-    // 5. Seed Initial College Heads
+    // 6. Seed Initial College Heads if not present
     const defaultHeads = [
       { username: 'head_mpec', college: 'MPEC', faculty_name: 'Dr. Rajesh Sharma', pass: headPasswords['head_mpec'] || 'mpec#2026' },
       { username: 'head_mips', college: 'MIPS', faculty_name: 'Prof. Anita Verma', pass: headPasswords['head_mips'] || 'mips#2026' },
@@ -136,53 +135,47 @@ export const seedInitialAccountHashes = async () => {
     ];
 
     for (const ch of defaultHeads) {
-      const existing = await queryDb('SELECT id, password_hash FROM college_head_users WHERE username = $1', [ch.username]);
+      const existing = await queryDb('SELECT id FROM college_head_users WHERE username = $1', [ch.username]);
       if (!existing || existing.rows.length === 0) {
         const hash = await bcrypt.hash(ch.pass, 10);
+        const newId = crypto.randomUUID();
         await queryDb(
-          `INSERT INTO college_head_users (username, password_hash, college, faculty_name, status)
-           VALUES ($1, $2, $3, $4, 'active')`,
-          [ch.username, hash, ch.college, ch.faculty_name]
+          `INSERT INTO college_head_users (id, username, password_hash, college, faculty_name, status, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, 'active', NOW(), NOW())`,
+          [newId, ch.username, hash, ch.college, ch.faculty_name]
         );
-      } else if (!existing.rows[0].password_hash) {
-        const hash = await bcrypt.hash(ch.pass, 10);
-        await queryDb('UPDATE college_head_users SET password_hash = $1 WHERE id = $2', [hash, existing.rows[0].id]);
       }
     }
 
-    // 6. Seed Initial PR User
+    // 7. Seed Initial PR User if not present
     const prUserPass = envConfig.passPrAdmin || 'password123';
-    const existingPR = await queryDb('SELECT id, password_hash FROM pr_users WHERE username = $1', ['pr_admin']);
+    const existingPR = await queryDb('SELECT id FROM pr_users WHERE username = $1', ['pr_admin']);
     if (!existingPR || existingPR.rows.length === 0) {
       const hash = await bcrypt.hash(prUserPass, 10);
+      const newId = crypto.randomUUID();
       await queryDb(
-        `INSERT INTO pr_users (username, password_hash, role, name, email, status)
-         VALUES ('pr_admin', $1, 'pr_coordinator', 'PR Administrator', 'pr.admin@sems.edu', 'active')`,
-        [hash]
+        `INSERT INTO pr_users (id, username, password_hash, role, name, email, status, created_at, updated_at)
+         VALUES ($1, 'pr_admin', $2, 'pr_coordinator', 'PR Administrator', 'pr.admin@sems.edu', 'active', NOW(), NOW())`,
+        [newId, hash]
       );
-    } else if (!existingPR.rows[0].password_hash) {
-      const hash = await bcrypt.hash(prUserPass, 10);
-      await queryDb('UPDATE pr_users SET password_hash = $1 WHERE id = $2', [hash, existingPR.rows[0].id]);
     }
 
-    // 7. Seed Initial Super Coordinator User
+    // 8. Seed Initial Super Coordinator User if not present
     const superCoordPass = envConfig.passSuperCoord || 'super#2026';
-    const existingSuper = await queryDb('SELECT id, password_hash FROM pr_users WHERE username = $1', ['super_coordinator']);
+    const existingSuper = await queryDb('SELECT id FROM pr_users WHERE username = $1', ['super_coordinator']);
     if (!existingSuper || existingSuper.rows.length === 0) {
       const hash = await bcrypt.hash(superCoordPass, 10);
+      const newId = crypto.randomUUID();
       await queryDb(
-        `INSERT INTO pr_users (username, password_hash, role, name, email, status)
-         VALUES ('super_coordinator', $1, 'super_coordinator', 'Super Coordinator (President)', 'president.sports@mpec.ac.in', 'active')`,
-        [hash]
+        `INSERT INTO pr_users (id, username, password_hash, role, name, email, status, created_at, updated_at)
+         VALUES ($1, 'super_coordinator', $2, 'super_coordinator', 'Super Coordinator (President)', 'president.sports@mpec.ac.in', 'active', NOW(), NOW())`,
+        [newId, hash]
       );
-    } else if (!existingSuper.rows[0].password_hash) {
-      const hash = await bcrypt.hash(superCoordPass, 10);
-      await queryDb('UPDATE pr_users SET password_hash = $1 WHERE id = $2', [hash, existingSuper.rows[0].id]);
     }
 
-    console.log('✅ [Database Seed] Initial bcrypt password hashes seeded successfully for all accounts.');
+    console.log('✅ [Database Seed] Account checks and seeding executed safely without touching existing records.');
   } catch (err) {
-    console.warn('⚠️ [Database Seed Warning] Failed to seed initial password hashes:', err.message);
+    console.warn('⚠️ [Database Seed Warning] Initial account setup notice:', err.message);
   }
 };
 
