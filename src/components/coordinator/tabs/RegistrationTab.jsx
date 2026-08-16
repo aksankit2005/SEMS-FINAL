@@ -268,32 +268,61 @@ export const RegistrationTab = ({ registrations, user, onUpdateRegistrations }) 
       {/* Team Details Modal */}
       {selectedTeamModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4">
+          <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <h4 className="text-base font-black text-slate-900 dark:text-white">{selectedTeamModal.teamName}</h4>
-                <p className="text-xs text-orange-500 font-bold">{user?.sportName} Registration</p>
+                <h4 className="text-base font-black text-slate-900 dark:text-white">{selectedTeamModal.teamName || selectedTeamModal.studentName}</h4>
+                <p className="text-xs text-orange-500 font-bold">{user?.sportName} Registration Card</p>
               </div>
-              <button onClick={() => setSelectedTeamModal(null)} className="p-1 text-slate-400 hover:text-white">
+              <button onClick={() => setSelectedTeamModal(null)} className="p-1 text-slate-400 hover:text-white cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
-              <p><strong>Registration ID:</strong> {selectedTeamModal.id}</p>
-              <p><strong>Captain Name:</strong> {selectedTeamModal.studentName}</p>
+            <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-300">
+              <p><strong>Registration ID:</strong> <span className="font-mono">{selectedTeamModal.id}</span></p>
+              <p><strong>Captain:</strong> {selectedTeamModal.studentName}</p>
               <p><strong>College:</strong> {selectedTeamModal.college}</p>
-              <p><strong>Department:</strong> {selectedTeamModal.department}</p>
-              <p><strong>Gender Category:</strong> {selectedTeamModal.gender}</p>
-              <p><strong>Phone Contact:</strong> {selectedTeamModal.contactPhone}</p>
-              <p><strong>Registered Date:</strong> {selectedTeamModal.registeredDate}</p>
-              <p><strong>Verification Status:</strong> <span className="font-bold text-orange-500">{selectedTeamModal.status}</span></p>
+              <p><strong>Course:</strong> {selectedTeamModal.department || 'N/A'}</p>
+              <p><strong>Gender:</strong> {selectedTeamModal.gender}</p>
+              <p><strong>Registered Date:</strong> {selectedTeamModal.registeredDate || 'N/A'}</p>
             </div>
+
+            {/* Full Team Roster List */}
+            {Array.isArray(selectedTeamModal.members) && selectedTeamModal.members.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <h5 className="text-xs font-black uppercase text-slate-500 tracking-wider">
+                  Registered Team Roster ({selectedTeamModal.members.length} Athletes)
+                </h5>
+                <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden text-xs">
+                  {selectedTeamModal.members.map((m, idx) => (
+                    <div key={idx} className="p-2.5 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
+                      <div>
+                        <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
+                          <span>{m.fullName || m.name}</span>
+                          {(m.isCaptain || idx === 0) && (
+                            <span className="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                              Captain
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          {m.rollNo ? `Roll: ${m.rollNo} • ` : ''}{m.course || m.branch || 'N/A'} {m.yearSemester ? `• ${m.yearSemester}` : ''}
+                        </div>
+                      </div>
+                      <div className="text-right text-[10px] font-mono text-slate-500">
+                        {m.mobile || m.phone || 'N/A'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="pt-2 flex justify-end">
               <button
                 onClick={() => setSelectedTeamModal(null)}
-                className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs"
+                className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white font-bold text-xs cursor-pointer"
               >
                 Close Details
               </button>

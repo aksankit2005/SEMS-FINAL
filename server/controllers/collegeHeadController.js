@@ -109,23 +109,44 @@ export const getDashboardStats = async (req, res) => {
   try {
     const college = req.user.college || 'MPEC';
 
-    const totalRegistrations = await prisma.collegeRegistration.count({
-      where: { college: { equals: college, mode: 'insensitive' } }
-    });
+    const [regCountRes, studentCountRes, sportsGroupRes] = await Promise.all([
+      queryDb(`
+        SELECT COUNT(*) AS count FROM college_registrations cr
+        LEFT JOIN colleges c ON cr.college = c.name OR cr.college = c.code
+        WHERE LOWER(cr.college) = LOWER($1) OR LOWER(c.code) = LOWER($1) OR LOWER(cr.college) LIKE LOWER($2)
+      `, [college, `%${college}%`]).catch(() => null),
 
-    const sportsGroup = await prisma.collegeRegistration.groupBy({
-      by: ['sportId'],
-      where: { college: { equals: college, mode: 'insensitive' } }
-    });
+      queryDb(`
+        SELECT COUNT(*) AS count FROM registration_members m
+        JOIN registrations r ON m."registrationId" = r.id
+        LEFT JOIN college_registrations cr ON cr.registration_id = r.id OR cr.id::text = r.id::text
+        LEFT JOIN colleges c ON r.college_id = c.id
+        WHERE LOWER(COALESCE(cr.college, c.name, c.code, '')) = LOWER($1)
+           OR LOWER(COALESCE(c.code, '')) = LOWER($1)
+           OR LOWER(COALESCE(cr.college, '')) LIKE LOWER($2)
+      `, [college, `%${college}%`]).catch(() => null),
+
+      queryDb(`
+        SELECT COUNT(DISTINCT COALESCE(cr.sport_id, r.sport_id)) AS count
+        FROM college_registrations cr
+        LEFT JOIN registrations r ON cr.registration_id = r.id
+        LEFT JOIN colleges c ON cr.college = c.name OR cr.college = c.code
+        WHERE LOWER(cr.college) = LOWER($1) OR LOWER(c.code) = LOWER($1) OR LOWER(cr.college) LIKE LOWER($2)
+      `, [college, `%${college}%`]).catch(() => null)
+    ]);
+
+    const totalRegistrations = Number(regCountRes?.rows[0]?.count || 0);
+    const totalStudents = Math.max(Number(studentCountRes?.rows[0]?.count || 0), totalRegistrations);
+    const sportsCount = Number(sportsGroupRes?.rows[0]?.count || 0);
 
     const medals = inMemoryCollegeMedals[college] || { gold: 0, silver: 0, bronze: 0, totalPoints: 0, topSport: 'N/A' };
 
     return res.json({
       college,
       facultyName: req.user.faculty_name || req.user.facultyName || 'College Head Faculty',
-      totalStudents: totalRegistrations,
+      totalStudents,
       totalRegistrations,
-      sportsCount: sportsGroup.length,
+      sportsCount,
       medals,
     });
   } catch (err) {
@@ -139,31 +160,100 @@ export const getStudents = async (req, res) => {
     const college = req.user.college || 'MPEC';
     const { search, sport, status, page, limit } = req.query;
 
-    const whereCondition = {
-      college: { equals: college, mode: 'insensitive' }
-    };
+    const dbRes = await queryDb(`
+      SELECT 
+        m.id,
+        m."fullName" AS "studentName",
+        m."rollNo" AS "rollNumber",
+        m.course,
+        m.year_semester AS "yearSemester",
+        m.year_semester AS year,
+        m.gender,
+        m.mobile AS phone,
+        m.email,
+        m."isCaptain",
+        COALESCE(cr.sport_id, s.slug, s.name, 'sport') AS "sportId",
+        COALESCE(s.name, cr.sport_id, 'Sport') AS "sportName",
+        COALESCE(cr.team_name, r."teamName", 'Individual') AS "teamName",
+        COALESCE(cr.status, r.status::text, 'VERIFIED') AS status,
+        COALESCE(cr.event_id, 'APEX-2026') AS "eventType",
+        m."createdAt" AS "createdAt"
+      FROM registration_members m
+      JOIN registrations r ON m."registrationId" = r.id
+      LEFT JOIN college_registrations cr ON cr.registration_id = r.id
+      LEFT JOIN sports s ON s.id::text = r."sportId"::text OR s.slug = r."sportId" OR s.slug = cr.sport_id
+      LEFT JOIN colleges c ON c.id = r."collegeId"
+      WHERE (
+        LOWER(COALESCE(c.code, c.name, cr.college, '')) = LOWER($1) OR
+        LOWER(COALESCE(cr.college, '')) LIKE LOWER($2)
+      )
+      ORDER BY m."createdAt" DESC
+    `, [college, `%${college}%`]).catch((err) => {
+      console.warn('College head members query error:', err.message);
+      return null;
+    });
+
+    let students = [];
+    if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+      students = dbRes.rows.map(s => ({
+        id: s.id,
+        studentName: s.studentName,
+        rollNumber: s.rollNumber || 'N/A',
+        course: s.course || 'N/A',
+        yearSemester: s.yearSemester || 'N/A',
+        year: s.year || s.yearSemester || 'N/A',
+        gender: s.gender || 'Boys',
+        phone: s.phone || 'N/A',
+        email: s.email || 'N/A',
+        isCaptain: !!s.isCaptain,
+        sportId: (s.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        sportName: (s.sportName || 'Sport').replace(/-/g, ' ').toUpperCase(),
+        teamName: s.teamName || 'Individual',
+        status: s.status || 'VERIFIED',
+        eventType: s.eventType || 'APEX-2026'
+      }));
+    } else {
+      // Fallback to prisma collegeRegistration if no members table entries
+      const fallbackRegs = await prisma.collegeRegistration.findMany({
+        where: { college: { equals: college, mode: 'insensitive' } },
+        orderBy: { createdAt: 'desc' }
+      });
+      students = fallbackRegs.map(r => ({
+        id: r.id,
+        studentName: r.studentName,
+        rollNumber: r.enrollmentNo || 'N/A',
+        course: r.department || 'N/A',
+        yearSemester: 'N/A',
+        year: 'N/A',
+        gender: r.gender,
+        phone: r.phone || 'N/A',
+        email: r.email || 'N/A',
+        isCaptain: true,
+        sportId: (r.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        sportName: (r.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
+        teamName: r.teamName || 'Individual',
+        status: r.status || 'VERIFIED',
+        eventType: r.eventId || 'APEX-2026'
+      }));
+    }
 
     if (sport && sport !== 'all') {
-      whereCondition.sportId = { contains: sport.toLowerCase(), mode: 'insensitive' };
+      const sp = sport.toLowerCase();
+      students = students.filter(s => (s.sportId || '').toLowerCase().includes(sp) || (s.sportName || '').toLowerCase().includes(sp));
     }
 
     if (status && status !== 'all') {
-      whereCondition.status = { equals: status, mode: 'insensitive' };
+      students = students.filter(s => (s.status || '').toLowerCase() === status.toLowerCase());
     }
-
-    let students = await prisma.collegeRegistration.findMany({
-      where: whereCondition,
-      orderBy: { createdAt: 'desc' }
-    });
 
     if (search) {
       const q = search.toLowerCase();
-      students = students.filter(
-        (s) =>
-          (s.studentName && s.studentName.toLowerCase().includes(q)) ||
-          (s.enrollmentNo && s.enrollmentNo.toLowerCase().includes(q)) ||
-          (s.department && s.department.toLowerCase().includes(q)) ||
-          (s.sportId && s.sportId.toLowerCase().includes(q))
+      students = students.filter(s =>
+        (s.studentName && s.studentName.toLowerCase().includes(q)) ||
+        (s.rollNumber && s.rollNumber.toLowerCase().includes(q)) ||
+        (s.course && s.course.toLowerCase().includes(q)) ||
+        (s.sportName && s.sportName.toLowerCase().includes(q)) ||
+        (s.teamName && s.teamName.toLowerCase().includes(q))
       );
     }
 
@@ -221,20 +311,52 @@ export const getSportsParticipation = async (req, res) => {
   try {
     const college = req.user.college || 'MPEC';
 
-    const registrations = await prisma.collegeRegistration.findMany({
-      where: { college: { equals: college, mode: 'insensitive' } }
-    });
+    const dbRes = await queryDb(`
+      SELECT 
+        COALESCE(cr.sport_id, s.slug, s.name, 'general') AS "sportId",
+        COALESCE(s.name, cr.sport_id, 'GENERAL') AS "sportName",
+        m.gender
+      FROM registration_members m
+      JOIN registrations r ON m."registrationId" = r.id
+      LEFT JOIN college_registrations cr ON cr.registration_id = r.id
+      LEFT JOIN sports s ON (r."sportId" IS NOT NULL AND (s.id::text = r."sportId"::text OR s.slug = r."sportId")) OR (r."sportId" IS NULL AND (s.id::text = cr.sport_id OR s.slug = cr.sport_id))
+      LEFT JOIN colleges c ON (r."collegeId" IS NOT NULL AND c.id = r."collegeId") OR (r."collegeId" IS NULL AND (c.code = cr.college OR c.name = cr.college))
+      WHERE (
+        LOWER(COALESCE(cr.college, c.name, c.code, '')) = LOWER($1) OR
+        LOWER(COALESCE(c.code, '')) = LOWER($1) OR
+        LOWER(COALESCE(cr.college, '')) LIKE LOWER($2)
+      )
+    `, [college, `%${college}%`]).catch(() => null);
 
     const breakdownMap = {};
-    registrations.forEach((s) => {
-      const sportName = s.sportId ? s.sportId.replace(/-/g, ' ').toUpperCase() : 'GENERAL';
-      if (!breakdownMap[sportName]) {
-        breakdownMap[sportName] = { sportName, sportId: s.sportId, total: 0, male: 0, female: 0 };
-      }
-      breakdownMap[sportName].total += 1;
-      if ((s.gender || '').toLowerCase() === 'female') breakdownMap[sportName].female += 1;
-      else breakdownMap[sportName].male += 1;
-    });
+
+    if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+      dbRes.rows.forEach((s) => {
+        const sportName = (s.sportName || s.sportId || 'GENERAL').replace(/-/g, ' ').toUpperCase();
+        if (!breakdownMap[sportName]) {
+          breakdownMap[sportName] = { sportName, sportId: s.sportId, total: 0, male: 0, female: 0 };
+        }
+        breakdownMap[sportName].total += 1;
+        if ((s.gender || '').toLowerCase() === 'female' || (s.gender || '').toLowerCase() === 'girls') {
+          breakdownMap[sportName].female += 1;
+        } else {
+          breakdownMap[sportName].male += 1;
+        }
+      });
+    } else {
+      const registrations = await prisma.collegeRegistration.findMany({
+        where: { college: { equals: college, mode: 'insensitive' } }
+      });
+      registrations.forEach((s) => {
+        const sportName = s.sportId ? s.sportId.replace(/-/g, ' ').toUpperCase() : 'GENERAL';
+        if (!breakdownMap[sportName]) {
+          breakdownMap[sportName] = { sportName, sportId: s.sportId, total: 0, male: 0, female: 0 };
+        }
+        breakdownMap[sportName].total += 1;
+        if ((s.gender || '').toLowerCase() === 'female') breakdownMap[sportName].female += 1;
+        else breakdownMap[sportName].male += 1;
+      });
+    }
 
     return res.json(Object.values(breakdownMap));
   } catch (err) {

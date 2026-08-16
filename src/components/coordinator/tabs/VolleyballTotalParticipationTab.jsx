@@ -124,23 +124,60 @@ export const VolleyballTotalParticipationTab = ({ user, globalSearch = '' }) => 
     );
   });
 
+  const flattenedAthletes = [];
+  filtered.forEach((p) => {
+    if (Array.isArray(p.members) && p.members.length > 0) {
+      p.members.forEach((m, mIdx) => {
+        flattenedAthletes.push({
+          id: `${p.id}_m_${m.id || mIdx}`,
+          timestamp: p.timestamp || p.registeredAt || 'N/A',
+          sport: p.sport || sportName,
+          teamName: p.teamName || p.name || 'Team',
+          collegeName: p.collegeName || p.college || 'N/A',
+          name: m.fullName || m.name || (mIdx === 0 ? (p.name || p.captainName || p.studentName) : `Player ${mIdx + 1}`),
+          rollNo: m.rollNo || m.roll || 'N/A',
+          phone: m.mobile || m.phone || (mIdx === 0 ? (p.phone || p.mobile) : 'N/A'),
+          email: m.email || (mIdx === 0 ? p.email : 'N/A'),
+          isCaptain: m.isCaptain !== undefined ? m.isCaptain : (mIdx === 0),
+          role: (m.isCaptain !== undefined ? m.isCaptain : (mIdx === 0)) ? 'Captain' : 'Player'
+        });
+      });
+    } else {
+      flattenedAthletes.push({
+        id: p.id,
+        timestamp: p.timestamp || p.registeredAt || 'N/A',
+        sport: p.sport || sportName,
+        teamName: p.teamName || p.name || 'Team',
+        collegeName: p.collegeName || p.college || 'N/A',
+        name: p.name || p.captainName || p.player1?.name || p.studentName || 'N/A',
+        rollNo: p.roll || p.enrollmentNo || 'N/A',
+        phone: p.phone || p.mobile || p.player1?.phone || 'N/A',
+        email: p.email || p.player1?.email || 'N/A',
+        isCaptain: true,
+        role: 'Captain'
+      });
+    }
+  });
+
   const handleExportExcel = () => {
-    if (!filtered || filtered.length === 0) {
+    if (!flattenedAthletes || flattenedAthletes.length === 0) {
       addToast('No participant records to export', 'warning');
       return;
     }
 
     const escapeCsv = (str) => `"${String(str || '').replace(/"/g, '""')}"`;
-    const headers = ['Time', 'Game Name', 'Team Name', 'College Name', 'Captain / Name', 'Mobile No', 'Email'];
-    const rows = filtered.map((p) => {
+    const headers = ['Time', 'Game Name', 'Team Name', 'College Name', 'Player Name', 'Role', 'Roll No', 'Mobile No', 'Email'];
+    const rows = flattenedAthletes.map((p) => {
       return [
-        escapeCsv(p.timestamp || p.registeredAt || 'N/A'),
+        escapeCsv(p.timestamp || 'N/A'),
         escapeCsv(p.sport || sportName),
-        escapeCsv(p.teamName || p.name || 'Team'),
-        escapeCsv(p.collegeName || p.college || 'N/A'),
-        escapeCsv(p.name || p.captainName || p.player1?.name || 'N/A'),
-        escapeCsv(p.phone || p.mobile || p.player1?.phone || 'N/A'),
-        escapeCsv(p.email || p.player1?.email || 'N/A')
+        escapeCsv(p.teamName || 'Team'),
+        escapeCsv(p.collegeName || 'N/A'),
+        escapeCsv(p.name || 'N/A'),
+        escapeCsv(p.role || 'Player'),
+        escapeCsv(p.rollNo || 'N/A'),
+        escapeCsv(p.phone || 'N/A'),
+        escapeCsv(p.email || 'N/A')
       ];
     });
 
@@ -149,34 +186,29 @@ export const VolleyballTotalParticipationTab = ({ user, globalSearch = '' }) => 
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `Volleyball_Participant_Database.csv`);
+    link.setAttribute('download', `Volleyball_All_Participants_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    addToast(`Volleyball participant database exported to CSV successfully!`, 'success');
+    addToast('Volleyball roster exported to CSV successfully!', 'success');
   };
 
   return (
     <div className="space-y-6 text-slate-900 dark:text-slate-200 animate-fade-in font-sans">
-
-      <div className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800/90 shadow-soft dark:shadow-2xl space-y-5">
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-200 dark:border-slate-800">
+      <div className="p-6 rounded-3xl bg-white dark:bg-[#0B0F17] border border-slate-200 dark:border-slate-800 space-y-6 shadow-soft">
+        
+        {/* Header Bar */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-orange-500/10 text-orange-500 border border-orange-500/20">
+            <div className="p-2.5 rounded-2xl bg-orange-500/10 text-orange-500">
               <Users className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                  Participant Database (Read Only)
-                </h3>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-                  READ ONLY
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Verified registration records for Volleyball ({filtered.length} Records)
+              <h3 className="text-base font-black text-slate-900 dark:text-white">
+                {sportName} Registered Participants Roster
+              </h3>
+              <p className="text-xs font-semibold text-slate-500">
+                Total Athletes: <span className="text-orange-500 font-black">{flattenedAthletes.length}</span> ({filtered.length} Teams)
               </p>
             </div>
 
@@ -209,7 +241,7 @@ export const VolleyballTotalParticipationTab = ({ user, globalSearch = '' }) => 
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search team name, college, captain, phone or email..."
+            placeholder="Search team name, college, player name, phone or email..."
             className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
           />
         </div>
@@ -223,28 +255,43 @@ export const VolleyballTotalParticipationTab = ({ user, globalSearch = '' }) => 
                 <th className="p-3.5">Game Name</th>
                 <th className="p-3.5">Team Name</th>
                 <th className="p-3.5">College Name</th>
-                <th className="p-3.5">Captain / Name</th>
+                <th className="p-3.5">Player Name & Role</th>
+                <th className="p-3.5">Roll No</th>
                 <th className="p-3.5">Mobile No</th>
                 <th className="p-3.5">Email</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-xs font-medium">
-              {filtered.length === 0 ? (
+              {flattenedAthletes.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-12 text-center text-slate-400 font-mono">
+                  <td colSpan={8} className="p-12 text-center text-slate-400 font-mono">
                     No participants found.
                   </td>
                 </tr>
               ) : (
-                filtered.map((p, idx) => (
+                flattenedAthletes.map((p, idx) => (
                   <tr key={p.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition">
-                    <td className="p-3.5 font-mono text-slate-500">{p.timestamp || p.registeredAt || 'N/A'}</td>
-                    <td className="p-3.5 font-bold text-orange-600 dark:text-orange-400">{p.sport || sportName}</td>
-                    <td className="p-3.5 font-black text-slate-900 dark:text-white">{p.teamName || p.name || 'Team'}</td>
-                    <td className="p-3.5 text-slate-600 dark:text-slate-300">{p.collegeName || p.college || 'N/A'}</td>
-                    <td className="p-3.5 font-bold text-slate-800 dark:text-slate-200">{p.name || p.captainName || p.player1?.name || 'N/A'}</td>
-                    <td className="p-3.5 font-mono text-slate-600 dark:text-slate-400">{p.phone || p.mobile || p.player1?.phone || 'N/A'}</td>
-                    <td className="p-3.5 font-mono text-slate-500">{p.email || p.player1?.email || 'N/A'}</td>
+                    <td className="p-3.5 font-mono text-slate-500">{p.timestamp || 'N/A'}</td>
+                    <td className="p-3.5 font-bold text-orange-600 dark:text-orange-400">{p.sport}</td>
+                    <td className="p-3.5 font-black text-slate-900 dark:text-white">{p.teamName}</td>
+                    <td className="p-3.5 text-slate-600 dark:text-slate-300">{p.collegeName}</td>
+                    <td className="p-3.5 font-bold text-slate-800 dark:text-slate-200">
+                      <div className="flex items-center gap-1.5">
+                        <span>{p.name}</span>
+                        {p.isCaptain ? (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                            Captain
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-slate-100 dark:bg-slate-800 text-slate-500">
+                            Player
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-3.5 font-mono text-slate-600 dark:text-slate-400">{p.rollNo || 'N/A'}</td>
+                    <td className="p-3.5 font-mono text-slate-600 dark:text-slate-400">{p.phone}</td>
+                    <td className="p-3.5 font-mono text-slate-500">{p.email}</td>
                   </tr>
                 ))
               )}

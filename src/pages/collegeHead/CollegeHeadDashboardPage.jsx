@@ -576,8 +576,8 @@ export const CollegeHeadDashboardPage = () => {
                     <tr>
                       <th className="p-4">Student Athlete</th>
                       <th className="p-4">Roll Number</th>
-                      <th className="p-4">Course & Branch</th>
-                      <th className="p-4">Year</th>
+                      <th className="p-4">Course</th>
+                      <th className="p-4">Year / Semester</th>
                       <th className="p-4">Sport Event</th>
                     </tr>
                   </thead>
@@ -592,16 +592,26 @@ export const CollegeHeadDashboardPage = () => {
                       studentsData.students.map((student) => (
                         <tr key={student.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
                           <td className="p-4 font-extrabold text-slate-900 dark:text-white">
-                            {student.studentName}
+                            <div className="flex items-center gap-1.5">
+                              <span>{student.studentName}</span>
+                              {student.isCaptain && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                                  Captain
+                                </span>
+                              )}
+                            </div>
+                            {student.teamName && student.teamName !== 'Individual' && (
+                              <span className="text-[10px] text-slate-400 font-normal block">Team: {student.teamName}</span>
+                            )}
                           </td>
                           <td className="p-4 font-mono font-bold text-slate-600 dark:text-slate-300">
-                            {student.rollNumber}
+                            {student.rollNumber || 'N/A'}
                           </td>
                           <td className="p-4 font-bold text-slate-600 dark:text-slate-300">
-                            {student.course} ({student.branch})
+                            {student.course || 'N/A'}
                           </td>
                           <td className="p-4 text-slate-500 font-medium">
-                            {student.year || '3rd Year'}
+                            {student.yearSemester || student.year || 'N/A'}
                           </td>
                           <td className="p-4">
                             <span className="font-extrabold text-blue-600 dark:text-blue-400 block">{student.sportName}</span>

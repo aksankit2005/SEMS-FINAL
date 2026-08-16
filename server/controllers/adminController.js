@@ -141,102 +141,132 @@ export const getAdminProfile = async (req, res) => {
 
 export const getMasterParticipants = async (req, res) => {
   try {
-    const dbRes = await queryDb(`
+    // 1. Primary DB query: Every athlete row from registration_members
+    const membersDb = await queryDb(`
+      SELECT 
+        m.id,
+        m.id AS "memberId",
+        r.id AS "registrationId",
+        cr.id AS "receiptId",
+        TO_CHAR(m."createdAt", 'HH:MI AM') AS time,
+        TO_CHAR(m."createdAt", 'YYYY-MM-DD') AS date,
+        COALESCE(cr.sport_id, s.slug, s.name, 'sport') AS "sportId",
+        COALESCE(s.name, cr.sport_id, 'Sport') AS "sportName",
+        COALESCE(cr.team_name, r."teamName", m."fullName") AS "teamName",
+        COALESCE(cr.college, c.code, c.name, 'MPEC') AS college,
+        m."fullName" AS name,
+        m."rollNo" AS "rollNo",
+        m.mobile,
+        m.email,
+        m.gender,
+        m.course,
+        m.year_semester AS "yearSemester",
+        m."isCaptain",
+        COALESCE(cr.status, r.status::text, 'VERIFIED') AS status,
+        COALESCE(cr.fee_paid, r.amount, 0) AS "feePaid"
+      FROM registration_members m
+      JOIN registrations r ON m."registrationId" = r.id
+      LEFT JOIN college_registrations cr ON cr.registration_id = r.id
+      LEFT JOIN sports s ON s.id::text = r."sportId"::text OR s.slug = r."sportId" OR s.slug = cr.sport_id
+      LEFT JOIN colleges c ON c.id = r."collegeId"
+      ORDER BY m."createdAt" DESC
+    `).catch((err) => {
+      console.warn('Registration members join query error:', err.message);
+      return null;
+    });
+
+    const participantList = [];
+    const seenMemberIds = new Set();
+    const coveredRegIds = new Set();
+
+    if (membersDb && membersDb.rows && membersDb.rows.length > 0) {
+      membersDb.rows.forEach((row) => {
+        seenMemberIds.add(row.id);
+        if (row.registrationId) coveredRegIds.add(row.registrationId);
+        if (row.receiptId) coveredRegIds.add(row.receiptId);
+
+        participantList.push({
+          id: row.id,
+          memberId: row.memberId,
+          registrationId: row.registrationId,
+          receiptId: row.receiptId,
+          time: row.time || '10:00 AM',
+          date: row.date || new Date().toISOString().split('T')[0],
+          sportId: (row.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
+          sportName: (row.sportName || 'Sport').replace(/-/g, ' ').toUpperCase(),
+          eventTitle: `${(row.sportName || 'Sport').replace(/-/g, ' ').toUpperCase()} Championship`,
+          teamName: row.teamName || row.name || 'Participant',
+          college: row.college || 'MPEC',
+          name: row.name || 'Student',
+          mobile: row.mobile || 'N/A',
+          email: row.email || 'N/A',
+          gender: row.gender || 'Boys',
+          rollNo: row.rollNo || 'N/A',
+          course: row.course || 'N/A',
+          yearSemester: row.yearSemester || 'N/A',
+          isCaptain: !!row.isCaptain,
+          status: row.status || 'VERIFIED',
+          feePaid: Number(row.feePaid || 0)
+        });
+      });
+    }
+
+    // 2. Include any standalone registrations from college_registrations not already covered
+    const crDb = await queryDb(`
       SELECT 
         id,
+        registration_id AS "registrationId",
         TO_CHAR(created_at, 'HH:MI AM') AS time,
+        TO_CHAR(created_at, 'YYYY-MM-DD') AS date,
         sport_id AS "sportId",
         student_name AS "name",
         team_name AS "teamName",
         college,
-        department AS branch,
-        '' AS "rollNo",
+        department,
         email,
         phone AS mobile,
         gender,
         status,
-        fee_paid AS "feePaid",
-        created_at
+        fee_paid AS "feePaid"
       FROM college_registrations
       ORDER BY created_at DESC
-    `);
+    `).catch(() => null);
 
-    if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
-      const list = dbRes.rows.map((row) => ({
-        id: row.id,
-        time: row.time || '10:00 AM',
-        sportId: (row.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
-        sportName: (row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
-        eventTitle: `${(row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase()} Event`,
-        teamName: row.teamName || row.name || 'Participant',
-        college: row.college || 'MPEC',
-        name: row.name || 'Student',
-        mobile: row.mobile || '',
-        email: row.email || '',
-        gender: row.gender || 'Boys',
-        rollNo: row.rollNo || 'N/A',
-        branch: row.branch || 'CSE',
-        year: '3rd Year',
-        status: row.status || 'VERIFIED',
-        feePaid: Number(row.feePaid || 0)
-      }));
-
-      return res.json(list);
+    if (crDb && crDb.rows) {
+      crDb.rows.forEach((row) => {
+        if (!coveredRegIds.has(row.id) && !coveredRegIds.has(row.registrationId)) {
+          participantList.push({
+            id: row.id,
+            memberId: row.id,
+            registrationId: row.registrationId || row.id,
+            receiptId: row.id,
+            time: row.time || '10:00 AM',
+            date: row.date || new Date().toISOString().split('T')[0],
+            sportId: (row.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
+            sportName: (row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
+            eventTitle: `${(row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase()} Championship`,
+            teamName: row.teamName || row.name || 'Participant',
+            college: row.college || 'MPEC',
+            name: row.name || 'Student',
+            mobile: row.mobile || 'N/A',
+            email: row.email || 'N/A',
+            gender: row.gender || 'Boys',
+            rollNo: 'N/A',
+            course: row.department || 'N/A',
+            yearSemester: 'N/A',
+            isCaptain: true,
+            status: row.status || 'VERIFIED',
+            feePaid: Number(row.feePaid || 0)
+          });
+        }
+      });
     }
 
-    // Secondary DB query for Prisma registration_members table
-    try {
-      const membersDb = await queryDb(`
-        SELECT 
-          m.id,
-          TO_CHAR(m."createdAt", 'HH:MI AM') AS time,
-          s.name AS "sportName",
-          m."fullName" AS name,
-          m."rollNo" AS "rollNo",
-          m.email,
-          m.mobile,
-          m.gender,
-          m.course AS branch,
-          m.year_semester AS year,
-          c.code AS college,
-          r.status,
-          r.amount AS "feePaid"
-        FROM registration_members m
-        JOIN registrations r ON m."registrationId" = r.id
-        LEFT JOIN sports s ON r.sport_id = s.id
-        LEFT JOIN teams t ON t.captain_registration_id = r.id
-        LEFT JOIN colleges c ON t.college_id = c.id
-        ORDER BY m."createdAt" DESC
-      `);
-
-      if (membersDb && membersDb.rows && membersDb.rows.length > 0) {
-        const list = membersDb.rows.map((row) => ({
-          id: row.id,
-          time: row.time || '10:00 AM',
-          sportId: (row.sportName || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
-          sportName: row.sportName || 'Sport',
-          eventTitle: `${row.sportName || 'Sport'} Event`,
-          teamName: row.name,
-          college: row.college || 'MPEC',
-          name: row.name,
-          mobile: row.mobile || '',
-          email: row.email || '',
-          gender: row.gender || 'Boys',
-          rollNo: row.rollNo || 'N/A',
-          branch: row.branch || 'CSE',
-          year: row.year || '3rd Year',
-          status: row.status || 'VERIFIED',
-          feePaid: Number(row.feePaid || 0)
-        }));
-
-        return res.json(list);
-      }
-    } catch (e) {}
+    return res.json(participantList);
   } catch (err) {
     console.error('Error fetching master participants from DB:', err.message);
+    return res.json([]);
   }
-
-  return res.json([]);
 };
 
 export const getSuperCoordinatorEvents = async (req, res) => {

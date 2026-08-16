@@ -648,7 +648,7 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
         'Player Name',
         'Roll No',
         'College',
-        'Year / Branch',
+        'Year / Semester',
         'Phone No',
         'Email'
       ];
@@ -662,7 +662,7 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
           name: p.studentName || p.name || 'Aditya Singh',
           roll: p.roll || '25261101308',
           college: p.college || 'MPCPS (KN142)',
-          year: p.department || '2nd Year',
+          year: p.department || 'N/A',
           phone: p.phone || '9336938985',
           email: p.email || 'adityasinghmlzs01@gmail.com'
         };
@@ -699,7 +699,7 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
         'Player Name',
         'Roll No',
         'College',
-        'Year / Branch',
+        'Year / Semester',
         'Phone No',
         'Email',
         'Team Partner / Relay Details'
@@ -714,7 +714,7 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
           name: p.captainName || p.name || p.studentName || 'Athlete',
           roll: p.rollNo || p.roll || 'N/A',
           college: p.collegeName || p.college || 'SEMS Institution',
-          year: p.semester || p.year || p.department || '3rd Year',
+          year: p.semester || p.year || p.department || 'N/A',
           phone: p.captainPhone || p.phone || p.mobile || '-',
           email: p.captainEmail || p.email || '-'
         };
@@ -760,13 +760,13 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
         'Player Name',
         'Roll No',
         'College',
-        'Year / Branch',
+        'Year / Semester',
         'Phone No',
         'Email',
         'Partner Name',
         'Partner Roll No',
         'Partner College',
-        'Partner Year / Branch',
+        'Partner Year / Semester',
         'Partner Phone No',
         'Partner Email'
       ];

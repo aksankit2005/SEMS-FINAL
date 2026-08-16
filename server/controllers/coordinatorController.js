@@ -1069,6 +1069,7 @@ export const getRegistrations = async (req, res) => {
           college, department, '' AS "enrollmentNo", email, phone, gender,
           emergency_contact AS "emergencyContact", status, fee_paid AS "feePaid",
           payment_id AS "paymentId", payment_status AS "paymentStatus",
+          participant_data AS "participantData",
           created_at AS "createdAt"
          FROM college_registrations
          WHERE LOWER(sport_id) LIKE $1 OR LOWER(sport_id) LIKE $2 OR LOWER(sport_id) LIKE $3
@@ -1087,14 +1088,30 @@ export const getRegistrations = async (req, res) => {
             if (targetUuid) {
               try {
                 const memRes = await queryDb(
-                  `SELECT "fullName", "rollNo", "dateOfBirth",
+                  `SELECT id, "fullName", "rollNo", "dateOfBirth",
                           mobile, email, course, year_semester AS "yearSemester", gender, "isCaptain"
                    FROM registration_members
-                   WHERE "registrationId" = $1::uuid OR id = $1::uuid`,
+                   WHERE "registrationId" = $1::uuid OR id = $1::uuid
+                   ORDER BY "isCaptain" DESC, "createdAt" ASC`,
                   [targetUuid]
                 );
                 if (memRes && memRes.rows) members = memRes.rows;
               } catch (e) {}
+            }
+
+            // Fallback to participantData roster if members table query returned empty
+            if (members.length === 0 && r.participantData?.roster && Array.isArray(r.participantData.roster)) {
+              members = r.participantData.roster.map((m, idx) => ({
+                id: `${r.id}_mem_${idx}`,
+                fullName: m.name || m.fullName,
+                rollNo: m.rollNo || m.roll || 'N/A',
+                mobile: m.phone || m.mobile || r.phone,
+                email: m.email || r.email,
+                course: m.course || m.branch || r.department || 'N/A',
+                yearSemester: m.semester || m.year || m.yearSemester || 'N/A',
+                gender: m.gender || r.gender,
+                isCaptain: idx === 0
+              }));
             }
 
             const player1 = members[0] ? {

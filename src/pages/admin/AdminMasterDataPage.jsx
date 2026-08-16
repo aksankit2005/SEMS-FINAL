@@ -112,9 +112,19 @@ export const AdminMasterDataPage = () => {
     return fee || 400;
   };
 
-  // Totals that update whenever filters change
-  const totalRegistrations = filteredParticipants.length;
-  const totalMoney = filteredParticipants.reduce((sum, p) => sum + participantFee(p), 0);
+  // Totals that update whenever filters change without multiplying team fees
+  const totalParticipants = filteredParticipants.length;
+  const uniqueRegistrations = new Set(filteredParticipants.map((p) => p.registrationId || p.receiptId || p.id));
+  const totalRegistrations = uniqueRegistrations.size;
+
+  const uniqueRegFees = new Map();
+  filteredParticipants.forEach((p) => {
+    const key = p.registrationId || p.receiptId || p.id;
+    if (!uniqueRegFees.has(key)) {
+      uniqueRegFees.set(key, Number(p.feePaid || 0));
+    }
+  });
+  const totalMoney = Array.from(uniqueRegFees.values()).reduce((sum, v) => sum + v, 0);
 
   const totalPages = Math.max(1, Math.ceil(filteredParticipants.length / itemsPerPage));
   const paginatedParticipants = filteredParticipants.slice(
@@ -385,8 +395,17 @@ export const AdminMasterDataPage = () => {
 
                     {/* 5. Student Name */}
                     <td className="py-3 px-3 whitespace-nowrap font-semibold text-slate-900 dark:text-white">
-                      <div>{p.name}</div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">{p.email}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span>{p.name}</span>
+                        {p.isCaptain && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                            Captain
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">
+                        {p.rollNo && p.rollNo !== 'N/A' ? `Roll: ${p.rollNo} • ` : ''}{p.email}
+                      </div>
                     </td>
 
                     {/* 6. Mobile No */}
@@ -413,21 +432,22 @@ export const AdminMasterDataPage = () => {
                           setSelectedParticipant({
                             id: p.id,
                             participantName: p.name || p.teamName,
-                            rollNumber: p.rollNo || '2101430100012',
+                            rollNumber: p.rollNo || 'N/A',
                             college: p.college,
-                            branch: p.branch || 'CSE',
-                            section: p.section || 'A',
-                            year: p.year || '3rd Year',
+                            course: p.course || 'N/A',
+                            yearSemester: p.yearSemester || 'N/A',
+                            year: p.yearSemester || 'N/A',
                             gender: p.gender,
                             gameSport: p.sportName,
-                            category: 'Team / Single',
+                            category: p.teamName ? 'Team Event' : 'Individual',
                             mobile: p.mobile,
                             email: p.email,
                             registrationDate: p.date || '2026-08-05',
                             registrationTime: p.time || '10:00 AM',
                             paymentStatus: 'PAID',
                             registrationStatus: p.status || 'VERIFIED',
-                            registeredBy: 'Super Coordinator Roster'
+                            registeredBy: 'Super Coordinator Roster',
+                            isCaptain: p.isCaptain
                           });
                           setIsDetailsOpen(true);
                         }}

@@ -53,9 +53,9 @@ export const RegistrationDetailsModal = ({ isOpen, registration, onClose }) => {
               <BookOpen className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase">Branch & Year</p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase">Course & Year / Semester</p>
               <p className="text-xs font-bold text-slate-900 dark:text-white">
-                {registration.branch} ({registration.year}) - Sec {registration.section}
+                {registration.course || registration.branch || 'N/A'}{registration.yearSemester || registration.year ? ` • ${registration.yearSemester || registration.year}` : ''}
               </p>
             </div>
           </div>
