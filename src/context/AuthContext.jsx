@@ -9,6 +9,7 @@ export const AuthProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : null;
   });
 
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [userRegistrations, setUserRegistrations] = useState(() => {
     const saved = localStorage.getItem('sems_registrations');
     return saved ? JSON.parse(saved) : [];
