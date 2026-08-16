@@ -56,10 +56,6 @@ export const AuthProvider = ({ children }) => {
     const updated = [registrationData, ...userRegistrations.filter(r => r.id !== registrationData.id)];
     setUserRegistrations(updated);
     localStorage.setItem('sems_registrations', JSON.stringify(updated));
-
-    try {
-      coordinatorApi.createRegistration(registrationData);
-    } catch (e) {}
   };
 
   return (
