@@ -29,16 +29,16 @@ const computeStandings = () => {
 
   // Include ALL colleges — those without points get 0s
   const standings = ALL_COLLEGES
-    .filter((c) => c.id !== 'EXTERNAL') // exclude external/guest colleges from table
+    .filter((c) => String(c.id || '').toUpperCase() !== 'EXTERNAL') // exclude external/guest colleges from table
     .map((college) => {
       const counts = tally[college.id] || { gold: 0, silver: 0 };
       return {
-        id: college.id,
-        college: college.name,
-        code: college.id,
-        gold: counts.gold,
-        silver: counts.silver,
-        totalPoints: counts.gold * 5 + counts.silver * 3,
+        id: String(college.id || ''),
+        college: String(college.name || college.id || ''),
+        code: String(college.id || ''),
+        gold: Number(counts.gold || 0),
+        silver: Number(counts.silver || 0),
+        totalPoints: Number((counts.gold || 0) * 5 + (counts.silver || 0) * 3),
       };
     });
 
@@ -47,7 +47,7 @@ const computeStandings = () => {
     if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
     if (b.gold !== a.gold) return b.gold - a.gold;
     if (b.silver !== a.silver) return b.silver - a.silver;
-    return (a.college || '').localeCompare(b.college || '');
+    return String(a.college || '').localeCompare(String(b.college || ''));
   });
 
   return standings;
@@ -61,15 +61,15 @@ export const LeaderboardPage = () => {
   const normalizeStandings = (data) => {
     if (!Array.isArray(data)) return [];
     return data
-      .filter((c) => (c.code || c.id || '') !== 'EXTERNAL')
+      .filter((c) => String(c.code || c.id || '').toUpperCase() !== 'EXTERNAL')
       .map((item) => ({
-        id: item.id || item.code || item.college || '',
-        code: item.code || item.id || '',
-        college: item.college || item.name || item.code || 'College',
-        gold: item.gold ?? item.wins ?? item.goldCount ?? 0,
-        silver: item.silver ?? item.runnerUps ?? item.silverCount ?? 0,
-        totalPoints: item.totalPoints ?? item.points ?? 0,
-        rank: item.rank || 0,
+        id: String(item.id || item.code || item.college || ''),
+        code: String(item.code || item.id || ''),
+        college: String(item.college || item.name || item.code || 'College'),
+        gold: Number(item.gold ?? item.wins ?? item.goldCount ?? 0),
+        silver: Number(item.silver ?? item.runnerUps ?? item.silverCount ?? 0),
+        totalPoints: Number(item.totalPoints ?? item.points ?? 0),
+        rank: Number(item.rank || 0),
       }));
   };
 
@@ -114,9 +114,9 @@ export const LeaderboardPage = () => {
   }, []);
 
   const filtered = standings.filter((item) => {
-    const colName = (item.college || item.name || '').toLowerCase();
-    const colCode = (item.code || item.id || '').toLowerCase();
-    const q = query.toLowerCase();
+    const colName = String(item.college || item.name || '').toLowerCase();
+    const colCode = String(item.code || item.id || '').toLowerCase();
+    const q = String(query || '').toLowerCase();
     return colName.includes(q) || colCode.includes(q);
   });
 
