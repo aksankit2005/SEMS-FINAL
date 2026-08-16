@@ -16,7 +16,212 @@ const getShortCollege = (name) => {
   return s.split(' ').map((w) => w[0]).join('').toUpperCase();
 };
 
-const YouTubePlayer = React.memo(({ youtubeVideoId, match, isCricket }) => {
+const LiveScoreOverlay = ({ match }) => {
+  if (!match) return null;
+
+  const sportKey = (match.sportId || match.sport || match.sportName || '').toLowerCase();
+  const titleKey = (match.matchTitle || match.title || match.eventTitle || '').toLowerCase();
+
+  const isCricket = sportKey.includes('cricket') || titleKey.includes('cricket') || Boolean(match.striker || match.bowler);
+  const isFootball = sportKey.includes('football') || titleKey.includes('football');
+  const isBasketball = !isCricket && !isFootball && (sportKey.includes('basketball') || (Boolean(match.roster1 || match.roster2) && !sportKey.includes('chess')));
+  const isChess = !isCricket && !isFootball && (sportKey.includes('chess') || titleKey.includes('chess'));
+  const isAthletics = sportKey.includes('athletics') || titleKey.includes('athletics');
+
+  const team1Name = typeof match.team1 === 'object' ? (match.team1?.name || 'Team 1') : String(match.team1 || 'Team 1');
+  const team2Name = typeof match.team2 === 'object' ? (match.team2?.name || 'Team 2') : String(match.team2 || 'Team 2');
+  const score1Val = Number(typeof match.team1 === 'object' ? (match.team1?.score ?? '0') : (match.score1 ?? '0'));
+  const score2Val = Number(typeof match.team2 === 'object' ? (match.team2?.score ?? '0') : (match.score2 ?? '0'));
+
+  const setsHistory = match.setsHistory || [];
+
+  const calcSetsWon1 = () => {
+    if (typeof match.setsWon1 === 'number') return match.setsWon1;
+    if (typeof match.setsWonA === 'number') return match.setsWonA;
+    return setsHistory.filter(
+      (s) => s.isLocked && (s.winner === 1 || s.winner === '1' || s.winner === team1Name || s.score1 > s.score2)
+    ).length;
+  };
+
+  const calcSetsWon2 = () => {
+    if (typeof match.setsWon2 === 'number') return match.setsWon2;
+    if (typeof match.setsWonB === 'number') return match.setsWonB;
+    return setsHistory.filter(
+      (s) => s.isLocked && (s.winner === 2 || s.winner === '2' || s.winner === team2Name || s.score2 > s.score1)
+    ).length;
+  };
+
+  const setsWonA = calcSetsWon1();
+  const setsWonB = calcSetsWon2();
+
+  // 1. Cricket Floating Overlay
+  if (isCricket) {
+    const currentInnings = match.currentInnings || 1;
+    const currentRuns = currentInnings === 1 ? (match.score1 ?? 0) : (match.score2 ?? 0);
+    const currentWickets = currentInnings === 1 ? (match.wickets1 ?? 0) : (match.wickets2 ?? 0);
+    const currentOvers = currentInnings === 1 ? (match.overs1 || '0.0') : (match.overs2 || '0.0');
+    const battingTeam = currentInnings === 1 ? team1Name : team2Name;
+
+    return (
+      <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4 z-20 pointer-events-none">
+        <div className="bg-slate-950/90 backdrop-blur-md rounded-2xl border border-slate-700/60 p-2.5 sm:p-3 shadow-2xl text-white pointer-events-auto transition-all">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+            {/* Left: Batting Team & Big Score */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                <span className="font-black text-sm uppercase text-emerald-400 tracking-wide">{battingTeam}</span>
+              </div>
+              <div className="px-2.5 py-0.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-black text-sm sm:text-base">
+                {currentRuns}/{currentWickets} <span className="text-xs font-normal text-slate-300">({currentOvers} ov)</span>
+              </div>
+            </div>
+
+            {/* Center: On-Field Striker & Bowler */}
+            <div className="hidden md:flex items-center gap-4 text-[11px]">
+              <div className="flex items-center gap-1 bg-slate-900/90 px-2.5 py-1 rounded-xl border border-slate-800">
+                <span className="text-amber-400 font-bold">🏏 {match.striker?.name || 'Striker'}</span>
+                <span className="font-black text-white">{match.striker?.runs || 0}</span>
+                <span className="text-slate-400">({match.striker?.balls || 0}b)</span>
+              </div>
+              <div className="flex items-center gap-1 bg-slate-900/90 px-2.5 py-1 rounded-xl border border-slate-800">
+                <span className="text-cyan-400 font-bold">🎯 {match.bowler?.name || 'Bowler'}</span>
+                <span className="font-black text-rose-400">{match.bowler?.wickets || 0}/{match.bowler?.runs || 0}</span>
+                <span className="text-slate-400">({match.bowler?.overs || '0.0'})</span>
+              </div>
+            </div>
+
+            {/* Right: Recent Deliveries Ticker */}
+            {(match.recentBalls || []).length > 0 && (
+              <div className="flex items-center gap-1 overflow-x-auto">
+                {match.recentBalls.slice(-6).map((b, idx) => (
+                  <span
+                    key={idx}
+                    className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center font-mono font-black text-[10px] sm:text-xs border ${
+                      b === 'W' ? 'bg-rose-600 text-white border-rose-500 animate-pulse' :
+                      b === '4' || b === '6' ? 'bg-emerald-600 text-white border-emerald-500' :
+                      b === 'WD' || b === 'NB' ? 'bg-amber-500/30 text-amber-300 border-amber-500/50' :
+                      'bg-slate-900 text-slate-200 border-slate-700'
+                    }`}
+                  >
+                    {b}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Athletics Overlay
+  if (isAthletics) {
+    return (
+      <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4 z-20 pointer-events-none">
+        <div className="bg-slate-950/90 backdrop-blur-md rounded-2xl border border-blue-500/40 p-2.5 sm:p-3 shadow-2xl text-white pointer-events-auto transition-all flex items-center justify-between gap-3 text-xs font-mono">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+            <span className="font-black text-xs uppercase text-blue-400 tracking-wide">🏃 {match.activeSubEvent || 'Athletics Meet'}</span>
+          </div>
+          <div className="font-bold text-slate-200 truncate max-w-[260px] sm:max-w-md">
+            {match.winner ? `🏆 Winner: ${match.winner}` : (match.scoreSummary || match.liveNotes || 'Live Track & Field Event in Progress')}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Chess Overlay
+  if (isChess) {
+    return (
+      <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4 z-20 pointer-events-none">
+        <div className="bg-slate-950/90 backdrop-blur-md rounded-2xl border border-purple-500/40 p-2.5 sm:p-3 shadow-2xl text-white pointer-events-auto transition-all flex items-center justify-between gap-3 text-xs font-mono">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+            <span className="font-black text-xs uppercase text-purple-400 tracking-wide">♟️ {team1Name} vs {team2Name}</span>
+          </div>
+          <div className="font-bold text-amber-300">
+            {match.winner ? `Winner: ${match.winner}` : (match.scoreText || match.scoreSummary || 'Live Chess Match in Progress')}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 4. Universal Score Overlay for All Other Sports (Badminton, TT, Football, Basketball, Volleyball, Kabaddi, Kho-Kho, Tug of War, etc.)
+  const sportDisplayName = match.sportName || match.sport || 'LIVE MATCH';
+  const showSets = setsWonA > 0 || setsWonB > 0 || (setsHistory && setsHistory.length > 0);
+
+  return (
+    <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4 z-20 pointer-events-none">
+      <div className="bg-slate-950/90 backdrop-blur-md rounded-2xl border border-slate-700/60 p-2.5 sm:p-3 shadow-2xl text-white pointer-events-auto transition-all">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+          
+          {/* Left: Live indicator + Sport Name */}
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+            <span className="font-black text-xs uppercase text-emerald-400 tracking-wider">
+              {sportDisplayName}
+            </span>
+          </div>
+
+          {/* Center: Team A vs Team B Live Score */}
+          <div className="flex items-center gap-3 sm:gap-4 font-black">
+            {/* Team A */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-100 uppercase max-w-[90px] sm:max-w-[140px] truncate">{team1Name}</span>
+              {showSets && (
+                <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40 text-[10px]">
+                  ({setsWonA})
+                </span>
+              )}
+            </div>
+
+            {/* Score Numbers */}
+            <div className="px-3 py-1 rounded-xl bg-slate-900 border border-slate-700 text-amber-400 text-sm sm:text-base tracking-widest font-black shadow-inner">
+              {score1Val} - {score2Val}
+            </div>
+
+            {/* Team B */}
+            <div className="flex items-center gap-1.5">
+              {showSets && (
+                <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40 text-[10px]">
+                  ({setsWonB})
+                </span>
+              )}
+              <span className="text-slate-100 uppercase max-w-[90px] sm:max-w-[140px] truncate">{team2Name}</span>
+            </div>
+          </div>
+
+          {/* Right: Half/Quarter or Set Status Tag */}
+          <div className="hidden sm:flex items-center gap-2 text-[10px] text-slate-400 font-bold">
+            {match.half ? (
+              <span className="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-amber-300">
+                Half {match.half}
+              </span>
+            ) : match.quarter ? (
+              <span className="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-amber-300">
+                Q{match.quarter}
+              </span>
+            ) : showSets ? (
+              <span className="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-emerald-300">
+                Sets: {setsWonA} - {setsWonB}
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-emerald-300">
+                LIVE SCORE
+              </span>
+            )}
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const YouTubePlayer = React.memo(({ youtubeVideoId, match }) => {
   const embedUrl = youtubeVideoId ? getYouTubeEmbedUrl(youtubeVideoId) : null;
   const containerRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -39,14 +244,6 @@ const YouTubePlayer = React.memo(({ youtubeVideoId, match, isCricket }) => {
   };
 
   if (!embedUrl) return null;
-
-  const currentInnings = match?.currentInnings || 1;
-  const currentRuns = currentInnings === 1 ? (match?.score1 ?? 0) : (match?.score2 ?? 0);
-  const currentWickets = currentInnings === 1 ? (match?.wickets1 ?? 0) : (match?.wickets2 ?? 0);
-  const currentOvers = currentInnings === 1 ? (match?.overs1 || '0.0') : (match?.overs2 || '0.0');
-  const team1Name = typeof match?.team1 === 'object' ? (match?.team1?.name || 'Team 1') : String(match?.team1 || 'Team 1');
-  const team2Name = typeof match?.team2 === 'object' ? (match?.team2?.name || 'Team 2') : String(match?.team2 || 'Team 2');
-  const battingTeam = currentInnings === 1 ? team1Name : team2Name;
 
   return (
     <div ref={containerRef} className="relative aspect-video w-full bg-black group overflow-hidden">
@@ -76,63 +273,8 @@ const YouTubePlayer = React.memo(({ youtubeVideoId, match, isCricket }) => {
         <span>{isFullscreen ? 'Exit Fullscreen' : '📺 Fullscreen (with Live Score)'}</span>
       </button>
 
-      {/* FLOATING BROADCAST SCOREBAR OVERLAY (FOR CRICKET) */}
-      {isCricket && match && (
-        <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4 z-20 pointer-events-none">
-          <div className="bg-slate-950/90 backdrop-blur-md rounded-2xl border border-slate-700/60 p-2.5 sm:p-3 shadow-2xl text-white pointer-events-auto transition-all">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
-              
-              {/* Left: Batting Team & Big Score */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-                  <span className="font-black text-sm uppercase text-emerald-400 tracking-wide">{battingTeam}</span>
-                </div>
-                <div className="px-2.5 py-0.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-black text-sm sm:text-base">
-                  {currentRuns}/{currentWickets} <span className="text-xs font-normal text-slate-300">({currentOvers} ov)</span>
-                </div>
-              </div>
-
-              {/* Center: On-Field Striker & Bowler Quick Summary */}
-              <div className="hidden md:flex items-center gap-4 text-[11px]">
-                {/* Striker */}
-                <div className="flex items-center gap-1 bg-slate-900/90 px-2.5 py-1 rounded-xl border border-slate-800">
-                  <span className="text-amber-400 font-bold">🏏 {match.striker?.name || 'Striker'}</span>
-                  <span className="font-black text-white">{match.striker?.runs || 0}</span>
-                  <span className="text-slate-400">({match.striker?.balls || 0}b)</span>
-                </div>
-
-                {/* Bowler */}
-                <div className="flex items-center gap-1 bg-slate-900/90 px-2.5 py-1 rounded-xl border border-slate-800">
-                  <span className="text-cyan-400 font-bold">🎯 {match.bowler?.name || 'Bowler'}</span>
-                  <span className="font-black text-rose-400">{match.bowler?.wickets || 0}/{match.bowler?.runs || 0}</span>
-                  <span className="text-slate-400">({match.bowler?.overs || '0.0'})</span>
-                </div>
-              </div>
-
-              {/* Right: Recent Deliveries Ticker */}
-              {(match.recentBalls || []).length > 0 && (
-                <div className="flex items-center gap-1 overflow-x-auto">
-                  {match.recentBalls.slice(-6).map((b, idx) => (
-                    <span
-                      key={idx}
-                      className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center font-mono font-black text-[10px] sm:text-xs border ${
-                        b === 'W' ? 'bg-rose-600 text-white border-rose-500 animate-pulse' :
-                        b === '4' || b === '6' ? 'bg-emerald-600 text-white border-emerald-500' :
-                        b === 'WD' || b === 'NB' ? 'bg-amber-500/30 text-amber-300 border-amber-500/50' :
-                        'bg-slate-900 text-slate-200 border-slate-700'
-                      }`}
-                    >
-                      {b}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-            </div>
-          </div>
-        </div>
-      )}
+      {/* FLOATING BROADCAST SCOREBAR OVERLAY FOR ALL SPORTS */}
+      {match && <LiveScoreOverlay match={match} />}
     </div>
   );
 });
@@ -364,7 +506,7 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
         {(() => {
           const activeVideoId = extractYouTubeVideoId(match.youtubeVideoId) || extractYouTubeVideoId(match.streamUrl);
           if (activeVideoId) {
-            return <YouTubePlayer youtubeVideoId={activeVideoId} match={match} isCricket={isCricket} />;
+            return <YouTubePlayer youtubeVideoId={activeVideoId} match={match} />;
           }
           return (
             <div className="p-5 sm:p-6 bg-gradient-to-r from-slate-50 via-blue-50/20 to-slate-50 dark:from-[#090D16] dark:via-[#0E1626] dark:to-[#090D16] text-center border-b border-slate-200 dark:border-[#1E293B] space-y-2">
