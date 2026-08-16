@@ -1425,7 +1425,7 @@ export const getCommitteeDB = async (req, res) => {
   try {
     let sessions = await prisma.committeeSession.findMany({
       include: { members: { orderBy: { sortOrder: 'asc' } } },
-      orderBy: { createdAt: 'desc' }
+      orderBy: [{ isActive: 'desc' }, { label: 'asc' }]
     });
 
     // Auto-seed default session if DB is empty
@@ -1546,9 +1546,29 @@ export const saveCommitteeMemberDB = async (req, res) => {
     const finalPhoto = photoUrl || image || null;
     const normalizedType = (type === 'advisors' || type === 'ADVISOR') ? 'ADVISOR' : 'EXECUTIVE';
 
-    let targetSessionId = sessionId;
+    let targetSessionId = null;
+    const isSessionUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId || '');
+    if (isSessionUuid) {
+      const found = await prisma.committeeSession.findUnique({ where: { id: sessionId } });
+      if (found) targetSessionId = found.id;
+    }
+    if (!targetSessionId && sessionId) {
+      const cleanLabel = String(sessionId).replace(/^session-/, '');
+      const found = await prisma.committeeSession.findFirst({
+        where: {
+          OR: [
+            { label: String(sessionId) },
+            { label: cleanLabel }
+          ]
+        }
+      });
+      if (found) targetSessionId = found.id;
+    }
     if (!targetSessionId) {
       let defaultSession = await prisma.committeeSession.findFirst({ where: { isActive: true } });
+      if (!defaultSession) {
+        defaultSession = await prisma.committeeSession.findFirst();
+      }
       if (!defaultSession) {
         defaultSession = await prisma.committeeSession.create({
           data: { label: '2025-26', isActive: true }
@@ -1557,26 +1577,29 @@ export const saveCommitteeMemberDB = async (req, res) => {
       targetSessionId = defaultSession.id;
     }
 
-    if (id) {
+    const isMemberUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id || '');
+    if (isMemberUuid) {
       const existing = await prisma.committeeMember.findUnique({ where: { id } });
-      if (existing && existing.publicId && publicId && existing.publicId !== publicId) {
-        deleteCloudinaryAsset(existing.publicId, 'image').catch(() => {});
-      }
-
-      const updated = await prisma.committeeMember.update({
-        where: { id },
-        data: {
-          name,
-          role,
-          type: normalizedType,
-          photoUrl: finalPhoto,
-          publicId: publicId || existing?.publicId || null,
-          email: email || '',
-          phone: phone || '',
-          sortOrder: sortOrder !== undefined ? Number(sortOrder) : undefined
+      if (existing) {
+        if (existing.publicId && publicId && existing.publicId !== publicId) {
+          deleteCloudinaryAsset(existing.publicId, 'image').catch(() => {});
         }
-      });
-      return res.json({ success: true, member: updated });
+
+        const updated = await prisma.committeeMember.update({
+          where: { id },
+          data: {
+            name,
+            role,
+            type: normalizedType,
+            photoUrl: finalPhoto,
+            publicId: publicId || existing.publicId || null,
+            email: email || '',
+            phone: phone || '',
+            sortOrder: sortOrder !== undefined ? Number(sortOrder) : undefined
+          }
+        });
+        return res.json({ success: true, member: updated });
+      }
     }
 
     const created = await prisma.committeeMember.create({
@@ -1602,12 +1625,14 @@ export const saveCommitteeMemberDB = async (req, res) => {
 export const deleteCommitteeMemberDB = async (req, res) => {
   const { id } = req.params;
   try {
-    const existing = await prisma.committeeMember.findUnique({ where: { id } });
-    if (existing && existing.publicId) {
-      deleteCloudinaryAsset(existing.publicId, 'image').catch(() => {});
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id || '');
+    if (isUuid) {
+      const existing = await prisma.committeeMember.findUnique({ where: { id } });
+      if (existing && existing.publicId) {
+        deleteCloudinaryAsset(existing.publicId, 'image').catch(() => {});
+      }
+      await prisma.committeeMember.delete({ where: { id } });
     }
-
-    await prisma.committeeMember.delete({ where: { id } });
     return res.json({ success: true, message: 'Committee member deleted successfully.' });
   } catch (err) {
     console.error('Error deleting committee member in DB:', err.message);

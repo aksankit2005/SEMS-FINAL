@@ -121,6 +121,7 @@ export const AboutPage = () => {
   sessions.forEach((s) => {
     const year = (s.label || '').split('-')[0] || s.label || '2025';
     committeeYears[year] = s;
+    if (s.id) committeeYears[s.id] = s;
   });
 
   const activeSession = sessions.find((s) => s.isActive) || sessions[0] || null;
@@ -132,7 +133,13 @@ export const AboutPage = () => {
       ? activeSession.advisors
       : facultyAdvisors;
 
-  const currentTeam = (selectedSession?.executiveCommittee || committeeData['2025'] || []).map((m) => ({
+  const currentTeam = (
+    (selectedSession?.executiveCommittee && selectedSession.executiveCommittee.length > 0)
+      ? selectedSession.executiveCommittee
+      : (activeSession?.executiveCommittee && activeSession.executiveCommittee.length > 0)
+        ? activeSession.executiveCommittee
+        : DEFAULT_EXEC_COMMITTEE
+  ).map((m) => ({
     ...m,
     badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30'
   }));
