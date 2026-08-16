@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Crown, Search } from 'lucide-react';
 import { ALL_COLLEGES } from '../services/superCoordinatorApi';
+import { apiUrl } from '../services/apiConfig';
+import { useSportsData } from '../context/SportsDataContext';
 
 // Build college standings from Super Coordinator awarded points in localStorage
 const computeStandings = () => {
@@ -8,7 +10,7 @@ const computeStandings = () => {
   try {
     const stored = localStorage.getItem('sems_super_coord_leaderboard');
     if (stored) entries = JSON.parse(stored);
-  } catch (e) {}
+  } catch (e) { }
 
   // Tally gold and silver per college
   const tally = {};
@@ -54,10 +56,11 @@ const computeStandings = () => {
 export const LeaderboardPage = () => {
   const [query, setQuery] = useState('');
   const [standings, setStandings] = useState([]);
+  const { leaderboard } = useSportsData();
 
   const refresh = async () => {
     try {
-      const res = await fetch('/api/leaderboard');
+      const res = await fetch(apiUrl('/leaderboard'));
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
@@ -66,9 +69,23 @@ export const LeaderboardPage = () => {
           return;
         }
       }
-    } catch (e) {}
+    } catch (e) { }
+
+    if (leaderboard && leaderboard.length > 0) {
+      setStandings(leaderboard);
+      return;
+    }
+
     setStandings(computeStandings());
   };
+
+  useEffect(() => {
+    if (leaderboard && leaderboard.length > 0) {
+      setStandings(leaderboard);
+    } else {
+      refresh();
+    }
+  }, [leaderboard]);
 
   useEffect(() => {
     refresh();
@@ -104,7 +121,7 @@ export const LeaderboardPage = () => {
             Overall <span className="bg-gradient-to-r from-orange-500 via-amber-500 to-blue-600 bg-clip-text text-transparent">Leaderboard</span>
           </h1>
           <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
-            Live medal tallies and cumulative points across all sports events. 🥇 Winner = 5 pts &nbsp;•&nbsp; 🥈 Runner-Up = 3 pts
+            Live medal tallies and cumulative points across all sports events. 🥇 Gold = 2 pts &nbsp;•&nbsp; 🥈 Silver = 1 pt
           </p>
         </div>
 
@@ -178,8 +195,8 @@ export const LeaderboardPage = () => {
                 <tr>
                   <th className="p-4 text-center">Rank</th>
                   <th className="p-4">College / University</th>
-                  <th className="p-4 text-center">Firsts 🥇 (+5 pts)</th>
-                  <th className="p-4 text-center">Seconds 🥈 (+3 pts)</th>
+                  <th className="p-4 text-center">Gold 🥇 (+2 pts)</th>
+                  <th className="p-4 text-center">Silver 🥈 (+1 pt)</th>
                   <th className="p-4 text-center font-black text-blue-600 dark:text-blue-400">Total Points</th>
                 </tr>
               </thead>
@@ -194,11 +211,10 @@ export const LeaderboardPage = () => {
                   filtered.map((item, index) => (
                     <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
                       <td className="p-4 text-center font-black">
-                        <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs ${
-                          index === 0 ? 'bg-orange-500 text-white font-black' :
-                          index === 1 ? 'bg-slate-300 text-slate-950 font-bold' :
-                          'bg-slate-100 dark:bg-slate-800 text-slate-500'
-                        }`}>
+                        <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs ${index === 0 ? 'bg-orange-500 text-white font-black' :
+                            index === 1 ? 'bg-slate-300 text-slate-950 font-bold' :
+                              'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                          }`}>
                           {index + 1}
                         </span>
                       </td>
