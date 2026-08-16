@@ -25,7 +25,7 @@ router.get('/live-matches', async (req, res) => {
               updated_at AS "updatedAt"
        FROM live_matches 
        WHERE LOWER(status) IN ('running', 'live', 'in_progress', 'active') 
-       ORDER BY updated_at DESC`
+       ORDER BY sport_id ASC, table_number ASC, id ASC`
     );
 
     if (!dbRes || !dbRes.rows) {

@@ -399,7 +399,11 @@ export const batchSaveMatches = async (req, res) => {
          ON CONFLICT (id) DO UPDATE SET
            sport_id = EXCLUDED.sport_id,
            format = EXCLUDED.format,
-           status = EXCLUDED.status,
+           status = CASE
+  WHEN LOWER(live_matches.status) IN ('running', 'live', 'in_progress', 'active')
+    THEN live_matches.status
+  ELSE EXCLUDED.status
+END,
            team1 = EXCLUDED.team1,
            team2 = EXCLUDED.team2,
            match_title = EXCLUDED.match_title,
