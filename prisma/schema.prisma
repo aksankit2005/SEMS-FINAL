@@ -254,6 +254,7 @@ model Student {
   collegeId    String?   @db.Uuid
   fullName     String
   rollNo       String?
+  enrollmentNo String?
   email        String?
   mobile       String?
   gender       String?

@@ -1,92 +1,137 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 import { SPORTS_DATA } from '../data/sportsData';
-import { LIVE_MATCHES_DATA } from '../data/liveMatchesData';
 import { SCHEDULE_DATA } from '../data/scheduleData';
 import { RESULTS_DATA } from '../data/resultsData';
 import { ANNOUNCEMENTS_DATA } from '../data/announcementsData';
 import { ALL_COLLEGES } from '../services/superCoordinatorApi';
 import { coordinatorApi } from '../services/coordinatorApi';
+import { API_BASE_URL } from '../services/apiConfig';
 
 const SportsDataContext = createContext();
 
 export const SportsDataProvider = ({ children }) => {
   const [sports] = useState(SPORTS_DATA);
   const [liveMatches, setLiveMatches] = useState([]);
-  const [schedule] = useState(SCHEDULE_DATA);
-  const [results] = useState(RESULTS_DATA);
+  const [schedule, setSchedule] = useState(SCHEDULE_DATA);
+  const [results, setResults] = useState(RESULTS_DATA);
   const [leaderboard, setLeaderboard] = useState([]);
   const [announcements, setAnnouncements] = useState(ANNOUNCEMENTS_DATA);
 
-  const computeLeaderboard = () => {
-    let entries = [];
+  // Fetch live matches from backend PostgreSQL database
+  const syncLiveMatches = async () => {
     try {
-      const stored = localStorage.getItem('sems_super_coord_leaderboard');
-      if (stored) entries = JSON.parse(stored);
-    } catch (e) { }
-    const tally = {};
-    entries.forEach((entry) => {
-      if (entry.winnerCollege) {
-        if (!tally[entry.winnerCollege]) tally[entry.winnerCollege] = { gold: 0, silver: 0 };
-        tally[entry.winnerCollege].gold += 1;
+      const resData = await coordinatorApi.getPublicLiveMatches();
+      if (resData && Array.isArray(resData)) {
+        const dbLive = resData.filter(
+          (m) => m && m.id && (m.status === 'running' || m.status === 'live' || m.status === 'in_progress' || m.status === 'active')
+        );
+        setLiveMatches(dbLive);
       }
-      if (entry.runnerUpCollege) {
-        if (!tally[entry.runnerUpCollege]) tally[entry.runnerUpCollege] = { gold: 0, silver: 0 };
-        tally[entry.runnerUpCollege].silver += 1;
+    } catch (e) {
+      console.warn('Live matches API fetch error:', e.message);
+    }
+  };
+
+  // Fetch schedule from backend PostgreSQL database
+  const syncSchedule = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/schedules`);
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setSchedule(res.data);
       }
-    });
+    } catch (e) {
+      console.warn('Schedules API fetch error:', e.message);
+    }
+  };
+
+  // Fetch results from backend PostgreSQL database
+  const syncResults = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/results`);
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setResults(res.data);
+      }
+    } catch (e) {
+      console.warn('Results API fetch error:', e.message);
+    }
+  };
+
+  // Fetch leaderboard standings from backend PostgreSQL database
+  const syncLeaderboard = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/leaderboard`);
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        const entries = res.data;
+        const tally = {};
+        entries.forEach((entry) => {
+          if (entry.winnerCollege) {
+            if (!tally[entry.winnerCollege]) tally[entry.winnerCollege] = { gold: 0, silver: 0 };
+            tally[entry.winnerCollege].gold += 1;
+          }
+          if (entry.runnerUpCollege) {
+            if (!tally[entry.runnerUpCollege]) tally[entry.runnerUpCollege] = { gold: 0, silver: 0 };
+            tally[entry.runnerUpCollege].silver += 1;
+          }
+        });
+        const standings = ALL_COLLEGES
+          .filter((c) => c.id !== 'EXTERNAL')
+          .map((college) => {
+            const counts = tally[college.id] || { gold: 0, silver: 0 };
+            return {
+              id: college.id,
+              college: college.name,
+              code: college.id,
+              gold: counts.gold,
+              silver: counts.silver,
+              totalPoints: counts.gold * 2 + counts.silver * 1,
+            };
+          });
+        standings.sort((a, b) => b.totalPoints - a.totalPoints || b.gold - a.gold || b.silver - a.silver || a.college.localeCompare(b.college));
+        setLeaderboard(standings);
+        return;
+      }
+    } catch (e) {
+      console.warn('Leaderboard API fetch error:', e.message);
+    }
+
+    // Fallback: calculate standings from ALL_COLLEGES if no database entries yet
     const standings = ALL_COLLEGES
       .filter((c) => c.id !== 'EXTERNAL')
-      .map((college) => {
-        const counts = tally[college.id] || { gold: 0, silver: 0 };
-        return {
-          id: college.id,
-          college: college.name,
-          code: college.id,
-          gold: counts.gold,
-          silver: counts.silver,
-          totalPoints: counts.gold * 2 + counts.silver * 1,
-        };
-      });
-    standings.sort((a, b) => b.totalPoints - a.totalPoints || b.gold - a.gold || b.silver - a.silver || a.college.localeCompare(b.college));
+      .map((college) => ({
+        id: college.id,
+        college: college.name,
+        code: college.id,
+        gold: 0,
+        silver: 0,
+        totalPoints: 0,
+      }));
     setLeaderboard(standings);
   };
 
-  const syncAnnouncements = () => {
-    let adminList = [];
+  // Fetch announcements from backend PostgreSQL database
+  const syncAnnouncements = async () => {
     try {
-      const stored = localStorage.getItem('sems_admin_announcements');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          adminList = parsed.filter((a) => a && (a.isPublished !== false));
-        }
+      const res = await axios.get(`${API_BASE_URL}/announcements`);
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        const dbList = res.data.map((a) => ({
+          id: a.id,
+          title: a.title,
+          summary: a.description || 'Official announcement notice',
+          content: a.description || 'Official announcement notice',
+          category: 'Rules & Guidelines',
+          date: a.createdAt ? new Date(a.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          time: '10:00 AM',
+          author: 'System Administrator (Admin)',
+          isImportant: true,
+          attachments: a.attachments || []
+        }));
+        setAnnouncements(dbList);
+        return;
       }
-    } catch (e) { }
-
-    const formattedAdminList = adminList.map((a) => ({
-      id: a.id,
-      title: a.title,
-      summary: a.description || a.summary || 'Official announcement notice',
-      content: a.description || a.content || 'Official announcement notice',
-      category: a.category || 'Rules & Guidelines',
-      date: a.date || a.publishDate || new Date().toISOString().split('T')[0],
-      time: a.time || '10:00 AM',
-      author: 'System Administrator (Admin)',
-      isImportant: Boolean(a.isImportant || a.important || true),
-      attachments: a.attachments || []
-    }));
-
-    const combined = [...formattedAdminList, ...ANNOUNCEMENTS_DATA];
-    const seen = new Set();
-    const unique = [];
-    combined.forEach((item) => {
-      if (item && item.id && !seen.has(item.id)) {
-        seen.add(item.id);
-        unique.push(item);
-      }
-    });
-
-    setAnnouncements(unique);
+    } catch (e) {
+      console.warn('Announcements API fetch error:', e.message);
+    }
   };
 
   useEffect(() => {
@@ -108,36 +153,20 @@ export const SportsDataProvider = ({ children }) => {
     };
 
     syncLiveMatches();
-    const intervalId = setInterval(syncLiveMatches, 3000);
-
-    window.addEventListener('storage', syncLiveMatches);
-    window.addEventListener('sems_matches_updated', syncLiveMatches);
-
-    return () => {
-      clearInterval(intervalId);
-      window.removeEventListener('storage', syncLiveMatches);
-      window.removeEventListener('sems_matches_updated', syncLiveMatches);
-    };
-  }, []);
-
-  useEffect(() => {
-    computeLeaderboard();
-    window.addEventListener('sems_leaderboard_updated', computeLeaderboard);
-    window.addEventListener('storage', computeLeaderboard);
-    return () => {
-      window.removeEventListener('sems_leaderboard_updated', computeLeaderboard);
-      window.removeEventListener('storage', computeLeaderboard);
-    };
-  }, []);
-
-  useEffect(() => {
+    syncSchedule();
+    syncResults();
+    syncLeaderboard();
     syncAnnouncements();
-    window.addEventListener('sems_announcements_updated', syncAnnouncements);
-    window.addEventListener('storage', syncAnnouncements);
-    return () => {
-      window.removeEventListener('sems_announcements_updated', syncAnnouncements);
-      window.removeEventListener('storage', syncAnnouncements);
-    };
+
+    const intervalId = setInterval(() => {
+      syncLiveMatches();
+      syncSchedule();
+      syncResults();
+      syncLeaderboard();
+      syncAnnouncements();
+    }, 5000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   const updateLiveMatchScore = (matchId, team1Score, team2Score, statusInfo) => {
