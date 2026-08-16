@@ -254,14 +254,11 @@ model Student {
   collegeId    String?   @db.Uuid
   fullName     String
   rollNo       String?
-  enrollmentNo String?
   email        String?
   mobile       String?
   gender       String?
-  course       String?
   branch       String?
-  yearSemester String?
-  section      String?
+  yearSemester String?  
   dateOfBirth  DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -306,15 +303,12 @@ model RegistrationMember {
   fullName         String
   fatherMotherName String?   @map("father_mother_name")
   rollNo           String?
-  enrollmentNo     String?
   email            String?
   mobile           String?
   alternateMobile  String?   @map("alternate_mobile")
   gender           String?
   course           String?
-  branch           String?
   yearSemester     String?   @map("year_semester")
-  section          String?
   dateOfBirth      DateTime?
   aadhaarNumber    String?
   isCaptain        Boolean   @default(false)
@@ -324,7 +318,6 @@ model RegistrationMember {
   registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
 
   @@index([registrationId])
-  @@index([enrollmentNo])
   @@map("registration_members")
 }
 
@@ -419,7 +412,6 @@ model TeamMember {
   registrationId       String?  @db.Uuid
   name                 String?
   rollNo               String?
-  enrollmentNo         String?
   phone                String?
   email                String?
   gender               String?
