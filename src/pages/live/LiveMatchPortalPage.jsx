@@ -215,7 +215,6 @@ export const LiveMatchPortalPage = () => {
             </div>
 
           ) : (
-
             /* Live Match Cards Grid */
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {filteredLiveMatches.map((m) => {
@@ -228,13 +227,22 @@ export const LiveMatchPortalPage = () => {
                 const statusLower = (m.status || '').toLowerCase();
                 const isFinished = statusLower === 'completed' || statusLower === 'finished' || statusLower === 'ended';
 
-                const isCricketMatch =
-                  (m.sportId || m.sport || m.sportName || '').toLowerCase().includes('cricket') ||
-                  (m.matchTitle || m.title || '').toLowerCase().includes('cricket');
+                const sportKey = String(m.sportId || m.sport || m.sportName || '').toLowerCase().replace(/_/g, '-');
+                const titleKey = String(m.matchTitle || m.title || '').toLowerCase();
 
-                const isAthleticsMatch =
-                  (m.sportId || m.sport || m.sportName || '').toLowerCase().includes('athletics') ||
-                  (m.matchTitle || m.title || '').toLowerCase().includes('athletics');
+                const isCricketMatch = sportKey.includes('cricket') || titleKey.includes('cricket') || Boolean(m.striker || m.bowler);
+                const isFootballMatch = sportKey.includes('football') || titleKey.includes('football');
+                const isBasketballMatch = !isCricketMatch && !isFootballMatch && (sportKey.includes('basketball') || titleKey.includes('basketball') || (Boolean(m.roster1 || m.roster2) && !sportKey.includes('chess') && !sportKey.includes('kabaddi')));
+                const isKabaddiMatch = !isCricketMatch && !isFootballMatch && !isBasketballMatch && (sportKey.includes('kabaddi') || titleKey.includes('kabaddi'));
+                const isVolleyballMatch = !isCricketMatch && !isFootballMatch && !isBasketballMatch && (sportKey.includes('volleyball') || titleKey.includes('volleyball'));
+                const isBadmintonMatch = sportKey.includes('badminton') || titleKey.includes('badminton');
+                const isTableTennisMatch = sportKey.includes('table-tennis') || sportKey.includes('tabletennis') || titleKey.includes('table tennis') || titleKey.includes('tt');
+                const isKhoKhoMatch = sportKey.includes('kho-kho') || sportKey.includes('khokho') || titleKey.includes('kho kho');
+                const isTugOfWarMatch = sportKey.includes('tug-of-war') || sportKey.includes('tug') || titleKey.includes('tug of war');
+                const isChessMatch = !isCricketMatch && !isFootballMatch && (sportKey.includes('chess') || titleKey.includes('chess'));
+                const isAthleticsMatch = sportKey.includes('athletics') || titleKey.includes('athletics');
+
+                const isRacketOrVolleyball = isBadmintonMatch || isTableTennisMatch || isVolleyballMatch;
 
                 const parseCricketTeamScore = (teamObj, scoreVal, wicketsVal, oversVal) => {
                   const rawStr = typeof teamObj === 'object' ? (teamObj?.score || '') : (typeof scoreVal === 'string' ? scoreVal : '');
@@ -270,7 +278,9 @@ export const LiveMatchPortalPage = () => {
                   ? battingTeamStr.includes(t2Name.trim().toLowerCase())
                   : currentInnings === 2;
 
-                const hasLiveStream = Boolean(m.youtubeVideoId || m.streamUrl || m.isLiveStreaming || extractYouTubeVideoId(m.streamUrl));
+                const rawStream = m.streamUrl || m.liveStreamUrl || (m.details && (m.details.streamUrl || m.details.liveStreamUrl));
+                const videoId = m.youtubeVideoId || extractYouTubeVideoId(rawStream) || (m.details && (m.details.youtubeVideoId || extractYouTubeVideoId(m.details.streamUrl)));
+                const hasLiveStream = Boolean(m.isLiveStreaming || videoId || rawStream);
 
                 return (
                   <div
@@ -319,7 +329,7 @@ export const LiveMatchPortalPage = () => {
                       </div>
                     </div>
 
-                    {/* Cricket Spectator Score Box vs Athletics Box vs Standard Score Box */}
+                    {/* Sport-Specific Score Display Box */}
                     {isCricketMatch ? (
                       <div className="p-4 rounded-2xl bg-gradient-to-br from-[#061814] via-[#091E1A] to-[#0F172A] border border-emerald-500/40 space-y-3 shadow-md">
                         {/* Innings Header & Target/Max Overs info */}
@@ -461,6 +471,102 @@ export const LiveMatchPortalPage = () => {
                           </div>
                         )}
                       </div>
+                    ) : isBasketballMatch ? (
+                      <div className="p-4 rounded-2xl bg-amber-500/5 dark:bg-amber-950/20 border border-amber-500/30 space-y-2 shadow-xs">
+                        <div className="flex items-center justify-between text-xs font-mono">
+                          <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-300 font-bold">
+                            🏀 {m.quarter || 'Quarter 1'}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase">PTS SCORE</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white truncate" title={t1Name}>
+                              {t1Name}
+                            </p>
+                          </div>
+                          <div className="px-4 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-500/40 text-center font-mono font-black text-2xl sm:text-3xl text-amber-600 dark:text-amber-400 shadow-xs shrink-0">
+                            {score1Display} : {score2Display}
+                          </div>
+                          <div className="flex-1 min-w-0 text-right">
+                            <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white truncate" title={t2Name}>
+                              {t2Name}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : isFootballMatch ? (
+                      <div className="p-4 rounded-2xl bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/30 space-y-2 shadow-xs">
+                        <div className="flex items-center justify-between text-xs font-mono">
+                          <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 font-bold">
+                            ⚽ {m.quarter || (m.half === 2 ? '2nd Half' : '1st Half')}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase">GOALS</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white truncate" title={t1Name}>
+                              {t1Name}
+                            </p>
+                          </div>
+                          <div className="px-4 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-500/40 text-center font-mono font-black text-2xl sm:text-3xl text-emerald-600 dark:text-emerald-400 shadow-xs shrink-0">
+                            {score1Display} : {score2Display}
+                          </div>
+                          <div className="flex-1 min-w-0 text-right">
+                            <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white truncate" title={t2Name}>
+                              {t2Name}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : isKabaddiMatch ? (
+                      <div className="p-4 rounded-2xl bg-blue-500/5 dark:bg-blue-950/20 border border-blue-500/30 space-y-2 shadow-xs">
+                        <div className="flex items-center justify-between text-xs font-mono">
+                          <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-600 dark:text-blue-300 font-bold">
+                            🤼 {m.half === 2 ? '2nd Half' : '1st Half'}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase">PTS SCORE</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white truncate" title={t1Name}>
+                              {t1Name}
+                            </p>
+                          </div>
+                          <div className="px-4 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-blue-500/40 text-center font-mono font-black text-2xl sm:text-3xl text-blue-600 dark:text-indigo-400 shadow-xs shrink-0">
+                            {score1Display} : {score2Display}
+                          </div>
+                          <div className="flex-1 min-w-0 text-right">
+                            <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white truncate" title={t2Name}>
+                              {t2Name}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : isTugOfWarMatch ? (
+                      <div className="p-4 rounded-2xl bg-amber-500/5 dark:bg-amber-950/20 border border-amber-500/30 space-y-2 shadow-xs">
+                        <div className="flex items-center justify-between text-xs font-mono">
+                          <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-300 font-bold">
+                            🪢 Round #{m.currentRound || 1}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase">ROUNDS WON</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white truncate" title={t1Name}>
+                              {t1Name}
+                            </p>
+                          </div>
+                          <div className="px-4 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-500/40 text-center font-mono font-black text-2xl sm:text-3xl text-amber-600 dark:text-amber-400 shadow-xs shrink-0">
+                            {m.roundsWon1 ?? score1Display} : {m.roundsWon2 ?? score2Display}
+                          </div>
+                          <div className="flex-1 min-w-0 text-right">
+                            <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white truncate" title={t2Name}>
+                              {t2Name}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     ) : (
                       <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-[#1E293B] flex items-center justify-between gap-3 shadow-xs">
                         <div className="flex-1 min-w-0 text-left">
@@ -496,8 +602,8 @@ export const LiveMatchPortalPage = () => {
                       </button>
                     </div>
 
-                    {/* Set / Half-by-Half Points Display */}
-                    {m.setsHistory && m.setsHistory.some((s) => s.score1 > 0 || s.score2 > 0 || s.isLocked) && (
+                    {/* Set Scores Pill Row - ONLY for Racket Sports & Volleyball */}
+                    {isRacketOrVolleyball && m.setsHistory && m.setsHistory.some((s) => s.score1 > 0 || s.score2 > 0 || s.isLocked) && (
                       <div className="pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between gap-2 text-[10px] font-mono">
                         <span className="text-slate-400 font-bold uppercase shrink-0">Set Scores:</span>
                         <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar py-0.5">

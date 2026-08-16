@@ -119,7 +119,9 @@ export const CricketLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
     const updated = {
       ...active,
       liveStreamUrl: rawUrl,
+      streamUrl: rawUrl,
       youtubeVideoId: videoId,
+      isLiveStreaming: Boolean(videoId),
       liveStreamPlatform: 'YouTube',
     };
 
@@ -127,7 +129,9 @@ export const CricketLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
 
     await coordinatorApi.updateMatchScoring(active.id, {
       liveStreamUrl: rawUrl,
+      streamUrl: rawUrl,
       youtubeVideoId: videoId,
+      isLiveStreaming: Boolean(videoId),
       liveStreamPlatform: 'YouTube',
     });
 

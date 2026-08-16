@@ -114,7 +114,9 @@ export const TableTennisLiveMatchControlTab = ({ matches, user, onUpdateMatchSco
     const updated = {
       ...active,
       liveStreamUrl: rawUrl,
+      streamUrl: rawUrl,
       youtubeVideoId: videoId,
+      isLiveStreaming: Boolean(videoId),
       liveStreamPlatform: 'YouTube',
     };
 
@@ -122,7 +124,9 @@ export const TableTennisLiveMatchControlTab = ({ matches, user, onUpdateMatchSco
 
     await coordinatorApi.updateMatchScoring(active.id, {
       liveStreamUrl: rawUrl,
+      streamUrl: rawUrl,
       youtubeVideoId: videoId,
+      isLiveStreaming: Boolean(videoId),
       liveStreamPlatform: 'YouTube',
     });
 

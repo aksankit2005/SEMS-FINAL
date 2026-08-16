@@ -117,7 +117,9 @@ export const BasketballLiveMatchControlTab = ({ matches, user, onUpdateMatchScor
     const updated = {
       ...active,
       liveStreamUrl: rawUrl,
+      streamUrl: rawUrl,
       youtubeVideoId: videoId,
+      isLiveStreaming: Boolean(videoId),
       liveStreamPlatform: 'YouTube',
     };
 
@@ -125,7 +127,9 @@ export const BasketballLiveMatchControlTab = ({ matches, user, onUpdateMatchScor
 
     await coordinatorApi.updateMatchScoring(active.id, {
       liveStreamUrl: rawUrl,
+      streamUrl: rawUrl,
       youtubeVideoId: videoId,
+      isLiveStreaming: Boolean(videoId),
       liveStreamPlatform: 'YouTube',
     });
 
@@ -165,6 +169,7 @@ export const BasketballLiveMatchControlTab = ({ matches, user, onUpdateMatchScor
     const updated = {
       ...active,
       liveStreamUrl: '',
+      streamUrl: '',
       youtubeVideoId: '',
       isLiveStreaming: false,
     };
@@ -174,6 +179,7 @@ export const BasketballLiveMatchControlTab = ({ matches, user, onUpdateMatchScor
 
     await coordinatorApi.updateMatchScoring(active.id, {
       liveStreamUrl: '',
+      streamUrl: '',
       youtubeVideoId: '',
       isLiveStreaming: false,
     });

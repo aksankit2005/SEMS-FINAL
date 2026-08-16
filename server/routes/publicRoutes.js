@@ -3,6 +3,7 @@ import { registerPublicEvent } from '../controllers/registrationController.js';
 import { getHeroSlidesDB, getCommitteeDB } from '../controllers/adminController.js';
 import { getLeaderboardStandings } from '../services/leaderboardService.js';
 import { queryDb, prisma, pool } from '../config/db.js';
+import { extractYouTubeVideoIdBackend } from '../controllers/coordinatorController.js';
 
 const router = express.Router();
 
@@ -24,6 +25,7 @@ router.get('/live-matches', async (req, res) => {
               current_set AS "currentSet",
               sets_won1 AS "setsWon1",
               sets_won2 AS "setsWon2",
+              current_quarter AS "currentQuarter",
               updated_at AS "updatedAt"
        FROM live_matches 
        WHERE LOWER(status) IN ('running', 'live', 'in_progress', 'active') 
@@ -34,7 +36,16 @@ router.get('/live-matches', async (req, res) => {
       dbRes = await queryDb(
         `SELECT id, sport_id AS "sportId", format, status, team1, team2, 
                 match_title AS "matchTitle", table_number AS "tableNumber", 
-                time, score1, score2, winner
+                time, score1, score2, winner,
+                youtube_video_id AS "youtubeVideoId",
+                stream_url AS "streamUrl",
+                is_live_streaming AS "isLiveStreaming",
+                details,
+                sets_history AS "setsHistory",
+                current_set AS "currentSet",
+                sets_won1 AS "setsWon1",
+                sets_won2 AS "setsWon2",
+                updated_at AS "updatedAt"
          FROM live_matches 
          WHERE LOWER(status) IN ('running', 'live', 'in_progress', 'active')`
       );
@@ -46,8 +57,19 @@ router.get('/live-matches', async (req, res) => {
         if (typeof detailsObj === 'string') {
           try { detailsObj = JSON.parse(detailsObj); } catch (e) {}
         }
+        if (!detailsObj || typeof detailsObj !== 'object') {
+          detailsObj = {};
+        }
 
-        let parsedSetsHistory = m.setsHistory || (detailsObj && detailsObj.setsHistory) || null;
+        const rawStream = m.streamUrl || m.stream_url || detailsObj.streamUrl || detailsObj.liveStreamUrl || null;
+        let videoId = m.youtubeVideoId || m.youtube_video_id || detailsObj.youtubeVideoId || detailsObj.youtube_video_id || extractYouTubeVideoIdBackend(rawStream) || null;
+        if (!videoId && rawStream) {
+          videoId = extractYouTubeVideoIdBackend(rawStream);
+        }
+
+        const isStreaming = Boolean(m.isLiveStreaming || videoId || rawStream);
+
+        let parsedSetsHistory = m.setsHistory || detailsObj.setsHistory || null;
         if (typeof parsedSetsHistory === 'string' && parsedSetsHistory.trim()) {
           try {
             parsedSetsHistory = JSON.parse(parsedSetsHistory);
@@ -56,7 +78,7 @@ router.get('/live-matches', async (req, res) => {
 
         let roster1 = detailsObj?.roster1 || null;
         let roster2 = detailsObj?.roster2 || null;
-        let currentQuarter = m.current_quarter || detailsObj?.quarter || 'Quarter 1';
+        let currentQuarter = m.currentQuarter || m.current_quarter || detailsObj?.quarter || 'Quarter 1';
 
         // Query database table basketball_player_stats for exact DB records
         try {
@@ -98,20 +120,60 @@ router.get('/live-matches', async (req, res) => {
         }
 
         return {
+          ...detailsObj,
           ...m,
+          details: detailsObj,
           sportId: m.sportId,
           sportName: (m.sportId || '').replace(/-/g, ' ').toUpperCase(),
           liveTimer: m.time || '14:32',
           quarter: currentQuarter,
-          youtubeVideoId: m.youtubeVideoId || m.youtube_video_id || null,
-          streamUrl: m.streamUrl || m.stream_url || null,
-          isLiveStreaming: Boolean(m.isLiveStreaming || m.youtubeVideoId || m.streamUrl),
+          half: detailsObj.half || (detailsObj.completedHalf1 ? 2 : 1),
+          youtubeVideoId: videoId,
+          streamUrl: rawStream,
+          isLiveStreaming: isStreaming,
           setsHistory: Array.isArray(parsedSetsHistory) ? parsedSetsHistory : null,
-          currentSet: m.currentSet || (detailsObj && detailsObj.currentSet) || 1,
-          setsWon1: m.setsWon1 || (detailsObj && detailsObj.setsWon1) || 0,
-          setsWon2: m.setsWon2 || (detailsObj && detailsObj.setsWon2) || 0,
+          currentSet: m.currentSet || detailsObj.currentSet || 1,
+          setsWon1: m.setsWon1 !== undefined ? m.setsWon1 : (detailsObj.setsWon1 || 0),
+          setsWon2: m.setsWon2 !== undefined ? m.setsWon2 : (detailsObj.setsWon2 || 0),
           roster1,
           roster2,
+          // Forward Cricket specific fields
+          striker: detailsObj.striker || null,
+          nonStriker: detailsObj.nonStriker || null,
+          bowler: detailsObj.bowler || null,
+          recentBalls: detailsObj.recentBalls || [],
+          commentaryLog: detailsObj.commentaryLog || [],
+          battingCard1: detailsObj.battingCard1 || [],
+          bowlingCard1: detailsObj.bowlingCard1 || [],
+          battingCard2: detailsObj.battingCard2 || [],
+          bowlingCard2: detailsObj.bowlingCard2 || [],
+          currentInnings: detailsObj.currentInnings || 1,
+          battingTeam: detailsObj.battingTeam || m.team1,
+          bowlingTeam: detailsObj.bowlingTeam || m.team2,
+          wickets1: detailsObj.wickets1 !== undefined ? detailsObj.wickets1 : 0,
+          overs1: detailsObj.overs1 || '0.0',
+          wickets2: detailsObj.wickets2 !== undefined ? detailsObj.wickets2 : 0,
+          overs2: detailsObj.overs2 || '0.0',
+          targetRuns: detailsObj.targetRuns || null,
+          firstInningsScore: detailsObj.firstInningsScore || null,
+          extras: detailsObj.extras || null,
+          // Forward Kabaddi specific fields
+          half1Score1: detailsObj.half1Score1 !== undefined ? detailsObj.half1Score1 : null,
+          half1Score2: detailsObj.half1Score2 !== undefined ? detailsObj.half1Score2 : null,
+          half2Score1: detailsObj.half2Score1 !== undefined ? detailsObj.half2Score1 : null,
+          half2Score2: detailsObj.half2Score2 !== undefined ? detailsObj.half2Score2 : null,
+          kabaddiStats1: detailsObj.kabaddiStats1 || null,
+          kabaddiStats2: detailsObj.kabaddiStats2 || null,
+          // Forward Tug of War specific fields
+          roundsWon1: detailsObj.roundsWon1 !== undefined ? detailsObj.roundsWon1 : null,
+          roundsWon2: detailsObj.roundsWon2 !== undefined ? detailsObj.roundsWon2 : null,
+          currentRound: detailsObj.currentRound || null,
+          roundsHistory: detailsObj.roundsHistory || null,
+          // Forward Athletics & Chess fields
+          activeSubEvent: detailsObj.activeSubEvent || null,
+          medals: detailsObj.medals || null,
+          scoreSummary: detailsObj.scoreSummary || null,
+          scoreText: detailsObj.scoreText || null,
           updatedAt: m.updatedAt || new Date().toISOString()
         };
       }));

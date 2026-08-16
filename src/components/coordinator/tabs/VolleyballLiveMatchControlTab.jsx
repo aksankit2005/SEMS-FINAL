@@ -118,7 +118,9 @@ export const VolleyballLiveMatchControlTab = ({ matches, user, onUpdateMatchScor
     const updated = {
       ...active,
       liveStreamUrl: rawUrl,
+      streamUrl: rawUrl,
       youtubeVideoId: videoId,
+      isLiveStreaming: Boolean(videoId),
       liveStreamPlatform: 'YouTube',
     };
 
@@ -126,7 +128,9 @@ export const VolleyballLiveMatchControlTab = ({ matches, user, onUpdateMatchScor
 
     await coordinatorApi.updateMatchScoring(active.id, {
       liveStreamUrl: rawUrl,
+      streamUrl: rawUrl,
       youtubeVideoId: videoId,
+      isLiveStreaming: Boolean(videoId),
       liveStreamPlatform: 'YouTube',
     });
 

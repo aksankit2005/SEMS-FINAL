@@ -3,6 +3,42 @@ import jwt from 'jsonwebtoken';
 import { envConfig, coordinatorPasswords } from '../config/env.js';
 import { queryDb, prisma } from '../config/db.js';
 
+export const extractYouTubeVideoIdBackend = (url) => {
+  if (!url || typeof url !== 'string') return null;
+  const trimmed = url.trim();
+
+  // If it does not contain http / slashes / dots, check for raw 11-char video ID
+  if (!trimmed.includes('/') && !trimmed.includes('.') && /^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  // Check standard YouTube patterns
+  const ytMatch = trimmed.match(/(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|live\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
+  if (ytMatch && ytMatch[1]) {
+    return ytMatch[1];
+  }
+
+  // URL object parsing with strict domain check
+  try {
+    const parsed = new URL(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`);
+    const host = parsed.hostname.toLowerCase();
+    const isYouTubeHost = host === 'youtube.com' || host.endsWith('.youtube.com') || host === 'youtu.be' || host === 'youtube-nocookie.com';
+    if (!isYouTubeHost) return null;
+
+    const vParam = parsed.searchParams.get('v');
+    if (vParam && /^[a-zA-Z0-9_-]{11}$/.test(vParam)) {
+      return vParam;
+    }
+    const pathSegments = parsed.pathname.split('/').filter(Boolean);
+    const lastSegment = pathSegments[pathSegments.length - 1];
+    if (lastSegment && /^[a-zA-Z0-9_-]{11}$/.test(lastSegment)) {
+      return lastSegment;
+    }
+  } catch (e) {}
+
+  return null;
+};
+
 const isUuid = (val) => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
 
 let inMemoryCoordinatorMatches = {};
@@ -254,6 +290,11 @@ const syncMatchToMatchesTable = async (m) => {
 export const createMatch = async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
   const matchId = req.body.id || `M${Math.floor(100000 + Math.random() * 900000)}`;
+
+  const rawStreamUrl = req.body.streamUrl || req.body.stream_url || req.body.liveStreamUrl || '';
+  const videoId = req.body.youtubeVideoId || req.body.youtube_video_id || extractYouTubeVideoIdBackend(rawStreamUrl) || null;
+  const isStreaming = Boolean(req.body.isLiveStreaming || videoId || rawStreamUrl);
+
   const newMatch = {
     id: matchId,
     sportId: sportId,
@@ -267,6 +308,9 @@ export const createMatch = async (req, res) => {
     score1: Number(req.body.score1 || 0),
     score2: Number(req.body.score2 || 0),
     winner: req.body.winner || null,
+    youtubeVideoId: videoId,
+    streamUrl: rawStreamUrl || null,
+    isLiveStreaming: isStreaming,
   };
 
   if (!inMemoryCoordinatorMatches[sportId]) {
@@ -285,6 +329,7 @@ export const createMatch = async (req, res) => {
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS current_set INT DEFAULT 1;
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won1 INT DEFAULT 0;
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won2 INT DEFAULT 0;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS current_quarter TEXT;
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
     `);
   } catch (e) {}
@@ -301,7 +346,11 @@ export const createMatch = async (req, res) => {
     setsHistory: defaultSetsHistory,
     currentSet: newMatch.currentSet || 1,
     setsWon1: newMatch.setsWon1 || 0,
-    setsWon2: newMatch.setsWon2 || 0
+    setsWon2: newMatch.setsWon2 || 0,
+    youtubeVideoId: videoId,
+    streamUrl: rawStreamUrl || null,
+    isLiveStreaming: isStreaming,
+    ...(req.body.details && typeof req.body.details === 'object' ? req.body.details : {})
   };
 
   await queryDb(
@@ -311,9 +360,9 @@ export const createMatch = async (req, res) => {
        format = EXCLUDED.format, status = EXCLUDED.status, team1 = EXCLUDED.team1, team2 = EXCLUDED.team2,
        match_title = EXCLUDED.match_title, table_number = EXCLUDED.table_number, time = EXCLUDED.time,
        score1 = EXCLUDED.score1, score2 = EXCLUDED.score2, winner = EXCLUDED.winner,
-       youtube_video_id = COALESCE(EXCLUDED.youtube_video_id, live_matches.youtube_video_id),
-       stream_url = COALESCE(EXCLUDED.stream_url, live_matches.stream_url),
-       is_live_streaming = COALESCE(EXCLUDED.is_live_streaming, live_matches.is_live_streaming),
+       youtube_video_id = EXCLUDED.youtube_video_id,
+       stream_url = EXCLUDED.stream_url,
+       is_live_streaming = EXCLUDED.is_live_streaming,
        details = EXCLUDED.details,
        sets_history = EXCLUDED.sets_history,
        current_set = EXCLUDED.current_set,
@@ -333,9 +382,9 @@ export const createMatch = async (req, res) => {
       newMatch.score1,
       newMatch.score2,
       newMatch.winner,
-      newMatch.youtubeVideoId || newMatch.youtube_video_id || null,
-      newMatch.streamUrl || newMatch.stream_url || null,
-      Boolean(newMatch.isLiveStreaming || newMatch.youtubeVideoId || newMatch.streamUrl),
+      videoId,
+      rawStreamUrl || null,
+      isStreaming,
       JSON.stringify(detailsObj),
       JSON.stringify(defaultSetsHistory),
       newMatch.currentSet || 1,
@@ -356,7 +405,6 @@ export const batchSaveMatches = async (req, res) => {
   if (!Array.isArray(matches)) {
     return res.status(400).json({ message: 'matches must be an array' });
   }
-
 
   const savedMatches = [];
 
@@ -380,6 +428,10 @@ export const batchSaveMatches = async (req, res) => {
     const score2Val = Number(m.score2 || 0);
     const winnerVal = m.winner || null;
 
+    const rawStream = m.streamUrl || m.stream_url || m.liveStreamUrl || '';
+    const videoId = m.youtubeVideoId || m.youtube_video_id || extractYouTubeVideoIdBackend(rawStream) || null;
+    const isStreaming = Boolean(m.isLiveStreaming || videoId || rawStream);
+
     const detailsObj = {
       category: m.category || m.gender || 'Open',
       date: m.date || new Date().toISOString().split('T')[0],
@@ -391,6 +443,9 @@ export const batchSaveMatches = async (req, res) => {
       team1Player2: m.team1Player2 || null,
       team2Player1: m.team2Player1 || null,
       team2Player2: m.team2Player2 || null,
+      youtubeVideoId: videoId,
+      streamUrl: rawStream || null,
+      isLiveStreaming: isStreaming,
       ...(m.details && typeof m.details === 'object' ? m.details : {})
     };
 
@@ -425,6 +480,9 @@ END,
            END,
 
            winner = COALESCE(live_matches.winner, EXCLUDED.winner),
+           youtube_video_id = CASE WHEN EXCLUDED.youtube_video_id IS NOT NULL AND EXCLUDED.youtube_video_id != '' THEN EXCLUDED.youtube_video_id ELSE live_matches.youtube_video_id END,
+           stream_url = CASE WHEN EXCLUDED.stream_url IS NOT NULL AND EXCLUDED.stream_url != '' THEN EXCLUDED.stream_url ELSE live_matches.stream_url END,
+           is_live_streaming = COALESCE(EXCLUDED.is_live_streaming, live_matches.is_live_streaming),
             details = EXCLUDED.details,
             updated_at = CURRENT_TIMESTAMP`,
         [
@@ -440,9 +498,9 @@ END,
           score1Val,
           score2Val,
           winnerVal,
-          m.youtubeVideoId || m.youtube_video_id || null,
-          m.streamUrl || m.stream_url || null,
-          Boolean(m.isLiveStreaming || m.youtubeVideoId || m.streamUrl),
+          videoId,
+          rawStream || null,
+          isStreaming,
           JSON.stringify(detailsObj),
           m.setsHistory ? (typeof m.setsHistory === 'string' ? m.setsHistory : JSON.stringify(m.setsHistory)) : null,
           m.currentSet || 1,
@@ -476,46 +534,49 @@ END,
 
   return res.json({ success: true, count: savedMatches.length, matches: savedMatches });
 };
+
 export const updateMatch = async (req, res) => {
-  const sportId = req.user.assignedSport.toLowerCase();
+  const sportId = (req.user?.assignedSport || req.body.sportId || 'badminton').toLowerCase();
   const { id } = req.params;
 
+  let existing = null;
+  try {
+    const dbRes = await queryDb('SELECT * FROM live_matches WHERE id = $1', [id]);
+    if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+      existing = dbRes.rows[0];
+    }
+  } catch (e) {}
+
   const rawStreamUrl =
-    req.body.streamUrl ||
-    req.body.stream_url ||
-    req.body.liveStreamUrl ||
-    '';
+    req.body.streamUrl !== undefined
+      ? req.body.streamUrl
+      : req.body.liveStreamUrl !== undefined
+      ? req.body.liveStreamUrl
+      : req.body.stream_url !== undefined
+      ? req.body.stream_url
+      : (existing ? existing.stream_url : '');
 
   let extractedVideoId =
-    req.body.youtubeVideoId ||
-    req.body.youtube_video_id ||
-    '';
+    req.body.youtubeVideoId !== undefined
+      ? req.body.youtubeVideoId
+      : req.body.youtube_video_id !== undefined
+      ? req.body.youtube_video_id
+      : extractYouTubeVideoIdBackend(rawStreamUrl);
 
-  if (!extractedVideoId && rawStreamUrl) {
-    const match = rawStreamUrl.match(
-      /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|live\/|shorts\/))([\w-]{11})/
-    );
-
-    if (match && match[1]) {
-      extractedVideoId = match[1];
-    }
+  if (req.body.streamUrl === '' || req.body.liveStreamUrl === '' || req.body.youtubeVideoId === '') {
+    extractedVideoId = null;
   }
+
+  const isStreaming = Boolean(
+    req.body.isLiveStreaming ||
+    (extractedVideoId && req.body.streamUrl !== '' && req.body.liveStreamUrl !== '')
+  );
 
   const payloadWithStream = {
     ...req.body,
-    youtubeVideoId:
-      extractedVideoId ||
-      req.body.youtubeVideoId ||
-      null,
-    streamUrl:
-      rawStreamUrl ||
-      req.body.streamUrl ||
-      null,
-    isLiveStreaming: Boolean(
-      req.body.isLiveStreaming ||
-      extractedVideoId ||
-      rawStreamUrl
-    )
+    youtubeVideoId: extractedVideoId || null,
+    streamUrl: rawStreamUrl || null,
+    isLiveStreaming: isStreaming
   };
 
   const updatedMatch = {
@@ -524,37 +585,44 @@ export const updateMatch = async (req, res) => {
     ...payloadWithStream
   };
 
-
-  // Ensure table columns exist
- 
-
-  const rawSetsHistory = req.body.setsHistory || updatedMatch.setsHistory;
+  const rawSetsHistory = req.body.setsHistory || updatedMatch.setsHistory || existing?.sets_history;
   const setsHistoryArr = Array.isArray(rawSetsHistory) 
     ? rawSetsHistory 
-    : (typeof rawSetsHistory === 'string' ? JSON.parse(rawSetsHistory) : null);
+    : (typeof rawSetsHistory === 'string' && rawSetsHistory.trim() ? JSON.parse(rawSetsHistory) : null);
 
   const setsHistoryStr = setsHistoryArr ? JSON.stringify(setsHistoryArr) : null;
-  const currentSetVal = req.body.currentSet || req.body.currentSetIndex || updatedMatch.currentSet || 1;
-  const setsWon1Val = req.body.setsWon1 !== undefined ? Number(req.body.setsWon1) : (updatedMatch.setsWon1 || 0);
-  const setsWon2Val = req.body.setsWon2 !== undefined ? Number(req.body.setsWon2) : (updatedMatch.setsWon2 || 0);
+  const currentSetVal = req.body.currentSet || req.body.currentSetIndex || updatedMatch.currentSet || existing?.current_set || 1;
+  const setsWon1Val = req.body.setsWon1 !== undefined ? Number(req.body.setsWon1) : (updatedMatch.setsWon1 || existing?.sets_won1 || 0);
+  const setsWon2Val = req.body.setsWon2 !== undefined ? Number(req.body.setsWon2) : (updatedMatch.setsWon2 || existing?.sets_won2 || 0);
 
-  const currentQuarterVal = req.body.quarter || req.body.currentQuarter || updatedMatch.quarter || 'Quarter 1';
+  const currentQuarterVal = req.body.quarter || req.body.currentQuarter || updatedMatch.quarter || existing?.current_quarter || 'Quarter 1';
+
+  let existingDetails = {};
+  if (existing?.details) {
+    try {
+      existingDetails = typeof existing.details === 'string' ? JSON.parse(existing.details) : existing.details;
+    } catch (e) {}
+  }
 
   const detailsObj = {
+    ...existingDetails,
     setsHistory: setsHistoryArr,
     currentSet: currentSetVal,
     setsWon1: setsWon1Val,
     setsWon2: setsWon2Val,
     quarter: currentQuarterVal,
-    roster1: req.body.roster1 || updatedMatch.roster1 || null,
-    roster2: req.body.roster2 || updatedMatch.roster2 || null,
-    playerStats1: req.body.playerStats1 || updatedMatch.playerStats1 || null,
-    playerStats2: req.body.playerStats2 || updatedMatch.playerStats2 || null
+    roster1: req.body.roster1 || updatedMatch.roster1 || existingDetails.roster1 || null,
+    roster2: req.body.roster2 || updatedMatch.roster2 || existingDetails.roster2 || null,
+    playerStats1: req.body.playerStats1 || updatedMatch.playerStats1 || existingDetails.playerStats1 || null,
+    playerStats2: req.body.playerStats2 || updatedMatch.playerStats2 || existingDetails.playerStats2 || null,
+    youtubeVideoId: extractedVideoId || null,
+    streamUrl: rawStreamUrl || null,
+    isLiveStreaming: isStreaming,
+    ...(req.body.details && typeof req.body.details === 'object' ? req.body.details : {})
   };
 
-  // Upsert Basketball Player Stats into basketball_player_stats table in Supabase
-  const t1Name = req.body.team1 || updatedMatch.team1 || 'Team 1';
-  const t2Name = req.body.team2 || updatedMatch.team2 || 'Team 2';
+  const t1Name = req.body.team1 || updatedMatch.team1 || existing?.team1 || 'Team 1';
+  const t2Name = req.body.team2 || updatedMatch.team2 || existing?.team2 || 'Team 2';
 
   const r1List = req.body.roster1 || updatedMatch.roster1;
   if (Array.isArray(r1List)) {
@@ -578,9 +646,7 @@ export const updateMatch = async (req, res) => {
              updated_at = CURRENT_TIMESTAMP`,
           [id, t1Name, jNo, pName, onPitch, pts, fls]
         );
-      } catch (err) {
-        console.error('Error upserting basketball_player_stats for team 1:', err.message);
-      }
+      } catch (err) {}
     }
   }
 
@@ -606,13 +672,9 @@ export const updateMatch = async (req, res) => {
              updated_at = CURRENT_TIMESTAMP`,
           [id, t2Name, jNo, pName, onPitch, pts, fls]
         );
-      } catch (err) {
-        console.error('Error upserting basketball_player_stats for team 2:', err.message);
-      }
+      } catch (err) {}
     }
   }
-
-  // Ensure current_quarter column exists on live_matches
 
   await queryDb(
     `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, details, sets_history, current_set, sets_won1, sets_won2, current_quarter, updated_at)
@@ -624,23 +686,13 @@ export const updateMatch = async (req, res) => {
        match_title = COALESCE(EXCLUDED.match_title, live_matches.match_title),
        table_number = COALESCE(EXCLUDED.table_number, live_matches.table_number),
        time = COALESCE(EXCLUDED.time, live_matches.time),
-       score1 = CASE
-  WHEN LOWER(live_matches.status) IN ('running', 'live', 'in_progress', 'active')
-    THEN live_matches.score1
-  ELSE EXCLUDED.score1
-END,
-
-score2 = CASE
-  WHEN LOWER(live_matches.status) IN ('running', 'live', 'in_progress', 'active')
-    THEN live_matches.score2
-  ELSE EXCLUDED.score2
-END,
-
-winner = COALESCE(live_matches.winner, EXCLUDED.winner),
-       youtube_video_id = CASE WHEN EXCLUDED.youtube_video_id IS NOT NULL AND EXCLUDED.youtube_video_id != '' THEN EXCLUDED.youtube_video_id ELSE live_matches.youtube_video_id END,
-       stream_url = CASE WHEN EXCLUDED.stream_url IS NOT NULL AND EXCLUDED.stream_url != '' THEN EXCLUDED.stream_url ELSE live_matches.stream_url END,
-       is_live_streaming = COALESCE(EXCLUDED.is_live_streaming, live_matches.is_live_streaming),
-       details = CASE WHEN EXCLUDED.details IS NOT NULL THEN EXCLUDED.details ELSE live_matches.details END,
+       score1 = EXCLUDED.score1,
+       score2 = EXCLUDED.score2,
+       winner = COALESCE(live_matches.winner, EXCLUDED.winner),
+       youtube_video_id = EXCLUDED.youtube_video_id,
+       stream_url = EXCLUDED.stream_url,
+       is_live_streaming = EXCLUDED.is_live_streaming,
+       details = EXCLUDED.details,
        sets_history = CASE WHEN EXCLUDED.sets_history IS NOT NULL AND EXCLUDED.sets_history != '' THEN EXCLUDED.sets_history ELSE live_matches.sets_history END,
        current_set = COALESCE(EXCLUDED.current_set, live_matches.current_set),
        sets_won1 = COALESCE(EXCLUDED.sets_won1, live_matches.sets_won1),
@@ -650,19 +702,19 @@ winner = COALESCE(live_matches.winner, EXCLUDED.winner),
     [
       id,
       sportId,
-      (req.body.format || updatedMatch.format || 'SINGLES').toUpperCase(),
-      req.body.status || updatedMatch.status || 'SCHEDULED',
+      (req.body.format || updatedMatch.format || existing?.format || 'SINGLES').toUpperCase(),
+      req.body.status || updatedMatch.status || existing?.status || 'SCHEDULED',
       t1Name,
       t2Name,
-      req.body.matchTitle || updatedMatch.matchTitle || `${t1Name} vs ${t2Name}`,
-      req.body.tableNumber || updatedMatch.tableNumber || 'Table 1',
-      req.body.time || updatedMatch.time || '05:30 PM',
-      req.body.score1 !== undefined ? Number(req.body.score1) : (updatedMatch.score1 || 0),
-      req.body.score2 !== undefined ? Number(req.body.score2) : (updatedMatch.score2 || 0),
-      req.body.winner || updatedMatch.winner || null,
-      updatedMatch.youtubeVideoId || null,
-      updatedMatch.streamUrl || null,
-      Boolean(updatedMatch.isLiveStreaming || updatedMatch.youtubeVideoId || updatedMatch.streamUrl),
+      req.body.matchTitle || updatedMatch.matchTitle || existing?.match_title || `${t1Name} vs ${t2Name}`,
+      req.body.tableNumber || updatedMatch.tableNumber || existing?.table_number || 'Table 1',
+      req.body.time || updatedMatch.time || existing?.time || '05:30 PM',
+      req.body.score1 !== undefined ? Number(req.body.score1) : Number(existing?.score1 || 0),
+      req.body.score2 !== undefined ? Number(req.body.score2) : Number(existing?.score2 || 0),
+      req.body.winner || updatedMatch.winner || existing?.winner || null,
+      extractedVideoId || null,
+      rawStreamUrl || null,
+      isStreaming,
       JSON.stringify(detailsObj),
       setsHistoryStr,
       currentSetVal,
@@ -674,7 +726,7 @@ winner = COALESCE(live_matches.winner, EXCLUDED.winner),
 
   await syncMatchToMatchesTable(updatedMatch);
 
-  return res.json({ success: true, match: { ...updatedMatch, quarter: currentQuarterVal } });
+  return res.json({ success: true, match: { ...updatedMatch, details: detailsObj } });
 };
 
 export const getBasketballMatchPlayersDB = async (req, res) => {
@@ -727,7 +779,7 @@ export const deleteAllMatches = async (req, res) => {
 };
 
 export const updateMatchScore = async (req, res) => {
-  const sportId = req.user.assignedSport.toLowerCase();
+  const sportId = (req.user?.assignedSport || req.body.sportId || 'badminton').toLowerCase();
   const { id } = req.params;
 
   let existing = null;
@@ -740,9 +792,35 @@ export const updateMatchScore = async (req, res) => {
     console.warn('updateMatchScore DB select error:', e.message);
   }
 
+  const rawStreamUrl =
+    req.body.streamUrl !== undefined
+      ? req.body.streamUrl
+      : req.body.liveStreamUrl !== undefined
+      ? req.body.liveStreamUrl
+      : req.body.stream_url !== undefined
+      ? req.body.stream_url
+      : (existing ? existing.stream_url : '');
+
+  let extractedVideoId =
+    req.body.youtubeVideoId !== undefined
+      ? req.body.youtubeVideoId
+      : req.body.youtube_video_id !== undefined
+      ? req.body.youtube_video_id
+      : extractYouTubeVideoIdBackend(rawStreamUrl);
+
+  if (req.body.streamUrl === '' || req.body.liveStreamUrl === '' || req.body.youtubeVideoId === '') {
+    extractedVideoId = null;
+  }
+
+  const isStreaming = Boolean(
+    req.body.isLiveStreaming !== undefined
+      ? req.body.isLiveStreaming
+      : (extractedVideoId && rawStreamUrl)
+  );
+
   let match = existing ? {
     id: existing.id,
-    sportId: existing.sport_id,
+    sportId: existing.sport_id || sportId,
     format: existing.format || 'SINGLES',
     status: req.body.status || existing.status || 'running',
     team1: existing.team1,
@@ -751,6 +829,10 @@ export const updateMatchScore = async (req, res) => {
     tableNumber: req.body.venue || req.body.tableNumber || existing.table_number || 'Table 1',
     score1: req.body.score1 !== undefined ? Number(req.body.score1) : Number(existing.score1 || 0),
     score2: req.body.score2 !== undefined ? Number(req.body.score2) : Number(existing.score2 || 0),
+    winner: req.body.winner || existing.winner || null,
+    youtubeVideoId: extractedVideoId || existing.youtube_video_id || null,
+    streamUrl: rawStreamUrl || existing.stream_url || null,
+    isLiveStreaming: isStreaming,
     setsHistory: existing.sets_history,
     currentSet: existing.current_set || 1,
     setsWon1: existing.sets_won1 || 0,
@@ -766,6 +848,10 @@ export const updateMatchScore = async (req, res) => {
     tableNumber: req.body.venue || req.body.tableNumber || 'Table 1',
     score1: Number(req.body.score1 || 0),
     score2: Number(req.body.score2 || 0),
+    winner: req.body.winner || null,
+    youtubeVideoId: extractedVideoId || null,
+    streamUrl: rawStreamUrl || null,
+    isLiveStreaming: isStreaming,
   };
 
   if (req.body.team1 !== undefined) match.team1 = req.body.team1;
@@ -776,11 +862,12 @@ export const updateMatchScore = async (req, res) => {
   if (req.body.status !== undefined) match.status = req.body.status;
   if (req.body.venue !== undefined) match.tableNumber = req.body.venue;
   if (req.body.tableNumber !== undefined) match.tableNumber = req.body.tableNumber;
+  if (req.body.winner !== undefined) match.winner = req.body.winner;
 
   const rawSetsHistory = req.body.setsHistory || match.setsHistory;
   const setsHistoryArr = Array.isArray(rawSetsHistory)
     ? rawSetsHistory
-    : (typeof rawSetsHistory === 'string' ? JSON.parse(rawSetsHistory) : [
+    : (typeof rawSetsHistory === 'string' && rawSetsHistory.trim() ? JSON.parse(rawSetsHistory) : [
         { set: 1, score1: match.score1, score2: match.score2, isLocked: false, winner: null },
         { set: 2, score1: 0, score2: 0, isLocked: false, winner: null },
         { set: 3, score1: 0, score2: 0, isLocked: false, winner: null },
@@ -792,20 +879,78 @@ export const updateMatchScore = async (req, res) => {
   const setsWon1Val = req.body.setsWon1 !== undefined ? Number(req.body.setsWon1) : (match.setsWon1 || 0);
   const setsWon2Val = req.body.setsWon2 !== undefined ? Number(req.body.setsWon2) : (match.setsWon2 || 0);
 
+  let existingDetails = {};
+  if (existing?.details) {
+    try {
+      existingDetails = typeof existing.details === 'string' ? JSON.parse(existing.details) : existing.details;
+    } catch (e) {}
+  }
+
   const detailsObj = {
-    ...(existing?.details && typeof existing.details === 'object' ? existing.details : {}),
+    ...existingDetails,
+    ...(req.body.details && typeof req.body.details === 'object' ? req.body.details : {}),
+    // Preserve sport-specific top-level properties sent by coordinator scorers
+    ...(req.body.striker !== undefined ? { striker: req.body.striker } : {}),
+    ...(req.body.nonStriker !== undefined ? { nonStriker: req.body.nonStriker } : {}),
+    ...(req.body.bowler !== undefined ? { bowler: req.body.bowler } : {}),
+    ...(req.body.recentBalls !== undefined ? { recentBalls: req.body.recentBalls } : {}),
+    ...(req.body.commentaryLog !== undefined ? { commentaryLog: req.body.commentaryLog } : {}),
+    ...(req.body.battingCard1 !== undefined ? { battingCard1: req.body.battingCard1 } : {}),
+    ...(req.body.bowlingCard1 !== undefined ? { bowlingCard1: req.body.bowlingCard1 } : {}),
+    ...(req.body.battingCard2 !== undefined ? { battingCard2: req.body.battingCard2 } : {}),
+    ...(req.body.bowlingCard2 !== undefined ? { bowlingCard2: req.body.bowlingCard2 } : {}),
+    ...(req.body.currentInnings !== undefined ? { currentInnings: req.body.currentInnings } : {}),
+    ...(req.body.battingTeam !== undefined ? { battingTeam: req.body.battingTeam } : {}),
+    ...(req.body.bowlingTeam !== undefined ? { bowlingTeam: req.body.bowlingTeam } : {}),
+    ...(req.body.wickets1 !== undefined ? { wickets1: req.body.wickets1 } : {}),
+    ...(req.body.overs1 !== undefined ? { overs1: req.body.overs1 } : {}),
+    ...(req.body.wickets2 !== undefined ? { wickets2: req.body.wickets2 } : {}),
+    ...(req.body.overs2 !== undefined ? { overs2: req.body.overs2 } : {}),
+    ...(req.body.targetRuns !== undefined ? { targetRuns: req.body.targetRuns } : {}),
+    ...(req.body.firstInningsScore !== undefined ? { firstInningsScore: req.body.firstInningsScore } : {}),
+    ...(req.body.extras !== undefined ? { extras: req.body.extras } : {}),
+    ...(req.body.quarter !== undefined ? { quarter: req.body.quarter } : {}),
+    ...(req.body.half !== undefined ? { half: req.body.half } : {}),
+    ...(req.body.completedHalf1 !== undefined ? { completedHalf1: req.body.completedHalf1 } : {}),
+    ...(req.body.half1Score1 !== undefined ? { half1Score1: req.body.half1Score1 } : {}),
+    ...(req.body.half1Score2 !== undefined ? { half1Score2: req.body.half1Score2 } : {}),
+    ...(req.body.half1Stats1 !== undefined ? { half1Stats1: req.body.half1Stats1 } : {}),
+    ...(req.body.half1Stats2 !== undefined ? { half1Stats2: req.body.half1Stats2 } : {}),
+    ...(req.body.half2Score1 !== undefined ? { half2Score1: req.body.half2Score1 } : {}),
+    ...(req.body.half2Score2 !== undefined ? { half2Score2: req.body.half2Score2 } : {}),
+    ...(req.body.half2Stats1 !== undefined ? { half2Stats1: req.body.half2Stats1 } : {}),
+    ...(req.body.half2Stats2 !== undefined ? { half2Stats2: req.body.half2Stats2 } : {}),
+    ...(req.body.kabaddiStats1 !== undefined ? { kabaddiStats1: req.body.kabaddiStats1 } : {}),
+    ...(req.body.kabaddiStats2 !== undefined ? { kabaddiStats2: req.body.kabaddiStats2 } : {}),
+    ...(req.body.roster1 !== undefined ? { roster1: req.body.roster1 } : {}),
+    ...(req.body.roster2 !== undefined ? { roster2: req.body.roster2 } : {}),
+    ...(req.body.playerStats1 !== undefined ? { playerStats1: req.body.playerStats1 } : {}),
+    ...(req.body.playerStats2 !== undefined ? { playerStats2: req.body.playerStats2 } : {}),
+    ...(req.body.roundsWon1 !== undefined ? { roundsWon1: req.body.roundsWon1 } : {}),
+    ...(req.body.roundsWon2 !== undefined ? { roundsWon2: req.body.roundsWon2 } : {}),
+    ...(req.body.currentRound !== undefined ? { currentRound: req.body.currentRound } : {}),
+    ...(req.body.roundsHistory !== undefined ? { roundsHistory: req.body.roundsHistory } : {}),
+    ...(req.body.activeSubEvent !== undefined ? { activeSubEvent: req.body.activeSubEvent } : {}),
+    ...(req.body.medals !== undefined ? { medals: req.body.medals } : {}),
+    ...(req.body.scoreSummary !== undefined ? { scoreSummary: req.body.scoreSummary } : {}),
+    ...(req.body.scoreText !== undefined ? { scoreText: req.body.scoreText } : {}),
     setsHistory: setsHistoryArr,
     currentSet: currentSetVal,
     setsWon1: setsWon1Val,
-    setsWon2: setsWon2Val
+    setsWon2: setsWon2Val,
+    youtubeVideoId: extractedVideoId || existing?.youtube_video_id || null,
+    streamUrl: rawStreamUrl || existing?.stream_url || null,
+    isLiveStreaming: isStreaming
   };
 
   try {
     await queryDb(
       `UPDATE live_matches 
        SET score1 = $1, score2 = $2, status = $3, table_number = $4,
-           details = $5, sets_history = $6, current_set = $7, sets_won1 = $8, sets_won2 = $9, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $10`,
+           details = $5, sets_history = $6, current_set = $7, sets_won1 = $8, sets_won2 = $9,
+           youtube_video_id = $10, stream_url = $11, is_live_streaming = $12, winner = $13,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $14`,
       [
         match.score1,
         match.score2,
@@ -816,6 +961,10 @@ export const updateMatchScore = async (req, res) => {
         currentSetVal,
         setsWon1Val,
         setsWon2Val,
+        extractedVideoId || existing?.youtube_video_id || null,
+        rawStreamUrl || existing?.stream_url || null,
+        isStreaming,
+        match.winner || null,
         id
       ]
     );
@@ -823,16 +972,28 @@ export const updateMatchScore = async (req, res) => {
     console.warn('updateMatchScore DB update error:', e.message);
   }
 
+  const completeUpdatedMatch = {
+    ...match,
+    youtubeVideoId: extractedVideoId || existing?.youtube_video_id || null,
+    streamUrl: rawStreamUrl || existing?.stream_url || null,
+    isLiveStreaming: isStreaming,
+    details: detailsObj,
+    setsHistory: setsHistoryArr,
+    currentSet: currentSetVal,
+    setsWon1: setsWon1Val,
+    setsWon2: setsWon2Val,
+  };
+
   if (inMemoryCoordinatorMatches[sportId]) {
     const idx = inMemoryCoordinatorMatches[sportId].findIndex(m => m.id === id);
     if (idx >= 0) {
-      inMemoryCoordinatorMatches[sportId][idx] = { ...inMemoryCoordinatorMatches[sportId][idx], ...match };
+      inMemoryCoordinatorMatches[sportId][idx] = { ...inMemoryCoordinatorMatches[sportId][idx], ...completeUpdatedMatch };
     }
   }
 
-  await syncMatchToMatchesTable(match);
+  await syncMatchToMatchesTable(completeUpdatedMatch);
 
-  return res.json({ success: true, match });
+  return res.json({ success: true, match: completeUpdatedMatch });
 };
 
 export const completeMatch = async (req, res) => {
