@@ -88,7 +88,7 @@ export const RegistrationPage = () => {
   const preselectedSportId = searchParams.get('sport');
 
   // Load configuration and merge with existing sports data
-  const [sportsList] = useState(() => {
+  const [sportsList, setSportsList] = useState(() => {
     const list = SPORTS_DATA.map((sport) => {
       const key = resolveSportKey(sport);
       const config = SPORTS_CONFIG[key] || {
