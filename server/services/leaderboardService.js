@@ -22,7 +22,7 @@ export async function syncCollegeLeaderboards(eventId = null) {
          VALUES ($1, $2, 0, 0, 0, 0, 0)
          ON CONFLICT (event_id, college_id) DO NOTHING`,
         [col.id, col.name]
-      ).catch(() => {});
+      ).catch(() => { });
     }
 
     // 2. Fetch all declared match results from leaderboard_entries
