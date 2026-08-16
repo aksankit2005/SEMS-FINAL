@@ -102,6 +102,7 @@ export const seedInitialAccountHashes = async () => {
       { username: 'head_mpec', college: 'MPEC', faculty_name: 'Dr. Rajesh Sharma', pass: headPasswords['head_mpec'] || 'mpec#2026' },
       { username: 'head_mips', college: 'MIPS', faculty_name: 'Prof. Anita Verma', pass: headPasswords['head_mips'] || 'mips#2026' },
       { username: 'head_mpcps', college: 'MPCPS (KN142)', faculty_name: 'Dr. Vikram Singh', pass: headPasswords['head_mpcps'] || 'mpcps#2026' },
+      { username: 'head_mpcps_bpharm', college: 'MPCPS (BPharmacy)', faculty_name: 'Dr. Sunil Kumar', pass: headPasswords['head_mpcps_bpharm'] || 'bpharmacy#2026' },
       { username: 'head_mpcp', college: 'MPCP', faculty_name: 'Prof. Sunita Gupta', pass: headPasswords['head_mpcp'] || 'mpcp#2026' },
       { username: 'head_mpdc', college: 'MPDC', faculty_name: 'Dr. Rakesh Trivedi', pass: headPasswords['head_mpdc'] || 'mpdc#2026' },
       { username: 'head_mpcnps', college: 'MPCN&PS', faculty_name: 'Prof. Meenakshi Joshi', pass: headPasswords['head_mpcnps'] || 'mpcnps#2026' },
@@ -110,15 +111,20 @@ export const seedInitialAccountHashes = async () => {
     ];
 
     for (const ch of defaultHeads) {
+      const colRes = await queryDb('SELECT id FROM colleges WHERE code = $1', [ch.college]);
+      const colId = (colRes && colRes.rows && colRes.rows.length > 0) ? colRes.rows[0].id : null;
+
       const existing = await queryDb('SELECT id FROM college_head_users WHERE username = $1', [ch.username]);
       if (!existing || existing.rows.length === 0) {
         const hash = await bcrypt.hash(ch.pass, 10);
         const newId = crypto.randomUUID();
         await queryDb(
-          `INSERT INTO college_head_users (id, username, password_hash, college, faculty_name, status, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, $5, 'active', NOW(), NOW())`,
-          [newId, ch.username, hash, ch.college, ch.faculty_name]
+          `INSERT INTO college_head_users (id, username, password_hash, college, college_id, faculty_name, status, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, 'active', NOW(), NOW())`,
+          [newId, ch.username, hash, ch.college, colId, ch.faculty_name]
         );
+      } else if (colId) {
+        await queryDb('UPDATE college_head_users SET college_id = $1 WHERE username = $2 AND college_id IS NULL', [colId, ch.username]);
       }
     }
 
