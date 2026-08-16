@@ -257,9 +257,9 @@ export const RegistrationPage = () => {
             tagline: foundEv.description || 'Championship Tournament',
             description: foundEv.description || '',
             image: foundEv.coverImage || foundEv.cover_image || 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=800&q=80',
-            entryFee: foundEv.entryFee !== undefined ? foundEv.entryFee : 300,
-            singlesFee: foundEv.singlesFee !== undefined ? foundEv.singlesFee : 300,
-            doublesFee: foundEv.doublesFee !== undefined ? foundEv.doublesFee : 600,
+            entryFee: typeof foundEv.entryFee === 'number' ? foundEv.entryFee : (typeof foundEv.teamFee === 'number' ? foundEv.teamFee : (foundEv.entryFee ?? foundEv.teamFee ?? 0)),
+            singlesFee: typeof foundEv.singlesFee === 'number' ? foundEv.singlesFee : (typeof foundEv.entryFee === 'number' ? foundEv.entryFee : 0),
+            doublesFee: typeof foundEv.doublesFee === 'number' ? foundEv.doublesFee : 0,
             minPlayers: foundEv.minPlayers !== undefined ? Number(foundEv.minPlayers) : bounds.min,
             maxPlayers: foundEv.maxPlayers !== undefined ? Number(foundEv.maxPlayers) : bounds.max,
             teamSize: foundEv.teamSize || '1 Player',
@@ -741,8 +741,9 @@ export const RegistrationPage = () => {
                     const isClosed = evt.status === 'Closed' || slotsLeft === 0;
 
                     const isRacket = isRacketSportCheck(evt);
-                    const sFee = evt.singlesFee !== undefined ? Number(evt.singlesFee) : Number(evt.entryFee || 300);
-                    const dFee = evt.doublesFee !== undefined ? Number(evt.doublesFee) : (evt.singlesFee !== undefined ? Number(evt.singlesFee) * 2 : 600);
+                    const currentFee = typeof evt.entryFee === 'number' ? evt.entryFee : (typeof evt.teamFee === 'number' ? evt.teamFee : (evt.entryFee ?? evt.teamFee ?? 0));
+                    const sFee = typeof evt.singlesFee === 'number' ? Number(evt.singlesFee) : currentFee;
+                    const dFee = typeof evt.doublesFee === 'number' ? Number(evt.doublesFee) : currentFee * 2;
 
                     const key = resolveSportKey(evt);
                     const bounds = SPORT_PLAYER_BOUNDS[key] || { min: 1, max: 10 };
@@ -775,7 +776,7 @@ export const RegistrationPage = () => {
                           </div>
 
                           <div className="absolute top-3 right-3 bg-slate-950/85 backdrop-blur-xs px-3 py-1 rounded-full text-[11px] font-black text-amber-400 border border-slate-700 shadow-md">
-                            {isRacket ? `Singles: ₹${sFee} | Doubles: ₹${dFee}` : (evt.entryFee > 0 ? `Fee: ₹${evt.entryFee}` : 'FREE')}
+                            {isRacket ? `Singles: ₹${sFee} | Doubles: ₹${dFee}` : (currentFee > 0 ? `Fee: ₹${currentFee}` : 'FREE (₹0)')}
                           </div>
 
                           <div className="absolute bottom-3 left-4 right-4">
