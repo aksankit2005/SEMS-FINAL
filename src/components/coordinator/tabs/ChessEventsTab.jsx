@@ -87,7 +87,7 @@ export const ChessEventsTab = ({ user }) => {
     setEditingEvent(eventObj);
     const minP = eventObj.minPlayers !== undefined ? eventObj.minPlayers : 1;
     const maxP = eventObj.maxPlayers !== undefined ? eventObj.maxPlayers : 1;
-    const feeVal = eventObj.entryFee !== undefined ? eventObj.entryFee : (eventObj.teamFee || 300);
+    const feeVal = typeof eventObj.entryFee === 'number' ? eventObj.entryFee : (typeof eventObj.teamFee === 'number' ? eventObj.teamFee : (eventObj.entryFee ?? eventObj.teamFee ?? 300));
 
     setFormData({
       title: eventObj.title || '',
@@ -295,7 +295,7 @@ export const ChessEventsTab = ({ user }) => {
   const closedEvents = events.filter((e) => e.status === 'Closed').length;
   const totalRegCount = events.reduce((acc, curr) => acc + (curr.registeredCount || 0), 0);
   const totalRevenue = events.reduce((acc, curr) => {
-    const fee = curr.entryFee !== undefined ? curr.entryFee : (curr.teamFee || 300);
+    const fee = typeof curr.entryFee === 'number' ? curr.entryFee : (typeof curr.teamFee === 'number' ? curr.teamFee : (curr.entryFee ?? curr.teamFee ?? 300));
     return acc + ((curr.registeredCount || 0) * fee);
   }, 0);
 
@@ -396,7 +396,7 @@ export const ChessEventsTab = ({ user }) => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {events.map((event) => {
               const registered = event.registeredCount || 0;
-              const fee = event.entryFee !== undefined ? event.entryFee : (event.teamFee || 300);
+              const fee = typeof event.entryFee === 'number' ? event.entryFee : (typeof event.teamFee === 'number' ? event.teamFee : (event.entryFee ?? event.teamFee ?? 300));
               const minP = event.minPlayers !== undefined ? event.minPlayers : 1;
               const maxP = event.maxPlayers !== undefined ? event.maxPlayers : 1;
               const teamSizeStr = event.teamSize || (minP === maxP ? `${minP} Player` : `${minP} - ${maxP} Players`);

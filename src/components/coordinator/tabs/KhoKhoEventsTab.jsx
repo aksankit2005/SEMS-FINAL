@@ -91,7 +91,7 @@ export const KhoKhoEventsTab = ({ user }) => {
       regEndDate: eventObj.regEndDate || '2026-08-25',
       tournStartDate: eventObj.tournStartDate || '2026-09-01',
       tournEndDate: eventObj.tournEndDate || '2026-09-03',
-      teamFee: eventObj.teamFee !== undefined ? eventObj.teamFee : (eventObj.entryFee || 1200),
+      teamFee: typeof eventObj.teamFee === 'number' ? eventObj.teamFee : (typeof eventObj.entryFee === 'number' ? eventObj.entryFee : (eventObj.teamFee ?? eventObj.entryFee ?? 1200)),
       minPlayers: minP,
       maxPlayers: maxP,
       teamSize: `${minP} - ${maxP} Players`,
@@ -254,7 +254,7 @@ export const KhoKhoEventsTab = ({ user }) => {
   const closedEvents = khoKhoEvents.filter((e) => e.status === 'Closed').length;
   const totalRegCount = khoKhoEvents.reduce((acc, curr) => acc + (curr.registeredCount || 0), 0);
   const totalRevenue = khoKhoEvents.reduce((acc, curr) => {
-    const fee = curr.teamFee !== undefined ? curr.teamFee : (curr.entryFee || 1200);
+    const fee = typeof curr.teamFee === 'number' ? curr.teamFee : (typeof curr.entryFee === 'number' ? curr.entryFee : (curr.teamFee ?? curr.entryFee ?? 1200));
     return acc + ((curr.registeredCount || 0) * fee);
   }, 0);
 
@@ -370,7 +370,10 @@ export const KhoKhoEventsTab = ({ user }) => {
                     <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-100 dark:border-[#1E293B]">
                       <span className="text-[10px] text-slate-400 font-bold uppercase block">Team Fee</span>
                       <span className="font-bold text-amber-600 dark:text-amber-400">
-                        ₹{evt.entryFee || evt.teamFee || 1200}
+                        {(() => {
+                          const fee = typeof evt.teamFee === 'number' ? evt.teamFee : (typeof evt.entryFee === 'number' ? evt.entryFee : (evt.teamFee ?? evt.entryFee ?? 1200));
+                          return fee === 0 ? 'FREE (₹0)' : `₹${fee}`;
+                        })()}
                       </span>
                     </div>
 

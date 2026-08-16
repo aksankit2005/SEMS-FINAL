@@ -98,7 +98,7 @@ export const FootballEventsTab = ({ user }) => {
       regEndDate: eventObj.regEndDate || '2026-08-25',
       tournStartDate: eventObj.tournStartDate || '2026-09-01',
       tournEndDate: eventObj.tournEndDate || '2026-09-03',
-      teamFee: eventObj.teamFee !== undefined ? eventObj.teamFee : (eventObj.entryFee || 2000),
+      teamFee: typeof eventObj.teamFee === 'number' ? eventObj.teamFee : (typeof eventObj.entryFee === 'number' ? eventObj.entryFee : (eventObj.teamFee ?? eventObj.entryFee ?? 2000)),
       minPlayers: minP,
       maxPlayers: maxP,
       teamSize: `${minP} - ${maxP} Players`,
@@ -381,7 +381,10 @@ Equipment: Shin guards and sports/football shoes mandatory for all players.
                       <DollarSign className="w-3.5 h-3.5 text-emerald-500" /> Team Entry Fee:
                     </span>
                     <span className="font-bold text-emerald-500 text-sm">
-                      ₹{eventItem.teamFee !== undefined ? eventItem.teamFee : (eventItem.entryFee || 2000)}
+                      {(() => {
+                        const fee = typeof eventItem.teamFee === 'number' ? eventItem.teamFee : (typeof eventItem.entryFee === 'number' ? eventItem.entryFee : (eventItem.teamFee ?? eventItem.entryFee ?? 2000));
+                        return fee === 0 ? 'FREE (₹0)' : `₹${fee}`;
+                      })()}
                     </span>
                   </div>
 

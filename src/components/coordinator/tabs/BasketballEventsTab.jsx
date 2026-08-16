@@ -96,7 +96,7 @@ export const BasketballEventsTab = ({ user }) => {
       regEndDate: eventObj.regEndDate || '2026-08-25',
       tournStartDate: eventObj.tournStartDate || '2026-09-01',
       tournEndDate: eventObj.tournEndDate || '2026-09-03',
-      teamFee: eventObj.teamFee !== undefined ? eventObj.teamFee : (eventObj.entryFee || 1500),
+      teamFee: typeof eventObj.teamFee === 'number' ? eventObj.teamFee : (typeof eventObj.entryFee === 'number' ? eventObj.entryFee : (eventObj.teamFee ?? eventObj.entryFee ?? 1500)),
       minPlayers: minP,
       maxPlayers: maxP,
       teamSize: `${minP} - ${maxP} Players`,
@@ -296,7 +296,7 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
   const closedEvents = events.filter((e) => e.status === 'Closed').length;
   const totalRegCount = events.reduce((acc, curr) => acc + (curr.registeredCount || 0), 0);
   const totalRevenue = events.reduce((acc, curr) => {
-    const fee = curr.teamFee !== undefined ? curr.teamFee : (curr.entryFee || 1500);
+    const fee = typeof curr.teamFee === 'number' ? curr.teamFee : (typeof curr.entryFee === 'number' ? curr.entryFee : (curr.teamFee ?? curr.entryFee ?? 1500));
     return acc + ((curr.registeredCount || 0) * fee);
   }, 0);
 
@@ -397,7 +397,7 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {events.map((event) => {
               const registered = event.registeredCount || 0;
-              const fee = event.teamFee !== undefined ? event.teamFee : (event.entryFee || 1500);
+              const fee = typeof event.teamFee === 'number' ? event.teamFee : (typeof event.entryFee === 'number' ? event.entryFee : (event.teamFee ?? event.entryFee ?? 1500));
               const minP = event.minPlayers !== undefined ? event.minPlayers : 5;
               const maxP = event.maxPlayers !== undefined ? event.maxPlayers : 10;
               const teamSizeStr = event.teamSize || `${minP} - ${maxP} Players`;

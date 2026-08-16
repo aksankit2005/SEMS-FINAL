@@ -112,7 +112,7 @@ export const QuickSearchModal = ({ isOpen, onClose }) => {
                       <img src={sport.image} alt={sport.name} className="w-8 h-8 rounded-lg object-cover" />
                       <div>
                         <div className="text-sm font-semibold text-slate-900 dark:text-white">{sport.name}</div>
-                        <div className="text-xs text-slate-500">{sport.category} • Fee: ₹{sport.entryFee}</div>
+                        <div className="text-xs text-slate-500">{sport.category} • Fee: {sport.entryFee === 0 ? 'FREE (₹0)' : `₹${sport.entryFee}`}</div>
                       </div>
                     </div>
                     <ArrowRight className="w-4 h-4 text-slate-400" />

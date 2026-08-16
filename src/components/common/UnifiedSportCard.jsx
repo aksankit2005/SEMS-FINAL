@@ -58,7 +58,13 @@ export const UnifiedSportCard = ({
                 <span className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1 mb-0.5">
                   <span>💰</span> Fee
                 </span>
-                <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-sm">₹{activeEvent.entryFee}</span>
+                {(() => {
+                  const feeVal = typeof activeEvent.entryFee === 'number' ? activeEvent.entryFee : (typeof activeEvent.teamFee === 'number' ? activeEvent.teamFee : 0);
+                  if (feeVal === 0) {
+                    return <span className="font-black text-emerald-600 dark:text-emerald-400 text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30">FREE (₹0)</span>;
+                  }
+                  return <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-sm">₹{feeVal}</span>;
+                })()}
               </div>
               <div className="pt-2 sm:pt-0 sm:px-2 flex flex-col items-center sm:items-start">
                 <span className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1 mb-0.5">
