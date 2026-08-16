@@ -203,6 +203,62 @@ export const RegistrationPage = () => {
     };
   }, []);
 
+  // Sync sportsList and activeSport dynamically whenever coordinator published events update
+  useEffect(() => {
+    if (coordinatorEvents && coordinatorEvents.length > 0) {
+      setSportsList((prevList) => {
+        return prevList.map((sport) => {
+          const key = resolveSportKey(sport);
+          const matchingEvent = coordinatorEvents.find((evt) => resolveSportKey(evt) === key);
+          if (matchingEvent) {
+            const resolvedFee = typeof matchingEvent.entryFee === 'number'
+              ? matchingEvent.entryFee
+              : (typeof matchingEvent.teamFee === 'number' ? matchingEvent.teamFee : (matchingEvent.entryFee ?? matchingEvent.teamFee ?? 0));
+            
+            const sFee = typeof matchingEvent.singlesFee === 'number' ? matchingEvent.singlesFee : resolvedFee;
+            const dFee = typeof matchingEvent.doublesFee === 'number' ? matchingEvent.doublesFee : resolvedFee * 2;
+
+            return {
+              ...sport,
+              entryFee: resolvedFee,
+              teamFee: resolvedFee,
+              singlesFee: sFee,
+              doublesFee: dFee,
+              venue: matchingEvent.venue || sport.venue,
+              rules: matchingEvent.rules || sport.rules
+            };
+          }
+          return sport;
+        });
+      });
+
+      setActiveSport((prevActive) => {
+        if (!prevActive) return null;
+        const key = resolveSportKey(prevActive);
+        const matchingEvent = coordinatorEvents.find((evt) => resolveSportKey(evt) === key);
+        if (matchingEvent) {
+          const resolvedFee = typeof matchingEvent.entryFee === 'number'
+            ? matchingEvent.entryFee
+            : (typeof matchingEvent.teamFee === 'number' ? matchingEvent.teamFee : (matchingEvent.entryFee ?? matchingEvent.teamFee ?? 0));
+          
+          const isRacket = isRacketSportCheck(prevActive);
+          const sFee = typeof matchingEvent.singlesFee === 'number' ? matchingEvent.singlesFee : resolvedFee;
+          const dFee = typeof matchingEvent.doublesFee === 'number' ? matchingEvent.doublesFee : resolvedFee * 2;
+          const currentFee = isRacket ? (formData.eventType === 'Doubles' ? dFee : sFee) : resolvedFee;
+
+          return {
+            ...prevActive,
+            entryFee: currentFee,
+            teamFee: resolvedFee,
+            singlesFee: sFee,
+            doublesFee: dFee
+          };
+        }
+        return prevActive;
+      });
+    }
+  }, [coordinatorEvents, formData.eventType]);
+
   // Prevent user from closing tab or refreshing while payment & DB registration is processing
   useEffect(() => {
     if (!isProcessingPayment) return;

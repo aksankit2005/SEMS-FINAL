@@ -100,9 +100,10 @@ export const SportsPage = () => {
     });
 
     if (coordEv) {
+      const resolvedFee = typeof coordEv.entryFee === 'number' ? coordEv.entryFee : (typeof coordEv.teamFee === 'number' ? coordEv.teamFee : (coordEv.entryFee ?? coordEv.teamFee ?? sport.entryFee));
       return {
         eventName: coordEv.title || coordEv.eventName || sport.name,
-        entryFee: coordEv.entryFee !== undefined ? coordEv.entryFee : sport.entryFee,
+        entryFee: resolvedFee,
         regStartDate: formatDateToDDMMYYYY(coordEv.regStartDate),
         regEndDate: formatDateToDDMMYYYY(coordEv.regEndDate || coordEv.reg_end_date),
         eventDate: formatDateToDDMMYYYY(coordEv.tournStartDate || coordEv.event_date || sport.startDate),
@@ -123,9 +124,10 @@ export const SportsPage = () => {
     });
 
     if (prEv) {
+      const resolvedFee = typeof prEv.entryFee === 'number' ? prEv.entryFee : (typeof prEv.teamFee === 'number' ? prEv.teamFee : (prEv.entryFee ?? prEv.teamFee ?? sport.entryFee));
       return {
         eventName: prEv.event_name || sport.name,
-        entryFee: prEv.entryFee !== undefined ? prEv.entryFee : sport.entryFee,
+        entryFee: resolvedFee,
         regStartDate: formatDateToDDMMYYYY(prEv.regStartDate || prEv.created_at?.split('T')[0]),
         regEndDate: formatDateToDDMMYYYY(prEv.regEndDate || '2026-08-30'),
         eventDate: formatDateToDDMMYYYY(prEv.event_date || sport.startDate),
