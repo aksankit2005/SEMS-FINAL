@@ -39,8 +39,8 @@ export const extractYouTubeVideoId = (url) => {
   return null;
 };
 
-export const getYouTubeEmbedUrl = (videoId, autoplay = true) => {
+export const getYouTubeEmbedUrl = (videoId, autoplay = true, allowNativeFullscreen = false) => {
   if (!videoId) return null;
   const cleanId = extractYouTubeVideoId(videoId) || videoId;
-  return `https://www.youtube.com/embed/${cleanId}?autoplay=${autoplay ? 1 : 0}&rel=0&modestbranding=1&fs=1`;
+  return `https://www.youtube.com/embed/${cleanId}?autoplay=${autoplay ? 1 : 0}&rel=0&modestbranding=1&fs=${allowNativeFullscreen ? 1 : 0}`;
 };

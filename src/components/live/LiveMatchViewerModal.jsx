@@ -246,13 +246,12 @@ const YouTubePlayer = React.memo(({ youtubeVideoId, match }) => {
   if (!embedUrl) return null;
 
   return (
-    <div ref={containerRef} className="relative aspect-video w-full bg-black group overflow-hidden">
+    <div ref={containerRef} onDoubleClick={toggleFullscreenOverlay} className="relative aspect-video w-full bg-black group overflow-hidden">
       <iframe
         src={embedUrl}
         title="Match Live Stream"
         className="w-full h-full border-0 pointer-events-auto"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
       />
 
       {/* Top Banner Tag */}
