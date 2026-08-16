@@ -121,21 +121,65 @@ export const SportsDataProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    // Initial fetch on mount
     syncLiveMatches();
     syncSchedule();
     syncResults();
     syncLeaderboard();
     syncAnnouncements();
 
-    const intervalId = setInterval(() => {
+    // Event-driven real-time synchronization
+    const handleMatchesUpdated = () => {
+      syncLiveMatches();
+      syncSchedule();
+    };
+    const handleResultsUpdated = () => {
+      syncResults();
+      syncLiveMatches();
+      syncLeaderboard();
+    };
+    const handleLeaderboardUpdated = () => {
+      syncLeaderboard();
+    };
+    const handleAnnouncementsUpdated = () => {
+      syncAnnouncements();
+    };
+    const handleWindowFocus = () => {
       syncLiveMatches();
       syncSchedule();
       syncResults();
       syncLeaderboard();
       syncAnnouncements();
-    }, 5000);
+    };
 
-    return () => clearInterval(intervalId);
+    window.addEventListener('sems_matches_updated', handleMatchesUpdated);
+    window.addEventListener('sems_results_updated', handleResultsUpdated);
+    window.addEventListener('sems_leaderboard_updated', handleLeaderboardUpdated);
+    window.addEventListener('sems_announcements_updated', handleAnnouncementsUpdated);
+    window.addEventListener('focus', handleWindowFocus);
+
+    // Live matches background polling (every 12 seconds for spectator freshness)
+    const liveMatchesInterval = setInterval(() => {
+      syncLiveMatches();
+    }, 12000);
+
+    // Background sync for static/infrequent data (every 60 seconds)
+    const staticDataInterval = setInterval(() => {
+      syncSchedule();
+      syncResults();
+      syncLeaderboard();
+      syncAnnouncements();
+    }, 60000);
+
+    return () => {
+      window.removeEventListener('sems_matches_updated', handleMatchesUpdated);
+      window.removeEventListener('sems_results_updated', handleResultsUpdated);
+      window.removeEventListener('sems_leaderboard_updated', handleLeaderboardUpdated);
+      window.removeEventListener('sems_announcements_updated', handleAnnouncementsUpdated);
+      window.removeEventListener('focus', handleWindowFocus);
+      clearInterval(liveMatchesInterval);
+      clearInterval(staticDataInterval);
+    };
   }, []);
 
   const updateLiveMatchScore = (matchId, team1Score, team2Score, statusInfo) => {

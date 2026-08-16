@@ -61,7 +61,7 @@ export const KhoKhoCoordinatorPage = () => {
 
       const pollInterval = setInterval(() => {
         fetchAllData(false);
-      }, 5000);
+      }, 15000);
 
       return () => {
         isMounted = false;
