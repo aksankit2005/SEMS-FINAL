@@ -954,28 +954,18 @@ export const RegistrationPage = () => {
               </div>
             )}
 
-            {/* ALL CHAMPIONSHIP SPORTS SELECTION GRID */}
-            <div className="space-y-4 pt-2">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-amber-500" />
-                  Select Championship Sport to Register
-                </h2>
-                <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono text-xs font-bold border border-blue-500/20">
-                  {sportsList.length} Sports Available
-                </span>
+            {/* EMPTY STATE WHEN NO COORDINATOR EVENTS PUBLISHED YET */}
+            {(!coordinatorEvents || coordinatorEvents.length === 0) && (
+              <div className="text-center py-16 px-4 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+                  <Trophy className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">No Coordinator Events Published Yet</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                  Registration for events opens as soon as the respective sports coordinator publishes an active event. Please check back shortly!
+                </p>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {sportsList.map((sport) => (
-                  <SportCard
-                    key={sport.id}
-                    sport={sport}
-                    onRegisterSelect={handleSportSelect}
-                  />
-                ))}
-              </div>
-            </div>
+            )}
 
           </div>
         ) : (
