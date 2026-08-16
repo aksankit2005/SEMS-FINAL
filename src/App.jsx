@@ -144,6 +144,12 @@ function App() {
                   <Route path="settings" element={<AdminSettingsPage />} />
                 </Route>
 
+                {/* Standalone Super Coordinator (President / Event Host) Routes */}
+                <Route path="/super-coordinator/login" element={<SuperCoordinatorLoginPage />} />
+                <Route path="/super-coordinator-login" element={<SuperCoordinatorLoginPage />} />
+                <Route path="/super-coordinator/dashboard" element={<SuperCoordinatorProtectedRoute><SuperCoordinatorDashboardPage /></SuperCoordinatorProtectedRoute>} />
+                <Route path="/super-coordinator" element={<SuperCoordinatorProtectedRoute><SuperCoordinatorDashboardPage /></SuperCoordinatorProtectedRoute>} />
+
                 <Route element={<DashboardLayout />}>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/sports" element={<SportsPage />} />
@@ -183,12 +189,6 @@ function App() {
 
                   {/* Protected College Head Portal Routes */}
                   <Route path="/college-head/dashboard" element={<CollegeHeadProtectedRoute><CollegeHeadDashboardPage /></CollegeHeadProtectedRoute>} />
-
-                  {/* Standalone Super Coordinator (President / Event Host) Routes */}
-                  <Route path="/super-coordinator/login" element={<SuperCoordinatorLoginPage />} />
-                  <Route path="/super-coordinator-login" element={<SuperCoordinatorLoginPage />} />
-                  <Route path="/super-coordinator/dashboard" element={<SuperCoordinatorProtectedRoute><SuperCoordinatorDashboardPage /></SuperCoordinatorProtectedRoute>} />
-                  <Route path="/super-coordinator" element={<SuperCoordinatorProtectedRoute><SuperCoordinatorDashboardPage /></SuperCoordinatorProtectedRoute>} />
 
                   {/* Public Sport Coordinator Login Routes */}
                   <Route path="/coordinator/login" element={<CoordinatorLoginPage />} />
