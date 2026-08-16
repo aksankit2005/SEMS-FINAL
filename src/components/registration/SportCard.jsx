@@ -19,7 +19,7 @@ export const SportCard = ({ sport, onRegisterSelect }) => {
   const isOpen = now >= startObj && now <= endObj;
 
   const activeEvent = {
-    entryFee: sport.entryFee || 400,
+    entryFee: typeof sport.entryFee === 'number' ? sport.entryFee : (typeof sport.teamFee === 'number' ? sport.teamFee : (sport.entryFee ?? sport.teamFee ?? 0)),
     regStartDate: startDate,
     regEndDate: endDate,
     tournStartDate: startDate,
