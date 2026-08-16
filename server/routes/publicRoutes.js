@@ -386,6 +386,34 @@ router.get('/public/events', async (req, res) => {
 // POST /api/public/register-event - Event registration endpoint
 router.post('/public/register-event', registerPublicEvent);
 
+// GET /api/leaderboard - Spectator college standings endpoint from Supabase
+router.get('/leaderboard', async (req, res) => {
+  try {
+    const entries = await prisma.leaderboardEntry.findMany({
+      orderBy: { declaredAt: 'desc' }
+    });
+    return res.json(entries || []);
+  } catch (err) {
+    console.error('Error fetching leaderboard entries from DB:', err);
+    return res.json([]);
+  }
+});
+
+// GET /api/announcements - Spectator public announcements endpoint from Supabase
+router.get('/announcements', async (req, res) => {
+  try {
+    const list = await prisma.announcement.findMany({
+      where: { isPublished: true },
+      include: { attachments: true },
+      orderBy: { createdAt: 'desc' }
+    });
+    return res.json(list || []);
+  } catch (err) {
+    console.error('Error fetching public announcements from DB:', err);
+    return res.json([]);
+  }
+});
+
 // Health check
 router.get('/health', async (req, res) => {
   try {

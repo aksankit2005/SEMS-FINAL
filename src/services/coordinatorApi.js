@@ -221,57 +221,24 @@ export const coordinatorApi = {
     try {
       const res = await api.get('/coordinator/matches');
       if (res.data && Array.isArray(res.data)) {
-        const serverData = res.data.filter(m => {
-          if (!m) return false;
-          const mSport = (m.sport || m.sportId || '').toLowerCase();
-          return !mSport || mSport === sportKey;
-        });
-        if (serverData.length > 0) {
-          const completedMap = new Map();
-          savedMatches.forEach((m) => {
-            if (m && m.id && (m.status === 'COMPLETED' || m.status === 'FINISHED')) {
-              completedMap.set(m.id, m);
-            }
-          });
-
-          const merged = serverData.map((m) => {
-            const tagged = {
-              ...m,
-              sport: sportKey,
-              sportId: sportKey,
-              sportName: user.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1))
-            };
-            if (completedMap.has(m.id)) {
-              return completedMap.get(m.id);
-            }
-            return tagged;
-          });
-
-          const serverIds = new Set(serverData.map((m) => m.id));
-          const localOnly = savedMatches.filter((m) => m && m.id && !serverIds.has(m.id));
-          const finalMatches = [...merged, ...localOnly].map(m => ({
-            ...m,
-            sport: sportKey,
-            sportId: sportKey,
-            sportName: user.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1))
-          }));
-          this.saveMatches(finalMatches);
-          return finalMatches;
-        } else if (savedMatches.length > 0) {
-          return savedMatches.map(m => ({
-            ...m,
-            sport: sportKey,
-            sportId: sportKey,
-            sportName: user.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1))
-          }));
-        } else {
-          this.saveMatches([]);
-          return [];
-        }
+        const serverData = res.data.map(m => ({
+          ...m,
+          sport: sportKey,
+          sportId: sportKey,
+          sportName: user.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1))
+        }));
+        return serverData;
       }
     } catch (e) {
-      console.warn('Backend matches API fallback to localStorage:', e);
+      console.warn('Backend matches API fallback:', e.message);
     }
+
+    return savedMatches.map(m => ({
+      ...m,
+      sport: sportKey,
+      sportId: sportKey,
+      sportName: user.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1))
+    }));
 
     return savedMatches.map(m => ({
       ...m,
@@ -319,83 +286,17 @@ export const coordinatorApi = {
     return this.getMatches();
   },
 
-  // Get all matches across backend server & localStorage
-  async getMatches() {
-    const deletedSet = new Set();
+  // Get all public match schedules across all sports
+  async getPublicSchedules() {
     try {
-      const deletedArr = JSON.parse(localStorage.getItem('sems_deleted_match_ids') || '[]');
-      deletedArr.forEach((id) => deletedSet.add(id));
-    } catch (e) {}
-
-    let serverMatches = [];
-    try {
-      const user = this.getCurrentUser();
-      if (user && user.token) {
-        const res = await api.get('/coordinator/matches');
-        if (res.data && Array.isArray(res.data)) {
-          serverMatches = res.data;
-        }
+      const res = await api.get('/schedules');
+      if (res.data && Array.isArray(res.data)) {
+        return res.data;
       }
-    } catch (e) {}
-
-    try {
-      const pubRes = await api.get('/schedules');
-      if (pubRes.data && Array.isArray(pubRes.data)) {
-        serverMatches = [...serverMatches, ...pubRes.data];
-      }
-    } catch (e) {}
-
-    const matchMap = new Map();
-
-    // 1. Scan localStorage match schedule keys first
-    const keysToCheck = ['basketballMatchSchedules', 'volleyballMatchSchedules'];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && (key.startsWith('sems_coord_matches_') || key.endsWith('MatchSchedules') || key.startsWith('sems_matches_'))) {
-        keysToCheck.push(key);
-      }
+    } catch (e) {
+      console.warn('Error fetching public schedules:', e.message);
     }
-
-    const uniqueKeys = Array.from(new Set(keysToCheck));
-    uniqueKeys.forEach((key) => {
-      try {
-        const raw = localStorage.getItem(key);
-        if (raw) {
-          const list = JSON.parse(raw);
-          if (Array.isArray(list)) {
-            const derivedSport = key.replace('sems_coord_matches_', '').replace('MatchSchedules', '').replace('sems_matches_', '').toLowerCase();
-            list.forEach((m) => {
-              if (m && m.id && !deletedSet.has(m.id)) {
-                const mSport = (m.sport || m.sportId || derivedSport || 'badminton').toLowerCase();
-                matchMap.set(m.id, {
-                  ...m,
-                  sport: mSport,
-                  sportId: mSport,
-                  sportName: m.sportName || (mSport.charAt(0).toUpperCase() + mSport.slice(1).replace('-', ' '))
-                });
-              }
-            });
-          }
-        }
-      } catch (err) { }
-    });
-
-    // 2. Add server matches ON TOP so server data ALWAYS takes precedence over localStorage
-    serverMatches.forEach((m) => {
-      if (m && m.id && !deletedSet.has(m.id)) {
-        const mSport = (m.sport || m.sportId || 'badminton').toLowerCase();
-        const existing = matchMap.get(m.id) || {};
-        matchMap.set(m.id, {
-          ...existing,
-          ...m,
-          sport: mSport,
-          sportId: mSport,
-          sportName: m.sportName || (mSport.charAt(0).toUpperCase() + mSport.slice(1).replace('-', ' '))
-        });
-      }
-    });
-
-    return Array.from(matchMap.values());
+    return [];
   },
 
   // Create match & persist to Backend API & localStorage
