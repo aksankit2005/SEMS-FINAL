@@ -29,16 +29,16 @@ const computeStandings = () => {
 
   // Include ALL colleges — those without points get 0s
   const standings = ALL_COLLEGES
-    .filter((c) => c.id !== 'EXTERNAL') // exclude external/guest colleges from table
+    .filter((c) => String(c.id || '').toUpperCase() !== 'EXTERNAL') // exclude external/guest colleges from table
     .map((college) => {
       const counts = tally[college.id] || { gold: 0, silver: 0 };
       return {
-        id: college.id,
-        college: college.name,
-        code: college.id,
-        gold: counts.gold,
-        silver: counts.silver,
-        totalPoints: counts.gold * 5 + counts.silver * 3,
+        id: String(college.id || ''),
+        college: String(college.name || college.id || ''),
+        code: String(college.id || ''),
+        gold: Number(counts.gold || 0),
+        silver: Number(counts.silver || 0),
+        totalPoints: Number((counts.gold || 0) * 5 + (counts.silver || 0) * 3),
       };
     });
 
@@ -47,7 +47,7 @@ const computeStandings = () => {
     if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
     if (b.gold !== a.gold) return b.gold - a.gold;
     if (b.silver !== a.silver) return b.silver - a.silver;
-    return a.college.localeCompare(b.college);
+    return String(a.college || '').localeCompare(String(b.college || ''));
   });
 
   return standings;
@@ -58,30 +58,44 @@ export const LeaderboardPage = () => {
   const [standings, setStandings] = useState([]);
   const { leaderboard } = useSportsData();
 
+  const normalizeStandings = (data) => {
+    if (!Array.isArray(data)) return [];
+    return data
+      .filter((c) => String(c.code || c.id || '').toUpperCase() !== 'EXTERNAL')
+      .map((item) => ({
+        id: String(item.id || item.code || item.college || ''),
+        code: String(item.code || item.id || ''),
+        college: String(item.college || item.name || item.code || 'College'),
+        gold: Number(item.gold ?? item.wins ?? item.goldCount ?? 0),
+        silver: Number(item.silver ?? item.runnerUps ?? item.silverCount ?? 0),
+        totalPoints: Number(item.totalPoints ?? item.points ?? 0),
+        rank: Number(item.rank || 0),
+      }));
+  };
+
   const refresh = async () => {
     try {
       const res = await fetch(apiUrl('/leaderboard'));
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
-          const filtered = data.filter((c) => (c.code || c.id) !== 'EXTERNAL');
-          setStandings(filtered);
+          setStandings(normalizeStandings(data));
           return;
         }
       }
     } catch (e) { }
 
     if (leaderboard && leaderboard.length > 0) {
-      setStandings(leaderboard);
+      setStandings(normalizeStandings(leaderboard));
       return;
     }
 
-    setStandings(computeStandings());
+    setStandings(normalizeStandings(computeStandings()));
   };
 
   useEffect(() => {
     if (leaderboard && leaderboard.length > 0) {
-      setStandings(leaderboard);
+      setStandings(normalizeStandings(leaderboard));
     } else {
       refresh();
     }
@@ -99,11 +113,12 @@ export const LeaderboardPage = () => {
     };
   }, []);
 
-  const filtered = standings.filter(
-    (item) =>
-      item.college.toLowerCase().includes(query.toLowerCase()) ||
-      item.code.toLowerCase().includes(query.toLowerCase())
-  );
+  const filtered = standings.filter((item) => {
+    const colName = String(item.college || item.name || '').toLowerCase();
+    const colCode = String(item.code || item.id || '').toLowerCase();
+    const q = String(query || '').toLowerCase();
+    return colName.includes(q) || colCode.includes(q);
+  });
 
   const top2 = standings.slice(0, 2);
   const hasData = standings.length > 0;
@@ -121,7 +136,7 @@ export const LeaderboardPage = () => {
             Overall <span className="bg-gradient-to-r from-orange-500 via-amber-500 to-blue-600 bg-clip-text text-transparent">Leaderboard</span>
           </h1>
           <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
-            Live medal tallies and cumulative points across all sports events. 🥇 Gold = 2 pts &nbsp;•&nbsp; 🥈 Silver = 1 pt
+            Live medal tallies and cumulative points across all sports events. 🥇 Winner = 5 pts &nbsp;•&nbsp; 🥈 Runner-Up = 3 pts
           </p>
         </div>
 
@@ -146,8 +161,8 @@ export const LeaderboardPage = () => {
                 <h3 className="font-black text-2xl text-orange-600 dark:text-orange-400">{top2[0].college}</h3>
                 <p className="text-xs text-slate-500 mt-1 mb-4">{top2[0].code}</p>
                 <div className="w-full p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-orange-500/30 flex justify-around text-xs font-bold">
-                  <span>🥇 {top2[0].gold} Gold</span>
-                  <span>🥈 {top2[0].silver} Silver</span>
+                  <span>🥇 {top2[0].gold} Wins</span>
+                  <span>🥈 {top2[0].silver} Runner-Ups</span>
                 </div>
                 <div className="mt-4 text-4xl font-black text-orange-500">{top2[0].totalPoints} Pts</div>
               </div>
@@ -161,8 +176,8 @@ export const LeaderboardPage = () => {
                 <h3 className="font-black text-xl text-slate-900 dark:text-white">{top2[1].college}</h3>
                 <p className="text-xs text-slate-500 mt-1 mb-4">{top2[1].code}</p>
                 <div className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 flex justify-around text-xs font-bold">
-                  <span>🥇 {top2[1].gold} Gold</span>
-                  <span>🥈 {top2[1].silver} Silver</span>
+                  <span>🥇 {top2[1].gold} Wins</span>
+                  <span>🥈 {top2[1].silver} Runner-Ups</span>
                 </div>
                 <div className="mt-4 text-2xl font-black text-slate-900 dark:text-white">{top2[1].totalPoints} Pts</div>
               </div>
@@ -195,8 +210,8 @@ export const LeaderboardPage = () => {
                 <tr>
                   <th className="p-4 text-center">Rank</th>
                   <th className="p-4">College / University</th>
-                  <th className="p-4 text-center">Gold 🥇 (+2 pts)</th>
-                  <th className="p-4 text-center">Silver 🥈 (+1 pt)</th>
+                  <th className="p-4 text-center">Firsts 🥇 (+5 pts)</th>
+                  <th className="p-4 text-center">Seconds 🥈 (+3 pts)</th>
                   <th className="p-4 text-center font-black text-blue-600 dark:text-blue-400">Total Points</th>
                 </tr>
               </thead>
@@ -209,7 +224,7 @@ export const LeaderboardPage = () => {
                   </tr>
                 ) : (
                   filtered.map((item, index) => (
-                    <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+                    <tr key={item.id || index} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
                       <td className="p-4 text-center font-black">
                         <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs ${index === 0 ? 'bg-orange-500 text-white font-black' :
                             index === 1 ? 'bg-slate-300 text-slate-950 font-bold' :
