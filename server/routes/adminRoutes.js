@@ -71,10 +71,10 @@ router.patch('/admin/announcements/:id/publish', toggleAnnouncementPublishDB);
 router.delete('/admin/announcements/:id', deleteAnnouncementDB);
 
 // PR Media & Folders endpoints
-router.get('/admin/pr-media/folders', getPRMediaFoldersDB);
-router.get('/admin/pr-media/files', getPRMediaFilesDB);
-router.delete('/admin/pr-media/files/:id', deletePRMediaFileDB);
-router.delete('/admin/pr-media/folders/:id', deletePRFolderDB);
+router.get('/admin/pr-media/folders', verifyAdminToken, getPRMediaFoldersDB);
+router.get('/admin/pr-media/files', verifyAdminToken, getPRMediaFilesDB);
+router.delete('/admin/pr-media/files/:id', verifyAdminToken, deletePRMediaFileDB);
+router.delete('/admin/pr-media/folders/:id', verifyAdminToken, deletePRFolderDB);
 
 // System Settings & Committee endpoints
 router.get('/admin/settings', getSettingsDB);

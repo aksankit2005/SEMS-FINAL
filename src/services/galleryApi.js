@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_BASE_URL } from './apiConfig';
+import { GALLERY_EVENTS, GALLERY_MEDIA } from '../data/galleryData';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -17,33 +18,24 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-import { GALLERY_EVENTS, GALLERY_MEDIA } from '../data/galleryData';
-
-// Initial rich fallback events & media
+// Initial fallback data for read queries
 const INITIAL_FALLBACK_EVENTS = GALLERY_EVENTS;
 const INITIAL_FALLBACK_MEDIA = GALLERY_MEDIA;
 
-// Helper to manage localStorage mock state when API server is not running
 const getLocalEvents = () => {
-  const stored = localStorage.getItem('sems_events_data');
-  if (stored) return JSON.parse(stored);
-  localStorage.setItem('sems_events_data', JSON.stringify(INITIAL_FALLBACK_EVENTS));
+  try {
+    const stored = localStorage.getItem('sems_events_data');
+    if (stored) return JSON.parse(stored);
+  } catch (e) {}
   return INITIAL_FALLBACK_EVENTS;
 };
 
-const saveLocalEvents = (events) => {
-  localStorage.setItem('sems_events_data', JSON.stringify(events));
-};
-
 const getLocalMedia = () => {
-  const stored = localStorage.getItem('sems_media_data');
-  if (stored) return JSON.parse(stored);
-  localStorage.setItem('sems_media_data', JSON.stringify(INITIAL_FALLBACK_MEDIA));
+  try {
+    const stored = localStorage.getItem('sems_media_data');
+    if (stored) return JSON.parse(stored);
+  } catch (e) {}
   return INITIAL_FALLBACK_MEDIA;
-};
-
-const saveLocalMedia = (media) => {
-  localStorage.setItem('sems_media_data', JSON.stringify(media));
 };
 
 // API Services Object
@@ -75,21 +67,34 @@ export const galleryApi = {
     return !!localStorage.getItem('pr_auth_token');
   },
 
+  // Get Cloudinary upload signature from backend
+  async getCloudinarySignature(folder = 'sems_gallery') {
+    try {
+      const res = await api.get('/pr/cloudinary-signature', { params: { folder } });
+      return res.data;
+    } catch (err) {
+      throw new Error(err.response?.data?.message || 'Failed to obtain Cloudinary upload signature');
+    }
+  },
+
   // GET /api/events - List all events with media counts
   async getEvents() {
     try {
       const res = await api.get('/events');
+      if (Array.isArray(res.data)) {
+        localStorage.setItem('sems_events_data', JSON.stringify(res.data));
+        return res.data;
+      }
       return res.data;
     } catch (err) {
-      // Fallback
       const events = getLocalEvents();
       const media = getLocalMedia();
       return events.map((ev) => {
         const evMedia = media.filter((m) => Number(m.event_id) === Number(ev.id));
         return {
           ...ev,
-          photos_count: evMedia.filter((m) => m.media_type === 'image').length,
-          videos_count: evMedia.filter((m) => m.media_type === 'video').length,
+          photos_count: evMedia.filter((m) => (m.media_type || '').toLowerCase() === 'image').length,
+          videos_count: evMedia.filter((m) => (m.media_type || '').toLowerCase() === 'video').length,
         };
       });
     }
@@ -109,104 +114,65 @@ export const galleryApi = {
       return {
         ...event,
         media: eventMedia,
-        photos: eventMedia.filter((m) => m.media_type === 'image'),
-        videos: eventMedia.filter((m) => m.media_type === 'video'),
+        photos: eventMedia.filter((m) => (m.media_type || '').toLowerCase() === 'image'),
+        videos: eventMedia.filter((m) => (m.media_type || '').toLowerCase() === 'video'),
       };
     }
   },
 
   // POST /api/events - Create new event
   async createEvent(eventData) {
-    let resData;
     try {
       const res = await api.post('/events', eventData);
-      resData = res.data;
+      window.dispatchEvent(new Event('sems_events_updated'));
+      return res.data;
     } catch (err) {
-      const events = getLocalEvents();
-      const newEvent = {
-        id: Date.now(),
-        event_name: eventData.event_name,
-        event_date: eventData.event_date,
-        cover_image: eventData.cover_image,
-        description: eventData.description || '',
-        created_at: new Date().toISOString(),
-        photos_count: 0,
-        videos_count: 0,
-      };
-      const updated = [newEvent, ...events];
-      saveLocalEvents(updated);
-      resData = newEvent;
+      throw new Error(err.response?.data?.message || 'Failed to create event album');
     }
-    window.dispatchEvent(new Event('sems_events_updated'));
-    return resData;
   },
 
   // PUT /api/events/:id - Edit existing event
   async updateEvent(id, eventData) {
-    let resData;
     try {
       const res = await api.put(`/events/${id}`, eventData);
-      resData = res.data;
+      window.dispatchEvent(new Event('sems_events_updated'));
+      return res.data;
     } catch (err) {
-      const events = getLocalEvents();
-      const updated = events.map((e) =>
-        Number(e.id) === Number(id) ? { ...e, ...eventData } : e
-      );
-      saveLocalEvents(updated);
-      resData = updated.find((e) => Number(e.id) === Number(id));
+      throw new Error(err.response?.data?.message || 'Failed to update event details');
     }
-    window.dispatchEvent(new Event('sems_events_updated'));
-    return resData;
   },
 
   // DELETE /api/events/:id - Delete event and cascade delete media
   async deleteEvent(id) {
-    let resData;
     try {
       const res = await api.delete(`/events/${id}`);
-      resData = res.data;
+      window.dispatchEvent(new Event('sems_events_updated'));
+      return res.data;
     } catch (err) {
-      const events = getLocalEvents();
-      const media = getLocalMedia();
-      saveLocalEvents(events.filter((e) => Number(e.id) !== Number(id)));
-      saveLocalMedia(media.filter((m) => Number(m.event_id) !== Number(id)));
-      resData = { success: true, message: 'Event deleted successfully' };
+      throw new Error(err.response?.data?.message || 'Failed to delete event');
     }
-    window.dispatchEvent(new Event('sems_events_updated'));
-    return resData;
   },
 
   // POST /api/media/upload - Upload media item
   async uploadMedia(mediaData) {
-    let result;
     try {
       const res = await api.post('/media/upload', mediaData);
-      result = res.data;
+      window.dispatchEvent(new Event('sems_events_updated'));
+      window.dispatchEvent(new Event('sems_media_updated'));
+      return res.data;
     } catch (err) {
-      const media = getLocalMedia();
-      const newMedia = {
-        id: Date.now(),
-        event_id: Number(mediaData.event_id),
-        media_type: mediaData.media_type,
-        title: mediaData.title,
-        media_url: mediaData.media_url,
-        uploaded_by: 'PR Coordinator',
-        uploaded_at: new Date().toISOString(),
-      };
-      const updated = [newMedia, ...media];
-      saveLocalMedia(updated);
-      result = newMedia;
+      throw new Error(err.response?.data?.message || 'Failed to save media record');
     }
-    window.dispatchEvent(new Event('sems_events_updated'));
-    window.dispatchEvent(new Event('sems_media_updated'));
-    return result;
   },
 
   // GET /api/media/event/:eventId - Get media for event
   async getMediaByEventId(eventId) {
     try {
       const res = await api.get(`/media/event/${eventId}`);
-      return res.data;
+      if (Array.isArray(res.data)) {
+        return res.data;
+      }
+      return res.data?.media || [];
     } catch (err) {
       const media = getLocalMedia();
       return media.filter((m) => Number(m.event_id) === Number(eventId));
@@ -220,16 +186,16 @@ export const galleryApi = {
       const list = Array.isArray(res.data) ? res.data : (res.data?.media || []);
       return {
         all: list,
-        photos: list.filter((m) => m.media_type === 'image'),
-        videos: list.filter((m) => m.media_type === 'video'),
+        photos: list.filter((m) => (m.media_type || '').toLowerCase() === 'image'),
+        videos: list.filter((m) => (m.media_type || '').toLowerCase() === 'video'),
       };
     } catch (err) {
       const media = getLocalMedia();
       const eventMedia = media.filter((m) => Number(m.event_id) === Number(eventId));
       return {
         all: eventMedia,
-        photos: eventMedia.filter((m) => m.media_type === 'image'),
-        videos: eventMedia.filter((m) => m.media_type === 'video'),
+        photos: eventMedia.filter((m) => (m.media_type || '').toLowerCase() === 'image'),
+        videos: eventMedia.filter((m) => (m.media_type || '').toLowerCase() === 'video'),
       };
     }
   },
@@ -238,12 +204,10 @@ export const galleryApi = {
   async deleteMedia(id) {
     try {
       const res = await api.delete(`/media/${id}`);
+      window.dispatchEvent(new Event('sems_media_updated'));
       return res.data;
     } catch (err) {
-      const media = getLocalMedia();
-      const updated = media.filter((m) => Number(m.id) !== Number(id));
-      saveLocalMedia(updated);
-      return { success: true, message: 'Media item deleted successfully' };
+      throw new Error(err.response?.data?.message || 'Failed to delete media item');
     }
   },
 
@@ -253,24 +217,37 @@ export const galleryApi = {
       const events = await this.getEvents();
       let totalPhotos = 0;
       let totalVideos = 0;
-      const media = getLocalMedia();
-      
-      totalPhotos = media.filter((m) => m.media_type === 'image').length;
-      totalVideos = media.filter((m) => m.media_type === 'video').length;
+      const allRecent = [];
+
+      for (const ev of events.slice(0, 10)) {
+        totalPhotos += ev.photos_count || 0;
+        totalVideos += ev.videos_count || 0;
+      }
+
+      // Fetch recent media items
+      const recentMediaRes = await api.get('/admin/pr-media/files').catch(() => null);
+      if (recentMediaRes && Array.isArray(recentMediaRes.data)) {
+        return {
+          totalEvents: events.length,
+          totalPhotos,
+          totalVideos,
+          recentUploads: recentMediaRes.data.slice(0, 8),
+        };
+      }
 
       return {
         totalEvents: events.length,
         totalPhotos,
         totalVideos,
-        recentUploads: media.slice(0, 5),
+        recentUploads: [],
       };
     } catch (err) {
       const events = getLocalEvents();
       const media = getLocalMedia();
       return {
         totalEvents: events.length,
-        totalPhotos: media.filter((m) => m.media_type === 'image').length,
-        totalVideos: media.filter((m) => m.media_type === 'video').length,
+        totalPhotos: media.filter((m) => (m.media_type || '').toLowerCase() === 'image').length,
+        totalVideos: media.filter((m) => (m.media_type || '').toLowerCase() === 'video').length,
         recentUploads: media.slice(0, 5),
       };
     }

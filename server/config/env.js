@@ -28,6 +28,10 @@ export const envConfig = {
   adminPasswordHash: process.env.ADMIN_PASSWORD_HASH || '',
   superCoordUsername: process.env.SUPER_COORD_USERNAME || 'super_coordinator',
   passSuperCoord: process.env.PASS_SUPER_COORD || 'super#2026',
+  cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME || process.env.VITE_CLOUDINARY_CLOUD_NAME || 'lnrkt6qp',
+  cloudinaryApiKey: process.env.CLOUDINARY_API_KEY || '996182763949582',
+  cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET || 'qKiT0FnkGNvtjBveU3Tu_psg2QI',
+  cloudinaryFolder: process.env.CLOUDINARY_FOLDER || 'sems_gallery',
 };
 
 export const headPasswords = {

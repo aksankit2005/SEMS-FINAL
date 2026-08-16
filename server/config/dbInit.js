@@ -247,19 +247,42 @@ export const initDatabaseSchema = async () => {
       END $$;
     `);
 
-    // 3. Ensure media table exists for PR media uploads
+    // 3. Ensure events and media tables exist for PR event albums & media uploads
+    await queryDb(`
+      CREATE TABLE IF NOT EXISTS events (
+        id SERIAL PRIMARY KEY,
+        event_name VARCHAR(255) NOT NULL,
+        event_date DATE NOT NULL,
+        cover_image TEXT NOT NULL,
+        public_id VARCHAR(255),
+        description TEXT DEFAULT '',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await queryDb(`ALTER TABLE events ADD COLUMN IF NOT EXISTS public_id VARCHAR(255);`);
+    await queryDb(`ALTER TABLE events ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;`);
+
     await queryDb(`
       CREATE TABLE IF NOT EXISTS media (
         id SERIAL PRIMARY KEY,
-        title VARCHAR(255),
-        url TEXT,
-        type VARCHAR(50),
-        category VARCHAR(50),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,
+        media_type VARCHAR(20) NOT NULL DEFAULT 'image',
+        title VARCHAR(255) NOT NULL,
+        media_url TEXT NOT NULL,
+        public_id VARCHAR(255),
+        uploaded_by VARCHAR(255) DEFAULT 'PR Coordinator',
+        uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    await queryDb(`ALTER TABLE media ADD COLUMN IF NOT EXISTS event_id INTEGER;`);
+    await queryDb(`ALTER TABLE media ADD COLUMN IF NOT EXISTS media_type VARCHAR(20) DEFAULT 'image';`);
+    await queryDb(`ALTER TABLE media ADD COLUMN IF NOT EXISTS media_url TEXT;`);
+    await queryDb(`ALTER TABLE media ADD COLUMN IF NOT EXISTS public_id VARCHAR(255);`);
+    await queryDb(`ALTER TABLE media ADD COLUMN IF NOT EXISTS uploaded_by VARCHAR(255) DEFAULT 'PR Coordinator';`);
+    await queryDb(`ALTER TABLE media ADD COLUMN IF NOT EXISTS uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;`);
 
-    // 3. Ensure leaderboard_entries table exists for SuperCoordinator declared points
+    // 4. Ensure leaderboard_entries table exists for SuperCoordinator declared points
     await queryDb(`
       CREATE TABLE IF NOT EXISTS leaderboard_entries (
         id SERIAL PRIMARY KEY,
