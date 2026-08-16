@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Play, Tv, RefreshCw, Video } from 'lucide-react';
 import { LiveMatchViewerModal } from '../../components/live/LiveMatchViewerModal';
-import { coordinatorApi, mergeMatchState } from '../../services/coordinatorApi';
+import { coordinatorApi, mergeMatchState, sortLiveMatches } from '../../services/coordinatorApi';
 import { getSportConfig, SPORTS_CONFIG } from '../../data/sportsConfig';
 import { SPORTS_DATA } from '../../data/sportsData';
 import { extractYouTubeVideoId } from '../../utils/youtube';
-
-import { LIVE_MATCHES_DATA } from '../../data/liveMatchesData';
 
 export const LiveMatchPortalPage = () => {
   const [selectedSportFilter, setSelectedSportFilter] = useState('All');
@@ -17,225 +15,76 @@ export const LiveMatchPortalPage = () => {
 
   const fetchScores = async () => {
     try {
+      // 1. Fetch public live matches from Supabase PostgreSQL
       const publicLive = await coordinatorApi.getPublicLiveMatches();
-      const localActiveStr = localStorage.getItem('sems_active_live_matches');
-      let localActiveList = [];
 
-      // Collect ended/completed match IDs across all storage keys
-      const completedMatchIds = new Set();
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && (key.startsWith('sems_completed_results_') || key.startsWith('sems_coord_matches_'))) {
-          try {
-            const list = JSON.parse(localStorage.getItem(key));
-            if (Array.isArray(list)) {
-              list.forEach((m) => {
-                if (m && (m.status === 'COMPLETED' || m.status === 'FINISHED')) {
-                  if (m.id) completedMatchIds.add(m.id);
-                }
-              });
-            }
-          } catch (e) { }
-        }
-      }
-
-      if (localActiveStr) {
-        try {
-          const parsed = JSON.parse(localActiveStr);
-          localActiveList = Object.values(parsed).filter((m) => {
+      // If publicLive is null, network request failed -> preserve previous state temporarily
+      if (Array.isArray(publicLive)) {
+        const formattedLive = publicLive
+          .filter((m) => {
             const s = (m?.status || '').toLowerCase();
-            return m && m.id && m.id !== 'M595473' && !completedMatchIds.has(m.id) && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active');
+            return m && m.id && m.id !== 'M595473' && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active');
+          })
+          .map((m) => {
+            const inferredSportId = (m.sportId || m.sport || (m.sportName ? m.sportName.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'badminton')).toLowerCase();
+            const inferredSportName = m.sportName || m.sport || (inferredSportId.charAt(0).toUpperCase() + inferredSportId.slice(1).replace('-', ' '));
+            const videoId = m.youtubeVideoId || extractYouTubeVideoId(m.streamUrl);
+
+            return {
+              ...m,
+              sportId: inferredSportId,
+              sportName: inferredSportName,
+              tableNumber: m.tableNumber || m.venue || 'Court 1',
+              matchTitle: m.matchTitle || `${typeof m.team1 === 'object' ? (m.team1?.name || 'Team 1') : (m.team1 || 'Team 1')} vs ${typeof m.team2 === 'object' ? (m.team2?.name || 'Team 2') : (m.team2 || 'Team 2')}`,
+              liveTimer: m.liveTimer || '14:32',
+              youtubeVideoId: videoId || m.youtubeVideoId,
+              isLiveStreaming: Boolean(videoId || m.isLiveStreaming || m.streamUrl),
+            };
           });
-        } catch (e) { }
-      }
 
-      // Check Athletics live stream state
-      const cachedAthleticsStream = localStorage.getItem('sems_athletics_live_stream');
-      if (cachedAthleticsStream) {
-        try {
-          const parsedAth = JSON.parse(cachedAthleticsStream);
-          if (parsedAth && (parsedAth.status === 'In Progress' || parsedAth.status === 'running' || parsedAth.status === 'live')) {
-            const athId = 'M-ATHLETICS-LIVE';
-            if (!completedMatchIds.has(athId) && !localActiveList.some((m) => m.id === athId)) {
-              localActiveList.push({
-                id: athId,
-                sportId: 'athletics',
-                sportName: 'Athletics',
-                matchTitle: `Athletics Meet — ${parsedAth.activeSubEvent || '100m Race'} Live`,
-                team1: '',
-                team2: '',
-                tableNumber: 'Main Stadium Track',
-                venue: 'Main Track & Field Ground',
-                status: 'running',
-                score1: 0,
-                score2: 0,
-                activeSubEvent: parsedAth.activeSubEvent || '100m Race',
-                scoreSummary: parsedAth.scoreSummary || `Live Sub-Event: ${parsedAth.activeSubEvent || '100m Race'}`,
-                youtubeVideoId: parsedAth.youtubeVideoId,
-                streamUrl: parsedAth.streamUrl,
-                isLiveStreaming: true,
-              });
-            }
+        // Deterministically sort matches: sportId -> numeric court/table -> match ID
+        const sortedLive = sortLiveMatches(formattedLive);
+        setLiveMatches(sortedLive);
+
+        // Update selected match modal if currently open
+        setSelectedMatch((prev) => {
+          if (!prev || !prev.id) return null;
+          const fresh = sortedLive.find((m) => m.id === prev.id);
+          if (fresh) {
+            return mergeMatchState(prev, fresh);
           }
-        } catch (e) { }
-      }
-
-      // Check if coordinator explicitly launched any live match for Table Tennis
-      const hasCoordinatorLiveTT = (localActiveList || []).some((m) => {
-        const s = (m?.status || '').toLowerCase();
-        const isTT = (m?.sportId || m?.sportName || '').toLowerCase().includes('table-tennis') || (m?.sportId || m?.sportName || '').toLowerCase().includes('tt');
-        return isTT && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active');
-      }) || (publicLive || []).some((m) => {
-        const s = (m?.status || '').toLowerCase();
-        const isTT = (m?.sportId || m?.sportName || '').toLowerCase().includes('table-tennis') || (m?.sportId || m?.sportName || '').toLowerCase().includes('tt');
-        return isTT && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active');
-      });
-
-      // Filter out fallback static mock match for Table Tennis unless coordinator explicitly went live
-      const filteredFallbackData = LIVE_MATCHES_DATA.filter((m) => {
-        const isTT = (m?.sportId || m?.sportName || '').toLowerCase().includes('table-tennis') || (m?.sportId || m?.sportName || '').toLowerCase().includes('tt');
-        if (isTT && !hasCoordinatorLiveTT) {
-          return false;
-        }
-        return !completedMatchIds.has(m.id);
-      });
-
-      // Safely merge backend matches, local active matches & fallback live matches using functional update & mergeMatchState
-      const incomingMap = {};
-      const combined = [...(publicLive || []), ...filteredFallbackData];
-      combined.forEach((m) => {
-        const s = (m?.status || '').toLowerCase();
-        if (m && m.id && m.id !== 'M595473' && !completedMatchIds.has(m.id) && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active')) {
-          const inferredSportId = (m.sportId || m.sport || (m.sportName ? m.sportName.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'badminton')).toLowerCase();
-          const inferredSportName = m.sportName || m.sport || (inferredSportId.charAt(0).toUpperCase() + inferredSportId.slice(1).replace('-', ' '));
-
-          const videoId = m.youtubeVideoId || extractYouTubeVideoId(m.streamUrl);
-          const formatted = {
-            ...m,
-            sportId: inferredSportId,
-            sportName: inferredSportName,
-            tableNumber: m.tableNumber || m.venue || 'Court 1',
-            matchTitle: m.matchTitle || `${typeof m.team1 === 'object' ? (m.team1?.name || 'Team 1') : (m.team1 || 'Team 1')} vs ${typeof m.team2 === 'object' ? (m.team2?.name || 'Team 2') : (m.team2 || 'Team 2')}`,
-            liveTimer: m.liveTimer || '14:32',
-            youtubeVideoId: videoId || m.youtubeVideoId,
-            isLiveStreaming: Boolean(videoId || m.isLiveStreaming || m.streamUrl),
-          };
-          incomingMap[m.id] = incomingMap[m.id] ? mergeMatchState(incomingMap[m.id], formatted) : formatted;
-        }
-      });
-
-      setLiveMatches((prev) => {
-        const activeMatchesList = Object.values(incomingMap).filter((m) => {
-          const s = (m?.status || '').toLowerCase();
-
-          return (
-            m &&
-            m.id &&
-            m.id !== 'M595473' &&
-            !completedMatchIds.has(m.id) &&
-            (s === 'running' ||
-              s === 'live' ||
-              s === 'in_progress' ||
-              s === 'active')
-          );
+          return null; // Match ended or no longer active
         });
-
-        // Do not wipe currently displayed matches because of
-        // one temporary empty polling response.
-        if (activeMatchesList.length === 0 && prev.length > 0) {
-          const stillActivePrev = prev.filter((m) => {
-            const s = (m?.status || '').toLowerCase();
-
-            return (
-              !completedMatchIds.has(m.id) &&
-              s !== 'completed' &&
-              s !== 'finished' &&
-              s !== 'ended' &&
-              s !== 'walkover'
-            );
-          });
-
-          return stillActivePrev;
-        }
-
-        return activeMatchesList;
-      });
-
-      setSelectedMatch((prev) => {
-        if (!prev || !prev.id) return prev;
-        const fresh = incomingMap[prev.id];
-        if (fresh) {
-          const s = (fresh.status || '').toLowerCase();
-          if (s === 'completed' || s === 'finished' || s === 'walkover') {
-            return null;
-          }
-          return mergeMatchState(prev, fresh);
-        }
-        return null;
-      });
-
-      // Dynamic upcoming scheduled matches fetching (Database-first)
-      const upcomingList = [];
-      try {
-        const publicSchedules = await coordinatorApi.getPublicSchedules();
-        if (Array.isArray(publicSchedules)) {
-          publicSchedules.forEach((m) => {
-            const s = (m?.status || '').toLowerCase();
-            if (m && s !== 'completed' && s !== 'finished' && s !== 'running' && s !== 'live' && !completedMatchIds.has(m.id)) {
-              const t1 = typeof m.team1 === 'object' ? (m.team1?.name || '') : String(m.team1 || '').trim();
-              const t2 = typeof m.team2 === 'object' ? (m.team2?.name || '') : String(m.team2 || '').trim();
-              if (!t1 || !t2) return;
-              upcomingList.push({
-                id: m.id || `M-${Math.random()}`,
-                sportId: (m.sportId || 'badminton').toLowerCase(),
-                matchTitle: m.matchTitle || m.event || `${t1} vs ${t2}`,
-                team1: t1,
-                team2: t2,
-                venue: m.tableNumber || m.venue || 'Table 1',
-                time: m.time || '10:00 AM',
-                date: m.date || 'Today'
-              });
-            }
-          });
-        }
-      } catch (err) {
-        console.warn('Could not fetch DB public schedules:', err);
       }
 
-      // Offline / Local fallback if DB returned empty
-      if (upcomingList.length === 0) {
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && (key.startsWith('sems_coord_matches_') || key.endsWith('MatchSchedules'))) {
-            try {
-              const list = JSON.parse(localStorage.getItem(key));
-              if (Array.isArray(list)) {
-                const sportId = key.replace('sems_coord_matches_', '').replace('MatchSchedules', '').toLowerCase();
-                list.forEach((m) => {
-                  if (m && m.status !== 'COMPLETED' && m.status !== 'FINISHED' && m.status !== 'running' && m.status !== 'live' && !completedMatchIds.has(m.id)) {
-                    const t1 = typeof m.team1 === 'object' ? (m.team1?.name || '') : String(m.team1 || '').trim();
-                    const t2 = typeof m.team2 === 'object' ? (m.team2?.name || '') : String(m.team2 || '').trim();
-                    if (!t1 || !t2) return;
-                    if (!upcomingList.some((u) => u.id === m.id)) {
-                      upcomingList.push({
-                        id: m.id || `M-${Math.random()}`,
-                        sportId,
-                        matchTitle: m.matchTitle || `${t1} vs ${t2}`,
-                        team1: t1,
-                        team2: t2,
-                        venue: m.tableNumber || m.venue || 'Table 1',
-                        time: m.time || '10:00 AM',
-                        date: m.date || 'Today'
-                      });
-                    }
-                  }
-                });
-              }
-            } catch (e) { }
-          }
-        }
+      // 2. Fetch public schedules from Supabase PostgreSQL
+      const publicSchedules = await coordinatorApi.getPublicSchedules();
+      if (Array.isArray(publicSchedules)) {
+        const formattedUpcoming = publicSchedules
+          .filter((m) => {
+            const s = (m?.status || '').toLowerCase();
+            return m && m.id && s !== 'completed' && s !== 'finished' && s !== 'running' && s !== 'live';
+          })
+          .map((m) => {
+            const t1 = typeof m.team1 === 'object' ? (m.team1?.name || '') : String(m.team1 || '').trim();
+            const t2 = typeof m.team2 === 'object' ? (m.team2?.name || '') : String(m.team2 || '').trim();
+            const inferredSportId = (m.sportId || 'badminton').toLowerCase();
+            return {
+              id: m.id,
+              sportId: inferredSportId,
+              matchTitle: m.matchTitle || m.event || `${t1 || 'Team 1'} vs ${t2 || 'Team 2'}`,
+              team1: t1 || 'Team 1',
+              team2: t2 || 'Team 2',
+              venue: m.tableNumber || m.venue || 'Court 1',
+              tableNumber: m.tableNumber || m.venue || 'Court 1',
+              time: m.time || '10:00 AM',
+              date: m.date || 'Today',
+            };
+          });
+
+        const sortedUpcoming = sortLiveMatches(formattedUpcoming);
+        setUpcomingMatches(sortedUpcoming);
       }
-      setUpcomingMatches(upcomingList);
     } catch (err) {
       console.error('Error fetching live matches:', err);
     } finally {

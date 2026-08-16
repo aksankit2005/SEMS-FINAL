@@ -5,7 +5,7 @@ import { SCHEDULE_DATA } from '../data/scheduleData';
 import { RESULTS_DATA } from '../data/resultsData';
 import { ANNOUNCEMENTS_DATA } from '../data/announcementsData';
 import { ALL_COLLEGES } from '../services/superCoordinatorApi';
-import { coordinatorApi } from '../services/coordinatorApi';
+import { coordinatorApi, sortLiveMatches } from '../services/coordinatorApi';
 import { API_BASE_URL } from '../services/apiConfig';
 
 const SportsDataContext = createContext();
@@ -36,7 +36,7 @@ export const SportsDataProvider = ({ children }) => {
           )
       );
 
-      setLiveMatches(dbLive);
+      setLiveMatches(sortLiveMatches(dbLive));
       return;
     }
   } catch (e) {

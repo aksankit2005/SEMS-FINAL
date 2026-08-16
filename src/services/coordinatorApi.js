@@ -17,6 +17,39 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Helper to deterministically sort live matches (sportId -> numeric court/table -> match ID)
+export const sortLiveMatches = (matches) => {
+  if (!Array.isArray(matches)) return [];
+  return [...matches].sort((a, b) => {
+    // 1. Primary: sportId (alphabetical)
+    const sportA = (a.sportId || a.sport || (a.sportName ? a.sportName.toLowerCase().replace(/[^a-z0-9]/g, '-') : '')).toLowerCase();
+    const sportB = (b.sportId || b.sport || (b.sportName ? b.sportName.toLowerCase().replace(/[^a-z0-9]/g, '-') : '')).toLowerCase();
+    if (sportA !== sportB) {
+      return sportA.localeCompare(sportB);
+    }
+
+    // 2. Secondary: numeric Court/Table number (e.g. Court 1 < Court 2 < Court 10)
+    const venueA = String(a.tableNumber || a.venue || '');
+    const venueB = String(b.tableNumber || b.venue || '');
+    const matchNumA = venueA.match(/\d+/);
+    const matchNumB = venueB.match(/\d+/);
+    const numA = matchNumA ? parseInt(matchNumA[0], 10) : null;
+    const numB = matchNumB ? parseInt(matchNumB[0], 10) : null;
+
+    if (numA !== null && numB !== null && numA !== numB) {
+      return numA - numB;
+    }
+    if (numA !== null && numB === null) return -1;
+    if (numA === null && numB !== null) return 1;
+
+    const venueComp = venueA.localeCompare(venueB);
+    if (venueComp !== 0) return venueComp;
+
+    // 3. Final tie-breaker: Match ID
+    return String(a.id || '').localeCompare(String(b.id || ''));
+  });
+};
+
 // Helper to safely merge live match states without score regressions or field loss
 export const mergeMatchState = (existing, incoming) => {
   if (!existing) return incoming;
@@ -692,10 +725,11 @@ async deleteMatch(id) {
       if (res.data && Array.isArray(res.data)) {
         return res.data;
       }
+      return [];
     } catch (e) {
-      console.warn('getPublicResults endpoint fallback:', e);
+      console.warn('getPublicResults endpoint fallback:', e.message);
+      return null;
     }
-    return [];
   },
 
   // Get public match schedules from Supabase database
@@ -705,10 +739,11 @@ async deleteMatch(id) {
       if (res.data && Array.isArray(res.data)) {
         return res.data;
       }
+      return [];
     } catch (e) {
-      console.warn('getPublicSchedules endpoint fallback:', e);
+      console.warn('getPublicSchedules endpoint fallback:', e.message);
+      return null;
     }
-    return [];
   },
 
   // Get public live matches from Supabase database
@@ -718,10 +753,11 @@ async deleteMatch(id) {
       if (res.data && Array.isArray(res.data)) {
         return res.data;
       }
+      return [];
     } catch (e) {
-      console.warn('getPublicLiveMatches endpoint error:', e);
+      console.warn('getPublicLiveMatches endpoint error:', e.message);
+      return null;
     }
-    return [];
   },
 
   // Complete match, save result, remove from active live assignments

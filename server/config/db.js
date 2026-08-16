@@ -21,6 +21,9 @@ const dbConfig = {
 };
 
 export const pool = new Pool(dbConfig);
+pool.on('error', (err) => {
+  console.warn('[PostgreSQL Pool Warning]:', err.message);
+});
 const prismaAdapter = new PrismaPg(pool);
 export const prisma = new PrismaClient({ adapter: prismaAdapter });
 
