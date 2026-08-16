@@ -316,7 +316,69 @@ export const coordinatorApi = {
 
   // Get all public match schedules across all sports
   async getPublicMatches() {
-    return this.getMatches();
+    const allMatches = [];
+    const seenIds = new Set();
+    let deletedIds = new Set();
+
+    try {
+      const deletedStr = localStorage.getItem('sems_deleted_match_ids');
+      if (deletedStr) {
+        deletedIds = new Set(JSON.parse(deletedStr));
+      }
+    } catch (e) {}
+
+    // 1. Scan localStorage for all scheduled match keys across all sports
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (
+        key &&
+        (key.startsWith('sems_coord_matches_') ||
+          key.startsWith('sems_matches_') ||
+          key === 'basketballMatchSchedules' ||
+          key === 'volleyballMatchSchedules')
+      ) {
+        try {
+          const list = JSON.parse(localStorage.getItem(key));
+          if (Array.isArray(list)) {
+            list.forEach((m) => {
+              if (
+                m &&
+                m.id &&
+                !seenIds.has(m.id) &&
+                !deletedIds.has(m.id) &&
+                m.status !== 'COMPLETED' &&
+                m.status !== 'FINISHED'
+              ) {
+                seenIds.add(m.id);
+                allMatches.push(m);
+              }
+            });
+          }
+        } catch (e) {}
+      }
+    }
+
+    // 2. Try fetching from Backend API public schedules
+    try {
+      const backendMatches = await this.getPublicSchedules();
+      if (Array.isArray(backendMatches)) {
+        backendMatches.forEach((m) => {
+          if (
+            m &&
+            m.id &&
+            !seenIds.has(m.id) &&
+            !deletedIds.has(m.id) &&
+            m.status !== 'COMPLETED' &&
+            m.status !== 'FINISHED'
+          ) {
+            seenIds.add(m.id);
+            allMatches.push(m);
+          }
+        });
+      }
+    } catch (e) {}
+
+    return allMatches;
   },
 
   // Get all public match schedules across all sports

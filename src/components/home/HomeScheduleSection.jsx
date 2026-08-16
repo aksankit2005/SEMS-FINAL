@@ -22,23 +22,30 @@ export const HomeScheduleSection = () => {
               const sportName = m.sportName || m.sport || (sportId.charAt(0).toUpperCase() + sportId.slice(1));
               const t1 = typeof m.team1 === 'object' ? (m.team1?.name || 'TBD') : String(m.team1 || 'TBD');
               const t2 = typeof m.team2 === 'object' ? (m.team2?.name || 'TBD') : String(m.team2 || 'TBD');
+              const eventTitle = (t1 && t2 && t1 !== 'TBD' && t2 !== 'TBD') 
+                ? `${t1} vs ${t2}` 
+                : (m.eventTitle || m.matchTitle || `${t1} vs ${t2}`);
+
+              const timeStr = m.time 
+                ? (m.date ? `${m.date} | ${m.time}` : m.time)
+                : (m.startTime || 'Scheduled Today');
 
               return {
                 id: m.id || Math.random().toString(),
                 sportName,
-                eventTitle: m.eventTitle || m.matchTitle || `${t1} vs ${t2}`,
+                eventTitle,
                 team1: t1,
                 team2: t2,
-                time: m.time || m.startTime || 'Scheduled Today',
-                venue: m.venue || m.court || 'Main Arena',
-                status: m.status || 'UPCOMING'
+                time: timeStr,
+                venue: m.tableNumber || m.venue || m.court || 'Main Arena',
+                status: m.status || 'SCHEDULED'
               };
             });
         }
 
-        // Fallback to SCHEDULE_DATA if less than 3
-        if (combined.length < 3) {
-          const fallback = (SCHEDULE_DATA || []).slice(0, 4 - combined.length).map((s) => ({
+        // Fallback to SCHEDULE_DATA only if no real scheduled matches exist
+        if (combined.length === 0) {
+          combined = (SCHEDULE_DATA || []).slice(0, 4).map((s) => ({
             id: s.id || Math.random().toString(),
             sportName: s.sport || s.sportName || 'Championship',
             eventTitle: `${s.team1 || 'College Team A'} vs ${s.team2 || 'College Team B'}`,
@@ -46,12 +53,11 @@ export const HomeScheduleSection = () => {
             team2: s.team2 || 'College Team B',
             time: s.time || '10:00 AM',
             venue: s.venue || 'Indoor Sports Complex',
-            status: 'UPCOMING'
+            status: 'SCHEDULED'
           }));
-          combined = [...combined, ...fallback];
         }
 
-        setSchedules(combined.slice(0, 4));
+        setSchedules(combined.slice(0, 8));
       } catch (e) {
         setSchedules([]);
       } finally {
@@ -60,6 +66,17 @@ export const HomeScheduleSection = () => {
     };
 
     loadSchedule();
+
+    const handleUpdate = () => loadSchedule();
+    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('sems_matches_updated', handleUpdate);
+    window.addEventListener('sems_results_updated', handleUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('sems_matches_updated', handleUpdate);
+      window.removeEventListener('sems_results_updated', handleUpdate);
+    };
   }, []);
 
   return (
