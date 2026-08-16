@@ -273,7 +273,7 @@ export const TableTennisEventsTab = ({ user }) => {
     <div className="space-y-6 animate-fade-in font-sans">
 
       {/* TOP DASHBOARD STATS BAR WITH OCEAN CYAN STYLING */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-cyan-500/20 p-4 rounded-2xl space-y-1 shadow-sm">
           <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Total Events</span>
           <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{totalEvents}</p>
@@ -287,11 +287,6 @@ export const TableTennisEventsTab = ({ user }) => {
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-cyan-500/20 p-4 rounded-2xl space-y-1 shadow-sm">
           <span className="text-[10px] font-mono font-bold uppercase text-rose-600 dark:text-rose-500">Closed Events</span>
           <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">{closedEvents}</p>
-        </div>
-
-        <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-cyan-500/20 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-amber-600 dark:text-amber-400">Revenue Collected</span>
-          <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight">₹{totalRevenue.toLocaleString()}</p>
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-cyan-500/20 p-4 rounded-2xl space-y-1 shadow-sm">
