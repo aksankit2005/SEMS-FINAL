@@ -75,15 +75,15 @@ app.options('*', cors());
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 
-// ─── RATE LIMITING ───────────────────────────────────────────────────────────
-app.use('/api/', apiLimiter);
-
 // ─── API ROUTES ──────────────────────────────────────────────────────────────
-app.use('/api', adminRoutes);
-app.use('/api', prRoutes);
-app.use('/api', collegeHeadRoutes);
-app.use('/api', coordinatorRoutes);
+// Public spectator routes use publicReadLimiter for high-cadence reading & live updates
 app.use('/api', publicRoutes);
+
+// Protected/Management routes use apiLimiter for operations & mutations
+app.use('/api', apiLimiter, adminRoutes);
+app.use('/api', apiLimiter, prRoutes);
+app.use('/api', apiLimiter, collegeHeadRoutes);
+app.use('/api', apiLimiter, coordinatorRoutes);
 
 // ─── STATIC ASSETS & SPA SERVING (Production Full-Stack) ─────────────────────
 if (fs.existsSync(distPath)) {

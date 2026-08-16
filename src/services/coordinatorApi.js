@@ -17,6 +17,16 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 429) {
+      console.warn('[429 Rate Limit] Server rate limit triggered. Request halted safely.');
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Helper to deterministically sort live matches (sportId -> numeric court/table -> match ID)
 export const sortLiveMatches = (matches) => {
   if (!Array.isArray(matches)) return [];
@@ -1281,61 +1291,37 @@ async deleteMatch(id) {
     }
   },
 
-  // Get all Published & Closed coordinator events across all sports
+  // Get all Published & Closed coordinator events across all sports from production database
   async getPublicEvents() {
-    try {
-      this.purgeOldTestEvents();
-    } catch (e) { }
-
     let deletedSet = new Set();
     try {
       const deletedArr = JSON.parse(localStorage.getItem('sems_deleted_event_ids') || '[]');
       deletedSet = new Set(deletedArr);
     } catch (e) { }
 
-    let serverEvents = [];
     try {
       const res = await api.get('/public/events');
-      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-        serverEvents = res.data;
+      if (res.data && Array.isArray(res.data)) {
+        const currentDate = new Date();
+        return res.data
+          .filter((e) => e && e.id && !deletedSet.has(e.id))
+          .map((e) => {
+            let status = e.status || 'Published';
+            if (e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) {
+              status = 'Closed';
+            }
+            return {
+              ...e,
+              status,
+              availableSlots: Math.max(0, (e.maxRegistrations || 64) - (e.registeredCount || 0))
+            };
+          });
       }
     } catch (e) {
-      console.warn('Public events endpoint fallback to scanning localStorage keys', e);
+      console.warn('Error fetching public events from server:', e.message);
     }
 
-    const publicList = serverEvents.filter((e) => e && !deletedSet.has(e.id));
-    const currentDate = new Date();
-    const existingIds = new Set(publicList.map((e) => e.id));
-
-    try {
-      const eventKeys = Object.keys(localStorage).filter(k => k && k.toLowerCase().startsWith('sems_coord_events_'));
-      eventKeys.forEach(key => {
-        try {
-          const list = JSON.parse(localStorage.getItem(key));
-          if (Array.isArray(list)) {
-            list.forEach((e) => {
-              if (e && e.id && !deletedSet.has(e.id) && (e.status === 'Published' || e.status === 'Open' || e.status === 'Active' || e.status === 'Closed' || !e.status)) {
-                if (e.id === 'EVT-BADMINTON-001' || e.id === 'EVT-CRICKET-001' || e.id === 'EVT-FOOTBALL-001') return;
-                if (existingIds.has(e.id)) return;
-
-                let status = e.status === 'Closed' ? 'Closed' : 'Published';
-                if (e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) {
-                  status = 'Closed';
-                }
-                publicList.push({
-                  ...e,
-                  status,
-                  availableSlots: Math.max(0, (e.maxRegistrations || 64) - (e.registeredCount || 0))
-                });
-                existingIds.add(e.id);
-              }
-            });
-          }
-        } catch (err) { }
-      });
-    } catch (e) { }
-
-    return publicList;
+    return [];
   },
 
 

@@ -59,9 +59,12 @@ export const KabaddiCoordinatorPage = () => {
     if (user) {
       fetchAllData(true);
 
+      // Real-time synchronization polling every 15 seconds
       const pollInterval = setInterval(() => {
-        fetchAllData(false);
-      }, 5000);
+        if (activeTab !== 'live') {
+          fetchAllData(false);
+        }
+      }, 15000);
 
       return () => {
         isMounted = false;

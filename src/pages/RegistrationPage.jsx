@@ -184,7 +184,7 @@ export const RegistrationPage = () => {
     window.addEventListener('focus', handleRefresh);
     window.addEventListener('sems_events_updated', handleRefresh);
 
-    const interval = setInterval(fetchCoordinatorEvents, 3000);
+    const interval = setInterval(fetchCoordinatorEvents, 60000);
 
     // Dynamically load Razorpay Checkout SDK Script
     const rzpScript = document.createElement('script');

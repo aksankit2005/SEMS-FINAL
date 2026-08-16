@@ -23,31 +23,27 @@ export const LiveTicker = () => {
   const { liveMatches, leaderboard } = useSportsData();
   const [standings, setStandings] = useState(() => (Array.isArray(leaderboard) && leaderboard.length > 0 ? normalizeStandings(leaderboard) : []));
 
-  const fetchStandings = async () => {
-    try {
-      const res = await fetch(apiUrl('/leaderboard'));
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setStandings(normalizeStandings(data));
-          return;
-        }
-      }
-    } catch (e) {
-      console.warn('LiveTicker leaderboard fetch warning:', e.message);
-    }
-  };
-
   useEffect(() => {
-    if (leaderboard && leaderboard.length > 0) {
+    if (Array.isArray(leaderboard) && leaderboard.length > 0) {
       setStandings(normalizeStandings(leaderboard));
-    } else {
-      fetchStandings();
     }
   }, [leaderboard]);
 
   useEffect(() => {
-    fetchStandings();
+    const fetchStandings = async () => {
+      try {
+        const res = await fetch(apiUrl('/leaderboard'));
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setStandings(normalizeStandings(data));
+          }
+        }
+      } catch (e) {
+        console.warn('LiveTicker leaderboard fetch warning:', e.message);
+      }
+    };
+
     const handler = () => fetchStandings();
     window.addEventListener('sems_leaderboard_updated', handler);
     return () => {

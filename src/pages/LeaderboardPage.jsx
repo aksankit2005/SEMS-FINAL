@@ -55,7 +55,6 @@ const computeStandings = () => {
 
 export const LeaderboardPage = () => {
   const [query, setQuery] = useState('');
-  const [standings, setStandings] = useState([]);
   const { leaderboard } = useSportsData();
 
   const normalizeStandings = (data) => {
@@ -73,37 +72,39 @@ export const LeaderboardPage = () => {
       }));
   };
 
-  const refresh = async () => {
-    try {
-      const res = await fetch(apiUrl('/leaderboard'));
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          setStandings(normalizeStandings(data));
-          return;
-        }
-      }
-    } catch (e) { }
-
-    if (leaderboard && leaderboard.length > 0) {
-      setStandings(normalizeStandings(leaderboard));
-      return;
-    }
-
-    setStandings(normalizeStandings(computeStandings()));
-  };
+  const [standings, setStandings] = useState(() => (Array.isArray(leaderboard) && leaderboard.length > 0 ? normalizeStandings(leaderboard) : []));
 
   useEffect(() => {
-    if (leaderboard && leaderboard.length > 0) {
+    if (Array.isArray(leaderboard) && leaderboard.length > 0) {
       setStandings(normalizeStandings(leaderboard));
-    } else {
-      refresh();
     }
   }, [leaderboard]);
 
   useEffect(() => {
-    refresh();
-    // Listen for super coordinator leaderboard updates
+    const refresh = async () => {
+      try {
+        const res = await fetch(apiUrl('/leaderboard'));
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setStandings(normalizeStandings(data));
+            return;
+          }
+        }
+      } catch (e) { }
+
+      if (leaderboard && leaderboard.length > 0) {
+        setStandings(normalizeStandings(leaderboard));
+        return;
+      }
+
+      setStandings(normalizeStandings(computeStandings()));
+    };
+
+    if (!leaderboard || leaderboard.length === 0) {
+      refresh();
+    }
+
     const handler = () => refresh();
     window.addEventListener('sems_leaderboard_updated', handler);
     window.addEventListener('storage', handler);
@@ -111,7 +112,7 @@ export const LeaderboardPage = () => {
       window.removeEventListener('sems_leaderboard_updated', handler);
       window.removeEventListener('storage', handler);
     };
-  }, []);
+  }, [leaderboard]);
 
   const filtered = standings.filter((item) => {
     const colName = String(item.college || item.name || '').toLowerCase();

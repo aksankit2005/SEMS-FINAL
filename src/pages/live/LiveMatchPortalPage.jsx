@@ -13,9 +13,9 @@ export const LiveMatchPortalPage = () => {
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchScores = async () => {
+  const fetchLiveScores = async () => {
     try {
-      // 1. Fetch public live matches from Supabase PostgreSQL
+      // 1. Fetch public live matches from PostgreSQL
       const publicLive = await coordinatorApi.getPublicLiveMatches();
 
       // If publicLive is null, network request failed -> preserve previous state temporarily
@@ -56,8 +56,16 @@ export const LiveMatchPortalPage = () => {
           return null; // Match ended or no longer active
         });
       }
+    } catch (err) {
+      console.error('Error fetching live matches:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // 2. Fetch public schedules from Supabase PostgreSQL
+  const fetchUpcomingSchedules = async () => {
+    try {
+      // 2. Fetch public schedules from PostgreSQL
       const publicSchedules = await coordinatorApi.getPublicSchedules();
       if (Array.isArray(publicSchedules)) {
         const formattedUpcoming = publicSchedules
@@ -86,24 +94,37 @@ export const LiveMatchPortalPage = () => {
         setUpcomingMatches(sortedUpcoming);
       }
     } catch (err) {
-      console.error('Error fetching live matches:', err);
-    } finally {
-      setLoading(false);
+      console.error('Error fetching schedules:', err);
     }
   };
 
   useEffect(() => {
-    fetchScores();
-    const interval = setInterval(() => fetchScores(), 1500);
-    const handleRefresh = () => fetchScores();
-    window.addEventListener('sems_matches_updated', handleRefresh);
-    window.addEventListener('sems_results_updated', handleRefresh);
-    window.addEventListener('storage', handleRefresh);
+    fetchLiveScores();
+    fetchUpcomingSchedules();
+
+    // Live matches spectator refresh interval (every 6 seconds)
+    const liveInterval = setInterval(() => fetchLiveScores(), 6000);
+
+    // Schedules background refresh (every 60 seconds)
+    const scheduleInterval = setInterval(() => fetchUpcomingSchedules(), 60000);
+
+    const handleRefreshAll = () => {
+      fetchLiveScores();
+      fetchUpcomingSchedules();
+    };
+
+    window.addEventListener('sems_matches_updated', handleRefreshAll);
+    window.addEventListener('sems_results_updated', handleRefreshAll);
+    window.addEventListener('storage', handleRefreshAll);
+    window.addEventListener('focus', handleRefreshAll);
+
     return () => {
-      clearInterval(interval);
-      window.removeEventListener('sems_matches_updated', handleRefresh);
-      window.removeEventListener('sems_results_updated', handleRefresh);
-      window.removeEventListener('storage', handleRefresh);
+      clearInterval(liveInterval);
+      clearInterval(scheduleInterval);
+      window.removeEventListener('sems_matches_updated', handleRefreshAll);
+      window.removeEventListener('sems_results_updated', handleRefreshAll);
+      window.removeEventListener('storage', handleRefreshAll);
+      window.removeEventListener('focus', handleRefreshAll);
     };
   }, []);
 

@@ -447,7 +447,7 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
     window.addEventListener('sems_matches_updated', handleUpdate);
     window.addEventListener('sems_results_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
-    const interval = setInterval(handleUpdate, 1000);
+    const interval = setInterval(handleUpdate, 4000);
 
     return () => {
       isSubscribed = false;

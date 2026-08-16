@@ -29,8 +29,13 @@ export const TugOfWarTotalParticipationTab = ({ user, globalSearch = '' }) => {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 5000);
-    return () => clearInterval(interval);
+    const interval = setInterval(loadData, 20000);
+    const handleFocus = () => loadData();
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [user]);
 
   const flattenedAthletes = flattenRegistrationRoster(registrations, { defaultSport: sportName });

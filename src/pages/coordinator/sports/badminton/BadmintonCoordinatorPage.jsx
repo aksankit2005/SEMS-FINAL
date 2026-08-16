@@ -48,12 +48,12 @@ export const BadmintonCoordinatorPage = () => {
     if (user) {
       fetchAllData(true);
 
-      // Real-time synchronization polling every 5 seconds
+      // Real-time synchronization polling every 15 seconds
       const pollInterval = setInterval(() => {
-  if (activeTab !== 'live') {
-    fetchAllData(false);
-  }
-}, 5000);
+        if (activeTab !== 'live') {
+          fetchAllData(false);
+        }
+      }, 15000);
 
       return () => {
         isMounted = false;

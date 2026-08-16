@@ -4,14 +4,15 @@ import { getHeroSlidesDB, getCommitteeDB } from '../controllers/adminController.
 import { getLeaderboardStandings } from '../services/leaderboardService.js';
 import { queryDb, prisma, pool } from '../config/db.js';
 import { extractYouTubeVideoIdBackend } from '../controllers/coordinatorController.js';
+import { publicReadLimiter, apiLimiter } from '../middleware/rateLimiters.js';
 
 const router = express.Router();
 
-router.get('/public/hero-slides', getHeroSlidesDB);
-router.get('/committee', getCommitteeDB);
+router.get('/public/hero-slides', publicReadLimiter, getHeroSlidesDB);
+router.get('/committee', publicReadLimiter, getCommitteeDB);
 
 // GET /api/live-matches - Spectator endpoint
-router.get('/live-matches', async (req, res) => {
+router.get('/live-matches', publicReadLimiter, async (req, res) => {
   try {
     let dbRes = await queryDb(
       `SELECT id, sport_id AS "sportId", format, status, team1, team2, 
@@ -187,7 +188,7 @@ router.get('/live-matches', async (req, res) => {
 });
 
 // GET /api/live-matches/:matchId/players - Public Spectator Player Stats endpoint
-router.get('/live-matches/:matchId/players', async (req, res) => {
+router.get('/live-matches/:matchId/players', publicReadLimiter, async (req, res) => {
   const { matchId } = req.params;
   try {
     const statsRes = await queryDb(
@@ -209,7 +210,7 @@ router.get('/live-matches/:matchId/players', async (req, res) => {
 });
 
 // GET /api/results - Spectator completed match results endpoint from Supabase
-router.get('/results', async (req, res) => {
+router.get('/results', publicReadLimiter, async (req, res) => {
   try {
     const dbRes = await queryDb(
       `SELECT id, sport_id AS "sportId", format, status, team1, team2, 
@@ -283,7 +284,7 @@ router.get('/results', async (req, res) => {
 });
 
 // GET /api/schedules - Spectator match schedules endpoint from Supabase
-router.get('/schedules', async (req, res) => {
+router.get('/schedules', publicReadLimiter, async (req, res) => {
   try {
     const dbRes = await queryDb(
       `SELECT id, sport_id AS "sportId", format, status, team1, team2, 
@@ -341,7 +342,7 @@ router.get('/schedules', async (req, res) => {
 });
 
 // GET /api/public/events - Public event catalog
-router.get('/public/events', async (req, res) => {
+router.get('/public/events', publicReadLimiter, async (req, res) => {
   const publishedEvents = [];
   const currentDate = new Date();
 
@@ -448,10 +449,10 @@ router.get('/public/events', async (req, res) => {
 });
 
 // POST /api/public/register-event - Event registration endpoint
-router.post('/public/register-event', registerPublicEvent);
+router.post('/public/register-event', apiLimiter, registerPublicEvent);
 
 // GET /api/leaderboard - Spectator college standings endpoint from Supabase college_leaderboards table
-router.get('/leaderboard', async (req, res) => {
+router.get('/leaderboard', publicReadLimiter, async (req, res) => {
   try {
     const standings = await getLeaderboardStandings();
     return res.json(standings || []);
@@ -462,7 +463,7 @@ router.get('/leaderboard', async (req, res) => {
 });
 
 // GET /api/announcements - Spectator public announcements endpoint from Supabase
-router.get('/announcements', async (req, res) => {
+router.get('/announcements', publicReadLimiter, async (req, res) => {
   try {
     const list = await prisma.announcement.findMany({
       where: { isPublished: true },
@@ -477,7 +478,7 @@ router.get('/announcements', async (req, res) => {
 });
 
 // Health check
-router.get('/health', async (req, res) => {
+router.get('/health', publicReadLimiter, async (req, res) => {
   try {
     await pool.query('SELECT 1');
     res.json({ status: 'ok', service: 'SEMS API Server', db: 'connected' });

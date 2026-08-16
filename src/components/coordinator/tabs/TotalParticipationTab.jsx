@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, FileDown, Users, Trophy } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
@@ -41,8 +41,13 @@ export const TotalParticipationTab = ({ user, assignedSport, globalSearch = '' }
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 5000);
-    return () => clearInterval(interval);
+    const interval = setInterval(loadData, 20000);
+    const handleFocus = () => loadData();
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [user, assignedSport]);
 
   const flattenedAthletes = flattenRegistrationRoster(registrations, { defaultSport: sportName });
