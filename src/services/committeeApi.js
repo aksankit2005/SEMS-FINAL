@@ -1,7 +1,24 @@
-// Frontend Service for Executive Committee & Faculty Advisors management
-// Stored session-wise in localStorage so the admin can edit photo, name & position.
+import axios from 'axios';
+import { API_BASE_URL } from './apiConfig';
 
 const COMMITTEE_STORAGE_KEY = 'sems_committee_data';
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+api.interceptors.request.use((config) => {
+  const adminToken = localStorage.getItem('sems_admin_token');
+  const prToken = localStorage.getItem('pr_auth_token');
+  const token = adminToken || prToken;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 const DEFAULT_FACULTY_ADVISORS = [
   { id: 'FA-1', name: 'Mr. Susil Kushwaha', role: 'Faculty Advisor', image: '/team/faculty_susil.jpg' },
@@ -45,93 +62,90 @@ const DEFAULT_SESSIONS = [
   }
 ];
 
-const getStorageItem = (key, fallback) => {
-  try {
-    const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : fallback;
-  } catch (e) {
-    return fallback;
-  }
-};
-
-const setStorageItem = (key, data) => {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (e) {
-    console.error(`Failed to write ${key} to localStorage:`, e);
-  }
-};
-
 export const committeeApi = {
-  // Get all sessions with their advisors & executive committee
+  // Get all sessions with advisors & executive committee from database
   getCommitteeData: async () => {
-    return getStorageItem(COMMITTEE_STORAGE_KEY, DEFAULT_SESSIONS);
-  },
-
-  // Save the full session-wise committee data
-  saveCommitteeData: async (sessions) => {
-    setStorageItem(COMMITTEE_STORAGE_KEY, sessions);
-    window.dispatchEvent(new Event('sems_committee_updated'));
-    return sessions;
-  },
-
-  // Add / update a session
-  saveSession: async (sessionData) => {
-    const sessions = await committeeApi.getCommitteeData();
-    let updated;
-    if (sessionData.id && sessions.some((s) => s.id === sessionData.id)) {
-      updated = sessions.map((s) => (s.id === sessionData.id ? { ...s, ...sessionData } : s));
-    } else {
-      const newSession = {
-        id: `session-${Date.now()}`,
-        label: sessionData.label || 'New Session',
-        isActive: false,
-        advisors: [],
-        executiveCommittee: [],
-        ...sessionData
-      };
-      updated = [...sessions, newSession];
+    try {
+      const res = await api.get('/committee');
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        localStorage.setItem(COMMITTEE_STORAGE_KEY, JSON.stringify(res.data));
+        return res.data;
+      }
+    } catch (err) {
+      console.warn('Could not fetch committee from API, loading local fallback:', err.message);
     }
-    return committeeApi.saveCommitteeData(updated);
+
+    try {
+      const saved = localStorage.getItem(COMMITTEE_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : DEFAULT_SESSIONS;
+    } catch (e) {
+      return DEFAULT_SESSIONS;
+    }
   },
 
-  // Delete a session
+  // Save/Create/Update Session
+  saveSession: async (sessionData) => {
+    try {
+      await api.post('/admin/committee/sessions', sessionData);
+    } catch (err) {
+      console.error('Failed to save session via API:', err.message);
+    }
+    const updated = await committeeApi.getCommitteeData();
+    window.dispatchEvent(new Event('sems_committee_updated'));
+    return updated;
+  },
+
+  // Delete Session
   deleteSession: async (id) => {
-    const sessions = await committeeApi.getCommitteeData();
-    const updated = sessions.filter((s) => s.id !== id);
-    return committeeApi.saveCommitteeData(updated);
+    try {
+      await api.delete(`/admin/committee/sessions/${id}`);
+    } catch (err) {
+      console.error('Failed to delete session via API:', err.message);
+    }
+    const updated = await committeeApi.getCommitteeData();
+    window.dispatchEvent(new Event('sems_committee_updated'));
+    return updated;
   },
 
   // Add / update a member inside a session (type: 'advisors' | 'executiveCommittee')
   saveMember: async (sessionId, type, memberData) => {
-    const sessions = await committeeApi.getCommitteeData();
-    const updated = sessions.map((s) => {
-      if (s.id !== sessionId) return s;
-      const list = s[type] || [];
-      let newList;
-      if (memberData.id && list.some((m) => m.id === memberData.id)) {
-        newList = list.map((m) => (m.id === memberData.id ? { ...m, ...memberData } : m));
-      } else {
-        newList = [{ id: `${type === 'advisors' ? 'FA' : 'EC'}-${Date.now()}`, ...memberData }, ...list];
-      }
-      return { ...s, [type]: newList };
-    });
-    return committeeApi.saveCommitteeData(updated);
+    try {
+      const payload = {
+        id: memberData.id && !memberData.id.startsWith('FA-') && !memberData.id.startsWith('EC-') ? memberData.id : undefined,
+        sessionId,
+        type,
+        name: memberData.name,
+        role: memberData.role,
+        image: memberData.image,
+        publicId: memberData.publicId,
+        email: memberData.email || '',
+        phone: memberData.phone || '',
+        sortOrder: memberData.sortOrder || 0
+      };
+      await api.post('/admin/committee/members', payload);
+    } catch (err) {
+      console.error('Failed to save committee member via API:', err.message);
+    }
+    const updated = await committeeApi.getCommitteeData();
+    window.dispatchEvent(new Event('sems_committee_updated'));
+    return updated;
   },
 
   // Delete a member from a session
   deleteMember: async (sessionId, type, memberId) => {
-    const sessions = await committeeApi.getCommitteeData();
-    const updated = sessions.map((s) => {
-      if (s.id !== sessionId) return s;
-      return { ...s, [type]: (s[type] || []).filter((m) => m.id !== memberId) };
-    });
-    return committeeApi.saveCommitteeData(updated);
+    try {
+      await api.delete(`/admin/committee/members/${memberId}`);
+    } catch (err) {
+      console.error('Failed to delete committee member via API:', err.message);
+    }
+    const updated = await committeeApi.getCommitteeData();
+    window.dispatchEvent(new Event('sems_committee_updated'));
+    return updated;
   },
 
   // Reset back to default seeded data
   resetCommitteeData: async () => {
-    setStorageItem(COMMITTEE_STORAGE_KEY, DEFAULT_SESSIONS);
+    localStorage.setItem(COMMITTEE_STORAGE_KEY, JSON.stringify(DEFAULT_SESSIONS));
     window.dispatchEvent(new Event('sems_committee_updated'));
     return DEFAULT_SESSIONS;
   }

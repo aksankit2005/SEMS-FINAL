@@ -321,6 +321,34 @@ export const initDatabaseSchema = async () => {
       );
     `);
 
+    // 5. Ensure committee_sessions and committee_members tables exist
+    await queryDb(`
+      CREATE TABLE IF NOT EXISTS committee_sessions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        label VARCHAR(100) UNIQUE NOT NULL,
+        is_active BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await queryDb(`
+      CREATE TABLE IF NOT EXISTS committee_members (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        session_id UUID REFERENCES committee_sessions(id) ON DELETE CASCADE,
+        type VARCHAR(50) NOT NULL DEFAULT 'EXECUTIVE',
+        name VARCHAR(150) NOT NULL,
+        role VARCHAR(150) NOT NULL,
+        photo_url TEXT,
+        public_id VARCHAR(255),
+        email VARCHAR(150),
+        phone VARCHAR(50),
+        sort_order INT DEFAULT 0,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await queryDb(`ALTER TABLE committee_members ADD COLUMN IF NOT EXISTS public_id VARCHAR(255);`);
+
     // 5. Seed user account tables and password hashes
     await seedInitialAccountHashes();
 

@@ -1,12 +1,13 @@
 import express from 'express';
 import { registerPublicEvent } from '../controllers/registrationController.js';
-import { getHeroSlidesDB } from '../controllers/adminController.js';
+import { getHeroSlidesDB, getCommitteeDB } from '../controllers/adminController.js';
 import { getLeaderboardStandings } from '../services/leaderboardService.js';
 import { queryDb, prisma, pool } from '../config/db.js';
 
 const router = express.Router();
 
 router.get('/public/hero-slides', getHeroSlidesDB);
+router.get('/committee', getCommitteeDB);
 
 // GET /api/live-matches - Spectator endpoint
 router.get('/live-matches', async (req, res) => {
