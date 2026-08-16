@@ -954,6 +954,29 @@ export const RegistrationPage = () => {
               </div>
             )}
 
+            {/* ALL CHAMPIONSHIP SPORTS SELECTION GRID */}
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-amber-500" />
+                  Select Championship Sport to Register
+                </h2>
+                <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono text-xs font-bold border border-blue-500/20">
+                  {sportsList.length} Sports Available
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {sportsList.map((sport) => (
+                  <SportCard
+                    key={sport.id}
+                    sport={sport}
+                    onRegisterSelect={handleSportSelect}
+                  />
+                ))}
+              </div>
+            </div>
+
           </div>
         ) : (
 
