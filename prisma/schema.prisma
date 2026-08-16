@@ -257,7 +257,6 @@ model Student {
   email        String?
   mobile       String?
   gender       String?
-  branch       String?
   yearSemester String?  
   dateOfBirth  DateTime?
   createdAt    DateTime  @default(now())
@@ -265,7 +264,7 @@ model Student {
 
   college College? @relation(fields: [collegeId], references: [id], onDelete: SetNull)
 
-  @@index([collegeId, enrollmentNo])
+  @@index([collegeId])
   @@index([rollNo])
   @@map("students")
 }
@@ -305,7 +304,6 @@ model RegistrationMember {
   rollNo           String?
   email            String?
   mobile           String?
-  alternateMobile  String?   @map("alternate_mobile")
   gender           String?
   course           String?
   yearSemester     String?   @map("year_semester")
@@ -332,7 +330,6 @@ model CollegeRegistration {
   teamName         String?  @map("team_name")
   college          String
   department       String?
-  enrollmentNo     String?  @map("enrollment_no")
   email            String?
   phone            String?
   gender           String
