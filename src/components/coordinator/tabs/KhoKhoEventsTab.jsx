@@ -262,7 +262,7 @@ export const KhoKhoEventsTab = ({ user }) => {
     <div className="space-y-6">
       
       {/* TOP DASHBOARD STATS BAR */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-[#1E293B] p-4 rounded-2xl space-y-1 shadow-sm">
           <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Total Events</span>
           <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{totalEvents}</p>
@@ -281,16 +281,6 @@ export const KhoKhoEventsTab = ({ user }) => {
         <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-[#1E293B] p-4 rounded-2xl space-y-1 shadow-sm">
           <span className="text-[10px] font-mono font-bold uppercase text-rose-600 dark:text-rose-400">Closed Events</span>
           <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">{closedEvents}</p>
-        </div>
-
-        <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-[#1E293B] p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-amber-600 dark:text-amber-400">Registered Teams</span>
-          <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight">{totalRegCount}</p>
-        </div>
-
-        <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-[#1E293B] p-4 rounded-2xl col-span-2 sm:col-span-1 space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Team Revenue</span>
-          <p className="text-xl font-black text-amber-600 dark:text-amber-400 truncate">₹{totalRevenue.toLocaleString()}</p>
         </div>
       </div>
 

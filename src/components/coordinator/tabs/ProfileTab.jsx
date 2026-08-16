@@ -113,7 +113,7 @@ export const ProfileTab = ({ user, matches = [], registrations = [], onLogout, a
       <div className={`grid grid-cols-1 ${isBadminton ? '' : 'lg:grid-cols-2'} gap-6`}>
         
         {/* Account Details Box */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-xl space-y-4">
+        <div className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-xl space-y-4 max-w-2xl">
           <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-indigo-400" /> Coordinator Credentials
           </h3>
@@ -140,52 +140,6 @@ export const ProfileTab = ({ user, matches = [], registrations = [], onLogout, a
             </div>
           </div>
         </div>
-
-        {/* Quick Operational Downloads & Actions */}
-        {!isBadminton && (
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-xl space-y-4">
-            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-              <Download className="w-4 h-4 text-blue-600 dark:text-indigo-400" /> Operational Actions
-            </h3>
-
-            <div className="space-y-3">
-              <button
-                onClick={() => addToast('Downloading match schedule report...', 'info')}
-                className="w-full p-3.5 rounded-2xl bg-slate-50 dark:bg-[#090D16] hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs transition flex items-center justify-between cursor-pointer"
-              >
-                <div className="flex items-center gap-2.5">
-                  <FileText className="w-4 h-4 text-blue-600 dark:text-indigo-400" />
-                  <span>Export Match Schedule Summary</span>
-                </div>
-                <span className="text-[10px] font-mono font-bold text-slate-400">PDF</span>
-              </button>
-
-              <button
-                onClick={() => addToast('Exporting registered participants list...', 'info')}
-                className="w-full p-3.5 rounded-2xl bg-slate-50 dark:bg-[#090D16] hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs transition flex items-center justify-between cursor-pointer"
-              >
-                <div className="flex items-center gap-2.5">
-                  <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span>Export Participant Registrations</span>
-                </div>
-                <span className="text-[10px] font-mono font-bold text-slate-400">CSV</span>
-              </button>
-
-              {canChangePassword && (
-                <button
-                  onClick={() => setShowPasswordModal(true)}
-                  className="w-full p-3.5 rounded-2xl bg-slate-50 dark:bg-[#090D16] hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs transition flex items-center justify-between cursor-pointer"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Key className="w-4 h-4 text-amber-500" />
-                    <span>Update Account Password</span>
-                  </div>
-                  <span className="text-[10px] font-mono font-bold text-slate-400">SECURITY</span>
-                </button>
-              )}
-            </div>
-          </div>
-        )}
 
       </div>
 

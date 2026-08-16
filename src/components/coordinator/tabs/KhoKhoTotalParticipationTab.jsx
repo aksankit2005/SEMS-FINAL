@@ -211,16 +211,6 @@ export const KhoKhoTotalParticipationTab = ({ user, globalSearch = '' }) => {
                 Verified registration records for Kho-Kho: <span className="font-bold text-amber-500">{flattenedAthletes.length}</span> Athletes ({filtered.length} Teams)
               </p>
             </div>
-
-            {participants.length > 0 && (
-              <button
-                onClick={handleClearParticipants}
-                className="px-3 py-1 rounded-xl bg-rose-50 dark:bg-rose-600/20 hover:bg-rose-100 dark:hover:bg-rose-600 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ml-2"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Clear Data</span>
-              </button>
-            )}
           </div>
 
           <div className="flex items-center gap-3 w-full sm:w-auto">

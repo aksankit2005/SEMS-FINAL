@@ -247,16 +247,6 @@ export const RegistrationTab = ({ registrations, user, onUpdateRegistrations }) 
                           <UserX className="w-3 h-3" /> Reject
                         </button>
                       )}
-
-                      {!isBadminton && (
-                        <button
-                          onClick={() => handleDelete(r.id, r.teamName || r.studentName)}
-                          className="p-2 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition cursor-pointer"
-                          title="Delete Registration"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
                     </div>
                   </td>
                 </tr>
