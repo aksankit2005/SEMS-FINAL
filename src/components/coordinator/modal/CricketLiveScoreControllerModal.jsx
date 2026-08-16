@@ -645,8 +645,8 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
     setLegalBalls(0);
     setOversFormatted('0.0');
 
-    const nextBattingSquad = norm(bowlingTeamNameInitial) === norm(teamA) ? teamAPlayers : teamBPlayers;
-    const nextBowlingSquad = norm(battingTeamNameInitial) === norm(teamA) ? teamAPlayers : teamBPlayers;
+    const nextBattingSquad = (norm(bowlingTeamNameInitial) === norm(teamA) ? teamAPlayerList : teamBPlayerList) || [];
+    const nextBowlingSquad = (norm(battingTeamNameInitial) === norm(teamA) ? teamAPlayerList : teamBPlayerList) || [];
 
     setStriker({ name: nextBattingSquad[0]?.name || 'Striker', runs: 0, balls: 0, fours: 0, sixes: 0 });
     setNonStriker({ name: nextBattingSquad[1]?.name || 'Non-Striker', runs: 0, balls: 0, fours: 0, sixes: 0 });
