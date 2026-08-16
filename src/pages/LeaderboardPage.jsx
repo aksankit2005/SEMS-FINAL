@@ -36,7 +36,7 @@ const computeStandings = () => {
         code: college.id,
         gold: counts.gold,
         silver: counts.silver,
-        totalPoints: counts.gold * 2 + counts.silver * 1,
+        totalPoints: counts.gold * 5 + counts.silver * 3,
       };
     });
 
@@ -103,7 +103,7 @@ export const LeaderboardPage = () => {
             Overall <span className="bg-gradient-to-r from-orange-500 via-amber-500 to-blue-600 bg-clip-text text-transparent">Leaderboard</span>
           </h1>
           <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
-            Live medal tallies and cumulative points across all sports events. 🥇 Gold = 2 pts &nbsp;•&nbsp; 🥈 Silver = 1 pt
+            Live medal tallies and cumulative points across all sports events. 🥇 Winner = 5 pts &nbsp;•&nbsp; 🥈 Runner-Up = 3 pts
           </p>
         </div>
 

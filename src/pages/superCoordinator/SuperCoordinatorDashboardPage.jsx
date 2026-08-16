@@ -209,11 +209,11 @@ export const SuperCoordinatorDashboardPage = () => {
     leaderboardEntries.forEach((entry) => {
       if (entry.winnerCollege === c.id || entry.winnerCollege === c.name || entry.winnerCollegeName === c.name) {
         winnerCount += 1;
-        totalPoints += 2;
+        totalPoints += 5;
       }
       if (entry.runnerUpCollege === c.id || entry.runnerUpCollege === c.name || entry.runnerUpCollegeName === c.name) {
         runnerUpCount += 1;
-        totalPoints += 1;
+        totalPoints += 3;
       }
     });
 

@@ -84,7 +84,7 @@ export const SportsDataProvider = ({ children }) => {
               code: college.id,
               gold: counts.gold,
               silver: counts.silver,
-              totalPoints: counts.gold * 2 + counts.silver * 1,
+              totalPoints: counts.gold * 5 + counts.silver * 3,
             };
           });
         standings.sort((a, b) => b.totalPoints - a.totalPoints || b.gold - a.gold || b.silver - a.silver || a.college.localeCompare(b.college));
