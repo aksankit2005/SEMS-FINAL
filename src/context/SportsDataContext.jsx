@@ -20,18 +20,29 @@ export const SportsDataProvider = ({ children }) => {
 
   // Fetch live matches from backend PostgreSQL database
   const syncLiveMatches = async () => {
-    try {
-      const resData = await coordinatorApi.getPublicLiveMatches();
-      if (resData && Array.isArray(resData)) {
-        const dbLive = resData.filter(
-          (m) => m && m.id && (m.status === 'running' || m.status === 'live' || m.status === 'in_progress' || m.status === 'active')
-        );
-        setLiveMatches(dbLive);
-      }
-    } catch (e) {
-      console.warn('Live matches API fetch error:', e.message);
+  try {
+    const resData = await coordinatorApi.getPublicLiveMatches();
+
+    if (resData && Array.isArray(resData)) {
+      const dbLive = resData.filter(
+        (m) =>
+          m &&
+          m.id &&
+          (
+            m.status === 'running' ||
+            m.status === 'live' ||
+            m.status === 'in_progress' ||
+            m.status === 'active'
+          )
+      );
+
+      setLiveMatches(dbLive);
+      return;
     }
-  };
+  } catch (e) {
+    console.warn('Live matches API fetch error:', e.message);
+  }
+};
 
   // Fetch schedule from backend PostgreSQL database
   const syncSchedule = async () => {
