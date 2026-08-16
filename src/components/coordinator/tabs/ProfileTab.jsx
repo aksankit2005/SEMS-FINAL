@@ -75,7 +75,7 @@ export const ProfileTab = ({ user, matches = [], registrations = [], onLogout })
       </div>
 
       {/* Account Security & Overview Section */}
-      <div className={`grid grid-cols-1 ${isBadminton ? '' : 'lg:grid-cols-2'} gap-6`}>
+      <div className="grid grid-cols-1 gap-6">
         
         {/* Account Details Box */}
         <div className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-xl space-y-4 max-w-2xl">
