@@ -124,11 +124,39 @@ export const LiveMatchPortalPage = () => {
         }
       });
 
-      setLiveMatches(() => {
+      setLiveMatches((prev) => {
         const activeMatchesList = Object.values(incomingMap).filter((m) => {
           const s = (m?.status || '').toLowerCase();
-          return m && m.id && m.id !== 'M595473' && !completedMatchIds.has(m.id) && s !== 'completed' && s !== 'finished' && s !== 'scheduled' && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active');
+
+          return (
+            m &&
+            m.id &&
+            m.id !== 'M595473' &&
+            !completedMatchIds.has(m.id) &&
+            (s === 'running' ||
+              s === 'live' ||
+              s === 'in_progress' ||
+              s === 'active')
+          );
         });
+
+        // Do not wipe currently displayed matches because of
+        // one temporary empty polling response.
+        if (activeMatchesList.length === 0 && prev.length > 0) {
+          const stillActivePrev = prev.filter((m) => {
+            const s = (m?.status || '').toLowerCase();
+
+            return (
+              !completedMatchIds.has(m.id) &&
+              s !== 'completed' &&
+              s !== 'finished' &&
+              s !== 'ended' &&
+              s !== 'walkover'
+            );
+          });
+
+          return stillActivePrev;
+        }
 
         return activeMatchesList;
       });
