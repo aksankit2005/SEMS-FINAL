@@ -15,17 +15,26 @@ const passwordHash = await bcrypt.hash("test123", 10);
 async function main() {
   console.log("=== SEEDING ESSENTIAL MASTER DATA (NO DEMO/MOCK DATA) ===");
 
-  // 1. Master Colleges
-  const mpec = await prisma.college.upsert({
-    where: { code: "MPEC" },
-    update: { name: "Maharana Pratap Engineering College", isActive: true },
-    create: { code: "MPEC", name: "Maharana Pratap Engineering College" },
-  });
-  const mips = await prisma.college.upsert({
-    where: { code: "MIPS" },
-    update: { name: "Maharana Institute of Professional Studies", isActive: true },
-    create: { code: "MIPS", name: "Maharana Institute of Professional Studies" },
-  });
+  // 1. Master Colleges (All 9 MPGI Colleges)
+  const masterColleges = [
+    { code: "MPEC", name: "Maharana Pratap Engineering College" },
+    { code: "MPCAMS", name: "Maharana Pratap College of Applied Medical Sciences" },
+    { code: "MIPS", name: "Maharana Institute of Professional Studies" },
+    { code: "MPDC", name: "Maharana Pratap Dental College" },
+    { code: "MPCPS (BPharmacy)", name: "MPCPS (BPharmacy)" },
+    { code: "MPCPS (KN142)", name: "MPCPS (KN142)" },
+    { code: "MPCP", name: "Maharana Pratap College of Pharmacy" },
+    { code: "MPCN&PS", name: "Maharana Pratap College of Nursing & Paramedical Sciences" },
+    { code: "MPAMC", name: "Maharana Pratap Ayurvedic Medical College" },
+  ];
+
+  for (const c of masterColleges) {
+    await prisma.college.upsert({
+      where: { code: c.code },
+      update: { name: c.name, isActive: true },
+      create: { code: c.code, name: c.name },
+    });
+  }
 
   // 2. Master Sports
   for (const sport of [
