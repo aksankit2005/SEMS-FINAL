@@ -41,6 +41,7 @@ export const PREventsPage = () => {
   const [eventDate, setEventDate] = useState('');
   const [coverImageMode, setCoverImageMode] = useState('upload'); // 'upload' | 'url'
   const [coverImage, setCoverImage] = useState('');
+  const [coverPublicId, setCoverPublicId] = useState('');
   const [description, setDescription] = useState('');
   
   // Upload State
@@ -72,6 +73,7 @@ export const PREventsPage = () => {
     setEventName('');
     setEventDate(new Date().toISOString().split('T')[0]);
     setCoverImage('https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=1200&q=80');
+    setCoverPublicId('');
     setDescription('');
     setCoverImageMode('upload');
     setActiveModal('create');
@@ -82,6 +84,7 @@ export const PREventsPage = () => {
     setEventName(eventItem.event_name);
     setEventDate(eventItem.event_date);
     setCoverImage(eventItem.cover_image);
+    setCoverPublicId(eventItem.public_id || '');
     setDescription(eventItem.description || '');
     setCoverImageMode('url');
     setActiveModal('edit');
@@ -112,11 +115,12 @@ export const PREventsPage = () => {
       showToast('Uploading cover image to Cloudinary...', 'info');
       const cloudRes = await uploadFileToCloudinary(file, (progress) => {
         setCoverProgress(progress);
-      });
+      }, 'sems_event_covers');
       setCoverImage(cloudRes.url);
+      setCoverPublicId(cloudRes.public_id || '');
       showToast('Cover image uploaded successfully!', 'success');
     } catch (err) {
-      showToast('Failed to upload cover image. Check Cloudinary settings.', 'error');
+      showToast(err.message || 'Failed to upload cover image. Check Cloudinary settings.', 'error');
     } finally {
       setUploadingCover(false);
       setCoverProgress(0);
@@ -138,7 +142,7 @@ export const PREventsPage = () => {
       setEventMediaList((prev) => prev.filter((m) => m.id !== mediaId));
       fetchEvents();
     } catch (err) {
-      showToast('Failed to delete media item', 'error');
+      showToast(err.message || 'Failed to delete media item', 'error');
     }
   };
 
@@ -157,6 +161,7 @@ export const PREventsPage = () => {
           event_name: eventName,
           event_date: eventDate,
           cover_image: coverImage,
+          public_id: coverPublicId || null,
           description,
         });
         showToast('Event Album Created Successfully!', 'success');
@@ -165,6 +170,7 @@ export const PREventsPage = () => {
           event_name: eventName,
           event_date: eventDate,
           cover_image: coverImage,
+          public_id: coverPublicId || null,
           description,
         });
         showToast('Event Details Updated Successfully!', 'success');
@@ -172,7 +178,7 @@ export const PREventsPage = () => {
       setActiveModal(null);
       fetchEvents();
     } catch (err) {
-      showToast('Failed to save event details', 'error');
+      showToast(err.message || 'Failed to save event details', 'error');
     } finally {
       setSaving(false);
     }

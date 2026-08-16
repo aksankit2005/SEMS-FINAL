@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { envConfig } from '../config/env.js';
 import { queryDb, prisma } from '../config/db.js';
 import { syncCollegeLeaderboards } from '../services/leaderboardService.js';
+import { deleteCloudinaryAsset, deleteCloudinaryBatch } from '../services/cloudinaryService.js';
 
 export const adminLogin = async (req, res) => {
   const { username, password } = req.body;
@@ -1335,7 +1336,13 @@ export const getPRMediaFilesDB = async (req, res) => {
 export const deletePRMediaFileDB = async (req, res) => {
   const { id } = req.params;
   try {
-    await queryDb('DELETE FROM media WHERE id = $1', [Number(id) || 0]);
+    const numId = Number(id) || 0;
+    const existing = await queryDb('SELECT public_id, media_type FROM media WHERE id = $1', [numId]);
+    if (existing && existing.rows.length > 0 && existing.rows[0].public_id) {
+      deleteCloudinaryAsset(existing.rows[0].public_id, existing.rows[0].media_type || 'image').catch(() => {});
+    }
+
+    await queryDb('DELETE FROM media WHERE id = $1', [numId]);
     return res.json({ success: true, message: 'PR media file deleted from database successfully.' });
   } catch (err) {
     console.error('Error deleting PR media file from DB:', err.message);
@@ -1347,6 +1354,27 @@ export const deletePRFolderDB = async (req, res) => {
   const { id } = req.params;
   try {
     const numId = Number(id) || 0;
+
+    // Purge associated Cloudinary assets
+    const mediaRes = await queryDb('SELECT public_id, media_type FROM media WHERE event_id = $1', [numId]);
+    const eventRes = await queryDb('SELECT public_id FROM events WHERE id = $1', [numId]);
+
+    const itemsToDelete = [];
+    if (mediaRes && mediaRes.rows) {
+      mediaRes.rows.forEach((m) => {
+        if (m.public_id) {
+          itemsToDelete.push({ publicId: m.public_id, resourceType: (m.media_type || '').toLowerCase() });
+        }
+      });
+    }
+    if (eventRes && eventRes.rows.length > 0 && eventRes.rows[0].public_id) {
+      itemsToDelete.push({ publicId: eventRes.rows[0].public_id, resourceType: 'image' });
+    }
+
+    if (itemsToDelete.length > 0) {
+      deleteCloudinaryBatch(itemsToDelete).catch(() => {});
+    }
+
     await queryDb('DELETE FROM media WHERE event_id = $1', [numId]);
     await queryDb('DELETE FROM events WHERE id = $1', [numId]);
     return res.json({ success: true, message: 'PR folder deleted from database successfully.' });

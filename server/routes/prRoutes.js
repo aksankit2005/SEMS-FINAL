@@ -8,7 +8,8 @@ import {
   deleteEvent,
   uploadMedia,
   getMediaByEventId,
-  deleteMedia
+  deleteMedia,
+  getCloudinarySignature
 } from '../controllers/prController.js';
 import { verifyPRToken } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimiters.js';
@@ -16,6 +17,7 @@ import { authLimiter } from '../middleware/rateLimiters.js';
 const router = express.Router();
 
 router.post('/pr/login', authLimiter, prLogin);
+router.get('/pr/cloudinary-signature', verifyPRToken, getCloudinarySignature);
 router.get('/events', getEvents);
 router.get('/events/:id', getEventById);
 router.post('/events', verifyPRToken, createEvent);
