@@ -61,7 +61,8 @@ export const LeaderboardPage = () => {
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
-          setStandings(data);
+          const filtered = data.filter((c) => (c.code || c.id) !== 'EXTERNAL');
+          setStandings(filtered);
           return;
         }
       }
@@ -177,8 +178,8 @@ export const LeaderboardPage = () => {
                 <tr>
                   <th className="p-4 text-center">Rank</th>
                   <th className="p-4">College / University</th>
-                  <th className="p-4 text-center">Gold 🥇 (+2 pts)</th>
-                  <th className="p-4 text-center">Silver 🥈 (+1 pt)</th>
+                  <th className="p-4 text-center">Firsts 🥇 (+5 pts)</th>
+                  <th className="p-4 text-center">Seconds 🥈 (+3 pts)</th>
                   <th className="p-4 text-center font-black text-blue-600 dark:text-blue-400">Total Points</th>
                 </tr>
               </thead>

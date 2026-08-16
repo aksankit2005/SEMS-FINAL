@@ -62,33 +62,8 @@ export const SportsDataProvider = ({ children }) => {
     try {
       const res = await axios.get(`${API_BASE_URL}/leaderboard`);
       if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-        const entries = res.data;
-        const tally = {};
-        entries.forEach((entry) => {
-          if (entry.winnerCollege) {
-            if (!tally[entry.winnerCollege]) tally[entry.winnerCollege] = { gold: 0, silver: 0 };
-            tally[entry.winnerCollege].gold += 1;
-          }
-          if (entry.runnerUpCollege) {
-            if (!tally[entry.runnerUpCollege]) tally[entry.runnerUpCollege] = { gold: 0, silver: 0 };
-            tally[entry.runnerUpCollege].silver += 1;
-          }
-        });
-        const standings = ALL_COLLEGES
-          .filter((c) => c.id !== 'EXTERNAL')
-          .map((college) => {
-            const counts = tally[college.id] || { gold: 0, silver: 0 };
-            return {
-              id: college.id,
-              college: college.name,
-              code: college.id,
-              gold: counts.gold,
-              silver: counts.silver,
-              totalPoints: counts.gold * 5 + counts.silver * 3,
-            };
-          });
-        standings.sort((a, b) => b.totalPoints - a.totalPoints || b.gold - a.gold || b.silver - a.silver || a.college.localeCompare(b.college));
-        setLeaderboard(standings);
+        const filtered = res.data.filter(c => c.code !== 'EXTERNAL');
+        setLeaderboard(filtered);
         return;
       }
     } catch (e) {
