@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Trash2, FileDown, Users } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
+import { getMemberCaptainStatus } from '../../../utils/booleanHelper';
 import { openSpreadsheetViewer, exportToCSV } from '../../../utils/pdfExporter';
 
 const DEFAULT_KABADDI_PARTICIPANTS = [
@@ -132,6 +133,7 @@ export const KabaddiTotalParticipationTab = ({ user, globalSearch = '' }) => {
   filtered.forEach((p) => {
     if (Array.isArray(p.members) && p.members.length > 0) {
       p.members.forEach((m, mIdx) => {
+        const isCap = getMemberCaptainStatus(m, mIdx, p.members);
         flattenedAthletes.push({
           id: `${p.id}_m_${m.id || mIdx}`,
           timestamp: p.timestamp || p.registeredAt || 'N/A',
@@ -142,8 +144,8 @@ export const KabaddiTotalParticipationTab = ({ user, globalSearch = '' }) => {
           rollNo: m.rollNo || m.roll || 'N/A',
           phone: m.mobile || m.phone || (mIdx === 0 ? (p.phone || p.mobile) : 'N/A'),
           email: m.email || (mIdx === 0 ? p.email : 'N/A'),
-          isCaptain: m.isCaptain !== undefined ? m.isCaptain : (mIdx === 0),
-          role: (m.isCaptain !== undefined ? m.isCaptain : (mIdx === 0)) ? 'Captain' : 'Player'
+          isCaptain: isCap,
+          role: isCap ? 'Captain' : 'Player'
         });
       });
     } else {

@@ -205,7 +205,7 @@ export const getStudents = async (req, res) => {
         gender: s.gender || 'Boys',
         phone: s.phone || 'N/A',
         email: s.email || 'N/A',
-        isCaptain: !!s.isCaptain,
+        isCaptain: (s.isCaptain === true || s.isCaptain === 1 || s.isCaptain === 'true' || s.isCaptain === '1'),
         sportId: (s.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
         sportName: (s.sportName || 'Sport').replace(/-/g, ' ').toUpperCase(),
         teamName: s.teamName || 'Individual',

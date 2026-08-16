@@ -127,7 +127,13 @@ export const registerPublicEvent = async (req, res) => {
             isCaptain: true
           }];
 
-      for (const m of rosterList) {
+      for (let idx = 0; idx < rosterList.length; idx++) {
+        const m = rosterList[idx];
+        const parsedCaptain = (m.isCaptain === true || m.isCaptain === 1 || m.isCaptain === 'true' || m.isCaptain === '1')
+          ? true
+          : ((m.isCaptain === false || m.isCaptain === 0 || m.isCaptain === 'false' || m.isCaptain === '0') ? false : null);
+        const isCap = parsedCaptain !== null ? parsedCaptain : (idx === 0);
+
         await tx.registrationMember.create({
           data: {
             registrationId: registration.id,
@@ -141,7 +147,7 @@ export const registerPublicEvent = async (req, res) => {
             course: m.course || participantData.course || newRegRecord.department || 'B.Tech',
             yearSemester: m.yearSemester || m.year || m.semester || '3rd Year',
             gender: (m.gender || newRegRecord.gender || 'Male').toUpperCase() === 'FEMALE' ? 'FEMALE' : 'MALE',
-            isCaptain: m.isCaptain !== undefined ? m.isCaptain : true
+            isCaptain: isCap
           }
         });
       }

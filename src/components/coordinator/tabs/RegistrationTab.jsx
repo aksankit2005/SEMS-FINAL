@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
+import { getMemberCaptainStatus } from '../../../utils/booleanHelper';
 
 export const RegistrationTab = ({ registrations, user, onUpdateRegistrations }) => {
   const { addToast } = useToast();
@@ -295,26 +296,29 @@ export const RegistrationTab = ({ registrations, user, onUpdateRegistrations }) 
                   Registered Team Roster ({selectedTeamModal.members.length} Athletes)
                 </h5>
                 <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden text-xs">
-                  {selectedTeamModal.members.map((m, idx) => (
-                    <div key={idx} className="p-2.5 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
-                      <div>
-                        <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
-                          <span>{m.fullName || m.name}</span>
-                          {(m.isCaptain || idx === 0) && (
-                            <span className="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                              Captain
-                            </span>
-                          )}
+                  {selectedTeamModal.members.map((m, idx) => {
+                    const isCap = getMemberCaptainStatus(m, idx, selectedTeamModal.members);
+                    return (
+                      <div key={idx} className="p-2.5 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
+                        <div>
+                          <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
+                            <span>{m.fullName || m.name}</span>
+                            {isCap && (
+                              <span className="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                Captain
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-slate-400">
+                            {m.rollNo ? `Roll: ${m.rollNo} • ` : ''}{m.course || 'N/A'} {m.yearSemester ? `• ${m.yearSemester}` : ''}
+                          </div>
                         </div>
-                        <div className="text-[10px] text-slate-400">
-                          {m.rollNo ? `Roll: ${m.rollNo} • ` : ''}{m.course || m.branch || 'N/A'} {m.yearSemester ? `• ${m.yearSemester}` : ''}
+                        <div className="text-right text-[10px] font-mono text-slate-500">
+                          {m.mobile || m.phone || 'N/A'}
                         </div>
                       </div>
-                      <div className="text-right text-[10px] font-mono text-slate-500">
-                        {m.mobile || m.phone || 'N/A'}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

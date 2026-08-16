@@ -8,6 +8,7 @@ import {
 import { collegeHeadApi } from '../../services/collegeHeadApi';
 import { useToast } from '../../context/ToastContext';
 import { SPORTS_DATA } from '../../data/sportsData';
+import { exportToCSV } from '../../utils/pdfExporter';
 
 export const CollegeHeadDashboardPage = () => {
   const navigate = useNavigate();
@@ -176,23 +177,31 @@ export const CollegeHeadDashboardPage = () => {
             <tr>
               <th>#</th>
               <th>Student Name</th>
+              <th>Role</th>
               <th>Roll Number</th>
-              <th>Course / Branch</th>
-              <th>Year</th>
-              <th>Sport Name</th>
+              <th>Course</th>
+              <th>Year / Semester</th>
+              <th>Sport</th>
+              <th>Team Name</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>
-            ${studentsData.students.map((s, idx) => `
+            ${studentsData.students.map((s, idx) => {
+              const isCap = (s.isCaptain === true || s.isCaptain === 1 || s.isCaptain === 'true' || s.isCaptain === '1');
+              return `
               <tr>
                 <td>${idx + 1}</td>
-                <td><strong>${s.studentName}</strong></td>
-                <td>${s.rollNumber}</td>
-                <td>${s.course} - ${s.branch}</td>
-                <td>${s.year || 'N/A'}</td>
-                <td>${s.sportName}</td>
+                <td><strong>${s.studentName || 'N/A'}</strong></td>
+                <td><span style="font-weight: bold; color: ${isCap ? '#2563eb' : '#64748b'};">${isCap ? 'Captain' : 'Player'}</span></td>
+                <td>${s.rollNumber || 'N/A'}</td>
+                <td>${s.course || 'N/A'}</td>
+                <td>${s.yearSemester || s.year || 'N/A'}</td>
+                <td>${s.sportName || 'N/A'}</td>
+                <td>${s.teamName || 'Individual'}</td>
+                <td>${s.status || 'VERIFIED'}</td>
               </tr>
-            `).join('')}
+            `}).join('')}
           </tbody>
         </table>
 
@@ -218,27 +227,24 @@ export const CollegeHeadDashboardPage = () => {
       addToast('No student records to export', 'error');
       return;
     }
-    const headers = ['Student Name', 'Roll Number', 'College', 'Course', 'Branch', 'Year', 'Sport Name', 'Category'];
-    const rows = studentsData.students.map(s => [
-      `"${s.studentName}"`,
-      `"${s.rollNumber}"`,
-      `"${s.college}"`,
-      `"${s.course}"`,
-      `"${s.branch}"`,
-      `"${s.year || ''}"`,
-      `"${s.sportName}"`,
-      `"${s.category}"`
-    ]);
+    const exportData = studentsData.students.map((s, idx) => ({
+      'S.No.': idx + 1,
+      'Student Name': s.studentName || 'N/A',
+      'Role': (s.isCaptain === true || s.isCaptain === 1 || s.isCaptain === 'true' || s.isCaptain === '1') ? 'Captain' : 'Player',
+      'Roll Number': s.rollNumber || 'N/A',
+      'Course': s.course || 'N/A',
+      'Year / Semester': s.yearSemester || s.year || 'N/A',
+      'Sport': s.sportName || 'N/A',
+      'Event': s.eventType || `${s.sportName || 'Sport'} Championship`,
+      'Team Name': s.teamName || 'Individual',
+      'Mobile Number': s.phone || 'N/A',
+      'Email Address': s.email || 'N/A',
+      'Gender': s.gender || 'N/A',
+      'Status': s.status || 'VERIFIED'
+    }));
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `${user?.college}_Sports_Report_2026.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    addToast('CSV Report exported successfully!', 'success');
+    exportToCSV(exportData, `${(user?.college || 'College').replace(/\s+/g, '_')}_Official_Roster_${new Date().toISOString().split('T')[0]}`);
+    addToast('Official College Roster exported to CSV successfully!', 'success');
   };
 
   if (!user) return null;

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Users, User, Search, Filter, ShieldCheck, Mail, Phone } from 'lucide-react';
+import { getMemberCaptainStatus } from '../../../utils/booleanHelper';
 
 export const TeamsPlayersTab = ({ registrations = [], user }) => {
   const [activeSubTab, setActiveSubTab] = useState('teams');
@@ -16,6 +17,7 @@ export const TeamsPlayersTab = ({ registrations = [], user }) => {
   (registrations || []).forEach((t) => {
     if (Array.isArray(t.members) && t.members.length > 0) {
       t.members.forEach((m, idx) => {
+        const isCap = getMemberCaptainStatus(m, idx, t.members);
         allPlayers.push({
           id: m.id || `${t.id}_m_${idx}`,
           name: m.fullName || m.name || (idx === 0 ? t.studentName : `Player ${idx + 1}`),
@@ -26,7 +28,7 @@ export const TeamsPlayersTab = ({ registrations = [], user }) => {
           email: m.email || t.email || 'N/A',
           college: t.college || 'N/A',
           teamName: t.teamName || t.name || 'Team',
-          isCaptain: m.isCaptain !== undefined ? m.isCaptain : (idx === 0)
+          isCaptain: isCap
         });
       });
     } else {

@@ -204,7 +204,7 @@ export const getMasterParticipants = async (req, res) => {
           rollNo: row.rollNo || 'N/A',
           course: row.course || 'N/A',
           yearSemester: row.yearSemester || 'N/A',
-          isCaptain: !!row.isCaptain,
+          isCaptain: (row.isCaptain === true || row.isCaptain === 1 || row.isCaptain === 'true' || row.isCaptain === '1'),
           status: row.status || 'VERIFIED',
           feePaid: Number(row.feePaid || 0)
         });

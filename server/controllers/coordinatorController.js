@@ -1095,23 +1095,33 @@ export const getRegistrations = async (req, res) => {
                    ORDER BY "isCaptain" DESC, "createdAt" ASC`,
                   [targetUuid]
                 );
-                if (memRes && memRes.rows) members = memRes.rows;
+                if (memRes && memRes.rows) {
+                  members = memRes.rows.map((m) => ({
+                    ...m,
+                    isCaptain: (m.isCaptain === true || m.isCaptain === 1 || m.isCaptain === 'true' || m.isCaptain === '1')
+                  }));
+                }
               } catch (e) {}
             }
 
             // Fallback to participantData roster if members table query returned empty
             if (members.length === 0 && r.participantData?.roster && Array.isArray(r.participantData.roster)) {
-              members = r.participantData.roster.map((m, idx) => ({
-                id: `${r.id}_mem_${idx}`,
-                fullName: m.name || m.fullName,
-                rollNo: m.rollNo || m.roll || 'N/A',
-                mobile: m.phone || m.mobile || r.phone,
-                email: m.email || r.email,
-                course: m.course || m.branch || r.department || 'N/A',
-                yearSemester: m.semester || m.year || m.yearSemester || 'N/A',
-                gender: m.gender || r.gender,
-                isCaptain: idx === 0
-              }));
+              members = r.participantData.roster.map((m, idx) => {
+                const parsedCap = (m.isCaptain === true || m.isCaptain === 1 || m.isCaptain === 'true' || m.isCaptain === '1')
+                  ? true
+                  : ((m.isCaptain === false || m.isCaptain === 0 || m.isCaptain === 'false' || m.isCaptain === '0') ? false : null);
+                return {
+                  id: `${r.id}_mem_${idx}`,
+                  fullName: m.name || m.fullName,
+                  rollNo: m.rollNo || m.roll || 'N/A',
+                  mobile: m.phone || m.mobile || r.phone,
+                  email: m.email || r.email,
+                  course: m.course || m.branch || r.department || 'N/A',
+                  yearSemester: m.semester || m.year || m.yearSemester || 'N/A',
+                  gender: m.gender || r.gender,
+                  isCaptain: parsedCap !== null ? parsedCap : (idx === 0)
+                };
+              });
             }
 
             const player1 = members[0] ? {

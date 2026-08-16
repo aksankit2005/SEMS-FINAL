@@ -137,18 +137,26 @@ export const AdminMasterDataPage = () => {
       addToast('No data available to export', 'error');
       return;
     }
-    const exportData = filteredParticipants.map(p => ({
-      'Reg Time': `${p.date || '2026-08-05'} ${p.time || '10:00 AM'}`,
-      'Game & Event Title': `${p.sportName} - ${p.eventTitle || 'Tournament'}`,
-      'Team Name': p.teamName || p.name,
-      'College Name': p.college,
-      'Student Name': p.name,
-      'Mobile No': p.mobile,
-      'Gender': p.gender,
-      'Status': p.status
+    const exportData = filteredParticipants.map((p, idx) => ({
+      'S.No.': idx + 1,
+      'Registration ID': p.receiptId || p.registrationId || p.id || 'N/A',
+      'Registration Date': `${p.date || ''} ${p.time || ''}`.trim() || 'N/A',
+      'Sport': p.sportName || 'N/A',
+      'Event': p.eventTitle || `${p.sportName || 'Sport'} Championship`,
+      'Team Name': p.teamName || p.name || 'N/A',
+      'College': p.college || 'N/A',
+      'Player Name': p.name || 'N/A',
+      'Role': (p.isCaptain === true || p.isCaptain === 1 || p.isCaptain === 'true' || p.isCaptain === '1') ? 'Captain' : 'Player',
+      'Roll Number': p.rollNo || 'N/A',
+      'Mobile Number': p.mobile || 'N/A',
+      'Email Address': p.email || 'N/A',
+      'Gender': p.gender || 'N/A',
+      'Course': p.course || 'N/A',
+      'Year / Semester': p.yearSemester || 'N/A',
+      'Status': p.status || 'VERIFIED'
     }));
-    exportToCSV(exportData, `Master_Participants_${Date.now()}`);
-    addToast('Master Data exported to CSV', 'success');
+    exportToCSV(exportData, `Admin_Master_Roster_${new Date().toISOString().split('T')[0]}`);
+    addToast('Admin Master Roster exported to CSV successfully!', 'success');
   };
 
   const handleExportPDF = () => {
@@ -156,19 +164,22 @@ export const AdminMasterDataPage = () => {
       addToast('No data available to export', 'error');
       return;
     }
-    const headers = [['Reg Time', 'Game & Event Title', 'Team Name', 'College Name', 'Student Name', 'Mobile No', 'Gender', 'Status']];
-    const rows = filteredParticipants.map(p => [
-      `${p.date || '2026-08-05'} ${p.time || '10:00 AM'}`,
-      `${p.sportName} - ${p.eventTitle || 'Tournament'}`,
-      p.teamName || p.name,
-      p.college,
-      p.name,
-      p.mobile,
-      p.gender,
-      p.status
+    const headers = ['#', 'Reg ID', 'Sport', 'Team Name', 'College', 'Player Name', 'Role', 'Roll No', 'Mobile', 'Course', 'Status'];
+    const rows = filteredParticipants.map((p, idx) => [
+      idx + 1,
+      p.receiptId || p.registrationId || p.id || 'N/A',
+      p.sportName || 'N/A',
+      p.teamName || p.name || 'N/A',
+      p.college || 'N/A',
+      p.name || 'N/A',
+      (p.isCaptain === true || p.isCaptain === 1 || p.isCaptain === 'true' || p.isCaptain === '1') ? 'Captain' : 'Player',
+      p.rollNo || 'N/A',
+      p.mobile || 'N/A',
+      p.course || 'N/A',
+      p.status || 'VERIFIED'
     ]);
-    exportToPDF('Master Participants Roster Report', headers, rows, `Master_Participants_${Date.now()}`);
-    addToast('Master Data exported to PDF', 'success');
+    exportToPDF('APEX 2026 - Master Participants Official Roster', headers, rows, `Admin_Master_Roster_${new Date().toISOString().split('T')[0]}`);
+    addToast('Admin Master Roster exported to PDF successfully!', 'success');
   };
 
   return (
