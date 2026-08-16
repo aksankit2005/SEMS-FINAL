@@ -66,8 +66,8 @@ export const LeaderboardPage = () => {
         id: String(item.id || item.code || item.college || ''),
         code: String(item.code || item.id || ''),
         college: String(item.college || item.name || item.code || 'College'),
-        gold: Number(item.gold ?? item.wins ?? item.goldCount ?? 0),
-        silver: Number(item.silver ?? item.runnerUps ?? item.silverCount ?? 0),
+        gold: Number(item.gold ?? item.wins ?? item.goldCount ?? item.firsts ?? 0),
+        silver: Number(item.silver ?? item.runnerUps ?? item.silverCount ?? item.seconds ?? 0),
         totalPoints: Number(item.totalPoints ?? item.points ?? 0),
         rank: Number(item.rank || 0),
       }));

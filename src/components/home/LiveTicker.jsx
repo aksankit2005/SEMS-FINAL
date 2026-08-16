@@ -2,65 +2,56 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Radio, ArrowRight, Trophy, Crown, ChevronRight, Activity } from 'lucide-react';
 import { useSportsData } from '../../context/SportsDataContext';
-import { ALL_COLLEGES } from '../../services/superCoordinatorApi';
+import { apiUrl } from '../../services/apiConfig';
 
-const computeStandings = () => {
-  let entries = [];
-  try {
-    const stored = localStorage.getItem('sems_super_coord_leaderboard');
-    if (stored) entries = JSON.parse(stored);
-  } catch (e) {}
-
-  const tally = {};
-  entries.forEach((entry) => {
-    const winner = entry.winnerCollege;
-    const runnerUp = entry.runnerUpCollege;
-    if (winner) {
-      if (!tally[winner]) tally[winner] = { gold: 0, silver: 0 };
-      tally[winner].gold += 1;
-    }
-    if (runnerUp) {
-      if (!tally[runnerUp]) tally[runnerUp] = { gold: 0, silver: 0 };
-      tally[runnerUp].silver += 1;
-    }
-  });
-
-  const standings = (ALL_COLLEGES || [])
-    .filter((c) => c.id !== 'EXTERNAL')
-    .map((college) => {
-      const counts = tally[college.id] || { gold: 0, silver: 0 };
-      return {
-        id: college.id,
-        college: college.name,
-        code: college.id,
-        gold: counts.gold,
-        silver: counts.silver,
-        totalPoints: counts.gold * 2 + counts.silver * 1,
-      };
-    });
-
-  standings.sort((a, b) => {
-    if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
-    if (b.gold !== a.gold) return b.gold - a.gold;
-    if (b.silver !== a.silver) return b.silver - a.silver;
-    return a.college.localeCompare(b.college);
-  });
-
-  return standings;
+const normalizeStandings = (data) => {
+  if (!Array.isArray(data)) return [];
+  return data
+    .filter((c) => String(c.code || c.id || '').toUpperCase() !== 'EXTERNAL')
+    .map((item) => ({
+      id: String(item.id || item.code || item.college || ''),
+      code: String(item.code || item.id || ''),
+      college: String(item.college || item.name || item.code || 'College'),
+      gold: Number(item.gold ?? item.wins ?? item.goldCount ?? item.firsts ?? 0),
+      silver: Number(item.silver ?? item.runnerUps ?? item.silverCount ?? item.seconds ?? 0),
+      totalPoints: Number(item.totalPoints ?? item.points ?? 0),
+      rank: Number(item.rank || 0),
+    }));
 };
 
 export const LiveTicker = () => {
-  const { liveMatches } = useSportsData();
-  const [standings, setStandings] = useState(() => computeStandings());
+  const { liveMatches, leaderboard } = useSportsData();
+  const [standings, setStandings] = useState(() => (Array.isArray(leaderboard) && leaderboard.length > 0 ? normalizeStandings(leaderboard) : []));
+
+  const fetchStandings = async () => {
+    try {
+      const res = await fetch(apiUrl('/leaderboard'));
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setStandings(normalizeStandings(data));
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('LiveTicker leaderboard fetch warning:', e.message);
+    }
+  };
 
   useEffect(() => {
-    const refresh = () => setStandings(computeStandings());
-    refresh();
-    window.addEventListener('sems_leaderboard_updated', refresh);
-    window.addEventListener('storage', refresh);
+    if (leaderboard && leaderboard.length > 0) {
+      setStandings(normalizeStandings(leaderboard));
+    } else {
+      fetchStandings();
+    }
+  }, [leaderboard]);
+
+  useEffect(() => {
+    fetchStandings();
+    const handler = () => fetchStandings();
+    window.addEventListener('sems_leaderboard_updated', handler);
     return () => {
-      window.removeEventListener('sems_leaderboard_updated', refresh);
-      window.removeEventListener('storage', refresh);
+      window.removeEventListener('sems_leaderboard_updated', handler);
     };
   }, []);
 
@@ -247,7 +238,7 @@ export const LiveTicker = () => {
 
             {/* Footer summary */}
             <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-              <span>Points System: 🥇 Gold = 2pts | 🥈 Silver = 1pt</span>
+              <span>Points System: 🥇 1st Place = 5pts | 🥈 2nd Place = 3pts</span>
               <Link to="/leaderboard" className="font-bold text-amber-500 hover:underline flex items-center gap-1">
                 View All Rankings <ChevronRight className="w-3.5 h-3.5" />
               </Link>
