@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { envConfig } from '../config/env.js';
 import { queryDb, prisma } from '../config/db.js';
+import { syncCollegeLeaderboards } from '../services/leaderboardService.js';
 
 export const adminLogin = async (req, res) => {
   const { username, password } = req.body;
@@ -418,6 +419,8 @@ export const saveLeaderboardEntry = async (req, res) => {
       ]
     );
 
+    await syncCollegeLeaderboards();
+
     if (dbRes && dbRes.rows.length > 0) {
       const row = dbRes.rows[0];
       const entry = {
@@ -456,6 +459,7 @@ export const deleteLeaderboardEntry = async (req, res) => {
 
   try {
     await queryDb('DELETE FROM leaderboard_entries WHERE id = $1', [id]);
+    await syncCollegeLeaderboards();
     return res.json({ success: true, message: 'Leaderboard result deleted successfully' });
   } catch (err) {
     console.error('Error deleting leaderboard entry:', err.message);

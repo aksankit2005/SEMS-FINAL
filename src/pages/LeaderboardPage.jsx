@@ -55,7 +55,19 @@ export const LeaderboardPage = () => {
   const [query, setQuery] = useState('');
   const [standings, setStandings] = useState([]);
 
-  const refresh = () => setStandings(computeStandings());
+  const refresh = async () => {
+    try {
+      const res = await fetch('/api/leaderboard');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setStandings(data);
+          return;
+        }
+      }
+    } catch (e) {}
+    setStandings(computeStandings());
+  };
 
   useEffect(() => {
     refresh();

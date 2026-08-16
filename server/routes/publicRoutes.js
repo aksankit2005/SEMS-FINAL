@@ -1,7 +1,7 @@
 import express from 'express';
 import { registerPublicEvent } from '../controllers/registrationController.js';
 import { getHeroSlidesDB } from '../controllers/adminController.js';
-import { queryDb, prisma, pool } from '../config/db.js';
+import { getLeaderboardStandings } from '../services/leaderboardService.js';
 
 const router = express.Router();
 
@@ -386,15 +386,13 @@ router.get('/public/events', async (req, res) => {
 // POST /api/public/register-event - Event registration endpoint
 router.post('/public/register-event', registerPublicEvent);
 
-// GET /api/leaderboard - Spectator college standings endpoint from Supabase
+// GET /api/leaderboard - Spectator college standings endpoint from Supabase college_leaderboards table
 router.get('/leaderboard', async (req, res) => {
   try {
-    const entries = await prisma.leaderboardEntry.findMany({
-      orderBy: { declaredAt: 'desc' }
-    });
-    return res.json(entries || []);
+    const standings = await getLeaderboardStandings();
+    return res.json(standings || []);
   } catch (err) {
-    console.error('Error fetching leaderboard entries from DB:', err);
+    console.error('Error fetching leaderboard standings from DB:', err);
     return res.json([]);
   }
 });
