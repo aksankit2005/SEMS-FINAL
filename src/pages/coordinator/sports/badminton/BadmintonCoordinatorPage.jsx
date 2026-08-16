@@ -50,15 +50,17 @@ export const BadmintonCoordinatorPage = () => {
 
       // Real-time synchronization polling every 5 seconds
       const pollInterval = setInterval(() => {
-        fetchAllData(false);
-      }, 5000);
+  if (activeTab !== 'live') {
+    fetchAllData(false);
+  }
+}, 5000);
 
       return () => {
         isMounted = false;
         clearInterval(pollInterval);
       };
     }
-  }, [user]);
+  }, [user, activeTab]);
 
   const handleLogout = () => {
     coordinatorApi.logout();

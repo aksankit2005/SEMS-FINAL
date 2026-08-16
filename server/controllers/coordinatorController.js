@@ -127,23 +127,32 @@ export const getProfile = (req, res) => {
 
 export const getMatches = async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
-  const memoryList = inMemoryCoordinatorMatches[sportId] || [];
+
   try {
     const dbMatches = await prisma.liveMatch.findMany({
-      where: { sportId: { equals: sportId, mode: 'insensitive' } },
-      orderBy: { createdAt: 'desc' }
+      where: {
+        sportId: {
+          equals: sportId,
+          mode: 'insensitive',
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
-    if (dbMatches && dbMatches.length > 0) {
-      const dbIds = new Set(dbMatches.map((m) => m.id));
-      const memOnly = memoryList.filter((m) => m && m.id && !dbIds.has(m.id));
-      const merged = [...dbMatches, ...memOnly];
-      inMemoryCoordinatorMatches[sportId] = merged;
-      return res.json(merged);
-    }
+
+    return res.json(dbMatches || []);
   } catch (err) {
-    console.error('Error fetching coordinator matches from DB:', err.message);
+    console.error(
+      'Error fetching coordinator matches from DB:',
+      err.message
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch matches',
+    });
   }
-  return res.json(memoryList);
 };
 
 const syncMatchToMatchesTable = async (m) => {
@@ -183,37 +192,59 @@ const syncMatchToMatchesTable = async (m) => {
 
   try {
     await queryDb(
-      `INSERT INTO matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, details, "homeTeamName", "awayTeamName", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-       ON CONFLICT (id) DO UPDATE SET
-         sport_id = EXCLUDED.sport_id,
-         format = EXCLUDED.format,
-         status = EXCLUDED.status,
-         team1 = EXCLUDED.team1,
-         team2 = EXCLUDED.team2,
-         match_title = EXCLUDED.match_title,
-         table_number = EXCLUDED.table_number,
-         time = EXCLUDED.time,
-         details = EXCLUDED.details,
-         "homeTeamName" = EXCLUDED.team1,
-         "awayTeamName" = EXCLUDED.team2,
-         "updatedAt" = CURRENT_TIMESTAMP`,
-      [
-        matchId,
-        mSportId,
-        formatVal,
-        statusVal,
-        team1Val,
-        team2Val,
-        matchTitleVal,
-        tableNumberVal,
-        timeVal,
-        Number(m.score1 || 0),
-        Number(m.score2 || 0),
-        m.winner || null,
-        JSON.stringify(detailsObj)
-      ]
-    );
+  `INSERT INTO matches (
+     id,
+     sport_id,
+     format,
+     status,
+     team1,
+     team2,
+     match_title,
+     table_number,
+     time,
+     score1,
+     score2,
+     winner,
+     details,
+     "createdAt",
+     "updatedAt"
+   )
+   VALUES (
+     $1, $2, $3, $4, $5, $6, $7, $8, $9,
+     $10, $11, $12, $13,
+     CURRENT_TIMESTAMP,
+     CURRENT_TIMESTAMP
+   )
+   ON CONFLICT (id) DO UPDATE SET
+     sport_id = EXCLUDED.sport_id,
+     format = EXCLUDED.format,
+     status = EXCLUDED.status,
+     team1 = EXCLUDED.team1,
+     team2 = EXCLUDED.team2,
+     match_title = EXCLUDED.match_title,
+     table_number = EXCLUDED.table_number,
+     time = EXCLUDED.time,
+     score1 = EXCLUDED.score1,
+     score2 = EXCLUDED.score2,
+     winner = EXCLUDED.winner,
+     details = EXCLUDED.details,
+     "updatedAt" = CURRENT_TIMESTAMP`,
+  [
+    matchId,
+    mSportId,
+    formatVal,
+    statusVal,
+    team1Val,
+    team2Val,
+    matchTitleVal,
+    tableNumberVal,
+    timeVal,
+    Number(m.score1 || 0),
+    Number(m.score2 || 0),
+    m.winner || null,
+    JSON.stringify(detailsObj)
+  ]
+);
   } catch (err) {
     console.warn('Sync to matches table warning:', err.message);
   }
@@ -324,21 +355,6 @@ export const batchSaveMatches = async (req, res) => {
     return res.status(400).json({ message: 'matches must be an array' });
   }
 
-  // Ensure table columns exist
-  try {
-    await queryDb(`
-      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;
-      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS stream_url TEXT;
-      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS is_live_streaming BOOLEAN DEFAULT FALSE;
-      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS details JSONB;
-      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_history TEXT;
-      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS current_set INT DEFAULT 1;
-      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won1 INT DEFAULT 0;
-      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won2 INT DEFAULT 0;
-      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS current_quarter TEXT;
-      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-    `);
-  } catch (e) {}
 
   const savedMatches = [];
 
@@ -389,11 +405,22 @@ export const batchSaveMatches = async (req, res) => {
            match_title = EXCLUDED.match_title,
            table_number = EXCLUDED.table_number,
            time = EXCLUDED.time,
-           score1 = EXCLUDED.score1,
-           score2 = EXCLUDED.score2,
-           winner = COALESCE(EXCLUDED.winner, live_matches.winner),
-           details = EXCLUDED.details,
-           updated_at = CURRENT_TIMESTAMP`,
+
+           score1 = CASE
+           WHEN LOWER(live_matches.status) IN ('running', 'live', 'in_progress', 'active')
+           THEN live_matches.score1
+           ELSE EXCLUDED.score1
+           END,
+
+           score2 = CASE
+           WHEN LOWER(live_matches.status) IN ('running', 'live', 'in_progress', 'active')
+           THEN live_matches.score2
+           ELSE EXCLUDED.score2
+           END,
+
+           winner = COALESCE(live_matches.winner, EXCLUDED.winner),
+            details = EXCLUDED.details,
+            updated_at = CURRENT_TIMESTAMP`,
         [
           matchId,
           mSportId,
@@ -441,65 +468,59 @@ export const batchSaveMatches = async (req, res) => {
     }
   }
 
-  if (!inMemoryCoordinatorMatches[sportId]) {
-    inMemoryCoordinatorMatches[sportId] = [];
-  }
-  savedMatches.forEach(sm => {
-    const idx = inMemoryCoordinatorMatches[sportId].findIndex(x => x.id === sm.id);
-    if (idx !== -1) {
-      inMemoryCoordinatorMatches[sportId][idx] = sm;
-    } else {
-      inMemoryCoordinatorMatches[sportId].push(sm);
-    }
-  });
-
   return res.json({ success: true, count: savedMatches.length, matches: savedMatches });
 };
-
 export const updateMatch = async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
   const { id } = req.params;
-  const list = inMemoryCoordinatorMatches[sportId] || [];
 
-  const rawStreamUrl = req.body.streamUrl || req.body.stream_url || req.body.liveStreamUrl || '';
-  let extractedVideoId = req.body.youtubeVideoId || req.body.youtube_video_id || '';
+  const rawStreamUrl =
+    req.body.streamUrl ||
+    req.body.stream_url ||
+    req.body.liveStreamUrl ||
+    '';
+
+  let extractedVideoId =
+    req.body.youtubeVideoId ||
+    req.body.youtube_video_id ||
+    '';
 
   if (!extractedVideoId && rawStreamUrl) {
-    const match = rawStreamUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|live\/|shorts\/))([\w-]{11})/);
-    if (match && match[1]) extractedVideoId = match[1];
+    const match = rawStreamUrl.match(
+      /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|live\/|shorts\/))([\w-]{11})/
+    );
+
+    if (match && match[1]) {
+      extractedVideoId = match[1];
+    }
   }
 
   const payloadWithStream = {
     ...req.body,
-    youtubeVideoId: extractedVideoId || req.body.youtubeVideoId || null,
-    streamUrl: rawStreamUrl || req.body.streamUrl || null,
-    isLiveStreaming: Boolean(req.body.isLiveStreaming || extractedVideoId || rawStreamUrl)
+    youtubeVideoId:
+      extractedVideoId ||
+      req.body.youtubeVideoId ||
+      null,
+    streamUrl:
+      rawStreamUrl ||
+      req.body.streamUrl ||
+      null,
+    isLiveStreaming: Boolean(
+      req.body.isLiveStreaming ||
+      extractedVideoId ||
+      rawStreamUrl
+    )
   };
 
-  const index = list.findIndex((m) => m.id === id);
-  if (index !== -1) {
-    list[index] = { ...list[index], ...payloadWithStream };
-  } else {
-    if (!inMemoryCoordinatorMatches[sportId]) inMemoryCoordinatorMatches[sportId] = [];
-    inMemoryCoordinatorMatches[sportId].unshift({ id, sportId, ...payloadWithStream });
-  }
+  const updatedMatch = {
+    id,
+    sportId,
+    ...payloadWithStream
+  };
 
-  const updatedMatch = index !== -1 ? list[index] : { id, sportId, ...payloadWithStream };
 
   // Ensure table columns exist
-  try {
-    await queryDb(`
-      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;
-      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS stream_url TEXT;
-      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS is_live_streaming BOOLEAN DEFAULT FALSE;
-      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS details JSONB;
-      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_history TEXT;
-      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS current_set INT DEFAULT 1;
-      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won1 INT DEFAULT 0;
-      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won2 INT DEFAULT 0;
-      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-    `);
-  } catch (e) {}
+ 
 
   const rawSetsHistory = req.body.setsHistory || updatedMatch.setsHistory;
   const setsHistoryArr = Array.isArray(rawSetsHistory) 
@@ -586,9 +607,6 @@ export const updateMatch = async (req, res) => {
   }
 
   // Ensure current_quarter column exists on live_matches
-  try {
-    await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS current_quarter TEXT;`);
-  } catch (e) {}
 
   await queryDb(
     `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, details, sets_history, current_set, sets_won1, sets_won2, current_quarter, updated_at)
@@ -600,9 +618,19 @@ export const updateMatch = async (req, res) => {
        match_title = COALESCE(EXCLUDED.match_title, live_matches.match_title),
        table_number = COALESCE(EXCLUDED.table_number, live_matches.table_number),
        time = COALESCE(EXCLUDED.time, live_matches.time),
-       score1 = EXCLUDED.score1,
-       score2 = EXCLUDED.score2,
-       winner = COALESCE(EXCLUDED.winner, live_matches.winner),
+       score1 = CASE
+  WHEN LOWER(live_matches.status) IN ('running', 'live', 'in_progress', 'active')
+    THEN live_matches.score1
+  ELSE EXCLUDED.score1
+END,
+
+score2 = CASE
+  WHEN LOWER(live_matches.status) IN ('running', 'live', 'in_progress', 'active')
+    THEN live_matches.score2
+  ELSE EXCLUDED.score2
+END,
+
+winner = COALESCE(live_matches.winner, EXCLUDED.winner),
        youtube_video_id = CASE WHEN EXCLUDED.youtube_video_id IS NOT NULL AND EXCLUDED.youtube_video_id != '' THEN EXCLUDED.youtube_video_id ELSE live_matches.youtube_video_id END,
        stream_url = CASE WHEN EXCLUDED.stream_url IS NOT NULL AND EXCLUDED.stream_url != '' THEN EXCLUDED.stream_url ELSE live_matches.stream_url END,
        is_live_streaming = COALESCE(EXCLUDED.is_live_streaming, live_matches.is_live_streaming),
@@ -781,61 +809,144 @@ export const completeMatch = async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
   const { id } = req.params;
 
-  if (!inMemoryCoordinatorMatches[sportId]) {
-    inMemoryCoordinatorMatches[sportId] = [];
-  }
-  const list = inMemoryCoordinatorMatches[sportId];
-
-  let match = list.find((m) => m.id === id);
-  if (!match) {
-    match = {
-      id,
-      format: req.body.format || 'SINGLES',
-      team1: req.body.team1 || 'Team A',
-      team2: req.body.team2 || 'Team B',
-      matchTitle: req.body.matchTitle || `${req.body.team1} vs ${req.body.team2}`,
-    };
-    list.unshift(match);
-  }
-
-  match.status = 'COMPLETED';
-  match.tableNumber = null;
-  match.isLiveStreaming = false;
-  match.winner = req.body.winner || (match.score1 >= match.score2 ? match.team1 : match.team2);
-  match.completedAt = new Date().toISOString();
-
-  const rawSetsHistory = req.body.setsHistory || match.setsHistory;
-  const setsHistoryArr = Array.isArray(rawSetsHistory)
-    ? rawSetsHistory
-    : (typeof rawSetsHistory === 'string' ? JSON.parse(rawSetsHistory) : null);
-
-  const detailsObj = {
-    setsHistory: setsHistoryArr,
-    currentSet: match.currentSet || 1,
-    setsWon1: match.setsWon1 || 0,
-    setsWon2: match.setsWon2 || 0
-  };
-
   try {
-    await queryDb(
-      `UPDATE live_matches 
-       SET status = 'COMPLETED', table_number = NULL, is_live_streaming = FALSE, winner = $1,
-           details = COALESCE($2, details), sets_history = COALESCE($3, sets_history), updated_at = CURRENT_TIMESTAMP
-       WHERE id = $4`,
+    const existingResult = await queryDb(
+      `
+      SELECT
+        id,
+        sport_id,
+        format,
+        status,
+        team1,
+        team2,
+        score1,
+        score2,
+        winner,
+        sets_history,
+        current_set,
+        sets_won1,
+        sets_won2,
+        details
+      FROM live_matches
+      WHERE id = $1
+        AND LOWER(sport_id) = $2
+      LIMIT 1
+      `,
+      [id, sportId]
+    );
+
+    if (!existingResult || existingResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `Match ${id} not found`,
+      });
+    }
+
+    const existing = existingResult.rows[0];
+
+    let setsHistory = [];
+
+    if (Array.isArray(req.body.setsHistory)) {
+      setsHistory = req.body.setsHistory;
+    } else if (
+      typeof req.body.setsHistory === 'string' &&
+      req.body.setsHistory.trim()
+    ) {
+      setsHistory = JSON.parse(req.body.setsHistory);
+    } else if (Array.isArray(existing.sets_history)) {
+      setsHistory = existing.sets_history;
+    } else if (
+      typeof existing.sets_history === 'string' &&
+      existing.sets_history.trim()
+    ) {
+      setsHistory = JSON.parse(existing.sets_history);
+    }
+
+    const score1 = Number(existing.score1 || 0);
+    const score2 = Number(existing.score2 || 0);
+
+    const winner =
+      req.body.winner ||
+      existing.winner ||
+      (score1 > score2
+        ? existing.team1
+        : score2 > score1
+          ? existing.team2
+          : null);
+
+    if (!winner) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot complete a tied match without a winner',
+      });
+    }
+
+    const details = {
+      ...(existing.details &&
+      typeof existing.details === 'object'
+        ? existing.details
+        : {}),
+      setsHistory,
+      currentSet: Number(existing.current_set || 1),
+      setsWon1: Number(existing.sets_won1 || 0),
+      setsWon2: Number(existing.sets_won2 || 0),
+    };
+
+    const result = await queryDb(
+      `
+      UPDATE live_matches
+      SET
+        status = 'COMPLETED',
+        table_number = NULL,
+        is_live_streaming = FALSE,
+        winner = $1,
+        sets_history = $2,
+        details = $3,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $4
+        AND LOWER(sport_id) = $5
+      RETURNING
+        id,
+        sport_id AS "sportId",
+        format,
+        status,
+        team1,
+        team2,
+        score1,
+        score2,
+        winner,
+        sets_history AS "setsHistory",
+        current_set AS "currentSet",
+        sets_won1 AS "setsWon1",
+        sets_won2 AS "setsWon2",
+        table_number AS "tableNumber",
+        is_live_streaming AS "isLiveStreaming",
+        updated_at AS "updatedAt"
+      `,
       [
-        match.winner,
-        setsHistoryArr ? JSON.stringify(detailsObj) : null,
-        setsHistoryArr ? JSON.stringify(setsHistoryArr) : null,
-        id
+        winner,
+        JSON.stringify(setsHistory),
+        JSON.stringify(details),
+        id,
+        sportId,
       ]
     );
 
-    await syncMatchToMatchesTable(match);
-  } catch (e) {
-    console.warn('completeMatch DB update error:', e.message);
-  }
+    return res.json({
+      success: true,
+      match: result.rows[0],
+    });
+  } catch (err) {
+    console.error(
+      `Failed to complete match ${id}:`,
+      err
+    );
 
-  return res.json({ success: true, match });
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to complete match',
+    });
+  }
 };
 
 export const getDashboardStats = async (req, res) => {
@@ -1085,8 +1196,10 @@ export const deleteRegistration = async (req, res) => {
   const { id } = req.params;
   try {
     await queryDb('DELETE FROM registration_members WHERE "registrationId"::text = $1 OR id::text = $1', [String(id)]);
-    await queryDb('DELETE FROM college_registrations WHERE id = $1 OR registration_id::text = $1 OR "registrationId"::text = $1', [String(id)]);
-    if (isUuid(id)) {
+    await queryDb(
+  'DELETE FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1',
+  [String(id)]
+);    if (isUuid(id)) {
       try {
         await queryDb('DELETE FROM registrations WHERE id = $1::uuid', [id]);
       } catch (e) {}

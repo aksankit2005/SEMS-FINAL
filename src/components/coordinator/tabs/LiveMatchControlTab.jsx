@@ -62,39 +62,52 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
 
   // Sync liveAssignments to localStorage and backend API server whenever liveAssignments changes
   useEffect(() => {
-    const cacheKey = `sems_active_live_matches_${assignedSport}`;
-    localStorage.setItem(cacheKey, JSON.stringify(liveAssignments));
+  const cacheKey = `sems_active_live_matches_${assignedSport}`;
 
-    const globalSaved = localStorage.getItem('sems_active_live_matches');
-    let globalActiveMap = {};
-    if (globalSaved) {
-      try { globalActiveMap = JSON.parse(globalSaved); } catch (e) { }
-    }
-    Object.keys(globalActiveMap).forEach((k) => {
-      if (globalActiveMap[k]?.id === 'M595473') delete globalActiveMap[k];
-    });
+  localStorage.setItem(
+    cacheKey,
+    JSON.stringify(liveAssignments)
+  );
 
-    const mergedMap = { ...globalActiveMap, ...liveAssignments };
-    Object.keys(mergedMap).forEach((k) => {
-      if (mergedMap[k]?.id === 'M595473') delete mergedMap[k];
-    });
+  let globalActiveMap = {};
 
-    localStorage.setItem('sems_active_live_matches', JSON.stringify(mergedMap));
+  try {
+    const saved = localStorage.getItem('sems_active_live_matches');
 
-    Object.values(liveAssignments).forEach(async (match) => {
-      if (match && match.id && match.id !== 'M595473' && match.status === 'running') {
-        try {
-          await coordinatorApi.updateMatchScoring(match.id, {
-            ...match,
-            status: 'running',
-            venue: match.tableNumber || 'Table 1',
-          });
-        } catch (err) {
-          console.warn('Syncing live assignment to backend server error:', err);
-        }
+    if (saved) {
+      const parsed = JSON.parse(saved);
+
+      if (parsed && typeof parsed === 'object') {
+        globalActiveMap = parsed;
       }
-    });
-  }, [liveAssignments, assignedSport]);
+    }
+  } catch (err) {
+    console.warn('Invalid active match cache:', err);
+  }
+
+  Object.keys(globalActiveMap).forEach((key) => {
+    const match = globalActiveMap[key];
+
+    if (
+      match?.sportId?.toLowerCase() === assignedSport ||
+      match?.sportName?.toLowerCase() === assignedSport ||
+      match?.id === 'M595473'
+    ) {
+      delete globalActiveMap[key];
+    }
+  });
+
+  Object.values(liveAssignments).forEach((match) => {
+    if (match?.id && match.id !== 'M595473') {
+      globalActiveMap[match.id] = match;
+    }
+  });
+
+  localStorage.setItem(
+    'sems_active_live_matches',
+    JSON.stringify(globalActiveMap)
+  );
+}, [liveAssignments, assignedSport]);
 
   const handlePromoteGoLive = async (match, targetVenue) => {
     const liveObj = {
