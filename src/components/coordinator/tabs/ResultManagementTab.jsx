@@ -3,7 +3,8 @@ import { Trophy, Trash2, Download, Filter, RefreshCw, FileSpreadsheet, Eye, X, A
 import { useToast } from '../../../context/ToastContext';
 import { useConfirm } from '../../../context/ConfirmContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
-import { generateMatchResultPDF, exportToCSV } from '../../../utils/pdfExporter';
+import { generateMatchResultPDF, exportToCSV, exportSportResultPDF } from '../../../utils/pdfExporter';
+import { exportResultsToExcel } from '../../../utils/excelExporter';
 
 export const ResultManagementTab = ({ user }) => {
   const { addToast } = useToast();
@@ -260,54 +261,37 @@ export const ResultManagementTab = ({ user }) => {
     return true;
   });
 
-  // Export Results to Excel/CSV
+  // Export Results to Excel (.xlsx)
   const handleExportExcel = () => {
     if (filteredResults.length === 0) {
       addToast('No match results available to export', 'error');
       return;
     }
 
-    const isCricket = assignedSport === 'cricket';
+    try {
+      exportResultsToExcel(filteredResults, {
+        sport: assignedSport,
+        gender: selectedGender
+      });
+      addToast(`Exported ${filteredResults.length} ${sportName} match results to Excel (.xlsx)!`, 'success');
+    } catch (err) {
+      addToast(err.message || 'Failed to export match results', 'error');
+    }
+  };
 
-    const excelData = filteredResults.map((r) => {
-      if (isCricket) {
-        return {
-          'Match ID': r.id || 'N/A',
-          'Tournament / Event': r.eventTitle || 'Cricket Championship',
-          'Format': r.format || 'T20',
-          'Category': r.category || 'Men',
-          'Team 1': r.team1 || 'Team A',
-          '1st Innings Score': `${r.score1 || 0}/${r.wickets1 || 0} (${r.overs1 || '0.0'} Ov)`,
-          'Team 2': r.team2 || 'Team B',
-          '2nd Innings Score': `${r.score2 || 0}/${r.wickets2 || 0} (${r.overs2 || '0.0'} Ov)`,
-          'Result & Victory Summary': r.resultString || r.scoreSummary || r.winner || 'Completed',
-          'Declared Winner': r.winner || 'TBD',
-          'Venue': r.venue || 'Cricket Ground 1',
-          'Completed Date': r.completedAt ? new Date(r.completedAt).toLocaleString() : 'N/A'
-        };
-      }
+  // Export Results to PDF
+  const handleExportPDF = () => {
+    if (filteredResults.length === 0) {
+      addToast('No match results available to export', 'error');
+      return;
+    }
 
-      const setsBreakdown = r.setsHistory && Array.isArray(r.setsHistory) && r.setsHistory.some((s) => s.score1 > 0 || s.score2 > 0)
-        ? r.setsHistory.filter((s) => s.score1 > 0 || s.score2 > 0).map((s) => `S${s.set}: ${s.score1}-${s.score2}`).join(' | ')
-        : (r.scoreText || r.scoreSummary || 'Completed');
-
-      return {
-        'Match ID': r.id || 'N/A',
-        'Event Title': r.eventTitle || `${sportName} Tournament`,
-        'Format': isChess ? 'INDIVIDUAL' : (r.format || 'SINGLES'),
-        'Category / Gender': r.category || r.gender || 'Open',
-        'Player 1 / White': r.team1 || 'TBD',
-        'Player 2 / Black': r.team2 || 'TBD',
-        'Match Score / Result': isChess ? (r.scoreText || r.scoreSummary || (r.score1 === 1 ? '1 - 0' : r.score2 === 1 ? '0 - 1' : '½ - ½')) : setsBreakdown,
-        'Result Method / Notes': r.resultNote || 'Official Verdict',
-        'Declared Winner': r.winner || r.team1 || 'TBD',
-        'Venue / Table': r.tableNumber || r.venue || (isChess ? 'Table 1' : 'Court 1'),
-        'Completed Date': r.completedAt ? new Date(r.completedAt).toLocaleString() : 'N/A'
-      };
-    });
-
-    exportToCSV(excelData, `${sportName}_Match_Results_${new Date().toISOString().split('T')[0]}`);
-    addToast(`Exported ${filteredResults.length} match results to Excel/CSV!`, 'success');
+    try {
+      exportSportResultPDF(assignedSport, filteredResults, `SEMS 2026 ${sportName} Match Results Report`);
+      addToast(`Downloaded official ${sportName} Results PDF Report!`, 'success');
+    } catch (err) {
+      addToast(err.message || 'Failed to export PDF report', 'error');
+    }
   };
 
   return (
@@ -330,13 +314,22 @@ export const ResultManagementTab = ({ user }) => {
 
           <div className="flex items-center gap-2 flex-wrap">
             {filteredResults.length > 0 && (
-              <button
-                onClick={handleExportExcel}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
-              >
-                <FileSpreadsheet className="w-4 h-4" />
-                <span>Export Excel / CSV</span>
-              </button>
+              <>
+                <button
+                  onClick={handleExportPDF}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs border border-slate-300 dark:border-slate-700 transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Download className="w-4 h-4 text-blue-600 dark:text-indigo-400" />
+                  <span>Export PDF</span>
+                </button>
+                <button
+                  onClick={handleExportExcel}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  <span>Export Excel</span>
+                </button>
+              </>
             )}
           </div>
         </div>

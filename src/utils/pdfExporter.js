@@ -445,7 +445,7 @@ export const openSpreadsheetViewer = (dataArray = [], title = 'Excel / CSV Sprea
 };
 
 /**
- * Export tabular data as a downloadable CSV/Excel file.
+ * Export tabular data as a downloadable CSV file.
  * Supports both signatures:
  * 1. exportToCSV(filename, headers, rows)
  * 2. exportToCSV(dataArray, filename)
@@ -465,7 +465,8 @@ export const exportToCSV = (arg1, arg2, arg3) => {
     filename = typeof arg2 === 'string' ? arg2 : 'Export_Data';
     if (arg1.length > 0) {
       if (Array.isArray(arg1[0])) {
-        rows = arg1;
+        headers = arg1[0];
+        rows = arg1.slice(1);
       } else if (typeof arg1[0] === 'object') {
         headers = Object.keys(arg1[0]);
         rows = arg1.map((item) => headers.map((h) => item[h]));
@@ -473,7 +474,11 @@ export const exportToCSV = (arg1, arg2, arg3) => {
     }
   }
 
-  if (rows.length === 0 && headers.length === 0) return;
+  if (rows.length === 0 && headers.length === 0) {
+    throw new Error('No records available to export');
+  }
+
+  const csvLines = [];
 
   const escapeCsvCell = (val) => {
     if (val === null || val === undefined) return '""';
@@ -510,17 +515,21 @@ export const exportToCSV = (arg1, arg2, arg3) => {
   const url = URL.createObjectURL(blob);
   link.setAttribute('href', url);
   link.setAttribute('download', cleanFilename);
-  link.style.visibility = 'hidden';
+  link.style.display = 'none';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(url), 100);
+  setTimeout(() => URL.revokeObjectURL(url), 200);
 };
 
 /**
  * Export tabular data as a downloadable PDF document using jsPDF.
  */
 export const exportToPDF = (title = 'Report', headers = [], rows = [], filename = 'Report') => {
+  if (!headers || headers.length === 0 || !rows || rows.length === 0) {
+    throw new Error('No records available to export');
+  }
+
   try {
     const doc = new jsPDF({
       orientation: 'landscape',
@@ -528,57 +537,222 @@ export const exportToPDF = (title = 'Report', headers = [], rows = [], filename 
       format: 'a4'
     });
 
-    doc.setFillColor(15, 23, 42);
-    doc.rect(0, 0, 297, 210, 'F');
+    const pageW = doc.internal.pageSize.getWidth(); // 297mm
+    const margin = 12;
+    const contentW = pageW - (margin * 2); // 273mm
 
-    doc.setTextColor(255, 255, 255);
+    doc.setFillColor(15, 23, 42); // Dark slate background
+    doc.rect(0, 0, pageW, 210, 'F');
+
+    // Title banner
+    doc.setTextColor(245, 158, 11);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.text(String(title).toUpperCase(), 14, 18);
+    doc.setFontSize(15);
+    doc.text(String(title).toUpperCase(), margin, 16);
 
-    doc.setFontSize(10);
+    doc.setFontSize(8.5);
     doc.setTextColor(148, 163, 184);
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 25);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Official SEMS 2026 Sports Report • Total Records: ${rows.length} • Generated: ${new Date().toLocaleString()}`, margin, 23);
 
-    let y = 34;
+    let y = 28;
 
     // Header row
     doc.setFillColor(30, 41, 59);
-    doc.rect(14, y, 269, 10, 'F');
+    doc.rect(margin, y, contentW, 9, 'F');
     doc.setTextColor(56, 189, 248);
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
 
-    const colW = 269 / Math.max(1, headers.length);
+    const colW = contentW / Math.max(1, headers.length);
     headers.forEach((h, idx) => {
-      doc.text(String(h), 18 + (idx * colW), y + 7);
+      const headerText = String(h || '').substring(0, 24);
+      doc.text(headerText, margin + 3 + (idx * colW), y + 6);
     });
 
-    y += 10;
+    y += 9;
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
+    doc.setFontSize(7.5);
 
     rows.forEach((row, rIdx) => {
-      if (y > 195) {
+      if (y > 190) {
         doc.addPage();
-        y = 20;
+        doc.setFillColor(15, 23, 42);
+        doc.rect(0, 0, pageW, 210, 'F');
+        y = 16;
       }
-      doc.setFillColor(rIdx % 2 === 0 ? 20 : 15, 23, 42);
-      doc.rect(14, y, 269, 8, 'F');
+      doc.setFillColor(rIdx % 2 === 0 ? 24 : 15, 32, 51);
+      doc.rect(margin, y, contentW, 7, 'F');
       doc.setTextColor(226, 232, 240);
 
       row.forEach((val, cIdx) => {
-        doc.text(String(val || '').substring(0, 25), 18 + (cIdx * colW), y + 5.5);
+        const strVal = String(val || '').substring(0, 28);
+        doc.text(strVal, margin + 3 + (cIdx * colW), y + 4.8);
       });
-      y += 8;
+      y += 7;
     });
 
-    doc.save(`${filename}.pdf`);
+    const cleanFilename = filename.toLowerCase().endsWith('.pdf') ? filename : `${filename}.pdf`;
+    doc.save(cleanFilename);
     return true;
   } catch (err) {
     console.error('exportToPDF error:', err);
-    return false;
+    throw err;
   }
+};
+
+/**
+ * Export sport-specific results to official PDF report.
+ */
+export const exportSportResultPDF = (sportId, resultsList = [], title = null, customFilename = null) => {
+  if (!resultsList || resultsList.length === 0) {
+    throw new Error('No match results available to export');
+  }
+
+  const { getSportResultExportConfig } = require ? {} : {}; // dynamic or imported
+  // Use inline fallback formatting if needed or import
+  const sportKey = String(sportId || 'sport').toLowerCase().replace(/_/g, '-');
+  
+  // Format based on sport
+  let headers = [];
+  let rows = [];
+  const sName = sportKey.replace(/-/g, ' ').toUpperCase();
+
+  if (sportKey.includes('cricket')) {
+    headers = ['Match ID', 'Event', 'Team 1', '1st Innings', 'Team 2', '2nd Innings', 'Winner', 'Venue', 'Date'];
+    rows = resultsList.map((r) => [
+      r.id || 'N/A',
+      r.eventTitle || 'Cricket Championship',
+      r.team1 || 'Team 1',
+      `${r.score1 || 0}/${r.wickets1 || 0} (${r.overs1 || '0.0'} ov)`,
+      r.team2 || 'Team 2',
+      `${r.score2 || 0}/${r.wickets2 || 0} (${r.overs2 || '0.0'} ov)`,
+      r.winner || 'Completed',
+      r.tableNumber || r.venue || 'Ground 1',
+      r.completedAt ? new Date(r.completedAt).toISOString().split('T')[0] : 'N/A'
+    ]);
+  } else if (sportKey.includes('basketball')) {
+    headers = ['Match ID', 'Event', 'Team 1', 'Team 2', 'Final Score (PTS)', 'Quarter', 'Winner', 'Venue', 'Date'];
+    rows = resultsList.map((r) => [
+      r.id || 'N/A',
+      r.eventTitle || 'Basketball Tournament',
+      r.team1 || 'Team 1',
+      r.team2 || 'Team 2',
+      `${r.score1 || 0} - ${r.score2 || 0} PTS`,
+      r.quarter || 'Q4 Final',
+      r.winner || 'Winner',
+      r.tableNumber || r.venue || 'Court 1',
+      r.completedAt ? new Date(r.completedAt).toISOString().split('T')[0] : 'N/A'
+    ]);
+  } else if (sportKey.includes('football')) {
+    headers = ['Match ID', 'Event', 'Team 1', 'Team 2', 'Goals', 'Winner', 'Venue', 'Date'];
+    rows = resultsList.map((r) => [
+      r.id || 'N/A',
+      r.eventTitle || 'Football Championship',
+      r.team1 || 'Team 1',
+      r.team2 || 'Team 2',
+      `${r.score1 || 0} - ${r.score2 || 0} Goals`,
+      r.winner || 'Draw',
+      r.tableNumber || r.venue || 'Stadium 1',
+      r.completedAt ? new Date(r.completedAt).toISOString().split('T')[0] : 'N/A'
+    ]);
+  } else if (sportKey.includes('kabaddi')) {
+    headers = ['Match ID', 'Event', 'Team 1', 'Team 2', 'Points', 'Half 1 Score', 'Winner', 'Venue', 'Date'];
+    rows = resultsList.map((r) => [
+      r.id || 'N/A',
+      r.eventTitle || 'Kabaddi Championship',
+      r.team1 || 'Team 1',
+      r.team2 || 'Team 2',
+      `${r.score1 || 0} - ${r.score2 || 0} PTS`,
+      r.half1Score1 !== undefined ? `${r.half1Score1}-${r.half1Score2}` : 'N/A',
+      r.winner || 'Winner',
+      r.tableNumber || r.venue || 'Mat 1',
+      r.completedAt ? new Date(r.completedAt).toISOString().split('T')[0] : 'N/A'
+    ]);
+  } else if (sportKey.includes('volleyball') || sportKey.includes('badminton') || sportKey.includes('table-tennis')) {
+    headers = ['Match ID', 'Event', 'Team/Player 1', 'Team/Player 2', 'Sets Won', 'Set Scores', 'Winner', 'Venue', 'Date'];
+    rows = resultsList.map((r) => {
+      const setsStr = (Array.isArray(r.setsHistory) && r.setsHistory.length > 0)
+        ? r.setsHistory.map(s => `S${s.set}: ${s.score1}-${s.score2}`).join(' ')
+        : 'N/A';
+      return [
+        r.id || 'N/A',
+        r.eventTitle || `${sName} Championship`,
+        r.team1 || 'Player 1',
+        r.team2 || 'Player 2',
+        `${r.setsWon1 ?? (r.score1 > r.score2 ? 2 : 0)} - ${r.setsWon2 ?? (r.score2 > r.score1 ? 2 : 0)}`,
+        setsStr,
+        r.winner || 'Winner',
+        r.tableNumber || r.venue || 'Court 1',
+        r.completedAt ? new Date(r.completedAt).toISOString().split('T')[0] : 'N/A'
+      ];
+    });
+  } else if (sportKey.includes('chess')) {
+    headers = ['Match ID', 'Event', 'Player 1 (White)', 'Player 2 (Black)', 'Board Result', 'Verdict', 'Winner', 'Table', 'Date'];
+    rows = resultsList.map((r) => [
+      r.id || 'N/A',
+      r.eventTitle || 'Chess Championship',
+      r.team1 || 'White Player',
+      r.team2 || 'Black Player',
+      r.scoreText || r.scoreSummary || (r.score1 === 1 ? '1 - 0' : r.score2 === 1 ? '0 - 1' : '½ - ½'),
+      r.resultNote || 'Official Verdict',
+      r.winner || 'Draw',
+      r.tableNumber || r.venue || 'Table 1',
+      r.completedAt ? new Date(r.completedAt).toISOString().split('T')[0] : 'N/A'
+    ]);
+  } else if (sportKey.includes('tug')) {
+    headers = ['Match ID', 'Event', 'Team 1', 'Team 2', 'Rounds Won', 'Winner', 'Arena', 'Date'];
+    rows = resultsList.map((r) => [
+      r.id || 'N/A',
+      r.eventTitle || 'Tug of War Tournament',
+      r.team1 || 'Team 1',
+      r.team2 || 'Team 2',
+      `${r.roundsWon1 ?? r.score1 ?? 0} - ${r.roundsWon2 ?? r.score2 ?? 0} Pulls`,
+      r.winner || 'Winner',
+      r.tableNumber || r.venue || 'Arena 1',
+      r.completedAt ? new Date(r.completedAt).toISOString().split('T')[0] : 'N/A'
+    ]);
+  } else if (sportKey.includes('kho')) {
+    headers = ['Match ID', 'Event', 'Team 1', 'Team 2', 'Points', 'Winner', 'Field', 'Date'];
+    rows = resultsList.map((r) => [
+      r.id || 'N/A',
+      r.eventTitle || 'Kho-Kho Championship',
+      r.team1 || 'Team 1',
+      r.team2 || 'Team 2',
+      `${r.score1 || 0} - ${r.score2 || 0} Points`,
+      r.winner || 'Winner',
+      r.tableNumber || r.venue || 'Field 1',
+      r.completedAt ? new Date(r.completedAt).toISOString().split('T')[0] : 'N/A'
+    ]);
+  } else if (sportKey.includes('athletics')) {
+    headers = ['Sub-Event', 'Category', '🥇 Gold Medalist (1st)', 'College', '🥈 Silver Medalist (2nd)', 'College', '🥉 Bronze Medalist', 'Date'];
+    rows = resultsList.map((r) => [
+      r.activeSubEvent || r.subEvent || r.eventTitle || '100m Race',
+      r.category || r.gender || 'Open',
+      r.medals?.gold || r.winner || 'Gold Winner',
+      r.winnerCollege || 'MPEC',
+      r.medals?.silver || r.runnerUp || 'Silver Winner',
+      r.runnerUpCollege || 'MIPS',
+      r.medals?.bronze || 'Bronze Winner',
+      r.completedAt ? new Date(r.completedAt).toISOString().split('T')[0] : 'N/A'
+    ]);
+  } else {
+    headers = ['Match ID', 'Sport', 'Event', 'Team 1', 'Team 2', 'Score', 'Winner', 'Date'];
+    rows = resultsList.map((r) => [
+      r.id || 'N/A',
+      (r.sportName || r.sportId || sportKey).toUpperCase(),
+      r.eventTitle || 'Championship Tournament',
+      r.team1 || 'Team 1',
+      r.team2 || 'Team 2',
+      r.scoreSummary || `${r.score1 || 0} - ${r.score2 || 0}`,
+      r.winner || 'Winner',
+      r.completedAt ? new Date(r.completedAt).toISOString().split('T')[0] : 'N/A'
+    ]);
+  }
+
+  const reportTitle = title || `SEMS ${sName} Official Match Results Report`;
+  const reportFilename = customFilename || `SEMS_${sName.replace(/\s+/g, '_')}_Results_${new Date().toISOString().split('T')[0]}`;
+  return exportToPDF(reportTitle, headers, rows, reportFilename);
 };
 
 /**

@@ -3,7 +3,8 @@ import { Trophy, Trash2, Download, Filter, RefreshCw, FileSpreadsheet } from 'lu
 import { useToast } from '../../../context/ToastContext';
 import { useConfirm } from '../../../context/ConfirmContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
-import { generateMatchResultPDF, exportToCSV } from '../../../utils/pdfExporter';
+import { generateMatchResultPDF, exportToCSV, exportSportResultPDF } from '../../../utils/pdfExporter';
+import { exportResultsToExcel } from '../../../utils/excelExporter';
 
 export const TugOfWarResultManagementTab = ({ user }) => {
   const { addToast } = useToast();
@@ -134,29 +135,29 @@ export const TugOfWarResultManagementTab = ({ user }) => {
       return;
     }
 
-    const excelData = filteredResults.map((r) => {
-      const roundsBreakdown = r.roundsHistory && Array.isArray(r.roundsHistory) && r.roundsHistory.some((s) => s.winner)
-        ? r.roundsHistory.filter((s) => s.winner).map((s) => `R${s.round}: ${s.winner}`).join(' | ')
-        : (r.scoreSummary || 'N/A');
+    try {
+      exportResultsToExcel(filteredResults, {
+        sport: 'tug-of-war',
+        gender: selectedGender
+      });
+      addToast(`Exported ${filteredResults.length} Tug of War match results to Excel (.xlsx)!`, 'success');
+    } catch (err) {
+      addToast(err.message || 'Failed to export match results', 'error');
+    }
+  };
 
-      return {
-        'Match ID': r.id || 'N/A',
-        'Event Title': r.eventTitle || `${sportName} Tournament`,
-        'Format': r.format || 'Team Match (8v8)',
-        'Category / Gender': r.category || r.gender || 'Open',
-        'Team 1': r.team1 || 'TBD',
-        'Team 2': r.team2 || 'TBD',
-        'Rounds Won': r.roundsWon1 !== undefined && r.roundsWon2 !== undefined ? `${r.roundsWon1} - ${r.roundsWon2} Rounds` : 'N/A',
-        'Round-by-Round Breakdown': roundsBreakdown,
-        'Declared Winner': r.winner || r.team1 || 'TBD',
-        'Venue / Ground': r.tableNumber || r.venue || 'Tug of War Ground 1',
-        'Time / Slot': r.time || 'Completed',
-        'Completed Date': r.completedAt ? new Date(r.completedAt).toLocaleString() : 'N/A'
-      };
-    });
+  const handleExportPDF = () => {
+    if (filteredResults.length === 0) {
+      addToast('No match results available to export', 'error');
+      return;
+    }
 
-    exportToCSV(excelData, `${sportName}_Match_Results_${new Date().toISOString().split('T')[0]}`);
-    addToast(`Exported ${filteredResults.length} tug of war match results to Excel/CSV!`, 'success');
+    try {
+      exportSportResultPDF('tug-of-war', filteredResults, 'SEMS 2026 Tug of War Match Results Report');
+      addToast('Downloaded official Tug of War Results PDF Report!', 'success');
+    } catch (err) {
+      addToast(err.message || 'Failed to export PDF report', 'error');
+    }
   };
 
   return (
@@ -177,13 +178,22 @@ export const TugOfWarResultManagementTab = ({ user }) => {
 
           <div className="flex items-center gap-2 flex-wrap">
             {filteredResults.length > 0 && (
-              <button
-                onClick={handleExportExcel}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
-              >
-                <FileSpreadsheet className="w-4 h-4" />
-                <span>Export Excel / CSV</span>
-              </button>
+              <>
+                <button
+                  onClick={handleExportPDF}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs border border-slate-300 dark:border-slate-700 transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Download className="w-4 h-4 text-blue-600 dark:text-indigo-400" />
+                  <span>Export PDF</span>
+                </button>
+                <button
+                  onClick={handleExportExcel}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  <span>Export Excel</span>
+                </button>
+              </>
             )}
           </div>
         </div>

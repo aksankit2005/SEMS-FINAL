@@ -3,6 +3,7 @@ import { Award, Save, Download, Trophy, Plus, CheckCircle, RefreshCw, Layers, St
 import { useToast } from '../../../context/ToastContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { generateMatchResultPDF } from '../../../utils/pdfExporter';
+import { exportResultsToExcel } from '../../../utils/excelExporter';
 import { OFFICIAL_ATHLETICS_EVENTS } from '../../registration/AthleticsRegistration';
 
 export const AthleticsResultManagementTab = ({ sportName = 'Athletics', sportSlug = 'athletics', user }) => {
@@ -342,6 +343,50 @@ export const AthleticsResultManagementTab = ({ sportName = 'Athletics', sportSlu
     addToast(`📄 ${selectedSubEvent} PDF Score Sheet Downloaded!`, 'success');
   };
 
+  const handleExportExcel = () => {
+    const subEventKeys = Object.keys(resultsData);
+    if (subEventKeys.length === 0) {
+      addToast('No declared athletics results available to export', 'error');
+      return;
+    }
+
+    try {
+      const recordsToExport = subEventKeys.map((subEvent) => {
+        const entries = resultsData[subEvent] || [];
+        const goldEntry = entries.find((e) => e.rank === '1st Gold' || e.rank === 'Gold') || {};
+        const silverEntry = entries.find((e) => e.rank === '2nd Silver' || e.rank === 'Silver') || {};
+        const bronzeEntry = entries.find((e) => e.rank === '3rd Bronze' || e.rank === 'Bronze') || {};
+
+        return {
+          id: `ATH-${subEvent.replace(/[^a-zA-Z0-9]/g, '')}`,
+          sportId: 'athletics',
+          sportName: 'Athletics',
+          activeSubEvent: subEvent,
+          eventTitle: `Athletics Meet — ${subEvent}`,
+          category: 'Open / Inter-College',
+          medals: {
+            gold: goldEntry.name || 'TBD',
+            silver: silverEntry.name || 'TBD',
+            bronze: bronzeEntry.name || 'TBD'
+          },
+          entries: entries,
+          winner: goldEntry.name || 'TBD',
+          winnerCollege: goldEntry.college || 'MPEC',
+          runnerUp: silverEntry.name || 'TBD',
+          runnerUpCollege: silverEntry.college || 'MIPS',
+          tableNumber: 'Main Stadium Track',
+          completedAt: new Date().toISOString(),
+          status: 'COMPLETED'
+        };
+      });
+
+      exportResultsToExcel(recordsToExport, { sport: 'athletics' }, `SEMS_Athletics_Results_${new Date().toISOString().split('T')[0]}.xlsx`);
+      addToast(`Exported ${recordsToExport.length} Athletics event results to Excel (.xlsx)!`, 'success');
+    } catch (err) {
+      addToast(err.message || 'Failed to export Athletics results', 'error');
+    }
+  };
+
   const currentGold = currentEventResults.find((e) => e.rank === '1st Gold' || e.rank === 'Gold')?.name;
   const currentSilver = currentEventResults.find((e) => e.rank === '2nd Silver' || e.rank === 'Silver')?.name;
   const currentBronze = currentEventResults.find((e) => e.rank === '3rd Bronze' || e.rank === 'Bronze')?.name;
@@ -370,6 +415,14 @@ export const AthleticsResultManagementTab = ({ sportName = 'Athletics', sportSlu
             className="px-4 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs border border-slate-300 dark:border-slate-700 transition flex items-center gap-1.5 cursor-pointer"
           >
             <Download className="w-4 h-4 text-blue-600 dark:text-blue-400" /> Export PDF
+          </button>
+
+          <button
+            type="button"
+            onClick={handleExportExcel}
+            className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+          >
+            <Download className="w-4 h-4 text-white" /> Export Excel
           </button>
 
           <button

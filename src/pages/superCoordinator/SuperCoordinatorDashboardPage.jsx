@@ -10,6 +10,7 @@ import { SuperCoordinatorNavbar } from '../../components/superCoordinator/SuperC
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { exportToCSV, exportToPDF } from '../../utils/pdfExporter';
+import { exportResultsToExcel } from '../../utils/excelExporter';
 import { GoogleDriveImage } from '../../components/common/GoogleDriveImage';
 import { getHeroSlides, saveHeroSlides, DEFAULT_HERO_SLIDES } from '../../data/heroSlidesData';
 
@@ -333,61 +334,19 @@ export const SuperCoordinatorDashboardPage = () => {
     }
   };
 
-  // Handle Export Declared Match Results to Excel (Full Details)
+  // Handle Export Declared Match Results to Excel (.xlsx)
   const handleExportResultsExcel = (resultsToExport = leaderboardEntries) => {
     if (resultsToExport.length === 0) {
       addToast('No match results available to export', 'warning');
       return;
     }
 
-    const headers = [
-      'Result Entry ID',
-      'Date Recorded',
-      'Game / Sport',
-      'Athletics Sub-Event',
-      'Match Format',
-      'Gender Category',
-      'Winner Player Name (1st Place)',
-      'Winner Team Name',
-      'Winner College Name',
-      'Winner Points Awarded',
-      'Runner-Up Player Name (2nd Place)',
-      'Runner-Up Team Name',
-      'Runner-Up College Name',
-      'Runner-Up Points Awarded'
-    ];
-
-    const rows = resultsToExport.map((entry) => [
-      entry.id || '',
-      entry.date || '',
-      entry.sportName || '',
-      entry.athleticsSubEvent || 'N/A',
-      entry.matchFormat || 'N/A',
-      entry.gender || 'N/A',
-      entry.winnerName || 'N/A',
-      entry.winnerTeamName || entry.winnerName || 'N/A',
-      entry.winnerCollegeName || entry.winnerCollege || 'N/A',
-      '2 Points',
-      entry.runnerUpName || 'N/A',
-      entry.runnerUpTeamName || entry.runnerUpName || 'N/A',
-      entry.runnerUpCollegeName || entry.runnerUpCollege || 'N/A',
-      '1 Point'
-    ]);
-
-    const csvLines = [
-      headers.join(','),
-      ...rows.map((row) => row.map((val) => `"${String(val).replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob(['\uFEFF' + csvLines], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `Declared_Match_Results_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    addToast(`Exported ${resultsToExport.length} match result records to Excel successfully!`, 'success');
+    try {
+      exportResultsToExcel(resultsToExport, { sport: selectedSport, gender: selectedGender });
+      addToast(`Exported ${resultsToExport.length} match result records to Excel (.xlsx) successfully!`, 'success');
+    } catch (err) {
+      addToast(err.message || 'Failed to export results to Excel', 'error');
+    }
   };
 
   // Filtered Participants Logic

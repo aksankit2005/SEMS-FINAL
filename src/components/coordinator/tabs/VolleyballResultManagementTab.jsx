@@ -3,7 +3,8 @@ import { Trophy, Trash2, Download, Filter, RefreshCw, FileSpreadsheet } from 'lu
 import { useToast } from '../../../context/ToastContext';
 import { useConfirm } from '../../../context/ConfirmContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
-import { generateMatchResultPDF, exportToCSV } from '../../../utils/pdfExporter';
+import { generateMatchResultPDF, exportToCSV, exportSportResultPDF } from '../../../utils/pdfExporter';
+import { exportResultsToExcel } from '../../../utils/excelExporter';
 
 export const VolleyballResultManagementTab = ({ user }) => {
   const { addToast } = useToast();
@@ -137,29 +138,29 @@ export const VolleyballResultManagementTab = ({ user }) => {
       return;
     }
 
-    const excelData = filteredResults.map((r) => {
-      const setsBreakdown = r.setsHistory && Array.isArray(r.setsHistory) && r.setsHistory.some((s) => s.score1 > 0 || s.score2 > 0)
-        ? r.setsHistory.filter((s) => s.score1 > 0 || s.score2 > 0).map((s) => `S${s.set}: ${s.score1}-${s.score2}`).join(' | ')
-        : (r.scoreSummary || 'N/A');
+    try {
+      exportResultsToExcel(filteredResults, {
+        sport: 'volleyball',
+        gender: selectedGender
+      });
+      addToast(`Exported ${filteredResults.length} Volleyball match results to Excel (.xlsx)!`, 'success');
+    } catch (err) {
+      addToast(err.message || 'Failed to export match results', 'error');
+    }
+  };
 
-      return {
-        'Match ID': r.id || 'N/A',
-        'Event Title': r.eventTitle || `${sportName} Tournament`,
-        'Format': r.format || 'Team Match (6v6)',
-        'Category / Gender': r.category || r.gender || 'Open',
-        'Team 1': r.team1 || 'TBD',
-        'Team 2': r.team2 || 'TBD',
-        'Sets Won': r.setsWon1 !== undefined && r.setsWon2 !== undefined ? `${r.setsWon1} - ${r.setsWon2} Sets` : 'N/A',
-        'Set-by-Set Points': setsBreakdown,
-        'Declared Winner': r.winner || r.team1 || 'TBD',
-        'Venue / Court': r.tableNumber || r.venue || 'Volleyball Court 1',
-        'Time / Slot': r.time || 'Completed',
-        'Completed Date': r.completedAt ? new Date(r.completedAt).toLocaleString() : 'N/A'
-      };
-    });
+  const handleExportPDF = () => {
+    if (filteredResults.length === 0) {
+      addToast('No match results available to export', 'error');
+      return;
+    }
 
-    exportToCSV(excelData, `${sportName}_Match_Results_${new Date().toISOString().split('T')[0]}`);
-    addToast(`Exported ${filteredResults.length} volleyball match results to Excel/CSV!`, 'success');
+    try {
+      exportSportResultPDF('volleyball', filteredResults, 'SEMS 2026 Volleyball Match Results Report');
+      addToast('Downloaded official Volleyball Results PDF Report!', 'success');
+    } catch (err) {
+      addToast(err.message || 'Failed to export PDF report', 'error');
+    }
   };
 
   return (
@@ -180,13 +181,22 @@ export const VolleyballResultManagementTab = ({ user }) => {
 
           <div className="flex items-center gap-2 flex-wrap">
             {filteredResults.length > 0 && (
-              <button
-                onClick={handleExportExcel}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
-              >
-                <FileSpreadsheet className="w-4 h-4" />
-                <span>Export Excel / CSV</span>
-              </button>
+              <>
+                <button
+                  onClick={handleExportPDF}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs border border-slate-300 dark:border-slate-700 transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Download className="w-4 h-4 text-blue-600 dark:text-indigo-400" />
+                  <span>Export PDF</span>
+                </button>
+                <button
+                  onClick={handleExportExcel}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  <span>Export Excel</span>
+                </button>
+              </>
             )}
           </div>
         </div>
