@@ -439,13 +439,6 @@ export const AthleticsResultManagementTab = ({ sportName = 'Athletics', sportSlu
               >
                 <Edit className="w-3.5 h-3.5" /> Edit Winners
               </button>
-              <button
-                type="button"
-                onClick={handleDeleteDeclaredWinners}
-                className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-700 dark:text-rose-400 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
-              >
-                <Trash2 className="w-3.5 h-3.5" /> Delete / Reset Standings
-              </button>
             </div>
           </div>
 
@@ -539,7 +532,6 @@ export const AthleticsResultManagementTab = ({ sportName = 'Athletics', sportSlu
                   </th>
                   <th className="py-3 px-3 min-w-[140px]">Medal / Rank</th>
                   <th className="py-3 px-3 min-w-[160px]">Remarks</th>
-                  <th className="py-3 px-3 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium text-slate-800 dark:text-slate-200">
@@ -628,18 +620,6 @@ export const AthleticsResultManagementTab = ({ sportName = 'Athletics', sportSlu
                           placeholder="e.g. New Meet Record"
                           className="w-full px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-medium focus:border-blue-500 focus:outline-none"
                         />
-                      </td>
-
-                      {/* Action Column: Delete Entry */}
-                      <td className="py-3 px-3 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteAthleteEntry(athleteId, currentAthleteName)}
-                          className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition cursor-pointer"
-                          title="Delete Entry"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
                       </td>
                     </tr>
                   );

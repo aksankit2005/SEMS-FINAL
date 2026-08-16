@@ -79,7 +79,7 @@ export const ProfileTab = ({ user, matches = [], registrations = [], onLogout, a
         </div>
 
         {/* Profile Detail Fields Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 space-y-1">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Assigned Sport</span>
@@ -94,14 +94,6 @@ export const ProfileTab = ({ user, matches = [], registrations = [], onLogout, a
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-blue-500" />
               <span className="font-bold text-xs text-slate-900 dark:text-white truncate">{venue}</span>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Scheduled Fixtures</span>
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-indigo-500" />
-              <span className="font-extrabold text-sm text-blue-600 dark:text-indigo-400">{matches.length} Matches</span>
             </div>
           </div>
 

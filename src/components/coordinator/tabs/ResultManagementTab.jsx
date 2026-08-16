@@ -338,16 +338,6 @@ export const ResultManagementTab = ({ user }) => {
                 <span>Export Excel / CSV</span>
               </button>
             )}
-
-            {resultsList.length > 0 && (
-              <button
-                onClick={handleClearResults}
-                className="px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-600/20 hover:bg-rose-100 dark:hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-white border border-rose-200 dark:border-rose-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Clear Results</span>
-              </button>
-            )}
           </div>
         </div>
 
@@ -517,14 +507,6 @@ export const ResultManagementTab = ({ user }) => {
                             Set Winner
                           </button>
                         )}
-
-                        <button
-                          onClick={() => handleDeleteResult(r.id)}
-                          className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-white border border-rose-200 dark:border-rose-500/30 transition cursor-pointer"
-                          title="Delete Result"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
                       </div>
                     </td>
                   </tr>
