@@ -7,6 +7,7 @@ import { coordinatorApi } from '../../../services/coordinatorApi';
 
 export const RegistrationTab = ({ registrations, user, onUpdateRegistrations }) => {
   const { addToast } = useToast();
+  const isBadminton = (user?.assignedSport || user?.sportName || '').toLowerCase().includes('badminton');
 
   const handleDelete = async (id, name) => {
     if (window.confirm(`Delete registration for "${name || id}"?`)) {
@@ -246,13 +247,15 @@ export const RegistrationTab = ({ registrations, user, onUpdateRegistrations }) 
                         </button>
                       )}
 
-                      <button
-                        onClick={() => handleDelete(r.id, r.teamName || r.studentName)}
-                        className="p-2 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition cursor-pointer"
-                        title="Delete Registration"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {!isBadminton && (
+                        <button
+                          onClick={() => handleDelete(r.id, r.teamName || r.studentName)}
+                          className="p-2 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition cursor-pointer"
+                          title="Delete Registration"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

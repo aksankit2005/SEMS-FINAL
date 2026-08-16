@@ -18,6 +18,7 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
   const isCricket = sportId === 'cricket' || sportName.toLowerCase().includes('cricket');
   const isTableTennis = sportId === 'table-tennis' || sportId === 'tabletennis' || sportName.toLowerCase().includes('table tennis');
   const isAthletics = sportId === 'athletics' || sportName.toLowerCase().includes('athletics');
+  const isBadminton = sportId === 'badminton' || sportName.toLowerCase().includes('badminton');
 
   // Initial seed records for Athletics
   const defaultAthleticsParticipants = [
@@ -847,7 +848,7 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
               </p>
             </div>
 
-            {participants.length > 0 && (
+            {participants.length > 0 && !isBadminton && (
               <button
                 onClick={handleClearParticipants}
                 className="px-3 py-1 rounded-xl bg-rose-50 dark:bg-rose-600/20 hover:bg-rose-100 dark:hover:bg-rose-600 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ml-2"
@@ -941,13 +942,17 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                           {row.email}
                         </td>
                         <td className="p-4 text-right whitespace-nowrap">
-                          <button
-                            onClick={() => handleDeleteParticipant(p.id, row.teamName || row.name)}
-                            className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition cursor-pointer"
-                            title="Delete Registration"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {!isBadminton ? (
+                            <button
+                              onClick={() => handleDeleteParticipant(p.id, row.teamName || row.name)}
+                              className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition cursor-pointer"
+                              title="Delete Registration"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          ) : (
+                            <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">Read Only</span>
+                          )}
                         </td>
                       </tr>
                     );
@@ -981,7 +986,8 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                 ) : (
                   filtered.map((p, idx) => {
                     const isRelay = p.category === '4*100m relay Race' || (p.selectedEvents && p.selectedEvents.includes('4*100m relay Race'));
-                    const isDoubles = p.category === 'DOUBLES' || p.format === 'DOUBLES' || p.player2 || isRelay;
+                    const catStr = String(p.category || p.format || p.eventTitle || p.sportId || '').toUpperCase();
+                    const isDoubles = catStr.includes('DOUBLE') || catStr.includes('DOUBLES') || !!p.player2 || (p.members && p.members.length > 1) || (p.roster && p.roster.length > 1) || isRelay;
                     const timestamp = p.timestamp || p.registeredAt || '16 Jul, 10:32 am';
                     const sportDisplay = isAthletics ? 'Athletics' : isChess ? 'Chess' : (p.sport || sportName || 'Badminton');
                     const rawG = String(p.gender || p.player1?.gender || p.category || '').toLowerCase();
@@ -991,7 +997,7 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                       ? ((rawG.includes('female') || rawG.includes('girl') || rawG.includes('women')) ? 'Female' : 'Male')
                       : isAthletics
                       ? subEventName
-                      : (p.category || (isDoubles ? 'DOUBLES' : 'SINGLES'));
+                      : (isDoubles ? 'DOUBLES' : (p.category || 'SINGLES'));
 
                     const p1 = p.player1 || {
                       name: p.captainName || p.name || p.studentName || 'Athlete',
@@ -1003,6 +1009,27 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                     };
 
                     let p2 = p.player2 || null;
+                    if (!p2 && p.members && p.members.length > 1) {
+                      const m2 = p.members[1];
+                      p2 = {
+                        name: m2.fullName || m2.name,
+                        roll: m2.rollNo || m2.roll || 'N/A',
+                        college: p1.college,
+                        year: m2.yearSemester || p1.year,
+                        phone: m2.mobile || m2.phone || '-',
+                        email: m2.email || '-'
+                      };
+                    } else if (!p2 && p.roster && p.roster.length > 1) {
+                      const r2 = p.roster[1];
+                      p2 = {
+                        name: r2.name || r2.fullName,
+                        roll: r2.rollNo || r2.roll || 'N/A',
+                        college: p1.college,
+                        year: r2.year || p1.year,
+                        phone: r2.phone || '-',
+                        email: r2.email || '-'
+                      };
+                    }
                     if (!p2 && isRelay && p.roster && p.roster.length > 1) {
                       const partners = p.roster.slice(1);
                       p2 = {
@@ -1106,13 +1133,17 @@ export const TotalParticipationTab = ({ user, globalSearch = '' }) => {
                           </td>
                         )}
                         <td className="p-4 text-right whitespace-nowrap">
-                          <button
-                            onClick={() => handleDeleteParticipant(p.id, p1.name || p.teamName)}
-                            className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition cursor-pointer"
-                            title="Delete Registration"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {!isBadminton ? (
+                            <button
+                              onClick={() => handleDeleteParticipant(p.id, p1.name || p.teamName)}
+                              className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition cursor-pointer"
+                              title="Delete Registration"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          ) : (
+                            <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">Read Only</span>
+                          )}
                         </td>
                       </tr>
                     );

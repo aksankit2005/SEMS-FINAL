@@ -299,12 +299,19 @@ router.get('/public/events', async (req, res) => {
 
     if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
       dbRes.rows.forEach((e) => {
-        let currentStatus = e.status || 'Published';
-        if (e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) {
-          currentStatus = 'Closed';
+        const rawStatus = (e.status || 'Published').toLowerCase();
+        // DRAFT events are ONLY shown to the coordinator, NOT to public users
+        if (rawStatus === 'draft') {
+          return;
         }
-        if ((Number(e.registeredCount) || 0) >= (Number(e.maxRegistrations) || 64)) {
+
+        let currentStatus = e.status || 'Published';
+        if (rawStatus === 'upcoming') {
+          currentStatus = 'Upcoming';
+        } else if (rawStatus === 'closed' || (e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) || ((Number(e.registeredCount) || 0) >= (Number(e.maxRegistrations) || 64))) {
           currentStatus = 'Closed';
+        } else if (rawStatus === 'public' || rawStatus === 'published') {
+          currentStatus = 'Published';
         }
 
         let contact = e.contactInfo;
@@ -339,18 +346,26 @@ router.get('/public/events', async (req, res) => {
   // 2. Prisma fallback
   try {
     const dbEvents = await prisma.coordinatorEventItem.findMany({
+      where: {
+        NOT: { status: { equals: 'Draft', mode: 'insensitive' } }
+      },
       orderBy: { createdAt: 'desc' }
     });
 
     if (dbEvents && dbEvents.length > 0) {
       dbEvents.forEach((e) => {
-        let currentStatus = e.status;
-        if (e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) {
+        const rawStatus = (e.status || 'Published').toLowerCase();
+        if (rawStatus === 'draft') return;
+
+        let currentStatus = e.status || 'Published';
+        if (rawStatus === 'upcoming') {
+          currentStatus = 'Upcoming';
+        } else if (rawStatus === 'closed' || (e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) || ((e.registeredCount || 0) >= (e.maxRegistrations || 64))) {
           currentStatus = 'Closed';
+        } else if (rawStatus === 'public' || rawStatus === 'published') {
+          currentStatus = 'Published';
         }
-        if ((e.registeredCount || 0) >= (e.maxRegistrations || 64)) {
-          currentStatus = 'Closed';
-        }
+
         publishedEvents.push({
           ...e,
           entryFee: Number(e.entryFee || 0),
