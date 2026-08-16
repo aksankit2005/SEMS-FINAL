@@ -76,7 +76,6 @@ export const seedInitialAccountHashes = async () => {
       await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS team_name VARCHAR(255) DEFAULT '';`);
       await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS college VARCHAR(255) DEFAULT '';`);
       await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS department VARCHAR(255) DEFAULT '';`);
-      await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS enrollment_no VARCHAR(100) DEFAULT '';`);
       await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS email VARCHAR(255) DEFAULT '';`);
       await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS phone VARCHAR(100) DEFAULT '';`);
       await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS gender VARCHAR(50) DEFAULT '';`);

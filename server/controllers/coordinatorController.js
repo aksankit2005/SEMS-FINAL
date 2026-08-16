@@ -895,7 +895,7 @@ export const getRegistrations = async (req, res) => {
         `SELECT 
           id, registration_id AS "registrationId", event_id AS "eventId",
           sport_id AS "sportId", student_name AS "studentName", team_name AS "teamName",
-          college, department, enrollment_no AS "enrollmentNo", email, phone, gender,
+          college, department, '' AS "enrollmentNo", email, phone, gender,
           emergency_contact AS "emergencyContact", status, fee_paid AS "feePaid",
           payment_id AS "paymentId", payment_status AS "paymentStatus",
           created_at AS "createdAt"
@@ -911,10 +911,10 @@ export const getRegistrations = async (req, res) => {
             let members = [];
             try {
               const memRes = await queryDb(
-                `SELECT full_name AS "fullName", roll_no AS "rollNo", date_of_birth AS "dateOfBirth",
-                        mobile, email, course, year_semester AS "yearSemester", gender, is_captain AS "isCaptain"
+                `SELECT "fullName", "rollNo", "dateOfBirth",
+                        mobile, email, course, year_semester AS "yearSemester", gender, "isCaptain"
                  FROM registration_members
-                 WHERE registration_id = $1 OR id = $1`,
+                 WHERE "registrationId" = $1 OR id = $1`,
                 [r.id]
               );
               if (memRes && memRes.rows) members = memRes.rows;

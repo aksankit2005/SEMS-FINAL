@@ -149,7 +149,7 @@ export const getMasterParticipants = async (req, res) => {
         team_name AS "teamName",
         college,
         department AS branch,
-        enrollment_no AS "rollNo",
+        '' AS "rollNo",
         email,
         phone AS mobile,
         gender,
@@ -188,10 +188,10 @@ export const getMasterParticipants = async (req, res) => {
       const membersDb = await queryDb(`
         SELECT 
           m.id,
-          TO_CHAR(m.created_at, 'HH:MI AM') AS time,
+          TO_CHAR(m."createdAt", 'HH:MI AM') AS time,
           s.name AS "sportName",
-          m.full_name AS name,
-          m.roll_no AS "rollNo",
+          m."fullName" AS name,
+          m."rollNo" AS "rollNo",
           m.email,
           m.mobile,
           m.gender,
@@ -201,11 +201,11 @@ export const getMasterParticipants = async (req, res) => {
           r.status,
           r.amount AS "feePaid"
         FROM registration_members m
-        JOIN registrations r ON m.registration_id = r.id
+        JOIN registrations r ON m."registrationId" = r.id
         LEFT JOIN sports s ON r.sport_id = s.id
         LEFT JOIN teams t ON t.captain_registration_id = r.id
         LEFT JOIN colleges c ON t.college_id = c.id
-        ORDER BY m.created_at DESC
+        ORDER BY m."createdAt" DESC
       `);
 
       if (membersDb && membersDb.rows && membersDb.rows.length > 0) {
@@ -1017,7 +1017,7 @@ export const getAdminRegistrationsDB = async (req, res) => {
         team_name AS "teamName",
         college,
         department AS branch,
-        enrollment_no AS "rollNumber",
+        '' AS "rollNumber",
         email,
         phone AS mobile,
         gender,
