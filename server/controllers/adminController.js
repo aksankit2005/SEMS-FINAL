@@ -1423,35 +1423,158 @@ export const updateSettingsDB = async (req, res) => {
 // ── Admin Committee Management ────────────────────────────────────────────
 export const getCommitteeDB = async (req, res) => {
   try {
-    const sessions = await prisma.committeeSession.findMany({
+    let sessions = await prisma.committeeSession.findMany({
       include: { members: { orderBy: { sortOrder: 'asc' } } },
       orderBy: { createdAt: 'desc' }
     });
-    return res.json(sessions);
+
+    // Auto-seed default session if DB is empty
+    if (sessions.length === 0) {
+      const defaultAdvisors = [
+        { name: 'Mr. Susil Kushwaha', role: 'Faculty Advisor', photoUrl: '/team/faculty_susil.jpg', type: 'ADVISOR', sortOrder: 1 },
+        { name: 'Mr. Kaushal Maurya', role: 'Co-Faculty Advisor', photoUrl: '/team/faculty_kaushal.jpg', type: 'ADVISOR', sortOrder: 2 },
+        { name: 'Mr. Rahul Kumar', role: 'Co-Faculty Advisor', photoUrl: '/team/faculty_rahul.jpg', type: 'ADVISOR', sortOrder: 3 },
+        { name: 'Mr. Amit kr Verma', role: 'Co-Faculty Advisor', photoUrl: '/team/faculty_amit.jpg', type: 'ADVISOR', sortOrder: 4 },
+        { name: 'Dr. Ajay kr Singh', role: 'Sports Coach', photoUrl: '/team/faculty_ajay.jpg', type: 'ADVISOR', sortOrder: 5 }
+      ];
+
+      const defaultExec = [
+        { role: 'President', name: 'Praveen Rai', photoUrl: '/team/praveen.jpg', type: 'EXECUTIVE', sortOrder: 1 },
+        { role: 'Vice President', name: 'Harsh Singh', photoUrl: '/team/harsh.jpg', type: 'EXECUTIVE', sortOrder: 2 },
+        { role: 'Technical Head', name: 'Ankit Kumar Singh', photoUrl: '/team/ankit.jpg', type: 'EXECUTIVE', sortOrder: 3 },
+        { role: 'Secretary', name: 'Aditya Singh', photoUrl: '/team/aditya.jpg', type: 'EXECUTIVE', sortOrder: 4 },
+        { role: 'Treasurer', name: 'Shubham Tiwari', photoUrl: '/team/shubham.jpg', type: 'EXECUTIVE', sortOrder: 5 },
+        { role: 'Coordinator', name: 'Gunjan Gupta', photoUrl: '/team/gunjan.jpg', type: 'EXECUTIVE', sortOrder: 6 },
+        { role: 'PR Head', name: 'Vishesh Panday', photoUrl: '/team/vishesh.jpg', type: 'EXECUTIVE', sortOrder: 7 }
+      ];
+
+      const seededSession = await prisma.committeeSession.create({
+        data: {
+          label: '2025-26',
+          isActive: true,
+          members: {
+            create: [...defaultAdvisors, ...defaultExec]
+          }
+        },
+        include: { members: { orderBy: { sortOrder: 'asc' } } }
+      });
+
+      await prisma.committeeSession.create({ data: { label: '2026-27', isActive: false } }).catch(() => {});
+      await prisma.committeeSession.create({ data: { label: '2027-28', isActive: false } }).catch(() => {});
+
+      sessions = [seededSession];
+    }
+
+    const formatted = sessions.map(s => ({
+      id: s.id,
+      label: s.label,
+      isActive: s.isActive,
+      advisors: (s.members || []).filter(m => m.type === 'ADVISOR').map(m => ({
+        id: m.id,
+        name: m.name,
+        role: m.role,
+        image: m.photoUrl,
+        publicId: m.publicId,
+        email: m.email,
+        phone: m.phone,
+        sortOrder: m.sortOrder
+      })),
+      executiveCommittee: (s.members || []).filter(m => m.type === 'EXECUTIVE').map(m => ({
+        id: m.id,
+        name: m.name,
+        role: m.role,
+        image: m.photoUrl,
+        publicId: m.publicId,
+        email: m.email,
+        phone: m.phone,
+        sortOrder: m.sortOrder
+      }))
+    }));
+
+    return res.json(formatted);
   } catch (err) {
     console.error('Error fetching committee from DB:', err.message);
     return res.json([]);
   }
 };
 
-export const saveCommitteeMemberDB = async (req, res) => {
-  const { id, sessionId, type, name, role, photoUrl, email, phone } = req.body;
+export const saveSessionDB = async (req, res) => {
+  const { id, label, isActive } = req.body;
   try {
+    if (isActive) {
+      await prisma.committeeSession.updateMany({ data: { isActive: false } });
+    }
+
+    if (id) {
+      const updated = await prisma.committeeSession.update({
+        where: { id },
+        data: { label, isActive: Boolean(isActive) }
+      });
+      return res.json({ success: true, session: updated });
+    }
+
+    const created = await prisma.committeeSession.create({
+      data: { label: label || 'New Session', isActive: Boolean(isActive) }
+    });
+    return res.status(201).json({ success: true, session: created });
+  } catch (err) {
+    console.error('Error saving committee session in DB:', err.message);
+    return res.status(500).json({ message: 'Failed to save session to database' });
+  }
+};
+
+export const deleteSessionDB = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const members = await prisma.committeeMember.findMany({ where: { sessionId: id } });
+    const deleteItems = members.filter(m => m.publicId).map(m => ({ publicId: m.publicId, resourceType: 'image' }));
+    if (deleteItems.length > 0) {
+      deleteCloudinaryBatch(deleteItems).catch(() => {});
+    }
+
+    await prisma.committeeSession.delete({ where: { id } });
+    return res.json({ success: true, message: 'Session deleted successfully.' });
+  } catch (err) {
+    console.error('Error deleting committee session in DB:', err.message);
+    return res.status(500).json({ message: 'Failed to delete session from database' });
+  }
+};
+
+export const saveCommitteeMemberDB = async (req, res) => {
+  const { id, sessionId, type, name, role, photoUrl, image, publicId, email, phone, sortOrder } = req.body;
+  try {
+    const finalPhoto = photoUrl || image || null;
+    const normalizedType = (type === 'advisors' || type === 'ADVISOR') ? 'ADVISOR' : 'EXECUTIVE';
+
     let targetSessionId = sessionId;
     if (!targetSessionId) {
       let defaultSession = await prisma.committeeSession.findFirst({ where: { isActive: true } });
       if (!defaultSession) {
         defaultSession = await prisma.committeeSession.create({
-          data: { label: 'SEMS 2026 Executive Committee', isActive: true }
+          data: { label: '2025-26', isActive: true }
         });
       }
       targetSessionId = defaultSession.id;
     }
 
     if (id) {
+      const existing = await prisma.committeeMember.findUnique({ where: { id } });
+      if (existing && existing.publicId && publicId && existing.publicId !== publicId) {
+        deleteCloudinaryAsset(existing.publicId, 'image').catch(() => {});
+      }
+
       const updated = await prisma.committeeMember.update({
         where: { id },
-        data: { name, role, type: type || 'EXECUTIVE', photoUrl, email, phone }
+        data: {
+          name,
+          role,
+          type: normalizedType,
+          photoUrl: finalPhoto,
+          publicId: publicId || existing?.publicId || null,
+          email: email || '',
+          phone: phone || '',
+          sortOrder: sortOrder !== undefined ? Number(sortOrder) : undefined
+        }
       });
       return res.json({ success: true, member: updated });
     }
@@ -1459,12 +1582,14 @@ export const saveCommitteeMemberDB = async (req, res) => {
     const created = await prisma.committeeMember.create({
       data: {
         sessionId: targetSessionId,
-        type: type || 'EXECUTIVE',
+        type: normalizedType,
         name,
         role,
-        photoUrl,
-        email,
-        phone
+        photoUrl: finalPhoto,
+        publicId: publicId || null,
+        email: email || '',
+        phone: phone || '',
+        sortOrder: sortOrder !== undefined ? Number(sortOrder) : 0
       }
     });
     return res.status(201).json({ success: true, member: created });
@@ -1477,6 +1602,11 @@ export const saveCommitteeMemberDB = async (req, res) => {
 export const deleteCommitteeMemberDB = async (req, res) => {
   const { id } = req.params;
   try {
+    const existing = await prisma.committeeMember.findUnique({ where: { id } });
+    if (existing && existing.publicId) {
+      deleteCloudinaryAsset(existing.publicId, 'image').catch(() => {});
+    }
+
     await prisma.committeeMember.delete({ where: { id } });
     return res.json({ success: true, message: 'Committee member deleted successfully.' });
   } catch (err) {

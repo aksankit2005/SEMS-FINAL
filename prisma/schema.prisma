@@ -657,6 +657,7 @@ model CommitteeMember {
   name      String
   role      String
   photoUrl  String?             @map("photo_url")
+  publicId  String?             @map("public_id")
   email     String?
   phone     String?
   sortOrder Int                 @default(0) @map("sort_order")

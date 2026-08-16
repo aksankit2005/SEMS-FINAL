@@ -34,6 +34,8 @@ import {
   getSettingsDB,
   updateSettingsDB,
   getCommitteeDB,
+  saveSessionDB,
+  deleteSessionDB,
   saveCommitteeMemberDB,
   deleteCommitteeMemberDB,
   getAdminResultsDB,
@@ -81,8 +83,10 @@ router.delete('/admin/pr-media/folders/:id', verifyAdminToken, deletePRFolderDB)
 router.get('/admin/settings', getSettingsDB);
 router.post('/admin/settings', updateSettingsDB);
 router.get('/admin/committee', getCommitteeDB);
-router.post('/admin/committee/members', saveCommitteeMemberDB);
-router.delete('/admin/committee/members/:id', deleteCommitteeMemberDB);
+router.post('/admin/committee/sessions', verifyAdminToken, saveSessionDB);
+router.delete('/admin/committee/sessions/:id', verifyAdminToken, deleteSessionDB);
+router.post('/admin/committee/members', verifyAdminToken, saveCommitteeMemberDB);
+router.delete('/admin/committee/members/:id', verifyAdminToken, deleteCommitteeMemberDB);
 
 // Results & Leaderboard endpoints
 router.get('/admin/results', getAdminResultsDB);
