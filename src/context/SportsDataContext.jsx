@@ -73,7 +73,7 @@ export const SportsDataProvider = ({ children }) => {
     try {
       const res = await axios.get(`${API_BASE_URL}/leaderboard`);
       if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-        const filtered = res.data.filter(c => c.code !== 'EXTERNAL');
+        const filtered = res.data.filter(c => (c.code || c.id) !== 'EXTERNAL');
         setLeaderboard(filtered);
         return;
       }
