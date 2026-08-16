@@ -340,9 +340,13 @@ export const RegistrationPage = () => {
 
   const handleSportSelect = (sport) => {
     const isRacket = isRacketSportCheck(sport);
-    const sFee = sport.singlesFee !== undefined ? sport.singlesFee : 300;
-    const dFee = sport.doublesFee !== undefined ? sport.doublesFee : 600;
-    const initialFee = isRacket ? (formData.eventType === 'Doubles' ? dFee : sFee) : sport.entryFee;
+    const resolvedFee = typeof sport.entryFee === 'number'
+      ? sport.entryFee
+      : (typeof sport.teamFee === 'number' ? sport.teamFee : (sport.entryFee ?? sport.teamFee ?? 0));
+
+    const sFee = typeof sport.singlesFee === 'number' ? sport.singlesFee : resolvedFee;
+    const dFee = typeof sport.doublesFee === 'number' ? sport.doublesFee : resolvedFee * 2;
+    const initialFee = isRacket ? (formData.eventType === 'Doubles' ? dFee : sFee) : resolvedFee;
 
     setActiveSport({
       ...sport,
@@ -592,9 +596,12 @@ export const RegistrationPage = () => {
     });
 
     if (activeSport) {
-      const sFee = activeSport.singlesFee !== undefined ? activeSport.singlesFee : 300;
-      const dFee = activeSport.doublesFee !== undefined ? activeSport.doublesFee : 600;
-      const updatedFee = type === 'Singles' ? sFee : dFee;
+      const resolvedFee = typeof activeSport.entryFee === 'number'
+        ? activeSport.entryFee
+        : (typeof activeSport.teamFee === 'number' ? activeSport.teamFee : 0);
+      const sFee = typeof activeSport.singlesFee === 'number' ? activeSport.singlesFee : resolvedFee;
+      const dFee = typeof activeSport.doublesFee === 'number' ? activeSport.doublesFee : resolvedFee * 2;
+      const updatedFee = type === 'Doubles' ? dFee : sFee;
       setActiveSport((prev) => ({
         ...prev,
         entryFee: updatedFee
@@ -610,13 +617,13 @@ export const RegistrationPage = () => {
 
     return (
       <div className="space-y-6">
-        {/* Racket Sport Singles/Doubles Selection */}
+        {/* Racket Sport Event Type Toggle */}
         {isRacketSport && (
-          <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3">
-            <label className="block text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+          <div className="p-4 rounded-2xl bg-blue-50/60 dark:bg-slate-900 border border-blue-100 dark:border-slate-800 space-y-3">
+            <label className="block text-xs font-bold uppercase tracking-wider text-blue-900 dark:text-blue-300">
               Select Event Mode & Fee <span className="text-rose-500">*</span>
             </label>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => handleEventTypeToggle('Singles')}
@@ -629,7 +636,7 @@ export const RegistrationPage = () => {
                   <User className="w-4 h-4" /> Singles (1 Player)
                 </div>
                 <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400">
-                  Singles Fee: ₹{activeSport.singlesFee !== undefined ? activeSport.singlesFee : 300}
+                  Singles Fee: {activeSport.singlesFee === 0 ? 'FREE (₹0)' : `₹${activeSport.singlesFee ?? 0}`}
                 </span>
               </button>
               <button
@@ -644,7 +651,7 @@ export const RegistrationPage = () => {
                   <Users className="w-4 h-4" /> Doubles (2 Players)
                 </div>
                 <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400">
-                  Doubles Fee: ₹{activeSport.doublesFee !== undefined ? activeSport.doublesFee : 600}
+                  Doubles Fee: {activeSport.doublesFee === 0 ? 'FREE (₹0)' : `₹${activeSport.doublesFee ?? 0}`}
                 </span>
               </button>
             </div>
