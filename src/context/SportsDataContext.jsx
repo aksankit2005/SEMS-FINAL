@@ -104,18 +104,7 @@ export const SportsDataProvider = ({ children }) => {
         console.warn('Live matches API fetch error:', e.message);
       }
 
-      let activeList = [];
-      const saved = localStorage.getItem('sems_active_live_matches');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          activeList = Object.values(parsed).filter(
-            (m) => m && m.id && m.id !== 'M595473' && (m.status === 'running' || m.status === 'live' || m.status === 'in_progress' || m.status === 'active')
-          );
-        } catch (e) { }
-      }
-
-      setLiveMatches(activeList);
+      setLiveMatches([]);
     };
 
     syncLiveMatches();

@@ -155,50 +155,22 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
 
       let updated = null;
 
-      // 1. Check local active live matches map first
-      const localActiveStr = localStorage.getItem('sems_active_live_matches');
-      if (localActiveStr) {
-        try {
-          const parsed = JSON.parse(localActiveStr);
-          if (parsed) {
-            if (parsed[targetId]) {
-              updated = parsed[targetId];
-            } else {
-              const list = Array.isArray(parsed) ? parsed : Object.values(parsed);
-              updated = list.find((m) => m && (m.id === targetId || m.matchId === targetId));
-            }
-          }
-        } catch (e) { }
-      }
+      try {
+  const publicLive = await coordinatorApi.getPublicLiveMatches();
 
-      // 2. Fallback to coordinator public live matches (scans server API + local storage)
-      if (!updated) {
-        try {
-          const publicLive = await coordinatorApi.getPublicLiveMatches();
-          if (Array.isArray(publicLive)) {
-            updated = publicLive.find((m) => m && (m.id === targetId || m.matchId === targetId));
-          }
-        } catch (e) {}
-      }
-
-      // 3. Fallback to scanning all sems_coord_matches_* keys in localStorage
-      if (!updated) {
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && (key.startsWith('sems_coord_matches_') || key.endsWith('MatchSchedules'))) {
-            try {
-              const list = JSON.parse(localStorage.getItem(key));
-              if (Array.isArray(list)) {
-                const item = list.find((m) => m && (m.id === targetId || m.matchId === targetId));
-                if (item) {
-                  updated = item;
-                  break;
-                }
-              }
-            } catch (e) {}
-          }
-        }
-      }
+  if (Array.isArray(publicLive)) {
+    updated = publicLive.find(
+      (m) =>
+        m &&
+        (m.id === targetId || m.matchId === targetId)
+    );
+  }
+} catch (e) {
+  console.warn(
+    'Failed to refresh live match from server:',
+    e
+  );
+}
 
       if (updated && isSubscribed) {
         setMatch((prev) => {

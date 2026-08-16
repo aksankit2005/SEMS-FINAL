@@ -399,104 +399,186 @@ export const coordinatorApi = {
   },
 
   // Create match & persist to Backend API & localStorage
-  async createMatch(matchData) {
+ async createMatch(matchData) {
+  try {
     const user = this.getCurrentUser();
-    const sportKey = (user?.assignedSport || matchData?.sport || matchData?.sportId || 'badminton').toLowerCase();
-    const matches = await this.getMatches();
-    const prefix = sportKey === 'basketball' ? 'M-BSK-' : sportKey === 'volleyball' ? 'M-VOL-' : 'M-';
-    const newMatch = {
+    const sportKey = (
+      user?.assignedSport ||
+      matchData.sportId ||
+      matchData.sport ||
+      'badminton'
+    ).toLowerCase();
+
+    const payload = {
       ...matchData,
-      id: matchData.id || `${prefix}${Math.floor(100000 + Math.random() * 900000)}`,
       sport: sportKey,
       sportId: sportKey,
-      sportName: user?.sportName || matchData.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1)),
+      sportName:
+        user?.sportName ||
+        matchData.sportName ||
+        sportKey.charAt(0).toUpperCase() + sportKey.slice(1),
       status: matchData.status || 'SCHEDULED',
     };
-    const updated = [newMatch, ...matches.filter((m) => m.id !== newMatch.id)];
-    this.saveMatches(updated);
 
-    try {
-      const res = await api.post('/coordinator/matches', newMatch);
-      if (res.data && res.data.match) {
-        const currentMatches = await this.getMatches();
-        const mergedWithServer = [res.data.match, ...currentMatches.filter((m) => m.id !== res.data.match.id)];
-        this.saveMatches(mergedWithServer);
-        return res.data.match;
-      }
-    } catch (e) {
-      console.warn('Backend create match fallback:', e);
+    const res = await api.post(
+      '/coordinator/matches',
+      payload
+    );
+
+    if (!res.data || !res.data.match) {
+      throw new Error('Server did not return the created match');
     }
 
-    return newMatch;
-  },
-
-  // Update match & persist to Backend API & localStorage
-  async updateMatch(id, matchData) {
-    try {
-      const res = await api.put(`/coordinator/matches/${id}`, matchData);
-      if (res.data && res.data.match) {
-        const matches = await this.getMatches();
-        const updated = matches.map((m) => (m.id === id ? res.data.match : m));
-        this.saveMatches(updated);
-        return res.data.match;
-      }
-    } catch (e) {
-      console.warn('Backend update match fallback:', e);
-    }
+    const createdMatch = res.data.match;
 
     const matches = await this.getMatches();
-    const updated = matches.map((m) => (m.id === id ? { ...m, ...matchData } : m));
+
+    const updated = [
+      createdMatch,
+      ...matches.filter(
+        (m) => m.id !== createdMatch.id
+      ),
+    ];
+
     this.saveMatches(updated);
-    return updated.find((m) => m.id === id);
-  },
+
+    return createdMatch;
+  } catch (error) {
+    console.error(
+      'Failed to create match:',
+      error
+    );
+
+    throw error;
+  }
+},
+
+  // Update match & persist to Backend API & localStorage
+ async updateMatch(id, matchData) {
+  try {
+    const res = await api.put(
+      `/coordinator/matches/${id}`,
+      matchData
+    );
+
+    if (!res.data || !res.data.match) {
+      throw new Error('Server returned no updated match');
+    }
+
+    const updatedMatch = res.data.match;
+
+    const matches = await this.getMatches();
+
+    const updated = matches.map((m) =>
+      m.id === id
+        ? { ...m, ...updatedMatch }
+        : m
+    );
+
+    this.saveMatches(updated);
+
+    return updatedMatch;
+  } catch (error) {
+    console.error(
+      `Failed to update match ${id}:`,
+      error
+    );
+
+    throw error;
+  }
+},
 
   // Delete match & persist to Backend API & localStorage
-  async deleteMatch(id) {
-    try {
-      const deletedArr = JSON.parse(localStorage.getItem('sems_deleted_match_ids') || '[]');
-      if (!deletedArr.includes(id)) {
-        deletedArr.push(id);
-        localStorage.setItem('sems_deleted_match_ids', JSON.stringify(deletedArr));
-      }
-    } catch (e) {}
+async deleteMatch(id) {
+  try {
+    await api.delete(`/coordinator/matches/${id}`);
+  } catch (error) {
+    console.error(
+      `Failed to delete match ${id}:`,
+      error
+    );
 
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && (key.startsWith('sems_coord_matches_') || key.endsWith('MatchSchedules') || key.startsWith('sems_matches_'))) {
-          const raw = localStorage.getItem(key);
-          if (raw) {
-            const list = JSON.parse(raw);
-            if (Array.isArray(list)) {
-              const updated = list.filter((m) => m && m.id !== id);
-              localStorage.setItem(key, JSON.stringify(updated));
-            }
-          }
+    throw error;
+  }
+
+  try {
+    const deletedArr = JSON.parse(
+      localStorage.getItem('sems_deleted_match_ids') || '[]'
+    );
+
+    if (!deletedArr.includes(id)) {
+      deletedArr.push(id);
+
+      localStorage.setItem(
+        'sems_deleted_match_ids',
+        JSON.stringify(deletedArr)
+      );
+    }
+  } catch (error) {
+    console.warn(
+      'Failed to update deleted match cache:',
+      error
+    );
+  }
+
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+
+      if (
+        key &&
+        (
+          key.startsWith('sems_coord_matches_') ||
+          key.endsWith('MatchSchedules') ||
+          key.startsWith('sems_matches_')
+        )
+      ) {
+        const raw = localStorage.getItem(key);
+
+        if (!raw) continue;
+
+        const list = JSON.parse(raw);
+
+        if (Array.isArray(list)) {
+          const updated = list.filter(
+            (m) => m && m.id !== id
+          );
+
+          localStorage.setItem(
+            key,
+            JSON.stringify(updated)
+          );
         }
       }
-    } catch (e) {}
-
-    try {
-      await api.delete(`/coordinator/matches/${id}`);
-    } catch (e) {
-      console.warn('Backend delete match fallback:', e);
     }
 
-    // Remove from active live assignments in localStorage
-    const savedActiveStr = localStorage.getItem('sems_active_live_matches');
-    if (savedActiveStr) {
-      try {
-        const activeMap = JSON.parse(savedActiveStr);
-        if (activeMap && activeMap[id]) {
-          delete activeMap[id];
-          localStorage.setItem('sems_active_live_matches', JSON.stringify(activeMap));
+    const activeRaw = localStorage.getItem(
+      'sems_active_live_matches'
+    );
+
+    if (activeRaw) {
+      const activeMap = JSON.parse(activeRaw);
+
+      Object.keys(activeMap).forEach((key) => {
+        if (activeMap[key]?.id === id || key === id) {
+          delete activeMap[key];
         }
-      } catch (e) { }
-    }
+      });
 
-    window.dispatchEvent(new Event('storage'));
-    window.dispatchEvent(new CustomEvent('sems_matches_updated', { detail: { matchId: id } }));
-  },
+      localStorage.setItem(
+        'sems_active_live_matches',
+        JSON.stringify(activeMap)
+      );
+    }
+  } catch (error) {
+    console.warn(
+      'Failed to clean deleted match cache:',
+      error
+    );
+  }
+
+  return true;
+},
 
   // Auto-generate fixtures & persist to localStorage
   async generateFixtures(type) {
@@ -582,76 +664,113 @@ export const coordinatorApi = {
 
   // Update live match score & persist active live matches to Backend API & localStorage
   async updateMatchScoring(matchId, scoreData) {
-    try {
-      const res = await api.put(`/coordinator/matches/${matchId}`, scoreData);
-      if (res.data && res.data.match) {
-        const matches = await this.getMatches();
-        const updatedList = matches.map((m) => (m.id === matchId ? res.data.match : m));
-        this.saveMatches(updatedList);
-        return res.data.match;
-      }
-    } catch (e) {
-      console.warn('Backend updateMatchScoring fallback:', e);
+  try {
+    const res = await api.post(
+      `/coordinator/matches/${matchId}/score`,
+      scoreData
+    );
+
+    if (!res.data || !res.data.match) {
+      throw new Error('Server returned no updated match');
     }
+
+    const updatedMatch = res.data.match;
 
     const matches = await this.getMatches();
-    let target = matches.find((m) => m.id === matchId);
 
-    if (!target) {
-      target = {
-        id: matchId,
-        format: scoreData.format || 'SINGLES',
-        status: scoreData.status || 'running',
-        team1: scoreData.team1 || 'Team A',
-        team2: scoreData.team2 || 'Team B',
-        matchTitle: scoreData.matchTitle || `${scoreData.team1} vs ${scoreData.team2}`,
-        tableNumber: scoreData.venue || scoreData.tableNumber || 'Table 1',
-        score1: scoreData.score1 || 0,
-        score2: scoreData.score2 || 0,
-      };
-      matches.unshift(target);
+    const existingIndex = matches.findIndex(
+      (m) => m.id === matchId
+    );
+
+    let updatedList;
+
+    if (existingIndex !== -1) {
+      updatedList = matches.map((m) =>
+        m.id === matchId
+          ? { ...m, ...updatedMatch }
+          : m
+      );
+    } else {
+      updatedList = [
+        updatedMatch,
+        ...matches
+      ];
     }
 
-    const updatedMatch = { ...target, ...scoreData };
-    if (scoreData.venue) updatedMatch.tableNumber = scoreData.venue;
-
-    const updatedList = matches.map((m) => (m.id === matchId ? updatedMatch : m));
     this.saveMatches(updatedList);
 
-    // Update active live assignments key in localStorage strictly by matchId
-    const savedActiveStr = localStorage.getItem('sems_active_live_matches');
     let activeMap = {};
-    if (savedActiveStr) {
-      try {
+
+    try {
+      const savedActiveStr = localStorage.getItem(
+        'sems_active_live_matches'
+      );
+
+      if (savedActiveStr) {
         const parsed = JSON.parse(savedActiveStr);
+
         if (parsed && typeof parsed === 'object') {
-          Object.values(parsed).forEach((m) => {
-            if (m && m.id) {
-              activeMap[m.id] = activeMap[m.id] ? mergeMatchState(activeMap[m.id], m) : m;
+          Object.values(parsed).forEach((match) => {
+            if (match?.id) {
+              activeMap[match.id] = match;
             }
           });
         }
-      } catch (e) { }
-    }
-
-    const s = (updatedMatch.status || '').toLowerCase();
-    if (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active') {
-      if (matchId) {
-        activeMap[matchId] = mergeMatchState(activeMap[matchId], updatedMatch);
       }
-    } else {
-      if (matchId) delete activeMap[matchId];
-      Object.keys(activeMap).forEach((k) => {
-        if (activeMap[k]?.id === matchId) delete activeMap[k];
-      });
+    } catch (error) {
+      console.warn(
+        'Invalid live match local cache:',
+        error
+      );
     }
 
-    localStorage.setItem('sems_active_live_matches', JSON.stringify(activeMap));
-    window.dispatchEvent(new Event('storage'));
-    window.dispatchEvent(new CustomEvent('sems_matches_updated', { detail: { matchId, match: updatedMatch } }));
-    return updatedMatch;
-  },
+    const status = String(
+      updatedMatch.status || ''
+    ).toLowerCase();
 
+    const isLive =
+      status === 'running' ||
+      status === 'live' ||
+      status === 'in_progress' ||
+      status === 'active';
+
+    if (isLive) {
+      activeMap[matchId] = {
+        ...(activeMap[matchId] || {}),
+        ...updatedMatch,
+      };
+    } else {
+      delete activeMap[matchId];
+    }
+
+    localStorage.setItem(
+      'sems_active_live_matches',
+      JSON.stringify(activeMap)
+    );
+
+    window.dispatchEvent(
+      new Event('storage')
+    );
+
+    window.dispatchEvent(
+      new CustomEvent('sems_matches_updated', {
+        detail: {
+          matchId,
+          match: updatedMatch,
+        },
+      })
+    );
+
+    return updatedMatch;
+  } catch (error) {
+    console.error(
+      `Failed to save score for match ${matchId}:`,
+      error
+    );
+
+    throw error;
+  }
+},
   // Fetch real basketball player stats from Supabase
   async getBasketballMatchPlayers(matchId) {
     try {
@@ -721,7 +840,10 @@ export const coordinatorApi = {
     };
 
     try {
-      await api.put(`/coordinator/matches/${matchId}`, { ...winnerData, status: 'COMPLETED' });
+      await api.post(
+  `/coordinator/matches/${matchId}/complete`,
+  winnerData
+);
     } catch (e) {
       console.warn('Backend completeMatch API fallback:', e);
     }
@@ -934,62 +1056,6 @@ export const coordinatorApi = {
     window.dispatchEvent(new Event('storage'));
   },
 
-  // Get Public Live Matches from Backend API with localStorage fallback
-  async getPublicLiveMatches() {
-    let serverLive = [];
-    try {
-      const res = await api.get('/live-matches');
-      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-        serverLive = res.data;
-      }
-    } catch (e) {
-      console.warn('Backend live matches API fallback:', e);
-    }
-
-    const liveMap = {};
-
-    // 1. Process server live matches
-    serverLive.forEach((m) => {
-      const s = (m?.status || '').toLowerCase();
-      if (m && m.id && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active')) {
-        liveMap[m.id] = m;
-      }
-    });
-
-    // 2. Merge sems_active_live_matches from localStorage
-    const savedActiveStr = localStorage.getItem('sems_active_live_matches');
-    if (savedActiveStr) {
-      try {
-        const activeMap = JSON.parse(savedActiveStr);
-        Object.values(activeMap).forEach((m) => {
-          const s = (m?.status || '').toLowerCase();
-          if (m && m.id && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active')) {
-            liveMap[m.id] = mergeMatchState(liveMap[m.id], m);
-          }
-        });
-      } catch (e) { }
-    }
-
-    // 3. Merge sems_coord_matches_* keys from localStorage
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('sems_coord_matches_')) {
-        try {
-          const list = JSON.parse(localStorage.getItem(key));
-          if (Array.isArray(list)) {
-            list.forEach((m) => {
-              const s = (m?.status || '').toLowerCase();
-              if (m && m.id && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active')) {
-                liveMap[m.id] = mergeMatchState(liveMap[m.id], m);
-              }
-            });
-          }
-        } catch (e) { }
-      }
-    }
-
-    return Object.values(liveMap);
-  },
 
   // --- COORDINATOR EVENT MANAGEMENT API METHODS ---
 

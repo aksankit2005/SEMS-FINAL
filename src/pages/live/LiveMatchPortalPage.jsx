@@ -102,7 +102,7 @@ export const LiveMatchPortalPage = () => {
 
       // Safely merge backend matches, local active matches & fallback live matches using functional update & mergeMatchState
       const incomingMap = {};
-      const combined = [...(publicLive || []), ...localActiveList, ...filteredFallbackData];
+      const combined = [...(publicLive || []), ...filteredFallbackData];
       combined.forEach((m) => {
         const s = (m?.status || '').toLowerCase();
         if (m && m.id && m.id !== 'M595473' && !completedMatchIds.has(m.id) && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active')) {
