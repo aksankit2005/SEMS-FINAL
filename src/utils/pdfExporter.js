@@ -475,7 +475,18 @@ export const exportToCSV = (arg1, arg2, arg3) => {
 
   if (rows.length === 0 && headers.length === 0) return;
 
-  const csvLines = [];
+  const escapeCsvCell = (val) => {
+    if (val === null || val === undefined) return '""';
+    const str = String(val).trim();
+    if (str.startsWith('="') && str.endsWith('"')) {
+      return str;
+    }
+    // Protect phone numbers (10+ digits or with +) and roll numbers (long digits) from scientific notation in Excel
+    if (/^\+?\d{10,}$/.test(str) || /^0\d{8,}$/.test(str)) {
+      return `="` + str.replace(/"/g, '""') + `"`;
+    }
+    return `"${str.replace(/"/g, '""')}"`;
+  };
 
   // Add Header Row
   if (headers && headers.length > 0) {
@@ -486,7 +497,7 @@ export const exportToCSV = (arg1, arg2, arg3) => {
   // Add Data Rows
   rows.forEach((row) => {
     if (Array.isArray(row)) {
-      const escapedValues = row.map((val) => `"${('' + (val ?? '')).replace(/"/g, '""')}"`);
+      const escapedValues = row.map((val) => escapeCsvCell(val));
       csvLines.push(escapedValues.join(','));
     }
   });

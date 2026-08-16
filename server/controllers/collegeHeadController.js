@@ -172,8 +172,8 @@ export const getStudents = async (req, res) => {
         m.mobile AS phone,
         m.email,
         m."isCaptain",
-        COALESCE(cr.sport_id, s.slug, s.name, 'sport') AS "sportId",
-        COALESCE(s.name, cr.sport_id, 'Sport') AS "sportName",
+        COALESCE(cr.sport_id, r."sportId", s.slug, s.name, 'sport') AS "sportId",
+        COALESCE(s.name, cr.sport_id, r."sportId", 'Sport') AS "sportName",
         COALESCE(cr.team_name, r."teamName", 'Individual') AS "teamName",
         COALESCE(cr.status, r.status::text, 'VERIFIED') AS status,
         COALESCE(cr.event_id, 'APEX-2026') AS "eventType",
@@ -181,7 +181,7 @@ export const getStudents = async (req, res) => {
       FROM registration_members m
       JOIN registrations r ON m."registrationId" = r.id
       LEFT JOIN college_registrations cr ON cr.registration_id = r.id
-      LEFT JOIN sports s ON s.id::text = r."sportId"::text OR s.slug = r."sportId" OR s.slug = cr.sport_id
+      LEFT JOIN sports s ON s.slug = r."sportId" OR s.slug = cr.sport_id OR s.name = r."sportId"
       LEFT JOIN colleges c ON c.id = r."collegeId"
       WHERE (
         LOWER(COALESCE(c.code, c.name, cr.college, '')) = LOWER($1) OR

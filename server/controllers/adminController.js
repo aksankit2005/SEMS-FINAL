@@ -151,8 +151,8 @@ export const getMasterParticipants = async (req, res) => {
         cr.id AS "receiptId",
         TO_CHAR(m."createdAt", 'HH:MI AM') AS time,
         TO_CHAR(m."createdAt", 'YYYY-MM-DD') AS date,
-        COALESCE(cr.sport_id, s.slug, s.name, 'sport') AS "sportId",
-        COALESCE(s.name, cr.sport_id, 'Sport') AS "sportName",
+        COALESCE(cr.sport_id, r."sportId", s.slug, s.name, 'sport') AS "sportId",
+        COALESCE(s.name, cr.sport_id, r."sportId", 'Sport') AS "sportName",
         COALESCE(cr.team_name, r."teamName", m."fullName") AS "teamName",
         COALESCE(cr.college, c.code, c.name, 'MPEC') AS college,
         m."fullName" AS name,
@@ -168,7 +168,7 @@ export const getMasterParticipants = async (req, res) => {
       FROM registration_members m
       JOIN registrations r ON m."registrationId" = r.id
       LEFT JOIN college_registrations cr ON cr.registration_id = r.id
-      LEFT JOIN sports s ON s.id::text = r."sportId"::text OR s.slug = r."sportId" OR s.slug = cr.sport_id
+      LEFT JOIN sports s ON s.slug = r."sportId" OR s.slug = cr.sport_id OR s.name = r."sportId"
       LEFT JOIN colleges c ON c.id = r."collegeId"
       ORDER BY m."createdAt" DESC
     `).catch((err) => {

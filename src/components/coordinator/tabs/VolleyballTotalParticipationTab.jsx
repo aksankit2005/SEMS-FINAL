@@ -1,67 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Trash2, FileDown, Users } from 'lucide-react';
+﻿import React, { useState, useEffect } from 'react';
+import { Search, FileDown, Users } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
-import { getMemberCaptainStatus } from '../../../utils/booleanHelper';
-
-const DEFAULT_VOLLEYBALL_PARTICIPANTS = [
-  {
-    id: 'REG-VOL-101',
-    timestamp: '16 Jul, 10:30 AM',
-    sport: 'Volleyball',
-    eventTitle: 'Volleyball Championship 2026',
-    teamName: 'MPCN&PS Volleys',
-    collegeName: 'MPCN&PS',
-    name: 'Sameer Khan',
-    captainName: 'Sameer Khan',
-    phone: '9876543210',
-    email: 'sameer.volleys@sems.edu'
-  },
-  {
-    id: 'REG-VOL-102',
-    timestamp: '16 Jul, 11:15 AM',
-    sport: 'Volleyball',
-    eventTitle: 'Volleyball Championship 2026',
-    teamName: 'MPCP Spikers',
-    collegeName: 'MPCP',
-    name: 'Vikas Dubey',
-    captainName: 'Vikas Dubey',
-    phone: '9876543211',
-    email: 'vikas.spikers@sems.edu'
-  },
-  {
-    id: 'REG-VOL-103',
-    timestamp: '16 Jul, 02:45 PM',
-    sport: 'Volleyball',
-    eventTitle: 'Womens Volleyball Tournament',
-    teamName: 'MIPS Smashers',
-    collegeName: 'MIPS',
-    name: 'Kavya Sen',
-    captainName: 'Kavya Sen',
-    phone: '9876543212',
-    email: 'kavya.smashers@sems.edu'
-  },
-  {
-    id: 'REG-VOL-104',
-    timestamp: '17 Jul, 09:30 AM',
-    sport: 'Volleyball',
-    eventTitle: 'Volleyball Championship 2026',
-    teamName: 'MPEC Blockers',
-    collegeName: 'MPEC',
-    name: 'Rohan Sharma',
-    captainName: 'Rohan Sharma',
-    phone: '9876543213',
-    email: 'rohan.blockers@sems.edu'
-  }
-];
+import { flattenRegistrationRoster } from '../../../utils/rosterHelper';
+import { exportToCSV } from '../../../utils/pdfExporter';
 
 export const VolleyballTotalParticipationTab = ({ user, globalSearch = '' }) => {
   const { addToast } = useToast();
   const [search, setSearch] = useState('');
-  const [participants, setParticipants] = useState([]);
+  const [registrations, setRegistrations] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const sportId = 'volleyball';
-  const participantsKey = `sems_participants_${sportId}`;
   const sportName = 'Volleyball';
 
   const loadData = async () => {
@@ -70,24 +19,11 @@ export const VolleyballTotalParticipationTab = ({ user, globalSearch = '' }) => 
       const volData = (data || []).filter((d) => 
         !d.sport || d.sport.toLowerCase().includes('volleyball') || d.eventTitle?.toLowerCase().includes('volleyball')
       );
-
-      if (volData && volData.length > 0) {
-        setParticipants(volData);
-      } else {
-        const saved = localStorage.getItem(participantsKey);
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            setParticipants(Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_VOLLEYBALL_PARTICIPANTS);
-          } catch (e) {
-            setParticipants(DEFAULT_VOLLEYBALL_PARTICIPANTS);
-          }
-        } else {
-          setParticipants(DEFAULT_VOLLEYBALL_PARTICIPANTS);
-        }
-      }
+      setRegistrations(volData);
     } catch (e) {
-      setParticipants(DEFAULT_VOLLEYBALL_PARTICIPANTS);
+      console.error('Failed to load volleyball registrations:', e);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -97,68 +33,20 @@ export const VolleyballTotalParticipationTab = ({ user, globalSearch = '' }) => 
     return () => clearInterval(interval);
   }, [user]);
 
-  const handleClearParticipants = async () => {
-    if (window.confirm('Clear all volleyball participant data from storage?')) {
-      setParticipants([]);
-      localStorage.removeItem(participantsKey);
-      localStorage.removeItem('sems_participants_volleyball');
-      addToast('All volleyball participant data cleared', 'warning');
-    }
-  };
+  const flattenedAthletes = flattenRegistrationRoster(registrations, { defaultSport: sportName });
 
-  const filtered = participants.filter((p) => {
+  const filtered = flattenedAthletes.filter((p) => {
     const activeSearch = (search || globalSearch || '').toLowerCase().trim();
     if (!activeSearch) return true;
 
-    const teamName = p.teamName || p.college || p.name || '';
-    const collegeName = p.collegeName || p.college || p.player1?.college || '';
-    const personName = p.name || p.captainName || p.leaderName || p.player1?.name || p.studentName || '';
-    const phone = p.phone || p.mobile || p.player1?.phone || '';
-    const email = p.email || p.player1?.email || '';
-
     return (
-      teamName.toLowerCase().includes(activeSearch) ||
-      collegeName.toLowerCase().includes(activeSearch) ||
-      personName.toLowerCase().includes(activeSearch) ||
-      phone.toLowerCase().includes(activeSearch) ||
-      email.toLowerCase().includes(activeSearch)
+      (p.name && p.name.toLowerCase().includes(activeSearch)) ||
+      (p.teamName && p.teamName.toLowerCase().includes(activeSearch)) ||
+      (p.collegeName && p.collegeName.toLowerCase().includes(activeSearch)) ||
+      (p.rollNo && p.rollNo.toLowerCase().includes(activeSearch)) ||
+      (p.phone && p.phone.toLowerCase().includes(activeSearch)) ||
+      (p.email && p.email.toLowerCase().includes(activeSearch))
     );
-  });
-
-  const flattenedAthletes = [];
-  filtered.forEach((p) => {
-    if (Array.isArray(p.members) && p.members.length > 0) {
-      p.members.forEach((m, mIdx) => {
-        const isCap = getMemberCaptainStatus(m, mIdx, p.members);
-        flattenedAthletes.push({
-          id: `${p.id}_m_${m.id || mIdx}`,
-          timestamp: p.timestamp || p.registeredAt || 'N/A',
-          sport: p.sport || sportName,
-          teamName: p.teamName || p.name || 'Team',
-          collegeName: p.collegeName || p.college || 'N/A',
-          name: m.fullName || m.name || (mIdx === 0 ? (p.name || p.captainName || p.studentName) : `Player ${mIdx + 1}`),
-          rollNo: m.rollNo || m.roll || 'N/A',
-          phone: m.mobile || m.phone || (mIdx === 0 ? (p.phone || p.mobile) : 'N/A'),
-          email: m.email || (mIdx === 0 ? p.email : 'N/A'),
-          isCaptain: isCap,
-          role: isCap ? 'Captain' : 'Player'
-        });
-      });
-    } else {
-      flattenedAthletes.push({
-        id: p.id,
-        timestamp: p.timestamp || p.registeredAt || 'N/A',
-        sport: p.sport || sportName,
-        teamName: p.teamName || p.name || 'Team',
-        collegeName: p.collegeName || p.college || 'N/A',
-        name: p.name || p.captainName || p.player1?.name || p.studentName || 'N/A',
-        rollNo: p.roll || p.enrollmentNo || 'N/A',
-        phone: p.phone || p.mobile || p.player1?.phone || 'N/A',
-        email: p.email || p.player1?.email || 'N/A',
-        isCaptain: true,
-        role: 'Captain'
-      });
-    }
   });
 
   const handleExportExcel = () => {
@@ -167,130 +55,154 @@ export const VolleyballTotalParticipationTab = ({ user, globalSearch = '' }) => 
       return;
     }
 
-    const escapeCsv = (str) => `"${String(str || '').replace(/"/g, '""')}"`;
-    const headers = ['Time', 'Game Name', 'Team Name', 'College Name', 'Player Name', 'Role', 'Roll No', 'Mobile No', 'Email'];
-    const rows = flattenedAthletes.map((p) => {
-      return [
-        escapeCsv(p.timestamp || 'N/A'),
-        escapeCsv(p.sport || sportName),
-        escapeCsv(p.teamName || 'Team'),
-        escapeCsv(p.collegeName || 'N/A'),
-        escapeCsv(p.name || 'N/A'),
-        escapeCsv(p.role || 'Player'),
-        escapeCsv(p.rollNo || 'N/A'),
-        escapeCsv(p.phone || 'N/A'),
-        escapeCsv(p.email || 'N/A')
-      ];
-    });
+    const exportData = flattenedAthletes.map((p, idx) => ({
+      'S.No.': idx + 1,
+      'Registration ID': p.registrationId || 'N/A',
+      'Timestamp': p.timestamp || 'N/A',
+      'Game Name': p.sport || sportName,
+      'Team Name': p.teamName || 'Individual',
+      'College Name': p.collegeName || 'N/A',
+      'Player Name': p.name || 'N/A',
+      'Role': p.role || (p.isCaptain ? 'Captain' : 'Player'),
+      'Roll No': p.rollNo || 'N/A',
+      'Mobile No': p.phone || 'N/A',
+      'Email': p.email || 'N/A',
+      'Gender': p.gender || 'Male',
+      'Course': p.course || 'N/A',
+      'Year / Semester': p.yearSemester || 'N/A',
+      'Status': p.status || 'VERIFIED'
+    }));
 
-    const csvContent = [headers.map(escapeCsv).join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `Volleyball_All_Participants_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    addToast('Volleyball roster exported to CSV successfully!', 'success');
+    exportToCSV(exportData, `Volleyball_Official_Roster_${new Date().toISOString().split('T')[0]}`);
+    addToast('Volleyball official roster exported to CSV successfully!', 'success');
   };
 
   return (
-    <div className="space-y-6 text-slate-900 dark:text-slate-200 animate-fade-in font-sans">
-      <div className="p-6 rounded-3xl bg-white dark:bg-[#0B0F17] border border-slate-200 dark:border-slate-800 space-y-6 shadow-soft">
-        
-        {/* Header Bar */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-orange-500/10 text-orange-500">
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-black text-slate-900 dark:text-white">
-                {sportName} Registered Participants Roster
-              </h3>
-              <p className="text-xs font-semibold text-slate-500">
-                Total Athletes: <span className="text-orange-500 font-black">{flattenedAthletes.length}</span> ({filtered.length} Teams)
-              </p>
-            </div>
+    <div className="space-y-6">
+      {/* HEADER STATS & SUMMARY */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
+        <div>
+          <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+            <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <span>Volleyball Total Participants</span>
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Authoritative database roster with every registered student athlete and verified team captain.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="px-3.5 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-300 text-xs font-black">
+            Total Athletes: {flattenedAthletes.length}
+          </div>
+          <div className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold">
+            Registered Teams: {registrations.length}
+          </div>
+        </div>
+      </div>
+
+      {/* FILTER & EXPORT BAR */}
+      <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="relative w-full sm:max-w-md">
+            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search athlete, team, roll no, college, mobile..."
+              className="w-full pl-10 pr-4 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <button
               onClick={handleExportExcel}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-orange-600 hover:bg-orange-500 text-white font-black text-xs shadow-lg shadow-orange-500/20 transition flex items-center justify-center gap-2 cursor-pointer"
+              className="px-4 py-2 rounded-xl text-white text-xs font-black bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0"
             >
               <FileDown className="w-4 h-4" />
-              <span>Export CSV / Excel</span>
+              <span>Export Official CSV</span>
             </button>
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search team name, college, player name, phone or email..."
-            className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
-          />
-        </div>
-
-        {/* Table */}
-        <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+        {/* ATHLETE ROSTER TABLE */}
+        <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 dark:bg-[#111827] border-b border-slate-200 dark:border-slate-800 text-[10px] font-bold uppercase text-slate-500 tracking-wider">
-                <th className="p-3.5">Time</th>
-                <th className="p-3.5">Game Name</th>
-                <th className="p-3.5">Team Name</th>
-                <th className="p-3.5">College Name</th>
-                <th className="p-3.5">Player Name & Role</th>
-                <th className="p-3.5">Roll No</th>
-                <th className="p-3.5">Mobile No</th>
-                <th className="p-3.5">Email</th>
+              <tr className="border-b border-slate-200 dark:border-slate-800 text-[11px] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider bg-slate-50/50 dark:bg-slate-950/50">
+                <th className="p-4">Time</th>
+                <th className="p-4">Game / Sport</th>
+                <th className="p-4">Team Name</th>
+                <th className="p-4">College Name</th>
+                <th className="p-4">Player Name</th>
+                <th className="p-4">Roll No</th>
+                <th className="p-4">Mobile No</th>
+                <th className="p-4">Email & Academic</th>
+                <th className="p-4 text-right">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-xs font-medium">
-              {flattenedAthletes.length === 0 ? (
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs">
+              {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-12 text-center text-slate-400 font-mono">
-                    No participants found.
+                  <td colSpan={9} className="p-12 text-center text-slate-400 dark:text-slate-500 font-mono text-xs">
+                    {loading ? 'Loading participants from database...' : 'No registered Volleyball student athletes found in database.'}
                   </td>
                 </tr>
               ) : (
-                flattenedAthletes.map((p, idx) => (
-                  <tr key={p.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition">
-                    <td className="p-3.5 font-mono text-slate-500">{p.timestamp || 'N/A'}</td>
-                    <td className="p-3.5 font-bold text-orange-600 dark:text-orange-400">{p.sport}</td>
-                    <td className="p-3.5 font-black text-slate-900 dark:text-white">{p.teamName}</td>
-                    <td className="p-3.5 text-slate-600 dark:text-slate-300">{p.collegeName}</td>
-                    <td className="p-3.5 font-bold text-slate-800 dark:text-slate-200">
+                filtered.map((p, idx) => (
+                  <tr key={p.id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                    <td className="p-4 text-slate-600 dark:text-slate-400 font-mono text-xs whitespace-nowrap">
+                      {p.timestamp}
+                    </td>
+                    <td className="p-4 whitespace-nowrap">
+                      <span className="px-2.5 py-0.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold text-[11px]">
+                        Volleyball
+                      </span>
+                    </td>
+                    <td className="p-4 font-black text-slate-900 dark:text-white whitespace-nowrap">
+                      {p.teamName || 'Individual'}
+                    </td>
+                    <td className="p-4 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                      {p.collegeName}
+                    </td>
+                    <td className="p-4 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
-                        <span>{p.name}</span>
+                        <span className="font-extrabold text-slate-900 dark:text-white">{p.name}</span>
                         {p.isCaptain ? (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                          <span className="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                             Captain
                           </span>
                         ) : (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-slate-100 dark:bg-slate-800 text-slate-500">
+                          <span className="px-1.5 py-0.2 rounded text-[8px] font-bold uppercase bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                             Player
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="p-3.5 font-mono text-slate-600 dark:text-slate-400">{p.rollNo || 'N/A'}</td>
-                    <td className="p-3.5 font-mono text-slate-600 dark:text-slate-400">{p.phone}</td>
-                    <td className="p-3.5 font-mono text-slate-500">{p.email}</td>
+                    <td className="p-4 font-mono font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                      {p.rollNo && p.rollNo !== 'N/A' ? p.rollNo : '—'}
+                    </td>
+                    <td className="p-4 font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                      {p.phone}
+                    </td>
+                    <td className="p-4 whitespace-nowrap text-slate-600 dark:text-slate-400">
+                      <div className="font-mono text-[11px]">{p.email}</div>
+                      <div className="text-[10px] text-slate-400">
+                        {p.course && p.course !== 'N/A' ? p.course : ''} {p.yearSemester && p.yearSemester !== 'N/A' ? `• ${p.yearSemester}` : ''}
+                      </div>
+                    </td>
+                    <td className="p-4 text-right whitespace-nowrap">
+                      <span className="px-2.5 py-0.5 text-[10px] font-bold rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase">
+                        {p.status || 'VERIFIED'}
+                      </span>
+                    </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
         </div>
-
       </div>
     </div>
   );

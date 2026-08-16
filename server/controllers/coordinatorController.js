@@ -1056,14 +1056,13 @@ export const getDashboardStats = async (req, res) => {
 
 export const getRegistrations = async (req, res) => {
   try {
-    const sportId = (req.user.assignedSport || '').toLowerCase();
+    const sportId = (req.user?.assignedSport || req.user?.sportName || '').toLowerCase();
     const cleanSportId = sportId.replace(/_/g, '-');
-    const baseSportId = sportId.split('-')[0].split('_')[0]; // e.g. "badminton"
+    const baseSportId = cleanSportId.split('-')[0].split('_')[0]; // e.g. "badminton"
 
     // 1. Direct Raw SQL QueryDb from college_registrations
     try {
-      const sqlRes = await queryDb(
-        `SELECT 
+      let sql = `SELECT 
           id, registration_id AS "registrationId", event_id AS "eventId",
           sport_id AS "sportId", student_name AS "studentName", team_name AS "teamName",
           college, department, '' AS "enrollmentNo", email, phone, gender,
@@ -1071,11 +1070,16 @@ export const getRegistrations = async (req, res) => {
           payment_id AS "paymentId", payment_status AS "paymentStatus",
           participant_data AS "participantData",
           created_at AS "createdAt"
-         FROM college_registrations
-         WHERE LOWER(sport_id) LIKE $1 OR LOWER(sport_id) LIKE $2 OR LOWER(sport_id) LIKE $3
-         ORDER BY created_at DESC`,
-        [`%${sportId}%`, `%${cleanSportId}%`, `%${baseSportId}%`]
-      );
+         FROM college_registrations`;
+      let params = [];
+
+      if (sportId && sportId !== 'all') {
+        sql += ` WHERE LOWER(sport_id) LIKE $1 OR LOWER(sport_id) LIKE $2 OR LOWER(sport_id) LIKE $3`;
+        params = [`%${sportId}%`, `%${cleanSportId}%`, `%${baseSportId}%`];
+      }
+      sql += ` ORDER BY created_at DESC`;
+
+      const sqlRes = await queryDb(sql, params);
 
       if (sqlRes && sqlRes.rows && sqlRes.rows.length > 0) {
         const formatted = await Promise.all(
@@ -1206,8 +1210,23 @@ export const getRegistrations = async (req, res) => {
         let members = [];
         try {
           members = await prisma.registrationMember.findMany({
-            where: { registration: { id: r.id } }
+            where: {
+              OR: [
+                { registrationId: r.registrationId || r.id },
+                { registration: { id: r.id } }
+              ]
+            },
+            orderBy: [
+              { isCaptain: 'desc' },
+              { createdAt: 'asc' }
+            ]
           });
+          if (members && members.length > 0) {
+            members = members.map((m) => ({
+              ...m,
+              isCaptain: (m.isCaptain === true || m.isCaptain === 1 || m.isCaptain === 'true' || m.isCaptain === '1')
+            }));
+          }
         } catch (e) { }
 
         const player1 = members[0] ? {
