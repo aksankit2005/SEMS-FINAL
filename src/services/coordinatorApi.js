@@ -670,84 +670,27 @@ export const coordinatorApi = {
   },
 
 
-  // Get Registrations directly from PostgreSQL database via Backend API with localStorage merge
+  // Fetch all registrations from backend server PostgreSQL DB
   async getRegistrations() {
     const user = this.getCurrentUser();
-    if (!user) return [];
+    const sportKey = resolveSportKey(user?.assignedSport || 'badminton');
 
-    const sportKey = resolveSportKey(user.assignedSport || '');
-    let deletedSet = new Set();
-    try {
-      const deletedArr = JSON.parse(localStorage.getItem('sems_deleted_registration_ids') || '[]');
-      deletedSet = new Set(deletedArr);
-    } catch (e) { }
-
-    let serverRegs = [];
     try {
       const res = await api.get('/coordinator/registrations');
       if (res.data && Array.isArray(res.data)) {
-        serverRegs = res.data.filter(r => {
-          if (!r) return false;
-          const rKey = resolveSportKey(r.sportId || r.sportName || r.sport || '');
-          return !rKey || rKey === sportKey;
-        });
+        return res.data;
       }
     } catch (e) {
-      console.warn('Backend registrations API fallback to localStorage:', e);
+      console.warn('Backend getRegistrations error:', e.message);
     }
 
     const key = `sems_participants_${sportKey}`;
-    let localParticipantRegs = [];
     try {
       const saved = localStorage.getItem(key);
-      if (saved) localParticipantRegs = JSON.parse(saved);
-    } catch (e) { }
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
 
-    let userGlobalRegs = [];
-    try {
-      const savedUserRegs = localStorage.getItem('sems_registrations');
-      if (savedUserRegs) userGlobalRegs = JSON.parse(savedUserRegs);
-    } catch (e) { }
-
-    const filteredUserRegs = userGlobalRegs.filter(r => {
-      if (!r) return false;
-      const rKey = resolveSportKey(r.sportId || r.sportName || r.sport || '');
-      return rKey === sportKey;
-    });
-
-    const uniqueMap = new Map();
-
-    // 1. Seed mock data if empty for Badminton
-    if (sportKey === 'badminton' && localParticipantRegs.length === 0 && filteredUserRegs.length === 0 && serverRegs.length === 0) {
-      MOCK_BADMINTON_PARTICIPANTS.forEach(p => {
-        if (!deletedSet.has(p.id)) uniqueMap.set(p.id, p);
-      });
-    }
-
-    // 2. Local participant registrations
-    if (Array.isArray(localParticipantRegs)) {
-      localParticipantRegs.forEach(r => {
-        if (r && r.id && !deletedSet.has(r.id)) uniqueMap.set(r.id, r);
-      });
-    }
-
-    // 3. User global registrations
-    filteredUserRegs.forEach(r => {
-      if (r && r.id && !deletedSet.has(r.id)) {
-        const existing = uniqueMap.get(r.id) || {};
-        uniqueMap.set(r.id, { ...existing, ...r });
-      }
-    });
-
-    // 4. Backend Server Registrations
-    serverRegs.forEach(r => {
-      if (r && r.id && !deletedSet.has(r.id)) {
-        const existing = uniqueMap.get(r.id) || {};
-        uniqueMap.set(r.id, { ...existing, ...r });
-      }
-    });
-
-    return Array.from(uniqueMap.values());
+    return [];
   },
 
   // Save registrations array to localStorage
@@ -762,11 +705,41 @@ export const coordinatorApi = {
     window.dispatchEvent(new Event('storage'));
   },
 
-  // Create registration and persist to server + localStorage
+  // Create registration and persist to backend server PostgreSQL DB
   async createRegistration(regData) {
     const sportKey = resolveSportKey(regData.sportId || regData.sportName || regData.sport || 'badminton');
-    const key = `sems_participants_${sportKey}`;
 
+    try {
+      const res = await api.post('/public/register-event', {
+        eventId: regData.eventId || 'DEFAULT',
+        sportId: sportKey,
+        participantData: {
+          fullName: regData.studentName || regData.name || regData.fullName || 'Athlete',
+          fatherName: regData.fatherName || 'N/A',
+          collegeName: regData.college || 'MPEC',
+          department: regData.department || regData.branch || 'Engineering',
+          email: regData.email || 'athlete@sems.edu',
+          phone: regData.phone || regData.mobile || '+91 98765 43210',
+          gender: regData.gender || 'Male',
+          emergencyContact: regData.emergencyContact || '+91 98765 43211',
+          entryFee: regData.feePaid || 0,
+          teamName: regData.teamName || null,
+          roster: regData.roster || regData.members || []
+        },
+        paymentData: {
+          razorpayPaymentId: regData.paymentId || `TXN-RP-${Math.floor(100000000000 + Math.random() * 900000000000)}`
+        }
+      });
+
+      if (res.data && res.data.receipt) {
+        window.dispatchEvent(new Event('sems_registrations_updated'));
+        return res.data.receipt;
+      }
+    } catch (e) {
+      console.warn('Backend register-event error:', e?.response?.data || e.message);
+    }
+
+    const key = `sems_participants_${sportKey}`;
     let currentParticipants = [];
     try {
       const saved = localStorage.getItem(key);
@@ -775,15 +748,7 @@ export const coordinatorApi = {
 
     const updatedParticipants = [regData, ...currentParticipants.filter(r => r.id !== regData.id)];
     localStorage.setItem(key, JSON.stringify(updatedParticipants));
-
-    try {
-      await api.post('/coordinator/registrations', regData);
-    } catch (e) {
-      console.warn('Backend createRegistration fallback:', e);
-    }
-
     window.dispatchEvent(new Event('sems_registrations_updated'));
-    window.dispatchEvent(new Event('storage'));
     return regData;
   },
 
