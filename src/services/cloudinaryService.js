@@ -1,52 +1,36 @@
 import axios from 'axios';
-
-// Cloudinary Configuration Credentials
-export const CLOUDINARY_CONFIG = {
-  cloudName: localStorage.getItem('sems_cloudinary_cloud') || 'lnrkt6qp',
-  apiKey: '996182763949582',
-  apiSecret: 'qKiT0FnkGNvtjBveU3Tu_psg2QI',
-  uploadPreset: localStorage.getItem('sems_cloudinary_preset') || 'ml_default',
-};
-
-// Generates SHA-1 signature for authenticated Cloudinary upload using Web Crypto API
-const generateCloudinarySignature = async (timestamp, apiSecret) => {
-  const strToSign = `timestamp=${timestamp}${apiSecret}`;
-  const msgBuffer = new TextEncoder().encode(strToSign);
-  const hashBuffer = await crypto.subtle.digest('SHA-1', msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-};
+import { galleryApi } from './galleryApi';
 
 /**
- * Directly uploads an image or video file from computer to Cloudinary using Signed Authentication.
- * Guaranteed to upload into Cloudinary Media Library without preset errors.
+ * Uploads an image or video file to Cloudinary using backend-signed authentication.
+ * Never exposes the Cloudinary API Secret to the client browser.
  * @param {File} file - The file object from <input type="file">
  * @param {Function} onProgress - Callback receiving (progressPercent: number)
- * @returns {Promise<{ url: string, public_id: string, resource_type: string }>}
+ * @param {string} folder - Custom Cloudinary folder name
+ * @returns {Promise<{ url: string, public_id: string, resource_type: string, bytes?: number }>}
  */
-export const uploadFileToCloudinary = async (file, onProgress = () => { }) => {
+export const uploadFileToCloudinary = async (file, onProgress = () => { }, folder = 'sems_gallery') => {
   if (!file) throw new Error('No file selected for upload.');
-
-  const cloudName = localStorage.getItem('sems_cloudinary_cloud') || CLOUDINARY_CONFIG.cloudName;
-  const apiKey = CLOUDINARY_CONFIG.apiKey;
-  const apiSecret = CLOUDINARY_CONFIG.apiSecret;
 
   const isVideo = file.type.startsWith('video/');
   const resourceType = isVideo ? 'video' : 'image';
+
+  // 1. Obtain authenticated upload signature from backend
+  const authData = await galleryApi.getCloudinarySignature(folder);
+  const { signature, timestamp, apiKey, cloudName, folder: targetFolder } = authData;
+
   const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
 
-  const timestamp = Math.floor(Date.now() / 1000);
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('api_key', apiKey);
+  formData.append('timestamp', timestamp.toString());
+  formData.append('signature', signature);
+  if (targetFolder) {
+    formData.append('folder', targetFolder);
+  }
 
   try {
-    // 1. Try Signed Authenticated Upload (Uses API Key + API Secret SHA-1 Signature)
-    const signature = await generateCloudinarySignature(timestamp, apiSecret);
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('api_key', apiKey);
-    formData.append('timestamp', timestamp.toString());
-    formData.append('signature', signature);
-
     const response = await axios.post(uploadUrl, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       onUploadProgress: (progressEvent) => {
@@ -57,8 +41,6 @@ export const uploadFileToCloudinary = async (file, onProgress = () => { }) => {
       },
     });
 
-    console.log('✅ Authenticated Cloudinary Upload Success:', response.data.secure_url);
-
     return {
       url: response.data.secure_url || response.data.url,
       public_id: response.data.public_id,
@@ -66,50 +48,21 @@ export const uploadFileToCloudinary = async (file, onProgress = () => { }) => {
       format: response.data.format,
       bytes: response.data.bytes,
     };
-  } catch (signedErr) {
-    console.warn('Signed Cloudinary upload failed, attempting unsigned presets...', signedErr.response?.data?.error?.message || signedErr.message);
-
-    // 2. Unsigned Preset Fallback
-    const presetsToTry = ['ml_default', 'lnrkt6qp', 'unsigned_preset', 'sems_preset'];
-    for (const preset of presetsToTry) {
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', preset);
-        formData.append('api_key', apiKey);
-
-        const response = await axios.post(uploadUrl, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-          onUploadProgress: (progressEvent) => {
-            if (progressEvent.total) {
-              const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-              onProgress(percentCompleted);
-            }
-          },
-        });
-
-        return {
-          url: response.data.secure_url || response.data.url,
-          public_id: response.data.public_id,
-          resource_type: response.data.resource_type || resourceType,
-        };
-      } catch (presetErr) {
-        // try next
-      }
-    }
-
-    const errMsg = signedErr.response?.data?.error?.message || 'Cloudinary upload failed.';
-    throw new Error(errMsg);
+  } catch (err) {
+    const errMsg = err.response?.data?.error?.message || err.message || 'Cloudinary upload failed.';
+    console.error('Cloudinary Upload Error:', errMsg);
+    throw new Error(`Upload Failed: ${errMsg}`);
   }
 };
 
 /**
- * Uploads multiple files (images/videos) in batch to Cloudinary using Signed Authentication
+ * Uploads multiple files (images/videos) in batch to Cloudinary using signed authentication
  * @param {File[]} files - Array of File objects
- * @param {Function} onBatchProgress - Callback receiving ({ completedCount, totalCount, currentPercent })
- * @returns {Promise<Array<{ url: string, resource_type: string, fileOriginalName: string }>>}
+ * @param {Function} onBatchProgress - Callback receiving ({ completedCount, totalCount, currentPercent, currentFileName, overallPercent })
+ * @param {string} folder - Custom Cloudinary folder name
+ * @returns {Promise<Array<{ url: string, public_id: string, resource_type: string, fileOriginalName: string }>>}
  */
-export const uploadMultipleFilesToCloudinary = async (files, onBatchProgress = () => { }) => {
+export const uploadMultipleFilesToCloudinary = async (files, onBatchProgress = () => { }, folder = 'sems_gallery') => {
   if (!files || files.length === 0) return [];
 
   const results = [];
@@ -126,10 +79,11 @@ export const uploadMultipleFilesToCloudinary = async (files, onBatchProgress = (
         filePercent,
         overallPercent: Math.round(((i + filePercent / 100) / totalCount) * 100),
       });
-    });
+    }, folder);
 
     results.push({
       url: uploadRes.url,
+      public_id: uploadRes.public_id,
       resource_type: uploadRes.resource_type,
       fileOriginalName: file.name,
     });

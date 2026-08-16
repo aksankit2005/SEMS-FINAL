@@ -32,17 +32,20 @@ CREATE TABLE events (
   event_name VARCHAR(255) NOT NULL,
   event_date DATE NOT NULL,
   cover_image TEXT NOT NULL,
+  public_id VARCHAR(255),
   description TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Media Table (Photos & Videos)
 CREATE TABLE media (
   id SERIAL PRIMARY KEY,
   event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-  media_type VARCHAR(20) NOT NULL CHECK (media_type IN ('image', 'video')),
+  media_type VARCHAR(20) NOT NULL,
   title VARCHAR(255) NOT NULL,
   media_url TEXT NOT NULL,
+  public_id VARCHAR(255),
   uploaded_by VARCHAR(255) DEFAULT 'PR Coordinator',
   uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

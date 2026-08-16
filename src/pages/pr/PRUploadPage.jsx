@@ -140,9 +140,6 @@ export const PRUploadPage = () => {
       });
 
       try {
-        localStorage.setItem('sems_cloudinary_cloud', cloudNameInput);
-        localStorage.setItem('sems_cloudinary_preset', presetInput);
-
         showToast(`Starting batch upload of ${selectedFiles.length} file(s) to Cloudinary...`, 'info');
 
         const uploadedResults = await uploadMultipleFilesToCloudinary(
@@ -156,10 +153,10 @@ export const PRUploadPage = () => {
               overallPercent: progress.overallPercent || 0,
             });
           },
-          presetInput
+          'sems_gallery'
         );
 
-        // Save each uploaded item to the database/API
+        // Save each uploaded item to the database/API with its public_id
         for (let i = 0; i < uploadedResults.length; i++) {
           const item = uploadedResults[i];
 
@@ -178,6 +175,7 @@ export const PRUploadPage = () => {
             media_type: item.resource_type === 'video' ? 'video' : 'image',
             title: mediaTitle,
             media_url: item.url,
+            public_id: item.public_id || null,
           });
         }
 

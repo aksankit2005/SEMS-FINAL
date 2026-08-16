@@ -611,6 +611,7 @@ model MediaEvent {
   eventName   String   @map("event_name")
   eventDate   DateTime @map("event_date")
   coverImage  String   @map("cover_image")
+  publicId    String?  @map("public_id")
   description String?  @default("")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -627,6 +628,7 @@ model Media {
   mediaType  MediaType @map("media_type")
   title      String
   mediaUrl   String    @map("media_url")
+  publicId   String?   @map("public_id")
   uploadedBy String?   @map("uploaded_by")
   uploadedAt DateTime  @default(now()) @map("uploaded_at")
 
