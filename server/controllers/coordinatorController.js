@@ -42,7 +42,8 @@ export const coordinatorLogin = async (req, res) => {
     let isValid = false;
     if (user.password_hash) {
       isValid = await bcrypt.compare(password, user.password_hash);
-    } else {
+    }
+    if (!isValid) {
       const expectedPassword = coordinatorPasswords[userKey];
       isValid = expectedPassword && password === expectedPassword;
     }
@@ -304,8 +305,8 @@ export const createMatch = async (req, res) => {
   };
 
   await queryDb(
-    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, details, sets_history, current_set, sets_won1, sets_won2)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, details, sets_history, current_set, sets_won1, sets_won2, updated_at, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
      ON CONFLICT (id) DO UPDATE SET
        format = EXCLUDED.format, status = EXCLUDED.status, team1 = EXCLUDED.team1, team2 = EXCLUDED.team2,
        match_title = EXCLUDED.match_title, table_number = EXCLUDED.table_number, time = EXCLUDED.time,
@@ -317,7 +318,8 @@ export const createMatch = async (req, res) => {
        sets_history = EXCLUDED.sets_history,
        current_set = EXCLUDED.current_set,
        sets_won1 = EXCLUDED.sets_won1,
-       sets_won2 = EXCLUDED.sets_won2`,
+       sets_won2 = EXCLUDED.sets_won2,
+       updated_at = CURRENT_TIMESTAMP`,
     [
       newMatch.id,
       newMatch.sportId,
@@ -728,36 +730,52 @@ export const updateMatchScore = async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
   const { id } = req.params;
 
-  if (!inMemoryCoordinatorMatches[sportId]) {
-    inMemoryCoordinatorMatches[sportId] = [];
-  }
-  const list = inMemoryCoordinatorMatches[sportId];
-
-  let match = list.find((m) => m.id === id);
-  if (!match) {
-    match = {
-      id,
-      format: req.body.format || 'SINGLES',
-      status: req.body.status || 'running',
-      team1: req.body.team1 || 'Team A',
-      team2: req.body.team2 || 'Team B',
-      matchTitle: req.body.matchTitle || `${req.body.team1} vs ${req.body.team2}`,
-      tableNumber: req.body.venue || req.body.tableNumber || 'Table 1',
-      score1: req.body.score1 || 0,
-      score2: req.body.score2 || 0,
-      createdAt: new Date().toISOString(),
-    };
-    list.unshift(match);
+  let existing = null;
+  try {
+    const dbRes = await queryDb('SELECT * FROM live_matches WHERE id = $1', [id]);
+    if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+      existing = dbRes.rows[0];
+    }
+  } catch (e) {
+    console.warn('updateMatchScore DB select error:', e.message);
   }
 
+  let match = existing ? {
+    id: existing.id,
+    sportId: existing.sport_id,
+    format: existing.format || 'SINGLES',
+    status: req.body.status || existing.status || 'running',
+    team1: existing.team1,
+    team2: existing.team2,
+    matchTitle: existing.match_title,
+    tableNumber: req.body.venue || req.body.tableNumber || existing.table_number || 'Table 1',
+    score1: req.body.score1 !== undefined ? Number(req.body.score1) : Number(existing.score1 || 0),
+    score2: req.body.score2 !== undefined ? Number(req.body.score2) : Number(existing.score2 || 0),
+    setsHistory: existing.sets_history,
+    currentSet: existing.current_set || 1,
+    setsWon1: existing.sets_won1 || 0,
+    setsWon2: existing.sets_won2 || 0,
+  } : {
+    id,
+    sportId,
+    format: req.body.format || 'SINGLES',
+    status: req.body.status || 'running',
+    team1: req.body.team1 || 'Team A',
+    team2: req.body.team2 || 'Team B',
+    matchTitle: req.body.matchTitle || `${req.body.team1 || 'Team A'} vs ${req.body.team2 || 'Team B'}`,
+    tableNumber: req.body.venue || req.body.tableNumber || 'Table 1',
+    score1: Number(req.body.score1 || 0),
+    score2: Number(req.body.score2 || 0),
+  };
+
+  if (req.body.team1 !== undefined) match.team1 = req.body.team1;
+  if (req.body.team2 !== undefined) match.team2 = req.body.team2;
+  if (req.body.matchTitle !== undefined) match.matchTitle = req.body.matchTitle;
   if (req.body.score1 !== undefined) match.score1 = Number(req.body.score1);
   if (req.body.score2 !== undefined) match.score2 = Number(req.body.score2);
   if (req.body.status !== undefined) match.status = req.body.status;
   if (req.body.venue !== undefined) match.tableNumber = req.body.venue;
   if (req.body.tableNumber !== undefined) match.tableNumber = req.body.tableNumber;
-  if (req.body.team1 !== undefined) match.team1 = req.body.team1;
-  if (req.body.team2 !== undefined) match.team2 = req.body.team2;
-  if (req.body.matchTitle !== undefined) match.matchTitle = req.body.matchTitle;
 
   const rawSetsHistory = req.body.setsHistory || match.setsHistory;
   const setsHistoryArr = Array.isArray(rawSetsHistory)
@@ -775,6 +793,7 @@ export const updateMatchScore = async (req, res) => {
   const setsWon2Val = req.body.setsWon2 !== undefined ? Number(req.body.setsWon2) : (match.setsWon2 || 0);
 
   const detailsObj = {
+    ...(existing?.details && typeof existing.details === 'object' ? existing.details : {}),
     setsHistory: setsHistoryArr,
     currentSet: currentSetVal,
     setsWon1: setsWon1Val,
@@ -802,6 +821,13 @@ export const updateMatchScore = async (req, res) => {
     );
   } catch (e) {
     console.warn('updateMatchScore DB update error:', e.message);
+  }
+
+  if (inMemoryCoordinatorMatches[sportId]) {
+    const idx = inMemoryCoordinatorMatches[sportId].findIndex(m => m.id === id);
+    if (idx >= 0) {
+      inMemoryCoordinatorMatches[sportId][idx] = { ...inMemoryCoordinatorMatches[sportId][idx], ...match };
+    }
   }
 
   await syncMatchToMatchesTable(match);
@@ -975,10 +1001,38 @@ export const getDashboardStats = async (req, res) => {
       }
     });
 
-    const sportMatches = inMemoryCoordinatorMatches[sportId] || [];
-    const runningMatches = sportMatches.filter((m) => m.status === 'running' || m.status === 'live').length;
-    const completedMatches = sportMatches.filter((m) => m.status === 'COMPLETED' || m.status === 'FINISHED').length;
-    const upcomingMatches = sportMatches.filter((m) => m.status === 'SCHEDULED').length;
+    let runningMatches = 0;
+    let completedMatches = 0;
+    let upcomingMatches = 0;
+    let totalMatches = 0;
+
+    try {
+      const matchCountsRes = await queryDb(
+        `SELECT LOWER(status) as status, COUNT(*) as count FROM live_matches WHERE LOWER(sport_id) = $1 GROUP BY LOWER(status)`,
+        [sportId]
+      );
+      if (matchCountsRes && matchCountsRes.rows) {
+        matchCountsRes.rows.forEach(r => {
+          const s = r.status;
+          const count = parseInt(r.count, 10) || 0;
+          totalMatches += count;
+          if (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active') {
+            runningMatches += count;
+          } else if (s === 'completed' || s === 'finished') {
+            completedMatches += count;
+          } else if (s === 'scheduled' || s === 'upcoming' || s === 'draft') {
+            upcomingMatches += count;
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('Error querying match counts for stats:', e.message);
+      const sportMatches = inMemoryCoordinatorMatches[sportId] || [];
+      runningMatches = sportMatches.filter((m) => m.status === 'running' || m.status === 'live').length;
+      completedMatches = sportMatches.filter((m) => m.status === 'COMPLETED' || m.status === 'FINISHED').length;
+      upcomingMatches = sportMatches.filter((m) => m.status === 'SCHEDULED').length;
+      totalMatches = sportMatches.length;
+    }
 
     return res.json({
       assignedSport: req.user.assignedSport,
@@ -992,7 +1046,7 @@ export const getDashboardStats = async (req, res) => {
       approvedTeams,
       pendingRegistrations,
       playersRegistered: registeredTeams,
-      totalMatches: sportMatches.length,
+      totalMatches,
     });
   } catch (err) {
     console.error('Error fetching coordinator dashboard stats:', err);

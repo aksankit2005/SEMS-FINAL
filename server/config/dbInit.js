@@ -195,6 +195,8 @@ export const initDatabaseSchema = async () => {
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won1 INT DEFAULT 0;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won2 INT DEFAULT 0;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`);
+    await queryDb(`ALTER TABLE live_matches ALTER COLUMN updated_at SET DEFAULT CURRENT_TIMESTAMP;`);
+    await queryDb(`ALTER TABLE live_matches ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP;`);
 
     // Backfill details JSONB for pre-existing rows where details IS NULL
     await queryDb(`
@@ -278,7 +280,25 @@ export const initDatabaseSchema = async () => {
       );
     `);
 
-    // 4. Seed user account tables and password hashes
+    // 4. Ensure college_leaderboards table exists
+    await queryDb(`
+      CREATE TABLE IF NOT EXISTS college_leaderboards (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        event_id UUID,
+        college_id UUID,
+        college_code VARCHAR(50) UNIQUE NOT NULL,
+        college_name VARCHAR(255) NOT NULL,
+        gold_count INT DEFAULT 0,
+        silver_count INT DEFAULT 0,
+        bronze_count INT DEFAULT 0,
+        total_points INT DEFAULT 0,
+        rank INT DEFAULT 0,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 5. Seed user account tables and password hashes
     await seedInitialAccountHashes();
 
   } catch (err) {

@@ -174,37 +174,65 @@ export const LiveMatchPortalPage = () => {
         return null;
       });
 
-      // Dynamic upcoming scheduled matches fetching
+      // Dynamic upcoming scheduled matches fetching (Database-first)
       const upcomingList = [];
-
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && (key.startsWith('sems_coord_matches_') || key.endsWith('MatchSchedules'))) {
-          try {
-            const list = JSON.parse(localStorage.getItem(key));
-            if (Array.isArray(list)) {
-              const sportId = key.replace('sems_coord_matches_', '').replace('MatchSchedules', '').toLowerCase();
-              list.forEach((m) => {
-                if (m && m.status !== 'COMPLETED' && m.status !== 'FINISHED' && m.status !== 'running' && m.status !== 'live' && !completedMatchIds.has(m.id)) {
-                  const t1 = typeof m.team1 === 'object' ? (m.team1?.name || '') : String(m.team1 || '').trim();
-                  const t2 = typeof m.team2 === 'object' ? (m.team2?.name || '') : String(m.team2 || '').trim();
-                  if (!t1 || !t2) return;
-                  if (!upcomingList.some((u) => u.id === m.id)) {
-                    upcomingList.push({
-                      id: m.id || `M-${Math.random()}`,
-                      sportId,
-                      matchTitle: m.matchTitle || `${t1} vs ${t2}`,
-                      team1: t1,
-                      team2: t2,
-                      venue: m.tableNumber || m.venue || 'Table 1',
-                      time: m.time || '10:00 AM',
-                      date: m.date || 'Today'
-                    });
-                  }
-                }
+      try {
+        const publicSchedules = await coordinatorApi.getPublicSchedules();
+        if (Array.isArray(publicSchedules)) {
+          publicSchedules.forEach((m) => {
+            const s = (m?.status || '').toLowerCase();
+            if (m && s !== 'completed' && s !== 'finished' && s !== 'running' && s !== 'live' && !completedMatchIds.has(m.id)) {
+              const t1 = typeof m.team1 === 'object' ? (m.team1?.name || '') : String(m.team1 || '').trim();
+              const t2 = typeof m.team2 === 'object' ? (m.team2?.name || '') : String(m.team2 || '').trim();
+              if (!t1 || !t2) return;
+              upcomingList.push({
+                id: m.id || `M-${Math.random()}`,
+                sportId: (m.sportId || 'badminton').toLowerCase(),
+                matchTitle: m.matchTitle || m.event || `${t1} vs ${t2}`,
+                team1: t1,
+                team2: t2,
+                venue: m.tableNumber || m.venue || 'Table 1',
+                time: m.time || '10:00 AM',
+                date: m.date || 'Today'
               });
             }
-          } catch (e) { }
+          });
+        }
+      } catch (err) {
+        console.warn('Could not fetch DB public schedules:', err);
+      }
+
+      // Offline / Local fallback if DB returned empty
+      if (upcomingList.length === 0) {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith('sems_coord_matches_') || key.endsWith('MatchSchedules'))) {
+            try {
+              const list = JSON.parse(localStorage.getItem(key));
+              if (Array.isArray(list)) {
+                const sportId = key.replace('sems_coord_matches_', '').replace('MatchSchedules', '').toLowerCase();
+                list.forEach((m) => {
+                  if (m && m.status !== 'COMPLETED' && m.status !== 'FINISHED' && m.status !== 'running' && m.status !== 'live' && !completedMatchIds.has(m.id)) {
+                    const t1 = typeof m.team1 === 'object' ? (m.team1?.name || '') : String(m.team1 || '').trim();
+                    const t2 = typeof m.team2 === 'object' ? (m.team2?.name || '') : String(m.team2 || '').trim();
+                    if (!t1 || !t2) return;
+                    if (!upcomingList.some((u) => u.id === m.id)) {
+                      upcomingList.push({
+                        id: m.id || `M-${Math.random()}`,
+                        sportId,
+                        matchTitle: m.matchTitle || `${t1} vs ${t2}`,
+                        team1: t1,
+                        team2: t2,
+                        venue: m.tableNumber || m.venue || 'Table 1',
+                        time: m.time || '10:00 AM',
+                        date: m.date || 'Today'
+                      });
+                    }
+                  }
+                });
+              }
+            } catch (e) { }
+          }
         }
       }
       setUpcomingMatches(upcomingList);

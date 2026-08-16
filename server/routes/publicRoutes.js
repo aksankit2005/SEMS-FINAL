@@ -2,6 +2,7 @@ import express from 'express';
 import { registerPublicEvent } from '../controllers/registrationController.js';
 import { getHeroSlidesDB } from '../controllers/adminController.js';
 import { getLeaderboardStandings } from '../services/leaderboardService.js';
+import { queryDb, prisma, pool } from '../config/db.js';
 
 const router = express.Router();
 

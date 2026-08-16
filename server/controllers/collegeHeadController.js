@@ -243,8 +243,30 @@ export const getSportsParticipation = async (req, res) => {
   }
 };
 
-export const getMedalSummary = (req, res) => {
+export const getMedalSummary = async (req, res) => {
   const college = req.user.college || 'MPEC';
+  try {
+    const dbRes = await queryDb(
+      `SELECT gold_count AS "gold", silver_count AS "silver", bronze_count AS "bronze", total_points AS "totalPoints" 
+       FROM college_leaderboards 
+       WHERE LOWER(college_code) = LOWER($1) OR LOWER(college_name) = LOWER($1) 
+       LIMIT 1`,
+      [college]
+    );
+    if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+      const row = dbRes.rows[0];
+      return res.json({
+        college,
+        gold: Number(row.gold || 0),
+        silver: Number(row.silver || 0),
+        bronze: Number(row.bronze || 0),
+        totalPoints: Number(row.totalPoints || 0),
+        topSport: 'N/A'
+      });
+    }
+  } catch (err) {
+    console.warn('Error fetching college head medal summary from DB:', err.message);
+  }
   const medals = inMemoryCollegeMedals[college] || { gold: 0, silver: 0, bronze: 0, totalPoints: 0, topSport: 'N/A' };
   return res.json({ college, ...medals });
 };
