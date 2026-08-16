@@ -147,34 +147,36 @@ export const AdminResultsPage = () => {
   };
 
   // Calculate Inter-College Leaderboard Standings (Only 🥇 1st & 🥈 2nd)
-  const collegeStandings = ALL_COLLEGES.map((college) => {
-    let goldCount = 0;
-    let silverCount = 0;
-    let totalPoints = 0;
+  const collegeStandings = ALL_COLLEGES
+    .filter((c) => c.id !== 'EXTERNAL')
+    .map((college) => {
+      let goldCount = 0;
+      let silverCount = 0;
+      let totalPoints = 0;
 
-    results.forEach((res) => {
-      const wCol = (res.winnerCollege || '').toLowerCase();
-      const rCol = (res.runnerUpCollege || '').toLowerCase();
-      const cId = college.id.toLowerCase();
-      const cName = college.name.toLowerCase();
+      results.forEach((res) => {
+        const wCol = (res.winnerCollege || '').toLowerCase();
+        const rCol = (res.runnerUpCollege || '').toLowerCase();
+        const cId = college.id.toLowerCase();
+        const cName = college.name.toLowerCase();
 
-      if (wCol === cId || wCol === cName) {
-        goldCount += 1;
-        totalPoints += 5;
-      }
-      if (rCol === cId || rCol === cName) {
-        silverCount += 1;
-        totalPoints += 3;
-      }
-    });
+        if (wCol === cId || wCol === cName) {
+          goldCount += 1;
+          totalPoints += 5;
+        }
+        if (rCol === cId || rCol === cName) {
+          silverCount += 1;
+          totalPoints += 3;
+        }
+      });
 
-    return {
-      ...college,
-      goldCount,
-      silverCount,
-      totalPoints
-    };
-  }).sort((a, b) => b.totalPoints - a.totalPoints || b.goldCount - a.goldCount);
+      return {
+        ...college,
+        goldCount,
+        silverCount,
+        totalPoints
+      };
+    }).sort((a, b) => b.totalPoints - a.totalPoints || b.goldCount - a.goldCount);
 
   // Filtered Declared Results
   const filteredResults = results.filter((res) => {
