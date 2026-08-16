@@ -9,37 +9,9 @@ export const AuthProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const DEFAULT_SAMPLE_REGISTRATIONS = [
-    {
-      id: "REG-1001",
-      sportName: "Table Tennis",
-      eventTitle: "Table Tennis Mens Singles Championship 2026",
-      studentName: "Aarav Sharma",
-      college: "MPEC Kanpur",
-      category: "Singles",
-      status: "VERIFIED",
-      qrCode: "TT-AARAV-2026-MPEC",
-      registrationDate: "2026-08-01",
-      amountPaid: 300
-    },
-    {
-      id: "REG-1002",
-      sportName: "Badminton",
-      eventTitle: "Badminton Mixed Doubles Championship 2026",
-      studentName: "Aarav Sharma",
-      college: "MPEC Kanpur",
-      category: "Doubles",
-      status: "APPROVED",
-      qrCode: "BAD-AARAV-2026-MPEC",
-      registrationDate: "2026-08-02",
-      amountPaid: 600
-    }
-  ];
-
   const [userRegistrations, setUserRegistrations] = useState(() => {
     const saved = localStorage.getItem('sems_registrations');
-    return saved ? JSON.parse(saved) : DEFAULT_SAMPLE_REGISTRATIONS;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const login = (userData) => {
