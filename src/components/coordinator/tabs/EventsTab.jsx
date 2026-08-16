@@ -31,7 +31,7 @@ export const EventsTab = ({ user }) => {
   const defaultSportKey = resolveSportKey(user?.assignedSport || user?.sportName);
   const defaultBounds = SPORT_PLAYER_BOUNDS[defaultSportKey] || { min: 1, max: 10 };
   const isTableTennis = defaultSportKey === 'table-tennis';
-  const isBadminton = defaultSportKey === 'badminton';
+  const isBadminton = defaultSportKey === 'badminton' || (user?.sportName || user?.sport || '').toLowerCase().includes('badminton');
 
   // Form State
   const [formData, setFormData] = useState({
@@ -321,7 +321,7 @@ export const EventsTab = ({ user }) => {
     <div className="space-y-6 animate-fade-in font-sans">
 
       {/* TOP DASHBOARD STATS BAR */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className={`grid grid-cols-2 sm:grid-cols-3 ${isBadminton ? 'lg:grid-cols-5' : 'lg:grid-cols-6'} gap-3`}>
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
           <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Total Events</span>
           <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{totalEvents}</p>
@@ -342,10 +342,12 @@ export const EventsTab = ({ user }) => {
           <p className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight">{totalRegCount}</p>
         </div>
 
-        <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-amber-600 dark:text-amber-400">Revenue Collected</span>
-          <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight">₹{totalRevenue.toLocaleString()}</p>
-        </div>
+        {!isBadminton && (
+          <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
+            <span className="text-[10px] font-mono font-bold uppercase text-amber-600 dark:text-amber-400">Revenue Collected</span>
+            <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight">₹{totalRevenue.toLocaleString()}</p>
+          </div>
+        )}
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl col-span-2 sm:col-span-1 space-y-1 shadow-sm">
           <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Assigned Sport</span>

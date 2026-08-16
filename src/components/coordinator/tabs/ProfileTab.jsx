@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User, ShieldCheck, Mail, Building2, MapPin, Trophy, FileText, Key, Calendar, CheckCircle2, Download, LogOut } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 
-export const ProfileTab = ({ user, matches = [], registrations = [], onLogout }) => {
+export const ProfileTab = ({ user, matches = [], registrations = [], onLogout, allowPasswordChange = true }) => {
   const { addToast } = useToast();
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -14,6 +14,9 @@ export const ProfileTab = ({ user, matches = [], registrations = [], onLogout })
   const email = user?.email || `${sportName.toLowerCase().replace(/[^a-z0-9]/g, '')}.coord@sems.edu`;
   const venue = user?.venue || 'Main Sports Complex Arena';
   const college = user?.college || 'SEMS Official Campus';
+
+  const isBadminton = (user?.assignedSport || user?.sportName || user?.sport || '').toLowerCase().includes('badminton') || sportName.toLowerCase() === 'badminton';
+  const canChangePassword = allowPasswordChange && !isBadminton;
 
   const handlePasswordChange = (e) => {
     e.preventDefault();
@@ -61,15 +64,17 @@ export const ProfileTab = ({ user, matches = [], registrations = [], onLogout })
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 self-stretch sm:self-auto justify-end">
-            <button
-              onClick={() => setShowPasswordModal(true)}
-              className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 cursor-pointer"
-            >
-              <Key className="w-3.5 h-3.5 text-blue-600 dark:text-indigo-400" />
-              <span>Change Password</span>
-            </button>
-          </div>
+          {canChangePassword && (
+            <div className="flex items-center gap-2.5 self-stretch sm:self-auto justify-end">
+              <button
+                onClick={() => setShowPasswordModal(true)}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <Key className="w-3.5 h-3.5 text-blue-600 dark:text-indigo-400" />
+                <span>Change Password</span>
+              </button>
+            </div>
+          )}
 
         </div>
 
@@ -113,7 +118,7 @@ export const ProfileTab = ({ user, matches = [], registrations = [], onLogout })
       </div>
 
       {/* Account Security & Overview Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={`grid grid-cols-1 ${isBadminton ? '' : 'lg:grid-cols-2'} gap-6`}>
         
         {/* Account Details Box */}
         <div className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-xl space-y-4">
@@ -145,51 +150,55 @@ export const ProfileTab = ({ user, matches = [], registrations = [], onLogout })
         </div>
 
         {/* Quick Operational Downloads & Actions */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-xl space-y-4">
-          <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-            <Download className="w-4 h-4 text-blue-600 dark:text-indigo-400" /> Operational Actions
-          </h3>
+        {!isBadminton && (
+          <div className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-xl space-y-4">
+            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+              <Download className="w-4 h-4 text-blue-600 dark:text-indigo-400" /> Operational Actions
+            </h3>
 
-          <div className="space-y-3">
-            <button
-              onClick={() => addToast('Downloading match schedule report...', 'info')}
-              className="w-full p-3.5 rounded-2xl bg-slate-50 dark:bg-[#090D16] hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs transition flex items-center justify-between cursor-pointer"
-            >
-              <div className="flex items-center gap-2.5">
-                <FileText className="w-4 h-4 text-blue-600 dark:text-indigo-400" />
-                <span>Export Match Schedule Summary</span>
-              </div>
-              <span className="text-[10px] font-mono font-bold text-slate-400">PDF</span>
-            </button>
+            <div className="space-y-3">
+              <button
+                onClick={() => addToast('Downloading match schedule report...', 'info')}
+                className="w-full p-3.5 rounded-2xl bg-slate-50 dark:bg-[#090D16] hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs transition flex items-center justify-between cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5">
+                  <FileText className="w-4 h-4 text-blue-600 dark:text-indigo-400" />
+                  <span>Export Match Schedule Summary</span>
+                </div>
+                <span className="text-[10px] font-mono font-bold text-slate-400">PDF</span>
+              </button>
 
-            <button
-              onClick={() => addToast('Exporting registered participants list...', 'info')}
-              className="w-full p-3.5 rounded-2xl bg-slate-50 dark:bg-[#090D16] hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs transition flex items-center justify-between cursor-pointer"
-            >
-              <div className="flex items-center gap-2.5">
-                <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span>Export Participant Registrations</span>
-              </div>
-              <span className="text-[10px] font-mono font-bold text-slate-400">CSV</span>
-            </button>
+              <button
+                onClick={() => addToast('Exporting registered participants list...', 'info')}
+                className="w-full p-3.5 rounded-2xl bg-slate-50 dark:bg-[#090D16] hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs transition flex items-center justify-between cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5">
+                  <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Export Participant Registrations</span>
+                </div>
+                <span className="text-[10px] font-mono font-bold text-slate-400">CSV</span>
+              </button>
 
-            <button
-              onClick={() => setShowPasswordModal(true)}
-              className="w-full p-3.5 rounded-2xl bg-slate-50 dark:bg-[#090D16] hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs transition flex items-center justify-between cursor-pointer"
-            >
-              <div className="flex items-center gap-2.5">
-                <Key className="w-4 h-4 text-amber-500" />
-                <span>Update Account Password</span>
-              </div>
-              <span className="text-[10px] font-mono font-bold text-slate-400">SECURITY</span>
-            </button>
+              {canChangePassword && (
+                <button
+                  onClick={() => setShowPasswordModal(true)}
+                  className="w-full p-3.5 rounded-2xl bg-slate-50 dark:bg-[#090D16] hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs transition flex items-center justify-between cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Key className="w-4 h-4 text-amber-500" />
+                    <span>Update Account Password</span>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold text-slate-400">SECURITY</span>
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
 
       {/* Change Password Modal */}
-      {showPasswordModal && (
+      {canChangePassword && showPasswordModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl">
             <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">

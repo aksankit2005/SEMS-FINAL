@@ -113,6 +113,7 @@ export const BadmintonCoordinatorPage = () => {
                 matches={matches}
                 registrations={registrations}
                 onLogout={handleLogout}
+                allowPasswordChange={false}
               />
             )}
 
