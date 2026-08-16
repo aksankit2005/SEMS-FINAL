@@ -36,7 +36,8 @@ import {
   getCommitteeDB,
   saveCommitteeMemberDB,
   deleteCommitteeMemberDB,
-  getAdminResultsDB
+  getAdminResultsDB,
+  deleteCoordinatorEventDB
 } from '../controllers/adminController.js';
 import { verifyAdminToken } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimiters.js';
@@ -89,6 +90,9 @@ router.get('/admin/results', getAdminResultsDB);
 // SuperCoordinator Data & Leaderboard endpoints
 router.get('/super-coordinator/participants', getMasterParticipants);
 router.get('/super-coordinator/events', getSuperCoordinatorEvents);
+router.delete('/super-coordinator/events/:id', deleteCoordinatorEventDB);
+router.delete('/admin/coordinator-events/:id', deleteCoordinatorEventDB);
+router.delete('/admin/events/:id', deleteCoordinatorEventDB);
 router.get('/super-coordinator/coordinators', getSuperCoordinatorCoordinators);
 router.get('/super-coordinator/leaderboard', getLeaderboardEntries);
 router.post('/super-coordinator/leaderboard', saveLeaderboardEntry);

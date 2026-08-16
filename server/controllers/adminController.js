@@ -300,6 +300,30 @@ export const getSuperCoordinatorEvents = async (req, res) => {
   return res.json([]);
 };
 
+export const deleteCoordinatorEventDB = async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    return res.status(400).json({ message: 'Event ID is required' });
+  }
+
+  try {
+    const dbRes = await queryDb('DELETE FROM coordinator_event_items WHERE id = $1 RETURNING id', [id]);
+    if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+      return res.json({ success: true, message: 'Coordinator event deleted from database successfully.' });
+    }
+
+    const prismaRes = await prisma.coordinatorEventItem.deleteMany({ where: { id } }).catch(() => ({ count: 0 }));
+    if (prismaRes.count > 0) {
+      return res.json({ success: true, message: 'Coordinator event deleted from database successfully.' });
+    }
+
+    return res.status(404).json({ message: 'Event not found or already deleted.' });
+  } catch (err) {
+    console.error('Error deleting coordinator event from DB:', err.message);
+    return res.status(500).json({ message: 'Failed to delete coordinator event from database' });
+  }
+};
+
 export const getSuperCoordinatorCoordinators = async (req, res) => {
   try {
     const dbRes = await queryDb(`
@@ -934,7 +958,7 @@ export const getDashboardStatsDB = async (req, res) => {
       `),
       queryDb('SELECT COUNT(*) FROM media'),
       queryDb('SELECT COALESCE(SUM(members_count), COUNT(*)) FROM college_registrations'),
-      queryDb('SELECT COUNT(*) FROM sports WHERE "isActive" = true OR status = \'active\''),
+      queryDb('SELECT COUNT(*) FROM sports WHERE "isActive" = true'),
       queryDb('SELECT COUNT(*) FROM leaderboard_entries'),
       queryDb('SELECT COUNT(*) FROM live_matches WHERE LOWER(status) IN (\'scheduled\', \'live\', \'running\')'),
       queryDb('SELECT COUNT(*) FROM announcements WHERE "isPublished" = true')

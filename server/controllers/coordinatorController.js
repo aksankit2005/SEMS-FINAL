@@ -1605,6 +1605,9 @@ export const updateEvent = async (req, res) => {
 
 export const deleteEvent = async (req, res) => {
   const { id } = req.params;
+  if (!id) {
+    return res.status(400).json({ message: 'Event ID is required' });
+  }
 
   Object.keys(inMemoryCoordinatorEvents).forEach((sKey) => {
     if (inMemoryCoordinatorEvents[sKey]) {
@@ -1613,16 +1616,19 @@ export const deleteEvent = async (req, res) => {
   });
 
   try {
-    await queryDb('DELETE FROM coordinator_event_items WHERE id = $1', [id]);
+    const dbRes = await queryDb('DELETE FROM coordinator_event_items WHERE id = $1 RETURNING id', [id]);
+    if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+      return res.json({ success: true, message: 'Event deleted successfully' });
+    }
+
+    const prismaRes = await prisma.coordinatorEventItem.deleteMany({ where: { id } }).catch(() => ({ count: 0 }));
+    if (prismaRes.count > 0) {
+      return res.json({ success: true, message: 'Event deleted successfully' });
+    }
+
+    return res.status(404).json({ message: 'Event not found or already deleted.' });
   } catch (err) {
     console.error('Error deleting event from SQL DB:', err.message);
+    return res.status(500).json({ message: 'Error deleting event from database' });
   }
-
-  try {
-    await prisma.coordinatorEventItem.deleteMany({ where: { id } });
-  } catch (err) {
-    console.error('Error deleting event from DB:', err.message);
-  }
-
-  return res.json({ success: true, message: 'Event deleted successfully' });
 };

@@ -140,22 +140,27 @@ export const adminApi = {
   },
 
   deleteCoordinatorEvent: async (eventId) => {
-    try {
-      const res = await fetch(apiUrl(`/coordinator/events/${eventId}`), {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        await adminApi.addAuditLog({
-          user: 'System Administrator',
-          role: 'ADMIN',
-          action: 'Coordinator Event Deleted',
-          target: `Deleted coordinator event registration #${eventId}`
-        });
-        return true;
+    const token = localStorage.getItem('sems_admin_token') || localStorage.getItem('sems_coordinator_token');
+    const res = await fetch(apiUrl(`/admin/coordinator-events/${eventId}`), {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       }
-    } catch (e) {
-      console.error('Error deleting coordinator event from DB:', e);
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || `Failed to delete coordinator event (HTTP ${res.status})`);
     }
+
+    await adminApi.addAuditLog({
+      user: 'System Administrator',
+      role: 'ADMIN',
+      action: 'Coordinator Event Deleted',
+      target: `Deleted coordinator event registration #${eventId}`
+    }).catch(() => {});
+
     return true;
   },
 
