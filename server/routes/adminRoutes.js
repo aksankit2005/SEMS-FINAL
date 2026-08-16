@@ -41,6 +41,7 @@ import {
   getAdminResultsDB,
   deleteCoordinatorEventDB
 } from '../controllers/adminController.js';
+import { getCloudinarySignature } from '../controllers/prController.js';
 import { verifyAdminToken } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimiters.js';
 
@@ -49,6 +50,7 @@ const router = express.Router();
 router.post('/admin/login', authLimiter, adminLogin);
 router.post('/super-coordinator/login', authLimiter, superCoordinatorLogin);
 router.get('/admin/profile', verifyAdminToken, getAdminProfile);
+router.get('/admin/cloudinary-signature', verifyAdminToken, getCloudinarySignature);
 
 // Dashboard Statistics & Audit Trail
 router.get('/admin/dashboard-stats', getDashboardStatsDB);

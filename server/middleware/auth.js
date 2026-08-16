@@ -2,16 +2,21 @@ import jwt from 'jsonwebtoken';
 import { envConfig } from '../config/env.js';
 import { queryDb } from '../config/db.js';
 
-// PR Coordinator Auth Middleware
+// PR Coordinator / Staff Auth Middleware
 export const verifyPRToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'Unauthorized. PR Coordinator token required.' });
+    return res.status(401).json({ message: 'Unauthorized. Staff or PR token required.' });
   }
 
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, envConfig.jwtSecret);
+    if (['admin', 'super_coordinator', 'super_admin'].includes(decoded.role)) {
+      req.user = decoded;
+      return next();
+    }
+
     if (decoded.username) {
       try {
         const dbRes = await queryDb('SELECT status FROM pr_users WHERE LOWER(username) = $1', [decoded.username.toLowerCase()]);

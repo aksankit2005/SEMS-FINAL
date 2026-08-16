@@ -11,7 +11,7 @@ const api = axios.create({
 
 // Interceptor to add Authorization JWT Header if available
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('pr_auth_token');
+  const token = localStorage.getItem('pr_auth_token') || localStorage.getItem('sems_admin_token') || localStorage.getItem('admin_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -64,16 +64,23 @@ export const galleryApi = {
 
   // Check PR Auth status
   isPRAuthenticated() {
-    return !!localStorage.getItem('pr_auth_token');
+    return !!(localStorage.getItem('pr_auth_token') || localStorage.getItem('sems_admin_token'));
   },
 
   // Get Cloudinary upload signature from backend
   async getCloudinarySignature(folder = 'sems_gallery') {
     try {
-      const res = await api.get('/pr/cloudinary-signature', { params: { folder } });
+      const endpoint = localStorage.getItem('sems_admin_token') ? '/admin/cloudinary-signature' : '/pr/cloudinary-signature';
+      const res = await api.get(endpoint, { params: { folder } });
       return res.data;
     } catch (err) {
-      throw new Error(err.response?.data?.message || 'Failed to obtain Cloudinary upload signature');
+      try {
+        const altEndpoint = localStorage.getItem('sems_admin_token') ? '/pr/cloudinary-signature' : '/admin/cloudinary-signature';
+        const res2 = await api.get(altEndpoint, { params: { folder } });
+        return res2.data;
+      } catch (err2) {
+        throw new Error(err.response?.data?.message || err2.response?.data?.message || 'Failed to obtain Cloudinary upload signature');
+      }
     }
   },
 
