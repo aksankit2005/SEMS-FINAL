@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 import { envConfig, coordinatorPasswords } from '../config/env.js';
 import { queryDb, prisma } from '../config/db.js';
 
+const isUuid = (val) => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+
 let inMemoryCoordinatorMatches = {};
 let inMemoryCoordinatorEvents = {};
 let inMemoryRegistrationSettings = {};
@@ -909,16 +911,22 @@ export const getRegistrations = async (req, res) => {
         const formatted = await Promise.all(
           sqlRes.rows.map(async (r) => {
             let members = [];
-            try {
-              const memRes = await queryDb(
-                `SELECT "fullName", "rollNo", "dateOfBirth",
-                        mobile, email, course, year_semester AS "yearSemester", gender, "isCaptain"
-                 FROM registration_members
-                 WHERE "registrationId" = $1 OR id = $1`,
-                [r.id]
-              );
-              if (memRes && memRes.rows) members = memRes.rows;
-            } catch (e) {}
+            const targetUuid = (r.registrationId && isUuid(r.registrationId))
+              ? r.registrationId
+              : (isUuid(r.id) ? r.id : null);
+
+            if (targetUuid) {
+              try {
+                const memRes = await queryDb(
+                  `SELECT "fullName", "rollNo", "dateOfBirth",
+                          mobile, email, course, year_semester AS "yearSemester", gender, "isCaptain"
+                   FROM registration_members
+                   WHERE "registrationId" = $1::uuid OR id = $1::uuid`,
+                  [targetUuid]
+                );
+                if (memRes && memRes.rows) members = memRes.rows;
+              } catch (e) {}
+            }
 
             const player1 = members[0] ? {
               name: members[0].fullName || r.studentName,
@@ -1076,11 +1084,13 @@ export const getRegistrations = async (req, res) => {
 export const deleteRegistration = async (req, res) => {
   const { id } = req.params;
   try {
-    await queryDb('DELETE FROM registration_members WHERE registration_id = $1 OR id = $1', [id]);
-    await queryDb('DELETE FROM college_registrations WHERE id = $1 OR registration_id = $1', [id]);
-    try {
-      await queryDb('DELETE FROM registrations WHERE id = $1', [id]);
-    } catch (e) {}
+    await queryDb('DELETE FROM registration_members WHERE "registrationId"::text = $1 OR id::text = $1', [String(id)]);
+    await queryDb('DELETE FROM college_registrations WHERE id = $1 OR registration_id::text = $1 OR "registrationId"::text = $1', [String(id)]);
+    if (isUuid(id)) {
+      try {
+        await queryDb('DELETE FROM registrations WHERE id = $1::uuid', [id]);
+      } catch (e) {}
+    }
 
     try {
       await prisma.collegeRegistration.deleteMany({ where: { id } });
