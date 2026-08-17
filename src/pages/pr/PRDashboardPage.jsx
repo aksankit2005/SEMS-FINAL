@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { galleryApi } from '../../services/galleryApi';
 import { getMediaPreviewUrl, triggerMediaDownload } from '../../utils/googleDriveHelper';
+import { extractYouTubeVideoId } from '../../utils/youtube';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
 
@@ -297,13 +298,15 @@ export const PRDashboardPage = () => {
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => triggerMediaDownload(item.media_url, `${item.title}.${item.media_type === 'video' ? 'mp4' : 'jpg'}`)}
-                            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400 transition"
-                            title="Download Media"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
+                          {!( (item.media_type || '').toLowerCase() === 'video' || extractYouTubeVideoId(item.media_url) ) && (
+                            <button
+                              onClick={() => triggerMediaDownload(item.media_url, `${item.title}.jpg`)}
+                              className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400 transition cursor-pointer"
+                              title="Download Photo"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => handleDeleteMedia(item.id)}
                             className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-500/10 hover:text-rose-500 transition"
