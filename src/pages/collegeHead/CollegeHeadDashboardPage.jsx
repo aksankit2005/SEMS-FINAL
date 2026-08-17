@@ -48,6 +48,8 @@ export const CollegeHeadDashboardPage = () => {
 
   const loadAllData = async () => {
     setLoading(true);
+    setStudentsData({ count: 0, students: [] });
+    setSportsBreakdown([]);
     try {
       const [statsData, studentsRes, sportsRes, medalRes] = await Promise.all([
         collegeHeadApi.getDashboardStats(),
@@ -85,6 +87,11 @@ export const CollegeHeadDashboardPage = () => {
   }, [searchQuery, selectedSportFilter, user]);
 
   const handleLogout = () => {
+    setUser(null);
+    setStats(null);
+    setStudentsData({ count: 0, students: [] });
+    setSportsBreakdown([]);
+    setMedalSummary(null);
     collegeHeadApi.logout();
     addToast('Logged out successfully', 'info');
     navigate('/college-head/login');
