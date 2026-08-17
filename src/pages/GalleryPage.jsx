@@ -361,7 +361,7 @@ export const GalleryPage = () => {
                       onClick={() => openLightbox(displayedStreamMedia, idx)}
                       className="relative h-56 overflow-hidden bg-slate-950 cursor-pointer"
                     >
-                      {item.media_type === 'video' ? (
+                      {(item.media_type || '').toLowerCase() === 'video' || extractYouTubeVideoId(item.media_url) ? (
                         <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-white relative">
                           <GoogleDriveImage
                             src={getVideoThumbnailUrl(item.media_url, item.cover_image)}
@@ -503,7 +503,7 @@ export const GalleryPage = () => {
                       onClick={() => openLightbox(displayedAlbumMedia, idx)}
                       className="relative h-64 overflow-hidden bg-slate-950 cursor-pointer"
                     >
-                      {item.media_type === 'video' ? (
+                      {(item.media_type || '').toLowerCase() === 'video' || extractYouTubeVideoId(item.media_url) ? (
                         <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-white relative">
                           <GoogleDriveImage
                             src={getVideoThumbnailUrl(item.media_url, item.cover_image)}

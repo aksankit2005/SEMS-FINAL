@@ -22,6 +22,7 @@ import { galleryApi } from '../../services/galleryApi';
 import { uploadFileToCloudinary } from '../../services/cloudinaryService';
 import { GoogleDriveImage } from '../../components/common/GoogleDriveImage';
 import { getMediaPreviewUrl, getVideoThumbnailUrl } from '../../utils/googleDriveHelper';
+import { extractYouTubeVideoId } from '../../utils/youtube';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
 
@@ -543,7 +544,7 @@ export const PREventsPage = () => {
                         className="bg-slate-50 dark:bg-slate-950 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col justify-between group relative"
                       >
                         <div className="relative h-36 bg-slate-900 overflow-hidden">
-                          {media.media_type === 'video' ? (
+                          {(media.media_type || '').toLowerCase() === 'video' || extractYouTubeVideoId(media.media_url) ? (
                             <div className="w-full h-full flex items-center justify-center bg-slate-950 text-orange-400">
                               <GoogleDriveImage
                                 src={getVideoThumbnailUrl(media.media_url, media.cover_image)}
