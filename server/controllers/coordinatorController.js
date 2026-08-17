@@ -240,11 +240,18 @@ const syncMatchToMatchesTable = async (m) => {
   const timeVal = m.time || m.scheduledTime || '05:30 PM';
   const statusVal = (m.status || 'SCHEDULED').toUpperCase();
   const formatVal = (m.format || 'SINGLES').toUpperCase();
+  const eventIdVal = m.eventId || m.event_id || null;
+  const eventTitleVal = m.eventTitle || m.event_title || matchTitleVal;
+  const team1IdVal = m.team1Id || m.team1_id || null;
+  const team2IdVal = m.team2Id || m.team2_id || null;
 
   const detailsObj = {
     category: m.category || m.gender || 'Open',
     date: m.date || new Date().toISOString().split('T')[0],
     eventTitle: matchTitleVal,
+    eventId: eventIdVal,
+    team1Id: team1IdVal,
+    team2Id: team2IdVal,
     format: formatVal,
     team1Name: team1Val,
     team2Name: team2Val,
@@ -267,12 +274,13 @@ const syncMatchToMatchesTable = async (m) => {
      score2,
      winner,
      details,
+     event_id,
      "createdAt",
      "updatedAt"
    )
    VALUES (
      $1, $2, $3, $4, $5, $6, $7, $8, $9,
-     $10, $11, $12, $13,
+     $10, $11, $12, $13, $14,
      CURRENT_TIMESTAMP,
      CURRENT_TIMESTAMP
    )
@@ -289,6 +297,7 @@ const syncMatchToMatchesTable = async (m) => {
      score2 = EXCLUDED.score2,
      winner = EXCLUDED.winner,
      details = EXCLUDED.details,
+     event_id = COALESCE(EXCLUDED.event_id, matches.event_id),
      "updatedAt" = CURRENT_TIMESTAMP`,
   [
     matchId,
@@ -303,7 +312,8 @@ const syncMatchToMatchesTable = async (m) => {
     Number(m.score1 || 0),
     Number(m.score2 || 0),
     m.winner || null,
-    JSON.stringify(detailsObj)
+    JSON.stringify(detailsObj),
+    eventIdVal
   ]
 );
   } catch (err) {
@@ -314,6 +324,43 @@ const syncMatchToMatchesTable = async (m) => {
 export const createMatch = async (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
   const matchId = req.body.id || `M${Math.floor(100000 + Math.random() * 900000)}`;
+  const eventId = req.body.eventId || req.body.event_id || null;
+  let eventTitle = req.body.eventTitle || req.body.event_title || null;
+  const team1Id = req.body.team1Id || req.body.team1_id || null;
+  const team2Id = req.body.team2Id || req.body.team2_id || null;
+
+  // 1. Authoritative Event & Registration-Closed Gate Check
+  if (eventId && eventId !== 'DEFAULT') {
+    try {
+      const evRes = await queryDb(
+        `SELECT id, sport_id AS "sportId", title, status, registration_open AS "registrationOpen", reg_end_date AS "regEndDate"
+         FROM coordinator_event_items WHERE id = $1`,
+        [eventId]
+      );
+      if (evRes && evRes.rows && evRes.rows.length > 0) {
+        const ev = evRes.rows[0];
+        eventTitle = ev.title || eventTitle;
+        const evStatus = (ev.status || '').toLowerCase();
+        const isRegOpen = ev.registrationOpen !== false && ev.registrationOpen !== 'false' && ev.registrationOpen !== 0;
+        const isPastEnd = ev.regEndDate ? (new Date(ev.regEndDate + 'T23:59:59') < new Date()) : false;
+
+        if (evStatus === 'draft') {
+          return res.status(400).json({ success: false, message: 'Cannot schedule matches for a Draft event.' });
+        }
+        if (evStatus === 'completed') {
+          return res.status(400).json({ success: false, message: 'Cannot schedule new matches for a Completed event.' });
+        }
+        if (isRegOpen && !isPastEnd && evStatus !== 'closed') {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Cannot schedule matches while registration is still open. Registration for this event must be closed before fixtures can be scheduled.' 
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Event validation error in createMatch:', e.message);
+    }
+  }
 
   const rawStreamUrl = req.body.streamUrl || req.body.stream_url || req.body.liveStreamUrl || '';
   const videoId = req.body.youtubeVideoId || req.body.youtube_video_id || extractYouTubeVideoIdBackend(rawStreamUrl) || null;
@@ -322,6 +369,10 @@ export const createMatch = async (req, res) => {
   const newMatch = {
     id: matchId,
     sportId: sportId,
+    eventId: eventId,
+    eventTitle: eventTitle || req.body.eventTitle || `${req.user.sportName} Championship 2026`,
+    team1Id: team1Id,
+    team2Id: team2Id,
     format: (req.body.format || 'SINGLES').toUpperCase(),
     status: req.body.status || 'SCHEDULED',
     team1: req.body.team1,
@@ -345,6 +396,10 @@ export const createMatch = async (req, res) => {
   // Ensure table columns exist
   try {
     await queryDb(`
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS event_id TEXT;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS event_title TEXT;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS team1_id TEXT;
+      ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS team2_id TEXT;
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS stream_url TEXT;
       ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS is_live_streaming BOOLEAN DEFAULT FALSE;
@@ -367,6 +422,10 @@ export const createMatch = async (req, res) => {
   ];
 
   const detailsObj = {
+    eventId: eventId,
+    eventTitle: newMatch.eventTitle,
+    team1Id: team1Id,
+    team2Id: team2Id,
     setsHistory: defaultSetsHistory,
     currentSet: newMatch.currentSet || 1,
     setsWon1: newMatch.setsWon1 || 0,
@@ -378,8 +437,13 @@ export const createMatch = async (req, res) => {
   };
 
   await queryDb(
-    `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, details, sets_history, current_set, sets_won1, sets_won2, updated_at, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `INSERT INTO live_matches (
+       id, sport_id, format, status, team1, team2, match_title, table_number,
+       time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming,
+       details, sets_history, current_set, sets_won1, sets_won2, event_id, event_title,
+       team1_id, team2_id, updated_at, created_at
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
      ON CONFLICT (id) DO UPDATE SET
        format = EXCLUDED.format, status = EXCLUDED.status, team1 = EXCLUDED.team1, team2 = EXCLUDED.team2,
        match_title = EXCLUDED.match_title, table_number = EXCLUDED.table_number, time = EXCLUDED.time,
@@ -392,6 +456,10 @@ export const createMatch = async (req, res) => {
        current_set = EXCLUDED.current_set,
        sets_won1 = EXCLUDED.sets_won1,
        sets_won2 = EXCLUDED.sets_won2,
+       event_id = COALESCE(EXCLUDED.event_id, live_matches.event_id),
+       event_title = COALESCE(EXCLUDED.event_title, live_matches.event_title),
+       team1_id = COALESCE(EXCLUDED.team1_id, live_matches.team1_id),
+       team2_id = COALESCE(EXCLUDED.team2_id, live_matches.team2_id),
        updated_at = CURRENT_TIMESTAMP`,
     [
       newMatch.id,
@@ -413,7 +481,11 @@ export const createMatch = async (req, res) => {
       JSON.stringify(defaultSetsHistory),
       newMatch.currentSet || 1,
       newMatch.setsWon1 || 0,
-      newMatch.setsWon2 || 0
+      newMatch.setsWon2 || 0,
+      eventId,
+      newMatch.eventTitle,
+      team1Id,
+      team2Id
     ]
   );
 
@@ -428,6 +500,39 @@ export const batchSaveMatches = async (req, res) => {
 
   if (!Array.isArray(matches)) {
     return res.status(400).json({ message: 'matches must be an array' });
+  }
+
+  // 1. Authoritative Event & Registration-Closed Gate Check for batch matches
+  for (const m of matches) {
+    const eventId = m.eventId || m.event_id;
+    if (eventId && eventId !== 'DEFAULT') {
+      try {
+        const evRes = await queryDb(
+          `SELECT id, title, status, registration_open AS "registrationOpen", reg_end_date AS "regEndDate"
+           FROM coordinator_event_items WHERE id = $1`,
+          [eventId]
+        );
+        if (evRes && evRes.rows && evRes.rows.length > 0) {
+          const ev = evRes.rows[0];
+          const evStatus = (ev.status || '').toLowerCase();
+          const isRegOpen = ev.registrationOpen !== false && ev.registrationOpen !== 'false' && ev.registrationOpen !== 0;
+          const isPastEnd = ev.regEndDate ? (new Date(ev.regEndDate + 'T23:59:59') < new Date()) : false;
+
+          if (evStatus === 'draft') {
+            return res.status(400).json({ success: false, message: 'Cannot schedule matches for a Draft event.' });
+          }
+          if (evStatus === 'completed') {
+            return res.status(400).json({ success: false, message: 'Cannot schedule matches for a Completed event.' });
+          }
+          if (isRegOpen && !isPastEnd && evStatus !== 'closed') {
+            return res.status(400).json({ 
+              success: false, 
+              message: 'Cannot schedule matches while registration is still open. Registration for this event must be closed before fixtures can be scheduled.' 
+            });
+          }
+        }
+      } catch (e) {}
+    }
   }
 
   const savedMatches = [];
@@ -1644,19 +1749,72 @@ export const getEvents = async (req, res) => {
   const underscoreSportId = sportId.replace(/-/g, '_');
 
   try {
-    const dbEvents = await prisma.coordinatorEventItem.findMany({
-      where: {
-        OR: [
-          { sportId: { equals: sportId, mode: 'insensitive' } },
-          { sportId: { equals: normalizedSportId, mode: 'insensitive' } },
-          { sportId: { equals: underscoreSportId, mode: 'insensitive' } }
-        ]
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-    if (dbEvents && dbEvents.length > 0) {
-      inMemoryCoordinatorEvents[sportId] = dbEvents;
-      return res.json(dbEvents);
+    const dbRes = await queryDb(
+      `SELECT 
+        id, sport_id AS "sportId", sport_name AS "sportName", title,
+        cover_image AS "coverImage", description, reg_start_date AS "regStartDate",
+        reg_end_date AS "regEndDate", tourn_start_date AS "tournStartDate",
+        tourn_end_date AS "tournEndDate", entry_fee AS "entryFee",
+        singles_fee AS "singlesFee", doubles_fee AS "doublesFee",
+        team_size AS "teamSize", max_registrations AS "maxRegistrations",
+        registered_count AS "registeredCount", venue, category, status,
+        registration_open AS "registrationOpen", rules, required_documents AS "requiredDocuments",
+        contact_info AS "contactInfo", created_by AS "createdBy",
+        created_at AS "createdAt", updated_at AS "updatedAt"
+       FROM coordinator_event_items
+       WHERE LOWER(sport_id) IN ($1, $2, $3)
+       ORDER BY created_at DESC`,
+      [sportId, normalizedSportId, underscoreSportId]
+    );
+
+    if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+      const parsedEvents = dbRes.rows.map((row) => {
+        let contact = row.contactInfo;
+        if (typeof contact === 'string') {
+          try { contact = JSON.parse(contact); } catch (e) {}
+        }
+        let rulesObj = row.rules;
+        if (typeof rulesObj === 'string') {
+          try { rulesObj = JSON.parse(rulesObj); } catch (e) {}
+        }
+        let reqDocs = row.requiredDocuments;
+        if (typeof reqDocs === 'string') {
+          try { reqDocs = JSON.parse(reqDocs); } catch (e) {}
+        }
+
+        const isRegOpen = row.registrationOpen !== false && row.registrationOpen !== 'false' && row.registrationOpen !== 0;
+
+        return {
+          id: row.id,
+          sportId: row.sportId,
+          sportName: row.sportName,
+          title: row.title,
+          coverImage: row.coverImage,
+          description: row.description,
+          regStartDate: row.regStartDate,
+          regEndDate: row.regEndDate,
+          tournStartDate: row.tournStartDate,
+          tournEndDate: row.tournEndDate,
+          entryFee: Number(row.entryFee || 0),
+          teamFee: Number(row.entryFee || 0),
+          singlesFee: Number(row.singlesFee || 0),
+          doublesFee: Number(row.doublesFee || 0),
+          teamSize: row.teamSize,
+          maxRegistrations: Number(row.maxRegistrations || 64),
+          registeredCount: Number(row.registeredCount || 0),
+          venue: row.venue,
+          category: row.category,
+          status: row.status,
+          registrationOpen: isRegOpen,
+          rules: rulesObj || [],
+          requiredDocuments: reqDocs || [],
+          contactInfo: contact,
+          createdBy: row.createdBy
+        };
+      });
+
+      inMemoryCoordinatorEvents[sportId] = parsedEvents;
+      return res.json(parsedEvents);
     }
   } catch (err) {
     console.error('Error fetching coordinator events from DB:', err.message);
@@ -1693,6 +1851,7 @@ export const createEvent = async (req, res) => {
   const venue = req.body.venue || 'Central Sports Arena';
   const category = req.body.category || 'Open';
   const status = req.body.status || 'Draft';
+  const registrationOpen = req.body.registrationOpen !== undefined ? Boolean(req.body.registrationOpen) : true;
   const rules = req.body.rules || [];
   const requiredDocuments = req.body.requiredDocuments || ['College ID Card', 'Student Aadhaar/Govt ID'];
   const contactInfo = req.body.contactInfo || {
@@ -1721,6 +1880,7 @@ export const createEvent = async (req, res) => {
     venue,
     category,
     status,
+    registrationOpen,
     rules,
     requiredDocuments,
     contactInfo,
@@ -1738,9 +1898,9 @@ export const createEvent = async (req, res) => {
         id, sport_id, sport_name, title, cover_image, description,
         reg_start_date, reg_end_date, tourn_start_date, tourn_end_date,
         entry_fee, singles_fee, doubles_fee, team_size, max_registrations,
-        registered_count, venue, category, status, rules, required_documents,
+        registered_count, venue, category, status, registration_open, rules, required_documents,
         contact_info, created_by, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, CURRENT_TIMESTAMP)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, CURRENT_TIMESTAMP)
       ON CONFLICT (id) DO UPDATE SET
         sport_id = EXCLUDED.sport_id,
         sport_name = COALESCE(EXCLUDED.sport_name, coordinator_event_items.sport_name),
@@ -1760,6 +1920,7 @@ export const createEvent = async (req, res) => {
         venue = EXCLUDED.venue,
         category = EXCLUDED.category,
         status = EXCLUDED.status,
+        registration_open = EXCLUDED.registration_open,
         rules = EXCLUDED.rules,
         required_documents = EXCLUDED.required_documents,
         contact_info = EXCLUDED.contact_info,
@@ -1768,7 +1929,7 @@ export const createEvent = async (req, res) => {
         eventId, sportId, req.user.sportName, title, coverImage, description,
         regStartDate, regEndDate, tournStartDate, tournEndDate,
         entryFee, singlesFee, doublesFee, teamSize, maxRegistrations,
-        registeredCount, venue, category, status, JSON.stringify(rules), JSON.stringify(requiredDocuments),
+        registeredCount, venue, category, status, registrationOpen, JSON.stringify(rules), JSON.stringify(requiredDocuments),
         JSON.stringify(contactInfo), req.user.username || req.user.coordinatorName
       ]
     );
@@ -1816,6 +1977,7 @@ export const updateEvent = async (req, res) => {
   if (registeredCount >= maxRegistrations) {
     status = 'Closed';
   }
+  const registrationOpen = req.body.registrationOpen !== undefined ? Boolean(req.body.registrationOpen) : (existing.registrationOpen !== undefined ? existing.registrationOpen : true);
   const rules = req.body.rules || existing.rules || [];
   const requiredDocuments = req.body.requiredDocuments || existing.requiredDocuments || ['College ID Card', 'Student Aadhaar/Govt ID'];
   const contactInfo = req.body.contactInfo || existing.contactInfo || {
@@ -1844,6 +2006,7 @@ export const updateEvent = async (req, res) => {
     venue,
     category,
     status,
+    registrationOpen,
     rules,
     requiredDocuments,
     contactInfo,
@@ -1867,9 +2030,9 @@ export const updateEvent = async (req, res) => {
         id, sport_id, sport_name, title, cover_image, description,
         reg_start_date, reg_end_date, tourn_start_date, tourn_end_date,
         entry_fee, singles_fee, doubles_fee, team_size, max_registrations,
-        registered_count, venue, category, status, rules, required_documents,
+        registered_count, venue, category, status, registration_open, rules, required_documents,
         contact_info, created_by, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, CURRENT_TIMESTAMP)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, CURRENT_TIMESTAMP)
       ON CONFLICT (id) DO UPDATE SET
         sport_id = EXCLUDED.sport_id,
         sport_name = COALESCE(EXCLUDED.sport_name, coordinator_event_items.sport_name),
@@ -1889,6 +2052,7 @@ export const updateEvent = async (req, res) => {
         venue = EXCLUDED.venue,
         category = EXCLUDED.category,
         status = EXCLUDED.status,
+        registration_open = EXCLUDED.registration_open,
         rules = EXCLUDED.rules,
         required_documents = EXCLUDED.required_documents,
         contact_info = EXCLUDED.contact_info,
@@ -1898,7 +2062,7 @@ export const updateEvent = async (req, res) => {
         id, sportId, req.user.sportName, title, coverImage, description,
         regStartDate, regEndDate, tournStartDate, tournEndDate,
         entryFee, singlesFee, doublesFee, teamSize, maxRegistrations,
-        registeredCount, venue, category, status, JSON.stringify(rules), JSON.stringify(requiredDocuments),
+        registeredCount, venue, category, status, registrationOpen, JSON.stringify(rules), JSON.stringify(requiredDocuments),
         JSON.stringify(contactInfo), req.user.username || req.user.coordinatorName
       ]
     );
@@ -1926,6 +2090,7 @@ export const updateEvent = async (req, res) => {
         venue: row.venue,
         category: row.category,
         status: row.status,
+        registrationOpen: row.registration_open !== false,
         rules: row.rules,
         requiredDocuments: row.required_documents,
         contactInfo: row.contact_info
@@ -1983,6 +2148,172 @@ export const deleteEvent = async (req, res) => {
   } catch (err) {
     console.error('Error deleting event from SQL DB:', err.message);
     return res.status(500).json({ message: 'Error deleting event from database' });
+  }
+};
+
+// ── Eligible Competitors for Match Scheduling ─────────────────────────────────
+export const getEligibleCompetitors = async (req, res) => {
+  const sportId = (req.user?.assignedSport || req.query.sportId || '').toLowerCase();
+  const eventId = req.params.eventId || req.query.eventId;
+
+  if (!eventId) {
+    return res.status(400).json({ success: false, message: 'Event ID is required.' });
+  }
+
+  try {
+    // 1. Authoritative Event Verification
+    const evRes = await queryDb(
+      `SELECT id, sport_id AS "sportId", title, status, registration_open AS "registrationOpen", reg_end_date AS "regEndDate"
+       FROM coordinator_event_items WHERE id = $1`,
+      [eventId]
+    );
+    if (!evRes || evRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Event not found in coordinator events.' });
+    }
+    const event = evRes.rows[0];
+    const evStatus = (event.status || '').toLowerCase();
+    const isRegOpen = event.registrationOpen !== false && event.registrationOpen !== 'false' && event.registrationOpen !== 0;
+    const isPastEnd = event.regEndDate ? (new Date(event.regEndDate + 'T23:59:59') < new Date()) : false;
+    const isRegClosed = !isRegOpen || isPastEnd || evStatus === 'closed';
+
+    // 2. Fetch registrations for this event & sport
+    const normalizedSport = sportId.replace(/_/g, '-');
+    const underscoreSport = sportId.replace(/-/g, '_');
+
+    let rows = [];
+
+    const regSql = `
+      SELECT 
+        cr.id, cr.registration_id AS "registrationId", cr.event_id AS "eventId",
+        cr.sport_id AS "sportId", cr.student_name AS "studentName", cr.team_name AS "teamName",
+        cr.college, cr.department, cr.gender, cr.status, cr.participant_data AS "participantData",
+        cr.members_count AS "membersCount",
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', rm.id,
+              'name', COALESCE(rm."fullName", rm.full_name),
+              'rollNo', COALESCE(rm."rollNo", rm.roll_no),
+              'mobile', rm.mobile,
+              'email', rm.email,
+              'course', rm.course,
+              'yearSemester', COALESCE(rm."yearSemester", rm.year_semester),
+              'gender', rm.gender,
+              'isCaptain', COALESCE(rm."isCaptain", rm.is_captain)
+            )
+          ) FILTER (WHERE rm.id IS NOT NULL), '[]'
+        ) AS members
+      FROM college_registrations cr
+      LEFT JOIN registration_members rm ON rm."registrationId"::text = cr.registration_id::text OR rm."registrationId"::text = cr.id::text
+      WHERE (cr.event_id = $1 OR ($1 = 'DEFAULT' AND LOWER(cr.sport_id) IN ($2, $3, $4)))
+        AND LOWER(cr.sport_id) IN ($2, $3, $4)
+        AND (cr.status IS NULL OR LOWER(cr.status) NOT IN ('rejected', 'cancelled'))
+      GROUP BY cr.id, cr.registration_id, cr.event_id, cr.sport_id, cr.student_name, cr.team_name, cr.college, cr.department, cr.gender, cr.status, cr.participant_data, cr.members_count
+      ORDER BY cr.created_at ASC
+    `;
+
+    try {
+      const regRes = await queryDb(regSql, [eventId, sportId, normalizedSport, underscoreSport]);
+      if (regRes && Array.isArray(regRes.rows) && regRes.rows.length > 0) {
+        rows = regRes.rows;
+      }
+    } catch (sqlErr) {
+      console.warn('getEligibleCompetitors SQL warning, falling back to Prisma:', sqlErr?.message);
+    }
+
+    if (rows.length === 0) {
+      try {
+        const pRows = await prisma.collegeRegistration.findMany({
+          where: {
+            eventId: eventId,
+            sportId: { in: [sportId, normalizedSport, underscoreSport], mode: 'insensitive' },
+            status: { notIn: ['rejected', 'cancelled', 'REJECTED', 'CANCELLED'] }
+          },
+          orderBy: { createdAt: 'asc' }
+        });
+        if (pRows && pRows.length > 0) {
+          rows = pRows;
+        }
+      } catch (pErr) {
+        console.warn('Prisma fallback error:', pErr?.message);
+      }
+    }
+
+    const teams = [];
+    const participants = [];
+
+    rows.forEach((row) => {
+      let members = row.members;
+      if (typeof members === 'string') {
+        try { members = JSON.parse(members); } catch (e) { members = []; }
+      }
+      if (!Array.isArray(members) || members.length === 0) {
+        if (row.participantData && Array.isArray(row.participantData.roster)) {
+          members = row.participantData.roster.map((m, idx) => ({
+            id: `mem-${row.id}-${idx}`,
+            name: m.name || m.fullName || `Player ${idx + 1}`,
+            rollNo: m.rollNo || 'N/A',
+            mobile: m.phone || m.mobile || 'N/A',
+            course: m.course || row.department || 'N/A',
+            isCaptain: m.isCaptain || (idx === 0)
+          }));
+        } else {
+          members = [{
+            id: `mem-${row.id}-0`,
+            name: row.studentName || 'Athlete',
+            rollNo: row.department || 'N/A',
+            mobile: '',
+            course: row.department || 'N/A',
+            isCaptain: true
+          }];
+        }
+      }
+
+      const teamDisplayName = row.teamName ? `${row.teamName} (${row.college})` : `${row.studentName} (${row.college})`;
+      teams.push({
+        id: row.id,
+        registrationId: row.registrationId || row.id,
+        teamName: row.teamName || row.studentName,
+        displayName: teamDisplayName,
+        college: row.college,
+        department: row.department,
+        gender: row.gender,
+        membersCount: members.length,
+        members: members
+      });
+
+      members.forEach((m) => {
+        participants.push({
+          id: m.id || `${row.id}-${m.name}`,
+          registrationId: row.id,
+          teamName: row.teamName || null,
+          name: m.name,
+          displayName: `${m.name} (${row.college} • ${m.course || row.department || 'Student'}${m.isCaptain ? ' • Captain' : ''})`,
+          rollNo: m.rollNo,
+          mobile: m.mobile,
+          college: row.college,
+          course: m.course || row.department,
+          isCaptain: !!m.isCaptain,
+          gender: m.gender || row.gender
+        });
+      });
+    });
+
+    return res.json({
+      success: true,
+      event: {
+        id: event.id,
+        title: event.title,
+        status: event.status,
+        registrationOpen: !isRegClosed,
+        isSchedulingReady: isRegClosed && evStatus !== 'draft' && evStatus !== 'completed'
+      },
+      teams,
+      participants
+    });
+  } catch (err) {
+    console.error('Error fetching eligible competitors:', err.message);
+    return res.status(500).json({ success: false, message: 'Failed to fetch eligible competitors', error: err.message });
   }
 };
 

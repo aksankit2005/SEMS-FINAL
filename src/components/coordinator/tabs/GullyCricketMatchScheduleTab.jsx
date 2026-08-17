@@ -30,6 +30,9 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
   });
 
   const [createdEvents, setCreatedEvents] = useState([]);
+  const [selectedEventId, setSelectedEventId] = useState('');
+  const [eligibleCompetitors, setEligibleCompetitors] = useState({ teams: [], participants: [] });
+  const [loadingCompetitors, setLoadingCompetitors] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
   const [form, setForm] = useState({
@@ -38,25 +41,60 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
     eventTitle: 'Official Gully & Box Cricket Championship 2026',
     team1: '',
     team2: '',
+    team1Id: '',
+    team2Id: '',
     tableNumber: 'Street Pitch Ground 1',
     date: new Date().toISOString().split('T')[0],
     time: '10:00 AM',
   });
 
+  const activeEvents = createdEvents.filter((e) => e && e.status !== 'Draft' && e.status !== 'Completed');
+  const selectedEvent = activeEvents.find((e) => e.id === selectedEventId) || activeEvents[0] || null;
+  const isRegClosed = Boolean(selectedEvent && (selectedEvent.registrationOpen === false || selectedEvent.status === 'Closed'));
+
   useEffect(() => {
     const fetchEvents = async () => {
       try {
         const list = await coordinatorApi.getEvents();
-        if (list && list.length > 0) {
-          setCreatedEvents(list);
-          if (!form.eventTitle) {
-            setForm((prev) => ({ ...prev, eventTitle: list[0].title }));
+        const filtered = (list || []).filter(
+          (e) => (e.sportId || e.sportName || '').toLowerCase().includes('gully') || (e.title || '').toLowerCase().includes('gully')
+        );
+        if (filtered && filtered.length > 0) {
+          setCreatedEvents(filtered);
+          const act = filtered.filter((e) => e && e.status !== 'Draft' && e.status !== 'Completed');
+          if (act.length > 0) {
+            setSelectedEventId(act[0].id);
+            setForm((prev) => ({ ...prev, eventTitle: act[0].title }));
           }
         }
       } catch (e) { }
     };
     fetchEvents();
   }, []);
+
+  useEffect(() => {
+    if (!selectedEvent?.id) {
+      setEligibleCompetitors({ teams: [], participants: [] });
+      return;
+    }
+    const loadCompetitors = async () => {
+      setLoadingCompetitors(true);
+      try {
+        const data = await coordinatorApi.getEligibleCompetitors(selectedEvent.id);
+        if (data) {
+          setEligibleCompetitors({
+            teams: data.teams || [],
+            participants: data.participants || []
+          });
+        }
+      } catch (e) {
+        console.warn('Error loading eligible gully cricket teams:', e);
+      } finally {
+        setLoadingCompetitors(false);
+      }
+    };
+    loadCompetitors();
+  }, [selectedEvent?.id]);
 
   const getCleanTeamName = (teamStr) => {
     if (!teamStr) return '';
@@ -104,13 +142,30 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
   const handleAddSlot = async (e) => {
     e.preventDefault();
 
+    if (!selectedEvent) {
+      addToast('No active event selected for match scheduling.', 'error');
+      return;
+    }
+
+    if (!isRegClosed) {
+      addToast('Registration must be closed before fixtures can be scheduled.', 'error');
+      return;
+    }
+
     if (!form.team1.trim() || !form.team2.trim()) {
-      addToast('Please enter both Team 1 Name and Team 2 Name', 'error');
+      addToast('Please select both Team 1 and Team 2', 'error');
+      return;
+    }
+
+    if (form.team1.trim() === form.team2.trim()) {
+      addToast('Team 1 and Team 2 cannot be the same team', 'error');
       return;
     }
 
     const finalTeam1 = form.team1.trim();
     const finalTeam2 = form.team2.trim();
+    const finalTeam1Id = form.team1Id || null;
+    const finalTeam2Id = form.team2Id || null;
 
     if (editingId) {
       const updated = matches.map((m) =>
@@ -119,10 +174,13 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
             ...m,
             team1: finalTeam1,
             team2: finalTeam2,
+            team1Id: finalTeam1Id,
+            team2Id: finalTeam2Id,
             matchTitle: `${finalTeam1} vs ${finalTeam2}`,
             format: form.format,
             category: form.category,
-            eventTitle: form.eventTitle,
+            eventId: selectedEvent.id,
+            eventTitle: selectedEvent.title,
             tableNumber: form.tableNumber,
             date: form.date,
             time: form.time,
@@ -130,6 +188,19 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
           : m
       );
       onUpdateMatches(updated);
+      await coordinatorApi.updateMatchScoring(editingId, {
+        team1: finalTeam1,
+        team2: finalTeam2,
+        team1Id: finalTeam1Id,
+        team2Id: finalTeam2Id,
+        eventId: selectedEvent.id,
+        eventTitle: selectedEvent.title,
+        tableNumber: form.tableNumber,
+        date: form.date,
+        time: form.time,
+        format: form.format,
+        category: form.category,
+      });
       setEditingId(null);
       addToast('Gully Cricket match schedule updated successfully', 'success');
     } else {
@@ -138,37 +209,48 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
         sport: assignedSport,
         sportId: assignedSport,
         sportName: sportName,
+        eventId: selectedEvent.id,
+        eventTitle: selectedEvent.title,
         team1: finalTeam1,
         team2: finalTeam2,
+        team1Id: finalTeam1Id,
+        team2Id: finalTeam2Id,
         matchTitle: `${finalTeam1} vs ${finalTeam2}`,
         format: form.format,
         category: form.category,
-        eventTitle: form.eventTitle,
         tableNumber: form.tableNumber,
+        venue: form.tableNumber,
         date: form.date,
         time: form.time,
         status: 'SCHEDULED',
         score1: 0,
         score2: 0,
-        wickets1: 0,
-        wickets2: 0,
-        overs1: '0.0',
-        overs2: '0.0',
-        winner: null,
       };
 
-      const updated = [newMatch, ...matches];
+      const updated = [newMatch, ...(matches || [])];
       onUpdateMatches(updated);
-      addToast('New Gully Cricket match slot scheduled successfully', 'success');
+      await coordinatorApi.saveMatches(updated);
+      addToast('Gully Cricket match schedule created successfully!', 'success');
     }
 
-    // Reset Form fields
     setForm((prev) => ({
       ...prev,
       team1: '',
       team2: '',
-      time: '10:00 AM',
+      team1Id: '',
+      team2Id: '',
     }));
+  };
+
+  const handleDeleteSlot = async (id) => {
+    const isConfirmed = await confirmDelete({
+      title: 'Delete Gully Cricket Match',
+      message: 'Are you sure you want to remove this scheduled Gully Cricket match?'
+    });
+    if (!isConfirmed) return;
+    await coordinatorApi.deleteMatch(id);
+    onUpdateMatches(matches.filter((m) => m.id !== id));
+    addToast('Gully Cricket match schedule deleted', 'info');
   };
 
   const handleEdit = (m) => {
@@ -179,6 +261,8 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
       eventTitle: m.eventTitle || 'Official Gully & Box Cricket Championship 2026',
       team1: m.team1 || '',
       team2: m.team2 || '',
+      team1Id: m.team1Id || '',
+      team2Id: m.team2Id || '',
       tableNumber: m.tableNumber || 'Street Pitch Ground 1',
       date: m.date || new Date().toISOString().split('T')[0],
       time: m.time || '10:00 AM',
@@ -186,14 +270,8 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = (id) => {
-    const updated = matches.filter((m) => m.id !== id);
-    onUpdateMatches(updated);
-    addToast('Match slot deleted', 'info');
-  };
-
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6 animate-fade-in font-sans">
 
       {/* Top Banner / Heading */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-[#0F172A] p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -227,8 +305,38 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         {/* Schedule Creation Card */}
-        <div className="lg:col-span-5">
-          <div className="bg-white dark:bg-[#0F172A] p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5 sticky top-24">
+        <div className="lg:col-span-5 space-y-4">
+          
+          {/* LIFECYCLE GATE BANNER */}
+          {!selectedEvent ? (
+            <div className="p-5 rounded-3xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 space-y-1.5">
+              <h4 className="text-xs font-black uppercase tracking-wider">⚠️ No Active Gully Cricket Event</h4>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                Create and publish a Gully Cricket event in the Events tab to enable match scheduling.
+              </p>
+            </div>
+          ) : !isRegClosed ? (
+            <div className="p-5 rounded-3xl bg-blue-500/10 border border-blue-500/30 text-blue-700 dark:text-indigo-300 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
+                <h4 className="text-xs font-black uppercase tracking-wider">Event Active • Registration Open — Scheduling Locked</h4>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                Teams are actively registering for <strong>"{selectedEvent.title}"</strong>. To schedule matches, navigate to the <strong>Events tab</strong> and click <strong>"Close Reg"</strong> to freeze team rosters.
+              </p>
+            </div>
+          ) : (
+            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 flex items-center justify-between text-xs font-bold">
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                <span>Registration Closed — Fixtures Ready ({eligibleCompetitors.teams.length} teams)</span>
+              </span>
+            </div>
+          )}
+
+          <div className={`bg-white dark:bg-[#0F172A] p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5 sticky top-24 ${
+            !isRegClosed ? 'opacity-60 pointer-events-none' : ''
+          }`}>
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold">
@@ -249,6 +357,8 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
                       eventTitle: 'Official Gully & Box Cricket Championship 2026',
                       team1: '',
                       team2: '',
+                      team1Id: '',
+                      team2Id: '',
                       tableNumber: 'Street Pitch Ground 1',
                       date: new Date().toISOString().split('T')[0],
                       time: '10:00 AM',
@@ -263,20 +373,24 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
 
             <form onSubmit={handleAddSlot} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Gully Cricket Event</label>
-                <select
-                  value={form.eventTitle}
-                  onChange={(e) => setForm({ ...form, eventTitle: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
-                >
-                  {createdEvents.length > 0 ? (
-                    createdEvents.map((evt) => (
-                      <option key={evt.id} value={evt.title}>{evt.title}</option>
-                    ))
-                  ) : (
-                    <option value="Official Gully & Box Cricket Championship 2026">Official Gully & Box Cricket Championship 2026</option>
-                  )}
-                </select>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Target Event</label>
+                {activeEvents.length > 0 ? (
+                  <select
+                    value={selectedEventId}
+                    onChange={(e) => {
+                      setSelectedEventId(e.target.value);
+                      const ev = activeEvents.find(a => a.id === e.target.value);
+                      if (ev) setForm(prev => ({ ...prev, eventTitle: ev.title }));
+                    }}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                  >
+                    {activeEvents.map((evt) => (
+                      <option key={evt.id} value={evt.id}>{evt.title} ({evt.registrationOpen === false || evt.status === 'Closed' ? 'Reg Closed' : 'Reg Open'})</option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-xs text-rose-500">No active events found.</p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -308,33 +422,63 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
                 </div>
               </div>
 
-              {/* Team 1 & Team 2 Inputs */}
+              {/* Team 1 & Team 2 Registered Selectors */}
               <div className="space-y-3 p-3.5 rounded-2xl bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Team 1 (Batting First) *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. MPEC Gully Strikers"
+                  <label className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Team 1 (Batting First - Registered Team) *</label>
+                  <select
                     value={form.team1}
-                    onChange={(e) => setForm({ ...form, team1: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-emerald-500 outline-none"
-                  />
+                    onChange={(e) => {
+                      const selected = (eligibleCompetitors.teams.length > 0 ? eligibleCompetitors.teams : eligibleCompetitors.participants).find(
+                        (t) => (t.teamName || t.name) === e.target.value || t.displayName === e.target.value
+                      );
+                      setForm({
+                        ...form,
+                        team1: e.target.value,
+                        team1Id: selected?.id || selected?.registrationId || null
+                      });
+                    }}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="">-- Select Registered Team 1 --</option>
+                    {(eligibleCompetitors.teams.length > 0 ? eligibleCompetitors.teams : eligibleCompetitors.participants).map((t) => (
+                      <option key={t.id} value={t.teamName || t.name}>
+                        {t.displayName || t.teamName || t.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-
-                <div className="text-center font-black text-xs text-slate-400">VS</div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Team 2 (Batting Second) *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. MIPS Box Kings"
+                  <label className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Team 2 (Batting Second - Registered Team) *</label>
+                  <select
                     value={form.team2}
-                    onChange={(e) => setForm({ ...form, team2: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-emerald-500 outline-none"
-                  />
+                    onChange={(e) => {
+                      const selected = (eligibleCompetitors.teams.length > 0 ? eligibleCompetitors.teams : eligibleCompetitors.participants).find(
+                        (t) => (t.teamName || t.name) === e.target.value || t.displayName === e.target.value
+                      );
+                      setForm({
+                        ...form,
+                        team2: e.target.value,
+                        team2Id: selected?.id || selected?.registrationId || null
+                      });
+                    }}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="">-- Select Registered Team 2 --</option>
+                    {(eligibleCompetitors.teams.length > 0 ? eligibleCompetitors.teams : eligibleCompetitors.participants).map((t) => (
+                      <option key={t.id} value={t.teamName || t.name}>
+                        {t.displayName || t.teamName || t.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
+                {isRegClosed && eligibleCompetitors.teams.length === 0 && (
+                  <p className="text-[11px] font-bold text-rose-500 dark:text-rose-400">
+                    ⚠️ No verified registrations found for this Gully Cricket event.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-1">

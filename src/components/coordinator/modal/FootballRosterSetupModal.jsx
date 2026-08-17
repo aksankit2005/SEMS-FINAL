@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Plus, Trash2, UserCheck, Check, Edit2 } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
+import { coordinatorApi } from '../../../services/coordinatorApi';
 
 export const FootballRosterSetupModal = ({ match, targetVenue, onClose, onRosterSaved }) => {
   const { addToast } = useToast();
@@ -35,6 +36,52 @@ export const FootballRosterSetupModal = ({ match, targetVenue, onClose, onRoster
   const [roster2, setRoster2] = useState(
     match?.roster2 && match.roster2.length >= 5 ? match.roster2 : defaultRosterForTeam(team2Name, 'T2')
   );
+
+  useEffect(() => {
+    if (!match?.eventId) return;
+    const fetchRegisteredRosters = async () => {
+      try {
+        const eligible = await coordinatorApi.getEligibleCompetitors(match.eventId);
+        if (!eligible || !eligible.teams || eligible.teams.length === 0) return;
+
+        const findTeam = (name, id) => {
+          return eligible.teams.find((t) => (id && (t.id === id || t.registrationId === id)) || t.teamName === name || t.displayName === name);
+        };
+
+        const t1 = findTeam(match.team1, match.team1Id);
+        const t2 = findTeam(match.team2, match.team2Id);
+
+        if (t1 && Array.isArray(t1.members) && t1.members.length > 0) {
+          const mapped1 = t1.members.map((m, idx) => ({
+            id: `T1-${m.id || idx + 1}`,
+            name: m.name || `Player ${idx + 1}`,
+            jersey: String(idx + 1),
+            onCourt: idx < 5,
+            goals: 0,
+            yellowCards: 0,
+            redCard: false,
+          }));
+          setRoster1(mapped1);
+        }
+
+        if (t2 && Array.isArray(t2.members) && t2.members.length > 0) {
+          const mapped2 = t2.members.map((m, idx) => ({
+            id: `T2-${m.id || idx + 1}`,
+            name: m.name || `Player ${idx + 1}`,
+            jersey: String(idx + 1),
+            onCourt: idx < 5,
+            goals: 0,
+            yellowCards: 0,
+            redCard: false,
+          }));
+          setRoster2(mapped2);
+        }
+      } catch (err) {
+        console.warn('Could not auto-populate registered football rosters:', err);
+      }
+    };
+    fetchRegisteredRosters();
+  }, [match?.eventId, match?.team1, match?.team2, match?.team1Id, match?.team2Id]);
 
   const handleAddPlayer = (teamNum) => {
     const list = teamNum === 1 ? roster1 : roster2;

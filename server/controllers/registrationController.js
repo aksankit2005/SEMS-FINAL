@@ -16,10 +16,10 @@ export const registerPublicEvent = async (req, res) => {
 
   // 1. Authoritative DB Event Check
   if (eventId && eventId !== 'DEFAULT') {
-    try {
       const dbEventRes = await queryDb(
         `SELECT id, sport_id AS "sportId", entry_fee AS "entryFee", 
-                registered_count AS "registeredCount", max_registrations AS "maxRegistrations", status 
+                registered_count AS "registeredCount", max_registrations AS "maxRegistrations", 
+                status, registration_open AS "registrationOpen", reg_end_date AS "regEndDate"
          FROM coordinator_event_items WHERE id = $1`,
         [eventId]
       );
@@ -30,13 +30,21 @@ export const registerPublicEvent = async (req, res) => {
 
         const currentCount = Number(event.registeredCount || 0);
         const maxSlots = Number(event.maxRegistrations || 64);
-        if (currentCount >= maxSlots || (event.status && event.status.toLowerCase() === 'closed')) {
-          return res.status(400).json({ message: 'Registration limit reached. All slots are filled.' });
+        const evStatus = (event.status || '').toLowerCase();
+        const isRegOpen = event.registrationOpen !== false && event.registrationOpen !== 'false' && event.registrationOpen !== 0;
+        const isPastEnd = event.regEndDate ? (new Date(event.regEndDate + 'T23:59:59') < new Date()) : false;
+
+        if (evStatus === 'draft') {
+          return res.status(400).json({ success: false, message: 'This event is in Draft status and is not accepting registrations.' });
+        }
+
+        if (!isRegOpen || evStatus === 'closed' || evStatus === 'completed' || isPastEnd || currentCount >= maxSlots) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Registration is closed for this event. No new registrations can be accepted.' 
+          });
         }
       }
-    } catch (e) {
-      console.warn('Error fetching authoritative event from DB:', e.message);
-    }
   }
 
   // 2. Cryptographic Payment Signature Verification for Paid Events
