@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { envConfig, coordinatorPasswords } from '../config/env.js';
 import { queryDb, prisma } from '../config/db.js';
+import { computeEffectiveRegistrationStatus, parseRegistrationDeadline } from '../utils/registrationLifecycle.js';
 
 export const extractYouTubeVideoIdBackend = (url) => {
   if (!url || typeof url !== 'string') return null;
@@ -329,31 +330,31 @@ export const createMatch = async (req, res) => {
   const team1Id = req.body.team1Id || req.body.team1_id || null;
   const team2Id = req.body.team2Id || req.body.team2_id || null;
 
-  // 1. Authoritative Event & Registration-Closed Gate Check
+  // 1. Authoritative Event & Effective Registration-Closed Gate Check
   if (eventId && eventId !== 'DEFAULT') {
     try {
       const evRes = await queryDb(
-        `SELECT id, sport_id AS "sportId", title, status, registration_open AS "registrationOpen", reg_end_date AS "regEndDate"
+        `SELECT id, sport_id AS "sportId", title, status, registration_open AS "registrationOpen", reg_start_date AS "regStartDate", reg_end_date AS "regEndDate"
          FROM coordinator_event_items WHERE id = $1`,
         [eventId]
       );
       if (evRes && evRes.rows && evRes.rows.length > 0) {
         const ev = evRes.rows[0];
         eventTitle = ev.title || eventTitle;
-        const evStatus = (ev.status || '').toLowerCase();
-        const isRegOpen = ev.registrationOpen !== false && ev.registrationOpen !== 'false' && ev.registrationOpen !== 0;
-        const isPastEnd = ev.regEndDate ? (new Date(ev.regEndDate + 'T23:59:59') < new Date()) : false;
+        const regStatus = computeEffectiveRegistrationStatus(ev);
 
-        if (evStatus === 'draft') {
-          return res.status(400).json({ success: false, message: 'Cannot schedule matches for a Draft event.' });
-        }
-        if (evStatus === 'completed') {
-          return res.status(400).json({ success: false, message: 'Cannot schedule new matches for a Completed event.' });
-        }
-        if (isRegOpen && !isPastEnd && evStatus !== 'closed') {
+        if (!regStatus.canScheduleFixtures) {
+          if (regStatus.effectiveRegistrationOpen) {
+            return res.status(400).json({ 
+              success: false, 
+              message: 'Cannot schedule matches while registration is still open. Registration for this event must be closed before fixtures can be scheduled.',
+              code: 'REGISTRATION_STILL_OPEN'
+            });
+          }
           return res.status(400).json({ 
             success: false, 
-            message: 'Cannot schedule matches while registration is still open. Registration for this event must be closed before fixtures can be scheduled.' 
+            message: regStatus.reason || 'Cannot schedule matches for this event in its current state.',
+            code: regStatus.code
           });
         }
       }
@@ -502,32 +503,32 @@ export const batchSaveMatches = async (req, res) => {
     return res.status(400).json({ message: 'matches must be an array' });
   }
 
-  // 1. Authoritative Event & Registration-Closed Gate Check for batch matches
+  // 1. Authoritative Event & Effective Registration-Closed Gate Check for batch matches
   for (const m of matches) {
     const eventId = m.eventId || m.event_id;
     if (eventId && eventId !== 'DEFAULT') {
       try {
         const evRes = await queryDb(
-          `SELECT id, title, status, registration_open AS "registrationOpen", reg_end_date AS "regEndDate"
+          `SELECT id, title, status, registration_open AS "registrationOpen", reg_start_date AS "regStartDate", reg_end_date AS "regEndDate"
            FROM coordinator_event_items WHERE id = $1`,
           [eventId]
         );
         if (evRes && evRes.rows && evRes.rows.length > 0) {
           const ev = evRes.rows[0];
-          const evStatus = (ev.status || '').toLowerCase();
-          const isRegOpen = ev.registrationOpen !== false && ev.registrationOpen !== 'false' && ev.registrationOpen !== 0;
-          const isPastEnd = ev.regEndDate ? (new Date(ev.regEndDate + 'T23:59:59') < new Date()) : false;
+          const regStatus = computeEffectiveRegistrationStatus(ev);
 
-          if (evStatus === 'draft') {
-            return res.status(400).json({ success: false, message: 'Cannot schedule matches for a Draft event.' });
-          }
-          if (evStatus === 'completed') {
-            return res.status(400).json({ success: false, message: 'Cannot schedule matches for a Completed event.' });
-          }
-          if (isRegOpen && !isPastEnd && evStatus !== 'closed') {
+          if (!regStatus.canScheduleFixtures) {
+            if (regStatus.effectiveRegistrationOpen) {
+              return res.status(400).json({ 
+                success: false, 
+                message: 'Cannot schedule matches while registration is still open. Registration for this event must be closed before fixtures can be scheduled.',
+                code: 'REGISTRATION_STILL_OPEN'
+              });
+            }
             return res.status(400).json({ 
               success: false, 
-              message: 'Cannot schedule matches while registration is still open. Registration for this event must be closed before fixtures can be scheduled.' 
+              message: regStatus.reason || 'Cannot schedule matches for this event in its current state.',
+              code: regStatus.code
             });
           }
         }
@@ -1783,6 +1784,18 @@ export const getEvents = async (req, res) => {
         }
 
         const isRegOpen = row.registrationOpen !== false && row.registrationOpen !== 'false' && row.registrationOpen !== 0;
+        const regStatus = computeEffectiveRegistrationStatus({
+          ...row,
+          registrationOpen: isRegOpen
+        });
+
+        // Optional non-blocking idempotent DB flag sync when deadline passed
+        if (isRegOpen && regStatus.isDeadlinePassed) {
+          queryDb(
+            'UPDATE coordinator_event_items SET registration_open = false WHERE id = $1 AND registration_open = true',
+            [row.id]
+          ).catch(() => {});
+        }
 
         return {
           id: row.id,
@@ -1806,6 +1819,14 @@ export const getEvents = async (req, res) => {
           category: row.category,
           status: row.status,
           registrationOpen: isRegOpen,
+          effectiveStatus: regStatus.code,
+          effectiveStatusLabel: regStatus.label,
+          effectiveRegistrationOpen: regStatus.effectiveRegistrationOpen,
+          effectiveRegistrationClosed: regStatus.effectiveRegistrationClosed,
+          isDeadlinePassed: regStatus.isDeadlinePassed,
+          canReopen: regStatus.canReopen,
+          canScheduleFixtures: regStatus.canScheduleFixtures,
+          closureReason: regStatus.reason,
           rules: rulesObj || [],
           requiredDocuments: reqDocs || [],
           contactInfo: contact,
@@ -2013,6 +2034,19 @@ export const updateEvent = async (req, res) => {
     createdBy: req.user.username || req.user.coordinatorName
   };
 
+  // If attempting to open/reopen registration, check if deadline has passed
+  if (registrationOpen === true && (req.body.registrationOpen === true || req.body.status === 'Published' || req.body.status === 'Active')) {
+    const checkStatus = computeEffectiveRegistrationStatus(cleanEvent);
+    if (checkStatus.isDeadlinePassed) {
+      return res.status(400).json({
+        success: false,
+        message: 'Registration deadline has passed. Extend the registration end date before reopening registration.',
+        code: 'CLOSED_DEADLINE_PASSED',
+        effectiveStatus: checkStatus
+      });
+    }
+  }
+
   if (index !== -1) {
     list[index] = {
       ...list[index],
@@ -2069,6 +2103,16 @@ export const updateEvent = async (req, res) => {
 
     if (sqlRes && sqlRes.rows && sqlRes.rows.length > 0) {
       const row = sqlRes.rows[0];
+      const isRegOpen = row.registration_open !== false;
+      const regStatus = computeEffectiveRegistrationStatus({
+        ...row,
+        regStartDate: row.reg_start_date,
+        regEndDate: row.reg_end_date,
+        registeredCount: row.registered_count,
+        maxRegistrations: row.max_registrations,
+        registrationOpen: isRegOpen
+      });
+
       const resEvent = {
         id: row.id,
         sportId: row.sport_id,
@@ -2090,7 +2134,15 @@ export const updateEvent = async (req, res) => {
         venue: row.venue,
         category: row.category,
         status: row.status,
-        registrationOpen: row.registration_open !== false,
+        registrationOpen: isRegOpen,
+        effectiveStatus: regStatus.code,
+        effectiveStatusLabel: regStatus.label,
+        effectiveRegistrationOpen: regStatus.effectiveRegistrationOpen,
+        effectiveRegistrationClosed: regStatus.effectiveRegistrationClosed,
+        isDeadlinePassed: regStatus.isDeadlinePassed,
+        canReopen: regStatus.canReopen,
+        canScheduleFixtures: regStatus.canScheduleFixtures,
+        closureReason: regStatus.reason,
         rules: row.rules,
         requiredDocuments: row.required_documents,
         contactInfo: row.contact_info
@@ -2107,12 +2159,40 @@ export const updateEvent = async (req, res) => {
       update: cleanEvent,
       create: cleanEvent
     });
-    return res.json({ success: true, event: updated });
+    const regStatus = computeEffectiveRegistrationStatus(updated);
+    return res.json({ 
+      success: true, 
+      event: {
+        ...updated,
+        effectiveStatus: regStatus.code,
+        effectiveStatusLabel: regStatus.label,
+        effectiveRegistrationOpen: regStatus.effectiveRegistrationOpen,
+        effectiveRegistrationClosed: regStatus.effectiveRegistrationClosed,
+        isDeadlinePassed: regStatus.isDeadlinePassed,
+        canReopen: regStatus.canReopen,
+        canScheduleFixtures: regStatus.canScheduleFixtures,
+        closureReason: regStatus.reason
+      }
+    });
   } catch (err) {
     console.error('Prisma update error fallback:', err.message);
   }
 
-  return res.json({ success: true, event: cleanEvent });
+  const fallbackStatus = computeEffectiveRegistrationStatus(cleanEvent);
+  return res.json({ 
+    success: true, 
+    event: {
+      ...cleanEvent,
+      effectiveStatus: fallbackStatus.code,
+      effectiveStatusLabel: fallbackStatus.label,
+      effectiveRegistrationOpen: fallbackStatus.effectiveRegistrationOpen,
+      effectiveRegistrationClosed: fallbackStatus.effectiveRegistrationClosed,
+      isDeadlinePassed: fallbackStatus.isDeadlinePassed,
+      canReopen: fallbackStatus.canReopen,
+      canScheduleFixtures: fallbackStatus.canScheduleFixtures,
+      closureReason: fallbackStatus.reason
+    }
+  });
 };
 
 export const deleteEvent = async (req, res) => {
@@ -2163,7 +2243,7 @@ export const getEligibleCompetitors = async (req, res) => {
   try {
     // 1. Authoritative Event Verification
     const evRes = await queryDb(
-      `SELECT id, sport_id AS "sportId", title, status, registration_open AS "registrationOpen", reg_end_date AS "regEndDate"
+      `SELECT id, sport_id AS "sportId", title, status, registration_open AS "registrationOpen", reg_start_date AS "regStartDate", reg_end_date AS "regEndDate"
        FROM coordinator_event_items WHERE id = $1`,
       [eventId]
     );
@@ -2171,10 +2251,7 @@ export const getEligibleCompetitors = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Event not found in coordinator events.' });
     }
     const event = evRes.rows[0];
-    const evStatus = (event.status || '').toLowerCase();
-    const isRegOpen = event.registrationOpen !== false && event.registrationOpen !== 'false' && event.registrationOpen !== 0;
-    const isPastEnd = event.regEndDate ? (new Date(event.regEndDate + 'T23:59:59') < new Date()) : false;
-    const isRegClosed = !isRegOpen || isPastEnd || evStatus === 'closed';
+    const regStatus = computeEffectiveRegistrationStatus(event);
 
     // 2. Fetch registrations for this event & sport
     const normalizedSport = sportId.replace(/_/g, '-');
@@ -2305,8 +2382,15 @@ export const getEligibleCompetitors = async (req, res) => {
         id: event.id,
         title: event.title,
         status: event.status,
-        registrationOpen: !isRegClosed,
-        isSchedulingReady: isRegClosed && evStatus !== 'draft' && evStatus !== 'completed'
+        registrationOpen: event.registrationOpen !== false,
+        effectiveStatus: regStatus.code,
+        effectiveStatusLabel: regStatus.label,
+        effectiveRegistrationOpen: regStatus.effectiveRegistrationOpen,
+        effectiveRegistrationClosed: regStatus.effectiveRegistrationClosed,
+        isDeadlinePassed: regStatus.isDeadlinePassed,
+        canReopen: regStatus.canReopen,
+        isSchedulingReady: regStatus.canScheduleFixtures,
+        closureReason: regStatus.reason
       },
       teams,
       participants

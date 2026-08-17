@@ -17,6 +17,7 @@ import { PaymentForm } from '../components/registration/PaymentForm';
 import { RegistrationReceipt } from '../components/registration/RegistrationReceipt';
 import { generateCollegePassCode } from '../utils/pdfExporter';
 import { BadmintonRulesDisplay, BadmintonRulesModal } from '../components/registration/BadmintonRulesDisplay';
+import { computeEffectiveRegistrationStatus, parseRegistrationDeadline } from '../utils/registrationLifecycle';
 
 
 const MOCK_RECEIPT_IMAGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'><rect width='100%25' height='100%25' fill='%230f172a'/><text x='50%25' y='35%25' fill='%2310b981' font-family='sans-serif' font-size='22' font-weight='black' text-anchor='middle'>APEX 2026</text><text x='50%25' y='50%25' fill='%23ffffff' font-family='sans-serif' font-size='14' font-weight='bold' text-anchor='middle'>MOCK PAYMENT SUCCESSFUL</text><text x='50%25' y='65%25' fill='%2364748b' font-family='sans-serif' font-size='10' font-weight='medium' text-anchor='middle'>UTR: TXN-APEX-MOCK-998</text><rect x='20' y='220' width='260' height='50' fill='%231e293b' rx='10'/><text x='50%25' y='250%25' fill='%2338bdf8' font-family='sans-serif' font-size='12' font-weight='bold' text-anchor='middle'>VERIFIED DEMO RECEIPT</text></svg>";
@@ -32,19 +33,18 @@ const RegistrationCountdownTimer = ({ endDateStr }) => {
 
   useEffect(() => {
     const updateCountdown = () => {
-      if (!endDateStr || typeof endDateStr !== 'string') {
+      if (!endDateStr) {
         setTimeLeft('Closed');
         return;
       }
       try {
-        const datePart = endDateStr.includes('T') ? endDateStr : `${endDateStr}T23:59:59`;
-        const end = new Date(datePart);
-        if (isNaN(end.getTime())) {
+        const deadline = parseRegistrationDeadline(endDateStr);
+        if (!deadline) {
           setTimeLeft('Closed');
           return;
         }
         const now = new Date();
-        const diff = end - now;
+        const diff = deadline.getTime() - now.getTime();
 
         if (diff <= 0) {
           setTimeLeft('Closed');
@@ -442,9 +442,12 @@ export const RegistrationPage = () => {
 
   // Step 1 Validation
   const handleDetailsSubmit = () => {
-    if (activeSport && (activeSport.registrationOpen === false || activeSport.status === 'Closed')) {
-      addToast('Registration is closed for this event. No new submissions can be accepted.', 'error');
-      return;
+    if (activeSport) {
+      const regStatus = computeEffectiveRegistrationStatus(activeSport);
+      if (!regStatus.effectiveRegistrationOpen) {
+        addToast(regStatus.reason || 'Registration is closed for this event.', 'error');
+        return;
+      }
     }
 
     let formErrors = {};
@@ -555,6 +558,14 @@ export const RegistrationPage = () => {
   // Step 2 Submission (Payment Gateway & Declaration)
   const handlePaymentSubmit = (e) => {
     if (e) e.preventDefault();
+
+    if (activeSport) {
+      const regStatus = computeEffectiveRegistrationStatus(activeSport);
+      if (!regStatus.effectiveRegistrationOpen) {
+        addToast(regStatus.reason || 'Registration is closed for this event.', 'error');
+        return;
+      }
+    }
 
     if (!formData.declarationAccepted) {
       setErrors((prev) => ({ ...prev, declarationAccepted: 'Please accept the declaration and verification policy' }));
