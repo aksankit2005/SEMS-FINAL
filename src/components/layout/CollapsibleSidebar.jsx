@@ -142,7 +142,7 @@ export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
             className={({ isActive }) =>
               `flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                 isActive
-                  ? 'bg-orange-500 text-white shadow-xs'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xs'
                   : 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
               } ${isCollapsed ? 'justify-center px-0' : ''}`
             }

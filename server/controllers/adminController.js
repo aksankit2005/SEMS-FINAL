@@ -525,8 +525,21 @@ export const deleteLeaderboardEntry = async (req, res) => {
 export const getHeroSlidesDB = async (req, res) => {
   try {
     const setting = await prisma.systemSetting.findUnique({ where: { key: 'hero_slides' } });
-    if (setting && Array.isArray(setting.value)) {
+    if (setting && Array.isArray(setting.value) && setting.value.length > 0) {
       return res.json(setting.value);
+    }
+
+    // Direct database query fallback
+    const rawRes = await queryDb("SELECT value FROM system_settings WHERE key = 'hero_slides'");
+    if (rawRes && rawRes.rows && rawRes.rows.length > 0) {
+      const val = rawRes.rows[0].value;
+      if (Array.isArray(val) && val.length > 0) return res.json(val);
+      if (typeof val === 'string') {
+        try {
+          const parsed = JSON.parse(val);
+          if (Array.isArray(parsed) && parsed.length > 0) return res.json(parsed);
+        } catch (e) {}
+      }
     }
   } catch (err) {
     console.error('Error fetching hero slides from DB:', err.message);
@@ -548,8 +561,18 @@ export const saveHeroSlidesDB = async (req, res) => {
     });
     return res.json({ success: true, slides: updated.value });
   } catch (err) {
-    console.error('Error saving hero slides to DB:', err.message);
-    return res.status(500).json({ message: 'Failed to save hero slides to database' });
+    console.error('Error saving hero slides via Prisma, attempting raw query fallback:', err.message);
+    try {
+      await queryDb(`
+        INSERT INTO system_settings (key, value, "updatedAt")
+        VALUES ('hero_slides', $1::jsonb, NOW())
+        ON CONFLICT (key) DO UPDATE SET value = $1::jsonb, "updatedAt" = NOW()
+      `, [JSON.stringify(slides)]);
+      return res.json({ success: true, slides });
+    } catch (rawErr) {
+      console.error('Error saving hero slides via raw query:', rawErr.message);
+      return res.status(500).json({ message: 'Failed to save hero slides to database' });
+    }
   }
 };
 

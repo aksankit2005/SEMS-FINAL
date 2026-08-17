@@ -1,3 +1,5 @@
+import { extractYouTubeVideoId, getYouTubeEmbedUrl } from './youtube';
+
 /**
  * Utility functions for Google Drive URL parsing, direct media embedding,
  * and direct file downloading.
@@ -26,6 +28,11 @@ export const extractGoogleDriveId = (url) => {
 export const getMediaPreviewUrl = (url, mediaType = 'image') => {
   if (!url) return 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=1200&q=80';
 
+  const ytId = extractYouTubeVideoId(url);
+  if (ytId) {
+    return `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+  }
+
   const driveId = extractGoogleDriveId(url);
   if (driveId) {
     // 100% visible Google Drive thumbnail API endpoint (bypasses CORS & hotlinking blocks)
@@ -44,10 +51,15 @@ export const getGoogleDriveFallbackUrl = (url) => {
   return url;
 };
 
-// Generates high-res video poster thumbnail for Google Drive & Cloudinary videos
+// Generates high-res video poster thumbnail for YouTube, Google Drive & Cloudinary videos
 export const getVideoThumbnailUrl = (url, fallbackCover = null) => {
   if (fallbackCover) return fallbackCover;
   if (!url) return 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1200&q=80';
+
+  const ytId = extractYouTubeVideoId(url);
+  if (ytId) {
+    return `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+  }
 
   const driveId = extractGoogleDriveId(url);
   if (driveId) {
@@ -61,8 +73,13 @@ export const getVideoThumbnailUrl = (url, fallbackCover = null) => {
   return url;
 };
 
-// Generates embed URL for Google Drive videos (or direct video sources)
+// Generates embed URL for YouTube, Google Drive videos (or direct video sources)
 export const getVideoEmbedUrl = (url) => {
+  const ytId = extractYouTubeVideoId(url);
+  if (ytId) {
+    return getYouTubeEmbedUrl(ytId, false);
+  }
+
   const driveId = extractGoogleDriveId(url);
   if (driveId) {
     return `https://drive.google.com/file/d/${driveId}/preview`;

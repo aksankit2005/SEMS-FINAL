@@ -67,15 +67,15 @@ export const registerPublicEvent = async (req, res) => {
       }
       isPaymentVerified = true;
       paymentTxnId = razorpayPaymentId;
-    } else if (razorpayPaymentId && !razorpayKeySecret) {
-      // In development mode where Razorpay Key Secret is not set
-      console.warn('⚠️ [Payment Warning] RAZORPAY_KEY_SECRET not set on server. Accepting payment transaction with audit flag.');
+    } else if (razorpayPaymentId && !razorpayKeySecret && process.env.NODE_ENV !== 'production') {
+      // In development mode only
+      console.warn('⚠️ [Payment Warning] RAZORPAY_KEY_SECRET not set in non-production. Accepting test transaction.');
       paymentTxnId = razorpayPaymentId;
       isPaymentVerified = true;
     } else {
       return res.status(400).json({
         success: false,
-        message: 'Payment required. Valid Razorpay transaction details are missing.'
+        message: 'Payment verification failed: Valid cryptographic transaction signature required.'
       });
     }
   } else {

@@ -394,7 +394,18 @@ export const initDatabaseSchema = async () => {
     `);
     await queryDb(`ALTER TABLE committee_members ADD COLUMN IF NOT EXISTS public_id VARCHAR(255);`);
 
-    // 5. Seed user account tables and password hashes
+    // 6. Ensure system_settings table exists for hero slides and configuration
+    await queryDb(`
+      CREATE TABLE IF NOT EXISTS system_settings (
+        key VARCHAR(255) PRIMARY KEY,
+        value JSONB NOT NULL,
+        "updatedBy" VARCHAR(255),
+        "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 7. Seed user account tables and password hashes
     await seedInitialAccountHashes();
 
   } catch (err) {

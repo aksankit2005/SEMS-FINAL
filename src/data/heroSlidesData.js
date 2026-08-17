@@ -86,13 +86,15 @@ export const fetchHeroSlidesFromDB = async () => {
     const res = await fetch(apiUrl('/public/hero-slides'));
     if (res.ok) {
       const slides = await res.json();
-      if (Array.isArray(slides) && slides.length >= 5) {
+      if (Array.isArray(slides) && slides.length > 0) {
         localStorage.setItem('sems_home_hero_slides', JSON.stringify(slides));
         window.dispatchEvent(new Event('sems_slides_updated'));
         return slides;
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error('Error fetching hero slides from DB:', e);
+  }
   return getHeroSlides();
 };
 
@@ -102,12 +104,27 @@ export const saveHeroSlides = async (slides) => {
   window.dispatchEvent(new Event('storage'));
 
   try {
-    await fetch(apiUrl('/super-coordinator/hero-slides'), {
+    const token = localStorage.getItem('sems_super_coord_token') || localStorage.getItem('sems_admin_token');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(apiUrl('/super-coordinator/hero-slides'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(slides)
     });
+
+    if (res.ok) {
+      const data = await res.json();
+      return { success: true, data };
+    } else {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || `Server responded with status ${res.status}`);
+    }
   } catch (e) {
     console.error('Error persisting hero slides to DB:', e);
+    throw e;
   }
 };

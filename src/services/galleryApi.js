@@ -13,6 +13,7 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token =
     localStorage.getItem('pr_auth_token') ||
+    localStorage.getItem('sems_super_coord_token') ||
     localStorage.getItem('sems_admin_token') ||
     localStorage.getItem('admin_token') ||
     localStorage.getItem('token');
@@ -68,18 +69,29 @@ export const galleryApi = {
 
   // Check PR Auth status
   isPRAuthenticated() {
-    return !!(localStorage.getItem('pr_auth_token') || localStorage.getItem('sems_admin_token'));
+    return !!(localStorage.getItem('pr_auth_token') || localStorage.getItem('sems_admin_token') || localStorage.getItem('sems_super_coord_token'));
   },
 
   // Get Cloudinary upload signature from backend
   async getCloudinarySignature(folder = 'sems_gallery') {
+    const isSuperCoord = !!localStorage.getItem('sems_super_coord_token');
+    const isAdmin = !!localStorage.getItem('sems_admin_token');
+    const endpoint = isSuperCoord
+      ? '/super-coordinator/cloudinary-signature'
+      : isAdmin
+      ? '/admin/cloudinary-signature'
+      : '/pr/cloudinary-signature';
+
     try {
-      const endpoint = localStorage.getItem('sems_admin_token') ? '/admin/cloudinary-signature' : '/pr/cloudinary-signature';
       const res = await api.get(endpoint, { params: { folder } });
       return res.data;
     } catch (err) {
       try {
-        const altEndpoint = localStorage.getItem('sems_admin_token') ? '/pr/cloudinary-signature' : '/admin/cloudinary-signature';
+        const altEndpoint = isSuperCoord
+          ? '/admin/cloudinary-signature'
+          : isAdmin
+          ? '/pr/cloudinary-signature'
+          : '/admin/cloudinary-signature';
         const res2 = await api.get(altEndpoint, { params: { folder } });
         return res2.data;
       } catch (err2) {
