@@ -71,6 +71,7 @@ export const ReportsTab = ({ user }) => {
           'S.No.': idx + 1,
           'Registration ID': p.registrationId || 'N/A',
           'Timestamp': p.timestamp || 'N/A',
+          'Participation Type': p.participationType || 'INDIVIDUAL',
           'Sport': p.sport || sportName,
           'Team Name': p.teamName || 'Individual',
           'College Name': p.collegeName || 'N/A',

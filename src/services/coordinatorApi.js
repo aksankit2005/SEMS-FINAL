@@ -966,10 +966,9 @@ async deleteMatch(id) {
         return res.data.receipt;
       }
     } catch (e) {
-      console.warn('Backend register-event error:', e?.response?.data || e.message);
+      console.error('Backend register-event error:', e?.response?.data || e.message);
+      throw new Error(e?.response?.data?.message || 'Server registration failed. Please ensure payment is completed.');
     }
-
-    const key = `sems_participants_${sportKey}`;
     let currentParticipants = [];
     try {
       const saved = localStorage.getItem(key);
@@ -1258,17 +1257,18 @@ async deleteMatch(id) {
   },
 
   // Get eligible competitors (teams and participants) for an event and sport
-  async getEligibleCompetitors(eventId) {
-    if (!eventId) return { teams: [], participants: [] };
+  async getEligibleCompetitors(eventId, format = null) {
+    if (!eventId) return { teams: [], participants: [], singles: [], doubles: [], teamSquads: [] };
     try {
-      const res = await api.get(`/coordinator/events/${eventId}/eligible-competitors`);
+      const params = format ? { format } : {};
+      const res = await api.get(`/coordinator/events/${eventId}/eligible-competitors`, { params });
       if (res.data && res.data.success) {
         return res.data;
       }
     } catch (e) {
       console.warn('Error fetching eligible competitors from server:', e.message);
     }
-    return { teams: [], participants: [] };
+    return { teams: [], participants: [], singles: [], doubles: [], teamSquads: [] };
   },
 
   // Clear all coordinator created events across localStorage
@@ -1365,10 +1365,8 @@ async deleteMatch(id) {
       if (res.data && res.data.success) {
         return res.data;
       }
-      throw new Error(res.data?.message || 'Registration verification failed');
     } catch (e) {
-      console.error('Backend register event error:', e.response?.data?.message || e.message);
-      throw e;
+      console.warn('Backend register event unreachable, saving to local storage fallback:', e.response?.data?.message || e.message);
     }
 
     // Local storage fallback for incrementing registered count

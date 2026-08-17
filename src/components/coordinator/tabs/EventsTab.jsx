@@ -10,7 +10,7 @@ import { useToast } from '../../../context/ToastContext';
 import { exportToPDF, exportToCSV } from '../../../utils/pdfExporter';
 
 import { SPORT_PLAYER_BOUNDS, resolveSportKey } from '../../../data/sportsConfig';
-import { RegistrationStatusBadge, RegistrationActionButton } from '../events/RegistrationStatusControl';
+import { EventStatusBadge, EventStatusActionButton, RegistrationStatusBadge, RegistrationActionButton } from '../events/RegistrationStatusControl';
 import { computeEffectiveRegistrationStatus } from '../../../utils/registrationLifecycle';
 
 export const EventsTab = ({ user }) => {
@@ -295,38 +295,35 @@ export const EventsTab = ({ user }) => {
 
     const isCurrentlyOpen = regStatus.effectiveRegistrationOpen;
     const newRegOpen = !isCurrentlyOpen;
-    const newStatus = newRegOpen ? (eventObj.status === 'Closed' ? 'Published' : eventObj.status) : 'Closed';
     try {
       const updated = await coordinatorApi.updateEvent(eventObj.id, {
-        registrationOpen: newRegOpen,
-        status: newStatus
+        registrationOpen: newRegOpen
       });
-      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, registrationOpen: newRegOpen, status: newStatus } : item)));
+      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, registrationOpen: newRegOpen } : item)));
       if (!newRegOpen) {
         addToast(`🔒 Registration closed for "${eventObj.title}". Fixtures can now be scheduled!`, 'success');
       } else {
         addToast(`🔓 Registration reopened for "${eventObj.title}". Students can now register.`, 'info');
       }
+      fetchEvents();
+      window.dispatchEvent(new Event('sems_events_updated'));
     } catch (err) {
       const errMsg = err?.response?.data?.message || err?.message || 'Failed to toggle registration status';
       addToast(errMsg, 'error');
     }
   };
 
-  const handleToggleStatus = async (eventObj) => {
-    const statusCycle = {
-      'Draft': 'Upcoming',
-      'Upcoming': 'Published',
-      'Published': 'Closed',
-      'Closed': 'Draft'
-    };
-    const nextStatus = statusCycle[eventObj.status] || 'Published';
+  const handleToggleEventStatus = async (eventObj, targetStatus) => {
+    const nextStatus = targetStatus || ((eventObj.status === 'Active' || eventObj.status === 'Published') ? 'Inactive' : 'Active');
     try {
       const updated = await coordinatorApi.updateEvent(eventObj.id, { status: nextStatus });
-      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? updated : item)));
-      addToast(`Event status changed to ${nextStatus}`, 'info');
+      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, status: nextStatus } : item)));
+      addToast(`Event is now ${nextStatus}`, nextStatus === 'Active' || nextStatus === 'Published' ? 'success' : 'info');
+      fetchEvents();
+      window.dispatchEvent(new Event('sems_events_updated'));
     } catch (err) {
-      addToast('Status toggle failed', 'error');
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to update event status';
+      addToast(errMsg, 'error');
     }
   };
 
@@ -444,17 +441,7 @@ export const EventsTab = ({ user }) => {
 
                     {/* Status Badges */}
                     <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase border shadow-md ${
-                        event.status === 'Published' || event.status === 'Active'
-                          ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
-                          : event.status === 'Upcoming'
-                          ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
-                          : event.status === 'Closed'
-                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                          : 'bg-slate-500/20 text-slate-300 border-slate-500/40'
-                      }`}>
-                        ● EVENT: {event.status || 'Active'}
-                      </span>
+                      <EventStatusBadge event={event} />
                       <RegistrationStatusBadge event={event} />
                       <span className="px-2.5 py-1 rounded-full bg-slate-950/70 backdrop-blur-xs text-white text-[10px] font-bold border border-slate-800">
                         {event.category}
@@ -509,12 +496,15 @@ export const EventsTab = ({ user }) => {
                     {/* Actions Bar */}
                     <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-1.5">
+                        <EventStatusActionButton 
+                          event={event} 
+                          onToggleStatus={handleToggleEventStatus} 
+                        />
                         <RegistrationActionButton 
                           event={event} 
                           onToggle={handleToggleRegistrationOpen} 
                           onOpenEdit={handleOpenEdit} 
                         />
-
                         <button
                           onClick={() => handleViewParticipants(event)}
                           className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 text-blue-600 dark:text-indigo-400 border border-blue-200 dark:border-indigo-500/30 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"

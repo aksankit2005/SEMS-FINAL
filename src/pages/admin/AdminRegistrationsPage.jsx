@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { adminApi } from '../../services/adminApi';
 import { useToast } from '../../context/ToastContext';
 import { exportToCSV, exportToPDF } from '../../utils/pdfExporter';
+import { getParticipationType } from '../../utils/rosterHelper';
 import { RegistrationDetailsModal } from '../../components/admin/RegistrationDetailsModal';
 import { ConfirmationModal } from '../../components/admin/ConfirmationModal';
 import { ALL_12_SPORTS, ALL_COLLEGES } from '../../services/superCoordinatorApi';
@@ -179,9 +180,13 @@ export const AdminRegistrationsPage = () => {
       addToast('No data available to export', 'error');
       return;
     }
-    const exportData = filteredRegistrations.map(r => ({
-      'Reg Time': `${r.registrationDate} ${r.registrationTime || '10:00 AM'}`,
-      'Game & Event Title': `${r.gameSport} - ${r.eventTitle || 'Tournament'}`,
+    const exportData = filteredRegistrations.map((r, idx) => ({
+      'S.No.': idx + 1,
+      'Registration Date': r.registrationDate,
+      'Registration Time': r.registrationTime || '10:00 AM',
+      'Participation Type': r.participationType || getParticipationType(r),
+      'Game Sport': r.gameSport,
+      'Event Title': r.eventTitle || 'Tournament',
       'Team Name': r.teamName || r.participantName,
       'College Name': r.college,
       'Student Name': r.participantName,
@@ -198,15 +203,16 @@ export const AdminRegistrationsPage = () => {
       addToast('No data available to export', 'error');
       return;
     }
-    const headers = [['Reg Time', 'Game & Event Title', 'Team Name', 'College Name', 'Student Name', 'Mobile No', 'Gender', 'Status']];
-    const rows = filteredRegistrations.map(r => [
+    const headers = [['#', 'Reg Date', 'Type', 'Game / Sport', 'Team Name', 'College Name', 'Student Name', 'Mobile No', 'Status']];
+    const rows = filteredRegistrations.map((r, idx) => [
+      idx + 1,
       `${r.registrationDate} ${r.registrationTime || '10:00 AM'}`,
+      r.participationType || getParticipationType(r),
       `${r.gameSport} - ${r.eventTitle || 'Tournament'}`,
       r.teamName || r.participantName,
       r.college,
       r.participantName,
       r.mobile,
-      r.gender,
       r.registrationStatus
     ]);
     exportToPDF('Student Registration Detail Report', headers, rows, `Student_Registrations_${Date.now()}`);

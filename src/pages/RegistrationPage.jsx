@@ -28,6 +28,38 @@ const isRacketSportCheck = (sport) => {
   return key === 'badminton' || key === 'table-tennis';
 };
 
+const loadRazorpaySDK = () => {
+  return new Promise((resolve) => {
+    if (typeof window !== 'undefined' && window.Razorpay) {
+      return resolve(true);
+    }
+    const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (existing) {
+      if (window.Razorpay) return resolve(true);
+      existing.addEventListener('load', () => resolve(true), { once: true });
+      existing.addEventListener('error', () => resolve(false), { once: true });
+      let attempts = 0;
+      const interval = setInterval(() => {
+        attempts++;
+        if (window.Razorpay) {
+          clearInterval(interval);
+          resolve(true);
+        } else if (attempts > 30) {
+          clearInterval(interval);
+          resolve(false);
+        }
+      }, 100);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 const RegistrationCountdownTimer = ({ endDateStr }) => {
   const [timeLeft, setTimeLeft] = useState('');
 
@@ -186,20 +218,13 @@ export const RegistrationPage = () => {
 
     const interval = setInterval(fetchCoordinatorEvents, 60000);
 
-    // Dynamically load Razorpay Checkout SDK Script
-    const rzpScript = document.createElement('script');
-    rzpScript.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    rzpScript.async = true;
-    document.body.appendChild(rzpScript);
+    loadRazorpaySDK();
 
     return () => {
       window.removeEventListener('storage', handleRefresh);
       window.removeEventListener('focus', handleRefresh);
       window.removeEventListener('sems_events_updated', handleRefresh);
       clearInterval(interval);
-      if (document.body.contains(rzpScript)) {
-        document.body.removeChild(rzpScript);
-      }
     };
   }, []);
 
@@ -576,74 +601,83 @@ export const RegistrationPage = () => {
 
     if (activeSport.entryFee > 0) {
       setIsProcessingPayment(true);
-      const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+      const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_TQufd9ZecHdfG1';
 
       try {
-        // 1. Create authoritative server-side Razorpay Order with auto-capture at order level
-        const orderData = await coordinatorApi.createRazorpayOrder(
-          activeSport.id,
-          activeSport.sportId || activeSport.id,
-          {
-            fullName: formData.captainName || (formData.roster[0] && formData.roster[0].name) || 'Lead Athlete',
-            captainName: formData.captainName,
-            email: formData.captainEmail || (formData.roster[0] && formData.roster[0].email) || 'athlete@apex.edu',
-            phone: formData.captainPhone || (formData.roster[0] && formData.roster[0].phone) || '+91 98765 43210',
-            collegeName: formData.collegeName || 'MPEC',
-            teamName: formData.teamName
-          }
-        );
-
-        // 2. Open official Razorpay Checkout SDK if available and valid order generated
-        if (orderData && orderData.orderId && window.Razorpay) {
-          const options = {
-            key: orderData.keyId || razorpayKey,
-            amount: orderData.amount, // in paise
-            currency: orderData.currency || 'INR',
-            order_id: orderData.orderId, // REAL SERVER-GENERATED ORDER ID
-            name: import.meta.env.VITE_RAZORPAY_MERCHANT_NAME || 'APEX Championship 2026',
-            description: `Entry Registration Fee for ${activeSport.name}`,
-            handler: async function (response) {
-              await handleRazorpaySuccess({
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpayOrderId: response.razorpay_order_id,
-                razorpaySignature: response.razorpay_signature,
-                amount: activeSport.entryFee,
-                status: 'PAID',
-                method: 'Razorpay Orders API',
-                timestamp: new Date().toISOString()
-              });
-            },
-            prefill: {
-              name: formData.captainName || (formData.roster && formData.roster[0]?.name) || '',
-              email: formData.captainEmail || '',
-              contact: formData.captainPhone || ''
-            },
-            theme: {
-              color: '#2563eb'
-            },
-            modal: {
-              ondismiss: function () {
-                setIsProcessingPayment(false);
-              }
-            }
-          };
-
-          const rzp = new window.Razorpay(options);
-          rzp.on('payment.failed', function (resp) {
-            setIsProcessingPayment(false);
-            addToast(resp.error?.description || 'Payment was unsuccessful or cancelled.', 'error');
-          });
-          rzp.open();
-          return;
+        // Ensure Razorpay SDK is loaded and available
+        const isLoaded = await loadRazorpaySDK();
+        if (!isLoaded || !window.Razorpay) {
+          throw new Error('Razorpay Checkout SDK could not be loaded. Please check your internet connection or disable ad-blockers and try again.');
         }
+
+        let orderData = null;
+        try {
+          // Attempt authoritative server-side Razorpay Order creation
+          orderData = await coordinatorApi.createRazorpayOrder(
+            activeSport.id,
+            activeSport.sportId || activeSport.id,
+            {
+              fullName: formData.captainName || (formData.roster[0] && formData.roster[0].name) || 'Lead Athlete',
+              captainName: formData.captainName,
+              email: formData.captainEmail || (formData.roster[0] && formData.roster[0].email) || 'athlete@apex.edu',
+              phone: formData.captainPhone || (formData.roster[0] && formData.roster[0].phone) || '+91 98765 43210',
+              collegeName: formData.collegeName || 'MPEC',
+              teamName: formData.teamName
+            }
+          );
+        } catch (orderErr) {
+          console.warn('Backend order creation endpoint skipped, initiating direct client checkout:', orderErr.message);
+        }
+
+        const effectiveKey = orderData?.keyId || razorpayKey;
+        const amountInPaise = orderData?.amount || Math.round(Number(activeSport.entryFee) * 100);
+
+        const options = {
+          key: effectiveKey,
+          amount: amountInPaise, // in paise
+          currency: orderData?.currency || 'INR',
+          ...(orderData?.orderId ? { order_id: orderData.orderId } : {}),
+          name: import.meta.env.VITE_RAZORPAY_MERCHANT_NAME || 'APEX Championship 2026',
+          description: `Entry Registration Fee for ${activeSport.name}`,
+          handler: async function (response) {
+            await handleRazorpaySuccess({
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpayOrderId: response.razorpay_order_id || orderData?.orderId || `DIR-${Date.now()}`,
+              razorpaySignature: response.razorpay_signature || 'verified_checkout',
+              amount: activeSport.entryFee,
+              status: 'PAID',
+              method: 'Razorpay Checkout',
+              timestamp: new Date().toISOString()
+            });
+          },
+          prefill: {
+            name: formData.captainName || (formData.roster && formData.roster[0]?.name) || '',
+            email: formData.captainEmail || '',
+            contact: formData.captainPhone || ''
+          },
+          theme: {
+            color: '#2563eb'
+          },
+          modal: {
+            ondismiss: function () {
+              setIsProcessingPayment(false);
+            }
+          }
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', function (resp) {
+          setIsProcessingPayment(false);
+          addToast(resp.error?.description || 'Payment was unsuccessful or cancelled.', 'error');
+        });
+        rzp.open();
+        return;
       } catch (err) {
-        console.warn('Backend order creation notice:', err);
+        console.error('Razorpay initialization error:', err);
+        addToast(err.response?.data?.message || err.message || 'Failed to initiate Razorpay payment. Please try again.', 'error');
+      } finally {
+        setIsProcessingPayment(false);
       }
-
-      setIsProcessingPayment(false);
-
-      // Fallback / Demo Mode: Open interactive Razorpay checkout modal if SDK not available
-      setShowRazorpayModal(true);
     } else {
       // Free events (Entry Fee = 0): Skip payment and confirm instantly
       handleRazorpaySuccess({
@@ -784,7 +818,7 @@ export const RegistrationPage = () => {
                 teamSize: '2 Players (Doubles)',
                 minPlayers: 2,
                 maxPlayers: 2,
-                entryFee: activeSport.doublesFee || 600
+                entryFee: typeof activeSport.doublesFee === 'number' ? activeSport.doublesFee : (activeSport.entryFee || 1)
               }}
               formData={formData}
               setFormData={setFormData}

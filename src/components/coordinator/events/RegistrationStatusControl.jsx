@@ -1,10 +1,72 @@
 import React from 'react';
-import { ToggleRight, ToggleLeft, Clock, Lock, AlertCircle } from 'lucide-react';
+import { ToggleRight, ToggleLeft, Clock, Lock, AlertCircle, CheckCircle2, XCircle, Power, PowerOff } from 'lucide-react';
 import { computeEffectiveRegistrationStatus } from '../../../utils/registrationLifecycle';
 
 /**
- * Renders the standardized Registration Badge & Action Control
- * according to the 3-state independent lifecycle model (Active/Inactive, Manual Open/Closed, Deadline).
+ * Renders the standardized Event Operational Status Badge (Active / Inactive)
+ */
+export const EventStatusBadge = ({ event }) => {
+  const isEventActive = (event?.status || '').toLowerCase() === 'published' || (event?.status || '').toLowerCase() === 'active';
+  const isUpcoming = (event?.status || '').toLowerCase() === 'upcoming';
+
+  let badgeColor = 'bg-slate-500/20 text-slate-300 border-slate-500/40';
+  let dotColor = 'bg-slate-400';
+  let label = 'EVENT: INACTIVE';
+
+  if (isEventActive) {
+    badgeColor = 'bg-blue-500/20 text-blue-300 border-blue-500/40';
+    dotColor = 'bg-blue-400';
+    label = 'EVENT: ACTIVE';
+  } else if (isUpcoming) {
+    badgeColor = 'bg-sky-500/20 text-sky-300 border-sky-500/40';
+    dotColor = 'bg-sky-400';
+    label = 'EVENT: UPCOMING';
+  }
+
+  return (
+    <span 
+      className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase border shadow-md flex items-center gap-1.5 ${badgeColor}`}
+      title={`Event status: ${event?.status || 'Inactive'}`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${dotColor} ${isEventActive ? 'animate-pulse' : ''}`} />
+      <span>{label}</span>
+    </span>
+  );
+};
+
+/**
+ * Independent Event Status Action Button (Activate / Deactivate Event)
+ */
+export const EventStatusActionButton = ({ event, onToggleStatus }) => {
+  const isEventActive = (event?.status || '').toLowerCase() === 'published' || (event?.status || '').toLowerCase() === 'active';
+
+  if (isEventActive) {
+    return (
+      <button
+        onClick={() => onToggleStatus && onToggleStatus(event, 'Inactive')}
+        className="px-3 py-1.5 rounded-xl font-bold text-[11px] transition flex items-center gap-1 cursor-pointer border bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700"
+        title="Deactivate this event (disables public views & participation)"
+      >
+        <PowerOff className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+        <span>Deactivate Event</span>
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => onToggleStatus && onToggleStatus(event, 'Active')}
+      className="px-3 py-1.5 rounded-xl font-bold text-[11px] transition flex items-center gap-1 cursor-pointer border bg-blue-50 hover:bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-500/40"
+      title="Activate this event to publish it on the platform"
+    >
+      <Power className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+      <span>Activate Event</span>
+    </button>
+  );
+};
+
+/**
+ * Renders the standardized Registration Badge
  */
 export const RegistrationStatusBadge = ({ event }) => {
   const regStatus = computeEffectiveRegistrationStatus(event);
@@ -40,6 +102,9 @@ export const RegistrationStatusBadge = ({ event }) => {
   );
 };
 
+/**
+ * Independent Registration Action Button (Open / Close Registration)
+ */
 export const RegistrationActionButton = ({ event, onToggle, onOpenEdit }) => {
   const regStatus = computeEffectiveRegistrationStatus(event);
 

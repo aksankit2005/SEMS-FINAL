@@ -4,6 +4,7 @@ import { superCoordinatorApi, ALL_12_SPORTS, ALL_COLLEGES } from '../../services
 import { SPORTS_DATA } from '../../data/sportsData';
 import { useToast } from '../../context/ToastContext';
 import { exportToCSV, exportToPDF } from '../../utils/pdfExporter';
+import { getParticipationType } from '../../utils/rosterHelper';
 import { RegistrationDetailsModal } from '../../components/admin/RegistrationDetailsModal';
 import {
   Database,
@@ -141,6 +142,7 @@ export const AdminMasterDataPage = () => {
       'S.No.': idx + 1,
       'Registration ID': p.receiptId || p.registrationId || p.id || 'N/A',
       'Registration Date': `${p.date || ''} ${p.time || ''}`.trim() || 'N/A',
+      'Participation Type': p.participationType || getParticipationType(p),
       'Sport': p.sportName || 'N/A',
       'Event': p.eventTitle || `${p.sportName || 'Sport'} Championship`,
       'Team Name': p.teamName || p.name || 'N/A',
@@ -164,10 +166,11 @@ export const AdminMasterDataPage = () => {
       addToast('No data available to export', 'error');
       return;
     }
-    const headers = ['#', 'Reg ID', 'Sport', 'Team Name', 'College', 'Player Name', 'Role', 'Roll No', 'Mobile', 'Course', 'Status'];
+    const headers = ['#', 'Reg ID', 'Type', 'Sport', 'Team Name', 'College', 'Player Name', 'Role', 'Roll No', 'Mobile', 'Course', 'Status'];
     const rows = filteredParticipants.map((p, idx) => [
       idx + 1,
       p.receiptId || p.registrationId || p.id || 'N/A',
+      p.participationType || getParticipationType(p),
       p.sportName || 'N/A',
       p.teamName || p.name || 'N/A',
       p.college || 'N/A',

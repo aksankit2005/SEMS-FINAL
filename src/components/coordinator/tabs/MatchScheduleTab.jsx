@@ -74,17 +74,20 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
 
   useEffect(() => {
     if (!selectedEvent?.id) {
-      setEligibleCompetitors({ teams: [], participants: [] });
+      setEligibleCompetitors({ teams: [], participants: [], singles: [], doubles: [], teamSquads: [] });
       return;
     }
     const loadCompetitors = async () => {
       setLoadingCompetitors(true);
       try {
-        const data = await coordinatorApi.getEligibleCompetitors(selectedEvent.id);
+        const data = await coordinatorApi.getEligibleCompetitors(selectedEvent.id, form.format);
         if (data) {
           setEligibleCompetitors({
-            teams: data.teams || [],
-            participants: data.participants || []
+            teams: data.teams || data.doubles || [],
+            participants: data.participants || data.singles || [],
+            singles: data.singles || [],
+            doubles: data.doubles || [],
+            teamSquads: data.teamSquads || []
           });
         }
       } catch (e) {
@@ -94,7 +97,7 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
       }
     };
     loadCompetitors();
-  }, [selectedEvent?.id]);
+  }, [selectedEvent?.id, form.format]);
 
   const getCleanTeamName = (teamStr) => {
     if (!teamStr) return '';
@@ -304,7 +307,7 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
                   <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Format</label>
                   <select
                     value={form.format}
-                    onChange={(e) => setForm({ ...form, format: e.target.value, team1: '', team2: '' })}
+                    onChange={(e) => setForm(prev => ({ ...prev, format: e.target.value, team1: '', team2: '', team1Id: null, team2Id: null }))}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
                   >
                     <option value="Singles">Singles</option>
@@ -330,111 +333,131 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
             {/* Competitor Dropdowns from Registered Pool */}
             {!isChess && form.format === 'Doubles' ? (
               <div className="space-y-3 pt-1">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                    Side A / Team 1 (Registered Pair/Team) <span className="text-rose-500">*</span>
-                  </label>
-                  <select
-                    value={form.team1}
-                    onChange={(e) => {
-                      const selected = (eligibleCompetitors.teams.length > 0 ? eligibleCompetitors.teams : eligibleCompetitors.participants).find(
-                        (t) => (t.teamName || t.name) === e.target.value || t.displayName === e.target.value
-                      );
-                      setForm({
-                        ...form,
-                        team1: e.target.value,
-                        team1Id: selected?.id || selected?.registrationId || null
-                      });
-                    }}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
-                  >
-                    <option value="">-- Select Registered Team 1 --</option>
-                    {(eligibleCompetitors.teams.length > 0 ? eligibleCompetitors.teams : eligibleCompetitors.participants).map((t) => (
-                      <option key={t.id} value={t.teamName || t.name}>
-                        {t.displayName || t.teamName || t.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {(eligibleCompetitors.teams || eligibleCompetitors.doubles || []).length === 0 ? (
+                  <p className="text-[11px] font-bold text-rose-500 bg-rose-500/10 p-3 rounded-xl border border-rose-500/20">
+                    ⚠️ No verified Doubles/Duo registrations found for this event.
+                  </p>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                        Side A / Team 1 (Registered Pair/Team) <span className="text-rose-500">*</span>
+                      </label>
+                      <select
+                        value={form.team1}
+                        onChange={(e) => {
+                          const duoList = eligibleCompetitors.teams || eligibleCompetitors.doubles || [];
+                          const selected = duoList.find(
+                            (t) => (t.teamName || t.name) === e.target.value || t.displayName === e.target.value
+                          );
+                          setForm({
+                            ...form,
+                            team1: e.target.value,
+                            team1Id: selected?.id || selected?.registrationId || null
+                          });
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                      >
+                        <option value="">-- Select Registered Team 1 --</option>
+                        {(eligibleCompetitors.teams || eligibleCompetitors.doubles || []).map((t) => (
+                          <option key={t.id} value={t.teamName || t.name}>
+                            {t.displayName || t.teamName || t.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                    Side B / Team 2 (Registered Pair/Team) <span className="text-rose-500">*</span>
-                  </label>
-                  <select
-                    value={form.team2}
-                    onChange={(e) => {
-                      const selected = (eligibleCompetitors.teams.length > 0 ? eligibleCompetitors.teams : eligibleCompetitors.participants).find(
-                        (t) => (t.teamName || t.name) === e.target.value || t.displayName === e.target.value
-                      );
-                      setForm({
-                        ...form,
-                        team2: e.target.value,
-                        team2Id: selected?.id || selected?.registrationId || null
-                      });
-                    }}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
-                  >
-                    <option value="">-- Select Registered Team 2 --</option>
-                    {(eligibleCompetitors.teams.length > 0 ? eligibleCompetitors.teams : eligibleCompetitors.participants).map((t) => (
-                      <option key={t.id} value={t.teamName || t.name}>
-                        {t.displayName || t.teamName || t.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                        Side B / Team 2 (Registered Pair/Team) <span className="text-rose-500">*</span>
+                      </label>
+                      <select
+                        value={form.team2}
+                        onChange={(e) => {
+                          const duoList = eligibleCompetitors.teams || eligibleCompetitors.doubles || [];
+                          const selected = duoList.find(
+                            (t) => (t.teamName || t.name) === e.target.value || t.displayName === e.target.value
+                          );
+                          setForm({
+                            ...form,
+                            team2: e.target.value,
+                            team2Id: selected?.id || selected?.registrationId || null
+                          });
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                      >
+                        <option value="">-- Select Registered Team 2 --</option>
+                        {(eligibleCompetitors.teams || eligibleCompetitors.doubles || []).map((t) => (
+                          <option key={t.id} value={t.teamName || t.name}>
+                            {t.displayName || t.teamName || t.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
               </div>
             ) : (
               <div className="space-y-3 pt-1">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                    {isChess ? 'Player 1 (White - Registered)' : 'Competitor 1 (Registered Athlete)'} <span className="text-rose-500">*</span>
-                  </label>
-                  <select
-                    value={form.team1}
-                    onChange={(e) => {
-                      const p = eligibleCompetitors.participants.find((item) => (item.name === e.target.value || item.displayName === e.target.value));
-                      setForm({
-                        ...form,
-                        team1: e.target.value,
-                        team1Id: p?.id || p?.registrationId || null
-                      });
-                    }}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
-                  >
-                    <option value="">-- Select Registered Competitor 1 --</option>
-                    {eligibleCompetitors.participants.map((p) => (
-                      <option key={p.id} value={p.name}>
-                        {p.displayName || `${p.name} (${p.college})`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {(eligibleCompetitors.participants || eligibleCompetitors.singles || []).length === 0 ? (
+                  <p className="text-[11px] font-bold text-rose-500 bg-rose-500/10 p-3 rounded-xl border border-rose-500/20">
+                    ⚠️ No verified Singles registrations found for this event.
+                  </p>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                        {isChess ? 'Player 1 (White - Registered)' : 'Competitor 1 (Registered Athlete)'} <span className="text-rose-500">*</span>
+                      </label>
+                      <select
+                        value={form.team1}
+                        onChange={(e) => {
+                          const singleList = eligibleCompetitors.participants || eligibleCompetitors.singles || [];
+                          const p = singleList.find((item) => (item.name === e.target.value || item.displayName === e.target.value));
+                          setForm({
+                            ...form,
+                            team1: e.target.value,
+                            team1Id: p?.id || p?.registrationId || null
+                          });
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                      >
+                        <option value="">-- Select Registered Competitor 1 --</option>
+                        {(eligibleCompetitors.participants || eligibleCompetitors.singles || []).map((p) => (
+                          <option key={p.id} value={p.name}>
+                            {p.displayName || `${p.name} (${p.college})`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                    {isChess ? 'Player 2 (Black - Registered)' : 'Competitor 2 (Registered Athlete)'} <span className="text-rose-500">*</span>
-                  </label>
-                  <select
-                    value={form.team2}
-                    onChange={(e) => {
-                      const p = eligibleCompetitors.participants.find((item) => (item.name === e.target.value || item.displayName === e.target.value));
-                      setForm({
-                        ...form,
-                        team2: e.target.value,
-                        team2Id: p?.id || p?.registrationId || null
-                      });
-                    }}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
-                  >
-                    <option value="">-- Select Registered Competitor 2 --</option>
-                    {eligibleCompetitors.participants.map((p) => (
-                      <option key={p.id} value={p.name}>
-                        {p.displayName || `${p.name} (${p.college})`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                        {isChess ? 'Player 2 (Black - Registered)' : 'Competitor 2 (Registered Athlete)'} <span className="text-rose-500">*</span>
+                      </label>
+                      <select
+                        value={form.team2}
+                        onChange={(e) => {
+                          const singleList = eligibleCompetitors.participants || eligibleCompetitors.singles || [];
+                          const p = singleList.find((item) => (item.name === e.target.value || item.displayName === e.target.value));
+                          setForm({
+                            ...form,
+                            team2: e.target.value,
+                            team2Id: p?.id || p?.registrationId || null
+                          });
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                      >
+                        <option value="">-- Select Registered Competitor 2 --</option>
+                        {(eligibleCompetitors.participants || eligibleCompetitors.singles || []).map((p) => (
+                          <option key={p.id} value={p.name}>
+                            {p.displayName || `${p.name} (${p.college})`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
