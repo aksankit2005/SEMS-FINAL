@@ -204,26 +204,16 @@ export const registerPublicEvent = async (req, res) => {
         paymentTxnId = razorpayPaymentId;
       } catch (apiErr) {
         console.error('❌ [Razorpay Fetch/Capture Error]:', apiErr.message);
-        // If API fails in production, do not mark as verified without proof
-        if (process.env.NODE_ENV === 'production') {
-          return res.status(400).json({
-            success: false,
-            message: 'Unable to verify payment with Razorpay. Please retry or contact support.',
-            error: apiErr.message,
-          });
-        }
-        paymentTxnId = razorpayPaymentId;
-        isPaymentVerified = true;
+        return res.status(400).json({
+          success: false,
+          message: 'Unable to verify payment with Razorpay. Please retry or contact support.',
+          error: apiErr.message,
+        });
       }
-    } else if (razorpayPaymentId && !keySecret && process.env.NODE_ENV !== 'production') {
-      // Development mode fallback
-      console.warn('⚠️ [Payment Warning] RAZORPAY_KEY_SECRET not set in non-production. Accepting test transaction.');
-      paymentTxnId = razorpayPaymentId;
-      isPaymentVerified = true;
     } else {
       return res.status(400).json({
         success: false,
-        message: 'Payment verification failed: Valid cryptographic transaction signature required.',
+        message: 'Payment verification failed: Valid Razorpay transaction signature and credentials required.',
       });
     }
   } else {
