@@ -10,6 +10,8 @@ import { useToast } from '../../../context/ToastContext';
 import { useConfirm } from '../../../context/ConfirmContext';
 import { exportToCSV } from '../../../utils/pdfExporter';
 import { OFFICIAL_ATHLETICS_EVENTS } from '../../registration/AthleticsRegistration';
+import { RegistrationStatusBadge, RegistrationActionButton } from '../events/RegistrationStatusControl';
+import { computeEffectiveRegistrationStatus } from '../../../utils/registrationLifecycle';
 
 const DEFAULT_SUB_EVENTS_CONFIG = [
   { name: '100m Race', enabled: true, isRelay: false, entryFee: 100 },
@@ -282,6 +284,36 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
     }
   };
 
+  const handleToggleRegistrationOpen = async (eventObj) => {
+    const regStatus = computeEffectiveRegistrationStatus(eventObj);
+
+    if (regStatus.isDeadlinePassed) {
+      addToast('Registration deadline has passed. Extend the registration end date in edit settings before reopening registration.', 'warning');
+      return;
+    }
+
+    const isCurrentlyOpen = regStatus.effectiveRegistrationOpen;
+    const newRegOpen = !isCurrentlyOpen;
+    const newStatus = newRegOpen ? (eventObj.status === 'Closed' ? 'Published' : eventObj.status) : 'Closed';
+    try {
+      const updated = await coordinatorApi.updateEvent(eventObj.id, {
+        registrationOpen: newRegOpen,
+        status: newStatus
+      });
+      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, registrationOpen: newRegOpen, status: newStatus } : item)));
+      if (!newRegOpen) {
+        addToast(`🔒 Registration closed for "${eventObj.title}". Fixtures can now be scheduled!`, 'success');
+      } else {
+        addToast(`🔓 Registration reopened for "${eventObj.title}". Students can now register.`, 'info');
+      }
+      fetchEvents();
+      window.dispatchEvent(new Event('sems_events_updated'));
+    } catch (err) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to toggle registration status';
+      addToast(errMsg, 'error');
+    }
+  };
+
   // Open Participant Roster Drawer
   const handleOpenParticipants = async (eventObj) => {
     setSelectedEventForParticipants(eventObj);
@@ -320,71 +352,115 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
 
   return (
     <div className="space-y-6 animate-fade-in font-sans">
-      
+
+      {/* TOP DASHBOARD STATS BAR */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Total Events</span>
+          <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{events.length}</p>
+        </div>
+
+        <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Active (Published)</span>
+          <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+            {events.filter((e) => e.status === 'Published').length}
+          </p>
+        </div>
+
+        <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Total Athletes</span>
+          <p className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight">
+            {events.reduce((acc, curr) => acc + (curr.registeredCount || 0), 0)}
+          </p>
+        </div>
+
+        <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Sport Category</span>
+          <p className="text-sm font-black text-slate-900 dark:text-white truncate">Track & Field Athletics</p>
+        </div>
+      </div>
+
       {/* HEADER BAR */}
-      <div className="bg-white dark:bg-[#0B1120] p-6 rounded-3xl border border-slate-200 dark:border-slate-800/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#0B1120] p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-md">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-mono font-bold uppercase tracking-wider">
-              ATHLETICS EVENT MANAGEMENT & PRICING
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[10px] font-mono font-bold uppercase">
+              ATHLETICS COORDINATOR PORTAL
             </span>
-            <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[10px] font-mono font-bold">
-              Sub-Event Prices & Cash Prizes
-            </span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 font-mono">• Track & Field Multi-Event</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight mt-1.5">
-            Athletics Tournament Events
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            Athletics Championship Events & Pricing
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Publish Athletics Championship meets, configure sub-event entry fees (100m, 200m, Relay, Javelin etc.), set 1st/2nd/3rd cash prize money, and view registered athletes.
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+            Configure sub-events (100m, 200m, Relay, Javelin, Long Jump), customize individual entry fees, and manage registration availability.
           </p>
         </div>
 
         <button
           onClick={handleOpenCreate}
-          className="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs shadow-lg shadow-blue-500/25 transition duration-200 flex items-center justify-center gap-2 cursor-pointer shrink-0"
+          className="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-500/20 transition flex items-center gap-2 shrink-0 self-start sm:self-auto cursor-pointer"
         >
-          <Plus className="w-4 h-4" /> Create & Publish Athletics Event
+          <Plus className="w-4 h-4" />
+          <span>Create Athletics Event</span>
         </button>
       </div>
 
       {/* EVENTS GRID */}
       {loading ? (
-        <div className="p-12 text-center text-slate-400 text-xs font-mono">Loading Athletics events...</div>
+        <div className="py-16 text-center space-y-2 bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800">
+          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-xs text-slate-500 dark:text-slate-400">Loading Athletics registration events...</p>
+        </div>
       ) : events.length === 0 ? (
-        <div className="bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800 p-12 text-center space-y-3">
-          <Award className="w-12 h-12 text-blue-500 mx-auto opacity-50" />
-          <h3 className="text-base font-black text-slate-900 dark:text-white">No Athletics Events Published Yet</h3>
+        <div className="py-16 text-center space-y-3 bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800 p-8">
+          <Layers className="w-12 h-12 text-slate-400 dark:text-slate-600 mx-auto" />
+          <h3 className="text-base font-black text-slate-900 dark:text-white">No Athletics Events Created Yet</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-            Click the "Create & Publish Athletics Event" button above to publish your first Athletics Meet and set registration prices & cash prize money for all 7 sub-events.
+            Click the "Create Athletics Event" button above to publish your first Track & Field Championship event.
           </p>
+          <button
+            onClick={handleOpenCreate}
+            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
+          >
+            + Create First Athletics Event
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {events.map((evt) => {
-            const subConfigList = evt.subEventsConfig || DEFAULT_SUB_EVENTS_CONFIG;
+            const subConfigList = evt.rules && Array.isArray(evt.rules) && evt.rules.length > 0 && typeof evt.rules[0] === 'object'
+              ? evt.rules
+              : DEFAULT_SUB_EVENTS_CONFIG;
 
             return (
               <div
                 key={evt.id}
-                className="bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800/80 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col"
+                className="bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-soft dark:shadow-md hover:border-blue-500/30 transition flex flex-col justify-between"
               >
-                {/* Banner Image */}
+                {/* Event Banner */}
                 <div className="relative h-44 w-full bg-slate-900 overflow-hidden">
                   <img
                     src={evt.coverImage || 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80'}
                     alt={evt.title}
-                    className="w-full h-full object-cover opacity-90"
+                    className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
 
                   {/* Status & Category Badges */}
-                  <div className="absolute top-3 left-3 flex items-center gap-2">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase ${
-                      evt.status === 'Published' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                  <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5">
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase border shadow-md ${
+                      evt.status === 'Published' || evt.status === 'Active'
+                        ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                        : evt.status === 'Upcoming'
+                        ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
+                        : evt.status === 'Closed'
+                        ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                        : 'bg-slate-500/20 text-slate-300 border-slate-500/40'
                     }`}>
-                      {evt.status || 'Published'}
+                      ● EVENT: {evt.status || 'Active'}
                     </span>
+                    <RegistrationStatusBadge event={evt} />
                     <span className="px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-md text-white border border-slate-700 text-[10px] font-mono font-bold">
                       {evt.category || 'Open'}
                     </span>
@@ -434,13 +510,21 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
                   </div>
 
                   {/* Actions Bar */}
-                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
-                    <button
-                      onClick={() => handleOpenParticipants(evt)}
-                      className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Eye className="w-3.5 h-3.5" /> Athletes Roster ({evt.registeredCount || 0})
-                    </button>
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <RegistrationActionButton 
+                        event={evt} 
+                        onToggle={handleToggleRegistrationOpen} 
+                        onOpenEdit={handleOpenEdit} 
+                      />
+
+                      <button
+                        onClick={() => handleOpenParticipants(evt)}
+                        className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> Athletes Roster ({evt.registeredCount || 0})
+                      </button>
+                    </div>
 
                     <div className="flex items-center gap-1.5">
                       <button
@@ -452,8 +536,8 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
                       </button>
                       <button
                         onClick={() => handleDeleteEvent(evt.id)}
-                        className="p-2 rounded-xl text-rose-500 hover:bg-rose-500/10 transition cursor-pointer"
-                        title="Delete Event"
+                        className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition cursor-pointer"
+                        title="Delete Athletics Event"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

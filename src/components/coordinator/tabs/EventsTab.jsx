@@ -10,6 +10,8 @@ import { useToast } from '../../../context/ToastContext';
 import { exportToPDF, exportToCSV } from '../../../utils/pdfExporter';
 
 import { SPORT_PLAYER_BOUNDS, resolveSportKey } from '../../../data/sportsConfig';
+import { RegistrationStatusBadge, RegistrationActionButton } from '../events/RegistrationStatusControl';
+import { computeEffectiveRegistrationStatus } from '../../../utils/registrationLifecycle';
 
 export const EventsTab = ({ user }) => {
   const { addToast } = useToast();
@@ -284,7 +286,14 @@ export const EventsTab = ({ user }) => {
   };
 
   const handleToggleRegistrationOpen = async (eventObj) => {
-    const isCurrentlyOpen = eventObj.registrationOpen !== false && eventObj.status !== 'Closed';
+    const regStatus = computeEffectiveRegistrationStatus(eventObj);
+
+    if (regStatus.isDeadlinePassed) {
+      addToast('Registration deadline has passed. Extend the registration end date in edit settings before reopening registration.', 'warning');
+      return;
+    }
+
+    const isCurrentlyOpen = regStatus.effectiveRegistrationOpen;
     const newRegOpen = !isCurrentlyOpen;
     const newStatus = newRegOpen ? (eventObj.status === 'Closed' ? 'Published' : eventObj.status) : 'Closed';
     try {
@@ -299,7 +308,8 @@ export const EventsTab = ({ user }) => {
         addToast(`🔓 Registration reopened for "${eventObj.title}". Students can now register.`, 'info');
       }
     } catch (err) {
-      addToast('Failed to toggle registration status', 'error');
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to toggle registration status';
+      addToast(errMsg, 'error');
     }
   };
 
@@ -435,23 +445,17 @@ export const EventsTab = ({ user }) => {
                     {/* Status Badges */}
                     <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5">
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase border shadow-md ${
-                        event.status === 'Published'
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                        event.status === 'Published' || event.status === 'Active'
+                          ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
                           : event.status === 'Upcoming'
                           ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
                           : event.status === 'Closed'
                           ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                          : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                          : 'bg-slate-500/20 text-slate-300 border-slate-500/40'
                       }`}>
-                        ● {event.status}
+                        ● EVENT: {event.status || 'Active'}
                       </span>
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase border shadow-md ${
-                        isRegOpen
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                          : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                      }`}>
-                        {isRegOpen ? '● Reg: OPEN' : '🔒 Reg: CLOSED (Fixtures Ready)'}
-                      </span>
+                      <RegistrationStatusBadge event={event} />
                       <span className="px-2.5 py-1 rounded-full bg-slate-950/70 backdrop-blur-xs text-white text-[10px] font-bold border border-slate-800">
                         {event.category}
                       </span>
@@ -505,27 +509,11 @@ export const EventsTab = ({ user }) => {
                     {/* Actions Bar */}
                     <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <button
-                          onClick={() => handleToggleRegistrationOpen(event)}
-                          className={`px-3 py-1.5 rounded-xl font-bold text-[11px] transition flex items-center gap-1 cursor-pointer border ${
-                            isRegOpen
-                              ? 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-500/40'
-                              : 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/40'
-                          }`}
-                          title={isRegOpen ? 'Close registration to freeze participants and enable match scheduling' : 'Reopen registration for new student signups'}
-                        >
-                          {isRegOpen ? (
-                            <>
-                              <ToggleRight className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                              <span>Close Reg (Enable Fixtures)</span>
-                            </>
-                          ) : (
-                            <>
-                              <ToggleLeft className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                              <span>Reopen Reg</span>
-                            </>
-                          )}
-                        </button>
+                        <RegistrationActionButton 
+                          event={event} 
+                          onToggle={handleToggleRegistrationOpen} 
+                          onOpenEdit={handleOpenEdit} 
+                        />
 
                         <button
                           onClick={() => handleViewParticipants(event)}

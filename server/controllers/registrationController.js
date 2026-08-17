@@ -1,25 +1,28 @@
 import crypto from 'crypto';
 import { prisma, queryDb } from '../config/db.js';
+import { computeEffectiveRegistrationStatus } from '../utils/registrationLifecycle.js';
 
 let inMemoryCollegeRegistrations = [];
 
 export const registerPublicEvent = async (req, res) => {
-  const { eventId, sportId, participantData, paymentData } = req.body;
+  const { eventId, sportId } = req.body;
+  const participantData = req.body.participantData || req.body;
+  const paymentData = req.body.paymentData || req.body;
 
-  if (!participantData || typeof participantData !== 'object') {
-    return res.status(400).json({ message: 'Participant data is required.' });
+  if (!participantData || typeof participantData !== 'object' || (!participantData.studentName && !participantData.fullName && !participantData.teamName && !participantData.captainName)) {
+    return res.status(400).json({ success: false, message: 'Participant data is required.' });
   }
 
   let event = null;
   let targetSportId = (sportId || '').toLowerCase();
   let authoritativeFee = 0;
 
-  // 1. Authoritative DB Event Check
+  // 1. Authoritative DB Event Check with Effective Registration Status
   if (eventId && eventId !== 'DEFAULT') {
       const dbEventRes = await queryDb(
         `SELECT id, sport_id AS "sportId", entry_fee AS "entryFee", 
                 registered_count AS "registeredCount", max_registrations AS "maxRegistrations", 
-                status, registration_open AS "registrationOpen", reg_end_date AS "regEndDate"
+                status, registration_open AS "registrationOpen", reg_start_date AS "regStartDate", reg_end_date AS "regEndDate"
          FROM coordinator_event_items WHERE id = $1`,
         [eventId]
       );
@@ -28,20 +31,13 @@ export const registerPublicEvent = async (req, res) => {
         targetSportId = (event.sportId || targetSportId).toLowerCase();
         authoritativeFee = Number(event.entryFee || 0);
 
-        const currentCount = Number(event.registeredCount || 0);
-        const maxSlots = Number(event.maxRegistrations || 64);
-        const evStatus = (event.status || '').toLowerCase();
-        const isRegOpen = event.registrationOpen !== false && event.registrationOpen !== 'false' && event.registrationOpen !== 0;
-        const isPastEnd = event.regEndDate ? (new Date(event.regEndDate + 'T23:59:59') < new Date()) : false;
-
-        if (evStatus === 'draft') {
-          return res.status(400).json({ success: false, message: 'This event is in Draft status and is not accepting registrations.' });
-        }
-
-        if (!isRegOpen || evStatus === 'closed' || evStatus === 'completed' || isPastEnd || currentCount >= maxSlots) {
+        const regStatus = computeEffectiveRegistrationStatus(event);
+        if (!regStatus.effectiveRegistrationOpen) {
           return res.status(400).json({ 
             success: false, 
-            message: 'Registration is closed for this event. No new registrations can be accepted.' 
+            message: regStatus.reason || 'Registration for this event has closed.',
+            code: regStatus.code,
+            effectiveStatus: regStatus
           });
         }
       }
