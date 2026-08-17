@@ -635,15 +635,15 @@ export const RegistrationPage = () => {
           });
           rzp.open();
           return;
+        } else {
+          throw new Error('Razorpay Checkout SDK is not available. Please refresh the page and try again.');
         }
       } catch (err) {
-        console.warn('Backend order creation notice:', err);
+        console.error('Backend order creation error:', err);
+        addToast(err.response?.data?.message || err.message || 'Failed to initiate Razorpay payment. Please try again.', 'error');
+      } finally {
+        setIsProcessingPayment(false);
       }
-
-      setIsProcessingPayment(false);
-
-      // Fallback / Demo Mode: Open interactive Razorpay checkout modal if SDK not available
-      setShowRazorpayModal(true);
     } else {
       // Free events (Entry Fee = 0): Skip payment and confirm instantly
       handleRazorpaySuccess({

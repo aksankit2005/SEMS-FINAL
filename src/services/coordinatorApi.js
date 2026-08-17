@@ -966,10 +966,9 @@ async deleteMatch(id) {
         return res.data.receipt;
       }
     } catch (e) {
-      console.warn('Backend register-event error:', e?.response?.data || e.message);
+      console.error('Backend register-event error:', e?.response?.data || e.message);
+      throw new Error(e?.response?.data?.message || 'Server registration failed. Please ensure payment is completed.');
     }
-
-    const key = `sems_participants_${sportKey}`;
     let currentParticipants = [];
     try {
       const saved = localStorage.getItem(key);
