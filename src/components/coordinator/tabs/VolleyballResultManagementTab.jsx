@@ -281,7 +281,9 @@ export const VolleyballResultManagementTab = ({ user }) => {
                           {r.eventTitle || 'Volleyball Championship'}
                         </span>
                       </div>
-                      <p className="font-bold text-slate-900 dark:text-white text-sm">{r.team1} vs {r.team2}</p>
+                      <p className="font-bold text-slate-900 dark:text-white text-sm">
+                        {r.team1 || r.team1Name || 'Team 1'} <span className="text-slate-400 text-xs font-normal">vs</span> {r.team2 || r.team2Name || 'Team 2'}
+                      </p>
                     </td>
 
                     <td className="p-4 font-bold">

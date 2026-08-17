@@ -2,6 +2,239 @@ import React, { useState, useEffect } from 'react';
 import { Trophy, Star, Search, Calendar, CheckCircle2, Award } from 'lucide-react';
 import { coordinatorApi } from '../services/coordinatorApi';
 import { resolveSportConfig } from '../data/sportsConfig';
+import { getSportResultDisplay } from '../utils/sportResultFormatters';
+
+const SportResultSummary = ({ resultData }) => {
+  const display = getSportResultDisplay(resultData.rawMatch || resultData);
+
+  switch (display.sportType) {
+    case 'cricket':
+      return (
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between text-[11px] font-mono font-bold text-slate-400">
+            <span>FORMAT: <strong className="text-orange-500">{display.format}</strong></span>
+            {display.cricket.targetRuns && (
+              <span className="bg-orange-500/10 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full border border-orange-500/20">
+                Target: {display.cricket.targetRuns}
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2 bg-slate-100 dark:bg-slate-800/60 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+            <div className="space-y-0.5">
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase truncate block">
+                {display.team1}
+              </span>
+              <p className="text-sm font-black font-mono text-slate-900 dark:text-white">
+                {display.cricket.runs1}/{display.cricket.wickets1}
+              </p>
+              <span className="text-[10px] font-mono text-slate-400">({display.cricket.overs1} ov)</span>
+            </div>
+            <div className="space-y-0.5 text-right">
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase truncate block">
+                {display.team2}
+              </span>
+              <p className="text-sm font-black font-mono text-slate-900 dark:text-white">
+                {display.cricket.runs2}/{display.cricket.wickets2}
+              </p>
+              <span className="text-[10px] font-mono text-slate-400">({display.cricket.overs2} ov)</span>
+            </div>
+          </div>
+          {display.resultString && (
+            <p className="text-xs font-black text-amber-600 dark:text-amber-400 pt-0.5 flex items-center gap-1.5">
+              <span>⚡</span> {display.resultString}
+            </p>
+          )}
+        </div>
+      );
+
+    case 'racket':
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono font-black text-slate-900 dark:text-white">
+              {display.racket.setsScoreText}
+            </span>
+            <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">
+              {display.format}
+            </span>
+          </div>
+          {display.racket.setsBreakdown && display.racket.setsBreakdown.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {display.racket.setsBreakdown.map((s, idx) => (
+                <span
+                  key={idx}
+                  className="px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-mono font-bold border border-indigo-500/20"
+                >
+                  {s.label}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+
+    case 'volleyball':
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono font-black text-slate-900 dark:text-white">
+              {display.volleyball.setsScoreText}
+            </span>
+            <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">
+              {display.format}
+            </span>
+          </div>
+          {display.volleyball.setsBreakdown && display.volleyball.setsBreakdown.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {display.volleyball.setsBreakdown.map((s, idx) => (
+                <span
+                  key={idx}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-mono font-bold border border-emerald-500/20"
+                >
+                  {s.label}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+
+    case 'basketball':
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-base font-mono font-black text-orange-600 dark:text-orange-400">
+              {display.team1} {display.basketball.score1} — {display.basketball.score2} {display.team2}
+            </span>
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">
+              {display.basketball.quarter}
+            </span>
+          </div>
+          <p className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
+            Final Match Score (PTS)
+          </p>
+        </div>
+      );
+
+    case 'football':
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-base font-mono font-black text-slate-900 dark:text-white">
+              {display.team1} {display.football.score1} — {display.football.score2} {display.team2}
+            </span>
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">
+              {display.football.halfInfo}
+            </span>
+          </div>
+          <p className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
+            {display.football.isDraw ? '🤝 Match Drawn' : `Goals: ${display.football.scoreText}`}
+          </p>
+        </div>
+      );
+
+    case 'kabaddi':
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-base font-mono font-black text-amber-600 dark:text-amber-400">
+              {display.team1} {display.kabaddi.score1} — {display.kabaddi.score2} {display.team2}
+            </span>
+            <span className="text-[10px] font-mono font-bold text-slate-400">PTS</span>
+          </div>
+          {(display.kabaddi.half1Text || display.kabaddi.half2Text) && (
+            <div className="flex items-center gap-2 text-xs font-mono font-semibold text-slate-500 dark:text-slate-400">
+              {display.kabaddi.half1Text && <span>{display.kabaddi.half1Text}</span>}
+              {display.kabaddi.half2Text && <span>• {display.kabaddi.half2Text}</span>}
+            </div>
+          )}
+        </div>
+      );
+
+    case 'khokho':
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-base font-mono font-black text-emerald-600 dark:text-emerald-400">
+              {display.team1} {display.khokho.score1} — {display.khokho.score2} {display.team2}
+            </span>
+            <span className="text-[10px] font-mono font-bold text-slate-400">POINTS</span>
+          </div>
+          {display.khokho.inningsBreakdown && display.khokho.inningsBreakdown.length > 0 && (
+            <p className="text-xs font-mono text-slate-500 dark:text-slate-400">
+              {display.khokho.inningsBreakdown.join(' • ')}
+            </p>
+          )}
+        </div>
+      );
+
+    case 'tug':
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-mono font-black text-purple-600 dark:text-purple-400">
+              {display.tug.pullsScoreText}
+            </span>
+            <span className="text-[10px] font-mono font-bold text-slate-400">BEST OF 3</span>
+          </div>
+          {display.tug.roundsBreakdown && display.tug.roundsBreakdown.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {display.tug.roundsBreakdown.map((rStr, idx) => (
+                <span
+                  key={idx}
+                  className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-300"
+                >
+                  {rStr}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+
+    case 'chess':
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-mono font-black text-purple-600 dark:text-purple-400">
+              {display.chess.scoreText}
+            </span>
+            <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">
+              {display.format}
+            </span>
+          </div>
+          <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
+            Verdict: <strong className="text-slate-900 dark:text-white">{display.chess.verdict}</strong>
+          </p>
+        </div>
+      );
+
+    case 'athletics':
+      return (
+        <div className="space-y-1.5 text-xs font-medium">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-amber-500">🥇 Gold:</span>
+            <span className="font-bold text-slate-900 dark:text-white">{display.athletics.gold}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-slate-400">🥈 Silver:</span>
+            <span className="text-slate-700 dark:text-slate-300">{display.athletics.silver}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-amber-700">🥉 Bronze:</span>
+            <span className="text-slate-700 dark:text-slate-300">{display.athletics.bronze}</span>
+          </div>
+        </div>
+      );
+
+    default:
+      return (
+        <p className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-slate-200 leading-relaxed">
+          {display.summaryText}
+        </p>
+      );
+  }
+};
 
 export const ResultsPage = () => {
   const [query, setQuery] = useState('');
@@ -20,14 +253,15 @@ export const ResultsPage = () => {
           dbResults.forEach((item) => {
             if (!item || !item.id || seenIds.has(item.id)) return;
             seenIds.add(item.id);
+            const display = getSportResultDisplay(item.rawMatch || item);
             list.push({
               id: item.id,
-              sport: item.sport || 'Sports Event',
-              event: item.event || item.matchTitle || 'Championship Match',
-              winner: item.winner || 'Declared Winner',
-              scoreSummary: item.scoreSummary || (item.score1 !== undefined ? `${item.team1}: ${item.score1} | ${item.team2}: ${item.score2}` : 'Completed'),
-              date: item.date || (item.completedAt ? item.completedAt.split('T')[0] : new Date().toISOString().split('T')[0]),
-              mvp: item.mvp || item.winner || 'Top Performer',
+              sport: display.sportName || item.sport || 'Sports Event',
+              event: display.eventTitle || item.event || 'Championship Match',
+              winner: display.winner || item.winner || 'Declared Winner',
+              scoreSummary: display.summaryText || item.scoreSummary || 'Completed',
+              date: display.date || item.date,
+              mvp: display.mvp,
               rawMatch: item.rawMatch || item
             });
           });
@@ -48,14 +282,15 @@ export const ResultsPage = () => {
               parsed.forEach((item) => {
                 if (!item || !item.id || seenIds.has(item.id)) return;
                 seenIds.add(item.id);
+                const display = getSportResultDisplay(item);
                 list.push({
                   id: item.id,
-                  sport: item.sportName || sportName,
-                  event: item.eventTitle || item.title || `${sportName} Final`,
-                  winner: item.winner || 'Declared Winner',
-                  scoreSummary: item.scoreSummary || (item.score1 !== undefined ? `${item.team1}: ${item.score1} | ${item.team2}: ${item.score2}` : 'Match Completed'),
-                  date: item.completedAt ? item.completedAt.split('T')[0] : new Date().toISOString().split('T')[0],
-                  mvp: item.mvp || item.winner || 'Top Performer',
+                  sport: display.sportName || item.sportName || sportName,
+                  event: display.eventTitle || item.eventTitle || `${sportName} Final`,
+                  winner: display.winner || item.winner || 'Declared Winner',
+                  scoreSummary: display.summaryText || item.scoreSummary || 'Match Completed',
+                  date: display.date || (item.completedAt ? item.completedAt.split('T')[0] : new Date().toISOString().split('T')[0]),
+                  mvp: display.mvp,
                   rawMatch: item
                 });
               });
@@ -150,7 +385,7 @@ export const ResultsPage = () => {
                 <button
                   key={s}
                   onClick={() => setSelectedSport(s)}
-                  className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 border ${
+                  className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 border cursor-pointer ${
                     isSelected
                       ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-orange-500 shadow-md shadow-orange-500/20 font-black scale-105'
                       : 'bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -176,7 +411,7 @@ export const ResultsPage = () => {
           </div>
         </div>
 
-        {/* Results Card Grid Layout (Shows ONLY Player/Team, Points, Match Details) */}
+        {/* Results Card Grid Layout */}
         {filteredResults.length === 0 ? (
           <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-soft p-8 space-y-3">
             <Trophy className="w-12 h-12 text-slate-400 mx-auto" />
@@ -232,21 +467,19 @@ export const ResultsPage = () => {
                       </p>
                     </div>
 
-                    {/* Points / Score Summary Box */}
-                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                      <span className="text-[10px] font-mono uppercase font-black tracking-wider text-slate-400 dark:text-slate-500">
-                        Points & Match Summary
+                    {/* Sport-Specific Score Summary Box */}
+                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800 space-y-2">
+                      <span className="text-[10px] font-mono uppercase font-black tracking-wider text-slate-400 dark:text-slate-500 block">
+                        Official Score & Match Summary
                       </span>
-                      <p className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-slate-200 leading-relaxed">
-                        {res.scoreSummary}
-                      </p>
+                      <SportResultSummary resultData={res} />
                     </div>
 
-                    {/* Optional MVP Detail */}
-                    {res.mvp && (
+                    {/* Optional MVP Detail (Only when separately recorded as distinct player award) */}
+                    {res.mvp && res.mvp !== res.winner && (
                       <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-400 pt-1">
                         <Star className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                        <span className="truncate">MVP: <strong className="text-slate-900 dark:text-white">{res.mvp}</strong></span>
+                        <span className="truncate">Player of the Match / MVP: <strong className="text-slate-900 dark:text-white">{res.mvp}</strong></span>
                       </div>
                     )}
                   </div>
@@ -260,3 +493,4 @@ export const ResultsPage = () => {
     </div>
   );
 };
+
