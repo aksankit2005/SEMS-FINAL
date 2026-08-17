@@ -18,6 +18,7 @@ import { uploadFileToCloudinary } from '../../services/cloudinaryService';
 
 export const SuperCoordinatorDashboardPage = () => {
   const { addToast } = useToast();
+  const { confirm, confirmDelete } = useConfirm() || {};
   const superCoordUser = (() => {
     try {
       return JSON.parse(localStorage.getItem('sems_super_coord_user') || '{}');
@@ -308,15 +309,36 @@ export const SuperCoordinatorDashboardPage = () => {
   };
 
   const handleDeleteLeaderboardEntry = async (id) => {
-    const isConfirmed = await confirmDelete({
-      title: 'Delete Leaderboard Entry',
-      message: 'Are you sure you want to delete this leaderboard result entry?'
-    });
-    if (!isConfirmed) return;
-    await superCoordinatorApi.deleteLeaderboardEntry(id);
-    const freshEntries = await superCoordinatorApi.getLeaderboardEntries();
-    setLeaderboardEntries(freshEntries);
-    addToast('Leaderboard entry removed from database', 'info');
+    try {
+      let isConfirmed = false;
+      const confirmFn = confirmDelete || confirm;
+      if (typeof confirmFn === 'function') {
+        isConfirmed = await confirmFn({
+          title: 'Delete Leaderboard Entry',
+          message: 'Are you sure you want to delete this leaderboard result entry? This will update college point totals.',
+          confirmText: 'Yes, Delete',
+          cancelText: 'Cancel',
+          variant: 'danger'
+        });
+      } else {
+        isConfirmed = window.confirm('Are you sure you want to delete this leaderboard result entry?');
+      }
+
+      if (!isConfirmed) return;
+
+      const res = await superCoordinatorApi.deleteLeaderboardEntry(id);
+      if (res !== false) {
+        setLeaderboardEntries((prev) => prev.filter((e) => e.id !== id));
+        const freshEntries = await superCoordinatorApi.getLeaderboardEntries();
+        if (freshEntries) setLeaderboardEntries(freshEntries);
+        addToast('Leaderboard entry removed from database', 'info');
+      } else {
+        addToast('Failed to delete leaderboard entry', 'error');
+      }
+    } catch (err) {
+      console.error('Error deleting leaderboard entry:', err);
+      addToast(err.message || 'Failed to delete leaderboard entry', 'error');
+    }
   };
 
   // Handle Export Leaderboard Standings PDF Report
