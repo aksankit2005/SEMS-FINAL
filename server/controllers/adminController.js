@@ -412,12 +412,12 @@ export const getLeaderboardEntries = async (req, res) => {
         winnerTeamName: row.winnerTeam || row.winnerName || '',
         winnerCollege: row.winnerCollege || 'MPEC',
         winnerCollegeName: row.winnerCollege || 'MPEC',
-        winnerPoints: 2,
+        winnerPoints: 5,
         runnerUpName: row.runnerUpName || '',
         runnerUpTeamName: row.runnerUpTeam || row.runnerUpName || '',
         runnerUpCollege: row.runnerUpCollege || 'MIPS',
         runnerUpCollegeName: row.runnerUpCollege || 'MIPS',
-        runnerUpPoints: 1,
+        runnerUpPoints: 3,
         points: Number(row.points || 10),
         date: row.declaredAt ? new Date(row.declaredAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }) : new Date().toLocaleString()
       }));
@@ -490,12 +490,12 @@ export const saveLeaderboardEntry = async (req, res) => {
         winnerTeamName: row.winner_team,
         winnerCollege: row.winner_college,
         winnerCollegeName: row.winner_college,
-        winnerPoints: 2,
+        winnerPoints: 5,
         runnerUpName: row.runner_up_name,
         runnerUpTeamName: row.runner_up_team,
         runnerUpCollege: row.runner_up_college,
         runnerUpCollegeName: row.runner_up_college,
-        runnerUpPoints: 1,
+        runnerUpPoints: 3,
         points: Number(row.points || 10),
         date: new Date(row.declared_at).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
       };

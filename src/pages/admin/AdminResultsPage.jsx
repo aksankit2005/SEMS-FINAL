@@ -17,8 +17,7 @@ import {
   Loader2,
   FileSpreadsheet,
   Crown,
-  CheckCircle2,
-  Swords
+  CheckCircle2
 } from 'lucide-react';
 
 // Normalize declared results (super coord leaderboard entries + admin saved results)
@@ -233,15 +232,6 @@ export const AdminResultsPage = () => {
 
         <div className="flex items-center gap-2.5 flex-wrap">
           <button
-            onClick={() => navigate('/admin/coordinator-results')}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/20 transition-all cursor-pointer"
-            title="View completed match feed submitted by sport coordinators"
-          >
-            <Swords className="w-4 h-4 text-amber-300" />
-            <span>Coordinator Match Results Feed</span>
-          </button>
-
-          <button
             onClick={handleExportExcel}
             className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/20 transition-all cursor-pointer"
             title="Export filtered declared match results to Excel (.csv)"
@@ -282,13 +272,6 @@ export const AdminResultsPage = () => {
             }`}
           >
             🏅 Inter-College Leaderboard Points
-          </button>
-          <button
-            onClick={() => navigate('/admin/coordinator-results')}
-            className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center gap-1.5 border border-slate-200 dark:border-slate-800"
-          >
-            <Swords className="w-3.5 h-3.5 text-purple-500" />
-            <span>Coordinator Matches Feed ➔</span>
           </button>
         </div>
 

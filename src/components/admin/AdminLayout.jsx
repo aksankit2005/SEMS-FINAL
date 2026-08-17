@@ -11,7 +11,6 @@ import {
   Megaphone,
   Database,
   Trophy,
-  Swords,
   History,
   Settings,
   LogOut,
@@ -45,7 +44,6 @@ export const AdminLayout = () => {
     { label: 'Master Data', path: '/admin/master-data', icon: Database },
     { label: 'Committee & Advisors', path: '/admin/committee', icon: GraduationCap },
     { label: 'Results & Leaderboard', path: '/admin/results', icon: Trophy },
-    { label: 'Coordinator Results', path: '/admin/coordinator-results', icon: Swords },
     { label: 'Activity Logs', path: '/admin/activity', icon: History },
     { label: 'Settings', path: '/admin/settings', icon: Settings },
   ];

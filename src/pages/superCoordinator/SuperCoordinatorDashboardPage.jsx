@@ -264,14 +264,14 @@ export const SuperCoordinatorDashboardPage = () => {
       winnerTeamName: wTeam,
       winnerCollege: winnerObj.id,
       winnerCollegeName: winnerObj.name,
-      winnerPoints: 2,
+      winnerPoints: 5,
 
       // Runner-Up Details
       runnerUpName: rName,
       runnerUpTeamName: rTeam,
       runnerUpCollege: runnerObj.id,
       runnerUpCollegeName: runnerObj.name,
-      runnerUpPoints: 1,
+      runnerUpPoints: 3,
 
       date: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
     };
@@ -283,7 +283,7 @@ export const SuperCoordinatorDashboardPage = () => {
       const freshEntries = await superCoordinatorApi.getLeaderboardEntries();
       setLeaderboardEntries(freshEntries);
     }
-    addToast(`Result Saved! Winner: ${wName} (${winnerObj.id}) [+2 Pts] & Runner-Up: ${rName} (${runnerObj.id}) [+1 Pt]`, 'success');
+    addToast(`Result Saved! Winner: ${wName} (${winnerObj.id}) [+5 Pts] & Runner-Up: ${rName} (${runnerObj.id}) [+3 Pts]`, 'success');
 
     // Reset input fields
     setWinnerName('');
@@ -315,16 +315,16 @@ export const SuperCoordinatorDashboardPage = () => {
     const headers = [
       'Rank',
       'College Institution Name',
-      '1st Place Wins (2 Pts)',
-      'Runner-Up Finishes (1 Pt)',
+      '1st Place Wins (5 Pts)',
+      'Runner-Up Finishes (3 Pts)',
       'Total Championship Points'
     ];
 
     const rows = collegeStandings.map((c, idx) => [
       idx === 0 ? '1st Place (Gold 🥇)' : idx === 1 ? '2nd Place (Silver 🥈)' : idx === 2 ? '3rd Place (Bronze 🥉)' : `#${idx + 1}`,
       c.name,
-      `${c.winnerCount} Wins (${c.winnerCount * 2} Pts)`,
-      `${c.runnerUpCount} Finishes (${c.runnerUpCount * 1} Pt)`,
+      `${c.winnerCount} Wins (${c.winnerCount * 5} Pts)`,
+      `${c.runnerUpCount} Finishes (${c.runnerUpCount * 3} Pts)`,
       `${c.totalPoints} PTS`
     ]);
 
@@ -734,7 +734,7 @@ export const SuperCoordinatorDashboardPage = () => {
                     Super Coordinator Winner Declaration Console
                   </h3>
                   <p className="text-xs text-slate-600 dark:text-slate-400">
-                    Select Game, Match Format & Gender, enter 1st & 2nd Place details, then click <strong className="text-amber-600 dark:text-amber-400">Done</strong> to credit points (<strong className="text-emerald-600 dark:text-emerald-400">1st = 2 Pts</strong> • <strong className="text-blue-600 dark:text-blue-400">2nd = 1 Pt</strong>).
+                    Select Game, Match Format & Gender, enter 1st & 2nd Place details, then click <strong className="text-amber-600 dark:text-amber-400">Done</strong> to credit points (<strong className="text-emerald-600 dark:text-emerald-400">1st = 5 Pts</strong> • <strong className="text-blue-600 dark:text-blue-400">2nd = 3 Pts</strong>).
                   </p>
                 </div>
 
@@ -853,7 +853,7 @@ export const SuperCoordinatorDashboardPage = () => {
                         🥇 Winner Details (1st Place)
                       </span>
                       <span className="px-2 py-0.5 rounded-md bg-emerald-500 text-slate-950 font-mono font-black text-[10px]">
-                        +2 POINTS
+                        +5 POINTS
                       </span>
                     </div>
 
@@ -912,7 +912,7 @@ export const SuperCoordinatorDashboardPage = () => {
                         🥈 Runner-Up Details (2nd Place)
                       </span>
                       <span className="px-2 py-0.5 rounded-md bg-blue-500 text-white font-mono font-black text-[10px]">
-                        +1 POINT
+                        +3 POINTS
                       </span>
                     </div>
 
@@ -973,7 +973,7 @@ export const SuperCoordinatorDashboardPage = () => {
                     className="w-full sm:w-auto px-8 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-sm shadow-xl transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 border border-amber-400/40"
                   >
                     <CheckCircle2 className="w-5 h-5 text-slate-950" />
-                    <span>Done / Save Result Entry & Award Points (+2 & +1 Pts)</span>
+                    <span>Done / Save Result Entry & Award Points (+5 & +3 Pts)</span>
                   </button>
                 </div>
 
@@ -1006,8 +1006,8 @@ export const SuperCoordinatorDashboardPage = () => {
                     <tr className="bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 text-[11px] uppercase font-mono font-bold border-b border-slate-200 dark:border-slate-800">
                       <th className="p-4">Rank</th>
                       <th className="p-4">College Name</th>
-                      <th className="p-4">🥇 1st Place Wins (2 Pts)</th>
-                      <th className="p-4">🥈 Runner-Up Finishes (1 Pt)</th>
+                      <th className="p-4">🥇 1st Place Wins (5 Pts)</th>
+                      <th className="p-4">🥈 Runner-Up Finishes (3 Pts)</th>
                       <th className="p-4 text-right">Total Points</th>
                     </tr>
                   </thead>
@@ -1021,10 +1021,10 @@ export const SuperCoordinatorDashboardPage = () => {
                           {c.name}
                         </td>
                         <td className="p-4 font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                          {c.winnerCount} Wins ({c.winnerCount * 2} Pts)
+                          {c.winnerCount} Wins ({c.winnerCount * 5} Pts)
                         </td>
                         <td className="p-4 font-mono font-bold text-blue-600 dark:text-blue-400">
-                          {c.runnerUpCount} Finishes ({c.runnerUpCount * 1} Pt)
+                          {c.runnerUpCount} Finishes ({c.runnerUpCount * 3} Pts)
                         </td>
                         <td className="p-4 font-mono font-black text-lg text-right text-amber-600 dark:text-amber-400">
                           {c.totalPoints} PTS
@@ -1084,7 +1084,7 @@ export const SuperCoordinatorDashboardPage = () => {
                         <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 space-y-1">
                           <div className="flex items-center justify-between font-mono font-black text-emerald-700 dark:text-emerald-400 border-b border-emerald-200 dark:border-emerald-800/40 pb-1">
                             <span>🥇 WINNER (1st Place)</span>
-                            <span>+2 PTS</span>
+                            <span>+5 PTS</span>
                           </div>
                           <div className="pt-1 space-y-1">
                             <p className="text-slate-900 dark:text-white font-extrabold text-sm">
@@ -1103,7 +1103,7 @@ export const SuperCoordinatorDashboardPage = () => {
                         <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60 space-y-1">
                           <div className="flex items-center justify-between font-mono font-black text-blue-700 dark:text-blue-400 border-b border-blue-200 dark:border-blue-800/40 pb-1">
                             <span>🥈 RUNNER-UP (2nd Place)</span>
-                            <span>+1 PT</span>
+                            <span>+3 PTS</span>
                           </div>
                           <div className="pt-1 space-y-1">
                             <p className="text-slate-900 dark:text-white font-extrabold text-sm">
@@ -1277,7 +1277,7 @@ export const SuperCoordinatorDashboardPage = () => {
                               <div className="space-y-0.5">
                                 <div className="font-extrabold text-slate-900 dark:text-white text-xs flex items-center gap-1">
                                   <span className="text-emerald-600 dark:text-emerald-400">👤 {entry.winnerName || 'Winner'}</span>
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-mono font-bold">+2 Pts</span>
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-mono font-bold">+5 Pts</span>
                                 </div>
                                 <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
                                   🛡️ Team: <span className="text-slate-900 dark:text-white">{entry.winnerTeamName || entry.winnerName || 'N/A'}</span>
@@ -1293,7 +1293,7 @@ export const SuperCoordinatorDashboardPage = () => {
                               <div className="space-y-0.5">
                                 <div className="font-extrabold text-slate-900 dark:text-white text-xs flex items-center gap-1">
                                   <span className="text-blue-600 dark:text-blue-400">👤 {entry.runnerUpName || 'Runner-Up'}</span>
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 font-mono font-bold">+1 Pt</span>
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 font-mono font-bold">+3 Pts</span>
                                 </div>
                                 <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
                                   🛡️ Team: <span className="text-slate-900 dark:text-white">{entry.runnerUpTeamName || entry.runnerUpName || 'N/A'}</span>

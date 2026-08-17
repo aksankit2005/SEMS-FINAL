@@ -112,7 +112,6 @@ function App() {
                   <Route path="participants" element={<AdminMasterDataPage />} />
                   <Route path="committee" element={<AdminCommitteePage />} />
                   <Route path="results" element={<AdminResultsPage />} />
-                  <Route path="coordinator-results" element={<AdminCoordinatorMatchResultsPage />} />
                   <Route path="activity" element={<AdminActivityPage />} />
                   <Route path="audit-logs" element={<AdminActivityPage />} />
                   <Route path="settings" element={<AdminSettingsPage />} />
@@ -138,7 +137,6 @@ function App() {
                   <Route path="participants" element={<AdminMasterDataPage />} />
                   <Route path="committee" element={<AdminCommitteePage />} />
                   <Route path="results" element={<AdminResultsPage />} />
-                  <Route path="coordinator-results" element={<AdminCoordinatorMatchResultsPage />} />
                   <Route path="activity" element={<AdminActivityPage />} />
                   <Route path="audit-logs" element={<AdminActivityPage />} />
                   <Route path="settings" element={<AdminSettingsPage />} />

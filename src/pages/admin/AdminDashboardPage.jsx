@@ -63,8 +63,8 @@ export const AdminDashboardPage = () => {
     { label: 'Total PR Uploads', value: stats?.totalPRUploads || 0, icon: Camera, color: 'from-purple-500 to-indigo-600', shadow: 'shadow-purple-500/10', path: '/admin/pr-management' },
     { label: 'Total Participants', value: stats?.totalParticipants || 0, icon: Users, color: 'from-blue-500 to-cyan-600', shadow: 'shadow-blue-500/10', path: '/admin/master-data' },
     { label: 'Total Games / Sports', value: stats?.totalGames || 12, icon: Trophy, color: 'from-amber-400 to-amber-600', shadow: 'shadow-amber-400/10', path: '/admin/master-data' },
-    { label: 'Completed Results', value: stats?.completedResults || 0, icon: CheckCircle2, color: 'from-green-500 to-emerald-600', shadow: 'shadow-green-500/10', path: '/admin/coordinator-results' },
-    { label: 'Pending Results', value: stats?.pendingResults || 0, icon: Clock, color: 'from-amber-600 to-orange-500', shadow: 'shadow-amber-600/10', path: '/admin/coordinator-results' },
+    { label: 'Completed Results', value: stats?.completedResults || 0, icon: CheckCircle2, color: 'from-green-500 to-emerald-600', shadow: 'shadow-green-500/10', path: '/admin/results' },
+    { label: 'Pending Results', value: stats?.pendingResults || 0, icon: Clock, color: 'from-amber-600 to-orange-500', shadow: 'shadow-amber-600/10', path: '/admin/results' },
     { label: 'Active Announcements', value: stats?.activeAnnouncements || 0, icon: Megaphone, color: 'from-indigo-500 to-violet-600', shadow: 'shadow-indigo-500/10', path: '/admin/announcements' }
   ];
 
