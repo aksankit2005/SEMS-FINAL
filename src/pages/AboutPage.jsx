@@ -184,11 +184,11 @@ export const AboutPage = () => {
                 key={advisor.id || index}
                 className="overflow-hidden rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 flex flex-col hover:border-indigo-500/50 transition-all duration-300 group shadow-sm hover:shadow-xl"
               >
-                <div className="relative w-full h-56 overflow-hidden bg-slate-200 dark:bg-slate-800">
+                <div className="relative w-full h-44 sm:h-56 overflow-hidden bg-slate-200 dark:bg-slate-800">
                   <img
                     src={advisor.image}
                     alt={advisor.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
                 </div>
@@ -226,11 +226,11 @@ export const AboutPage = () => {
                 key={index}
                 className="overflow-hidden rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 flex flex-col hover:border-cyan-500/50 transition-all duration-300 group shadow-sm hover:shadow-xl"
               >
-                <div className="relative w-full h-56 overflow-hidden bg-slate-200 dark:bg-slate-800">
+                <div className="relative w-full h-44 sm:h-56 overflow-hidden bg-slate-200 dark:bg-slate-800">
                   <img
                     src={dev.image}
                     alt={dev.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
                 </div>
@@ -317,11 +317,11 @@ export const AboutPage = () => {
                   key={index}
                   className="overflow-hidden rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 flex flex-col hover:border-cyan-500/50 transition-all duration-300 group shadow-sm hover:shadow-xl"
                 >
-                  <div className="relative w-full h-56 overflow-hidden bg-slate-200 dark:bg-slate-800">
+                  <div className="relative w-full h-44 sm:h-56 overflow-hidden bg-slate-200 dark:bg-slate-800">
                     <img
                       src={member.image}
                       alt={member.name}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
                   </div>
