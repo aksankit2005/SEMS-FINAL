@@ -1,5 +1,6 @@
 import { prisma, queryDb } from '../config/db.js';
 import { computeEffectiveRegistrationStatus } from '../utils/registrationLifecycle.js';
+import { normalizeParticipationType } from './coordinatorController.js';
 import {
   createRazorpayOrder,
   fetchRazorpayPayment,
@@ -309,12 +310,20 @@ export const registerPublicEvent = async (req, res) => {
 
     await prisma.$transaction(
       async (tx) => {
+        const participationType = normalizeParticipationType({
+          ...participantData,
+          teamName: newRegRecord.teamName,
+          membersCount: Array.isArray(participantData.roster) ? participantData.roster.length : 1,
+          roster: participantData.roster,
+          participantData
+        }, targetSportId || sportId);
+
         const registration = await tx.registration.create({
           data: {
             eventId: primaryEvent.id,
             collegeId: collegeRecord?.id || null,
             sportId: sportRecord.id,
-            registrationType: newRegRecord.teamName ? 'TEAM' : 'INDIVIDUAL',
+            registrationType: participationType,
             status: isPaymentVerified ? 'VERIFIED' : 'PENDING',
             amount: newRegRecord.feePaid || 0,
           },

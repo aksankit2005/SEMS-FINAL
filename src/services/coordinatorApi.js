@@ -1258,17 +1258,18 @@ async deleteMatch(id) {
   },
 
   // Get eligible competitors (teams and participants) for an event and sport
-  async getEligibleCompetitors(eventId) {
-    if (!eventId) return { teams: [], participants: [] };
+  async getEligibleCompetitors(eventId, format = null) {
+    if (!eventId) return { teams: [], participants: [], singles: [], doubles: [], teamSquads: [] };
     try {
-      const res = await api.get(`/coordinator/events/${eventId}/eligible-competitors`);
+      const params = format ? { format } : {};
+      const res = await api.get(`/coordinator/events/${eventId}/eligible-competitors`, { params });
       if (res.data && res.data.success) {
         return res.data;
       }
     } catch (e) {
       console.warn('Error fetching eligible competitors from server:', e.message);
     }
-    return { teams: [], participants: [] };
+    return { teams: [], participants: [], singles: [], doubles: [], teamSquads: [] };
   },
 
   // Clear all coordinator created events across localStorage

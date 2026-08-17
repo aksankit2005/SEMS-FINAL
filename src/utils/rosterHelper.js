@@ -4,7 +4,7 @@ import { getMemberCaptainStatus, normalizeBoolean } from './booleanHelper.js';
  * Resolves the participation type for a registration or participant record.
  * Returns strictly: 'INDIVIDUAL' | 'DUO' | 'TEAM'
  */
-export const getParticipationType = (record) => {
+export const normalizeParticipationType = (record, explicitSportId = null) => {
   if (!record) return 'INDIVIDUAL';
 
   // 1. Explicit participationType or registrationType
@@ -13,57 +13,109 @@ export const getParticipationType = (record) => {
     record.registrationType ||
     record.registration_type ||
     record.category ||
+    record.eventType ||
+    record.participantData?.participationType ||
+    record.participantData?.registrationType ||
+    record.participantData?.eventType ||
+    record.participantData?.category ||
     ''
-  ).toUpperCase();
+  ).trim().toUpperCase();
 
-  if (rawType === 'DUO' || rawType === 'DOUBLES' || rawType === 'PAIR') return 'DUO';
-  if (rawType === 'INDIVIDUAL' || rawType === 'SINGLES' || rawType === 'SOLO') return 'INDIVIDUAL';
-  if (rawType === 'TEAM') {
-    const count = Number(
-      record.membersCount ||
-      record.teamSize ||
-      (Array.isArray(record.members) ? record.members.length : 0) ||
-      (Array.isArray(record.roster) ? record.roster.length : 0) ||
-      0
-    );
-    if (count === 2 || record.player2) return 'DUO';
-    return 'TEAM';
-  }
-
-  // 2. Check for player2 / Pair structure
-  if (record.player2 || (record.player1 && record.player2)) {
+  if (rawType === 'DUO' || rawType === 'DOUBLES' || rawType === 'PAIR') {
     return 'DUO';
   }
-
-  // 3. Check members count
-  const memberList = Array.isArray(record.members) ? record.members
-    : Array.isArray(record.roster) ? record.roster
-    : Array.isArray(record.participantData?.roster) ? record.participantData.roster
-    : null;
-
-  if (memberList) {
-    if (memberList.length === 2) return 'DUO';
-    if (memberList.length > 2) return 'TEAM';
-    if (memberList.length === 1) return 'INDIVIDUAL';
+  if (rawType === 'INDIVIDUAL' || rawType === 'SINGLES' || rawType === 'SOLO') {
+    return 'INDIVIDUAL';
   }
-
-  const count = Number(record.membersCount || record.teamSize || 0);
-  if (count === 2) return 'DUO';
-  if (count > 2) return 'TEAM';
-
-  // 4. Team name check
-  const teamName = String(record.teamName || '').trim();
-  if (teamName && teamName.toLowerCase() !== 'individual' && teamName.toLowerCase() !== 'participant') {
+  if (rawType === 'TEAM' || rawType === 'SQUAD' || rawType === 'GROUP') {
     return 'TEAM';
   }
 
-  // 5. Sport type heuristics
-  const sportKey = String(record.sportId || record.sport || record.sportName || '').toLowerCase();
-  if (sportKey.includes('chess') || (sportKey.includes('badminton') && !sportKey.includes('doubles')) || (sportKey.includes('table-tennis') && !sportKey.includes('doubles'))) {
+  // 2. Sport-Specific Classification
+  const sportKey = String(
+    explicitSportId ||
+    record.sportId ||
+    record.sport_id ||
+    record.sport ||
+    record.sportName ||
+    ''
+  ).toLowerCase().trim();
+
+  // Team-only sports:
+  const teamSports = ['volleyball', 'basketball', 'football', 'cricket', 'gully-cricket', 'gully_cricket', 'kabaddi', 'kho-kho', 'kho_kho', 'tug-of-war', 'tug_of_war'];
+  if (teamSports.some((ts) => sportKey.includes(ts))) {
+    return 'TEAM';
+  }
+
+  // Individual-only sports:
+  if (sportKey.includes('chess')) {
     return 'INDIVIDUAL';
   }
 
+  // Athletics: individual unless explicitly a relay/team event
+  if (sportKey.includes('athletics')) {
+    const subEvent = String(
+      record.selectedEvent ||
+      record.subEvent ||
+      record.event ||
+      record.participantData?.selectedEvent ||
+      record.participantData?.subEvent ||
+      ''
+    ).toLowerCase();
+    if (subEvent.includes('relay')) {
+      return 'TEAM';
+    }
+    return 'INDIVIDUAL';
+  }
+
+  // Racket sports (Badminton, Table Tennis):
+  if (sportKey.includes('badminton') || sportKey.includes('table-tennis') || sportKey.includes('table_tennis')) {
+    const eventType = String(
+      record.eventType ||
+      record.participantData?.eventType ||
+      record.category ||
+      record.participantData?.category ||
+      ''
+    ).toLowerCase();
+    if (eventType.includes('double') || eventType.includes('duo') || eventType.includes('pair')) {
+      return 'DUO';
+    }
+    if (eventType.includes('single') || eventType.includes('solo') || eventType.includes('individual')) {
+      return 'INDIVIDUAL';
+    }
+    // Check if player2 structure is present
+    if (record.player2 || (record.player1 && record.player2)) {
+      return 'DUO';
+    }
+    const teamName = String(record.teamName || record.team_name || '').toLowerCase();
+    if (teamName.includes('duo') || teamName.includes('pair') || teamName.includes('doubles')) {
+      return 'DUO';
+    }
+    // Roster count check as last resort for racket sports
+    const roster = Array.isArray(record.members) ? record.members
+      : Array.isArray(record.roster) ? record.roster
+      : Array.isArray(record.participantData?.roster) ? record.participantData.roster
+      : null;
+    const mCount = roster ? roster.length : Number(record.membersCount || record.members_count || 0);
+    if (mCount === 2 || (teamName && teamName !== 'individual' && teamName !== 'participant')) {
+      return 'DUO';
+    }
+    return 'INDIVIDUAL';
+  }
+
+  // Last-resort fallback:
+  const roster = Array.isArray(record.members) ? record.members
+    : Array.isArray(record.roster) ? record.roster
+    : Array.isArray(record.participantData?.roster) ? record.participantData.roster
+    : null;
+  const mCount = roster ? roster.length : Number(record.membersCount || record.members_count || 0);
+  if (mCount > 2) return 'TEAM';
+  if (mCount === 2) return 'DUO';
   return 'INDIVIDUAL';
+};
+
+export const getParticipationType = (record, explicitSportId = null) => {
+  return normalizeParticipationType(record, explicitSportId);
 };
 
 /**
