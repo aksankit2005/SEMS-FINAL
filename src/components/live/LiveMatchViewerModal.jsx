@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Award, Tv, VideoOff, Users, ShieldAlert, AlertCircle, Download, Maximize, Minimize } from 'lucide-react';
+import { X, Award, Tv, VideoOff, Users, ShieldAlert, AlertCircle, Maximize, Minimize } from 'lucide-react';
 import { resolveSportConfig } from '../../data/sportsConfig';
 import { getYouTubeEmbedUrl, extractYouTubeVideoId } from '../../utils/youtube';
 import { mergeMatchState } from '../../services/coordinatorApi';
-import { generateMatchResultPDF } from '../../utils/pdfExporter';
 
 const getShortCollege = (name) => {
   if (!name || typeof name !== 'string' || !name.trim()) return null;
@@ -564,24 +563,6 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => {
-                generateMatchResultPDF({
-                  ...match,
-                  team1: team1Name,
-                  team2: team2Name,
-                  score1: score1Val,
-                  score2: score2Val,
-                  sportName: sportConfig.name,
-                });
-              }}
-              className="px-3.5 py-2 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30 font-bold text-xs transition flex items-center gap-2 cursor-pointer shadow-xs"
-              title="Download Official Score Sheet PDF"
-            >
-              <Download className="w-4 h-4 text-orange-500" />
-              <span className="hidden sm:inline">Download Score Sheet PDF</span>
-            </button>
-
             <button
               onClick={onClose}
               className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"

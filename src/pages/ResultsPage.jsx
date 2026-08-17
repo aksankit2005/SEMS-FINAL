@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Star, Search, Download, Calendar, CheckCircle2, Award } from 'lucide-react';
+import { Trophy, Star, Search, Calendar, CheckCircle2, Award } from 'lucide-react';
 import { coordinatorApi } from '../services/coordinatorApi';
-import { generateMatchResultPDF } from '../utils/pdfExporter';
 import { resolveSportConfig } from '../data/sportsConfig';
 
 export const ResultsPage = () => {
@@ -250,39 +249,6 @@ export const ResultsPage = () => {
                         <span className="truncate">MVP: <strong className="text-slate-900 dark:text-white">{res.mvp}</strong></span>
                       </div>
                     )}
-                  </div>
-
-                  {/* Card Bottom: PDF Result Download Action */}
-                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80">
-                    <button
-                      onClick={() => {
-                        let matchObj = res.rawMatch;
-                        if (!matchObj) {
-                          const t1 = res.medals?.gold || res.winner || 'Team A';
-                          const t2 = res.medals?.silver || 'Team B';
-                          matchObj = {
-                            id: res.id,
-                            matchTitle: res.event || `${res.sport} Championship Final`,
-                            winner: res.winner,
-                            team1: t1,
-                            team2: t2,
-                            scoreSummary: res.scoreSummary,
-                            sportName: res.sport,
-                            completedAt: res.date,
-                            format: 'Official Championship Match',
-                            venue: 'Main Arena',
-                            roster1: res.roster1,
-                            roster2: res.roster2,
-                            setsHistory: res.setsHistory
-                          };
-                        }
-                        generateMatchResultPDF(matchObj, res.sport || matchObj.sportName);
-                      }}
-                      className="w-full py-2.5 px-3 rounded-2xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30 text-xs font-bold transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
-                    >
-                      <Download className="w-4 h-4 text-orange-500" />
-                      <span>Download PDF Result Certificate</span>
-                    </button>
                   </div>
                 </div>
               );
