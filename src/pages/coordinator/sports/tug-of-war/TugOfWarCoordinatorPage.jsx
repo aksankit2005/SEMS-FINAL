@@ -23,7 +23,7 @@ export const TugOfWarCoordinatorPage = () => {
       assignedSport: 'tug-of-war',
       sportName: 'Tug of War',
       coordinatorName: 'Vikram Singh',
-      email: 'tugofwar.coord@sems.edu'
+      email: 'tugofwar.coord@apex.edu'
     };
   });
 

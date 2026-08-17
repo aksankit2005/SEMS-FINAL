@@ -5,6 +5,7 @@ import { useConfirm } from '../../../context/ConfirmContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { generateMatchResultPDF, exportToCSV, exportSportResultPDF } from '../../../utils/pdfExporter';
 import { exportResultsToExcel } from '../../../utils/excelExporter';
+import { getSportResultDisplay } from '../../../utils/sportResultFormatters';
 
 export const ResultManagementTab = ({ user }) => {
   const { addToast } = useToast();
@@ -287,7 +288,7 @@ export const ResultManagementTab = ({ user }) => {
     }
 
     try {
-      exportSportResultPDF(assignedSport, filteredResults, `SEMS 2026 ${sportName} Match Results Report`);
+      exportSportResultPDF(assignedSport, filteredResults, `APEX 2026 ${sportName} Match Results Report`);
       addToast(`Downloaded official ${sportName} Results PDF Report!`, 'success');
     } catch (err) {
       addToast(err.message || 'Failed to export PDF report', 'error');
@@ -405,105 +406,157 @@ export const ResultManagementTab = ({ user }) => {
                   </td>
                 </tr>
               ) : (
-                filteredResults.map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                    
-                    {/* MATCH DETAILS */}
-                    <td className="p-4 space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">#{r.id}</span>
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase border ${
-                          isChess
-                            ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
-                            : 'bg-blue-500/10 text-blue-600 dark:text-indigo-300 border-blue-500/20'
-                        }`}>
-                          {isChess ? 'INDIVIDUAL' : (r.format || 'SINGLES')}
-                        </span>
-                        <span className="text-[10px] font-mono font-semibold text-slate-500 dark:text-slate-400">
-                          {r.eventTitle || `${sportName} Championship`}
-                        </span>
-                      </div>
-                      <p className="font-bold text-slate-900 dark:text-white text-sm">
-                        {r.team1 || (isChess ? 'White Player' : 'Team 1')} <span className="text-slate-400 text-xs font-normal">vs</span> {r.team2 || (isChess ? 'Black Player' : 'Team 2')}
-                      </p>
-                    </td>
+                filteredResults.map((r) => {
+                  const display = getSportResultDisplay({ ...r, sportId: assignedSport, sportName: sportName });
 
-                    {/* CATEGORY / GENDER */}
-                    <td className="p-4 font-bold">
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/20">
-                        {r.category || r.gender || 'Open'}
-                      </span>
-                    </td>
-
-                    {/* VENUE / TIME */}
-                    <td className="p-4 font-mono text-slate-600 dark:text-slate-400">
-                      📍 {r.tableNumber || r.venue || (isChess ? 'Table 1' : 'Court 1')} • {r.time || 'Completed'}
-                    </td>
-
-                    {/* SCORE & WINNER */}
-                    <td className="p-4 font-bold">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <span className={`font-mono font-black text-sm ${isChess ? 'text-purple-600 dark:text-purple-400' : 'text-slate-900 dark:text-white'}`}>
-                            {isChess
-                              ? (r.scoreText || r.scoreSummary || (r.score1 === 1 ? 'Result: 1 - 0 (White Wins)' : r.score2 === 1 ? 'Result: 0 - 1 (Black Wins)' : 'Result: ½ - ½ (Draw)'))
-                              : (r.setsWon1 !== undefined && r.setsWon2 !== undefined
-                                  ? `${r.setsWon1} - ${r.setsWon2} Sets`
-                                  : `${r.score1 || 0} - ${r.score2 || 0} Pts`)}
+                  return (
+                    <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                      
+                      {/* MATCH DETAILS */}
+                      <td className="p-4 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">#{r.id}</span>
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase border ${
+                            isChess
+                              ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+                              : 'bg-blue-500/10 text-blue-600 dark:text-indigo-300 border-blue-500/20'
+                          }`}>
+                            {display.format || (isChess ? 'INDIVIDUAL' : 'SINGLES')}
+                          </span>
+                          <span className="text-[10px] font-mono font-semibold text-slate-500 dark:text-slate-400">
+                            {display.eventTitle || `${sportName} Championship`}
                           </span>
                         </div>
+                        <p className="font-bold text-slate-900 dark:text-white text-sm">
+                          {display.team1} <span className="text-slate-400 text-xs font-normal">vs</span> {display.team2}
+                        </p>
+                      </td>
 
-                        {/* Set Breakdown for general sports */}
-                        {!isChess && r.setsHistory && Array.isArray(r.setsHistory) && r.setsHistory.some((s) => s.score1 > 0 || s.score2 > 0) && (
-                          <div className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-semibold">
-                            {r.setsHistory
-                              .filter((s) => s.score1 > 0 || s.score2 > 0)
-                              .map((s) => `S${s.set}: ${s.score1}-${s.score2}`)
-                              .join(' | ')}
-                          </div>
-                        )}
-
-                        <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-xs font-black pt-0.5">
-                          <Trophy className="w-3.5 h-3.5 text-amber-500" /> Winner: {r.winner || r.team1 || 'TBD'}
+                      {/* CATEGORY / GENDER */}
+                      <td className="p-4 font-bold">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/20">
+                          {display.category || 'Open'}
                         </span>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* ACTIONS */}
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => generateMatchResultPDF(r, user?.sportName || user?.assignedSport || (isChess ? 'Chess' : 'Badminton'))}
-                          className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-500/20 dark:hover:bg-purple-500/30 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 font-bold text-xs transition flex items-center gap-1 cursor-pointer"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          <span>PDF</span>
-                        </button>
+                      {/* VENUE / TIME */}
+                      <td className="p-4 font-mono text-slate-600 dark:text-slate-400">
+                        📍 {r.tableNumber || r.venue || (isChess ? 'Table 1' : 'Court 1')} • {r.time || 'Completed'}
+                      </td>
 
-                        {isBadminton ? (
+                      {/* SCORE & WINNER */}
+                      <td className="p-4 font-bold">
+                        <div className="flex flex-col gap-1">
+                          {display.sportType === 'cricket' ? (
+                            <div className="space-y-1">
+                              <span className="font-mono font-black text-sm text-slate-900 dark:text-white">
+                                {display.cricket.innings1Text} <span className="text-slate-400 font-normal">vs</span> {display.cricket.innings2Text}
+                              </span>
+                              {display.cricket.resultString && (
+                                <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 block">
+                                  {display.cricket.resultString}
+                                </span>
+                              )}
+                            </div>
+                          ) : display.sportType === 'racket' ? (
+                            <div className="space-y-1">
+                              <span className="font-mono font-black text-sm text-slate-900 dark:text-white">
+                                {display.racket.setsScoreText}
+                              </span>
+                              {display.racket.setsBreakdown && display.racket.setsBreakdown.length > 0 && (
+                                <div className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-semibold">
+                                  {display.racket.setsBreakdown.map(s => s.label).join(' | ')}
+                                </div>
+                              )}
+                            </div>
+                          ) : display.sportType === 'volleyball' ? (
+                            <div className="space-y-1">
+                              <span className="font-mono font-black text-sm text-slate-900 dark:text-white">
+                                {display.volleyball.setsScoreText}
+                              </span>
+                              {display.volleyball.setsBreakdown && display.volleyball.setsBreakdown.length > 0 && (
+                                <div className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                                  {display.volleyball.setsBreakdown.map(s => s.label).join(' | ')}
+                                </div>
+                              )}
+                            </div>
+                          ) : display.sportType === 'chess' ? (
+                            <div className="space-y-1">
+                              <span className="font-mono font-black text-sm text-purple-600 dark:text-purple-400">
+                                {display.chess.scoreText}
+                              </span>
+                              <span className="text-[11px] font-medium text-slate-500 block">
+                                {display.chess.verdict}
+                              </span>
+                            </div>
+                          ) : display.sportType === 'basketball' ? (
+                            <span className="font-mono font-black text-sm text-orange-600 dark:text-orange-400">
+                              {display.basketball.scoreText}
+                            </span>
+                          ) : display.sportType === 'football' ? (
+                            <span className="font-mono font-black text-sm text-slate-900 dark:text-white">
+                              {display.football.scoreText}
+                            </span>
+                          ) : display.sportType === 'kabaddi' ? (
+                            <span className="font-mono font-black text-sm text-amber-600 dark:text-amber-400">
+                              {display.kabaddi.scoreText}
+                            </span>
+                          ) : display.sportType === 'khokho' ? (
+                            <span className="font-mono font-black text-sm text-emerald-600 dark:text-emerald-400">
+                              {display.khokho.scoreText}
+                            </span>
+                          ) : display.sportType === 'tug' ? (
+                            <span className="font-mono font-black text-sm text-purple-600 dark:text-purple-400">
+                              {display.tug.pullsScoreText}
+                            </span>
+                          ) : (
+                            <span className="font-mono font-black text-sm text-slate-900 dark:text-white">
+                              {display.summaryText}
+                            </span>
+                          )}
+
+                          <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-xs font-black pt-0.5">
+                            <Trophy className="w-3.5 h-3.5 text-amber-500" /> Winner: {display.winner || 'TBD'}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* ACTIONS */}
+                      <td className="p-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
                           <button
-                            onClick={() => setSelectedDetailResult(r)}
-                            className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                            onClick={() => generateMatchResultPDF(r, user?.sportName || user?.assignedSport || (isChess ? 'Chess' : 'Badminton'))}
+                            className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-500/20 dark:hover:bg-purple-500/30 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 font-bold text-xs transition flex items-center gap-1 cursor-pointer"
                           >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>View Details</span>
+                            <Download className="w-3.5 h-3.5" />
+                            <span>PDF</span>
                           </button>
-                        ) : (
-                          <button
-                            onClick={() => handleSetWinner(r.id, r.winner || r.team1)}
-                            className={`px-4 py-2 rounded-xl text-white font-bold text-xs shadow-md transition cursor-pointer ${
-                              isChess
-                                ? 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/20'
-                                : 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/20'
-                            }`}
-                          >
-                            Set Winner
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+
+                          {isBadminton ? (
+                            <button
+                              onClick={() => setSelectedDetailResult(r)}
+                              className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>View Details</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleSetWinner(r.id, display.winner || r.team1)}
+                              className={`px-4 py-2 rounded-xl text-white font-bold text-xs shadow-md transition cursor-pointer ${
+                                isChess
+                                  ? 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/20'
+                                  : 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/20'
+                              }`}
+                            >
+                              Set Winner
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

@@ -23,7 +23,7 @@ export const MaintenancePage = ({ settings = {} }) => {
         {/* Main Headline */}
         <div className="space-y-3">
           <h1 className="text-3xl sm:text-5xl font-black text-white leading-tight tracking-tight">
-            SEMS Portal is Under <br />
+            APEX Portal is Under <br />
             <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 bg-clip-text text-transparent">
               Scheduled Maintenance
             </span>

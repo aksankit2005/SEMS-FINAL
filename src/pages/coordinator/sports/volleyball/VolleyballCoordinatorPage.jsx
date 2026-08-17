@@ -23,7 +23,7 @@ export const VolleyballCoordinatorPage = () => {
       assignedSport: 'volleyball',
       sportName: 'Volleyball',
       coordinatorName: 'Siddharth Rao',
-      email: 'volleyball.coord@sems.edu'
+      email: 'volleyball.coord@apex.edu'
     };
   });
 

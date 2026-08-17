@@ -3,18 +3,18 @@ import { galleryApi } from './galleryApi';
 import { apiUrl } from './apiConfig';
 
 export const ALL_12_SPORTS = [
-  { id: 'table-tennis', name: 'Table Tennis', icon: '🏓', coordinator: 'Amit Sharma', coordinatorEmail: 'tt.coord@sems.edu', category: 'Indoor', squadSize: '1 - 2 Players' },
-  { id: 'badminton', name: 'Badminton', icon: '🏸', coordinator: 'Priya Verma', coordinatorEmail: 'badminton.coord@sems.edu', category: 'Indoor', squadSize: '1 - 2 Players' },
-  { id: 'chess', name: 'Chess', icon: '♟️', coordinator: 'Rahul Saxena', coordinatorEmail: 'chess.coord@sems.edu', category: 'Mind Sport', squadSize: '1 Player' },
-  { id: 'cricket', name: 'Cricket', icon: '🏏', coordinator: 'Rohan Gupta', coordinatorEmail: 'cricket.coord@sems.edu', category: 'Outdoor', squadSize: '11 - 15 Players' },
-  { id: 'football', name: 'Football', icon: '⚽', coordinator: 'Vikramjit Singh', coordinatorEmail: 'football.coord@sems.edu', category: 'Outdoor', squadSize: '5 - 8 Players' },
-  { id: 'basketball', name: 'Basketball', icon: '🏀', coordinator: 'Neha Kapoor', coordinatorEmail: 'basketball.coord@sems.edu', category: 'Indoor/Outdoor', squadSize: '5 - 10 Players' },
-  { id: 'volleyball', name: 'Volleyball', icon: '🏐', coordinator: 'Suresh Kumar', coordinatorEmail: 'volleyball.coord@sems.edu', category: 'Outdoor', squadSize: '6 - 10 Players' },
-  { id: 'kabaddi', name: 'Kabaddi', icon: '🤼', coordinator: 'Deepak Yadav', coordinatorEmail: 'kabaddi.coord@sems.edu', category: 'Outdoor', squadSize: '7 - 12 Players' },
-  { id: 'kho-kho', name: 'Kho-Kho', icon: '🏃', coordinator: 'Anita Singh', coordinatorEmail: 'khokho.coord@sems.edu', category: 'Outdoor', squadSize: '9 - 12 Players' },
-  { id: 'athletics', name: 'Athletics', icon: '🏃‍♂️', coordinator: 'Manish Pandey', coordinatorEmail: 'athletics.coord@sems.edu', category: 'Track & Field', squadSize: '1 - 4 Players' },
-  { id: 'tug-of-war', name: 'Tug of War', icon: '🪢', coordinator: 'Rajesh Mishra', coordinatorEmail: 'tugofwar.coord@sems.edu', category: 'Outdoor Arena', squadSize: '8 - 10 Players' },
-  { id: 'gully-cricket', name: 'Gully Cricket', icon: '🏏', coordinator: 'Alok Tripathi', coordinatorEmail: 'gullycricket.coord@sems.edu', category: 'Street Pitch', squadSize: '5 - 8 Players' }
+  { id: 'table-tennis', name: 'Table Tennis', icon: '🏓', coordinator: 'Amit Sharma', coordinatorEmail: 'tt.coord@apex.edu', category: 'Indoor', squadSize: '1 - 2 Players' },
+  { id: 'badminton', name: 'Badminton', icon: '🏸', coordinator: 'Priya Verma', coordinatorEmail: 'badminton.coord@apex.edu', category: 'Indoor', squadSize: '1 - 2 Players' },
+  { id: 'chess', name: 'Chess', icon: '♟️', coordinator: 'Rahul Saxena', coordinatorEmail: 'chess.coord@apex.edu', category: 'Mind Sport', squadSize: '1 Player' },
+  { id: 'cricket', name: 'Cricket', icon: '🏏', coordinator: 'Rohan Gupta', coordinatorEmail: 'cricket.coord@apex.edu', category: 'Outdoor', squadSize: '11 - 15 Players' },
+  { id: 'football', name: 'Football', icon: '⚽', coordinator: 'Vikramjit Singh', coordinatorEmail: 'football.coord@apex.edu', category: 'Outdoor', squadSize: '5 - 8 Players' },
+  { id: 'basketball', name: 'Basketball', icon: '🏀', coordinator: 'Neha Kapoor', coordinatorEmail: 'basketball.coord@apex.edu', category: 'Indoor/Outdoor', squadSize: '5 - 10 Players' },
+  { id: 'volleyball', name: 'Volleyball', icon: '🏐', coordinator: 'Suresh Kumar', coordinatorEmail: 'volleyball.coord@apex.edu', category: 'Outdoor', squadSize: '6 - 10 Players' },
+  { id: 'kabaddi', name: 'Kabaddi', icon: '🤼', coordinator: 'Deepak Yadav', coordinatorEmail: 'kabaddi.coord@apex.edu', category: 'Outdoor', squadSize: '7 - 12 Players' },
+  { id: 'kho-kho', name: 'Kho-Kho', icon: '🏃', coordinator: 'Anita Singh', coordinatorEmail: 'khokho.coord@apex.edu', category: 'Outdoor', squadSize: '9 - 12 Players' },
+  { id: 'athletics', name: 'Athletics', icon: '🏃‍♂️', coordinator: 'Manish Pandey', coordinatorEmail: 'athletics.coord@apex.edu', category: 'Track & Field', squadSize: '1 - 4 Players' },
+  { id: 'tug-of-war', name: 'Tug of War', icon: '🪢', coordinator: 'Rajesh Mishra', coordinatorEmail: 'tugofwar.coord@apex.edu', category: 'Outdoor Arena', squadSize: '8 - 10 Players' },
+  { id: 'gully-cricket', name: 'Gully Cricket', icon: '🏏', coordinator: 'Alok Tripathi', coordinatorEmail: 'gullycricket.coord@apex.edu', category: 'Street Pitch', squadSize: '5 - 8 Players' }
 ];
 
 export const ALL_COLLEGES = [

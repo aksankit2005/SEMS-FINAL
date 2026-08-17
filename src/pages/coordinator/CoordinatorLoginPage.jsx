@@ -187,7 +187,7 @@ export const CoordinatorLoginPage = () => {
             </form>
 
             <div className="pt-4 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 text-center font-medium">
-              SEMS 2026 Sports Event Management System • Sport Coordinator Engine
+              APEX 2026 Sports Event Management System • Sport Coordinator Engine
             </div>
           </div>
         </div>

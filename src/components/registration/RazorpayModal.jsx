@@ -59,7 +59,7 @@ export const RazorpayModal = ({ event, amount, participantName, onClose, onSucce
                 <h3 className="font-black text-sm text-white uppercase tracking-wider">Razorpay Checkout</h3>
                 <span className="px-1.5 py-0.5 rounded bg-blue-500/30 text-blue-300 text-[9px] font-mono uppercase">Secured</span>
               </div>
-              <p className="text-xs text-slate-300">SEMS APEX Championship 2026</p>
+              <p className="text-xs text-slate-300">APEX Championship 2026</p>
             </div>
           </div>
           <button

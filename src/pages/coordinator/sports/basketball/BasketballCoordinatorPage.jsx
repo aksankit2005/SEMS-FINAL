@@ -23,7 +23,7 @@ export const BasketballCoordinatorPage = () => {
       assignedSport: 'basketball',
       sportName: 'Basketball',
       coordinatorName: 'Michael Jordan Singh',
-      email: 'basketball.coord@sems.edu'
+      email: 'basketball.coord@apex.edu'
     };
   });
 

@@ -289,11 +289,11 @@ export const getSportResultExportConfig = (rawSportId) => {
           t1,
           t2,
           `${setsWon1} - ${setsWon2} Sets`,
-          sets[0] ? `${sets[0].score1}-${sets[0].score2}` : 'N/A',
-          sets[1] ? `${sets[1].score1}-${sets[1].score2}` : 'N/A',
-          sets[2] ? `${sets[2].score1}-${sets[2].score2}` : 'N/A',
-          sets[3] ? `${sets[3].score1}-${sets[3].score2}` : 'N/A',
-          sets[4] ? `${sets[4].score1}-${sets[4].score2}` : 'N/A',
+          (sets[0] && (Number(sets[0].score1 || 0) > 0 || Number(sets[0].score2 || 0) > 0)) ? `${sets[0].score1}-${sets[0].score2}` : 'N/A',
+          (sets[1] && (Number(sets[1].score1 || 0) > 0 || Number(sets[1].score2 || 0) > 0)) ? `${sets[1].score1}-${sets[1].score2}` : 'N/A',
+          (sets[2] && (Number(sets[2].score1 || 0) > 0 || Number(sets[2].score2 || 0) > 0)) ? `${sets[2].score1}-${sets[2].score2}` : 'N/A',
+          (sets[3] && (Number(sets[3].score1 || 0) > 0 || Number(sets[3].score2 || 0) > 0)) ? `${sets[3].score1}-${sets[3].score2}` : 'N/A',
+          (sets[4] && (Number(sets[4].score1 || 0) > 0 || Number(sets[4].score2 || 0) > 0)) ? `${sets[4].score1}-${sets[4].score2}` : 'N/A',
           winner,
           winCollege,
           str(r.tableNumber || r.venue || 'Volleyball Court 1'),
@@ -347,11 +347,11 @@ export const getSportResultExportConfig = (rawSportId) => {
           t1,
           t2,
           `${setsWon1} - ${setsWon2} Sets`,
-          sets[0] ? `${sets[0].score1}-${sets[0].score2}` : 'N/A',
-          sets[1] ? `${sets[1].score1}-${sets[1].score2}` : 'N/A',
-          sets[2] ? `${sets[2].score1}-${sets[2].score2}` : 'N/A',
-          sets[3] ? `${sets[3].score1}-${sets[3].score2}` : 'N/A',
-          sets[4] ? `${sets[4].score1}-${sets[4].score2}` : 'N/A',
+          (sets[0] && (Number(sets[0].score1 || 0) > 0 || Number(sets[0].score2 || 0) > 0)) ? `${sets[0].score1}-${sets[0].score2}` : 'N/A',
+          (sets[1] && (Number(sets[1].score1 || 0) > 0 || Number(sets[1].score2 || 0) > 0)) ? `${sets[1].score1}-${sets[1].score2}` : 'N/A',
+          (sets[2] && (Number(sets[2].score1 || 0) > 0 || Number(sets[2].score2 || 0) > 0)) ? `${sets[2].score1}-${sets[2].score2}` : 'N/A',
+          (sets[3] && (Number(sets[3].score1 || 0) > 0 || Number(sets[3].score2 || 0) > 0)) ? `${sets[3].score1}-${sets[3].score2}` : 'N/A',
+          (sets[4] && (Number(sets[4].score1 || 0) > 0 || Number(sets[4].score2 || 0) > 0)) ? `${sets[4].score1}-${sets[4].score2}` : 'N/A',
           winner,
           winCollege,
           str(r.tableNumber || r.venue || (isTT ? 'Table 1' : 'Court 1')),
@@ -619,3 +619,380 @@ export const getSportResultExportConfig = (rawSportId) => {
     }
   };
 };
+
+/**
+ * Canonical Sport Result Display Parser for UI components (ResultsPage, Coordinator Tabs, Portals)
+ * Extracts structured sport-specific score summary, formatted text, and visual badges.
+ */
+export const getSportResultDisplay = (r) => {
+  if (!r) return { sportId: 'general', sportName: 'General', summaryText: 'Match Completed' };
+
+  const rawSport = r.sportId || r.sport || r.sportName || '';
+  const sportId = String(rawSport).toLowerCase().replace(/_/g, '-');
+  const details = parseDetails(r);
+
+  // Safe team name resolution (eliminating undefined vs undefined)
+  const team1 = str(r.team1 || r.team1Name || details.team1 || details.team1Name, 'Team 1');
+  const team2 = str(r.team2 || r.team2Name || details.team2 || details.team2Name, 'Team 2');
+  const eventTitle = str(r.eventTitle || r.event || r.matchTitle || details.eventTitle || details.matchTitle || `${team1} vs ${team2}`);
+  const winner = str(r.winner || r.winnerName || details.winner, '');
+  const format = str(r.format || details.format, '');
+  const category = str(r.category || r.gender || details.category, 'Open');
+  const date = formatDate(r.completedAt || r.date || r.updatedAt || details.completedAt);
+  const mvp = str(details.mvp || details.playerOfMatch || details.playerOfTheMatch || r.mvpPlayer, '');
+
+  // 1. CRICKET / GULLY CRICKET
+  if (sportId.includes('cricket')) {
+    const isGully = sportId.includes('gully');
+    const runs1 = r.score1 ?? details.runs1 ?? details.score1 ?? 0;
+    const wkts1 = r.wickets1 ?? details.wickets1 ?? 0;
+    const ov1 = str(r.overs1 || details.overs1, isGully ? '6.0' : '20.0');
+    const runs2 = r.score2 ?? details.runs2 ?? details.score2 ?? 0;
+    const wkts2 = r.wickets2 ?? details.wickets2 ?? 0;
+    const ov2 = str(r.overs2 || details.overs2, isGully ? '6.0' : '20.0');
+    const targetRuns = r.targetRuns || details.targetRuns || (Number(runs1) > 0 ? Number(runs1) + 1 : null);
+    const resultString = str(r.resultString || details.resultString || (winner ? `${winner} won` : 'Match Completed'));
+
+    return {
+      sportId: isGully ? 'gully-cricket' : 'cricket',
+      sportName: isGully ? 'Gully Cricket' : 'Cricket',
+      sportType: 'cricket',
+      isGully,
+      team1,
+      team2,
+      eventTitle,
+      format: format || (isGully ? '6-Overs Fast Box' : 'T20 (20 Overs)'),
+      category,
+      date,
+      winner: winner || resultString,
+      resultString,
+      mvp: mvp && mvp !== winner ? mvp : null,
+      cricket: {
+        runs1,
+        wickets1: wkts1,
+        overs1: ov1,
+        innings1Text: `${runs1}/${wkts1} (${ov1} ov)`,
+        runs2,
+        wickets2: wkts2,
+        overs2: ov2,
+        innings2Text: `${runs2}/${wkts2} (${ov2} ov)`,
+        targetRuns,
+        resultString
+      },
+      summaryText: `${team1}: ${runs1}/${wkts1} (${ov1} ov) vs ${team2}: ${runs2}/${wkts2} (${ov2} ov) • ${resultString}`
+    };
+  }
+
+  // 2. BADMINTON / TABLE TENNIS
+  if (sportId.includes('badminton') || sportId.includes('table-tennis') || sportId.includes('tabletennis')) {
+    const isTT = sportId.includes('table');
+    const setsWon1 = Number(r.setsWon1 ?? details.setsWon1 ?? (r.score1 > r.score2 ? 2 : 0));
+    const setsWon2 = Number(r.setsWon2 ?? details.setsWon2 ?? (r.score2 > r.score1 ? 2 : 0));
+    const rawSets = (Array.isArray(r.setsHistory) ? r.setsHistory : details.setsHistory) || [];
+    
+    // Filter to only sets that were actually played
+    const playedSets = rawSets.filter(s => (Number(s.score1 || s.team1Score || 0) > 0 || Number(s.score2 || s.team2Score || 0) > 0));
+    const setsBreakdown = playedSets.map((s, i) => ({
+      setNumber: i + 1,
+      score1: s.score1 || s.team1Score || 0,
+      score2: s.score2 || s.team2Score || 0,
+      label: `Set ${i + 1}: ${s.score1 || s.team1Score || 0}-${s.score2 || s.team2Score || 0}`
+    }));
+
+    const setsScoreText = `${setsWon1} - ${setsWon2} ${isTT ? 'Games' : 'Sets'}`;
+    const breakdownStr = setsBreakdown.map(s => `${s.score1}-${s.score2}`).join(', ');
+
+    return {
+      sportId: isTT ? 'table-tennis' : 'badminton',
+      sportName: isTT ? 'Table Tennis' : 'Badminton',
+      sportType: 'racket',
+      isTT,
+      team1,
+      team2,
+      eventTitle,
+      format: format || (isTT ? 'SINGLES (Best of 5)' : 'SINGLES (Best of 3)'),
+      category,
+      date,
+      winner: winner || (setsWon1 >= setsWon2 ? team1 : team2),
+      mvp: mvp && mvp !== winner ? mvp : null,
+      racket: {
+        setsWon1,
+        setsWon2,
+        setsScoreText,
+        setsBreakdown
+      },
+      summaryText: `${setsScoreText}${breakdownStr ? ` (${breakdownStr})` : ''}`
+    };
+  }
+
+  // 3. VOLLEYBALL
+  if (sportId.includes('volleyball')) {
+    const setsWon1 = Number(r.setsWon1 ?? details.setsWon1 ?? (r.score1 > r.score2 ? 3 : 0));
+    const setsWon2 = Number(r.setsWon2 ?? details.setsWon2 ?? (r.score2 > r.score1 ? 3 : 0));
+    const rawSets = (Array.isArray(r.setsHistory) ? r.setsHistory : details.setsHistory) || [];
+    const playedSets = rawSets.filter(s => (Number(s.score1 || 0) > 0 || Number(s.score2 || 0) > 0));
+    const setsBreakdown = playedSets.map((s, i) => ({
+      setNumber: i + 1,
+      score1: s.score1 || 0,
+      score2: s.score2 || 0,
+      label: `Set ${i + 1}: ${s.score1 || 0}-${s.score2 || 0}`
+    }));
+
+    const setsScoreText = `${setsWon1} - ${setsWon2} Sets`;
+    const breakdownStr = setsBreakdown.map(s => s.label).join(', ');
+
+    return {
+      sportId: 'volleyball',
+      sportName: 'Volleyball',
+      sportType: 'volleyball',
+      team1,
+      team2,
+      eventTitle,
+      format: format || 'Best of 3 / 5 Sets (6v6)',
+      category,
+      date,
+      winner: winner || (setsWon1 >= setsWon2 ? team1 : team2),
+      mvp: mvp && mvp !== winner ? mvp : null,
+      volleyball: {
+        setsWon1,
+        setsWon2,
+        setsScoreText,
+        setsBreakdown
+      },
+      summaryText: `${setsScoreText}${breakdownStr ? ` • ${breakdownStr}` : ''}`
+    };
+  }
+
+  // 4. BASKETBALL
+  if (sportId.includes('basketball')) {
+    const s1 = Number(r.score1 ?? details.score1 ?? 0);
+    const s2 = Number(r.score2 ?? details.score2 ?? 0);
+    const quarter = str(details.quarter || r.quarter || 'Full Time');
+
+    return {
+      sportId: 'basketball',
+      sportName: 'Basketball',
+      sportType: 'basketball',
+      team1,
+      team2,
+      eventTitle,
+      format: format || 'Standard 5v5 (4 Quarters)',
+      category,
+      date,
+      winner: winner || (s1 >= s2 ? team1 : team2),
+      mvp: mvp && mvp !== winner ? mvp : null,
+      basketball: {
+        score1: s1,
+        score2: s2,
+        scoreText: `${s1} - ${s2} PTS`,
+        quarter
+      },
+      summaryText: `${team1} ${s1} - ${s2} ${team2} PTS (${quarter})`
+    };
+  }
+
+  // 5. FOOTBALL
+  if (sportId.includes('football')) {
+    const s1 = Number(r.score1 ?? details.score1 ?? 0);
+    const s2 = Number(r.score2 ?? details.score2 ?? 0);
+    const halfInfo = str(details.quarter || details.half || r.quarter || 'Full Time (90m)');
+    const isDraw = s1 === s2 && (!winner || winner.toLowerCase().includes('draw'));
+
+    return {
+      sportId: 'football',
+      sportName: 'Football',
+      sportType: 'football',
+      team1,
+      team2,
+      eventTitle,
+      format: format || 'Standard 11v11 (2 Halves)',
+      category,
+      date,
+      winner: isDraw ? 'Match Draw' : (winner || (s1 > s2 ? team1 : team2)),
+      mvp: mvp && mvp !== winner ? mvp : null,
+      football: {
+        score1: s1,
+        score2: s2,
+        scoreText: `${s1} - ${s2} Goals`,
+        halfInfo,
+        isDraw
+      },
+      summaryText: `${team1} ${s1} - ${s2} ${team2} (${halfInfo})`
+    };
+  }
+
+  // 6. KABADDI
+  if (sportId.includes('kabaddi')) {
+    const s1 = Number(r.score1 ?? details.score1 ?? 0);
+    const s2 = Number(r.score2 ?? details.score2 ?? 0);
+    const h1_1 = details.half1Score1;
+    const h1_2 = details.half1Score2;
+    const h2_1 = details.half2Score1;
+    const h2_2 = details.half2Score2;
+    const hasHalves = h1_1 !== undefined && h1_2 !== undefined;
+
+    return {
+      sportId: 'kabaddi',
+      sportName: 'Kabaddi',
+      sportType: 'kabaddi',
+      team1,
+      team2,
+      eventTitle,
+      format: format || 'Standard 7v7 (2 Halves of 20m)',
+      category,
+      date,
+      winner: winner || (s1 >= s2 ? team1 : team2),
+      mvp: mvp && mvp !== winner ? mvp : null,
+      kabaddi: {
+        score1: s1,
+        score2: s2,
+        scoreText: `${s1} - ${s2} PTS`,
+        half1Text: hasHalves ? `1st Half: ${h1_1}-${h1_2}` : null,
+        half2Text: (h2_1 !== undefined && h2_2 !== undefined) ? `2nd Half: ${h2_1}-${h2_2}` : null
+      },
+      summaryText: `${team1} ${s1} - ${s2} ${team2} PTS${hasHalves ? ` (1st Half: ${h1_1}-${h1_2})` : ''}`
+    };
+  }
+
+  // 7. KHO-KHO
+  if (sportId.includes('kho')) {
+    const s1 = Number(r.score1 ?? details.score1 ?? 0);
+    const s2 = Number(r.score2 ?? details.score2 ?? 0);
+    const rawSets = (Array.isArray(r.setsHistory) ? r.setsHistory : details.setsHistory) || [];
+    const inningsBreakdown = rawSets.filter(s => (Number(s.score1 || 0) > 0 || Number(s.score2 || 0) > 0)).map((s, i) => `Inning ${i + 1}: ${s.score1}-${s.score2}`);
+
+    return {
+      sportId: 'kho-kho',
+      sportName: 'Kho-Kho',
+      sportType: 'khokho',
+      team1,
+      team2,
+      eventTitle,
+      format: format || 'Standard 9v9 (2 Innings / 2 Sets)',
+      category,
+      date,
+      winner: winner || (s1 >= s2 ? team1 : team2),
+      mvp: mvp && mvp !== winner ? mvp : null,
+      khokho: {
+        score1: s1,
+        score2: s2,
+        scoreText: `${s1} - ${s2} Points`,
+        inningsBreakdown
+      },
+      summaryText: `${team1} ${s1} - ${s2} ${team2} Points${inningsBreakdown.length > 0 ? ` (${inningsBreakdown.join(' | ')})` : ''}`
+    };
+  }
+
+  // 8. TUG OF WAR
+  if (sportId.includes('tug')) {
+    const rw1 = Number(r.roundsWon1 ?? details.roundsWon1 ?? (r.score1 || 0));
+    const rw2 = Number(r.roundsWon2 ?? details.roundsWon2 ?? (r.score2 || 0));
+    const rounds = (Array.isArray(r.roundsHistory) ? r.roundsHistory : details.roundsHistory) || [];
+    const roundsBreakdown = rounds.map((rd, i) => `Round ${i + 1}: ${rd.winner || 'Completed'}`);
+
+    return {
+      sportId: 'tug-of-war',
+      sportName: 'Tug of War',
+      sportType: 'tug',
+      team1,
+      team2,
+      eventTitle,
+      format: format || 'Team Match (8v8 Best of 3 Pulls)',
+      category,
+      date,
+      winner: winner || (rw1 >= rw2 ? team1 : team2),
+      mvp: mvp && mvp !== winner ? mvp : null,
+      tug: {
+        roundsWon1: rw1,
+        roundsWon2: rw2,
+        pullsScoreText: `${rw1} - ${rw2} Pulls Won`,
+        roundsBreakdown
+      },
+      summaryText: `${team1} vs ${team2}: ${rw1} - ${rw2} Pulls Won`
+    };
+  }
+
+  // 9. CHESS
+  if (sportId.includes('chess')) {
+    const s1 = Number(r.score1 ?? details.score1 ?? 0);
+    const s2 = Number(r.score2 ?? details.score2 ?? 0);
+    const scoreText = str(r.scoreText || r.scoreSummary || details.scoreText || (s1 === 1 ? '1 - 0 (White Wins)' : s2 === 1 ? '0 - 1 (Black Wins)' : '½ - ½ (Draw)'));
+    const verdict = str(r.resultNote || details.resultNote, 'Official Verdict');
+
+    return {
+      sportId: 'chess',
+      sportName: 'Chess',
+      sportType: 'chess',
+      team1: team1.includes('Player') ? 'Player 1 (White)' : team1,
+      team2: team2.includes('Player') ? 'Player 2 (Black)' : team2,
+      eventTitle,
+      format: format || 'INDIVIDUAL (Classical/Rapid)',
+      category,
+      date,
+      winner: winner || (s1 === 1 ? team1 : s2 === 1 ? team2 : 'Match Draw'),
+      mvp: mvp && mvp !== winner ? mvp : null,
+      chess: {
+        scoreText,
+        verdict
+      },
+      summaryText: `Board Result: ${scoreText} • ${verdict}`
+    };
+  }
+
+  // 10. ATHLETICS
+  if (sportId.includes('athletics')) {
+    const medals = details.medals || r.medals || {};
+    const entries = (Array.isArray(r.entries) ? r.entries : details.entries) || [];
+    const goldEntry = entries.find(e => (e.rank || '').includes('1') || (e.rank || '').toLowerCase().includes('gold')) || {};
+    const silverEntry = entries.find(e => (e.rank || '').includes('2') || (e.rank || '').toLowerCase().includes('silver')) || {};
+    const bronzeEntry = entries.find(e => (e.rank || '').includes('3') || (e.rank || '').toLowerCase().includes('bronze')) || {};
+
+    const gold = str(medals.gold || goldEntry.name || r.winner || r.winnerName, 'TBD');
+    const silver = str(medals.silver || silverEntry.name || r.runnerUp || r.runnerUpName, 'TBD');
+    const bronze = str(medals.bronze || bronzeEntry.name, 'TBD');
+
+    return {
+      sportId: 'athletics',
+      sportName: 'Athletics',
+      sportType: 'athletics',
+      team1: gold,
+      team2: silver,
+      eventTitle: str(r.activeSubEvent || r.subEvent || eventTitle, 'Track & Field Event'),
+      format: format || 'Individual Sprint / Field',
+      category,
+      date,
+      winner: gold !== 'TBD' ? `🥇 Gold: ${gold}` : 'Declared Podium',
+      mvp: mvp && mvp !== winner ? mvp : null,
+      athletics: {
+        gold,
+        silver,
+        bronze
+      },
+      summaryText: `🥇 1st: ${gold} | 🥈 2nd: ${silver} | 🥉 3rd: ${bronze}`
+    };
+  }
+
+  // GENERAL DEFAULT
+  const s1 = Number(r.score1 ?? details.score1 ?? 0);
+  const s2 = Number(r.score2 ?? details.score2 ?? 0);
+  return {
+    sportId,
+    sportName: (rawSport || 'Sport').replace(/-/g, ' ').toUpperCase(),
+    sportType: 'general',
+    team1,
+    team2,
+    eventTitle,
+    format: format || 'Championship Match',
+    category,
+    date,
+    winner: winner || (s1 >= s2 ? team1 : team2),
+    mvp: mvp && mvp !== winner ? mvp : null,
+    general: {
+      score1: s1,
+      score2: s2,
+      scoreText: `${s1} - ${s2}`
+    },
+    summaryText: `${team1}: ${s1} | ${team2}: ${s2} (Winner: ${winner || team1})`
+  };
+};
+

@@ -223,7 +223,7 @@ export const CoordinatorFormModal = ({ isOpen, coordinator = null, onSave, onClo
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="coordinator@sems.edu"
+                  placeholder="coordinator@apex.edu"
                   className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
                 />
               </div>

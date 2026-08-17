@@ -98,7 +98,7 @@ export const CoordinatorSidebar = ({ activeTab, setActiveTab, user, onLogout, is
           <div className="flex items-center justify-between">
             <div className="truncate">
               <p className="text-xs font-black text-slate-900 dark:text-white truncate">{user?.coordinatorName || 'Table Tennis Official'}</p>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user?.email || 'coord@sems.edu'}</p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user?.email || 'coord@apex.edu'}</p>
             </div>
             <button
               onClick={onLogout}

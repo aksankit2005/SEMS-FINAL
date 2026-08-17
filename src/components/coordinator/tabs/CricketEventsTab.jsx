@@ -58,7 +58,7 @@ export const CricketEventsTab = ({ user }) => {
     ],
     requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'Team Playing 11 Roster Form'],
     contactName: user?.coordinatorName || 'Vikramaditya Sharma',
-    contactEmail: user?.email || 'cricket.coord@sems.edu',
+    contactEmail: user?.email || 'cricket.coord@apex.edu',
     contactPhone: '+91 98765 43210'
   });
 
@@ -107,7 +107,7 @@ export const CricketEventsTab = ({ user }) => {
       rules: eventObj.rules || [],
       requiredDocuments: eventObj.requiredDocuments || ['College Student ID Card'],
       contactName: eventObj.contactInfo?.name || user?.coordinatorName || 'Cricket Coordinator',
-      contactEmail: eventObj.contactInfo?.email || user?.email || 'cricket.coord@sems.edu',
+      contactEmail: eventObj.contactInfo?.email || user?.email || 'cricket.coord@apex.edu',
       contactPhone: eventObj.contactInfo?.phone || '+91 98765 43210'
     });
     setRulesInput(Array.isArray(eventObj.rules) ? eventObj.rules.join('\n') : '');
@@ -149,7 +149,7 @@ export const CricketEventsTab = ({ user }) => {
       ],
       requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'Team Playing 11 Roster Form'],
       contactName: user?.coordinatorName || 'Cricket Coordinator',
-      contactEmail: user?.email || 'cricket.coord@sems.edu',
+      contactEmail: user?.email || 'cricket.coord@apex.edu',
       contactPhone: '+91 98765 43210'
     });
     setRulesInput(`Cricket Tournament Rules

@@ -153,7 +153,7 @@ export const TugOfWarResultManagementTab = ({ user }) => {
     }
 
     try {
-      exportSportResultPDF('tug-of-war', filteredResults, 'SEMS 2026 Tug of War Match Results Report');
+      exportSportResultPDF('tug-of-war', filteredResults, 'APEX 2026 Tug of War Match Results Report');
       addToast('Downloaded official Tug of War Results PDF Report!', 'success');
     } catch (err) {
       addToast(err.message || 'Failed to export PDF report', 'error');
@@ -278,7 +278,9 @@ export const TugOfWarResultManagementTab = ({ user }) => {
                           {r.eventTitle || 'Tug of War Championship'}
                         </span>
                       </div>
-                      <p className="font-bold text-slate-900 dark:text-white text-sm">{r.team1} vs {r.team2}</p>
+                      <p className="font-bold text-slate-900 dark:text-white text-sm">
+                        {r.team1 || r.team1Name || 'Team 1'} <span className="text-slate-400 text-xs font-normal">vs</span> {r.team2 || r.team2Name || 'Team 2'}
+                      </p>
                     </td>
 
                     <td className="p-4 font-bold">

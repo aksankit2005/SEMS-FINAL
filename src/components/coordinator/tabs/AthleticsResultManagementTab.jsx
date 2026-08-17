@@ -91,7 +91,7 @@ export const AthleticsResultManagementTab = ({ sportName = 'Athletics', sportSlu
       
       const updatedItem = index >= 0 
         ? { ...currentList[index], [field]: value }
-        : { id: athleteId, name: defaultName, college: college || 'SEMS College', resultMetric: '', rank: '', remarks: '', [field]: value };
+        : { id: athleteId, name: defaultName, college: college || 'APEX College', resultMetric: '', rank: '', remarks: '', [field]: value };
 
       if (index >= 0) {
         currentList[index] = updatedItem;
@@ -109,7 +109,7 @@ export const AthleticsResultManagementTab = ({ sportName = 'Athletics', sportSlu
     const newAthlete = {
       id: `ATH-MANUAL-${Date.now()}`,
       captainName: 'New Athlete',
-      collegeName: 'SEMS Institution',
+      collegeName: 'APEX Institution',
       captainPhone: '-',
       selectedEvents: [selectedSubEvent],
       isManual: true,
@@ -208,7 +208,7 @@ export const AthleticsResultManagementTab = ({ sportName = 'Athletics', sportSlu
   const handleSelectWinner = (place, idOrName) => {
     const found = subEventEntries.find((r) => r.id === idOrName || (r.captainName || (r.roster && r.roster[0]?.name)) === idOrName);
     const name = found ? (found.captainName || (found.roster && found.roster[0]?.name) || 'Athlete') : idOrName;
-    const college = found ? (found.collegeName || found.college || 'SEMS Institution') : '';
+    const college = found ? (found.collegeName || found.college || 'APEX Institution') : '';
 
     if (place === 'gold') {
       setGoldId(idOrName);
@@ -240,7 +240,7 @@ export const AthleticsResultManagementTab = ({ sportName = 'Athletics', sportSlu
       nextList.push({
         id: goldId || `ATH-WIN-GOLD-${Date.now()}`,
         name: goldName.trim(),
-        college: goldCollege.trim() || 'SEMS Institution',
+        college: goldCollege.trim() || 'APEX Institution',
         resultMetric: goldMetric,
         rank: '1st Gold',
         remarks: 'Gold Medalist'
@@ -250,7 +250,7 @@ export const AthleticsResultManagementTab = ({ sportName = 'Athletics', sportSlu
       nextList.push({
         id: silverId || `ATH-WIN-SILVER-${Date.now()}`,
         name: silverName.trim(),
-        college: silverCollege.trim() || 'SEMS Institution',
+        college: silverCollege.trim() || 'APEX Institution',
         resultMetric: silverMetric,
         rank: '2nd Silver',
         remarks: 'Silver Medalist'
@@ -260,7 +260,7 @@ export const AthleticsResultManagementTab = ({ sportName = 'Athletics', sportSlu
       nextList.push({
         id: bronzeId || `ATH-WIN-BRONZE-${Date.now()}`,
         name: bronzeName.trim(),
-        college: bronzeCollege.trim() || 'SEMS Institution',
+        college: bronzeCollege.trim() || 'APEX Institution',
         resultMetric: bronzeMetric,
         rank: '3rd Bronze',
         remarks: 'Bronze Medalist'
@@ -380,7 +380,7 @@ export const AthleticsResultManagementTab = ({ sportName = 'Athletics', sportSlu
         };
       });
 
-      exportResultsToExcel(recordsToExport, { sport: 'athletics' }, `SEMS_Athletics_Results_${new Date().toISOString().split('T')[0]}.xlsx`);
+      exportResultsToExcel(recordsToExport, { sport: 'athletics' }, `APEX_Athletics_Results_${new Date().toISOString().split('T')[0]}.xlsx`);
       addToast(`Exported ${recordsToExport.length} Athletics event results to Excel (.xlsx)!`, 'success');
     } catch (err) {
       addToast(err.message || 'Failed to export Athletics results', 'error');
@@ -591,7 +591,7 @@ export const AthleticsResultManagementTab = ({ sportName = 'Athletics', sportSlu
                 {subEventEntries.map((entry, idx) => {
                   const athleteId = entry.id || `ATH-REG-${idx}`;
                   const defaultName = entry.captainName || (entry.roster && entry.roster[0]?.name) || `Athlete ${idx + 1}`;
-                  const college = entry.collegeName || entry.college || 'SEMS Institution';
+                  const college = entry.collegeName || entry.college || 'APEX Institution';
                   const phone = entry.captainPhone || (entry.roster && entry.roster[0]?.phone) || '-';
 
                   const resObj = getAthleteResult(athleteId, defaultName);
@@ -730,7 +730,7 @@ export const AthleticsResultManagementTab = ({ sportName = 'Athletics', sportSlu
                         const name = r.captainName || (r.roster && r.roster[0]?.name) || `Athlete ${i + 1}`;
                         return (
                           <option key={r.id || i} value={r.id || name}>
-                            {name} ({r.collegeName || r.college || 'SEMS'})
+                            {name} ({r.collegeName || r.college || 'APEX'})
                           </option>
                         );
                       })}
@@ -794,7 +794,7 @@ export const AthleticsResultManagementTab = ({ sportName = 'Athletics', sportSlu
                         const name = r.captainName || (r.roster && r.roster[0]?.name) || `Athlete ${i + 1}`;
                         return (
                           <option key={r.id || i} value={r.id || name}>
-                            {name} ({r.collegeName || r.college || 'SEMS'})
+                            {name} ({r.collegeName || r.college || 'APEX'})
                           </option>
                         );
                       })}
@@ -858,7 +858,7 @@ export const AthleticsResultManagementTab = ({ sportName = 'Athletics', sportSlu
                         const name = r.captainName || (r.roster && r.roster[0]?.name) || `Athlete ${i + 1}`;
                         return (
                           <option key={r.id || i} value={r.id || name}>
-                            {name} ({r.collegeName || r.college || 'SEMS'})
+                            {name} ({r.collegeName || r.college || 'APEX'})
                           </option>
                         );
                       })}

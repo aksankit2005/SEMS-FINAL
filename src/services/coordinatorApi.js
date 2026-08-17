@@ -147,18 +147,18 @@ export const mergeMatchState = (existing, incoming) => {
 // Password pattern: {sport_key}#2026  (e.g. cricket#2026, table_tennis#2026)
 // NOTE: Passwords are NOT stored here — authentication is handled by the backend.
 export const COORDINATOR_ACCOUNTS = [
-  { assignedSport: 'cricket', sportName: 'Cricket', username: 'coord_cricket', coordinatorName: 'Vikramaditya Sharma', email: 'cricket.coord@sems.edu' },
-  { assignedSport: 'table-tennis', sportName: 'Table Tennis', username: 'coord_table_tennis', coordinatorName: 'Rohan Mehta', email: 'tt.coord@sems.edu' },
+  { assignedSport: 'cricket', sportName: 'Cricket', username: 'coord_cricket', coordinatorName: 'Vikramaditya Sharma', email: 'cricket.coord@apex.edu' },
+  { assignedSport: 'table-tennis', sportName: 'Table Tennis', username: 'coord_table_tennis', coordinatorName: 'Rohan Mehta', email: 'tt.coord@apex.edu' },
   { assignedSport: 'badminton', sportName: 'Badminton', username: 'coord_badminton', coordinatorName: 'Badminton Coordinator', email: '' },
-  { assignedSport: 'chess', sportName: 'Chess', username: 'coord_chess', coordinatorName: 'Grandmaster Anand Verma', email: 'chess.coord@sems.edu' },
-  { assignedSport: 'football', sportName: 'Football', username: 'coord_football', coordinatorName: 'Carlos Rodriguez', email: 'football.coord@sems.edu' },
-  { assignedSport: 'basketball', sportName: 'Basketball', username: 'coord_basketball', coordinatorName: 'Michael Jordan Singh', email: 'basketball.coord@sems.edu' },
-  { assignedSport: 'volleyball', sportName: 'Volleyball', username: 'coord_volleyball', coordinatorName: 'Siddharth Rao', email: 'volleyball.coord@sems.edu' },
-  { assignedSport: 'kabaddi', sportName: 'Kabaddi', username: 'coord_kabaddi', coordinatorName: 'Pradeep Narwal Kumar', email: 'kabaddi.coord@sems.edu' },
-  { assignedSport: 'kho-kho', sportName: 'Kho-Kho', username: 'coord_kho_kho', coordinatorName: 'Sunita Jadhav', email: 'khokho.coord@sems.edu' },
-  { assignedSport: 'athletics', sportName: 'Athletics', username: 'coord_athletics', coordinatorName: 'PT Usha Pillai', email: 'athletics.coord@sems.edu' },
-  { assignedSport: 'tug-of-war', sportName: 'Tug of War', username: 'coord_tug_of_war', coordinatorName: 'Bheem Singh Power', email: 'tugofwar.coord@sems.edu' },
-  { assignedSport: 'gully-cricket', sportName: 'Gully Cricket', username: 'coord_gully_cricket', coordinatorName: 'Chiku Bhai', email: 'gullycricket.coord@sems.edu' },
+  { assignedSport: 'chess', sportName: 'Chess', username: 'coord_chess', coordinatorName: 'Grandmaster Anand Verma', email: 'chess.coord@apex.edu' },
+  { assignedSport: 'football', sportName: 'Football', username: 'coord_football', coordinatorName: 'Carlos Rodriguez', email: 'football.coord@apex.edu' },
+  { assignedSport: 'basketball', sportName: 'Basketball', username: 'coord_basketball', coordinatorName: 'Michael Jordan Singh', email: 'basketball.coord@apex.edu' },
+  { assignedSport: 'volleyball', sportName: 'Volleyball', username: 'coord_volleyball', coordinatorName: 'Siddharth Rao', email: 'volleyball.coord@apex.edu' },
+  { assignedSport: 'kabaddi', sportName: 'Kabaddi', username: 'coord_kabaddi', coordinatorName: 'Pradeep Narwal Kumar', email: 'kabaddi.coord@apex.edu' },
+  { assignedSport: 'kho-kho', sportName: 'Kho-Kho', username: 'coord_kho_kho', coordinatorName: 'Sunita Jadhav', email: 'khokho.coord@apex.edu' },
+  { assignedSport: 'athletics', sportName: 'Athletics', username: 'coord_athletics', coordinatorName: 'PT Usha Pillai', email: 'athletics.coord@apex.edu' },
+  { assignedSport: 'tug-of-war', sportName: 'Tug of War', username: 'coord_tug_of_war', coordinatorName: 'Bheem Singh Power', email: 'tugofwar.coord@apex.edu' },
+  { assignedSport: 'gully-cricket', sportName: 'Gully Cricket', username: 'coord_gully_cricket', coordinatorName: 'Chiku Bhai', email: 'gullycricket.coord@apex.edu' },
 ];
 
 export const getSportRoute = (assignedSport) => {
@@ -842,12 +842,16 @@ async deleteMatch(id) {
     };
 
     try {
-      await api.post(
-  `/coordinator/matches/${matchId}/complete`,
-  winnerData
-);
+      const res = await api.post(
+        `/coordinator/matches/${matchId}/complete`,
+        completedObj
+      );
+      if (res?.data?.match) {
+        Object.assign(completedObj, res.data.match);
+      }
     } catch (e) {
-      console.warn('Backend completeMatch API fallback:', e);
+      console.error('completeMatch API error:', e?.response?.data?.message || e.message);
+      throw e;
     }
 
     // Remove completed match from active match schedule list
@@ -944,7 +948,7 @@ async deleteMatch(id) {
           fatherName: regData.fatherName || 'N/A',
           collegeName: regData.college || 'MPEC',
           department: regData.department || regData.branch || 'Engineering',
-          email: regData.email || 'athlete@sems.edu',
+          email: regData.email || 'athlete@apex.edu',
           phone: regData.phone || regData.mobile || '+91 98765 43210',
           gender: regData.gender || 'Male',
           emergencyContact: regData.emergencyContact || '+91 98765 43211',

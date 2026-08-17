@@ -3,6 +3,8 @@ import { Award, Upload, Lock, Unlock, Download, FileText, CheckCircle2, Trophy, 
 import { useToast } from '../../../context/ToastContext';
 import jsPDF from 'jspdf';
 
+import { getSportResultDisplay } from '../../../utils/sportResultFormatters';
+
 export const ResultsTab = ({ user }) => {
   const { addToast } = useToast();
 
@@ -19,14 +21,17 @@ export const ResultsTab = ({ user }) => {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const mapped = parsed.map((item, idx) => ({
-            rank: idx + 1,
-            team: item.winner || item.team1 || 'Team A',
-            college: item.college || 'MPEC',
-            medal: idx === 0 ? 'Gold' : idx === 1 ? 'Silver' : idx === 2 ? 'Bronze' : `${idx + 1}th Place`,
-            score: `${item.score1 || 0}-${item.score2 || 0}`,
-            status: 'Verified'
-          }));
+          const mapped = parsed.map((item, idx) => {
+            const display = getSportResultDisplay(item);
+            return {
+              rank: idx + 1,
+              team: display.winner || item.winner || display.team1 || 'Team A',
+              college: item.college || item.winnerCollege || 'MPEC',
+              medal: idx === 0 ? 'Gold' : idx === 1 ? 'Silver' : idx === 2 ? 'Bronze' : `${idx + 1}th Place`,
+              score: display.summaryText || `${item.score1 || 0}-${item.score2 || 0}`,
+              status: 'Verified'
+            };
+          });
           setResultsData(mapped);
           return;
         }
@@ -58,7 +63,7 @@ export const ResultsTab = ({ user }) => {
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(18);
-    doc.text(`SEMS 2026 - ${user?.sportName} Official Final Results & Medal Tally`, 14, 22);
+    doc.text(`APEX 2026 - ${user?.sportName} Official Final Results & Medal Tally`, 14, 22);
     doc.setFontSize(10);
     doc.text(`Certified by: ${user?.coordinatorName} (${user?.sportName} Coordinator)`, 14, 30);
     doc.text(`Published Date: ${new Date().toLocaleDateString()}`, 14, 36);

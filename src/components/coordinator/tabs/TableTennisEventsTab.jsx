@@ -64,7 +64,7 @@ export const TableTennisEventsTab = ({ user }) => {
     ],
     requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID'],
     contactName: user?.coordinatorName || 'Rohan Mehta',
-    contactEmail: user?.email || 'tt.coord@sems.edu',
+    contactEmail: user?.email || 'tt.coord@apex.edu',
     contactPhone: '+91 98765 11002'
   });
 
@@ -125,7 +125,7 @@ export const TableTennisEventsTab = ({ user }) => {
       rules: eventObj.rules || ['Official tournament rules apply.', 'College Student ID & Pass mandatory.'],
       requiredDocuments: eventObj.requiredDocuments || ['College Student ID Card', 'Aadhaar Card / Govt ID'],
       contactName: eventObj.contactInfo?.name || user?.coordinatorName || 'Rohan Mehta',
-      contactEmail: eventObj.contactInfo?.email || user?.email || 'tt.coord@sems.edu',
+      contactEmail: eventObj.contactInfo?.email || user?.email || 'tt.coord@apex.edu',
       contactPhone: eventObj.contactInfo?.phone || '+91 98765 11002'
     });
 
@@ -159,7 +159,7 @@ export const TableTennisEventsTab = ({ user }) => {
       rules: ['Official tournament rules apply.', 'College Student ID & Pass mandatory.'],
       requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID'],
       contactName: user?.coordinatorName || 'Rohan Mehta',
-      contactEmail: user?.email || 'tt.coord@sems.edu',
+      contactEmail: user?.email || 'tt.coord@apex.edu',
       contactPhone: '+91 98765 11002'
     });
     setRulesInput('Official tournament rules apply.\nCollege Student ID & Pass mandatory.');

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, Trophy, User, ShieldCheck, Sparkles, LayoutDashboard, LogOut, ChevronDown, Building2, Shield, Camera } from 'lucide-react';
 import { ThemeToggle } from '../common/ThemeToggle';
@@ -13,8 +13,31 @@ export const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isSignInOpen, setIsSignInOpen] = useState(false);
+  const signInRef = useRef(null);
   const { user, logout } = useAuth();
   const [, setAuthTick] = useState(0);
+
+  // Close dropdown on route change
+  useEffect(() => {
+    setIsSignInOpen(false);
+    setIsMobileOpen(false);
+  }, [location.pathname]);
+
+  // Click / Touch outside handler
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (signInRef.current && !signInRef.current.contains(e.target)) {
+        setIsSignInOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     const handleAuthChange = () => setAuthTick((t) => t + 1);
@@ -169,7 +192,11 @@ export const Navbar = () => {
                     <span>Portal Sign In</span>
                     <ChevronDown className="w-3.5 h-3.5 text-blue-200 group-hover:rotate-180 transition-transform duration-200" />
                   </button>
-                  <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex flex-col overflow-hidden p-1.5 space-y-1">
+                  <div className={`absolute right-0 mt-2 w-60 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl transition-all duration-200 z-50 flex flex-col overflow-hidden p-1.5 space-y-1 ${
+                    isSignInOpen
+                      ? 'opacity-100 visible'
+                      : 'opacity-0 invisible group-hover:opacity-100 group-hover:visible'
+                  }`}>
                     <div className="px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
                       Official Access Portals
                     </div>
@@ -187,6 +214,7 @@ export const Navbar = () => {
                     </Link>
                     <Link
                       to="/coordinator/login"
+                      onClick={() => setIsSignInOpen(false)}
                       className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-orange-50 dark:hover:bg-slate-800 rounded-xl transition flex items-center gap-2.5 group/item border-t border-slate-100 dark:border-slate-800/60"
                     >
                       <span className="p-1.5 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 group-hover/item:bg-orange-600 group-hover/item:text-white transition">
@@ -199,6 +227,7 @@ export const Navbar = () => {
                     </Link>
                     <Link
                       to="/pr-login"
+                      onClick={() => setIsSignInOpen(false)}
                       className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded-xl transition flex items-center gap-2.5 group/item border-t border-slate-100 dark:border-slate-800/60"
                     >
                       <span className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover/item:bg-indigo-600 group-hover/item:text-white transition">

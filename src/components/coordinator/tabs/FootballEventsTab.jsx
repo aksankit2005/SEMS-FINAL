@@ -60,7 +60,7 @@ export const FootballEventsTab = ({ user }) => {
     ],
     requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'Team Roster Approval Form'],
     contactName: user?.coordinatorName || 'Vikram Singh',
-    contactEmail: user?.email || 'football.coord@sems.edu',
+    contactEmail: user?.email || 'football.coord@apex.edu',
     contactPhone: '+91 98765 43214'
   });
 
@@ -109,7 +109,7 @@ export const FootballEventsTab = ({ user }) => {
       rules: eventObj.rules || [],
       requiredDocuments: eventObj.requiredDocuments || ['College Student ID Card'],
       contactName: eventObj.contactInfo?.name || user?.coordinatorName || 'Football Coordinator',
-      contactEmail: eventObj.contactInfo?.email || user?.email || 'football.coord@sems.edu',
+      contactEmail: eventObj.contactInfo?.email || user?.email || 'football.coord@apex.edu',
       contactPhone: eventObj.contactInfo?.phone || '+91 98765 43214'
     });
     setRulesInput(Array.isArray(eventObj.rules) ? eventObj.rules.join('\n') : '');
@@ -153,7 +153,7 @@ export const FootballEventsTab = ({ user }) => {
       ],
       requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID'],
       contactName: user?.coordinatorName || 'Football Coordinator',
-      contactEmail: user?.email || 'football.coord@sems.edu',
+      contactEmail: user?.email || 'football.coord@apex.edu',
       contactPhone: '+91 98765 43214'
     });
     setRulesInput(`Football Tournament Rules (5 to 8 Players Format)
@@ -470,7 +470,7 @@ Equipment: Shin guards and sports/football shoes mandatory for all players.
                 <input
                   type="text"
                   required
-                  placeholder="e.g. SEMS Inter-College Football Tournament 2026"
+                  placeholder="e.g. APEX Inter-College Football Tournament 2026"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"

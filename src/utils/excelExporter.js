@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { getSportResultExportConfig } from './sportResultFormatters';
+import { getSportResultExportConfig } from './sportResultFormatters.js';
 
 /**
  * Universal safe browser file download trigger.
@@ -58,7 +58,7 @@ export const buildWorksheetFromData = (headers = [], rows = []) => {
  * @param {Array|Object} data - Array of rows/objects for single sheet OR Object of sheets { SheetName: { headers, rows } }
  * @param {string} filename - Filename with or without .xlsx extension
  */
-export const exportToExcel = (data, filename = 'SEMS_Export.xlsx') => {
+export const exportToExcel = (data, filename = 'APEX_Export.xlsx') => {
   if (!data) throw new Error('No data provided to export');
 
   const wb = XLSX.utils.book_new();
@@ -143,7 +143,7 @@ export const exportResultsToExcel = (resultsData = [], filterOptions = {}, custo
     // Single Sport Export
     const config = getSportResultExportConfig(sport);
     const rows = resultsData.map((r) => config.formatRow(r));
-    const filename = customFilename || `SEMS_${config.sportName.replace(/\s+/g, '_')}_Results_${timestamp}.xlsx`;
+    const filename = customFilename || `APEX_${config.sportName.replace(/\s+/g, '_')}_Results_${timestamp}.xlsx`;
 
     exportToExcel(
       {
@@ -208,6 +208,6 @@ export const exportResultsToExcel = (resultsData = [], filterOptions = {}, custo
     ...groupedBySport
   };
 
-  const filename = customFilename || `SEMS_Championship_Results_Master_${timestamp}.xlsx`;
+  const filename = customFilename || `APEX_Championship_Results_Master_${timestamp}.xlsx`;
   exportToExcel(sheets, filename);
 };

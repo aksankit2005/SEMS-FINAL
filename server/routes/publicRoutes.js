@@ -225,7 +225,8 @@ router.get('/results', publicReadLimiter, async (req, res) => {
 
     if (dbRes && dbRes.rows) {
       const formatted = dbRes.rows.map((m) => {
-        const sportId = m.sportId || 'badminton';
+        const rawSport = m.sportId || 'badminton';
+        const sportId = String(rawSport).toLowerCase().replace(/_/g, '-');
         const sportName = (m.sportId || '').replace(/-/g, ' ').toUpperCase();
 
         let detailsObj = {};
@@ -235,33 +236,96 @@ router.get('/results', publicReadLimiter, async (req, res) => {
           } catch (e) {}
         }
 
+        const team1 = m.team1 || detailsObj.team1 || detailsObj.team1Name || 'Team 1';
+        const team2 = m.team2 || detailsObj.team2 || detailsObj.team2Name || 'Team 2';
+        const winnerStr = m.winner || detailsObj.winner || (m.score1 >= m.score2 ? team1 : team2) || 'Completed';
+        const isChess = sportId.includes('chess');
+        const isCricket = sportId.includes('cricket');
+        const isGully = sportId.includes('gully');
+        const isRacket = sportId.includes('badminton') || sportId.includes('table');
+        const isVolley = sportId.includes('volleyball');
+        const isBasket = sportId.includes('basketball');
+        const isFoot = sportId.includes('football');
+        const isKabd = sportId.includes('kabaddi');
+        const isKho = sportId.includes('kho');
+        const isTug = sportId.includes('tug');
+        const isAthletics = sportId.includes('athletics');
+
+        let scoreSummary = '';
         let formattedSetsStr = '';
-        const setsArr = (detailsObj && Array.isArray(detailsObj.setsHistory)) ? detailsObj.setsHistory : null;
-        if (setsArr && setsArr.length > 0) {
-          formattedSetsStr = setsArr
-            .map((s, idx) => `Set ${idx + 1}: ${s.score1 || s.team1Score || 0}-${s.score2 || s.team2Score || 0}`)
-            .join(', ');
-        } else if (m.setsHistory) {
-          try {
-            const parsed = typeof m.setsHistory === 'string' ? JSON.parse(m.setsHistory) : m.setsHistory;
-            if (Array.isArray(parsed)) {
-              formattedSetsStr = parsed.map((s, idx) => `Set ${idx + 1}: ${s.score1 || 0}-${s.score2 || 0}`).join(', ');
-            }
-          } catch (e) {}
+
+        if (isCricket) {
+          const r1 = m.score1 ?? detailsObj.runs1 ?? detailsObj.score1 ?? 0;
+          const w1 = detailsObj.wickets1 !== undefined ? detailsObj.wickets1 : 0;
+          const o1 = detailsObj.overs1 || (isGully ? '6.0' : '20.0');
+          const r2 = m.score2 ?? detailsObj.runs2 ?? detailsObj.score2 ?? 0;
+          const w2 = detailsObj.wickets2 !== undefined ? detailsObj.wickets2 : 0;
+          const o2 = detailsObj.overs2 || (isGully ? '6.0' : '20.0');
+          const resStr = detailsObj.resultString || (winnerStr ? `${winnerStr} won` : 'Match Completed');
+          scoreSummary = `${team1}: ${r1}/${w1} (${o1} ov) vs ${team2}: ${r2}/${w2} (${o2} ov) • ${resStr}`;
+        } else if (isRacket || isVolley) {
+          const setsArr = (detailsObj && Array.isArray(detailsObj.setsHistory)) ? detailsObj.setsHistory : null;
+          let parsedSets = [];
+          if (setsArr && setsArr.length > 0) {
+            parsedSets = setsArr;
+          } else if (m.setsHistory) {
+            try {
+              const p = typeof m.setsHistory === 'string' ? JSON.parse(m.setsHistory) : m.setsHistory;
+              if (Array.isArray(p)) parsedSets = p;
+            } catch (e) {}
+          }
+          const playedSets = parsedSets.filter(s => Number(s.score1 || s.team1Score || 0) > 0 || Number(s.score2 || s.team2Score || 0) > 0);
+          if (playedSets.length > 0) {
+            formattedSetsStr = playedSets
+              .map((s, idx) => `Set ${idx + 1}: ${s.score1 || s.team1Score || 0}-${s.score2 || s.team2Score || 0}`)
+              .join(', ');
+            scoreSummary = `Sets (${formattedSetsStr}) | Winner: ${winnerStr}`;
+          } else {
+            const sw1 = detailsObj.setsWon1 ?? (m.score1 > m.score2 ? (isVolley ? 3 : 2) : 0);
+            const sw2 = detailsObj.setsWon2 ?? (m.score2 > m.score1 ? (isVolley ? 3 : 2) : 0);
+            scoreSummary = `${sw1} - ${sw2} Sets | Winner: ${winnerStr}`;
+          }
+        } else if (isBasket) {
+          const s1 = m.score1 ?? detailsObj.score1 ?? 0;
+          const s2 = m.score2 ?? detailsObj.score2 ?? 0;
+          const q = detailsObj.quarter || 'FT';
+          scoreSummary = `${team1} ${s1} - ${s2} ${team2} PTS (${q}) | Winner: ${winnerStr}`;
+        } else if (isFoot) {
+          const s1 = m.score1 ?? detailsObj.score1 ?? 0;
+          const s2 = m.score2 ?? detailsObj.score2 ?? 0;
+          const h = detailsObj.quarter || detailsObj.half || 'FT';
+          scoreSummary = `${team1} ${s1} - ${s2} ${team2} Goals (${h}) | Result: ${winnerStr}`;
+        } else if (isKabd) {
+          const s1 = m.score1 ?? detailsObj.score1 ?? 0;
+          const s2 = m.score2 ?? detailsObj.score2 ?? 0;
+          scoreSummary = `${team1} ${s1} - ${s2} ${team2} PTS | Winner: ${winnerStr}`;
+        } else if (isKho) {
+          const s1 = m.score1 ?? detailsObj.score1 ?? 0;
+          const s2 = m.score2 ?? detailsObj.score2 ?? 0;
+          scoreSummary = `${team1} ${s1} - ${s2} ${team2} Points | Winner: ${winnerStr}`;
+        } else if (isTug) {
+          const s1 = m.score1 ?? detailsObj.roundsWon1 ?? 0;
+          const s2 = m.score2 ?? detailsObj.roundsWon2 ?? 0;
+          scoreSummary = `${team1} vs ${team2}: ${s1} - ${s2} Pulls | Winner: ${winnerStr}`;
+        } else if (isChess) {
+          const s1 = m.score1 ?? 0;
+          const s2 = m.score2 ?? 0;
+          const verdict = detailsObj.resultNote || (s1 === 1 ? 'White Wins (1-0)' : s2 === 1 ? 'Black Wins (0-1)' : 'Draw (½ - ½)');
+          scoreSummary = `Result: ${verdict}`;
+        } else if (isAthletics) {
+          const medals = detailsObj.medals || {};
+          scoreSummary = `🥇 Gold: ${medals.gold || winnerStr || 'TBD'} | 🥈 Silver: ${medals.silver || 'TBD'} | 🥉 Bronze: ${medals.bronze || 'TBD'}`;
+        } else {
+          scoreSummary = `${team1}: ${m.score1 || 0} | ${team2}: ${m.score2 || 0} (Winner: ${winnerStr})`;
         }
 
-        const winnerStr = m.winner || (m.score1 >= m.score2 ? m.team1 : m.team2) || 'Winner';
-        const scoreSummary = formattedSetsStr
-          ? `Sets (${formattedSetsStr}) | Winner: ${winnerStr}`
-          : (m.score1 !== undefined && m.score2 !== undefined
-              ? `${m.team1}: ${m.score1} | ${m.team2}: ${m.score2} (Winner: ${winnerStr})`
-              : `Winner: ${winnerStr}`);
+        const realMvp = detailsObj.mvp || detailsObj.playerOfMatch || detailsObj.playerOfTheMatch || null;
 
         return {
           id: m.id,
           sport: sportName,
           sportId: sportId,
-          event: m.matchTitle || `${m.team1} vs ${m.team2}`,
+          event: m.matchTitle || `${team1} vs ${team2}`,
           winner: winnerStr,
           scoreSummary,
           setsDetail: formattedSetsStr,
@@ -269,9 +333,10 @@ router.get('/results', publicReadLimiter, async (req, res) => {
           completedAt: m.updatedAt,
           score1: m.score1,
           score2: m.score2,
-          team1: m.team1,
-          team2: m.team2,
-          mvp: winnerStr,
+          team1,
+          team2,
+          mvp: realMvp && realMvp !== winnerStr ? realMvp : null,
+          details: detailsObj,
           rawMatch: m
         };
       });

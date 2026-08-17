@@ -23,7 +23,7 @@ export const KabaddiCoordinatorPage = () => {
       assignedSport: 'kabaddi',
       sportName: 'Kabaddi',
       coordinatorName: 'Pradeep Narwal Kumar',
-      email: 'kabaddi.coord@sems.edu'
+      email: 'kabaddi.coord@apex.edu'
     };
   });
 

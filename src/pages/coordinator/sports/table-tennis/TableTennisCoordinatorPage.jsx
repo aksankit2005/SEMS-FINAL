@@ -23,7 +23,7 @@ export const TableTennisCoordinatorPage = () => {
       assignedSport: 'table-tennis',
       sportName: 'Table Tennis',
       coordinatorName: 'Rohan Mehta',
-      email: 'tt.coord@sems.edu'
+      email: 'tt.coord@apex.edu'
     };
   });
 

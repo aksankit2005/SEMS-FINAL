@@ -144,7 +144,7 @@ export const CollegeHeadDashboardPage = () => {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>SEMS 2026 - ${escapeHtml(user?.college)} Sports Participation Report</title>
+        <title>APEX 2026 - ${escapeHtml(user?.college)} Sports Participation Report</title>
         <style>
           body { font-family: Arial, sans-serif; padding: 20px; color: #0f172a; }
           .header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 10px; margin-bottom: 20px; }

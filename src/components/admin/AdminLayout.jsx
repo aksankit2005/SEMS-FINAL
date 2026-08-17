@@ -18,7 +18,6 @@ import {
   Menu,
   X,
   Bell,
-  Search,
   ChevronRight,
   GraduationCap
 } from 'lucide-react';
@@ -77,7 +76,7 @@ export const AdminLayout = () => {
               </div>
             </div>
             <div>
-              <h1 className="font-extrabold text-base text-slate-900 dark:text-white leading-tight tracking-tight">SEMS ADMIN</h1>
+              <h1 className="font-extrabold text-base text-slate-900 dark:text-white leading-tight tracking-tight">APEX ADMIN</h1>
               <span className="text-[10px] tracking-wider uppercase font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
                 Central Admin Portal
               </span>
@@ -169,25 +168,18 @@ export const AdminLayout = () => {
           </div>
 
           <div className="flex items-center gap-3 sm:gap-4">
-            {/* Quick Search */}
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-xs text-slate-600 dark:text-slate-400 w-56 focus-within:w-64 focus-within:border-amber-500/50 transition-all">
-              <Search className="w-4 h-4 text-slate-400 dark:text-slate-500" />
-              <input
-                type="text"
-                placeholder="Search portal..."
-                className="bg-transparent border-none outline-none text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 text-xs w-full"
-              />
-            </div>
-
             {/* Theme Toggle Button */}
             <ThemeToggle />
 
-            {/* Notification Bell */}
-            <button className="relative p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+            {/* System Activity Logs Link */}
+            <Link
+              to="/admin/activity"
+              title="System Activity & Audit Logs"
+              className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              aria-label="View Activity Logs"
+            >
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400" />
-            </button>
+            </Link>
 
             <div className="h-6 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
 

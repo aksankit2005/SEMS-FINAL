@@ -60,7 +60,7 @@ export const NotFoundPage = () => {
           </div>
 
           <div className="pt-4 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-500 text-center font-medium">
-            SEMS 2026 Sports Event Management System
+            APEX 2026 Sports Event Management System
           </div>
         </div>
 

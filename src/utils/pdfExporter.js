@@ -553,7 +553,7 @@ export const exportToPDF = (title = 'Report', headers = [], rows = [], filename 
     doc.setFontSize(8.5);
     doc.setTextColor(148, 163, 184);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Official SEMS 2026 Sports Report • Total Records: ${rows.length} • Generated: ${new Date().toLocaleString()}`, margin, 23);
+    doc.text(`Official APEX 2026 Sports Report • Total Records: ${rows.length} • Generated: ${new Date().toLocaleString()}`, margin, 23);
 
     let y = 28;
 
@@ -750,8 +750,8 @@ export const exportSportResultPDF = (sportId, resultsList = [], title = null, cu
     ]);
   }
 
-  const reportTitle = title || `SEMS ${sName} Official Match Results Report`;
-  const reportFilename = customFilename || `SEMS_${sName.replace(/\s+/g, '_')}_Results_${new Date().toISOString().split('T')[0]}`;
+  const reportTitle = title || `APEX ${sName} Official Match Results Report`;
+  const reportFilename = customFilename || `APEX_${sName.replace(/\s+/g, '_')}_Results_${new Date().toISOString().split('T')[0]}`;
   return exportToPDF(reportTitle, headers, rows, reportFilename);
 };
 
@@ -860,7 +860,7 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
     doc.setTextColor(245, 158, 11);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
-    doc.text('SEMS APEX CHAMPIONSHIP 2026', pageW / 2, 26, { align: 'center' });
+    doc.text('APEX CHAMPIONSHIP 2026', pageW / 2, 26, { align: 'center' });
 
     doc.setTextColor(148, 163, 184);
     doc.setFontSize(10);
