@@ -268,64 +268,80 @@ export const VolleyballResultManagementTab = ({ user }) => {
                   </td>
                 </tr>
               ) : (
-                filteredResults.map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                    
-                    <td className="p-4 space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">#{r.id}</span>
-                        <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 uppercase">
-                          {r.format || 'TEAM MATCH'}
-                        </span>
-                        <span className="text-[10px] font-mono font-semibold text-slate-500 dark:text-slate-400">
-                          {r.eventTitle || 'Volleyball Championship'}
-                        </span>
-                      </div>
-                      <p className="font-bold text-slate-900 dark:text-white text-sm">
-                        {r.team1 || r.team1Name || 'Team 1'} <span className="text-slate-400 text-xs font-normal">vs</span> {r.team2 || r.team2Name || 'Team 2'}
-                      </p>
-                    </td>
+                filteredResults.map((r) => {
+                  const safeSets = (() => {
+                    if (!r.setsHistory) return [];
+                    if (Array.isArray(r.setsHistory)) return r.setsHistory;
+                    if (typeof r.setsHistory === 'string') {
+                      try {
+                        const parsed = JSON.parse(r.setsHistory);
+                        return Array.isArray(parsed) ? parsed : [];
+                      } catch {
+                        return [];
+                      }
+                    }
+                    return [];
+                  })();
+                  const validSets = safeSets.filter((s) => s && ((s.score1 || 0) > 0 || (s.score2 || 0) > 0));
+                  const hasValidSets = validSets.length > 0;
 
-                    <td className="p-4 font-bold">
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/20">
-                        {r.category || r.gender || 'Open'}
-                      </span>
-                    </td>
-
-                    <td className="p-4 font-mono text-slate-600 dark:text-slate-400">
-                      📍 {r.tableNumber || r.venue || 'Volleyball Court 1'} • {r.time || 'Completed'}
-                    </td>
-
-                    <td className="p-4 font-bold">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-black text-slate-900 dark:text-white text-sm">
-                            {r.setsWon1 !== undefined && r.setsWon2 !== undefined
-                              ? `${r.setsWon1} - ${r.setsWon2} Sets`
-                              : `${r.score1 || 0} - ${r.score2 || 0} Pts`}
+                  return (
+                    <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                      
+                      <td className="p-4 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">#{r.id}</span>
+                          <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 uppercase">
+                            {r.format || 'TEAM MATCH'}
+                          </span>
+                          <span className="text-[10px] font-mono font-semibold text-slate-500 dark:text-slate-400">
+                            {r.eventTitle || 'Volleyball Championship'}
                           </span>
                         </div>
+                        <p className="font-bold text-slate-900 dark:text-white text-sm">
+                          {r.team1 || r.team1Name || 'Team 1'} <span className="text-slate-400 text-xs font-normal">vs</span> {r.team2 || r.team2Name || 'Team 2'}
+                        </p>
+                      </td>
 
-                        {r.setsHistory && Array.isArray(r.setsHistory) && r.setsHistory.some((s) => s.score1 > 0 || s.score2 > 0) && (
-                          <div className="text-[11px] font-mono text-orange-600 dark:text-orange-400 font-semibold">
-                            {r.setsHistory
-                              .filter((s) => s.score1 > 0 || s.score2 > 0)
-                              .map((s) => `S${s.set}: ${s.score1}-${s.score2}`)
-                              .join(' | ')}
-                          </div>
-                        )}
-
-                        {r.scoreSummary && (!r.setsHistory || !r.setsHistory.some((s) => s.score1 > 0 || s.score2 > 0)) && (
-                          <div className="text-[11px] font-mono text-orange-600 dark:text-orange-400 font-semibold">
-                            {r.scoreSummary}
-                          </div>
-                        )}
-
-                        <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-xs font-black pt-0.5">
-                          <Trophy className="w-3.5 h-3.5" /> Winner: {r.winner || r.team1}
+                      <td className="p-4 font-bold">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/20">
+                          {r.category || r.gender || 'Open'}
                         </span>
-                      </div>
-                    </td>
+                      </td>
+
+                      <td className="p-4 font-mono text-slate-600 dark:text-slate-400">
+                        📍 {r.tableNumber || r.venue || 'Volleyball Court 1'} • {r.time || 'Completed'}
+                      </td>
+
+                      <td className="p-4 font-bold">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-black text-slate-900 dark:text-white text-sm">
+                              {r.setsWon1 !== undefined && r.setsWon2 !== undefined
+                                ? `${r.setsWon1} - ${r.setsWon2} Sets`
+                                : `${r.score1 || 0} - ${r.score2 || 0} Pts`}
+                            </span>
+                          </div>
+
+                          {hasValidSets && (
+                            <div className="text-[11px] font-mono text-orange-600 dark:text-orange-400 font-semibold">
+                              {validSets
+                                .map((s) => `S${s.set}: ${s.score1}-${s.score2}`)
+                                .join(' | ')}
+                            </div>
+                          )}
+
+                          {r.scoreSummary && !hasValidSets && (
+                            <div className="text-[11px] font-mono text-orange-600 dark:text-orange-400 font-semibold">
+                              {r.scoreSummary}
+                            </div>
+                          )}
+
+                          <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-xs font-black pt-0.5">
+                            <Trophy className="w-3.5 h-3.5" /> Winner: {r.winner || r.team1}
+                          </span>
+                        </div>
+                      </td>
 
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -345,7 +361,8 @@ export const VolleyballResultManagementTab = ({ user }) => {
                       </div>
                     </td>
                   </tr>
-                ))
+                );
+              })
               )}
             </tbody>
           </table>

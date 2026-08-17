@@ -127,18 +127,6 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
     }
   };
 
-  const handleClearAll = async () => {
-    const isConfirmed = await confirmDelete({
-      title: 'Clear All Gully Cricket Matches',
-      message: 'Are you sure you want to clear all scheduled Gully Cricket matches? This action cannot be undone.'
-    });
-    if (isConfirmed) {
-      await coordinatorApi.clearAllSchedules();
-      onUpdateMatches([]);
-      addToast('All Gully Cricket match schedules cleared', 'warning');
-    }
-  };
-
   const handleAddSlot = async (e) => {
     e.preventDefault();
 
@@ -289,16 +277,6 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
             Generate 6-Overs street pitch match fixtures, allocate match times, and promote matches to Live Scoring
           </p>
         </div>
-
-        {scheduledMatches.length > 0 && (
-          <button
-            onClick={handleClearAll}
-            className="px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Clear All Schedules</span>
-          </button>
-        )}
       </div>
 
       {/* Grid: Match Creation Form (Left) & Scheduled List (Right) */}

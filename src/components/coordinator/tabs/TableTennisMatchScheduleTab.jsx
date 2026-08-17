@@ -100,18 +100,6 @@ export const TableTennisMatchScheduleTab = ({ matches, user, onUpdateMatches, on
     return match ? match[1].trim() : teamStr.trim();
   };
 
-  const handleClearAll = async () => {
-    const isConfirmed = await confirmDelete({
-      title: 'Clear All Table Tennis Matches',
-      message: 'Are you sure you want to clear all scheduled Table Tennis matches from the database? This action cannot be undone.'
-    });
-    if (isConfirmed) {
-      await coordinatorApi.clearAllSchedules();
-      onUpdateMatches([]);
-      addToast('All match schedules cleared from database', 'warning');
-    }
-  };
-
   const handleFinishSlot = async (matchItem) => {
     const defaultWinner = matchItem.team1 || 'Player 1';
     const winnerName = window.prompt(`Enter winning player/team name for "${matchItem.team1} vs ${matchItem.team2}":`, getCleanTeamName(defaultWinner));
@@ -274,13 +262,6 @@ export const TableTennisMatchScheduleTab = ({ matches, user, onUpdateMatches, on
             <span>🏓</span>
             <span>Add Match Fixture</span>
           </h3>
-          <button
-            onClick={handleClearAll}
-            className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 font-bold text-xs transition flex items-center gap-1 cursor-pointer"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Clear Schedules</span>
-          </button>
         </div>
 
         {/* LIFECYCLE GATE BANNER */}

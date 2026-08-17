@@ -125,18 +125,6 @@ export const KabaddiMatchScheduleTab = ({ matches, user, onUpdateMatches, global
     }
   };
 
-  const handleClearAll = async () => {
-    const isConfirmed = await confirmDelete({
-      title: 'Clear All Kabaddi Matches',
-      message: 'Are you sure you want to clear all scheduled Kabaddi matches? This action cannot be undone.'
-    });
-    if (isConfirmed) {
-      await coordinatorApi.clearAllSchedules();
-      onUpdateMatches([]);
-      addToast('All Kabaddi match schedules cleared', 'warning');
-    }
-  };
-
   const handleAddSlot = async (e) => {
     e.preventDefault();
 
@@ -256,13 +244,6 @@ export const KabaddiMatchScheduleTab = ({ matches, user, onUpdateMatches, global
           <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
             {editingId ? 'Edit Kabaddi Fixture' : 'Add Kabaddi Fixture'}
           </h3>
-          <button
-            onClick={handleClearAll}
-            className="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-600/20 hover:bg-rose-100 dark:hover:bg-rose-600 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 font-bold text-xs transition flex items-center gap-1 cursor-pointer"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Clear Schedules</span>
-          </button>
         </div>
 
         {/* LIFECYCLE GATE BANNER */}

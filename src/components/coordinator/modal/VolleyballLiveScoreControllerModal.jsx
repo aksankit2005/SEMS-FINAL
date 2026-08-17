@@ -18,15 +18,28 @@ export const VolleyballLiveScoreControllerModal = ({ match, venueName, onClose, 
   const [currentSetIndex, setCurrentSetIndex] = useState(match?.currentSet || 1);
   const [isPaused, setIsPaused] = useState(match?.isPaused || false);
 
-  const [setsHistory, setSetsHistory] = useState(
-    match?.setsHistory || [
+  const parseSetsHistory = (raw) => {
+    const defaultSets = [
       { set: 1, score1: 0, score2: 0, isLocked: false, winner: null },
       { set: 2, score1: 0, score2: 0, isLocked: false, winner: null },
       { set: 3, score1: 0, score2: 0, isLocked: false, winner: null },
       { set: 4, score1: 0, score2: 0, isLocked: false, winner: null },
       { set: 5, score1: 0, score2: 0, isLocked: false, winner: null },
-    ]
-  );
+    ];
+    if (!raw) return defaultSets;
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : defaultSets;
+      } catch {
+        return defaultSets;
+      }
+    }
+    return defaultSets;
+  };
+
+  const [setsHistory, setSetsHistory] = useState(() => parseSetsHistory(match?.setsHistory));
 
   const [historyStack, setHistoryStack] = useState([]);
   const [showLockDialog, setShowLockDialog] = useState(null); // { winner: string, setNum: number }
@@ -41,8 +54,9 @@ export const VolleyballLiveScoreControllerModal = ({ match, venueName, onClose, 
   }, []);
 
   // Calculate sets won
-  const setsWon1 = setsHistory.filter((s) => s.isLocked && s.winner === match?.team1).length;
-  const setsWon2 = setsHistory.filter((s) => s.isLocked && s.winner === match?.team2).length;
+  const safeSetsHistory = Array.isArray(setsHistory) ? setsHistory : parseSetsHistory(setsHistory);
+  const setsWon1 = safeSetsHistory.filter((s) => s && s.isLocked && s.winner === match?.team1).length;
+  const setsWon2 = safeSetsHistory.filter((s) => s && s.isLocked && s.winner === match?.team2).length;
 
   // Sync state changes to server
   const syncToServer = async (overrideData = {}) => {

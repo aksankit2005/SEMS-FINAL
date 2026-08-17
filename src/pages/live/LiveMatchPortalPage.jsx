@@ -624,18 +624,25 @@ export const LiveMatchPortalPage = () => {
                     </div>
 
                     {/* Set Scores Pill Row - ONLY for Racket Sports & Volleyball */}
-                    {isRacketOrVolleyball && m.setsHistory && m.setsHistory.some((s) => s.score1 > 0 || s.score2 > 0 || s.isLocked) && (
-                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between gap-2 text-[10px] font-mono">
-                        <span className="text-slate-400 font-bold uppercase shrink-0">Set Scores:</span>
-                        <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar py-0.5">
-                          {m.setsHistory.filter((s) => s.score1 > 0 || s.score2 > 0 || s.isLocked).map((s) => (
-                            <span key={s.set} className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border border-slate-200 dark:border-slate-700 shrink-0">
-                              S{s.set}: {s.score1}-{s.score2}
-                            </span>
-                          ))}
+                    {isRacketOrVolleyball && (() => {
+                      const sets = Array.isArray(m.setsHistory)
+                        ? m.setsHistory
+                        : (typeof m.setsHistory === 'string' ? (() => { try { const p = JSON.parse(m.setsHistory); return Array.isArray(p) ? p : []; } catch { return []; } })() : []);
+                      const activeSets = sets.filter((s) => s && (s.score1 > 0 || s.score2 > 0 || s.isLocked));
+                      if (activeSets.length === 0) return null;
+                      return (
+                        <div className="pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between gap-2 text-[10px] font-mono">
+                          <span className="text-slate-400 font-bold uppercase shrink-0">Set Scores:</span>
+                          <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar py-0.5">
+                            {activeSets.map((s) => (
+                              <span key={s.set} className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border border-slate-200 dark:border-slate-700 shrink-0">
+                                S{s.set}: {s.score1}-{s.score2}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 );
               })}
