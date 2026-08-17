@@ -114,25 +114,37 @@ export const AdvancedLightboxViewer = ({ mediaList = [], initialIndex = 0, onClo
     }
   };
 
-  // Mouse Wheel Zoom
-  const handleWheel = (e) => {
-    if (isVideo) return;
-    e.preventDefault();
-    if (e.deltaY < 0) {
-      setScale((prev) => Math.min(prev + 0.25, 4));
-    } else {
-      setScale((prev) => {
-        const next = Math.max(prev - 0.25, 1);
-        if (next === 1) setPosition({ x: 0, y: 0 });
-        return next;
-      });
-    }
-  };
+  // Non-passive Wheel Zoom listener
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onWheel = (e) => {
+      if (isVideo) return;
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+      if (e.deltaY < 0) {
+        setScale((prev) => Math.min(prev + 0.25, 4));
+      } else {
+        setScale((prev) => {
+          const next = Math.max(prev - 0.25, 1);
+          if (next === 1) setPosition({ x: 0, y: 0 });
+          return next;
+        });
+      }
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+    };
+  }, [isVideo]);
 
   // Pan / Drag handlers when zoomed in
   const handleMouseDown = (e) => {
     if (scale <= 1) return;
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     setIsDragging(true);
     setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
   };
@@ -189,7 +201,6 @@ export const AdvancedLightboxViewer = ({ mediaList = [], initialIndex = 0, onClo
   return (
     <div 
       className="fixed inset-0 z-50 flex flex-col justify-between bg-slate-950/95 backdrop-blur-2xl text-white select-none animate-fade-in overflow-hidden"
-      onWheel={handleWheel}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}

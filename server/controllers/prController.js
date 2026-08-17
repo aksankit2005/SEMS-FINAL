@@ -90,7 +90,7 @@ export const getEvents = async (req, res) => {
       e.description,
       e.created_at,
       e.updated_at,
-      GREATEST(COUNT(CASE WHEN LOWER(m.media_type::text) = 'image' THEN 1 END)::int, CASE WHEN e.cover_image IS NOT NULL AND e.cover_image != '' THEN 1 ELSE 0 END) AS photos_count,
+      (COUNT(CASE WHEN LOWER(m.media_type::text) = 'image' THEN 1 END)::int + CASE WHEN e.cover_image IS NOT NULL AND e.cover_image != '' THEN 1 ELSE 0 END) AS photos_count,
       COUNT(CASE WHEN LOWER(m.media_type::text) = 'video' THEN 1 END)::int AS videos_count
     FROM events e
     LEFT JOIN media m ON e.id = m.event_id
@@ -107,7 +107,7 @@ export const getEvents = async (req, res) => {
     const directPhotoCount = evMedia.filter((m) => m.media_type === 'image').length;
     return {
       ...ev,
-      photos_count: Math.max(directPhotoCount, ev.cover_image ? 1 : 0),
+      photos_count: directPhotoCount + (ev.cover_image ? 1 : 0),
       videos_count: evMedia.filter((m) => m.media_type === 'video').length,
     };
   });
@@ -129,21 +129,26 @@ export const getEventById = async (req, res) => {
 
   if (eventDb && eventDb.rows.length > 0) {
     const event = eventDb.rows[0];
-    let media = mediaDb ? mediaDb.rows : [];
-    if (media.length === 0 && event.cover_image) {
-      media = [
-        {
+    let media = mediaDb ? [...mediaDb.rows] : [];
+
+    // Ensure cover image is included in media array
+    if (event.cover_image) {
+      const hasCoverAlready = media.some((m) => m.media_url === event.cover_image);
+      if (!hasCoverAlready) {
+        media.unshift({
           id: `cover-${event.id}`,
           event_id: event.id,
           media_type: 'image',
-          title: `${event.event_name} Cover Photo`,
+          title: `${event.event_name} (Cover Photo)`,
           media_url: event.cover_image,
           public_id: event.public_id || null,
           uploaded_by: 'PR Coordinator',
           uploaded_at: event.created_at || new Date().toISOString(),
-        }
-      ];
+          is_cover: true,
+        });
+      }
     }
+
     return res.json({
       ...event,
       media,
@@ -156,19 +161,21 @@ export const getEventById = async (req, res) => {
   if (!event) return res.status(404).json({ message: 'Event not found' });
 
   let eventMedia = inMemoryMedia.filter((m) => Number(m.event_id) === Number(id));
-  if (eventMedia.length === 0 && event.cover_image) {
-    eventMedia = [
-      {
+  if (event.cover_image) {
+    const hasCoverAlready = eventMedia.some((m) => m.media_url === event.cover_image);
+    if (!hasCoverAlready) {
+      eventMedia.unshift({
         id: `cover-${event.id}`,
         event_id: event.id,
         media_type: 'image',
-        title: `${event.event_name} Cover Photo`,
+        title: `${event.event_name} (Cover Photo)`,
         media_url: event.cover_image,
         public_id: event.public_id || null,
         uploaded_by: 'PR Coordinator',
         uploaded_at: event.created_at || new Date().toISOString(),
-      }
-    ];
+        is_cover: true,
+      });
+    }
   }
   return res.json({
     ...event,
@@ -306,14 +313,12 @@ export const uploadMedia = async (req, res) => {
     return res.status(400).json({ message: 'Event ID, media type, title, and media URL are required.' });
   }
 
-  const normalizedType = media_type.toLowerCase();
-  if (!['image', 'video'].includes(normalizedType)) {
-    return res.status(400).json({ message: 'media_type must be either image or video' });
-  }
+  const upperType = (media_type || '').toUpperCase();
+  const dbType = upperType === 'VIDEO' ? 'VIDEO' : 'IMAGE';
 
   const dbResult = await queryDb(
     'INSERT INTO media (event_id, media_type, title, media_url, public_id, uploaded_by, uploaded_at) VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING *',
-    [Number(event_id), normalizedType, title, media_url, public_id || null, req.user?.username || 'PR Coordinator']
+    [Number(event_id), dbType, title, media_url, public_id || null, req.user?.username || 'PR Coordinator']
   );
 
   if (dbResult && dbResult.rows.length > 0) {
@@ -323,7 +328,7 @@ export const uploadMedia = async (req, res) => {
   const newMedia = {
     id: Date.now(),
     event_id: Number(event_id),
-    media_type: normalizedType,
+    media_type: dbType,
     title,
     media_url,
     public_id: public_id || null,
@@ -378,3 +383,32 @@ export const deleteMedia = async (req, res) => {
   inMemoryMedia = inMemoryMedia.filter((m) => Number(m.id) !== Number(id));
   return res.json({ success: true, message: 'Media item deleted successfully.' });
 };
+
+/**
+ * Get all media files across all events for gallery stream
+ */
+export const getAllMedia = async (req, res) => {
+  const dbResult = await queryDb(`
+    SELECT 
+      m.id,
+      m.event_id,
+      m.media_type,
+      m.title,
+      m.media_url,
+      m.public_id,
+      m.uploaded_by,
+      m.uploaded_at,
+      e.event_name,
+      TO_CHAR(e.event_date, 'YYYY-MM-DD') AS event_date
+    FROM media m
+    LEFT JOIN events e ON m.event_id = e.id
+    ORDER BY m.uploaded_at DESC
+  `);
+
+  if (dbResult && dbResult.rows) {
+    return res.json(dbResult.rows);
+  }
+
+  return res.json(inMemoryMedia);
+};
+

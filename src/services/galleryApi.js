@@ -176,6 +176,20 @@ export const galleryApi = {
     }
   },
 
+  // GET /api/media - Get all media across all events
+  async getAllMedia() {
+    try {
+      const res = await api.get('/media');
+      if (Array.isArray(res.data)) {
+        return res.data;
+      }
+      return res.data?.media || [];
+    } catch (err) {
+      const media = getLocalMedia();
+      return media;
+    }
+  },
+
   // GET /api/media/event/:eventId - Get media for event
   async getMediaByEventId(eventId) {
     try {

@@ -86,8 +86,8 @@ router.get('/admin/pr-media/files', verifyAdminToken, getPRMediaFilesDB);
 router.delete('/admin/pr-media/files/:id', verifyAdminToken, deletePRMediaFileDB);
 router.delete('/admin/pr-media/folders/:id', verifyAdminToken, deletePRFolderDB);
 
-// System Settings & Committee endpoints (Admin Protected)
-router.get('/admin/settings', verifyAdminToken, getSettingsDB);
+// System Settings & Committee endpoints (Admin Protected for mutations)
+router.get('/admin/settings', getSettingsDB);
 router.post('/admin/settings', verifyAdminToken, updateSettingsDB);
 router.get('/admin/committee', getCommitteeDB);
 router.post('/admin/committee/sessions', verifyAdminToken, saveSessionDB);

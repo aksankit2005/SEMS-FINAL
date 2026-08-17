@@ -9,7 +9,8 @@ import {
   uploadMedia,
   getMediaByEventId,
   deleteMedia,
-  getCloudinarySignature
+  getCloudinarySignature,
+  getAllMedia
 } from '../controllers/prController.js';
 import { verifyPRToken } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimiters.js';
@@ -24,6 +25,7 @@ router.post('/events', verifyPRToken, createEvent);
 router.put('/events/:id', verifyPRToken, updateEvent);
 router.delete('/events/:id', verifyPRToken, deleteEvent);
 
+router.get('/media', getAllMedia);
 router.post('/media/upload', verifyPRToken, uploadMedia);
 router.get('/media/event/:eventId', getMediaByEventId);
 router.delete('/media/:id', verifyPRToken, deleteMedia);
