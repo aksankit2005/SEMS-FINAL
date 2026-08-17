@@ -28,6 +28,38 @@ const isRacketSportCheck = (sport) => {
   return key === 'badminton' || key === 'table-tennis';
 };
 
+const loadRazorpaySDK = () => {
+  return new Promise((resolve) => {
+    if (typeof window !== 'undefined' && window.Razorpay) {
+      return resolve(true);
+    }
+    const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (existing) {
+      if (window.Razorpay) return resolve(true);
+      existing.addEventListener('load', () => resolve(true), { once: true });
+      existing.addEventListener('error', () => resolve(false), { once: true });
+      let attempts = 0;
+      const interval = setInterval(() => {
+        attempts++;
+        if (window.Razorpay) {
+          clearInterval(interval);
+          resolve(true);
+        } else if (attempts > 30) {
+          clearInterval(interval);
+          resolve(false);
+        }
+      }, 100);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 const RegistrationCountdownTimer = ({ endDateStr }) => {
   const [timeLeft, setTimeLeft] = useState('');
 
@@ -184,22 +216,13 @@ export const RegistrationPage = () => {
     window.addEventListener('focus', handleRefresh);
     window.addEventListener('sems_events_updated', handleRefresh);
 
-    const interval = setInterval(fetchCoordinatorEvents, 60000);
-
-    // Dynamically load Razorpay Checkout SDK Script
-    const rzpScript = document.createElement('script');
-    rzpScript.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    rzpScript.async = true;
-    document.body.appendChild(rzpScript);
+    loadRazorpaySDK();
 
     return () => {
       window.removeEventListener('storage', handleRefresh);
       window.removeEventListener('focus', handleRefresh);
       window.removeEventListener('sems_events_updated', handleRefresh);
       clearInterval(interval);
-      if (document.body.contains(rzpScript)) {
-        document.body.removeChild(rzpScript);
-      }
     };
   }, []);
 
@@ -579,6 +602,12 @@ export const RegistrationPage = () => {
       const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
 
       try {
+        // Ensure Razorpay SDK is loaded and available
+        const isLoaded = await loadRazorpaySDK();
+        if (!isLoaded || !window.Razorpay) {
+          throw new Error('Razorpay Checkout SDK could not be loaded. Please check your internet connection or disable ad-blockers and try again.');
+        }
+
         // 1. Create authoritative server-side Razorpay Order with auto-capture at order level
         const orderData = await coordinatorApi.createRazorpayOrder(
           activeSport.id,
@@ -594,7 +623,7 @@ export const RegistrationPage = () => {
         );
 
         // 2. Open official Razorpay Checkout SDK if available and valid order generated
-        if (orderData && orderData.orderId && window.Razorpay) {
+        if (orderData && orderData.orderId) {
           const options = {
             key: orderData.keyId || razorpayKey,
             amount: orderData.amount, // in paise
@@ -636,7 +665,7 @@ export const RegistrationPage = () => {
           rzp.open();
           return;
         } else {
-          throw new Error('Razorpay Checkout SDK is not available. Please refresh the page and try again.');
+          throw new Error('Order creation failed. Please try again.');
         }
       } catch (err) {
         console.error('Backend order creation error:', err);
