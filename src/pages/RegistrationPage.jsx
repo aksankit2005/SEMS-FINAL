@@ -216,6 +216,8 @@ export const RegistrationPage = () => {
     window.addEventListener('focus', handleRefresh);
     window.addEventListener('sems_events_updated', handleRefresh);
 
+    const interval = setInterval(fetchCoordinatorEvents, 60000);
+
     loadRazorpaySDK();
 
     return () => {
