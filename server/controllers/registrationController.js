@@ -41,6 +41,7 @@ export const createPublicRegistrationOrder = async (req, res) => {
         eventName = event.title || eventName;
 
         const regStatus = computeEffectiveRegistrationStatus(event);
+        if (!regStatus.effectiveRegistrationOpen) {
           return res.status(400).json({
             success: false,
             message: regStatus.reason || 'Registration for this event has closed.',
