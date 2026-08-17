@@ -2058,13 +2058,13 @@ export const updateEvent = async (req, res) => {
   if (!sportId) {
     return res.status(403).json({ message: 'Sport coordinator authorization missing.' });
   }
-
   // Ensure coordinator can only update events belonging to their assigned sport
+  let existingDbRow = null;
   try {
-    const existingDb = await queryDb('SELECT id, sport_id FROM coordinator_event_items WHERE id = $1', [id]);
+    const existingDb = await queryDb('SELECT * FROM coordinator_event_items WHERE id = $1', [id]);
     if (existingDb && existingDb.rows.length > 0) {
-      const row = existingDb.rows[0];
-      if (row.sport_id && row.sport_id.toLowerCase() !== sportId) {
+      existingDbRow = existingDb.rows[0];
+      if (existingDbRow.sport_id && existingDbRow.sport_id.toLowerCase() !== sportId) {
         return res.status(403).json({ message: 'Access denied. You cannot modify events belonging to another sport.' });
       }
     }
@@ -2072,7 +2072,35 @@ export const updateEvent = async (req, res) => {
 
   const list = inMemoryCoordinatorEvents[sportId] || [];
   const index = list.findIndex((e) => e.id === id);
-  const existing = index !== -1 ? list[index] : {};
+  const existing = {
+    ...(existingDbRow ? {
+      id: existingDbRow.id,
+      sportId: existingDbRow.sport_id,
+      sportName: existingDbRow.sport_name,
+      title: existingDbRow.title,
+      coverImage: existingDbRow.cover_image,
+      description: existingDbRow.description,
+      regStartDate: existingDbRow.reg_start_date,
+      regEndDate: existingDbRow.reg_end_date,
+      tournStartDate: existingDbRow.tourn_start_date,
+      tournEndDate: existingDbRow.tourn_end_date,
+      entryFee: Number(existingDbRow.entry_fee || 0),
+      singlesFee: Number(existingDbRow.singles_fee || existingDbRow.entry_fee || 0),
+      doublesFee: Number(existingDbRow.doubles_fee || (existingDbRow.entry_fee ? existingDbRow.entry_fee * 2 : 0)),
+      teamSize: existingDbRow.team_size,
+      maxRegistrations: Number(existingDbRow.max_registrations || 64),
+      registeredCount: Number(existingDbRow.registered_count || 0),
+      venue: existingDbRow.venue,
+      category: existingDbRow.category,
+      status: existingDbRow.status,
+      registrationOpen: existingDbRow.registration_open !== false,
+      rules: existingDbRow.rules,
+      requiredDocuments: existingDbRow.required_documents,
+      contactInfo: existingDbRow.contact_info,
+      createdBy: existingDbRow.created_by
+    } : {}),
+    ...(index !== -1 ? list[index] : {})
+  };
 
   const title = req.body.title || req.body.eventName || existing.title || `${req.user.sportName} Event`;
   const coverImage = req.body.coverImage || existing.coverImage || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80';
@@ -2090,7 +2118,7 @@ export const updateEvent = async (req, res) => {
   const venue = req.body.venue || existing.venue || 'Main Venue';
   const category = req.body.category || existing.category || 'Open';
   let status = req.body.status !== undefined ? req.body.status : (existing.status || 'Draft');
-  if (registeredCount >= maxRegistrations) {
+  if (registeredCount >= maxRegistrations && req.body.status === undefined) {
     status = 'Closed';
   }
   const registrationOpen = req.body.registrationOpen !== undefined ? Boolean(req.body.registrationOpen) : (existing.registrationOpen !== undefined ? existing.registrationOpen : true);
@@ -2130,8 +2158,8 @@ export const updateEvent = async (req, res) => {
     updatedAt: new Date().toISOString()
   };
 
-  // If attempting to open/reopen registration, check if deadline has passed
-  if (registrationOpen === true && (req.body.registrationOpen === true || req.body.status === 'Published' || req.body.status === 'Active')) {
+  // If explicitly attempting to open/reopen registration, check if deadline has passed
+  if (req.body.registrationOpen === true && cleanEvent.registrationOpen === true) {
     const checkStatus = computeEffectiveRegistrationStatus(cleanEvent);
     if (checkStatus.isDeadlinePassed) {
       return res.status(400).json({
@@ -2335,29 +2363,38 @@ export const getEligibleCompetitors = async (req, res) => {
           json_agg(
             json_build_object(
               'id', rm.id,
-              'name', COALESCE(rm."fullName", rm.full_name),
-              'rollNo', COALESCE(rm."rollNo", rm.roll_no),
+              'name', rm."fullName",
+              'rollNo', COALESCE(rm."rollNo", 'N/A'),
               'mobile', rm.mobile,
               'email', rm.email,
               'course', rm.course,
-              'yearSemester', COALESCE(rm."yearSemester", rm.year_semester),
+              'yearSemester', rm.year_semester,
               'gender', rm.gender,
-              'isCaptain', COALESCE(rm."isCaptain", rm.is_captain)
+              'isCaptain', rm."isCaptain"
             )
           ) FILTER (WHERE rm.id IS NOT NULL), '[]'
         ) AS members
       FROM college_registrations cr
       LEFT JOIN registration_members rm ON rm."registrationId"::text = cr.registration_id::text OR rm."registrationId"::text = cr.id::text
-      WHERE (cr.event_id = $1 OR ($1 = 'DEFAULT' AND LOWER(cr.sport_id) IN ($2, $3, $4)))
+      WHERE (
+        cr.event_id = $1 
+        OR cr.event_id = 'DEFAULT' 
+        OR cr.event_id = '' 
+        OR cr.event_id IS NULL
+        OR LOWER(TRIM(cr.event_id)) = LOWER(TRIM($2))
+        OR LOWER(TRIM(cr.event_id)) = LOWER(TRIM($3))
+        OR LOWER(TRIM(cr.event_id)) = LOWER(TRIM($4))
+        OR ($1 = 'DEFAULT' AND LOWER(cr.sport_id) IN ($2, $3, $4))
+      )
         AND LOWER(cr.sport_id) IN ($2, $3, $4)
-        AND (cr.status IS NULL OR LOWER(cr.status) NOT IN ('rejected', 'cancelled'))
+        AND (cr.status IS NULL OR LOWER(TRIM(cr.status)) NOT IN ('rejected', 'cancelled', 'pending_payment'))
       GROUP BY cr.id, cr.registration_id, cr.event_id, cr.sport_id, cr.student_name, cr.team_name, cr.college, cr.department, cr.gender, cr.status, cr.participant_data, cr.members_count
       ORDER BY cr.created_at ASC
     `;
 
     try {
       const regRes = await queryDb(regSql, [eventId, sportId, normalizedSport, underscoreSport]);
-      if (regRes && Array.isArray(regRes.rows) && regRes.rows.length > 0) {
+      if (regRes && Array.isArray(regRes.rows)) {
         rows = regRes.rows;
       }
     } catch (sqlErr) {
@@ -2368,9 +2405,13 @@ export const getEligibleCompetitors = async (req, res) => {
       try {
         const pRows = await prisma.collegeRegistration.findMany({
           where: {
-            eventId: eventId,
+            OR: [
+              { eventId: eventId },
+              { eventId: 'DEFAULT' },
+              { eventId: { in: [sportId, normalizedSport, underscoreSport], mode: 'insensitive' } }
+            ],
             sportId: { in: [sportId, normalizedSport, underscoreSport], mode: 'insensitive' },
-            status: { notIn: ['rejected', 'cancelled', 'REJECTED', 'CANCELLED'] }
+            status: { notIn: ['rejected', 'cancelled', 'REJECTED', 'CANCELLED', 'pending_payment'] }
           },
           orderBy: { createdAt: 'asc' }
         });
@@ -2405,7 +2446,7 @@ export const getEligibleCompetitors = async (req, res) => {
             id: `mem-${row.id}-0`,
             name: row.studentName || 'Athlete',
             rollNo: row.department || 'N/A',
-            mobile: '',
+            mobile: row.phone || '',
             course: row.department || 'N/A',
             isCaptain: true
           }];
@@ -2466,4 +2507,3 @@ export const getEligibleCompetitors = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Failed to fetch eligible competitors', error: err.message });
   }
 };
-

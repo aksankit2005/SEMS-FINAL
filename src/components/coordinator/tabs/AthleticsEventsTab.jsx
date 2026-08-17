@@ -10,7 +10,7 @@ import { useToast } from '../../../context/ToastContext';
 import { useConfirm } from '../../../context/ConfirmContext';
 import { exportToCSV } from '../../../utils/pdfExporter';
 import { OFFICIAL_ATHLETICS_EVENTS } from '../../registration/AthleticsRegistration';
-import { RegistrationStatusBadge, RegistrationActionButton } from '../events/RegistrationStatusControl';
+import { EventStatusBadge, EventStatusActionButton, RegistrationStatusBadge, RegistrationActionButton } from '../events/RegistrationStatusControl';
 import { computeEffectiveRegistrationStatus } from '../../../utils/registrationLifecycle';
 
 const DEFAULT_SUB_EVENTS_CONFIG = [
@@ -294,13 +294,11 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
 
     const isCurrentlyOpen = regStatus.effectiveRegistrationOpen;
     const newRegOpen = !isCurrentlyOpen;
-    const newStatus = newRegOpen ? (eventObj.status === 'Closed' ? 'Published' : eventObj.status) : 'Closed';
     try {
       const updated = await coordinatorApi.updateEvent(eventObj.id, {
-        registrationOpen: newRegOpen,
-        status: newStatus
+        registrationOpen: newRegOpen
       });
-      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, registrationOpen: newRegOpen, status: newStatus } : item)));
+      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, registrationOpen: newRegOpen } : item)));
       if (!newRegOpen) {
         addToast(`🔒 Registration closed for "${eventObj.title}". Fixtures can now be scheduled!`, 'success');
       } else {
@@ -310,6 +308,20 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
       window.dispatchEvent(new Event('sems_events_updated'));
     } catch (err) {
       const errMsg = err?.response?.data?.message || err?.message || 'Failed to toggle registration status';
+      addToast(errMsg, 'error');
+    }
+  };
+
+  const handleToggleEventStatus = async (eventObj, targetStatus) => {
+    const nextStatus = targetStatus || ((eventObj.status === 'Active' || eventObj.status === 'Published') ? 'Inactive' : 'Active');
+    try {
+      const updated = await coordinatorApi.updateEvent(eventObj.id, { status: nextStatus });
+      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, status: nextStatus } : item)));
+      addToast(`Athletics event is now ${nextStatus}`, nextStatus === 'Active' || nextStatus === 'Published' ? 'success' : 'info');
+      fetchEvents();
+      window.dispatchEvent(new Event('sems_events_updated'));
+    } catch (err) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to update event status';
       addToast(errMsg, 'error');
     }
   };
@@ -449,17 +461,7 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
 
                   {/* Status & Category Badges */}
                   <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase border shadow-md ${
-                      evt.status === 'Published' || evt.status === 'Active'
-                        ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
-                        : evt.status === 'Upcoming'
-                        ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
-                        : evt.status === 'Closed'
-                        ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                        : 'bg-slate-500/20 text-slate-300 border-slate-500/40'
-                    }`}>
-                      ● EVENT: {evt.status || 'Active'}
-                    </span>
+                    <EventStatusBadge event={evt} />
                     <RegistrationStatusBadge event={evt} />
                     <span className="px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-md text-white border border-slate-700 text-[10px] font-mono font-bold">
                       {evt.category || 'Open'}
@@ -512,6 +514,10 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
                   {/* Actions Bar */}
                   <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-1.5">
+                      <EventStatusActionButton 
+                        event={evt} 
+                        onToggleStatus={handleToggleEventStatus} 
+                      />
                       <RegistrationActionButton 
                         event={evt} 
                         onToggle={handleToggleRegistrationOpen} 
