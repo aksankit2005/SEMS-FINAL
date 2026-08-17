@@ -818,7 +818,7 @@ export const RegistrationPage = () => {
                 teamSize: '2 Players (Doubles)',
                 minPlayers: 2,
                 maxPlayers: 2,
-                entryFee: activeSport.doublesFee || 600
+                entryFee: typeof activeSport.doublesFee === 'number' ? activeSport.doublesFee : (activeSport.entryFee || 1)
               }}
               formData={formData}
               setFormData={setFormData}
