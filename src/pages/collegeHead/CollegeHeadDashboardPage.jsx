@@ -360,13 +360,6 @@ export const CollegeHeadDashboardPage = () => {
 
                 <div className="flex flex-wrap items-center gap-3">
                   <button
-                    onClick={() => setShowPasswordModal(true)}
-                    className="px-5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
-                  >
-                    <Key className="w-4 h-4" />
-                    <span>Change Password</span>
-                  </button>
-                  <button
                     onClick={handleExportCSV}
                     className="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
                   >
@@ -384,7 +377,7 @@ export const CollegeHeadDashboardPage = () => {
               </div>
 
               {/* Profile Fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 text-xs">
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Faculty Representative</span>
                   <span className="font-extrabold text-sm text-slate-900 dark:text-white">{user.faculty_name || 'Sports Incharge'}</span>
@@ -393,11 +386,6 @@ export const CollegeHeadDashboardPage = () => {
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Assigned College Campus</span>
                   <span className="font-extrabold text-sm text-blue-600 dark:text-indigo-400">{user.college}</span>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Contact Email</span>
-                  <span className="font-extrabold text-sm text-slate-900 dark:text-white">{user.email || `head@${user.college.toLowerCase().replace(/[^a-z0-9]/g, '')}.edu`}</span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
@@ -416,28 +404,6 @@ export const CollegeHeadDashboardPage = () => {
                     <ShieldCheck className="w-3.5 h-3.5" /> Verified Official
                   </span>
                 </div>
-              </div>
-
-              {/* Account Security Box */}
-              <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500 shrink-0">
-                    <Lock className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-black text-slate-900 dark:text-white">Account Security & Credentials</h4>
-                    <p className="text-xs text-slate-500">
-                      Update your Head Coordinator portal access password regularly to keep your college data secure.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowPasswordModal(true)}
-                  className="px-5 py-2.5 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white font-bold text-xs shadow-sm transition flex items-center gap-2 shrink-0 cursor-pointer"
-                >
-                  <Key className="w-4 h-4 text-amber-400" />
-                  <span>Update Password</span>
-                </button>
               </div>
             </div>
           </div>

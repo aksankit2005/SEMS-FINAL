@@ -170,11 +170,11 @@ export const SchedulePage = () => {
         
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-10">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-black uppercase tracking-wider mb-3 border border-emerald-500/20 shadow-xs">
-            <CalendarIcon className="w-4 h-4 text-emerald-500" /> Tournament Schedule & Venues
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wider mb-3 border border-blue-500/20 shadow-xs">
+            <CalendarIcon className="w-4 h-4 text-blue-500" /> Tournament Schedule & Venues
           </div>
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
-            Championship <span className="bg-gradient-to-r from-emerald-600 to-teal-400 bg-clip-text text-transparent">Fixtures</span>
+            Championship <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">Fixtures</span>
           </h1>
           <p className="mt-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium">
             Never miss a match. Filter by any of the 12 sports disciplines, dates, or match venues.
@@ -185,7 +185,7 @@ export const SchedulePage = () => {
         <div className="space-y-4 mb-8 bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/80 pb-3">
             <span className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
-              <Trophy className="w-4 h-4 text-emerald-500" /> Filter Discipline ({sportsList.length - 1} Games)
+              <Trophy className="w-4 h-4 text-blue-500" /> Filter Discipline ({sportsList.length - 1} Games)
             </span>
 
             <div className="flex items-center gap-2">
@@ -193,14 +193,14 @@ export const SchedulePage = () => {
               <div className="flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-xl text-xs font-bold transition ${viewMode === 'grid' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'}`}
+                  className={`p-2 rounded-xl text-xs font-bold transition ${viewMode === 'grid' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'}`}
                   title="Grid View"
                 >
                   <Grid className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-xl text-xs font-bold transition ${viewMode === 'list' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'}`}
+                  className={`p-2 rounded-xl text-xs font-bold transition ${viewMode === 'list' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'}`}
                   title="List View"
                 >
                   <List className="w-4 h-4" />
@@ -222,7 +222,7 @@ export const SchedulePage = () => {
                   onClick={() => setSelectedSport(s)}
                   className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 border ${
                     isSelected
-                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-500 shadow-md shadow-emerald-500/20 font-black scale-105'
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-500 shadow-md shadow-blue-500/20 font-black scale-105'
                       : 'bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
@@ -240,24 +240,24 @@ export const SchedulePage = () => {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search teams, players, venue, or match title..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="Search by team name, match event, date, or court venue..."
+              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
             />
           </div>
         </div>
 
         {/* Fixtures View / Empty State */}
         {filteredFixtures.length === 0 ? (
-          <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-soft p-8 space-y-3">
-            <CalendarIcon className="w-12 h-12 text-slate-400 mx-auto" />
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">No Fixtures Scheduled</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-              There are no scheduled fixtures matching "{selectedSport}" discipline or search query.
+          <div className="py-16 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 shadow-xs">
+            <CalendarIcon className="w-12 h-12 text-slate-400 mx-auto mb-3 opacity-60" />
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">No Match Fixtures Found</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+              Try adjusting your discipline filter or clearing your search keywords.
             </p>
           </div>
         ) : viewMode === 'grid' ? (
           /* Grid View: Box with Sport Icon, Sport Name, Date, Time, Venue */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
             {filteredFixtures.map((fix) => {
               const sportCfg = resolveSportConfig(fix.sport || fix);
               const sportIcon = sportCfg.icon || '🏆';
@@ -266,12 +266,12 @@ export const SchedulePage = () => {
               return (
                 <div
                   key={fix.id}
-                  className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-emerald-500/50 transition-all duration-300 flex flex-col justify-between space-y-4 group"
+                  className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-blue-500/50 transition-all duration-300 flex flex-col justify-between space-y-4 group"
                 >
                   {/* Card Top: Sport Icon, Sport Name & Gender Badge */}
                   <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800/80">
                     <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/20 dark:from-emerald-600/30 dark:to-teal-600/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl font-black shadow-xs shrink-0">
+                      <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/20 dark:from-blue-600/30 dark:to-indigo-600/20 text-blue-600 dark:text-blue-400 flex items-center justify-center text-2xl font-black shadow-xs shrink-0">
                         {sportIcon}
                       </div>
                       <div>
@@ -304,7 +304,7 @@ export const SchedulePage = () => {
                   <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-2.5 text-xs">
                     <div className="flex items-center justify-between text-slate-700 dark:text-slate-300 font-medium">
                       <div className="flex items-center gap-1.5">
-                        <CalendarIcon className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        <CalendarIcon className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                         <span className="font-bold text-xs">{fix.date}</span>
                       </div>
                       <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
@@ -315,9 +315,9 @@ export const SchedulePage = () => {
 
                     <button
                       onClick={() => setActiveVenueModal(fix)}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl bg-slate-100 dark:bg-slate-800/80 hover:bg-emerald-500/10 text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 text-xs font-bold transition-all cursor-pointer border border-slate-200/80 dark:border-slate-700/60 active:scale-98"
+                      className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl bg-slate-100 dark:bg-slate-800/80 hover:bg-blue-500/10 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 text-xs font-bold transition-all cursor-pointer border border-slate-200/80 dark:border-slate-700/60 active:scale-98"
                     >
-                      <MapPin className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                       <span className="truncate">{fix.venue}</span>
                     </button>
                   </div>
@@ -336,15 +336,15 @@ export const SchedulePage = () => {
               return (
                 <div
                   key={fix.id}
-                  className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-emerald-500/50 transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-4"
+                  className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-blue-500/50 transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-4"
                 >
                   <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/20 dark:from-emerald-600/30 dark:to-teal-600/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl font-black shrink-0">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/20 dark:from-blue-600/30 dark:to-indigo-600/20 text-blue-600 dark:text-blue-400 flex items-center justify-center text-2xl font-black shrink-0">
                       {sportIcon}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wide">
+                        <span className="text-xs font-black uppercase text-blue-600 dark:text-blue-400 tracking-wide">
                           {fix.sport}
                         </span>
                         <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase">

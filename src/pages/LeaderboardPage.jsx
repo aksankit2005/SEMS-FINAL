@@ -134,7 +134,7 @@ export const LeaderboardPage = () => {
             <Crown className="w-4 h-4 text-orange-500" /> Inter-College Championship Standings
           </div>
           <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight">
-            Overall <span className="bg-gradient-to-r from-orange-500 via-amber-500 to-blue-600 bg-clip-text text-transparent">Leaderboard</span>
+            Overall <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">Leaderboard</span>
           </h1>
           <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
             Live medal tallies and cumulative points across all sports events. 🥇 Winner = 5 pts &nbsp;•&nbsp; 🥈 Runner-Up = 3 pts

@@ -29,7 +29,7 @@ export const AnnouncementsPage = () => {
             <Bell className="w-4 h-4 text-orange-500 animate-bounce" /> Official Broadcast Center
           </div>
           <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight">
-            News & <span className="bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent">Announcements</span>
+            News & <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">Announcements</span>
           </h1>
           <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
             Stay informed with real-time tournament alerts, schedule updates, and official PDF circulars published by Admin & Coordinators.

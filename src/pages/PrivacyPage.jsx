@@ -12,7 +12,7 @@ export const PrivacyPage = () => {
             <Lock className="w-4 h-4 text-emerald-500" /> Data Protection
           </div>
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight">
-            Privacy <span className="bg-gradient-to-r from-emerald-500 to-cyan-500 bg-clip-text text-transparent">Policy</span>
+            Privacy <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">Policy</span>
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             How APEX Sports Event Management System collects, protects, and uses your personal data.

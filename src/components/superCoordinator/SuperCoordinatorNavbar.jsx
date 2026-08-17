@@ -19,6 +19,15 @@ export const SuperCoordinatorNavbar = ({ onRefresh, activeTab, setActiveTab, onO
     navigate('/');
   };
 
+  const superCoordUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('sems_super_coord_user') || '{}');
+    } catch {
+      return {};
+    }
+  })();
+  const superCoordName = superCoordUser?.name || 'Super Coordinator Console';
+
   return (
     <nav className="sticky top-0 z-40 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white shadow-md transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
@@ -30,8 +39,8 @@ export const SuperCoordinatorNavbar = ({ onRefresh, activeTab, setActiveTab, onO
               👑
             </div>
             <div className="min-w-0">
-              <span className="text-xs sm:text-lg font-black text-slate-900 dark:text-white tracking-tight block truncate">
-                Super Coordinator Console
+              <span className="text-xs sm:text-lg font-black text-slate-900 dark:text-white tracking-tight block truncate" title={superCoordName}>
+                {superCoordName}
               </span>
               <span className="text-[9px] sm:text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide block truncate">
                 President & Host Control

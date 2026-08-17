@@ -214,7 +214,7 @@ export const SportsPage = () => {
             <Trophy className="w-4 h-4 text-orange-500" /> 11 Championship Disciplines
           </div>
           <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight">
-            Sports & <span className="bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent">Events Hub</span>
+            Sports & <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">Events Hub</span>
           </h1>
           <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
             Browse through all official sports categories. Inspect rules, venue specifications, squad sizes, and register your college team instantly.

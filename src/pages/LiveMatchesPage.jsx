@@ -21,7 +21,7 @@ export const LiveMatchesPage = () => {
             <Radio className="w-4 h-4 animate-ping" /> Real-Time Match Center
           </div>
           <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight">
-            Live Tournament <span className="bg-gradient-to-r from-rose-500 via-orange-500 to-emerald-500 bg-clip-text text-transparent">Scoreboard</span>
+            Live Tournament <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">Scoreboard</span>
           </h1>
           <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
             Real-time score updates, play-by-play commentary, and match statistics across all championship arenas.

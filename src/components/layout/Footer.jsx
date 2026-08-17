@@ -28,8 +28,8 @@ export const Footer = () => {
   return (
     <footer className="relative bg-slate-50/90 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-t border-slate-200/80 dark:border-slate-800/80 pt-6 sm:pt-8 pb-5 sm:pb-6 transition-colors duration-200 overflow-hidden font-sans">
       {/* Subtle Glow Overlays */}
-      <div className="absolute top-0 left-1/4 w-64 h-64 bg-cyan-500/5 dark:bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-0 left-1/4 w-64 h-64 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-orange-500/5 dark:bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-6">
         
@@ -50,7 +50,7 @@ export const Footer = () => {
                 className="block dark:hidden h-7 sm:h-8 w-auto object-contain transition-transform group-hover:scale-105"
               />
               <span className="text-lg sm:text-xl font-black tracking-tight text-slate-900 dark:text-white">
-                APEX <span className="text-cyan-600 dark:text-cyan-400">2026</span>
+                APEX <span className="text-blue-600 dark:text-blue-400">2026</span>
               </span>
             </Link>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-md">
@@ -64,28 +64,28 @@ export const Footer = () => {
               Quick Links
             </h4>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-600 dark:text-slate-400">
-              <Link to="/sports" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors py-0.5">
+              <Link to="/sports" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-0.5">
                 Sports Hub
               </Link>
-              <Link to="/live" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors py-0.5 flex items-center gap-1.5">
+              <Link to="/live" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-0.5 flex items-center gap-1.5">
                 Live Scores <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
               </Link>
-              <Link to="/registration" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors py-0.5">
+              <Link to="/registration" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-0.5">
                 Registration
               </Link>
-              <Link to="/schedule" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors py-0.5">
+              <Link to="/schedule" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-0.5">
                 Fixtures
               </Link>
-              <Link to="/results" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors py-0.5">
+              <Link to="/results" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-0.5">
                 Match Results
               </Link>
-              <Link to="/gallery" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors py-0.5">
+              <Link to="/gallery" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-0.5">
                 Gallery
               </Link>
-              <Link to="/announcements" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors py-0.5">
+              <Link to="/announcements" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-0.5">
                 Announcements
               </Link>
-              <Link to="/about" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors py-0.5">
+              <Link to="/about" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-0.5">
                 About APEX
               </Link>
             </div>
@@ -140,7 +140,7 @@ export const Footer = () => {
                 href="mailto:sports@mpgi.edu.in"
                 aria-label="Email APEX Support Desk"
                 title="Email: sports@mpgi.edu.in"
-                className="w-9 h-9 sm:w-8 sm:h-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 hover:border-cyan-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-xs"
+                className="w-9 h-9 sm:w-8 sm:h-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-xs"
               >
                 <Mail className="w-4 h-4" />
               </a>
@@ -170,18 +170,18 @@ export const Footer = () => {
 
           {/* Legal Links */}
           <div className="flex flex-wrap items-center justify-center gap-3 font-medium text-[11px] sm:text-xs">
-            <Link to="/faq" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
+            <Link to="/faq" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
               FAQ
             </Link>
             <span>•</span>
-            <Link to="/terms" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
+            <Link to="/terms" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
               Terms & Conditions
             </Link>
             <span>•</span>
             <Link
               to="/privacy"
               onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' })}
-              className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
+              className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
             >
               Privacy Policy
             </Link>

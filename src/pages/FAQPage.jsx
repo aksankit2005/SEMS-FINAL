@@ -58,7 +58,7 @@ export const FAQPage = () => {
             <HelpCircle className="w-4 h-4 text-cyan-500" /> Frequently Asked Questions
           </div>
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight">
-            How can we <span className="bg-gradient-to-r from-cyan-500 to-emerald-500 bg-clip-text text-transparent">help you?</span>
+            How can we <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">help you?</span>
           </h1>
           <p className="text-sm text-slate-600 dark:text-slate-400">
             Find answers to common questions about APEX 2026 sports registration, rules, live scoring, and tournament logistics.

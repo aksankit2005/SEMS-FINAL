@@ -37,7 +37,7 @@ export const NotFoundPage = () => {
 
           {/* Large 404 Display */}
           <div>
-            <h1 className="text-8xl sm:text-9xl font-black tracking-tight leading-none bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 bg-clip-text text-transparent select-none">
+            <h1 className="text-8xl sm:text-9xl font-black tracking-tight leading-none bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent select-none">
               404
             </h1>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight mt-3">
