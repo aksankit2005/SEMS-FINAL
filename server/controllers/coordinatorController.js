@@ -673,6 +673,9 @@ export const updateMatch = async (req, res) => {
     const dbRes = await queryDb('SELECT * FROM live_matches WHERE id = $1', [id]);
     if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
       existing = dbRes.rows[0];
+      if (existing.sport_id && existing.sport_id.toLowerCase() !== sportId) {
+        return res.status(403).json({ message: 'Access denied. You cannot modify matches belonging to another sport.' });
+      }
     }
   } catch (e) {}
 
@@ -1952,8 +1955,24 @@ export const createEvent = async (req, res) => {
 };
 
 export const updateEvent = async (req, res) => {
-  const sportId = req.user.assignedSport.toLowerCase();
+  const sportId = (req.user?.assignedSport || '').toLowerCase();
   const { id } = req.params;
+
+  if (!sportId) {
+    return res.status(403).json({ message: 'Sport coordinator authorization missing.' });
+  }
+
+  // Ensure coordinator can only update events belonging to their assigned sport
+  try {
+    const existingDb = await queryDb('SELECT id, sport_id FROM coordinator_event_items WHERE id = $1', [id]);
+    if (existingDb && existingDb.rows.length > 0) {
+      const row = existingDb.rows[0];
+      if (row.sport_id && row.sport_id.toLowerCase() !== sportId) {
+        return res.status(403).json({ message: 'Access denied. You cannot modify events belonging to another sport.' });
+      }
+    }
+  } catch (e) {}
+
   const list = inMemoryCoordinatorEvents[sportId] || [];
   const index = list.findIndex((e) => e.id === id);
   const existing = index !== -1 ? list[index] : {};

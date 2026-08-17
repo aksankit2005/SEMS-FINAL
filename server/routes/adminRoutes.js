@@ -110,6 +110,7 @@ router.post('/super-coordinator/leaderboard', verifySuperCoordinatorToken, saveL
 router.delete('/super-coordinator/leaderboard/:id', verifySuperCoordinatorToken, deleteLeaderboardEntry);
 router.get('/super-coordinator/hero-slides', verifySuperCoordinatorToken, getHeroSlidesDB);
 router.post('/super-coordinator/hero-slides', verifySuperCoordinatorToken, saveHeroSlidesDB);
+router.get('/super-coordinator/cloudinary-signature', verifySuperCoordinatorToken, getCloudinarySignature);
 router.post('/super-coordinator/change-password', verifySuperCoordinatorToken, changeSuperCoordinatorPasswordDB);
 
 export default router;

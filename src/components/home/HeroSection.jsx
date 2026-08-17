@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Trophy, ChevronRight, PlayCircle, ChevronLeft } from 'lucide-react';
-import { getHeroSlides } from '../../data/heroSlidesData';
+import { getHeroSlides, fetchHeroSlidesFromDB } from '../../data/heroSlidesData';
 
 export const HeroSection = () => {
   const [slides, setSlides] = useState(() => getHeroSlides());
@@ -9,6 +9,13 @@ export const HeroSection = () => {
   const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
+    // Fetch fresh slides from database on mount to guarantee user sync
+    fetchHeroSlidesFromDB().then((freshSlides) => {
+      if (freshSlides && Array.isArray(freshSlides) && freshSlides.length > 0) {
+        setSlides(freshSlides);
+      }
+    });
+
     const handleUpdate = () => {
       setSlides(getHeroSlides());
     };

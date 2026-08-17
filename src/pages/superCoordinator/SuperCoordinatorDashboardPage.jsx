@@ -13,6 +13,7 @@ import { exportToCSV, exportToPDF } from '../../utils/pdfExporter';
 import { exportResultsToExcel } from '../../utils/excelExporter';
 import { GoogleDriveImage } from '../../components/common/GoogleDriveImage';
 import { getHeroSlides, saveHeroSlides, DEFAULT_HERO_SLIDES } from '../../data/heroSlidesData';
+import { uploadFileToCloudinary } from '../../services/cloudinaryService';
 
 export const SuperCoordinatorDashboardPage = () => {
   const { addToast } = useToast();
@@ -31,6 +32,7 @@ export const SuperCoordinatorDashboardPage = () => {
   const [prPhotos, setPrPhotos] = useState([]);
   const [leaderboardEntries, setLeaderboardEntries] = useState([]);
   const [editableHeroSlides, setEditableHeroSlides] = useState(() => getHeroSlides());
+  const [uploadingSlideIdx, setUploadingSlideIdx] = useState(null);
 
   // PR Media Folders & Folder Details State
   const [prFolders, setPrFolders] = useState([]);
@@ -158,12 +160,13 @@ export const SuperCoordinatorDashboardPage = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [eventsList, participantsList, photosList, lbList, foldersList] = await Promise.all([
+      const [eventsList, participantsList, photosList, lbList, foldersList, heroSlides] = await Promise.all([
         superCoordinatorApi.getCoordinatorEvents(),
         superCoordinatorApi.getMasterParticipants(),
         superCoordinatorApi.getPRPhotos(),
         superCoordinatorApi.getLeaderboardEntries(),
-        superCoordinatorApi.getPREventFolders()
+        superCoordinatorApi.getPREventFolders(),
+        superCoordinatorApi.getHeroSlides().catch(() => null)
       ]);
 
       setCoordinatorEvents(eventsList || []);
@@ -171,6 +174,10 @@ export const SuperCoordinatorDashboardPage = () => {
       setPrPhotos(photosList || []);
       setLeaderboardEntries(lbList || []);
       setPrFolders(foldersList || []);
+      if (heroSlides && Array.isArray(heroSlides) && heroSlides.length > 0) {
+        setEditableHeroSlides(heroSlides);
+        localStorage.setItem('sems_home_hero_slides', JSON.stringify(heroSlides));
+      }
 
       if (selectedPRFolder) {
         const mediaDetails = await superCoordinatorApi.getPRFolderMedia(selectedPRFolder.id);
@@ -425,16 +432,24 @@ export const SuperCoordinatorDashboardPage = () => {
     setEditableHeroSlides(updated);
   };
 
-  const handleSaveHeroSlides = () => {
-    saveHeroSlides(editableHeroSlides);
-    addToast('Hero 5-Slide Carousel updated! Home Page updated live in real time.', 'success');
+  const handleSaveHeroSlides = async () => {
+    try {
+      await saveHeroSlides(editableHeroSlides);
+      addToast('Hero 5-Slide Carousel updated & saved to Database! Home Page updated live in real time.', 'success');
+    } catch (e) {
+      addToast(`Error saving slides to database: ${e.message}`, 'error');
+    }
   };
 
-  const handleResetHeroSlides = () => {
+  const handleResetHeroSlides = async () => {
     if (window.confirm('Reset all 5 slides to default configuration?')) {
       setEditableHeroSlides(DEFAULT_HERO_SLIDES);
-      saveHeroSlides(DEFAULT_HERO_SLIDES);
-      addToast('Reset Hero Slides to default!', 'info');
+      try {
+        await saveHeroSlides(DEFAULT_HERO_SLIDES);
+        addToast('Reset Hero Slides to default and saved to Database!', 'info');
+      } catch (e) {
+        addToast(`Error resetting slides: ${e.message}`, 'error');
+      }
     }
   };
 
@@ -592,7 +607,15 @@ export const SuperCoordinatorDashboardPage = () => {
                       </h3>
                     </div>
                     <div className="flex items-center gap-2">
-                      <img src={slide.image} alt={slide.title} className="w-12 h-8 rounded-lg object-cover border border-slate-700" />
+                      <img
+                        src={slide.image || DEFAULT_HERO_SLIDES[idx]?.image}
+                        alt={slide.title}
+                        className="w-12 h-8 rounded-lg object-cover border border-slate-700 bg-slate-900"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = DEFAULT_HERO_SLIDES[idx]?.image || DEFAULT_HERO_SLIDES[0].image;
+                        }}
+                      />
                       <span className="px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-500 font-mono text-[10px] font-bold border border-amber-500/20">
                         Slide #{idx + 1}
                       </span>
@@ -627,24 +650,41 @@ export const SuperCoordinatorDashboardPage = () => {
                           className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                           placeholder="Paste image URL or click upload..."
                         />
-                        <label className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs cursor-pointer flex items-center justify-center gap-1.5 shrink-0 transition active:scale-95 shadow-sm">
-                          <Upload className="w-3.5 h-3.5" />
-                          <span>Upload File</span>
+                        <label className={`px-4 py-2.5 rounded-xl text-slate-950 font-black text-xs cursor-pointer flex items-center justify-center gap-1.5 shrink-0 transition active:scale-95 shadow-sm ${
+                          uploadingSlideIdx === idx ? 'bg-amber-400 opacity-80 cursor-wait' : 'bg-amber-500 hover:bg-amber-400'
+                        }`}>
+                          {uploadingSlideIdx === idx ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>Uploading...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-3.5 h-3.5" />
+                              <span>Upload File</span>
+                            </>
+                          )}
                           <input
                             type="file"
                             accept="image/*"
+                            disabled={uploadingSlideIdx === idx}
                             className="hidden"
-                            onChange={(e) => {
+                            onChange={async (e) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                const reader = new FileReader();
-                                reader.onload = (uploadEvt) => {
-                                  if (uploadEvt.target?.result) {
-                                    handleUpdateSlideField(idx, 'image', uploadEvt.target.result);
-                                    addToast(`Uploaded custom image for Slide ${idx + 1}!`, 'success');
+                                try {
+                                  setUploadingSlideIdx(idx);
+                                  addToast(`Uploading image for Slide ${idx + 1} to Cloudinary...`, 'info');
+                                  const cloudRes = await uploadFileToCloudinary(file, () => {}, 'sems_gallery');
+                                  if (cloudRes && cloudRes.url) {
+                                    handleUpdateSlideField(idx, 'image', cloudRes.url);
+                                    addToast(`Uploaded custom image for Slide ${idx + 1} to Cloudinary! Click 'Save All 5 Slides' to save live.`, 'success');
                                   }
-                                };
-                                reader.readAsDataURL(file);
+                                } catch (err) {
+                                  addToast(err.message || 'Failed to upload image to Cloudinary', 'error');
+                                } finally {
+                                  setUploadingSlideIdx(null);
+                                }
                               }
                             }}
                           />
@@ -721,6 +761,34 @@ export const SuperCoordinatorDashboardPage = () => {
                         placeholder="e.g. /live"
                       />
                     </div>
+
+                    {/* Live Slide Card Preview */}
+                    {slide.image && (
+                      <div className="relative w-full h-32 sm:h-40 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 group md:col-span-2">
+                        <img
+                          src={slide.image}
+                          alt={slide.title || `Slide ${idx + 1} Card`}
+                          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = DEFAULT_HERO_SLIDES[idx]?.image || DEFAULT_HERO_SLIDES[0].image;
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/50 to-transparent flex items-end p-4">
+                          <div className="space-y-1">
+                            <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 text-[9px] font-mono font-bold uppercase border border-amber-500/30">
+                              Slide #{idx + 1} Visual Card Preview
+                            </span>
+                            <h4 className="text-sm sm:text-base font-black text-white uppercase tracking-tight line-clamp-1">
+                              {slide.title || 'Slide Title'}
+                            </h4>
+                            <p className="text-xs text-slate-300 line-clamp-1 max-w-2xl font-normal">
+                              {slide.description || 'Slide subtitle text...'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
