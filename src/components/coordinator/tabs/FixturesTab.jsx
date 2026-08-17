@@ -1,15 +1,10 @@
-import React, { useState } from 'react';
-import { GitPullRequest, Printer, Download, Sparkles, Trophy, ChevronRight, CheckCircle2 } from 'lucide-react';
+import React from 'react';
+import { GitPullRequest, Printer, Download, Trophy, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import jsPDF from 'jspdf';
 
 export const FixturesTab = ({ matches, user }) => {
   const { addToast } = useToast();
-  const [bracketMode, setBracketMode] = useState('automatic');
-
-  const handleGenerateAutomatic = () => {
-    addToast(`Automatic Knockout Fixtures bracket generated for ${user?.sportName}!`, 'success');
-  };
 
   const handlePrintFixtures = () => {
     window.print();
@@ -28,16 +23,16 @@ export const FixturesTab = ({ matches, user }) => {
       doc.text('Matches & Bracket Overview:', 14, 48);
 
       let y = 58;
-      matches.forEach((m, idx) => {
+      (matches || []).forEach((m, idx) => {
         if (y > 270) {
           doc.addPage();
           y = 20;
         }
-        doc.text(`${idx + 1}. [${m.round}] ${m.team1} vs ${m.team2} - Date: ${m.date} ${m.time} @ ${m.venue}`, 14, y);
+        doc.text(`${idx + 1}. [${m.round || 'Round 1'}] ${m.team1 || 'Team 1'} vs ${m.team2 || 'Team 2'} - Date: ${m.date || 'TBD'} ${m.time || ''} @ ${m.venue || 'Court 1'}`, 14, y);
         y += 10;
       });
 
-      doc.save(`${user?.assignedSport}_official_fixtures.pdf`);
+      doc.save(`${user?.assignedSport || 'sport'}_official_fixtures.pdf`);
       addToast('Official Fixtures PDF downloaded successfully!', 'success');
     } catch (err) {
       addToast('Error generating PDF', 'error');
@@ -54,26 +49,22 @@ export const FixturesTab = ({ matches, user }) => {
             {user?.sportName} Fixtures & Tournament Bracket
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Automatic and manual fixture bracket generation, print, and official PDF downloads.
+            Tournament knockout bracket view, print schedule, and official PDF downloads.
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={handleGenerateAutomatic}
-            className="px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5"
-          >
-            <Sparkles className="w-4 h-4" /> Auto Generate Bracket
-          </button>
-          <button
+            type="button"
             onClick={handlePrintFixtures}
-            className="px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs hover:bg-slate-200 transition flex items-center gap-1.5"
+            className="px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1.5 cursor-pointer"
           >
             <Printer className="w-4 h-4" /> Print
           </button>
           <button
+            type="button"
             onClick={handleDownloadPDF}
-            className="px-3.5 py-2.5 rounded-xl bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-bold text-xs hover:bg-slate-800 transition flex items-center gap-1.5"
+            className="px-3.5 py-2.5 rounded-xl bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-bold text-xs hover:bg-slate-800 transition flex items-center gap-1.5 cursor-pointer"
           >
             <Download className="w-4 h-4" /> Download PDF
           </button>

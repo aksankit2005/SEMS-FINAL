@@ -57,14 +57,19 @@ export const ContactPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!name || !email || !message) {
-      addToast('Please complete all required fields', 'error');
+    if (!name.trim() || !email.trim() || !message.trim()) {
+      addToast('Please complete all required fields (Name, Email, Message)', 'error');
       return;
     }
-    addToast('Your message has been sent to the APEX Help Desk!', 'success');
-    setName('');
-    setEmail('');
-    setMessage('');
+
+    const supportEmail = 'support.apex2026@university.edu';
+    const mailSubject = encodeURIComponent(`[APEX 2026 Support Query] ${subject}: from ${name}`);
+    const mailBody = encodeURIComponent(
+      `Hello APEX Help Desk,\n\nName: ${name}\nEmail: ${email}\nCategory: ${subject}\n\nMessage:\n${message}\n\n---\nSent via APEX Sports Portal Help Desk`
+    );
+
+    addToast('Opening your email client to send your support inquiry...', 'info');
+    window.location.href = `mailto:${supportEmail}?subject=${mailSubject}&body=${mailBody}`;
   };
 
   const faqs = [
@@ -187,7 +192,7 @@ export const ContactPage = () => {
 
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-md flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer transition"
               >
                 <Send className="w-4 h-4" /> Submit Inquiry
               </button>
@@ -205,8 +210,9 @@ export const ContactPage = () => {
             {faqs.map((faq, idx) => (
               <div key={idx} className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
                 <button
+                  type="button"
                   onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
-                  className="w-full p-4 text-left font-bold text-sm flex justify-between items-center bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800"
+                  className="w-full p-4 text-left font-bold text-sm flex justify-between items-center bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800 cursor-pointer"
                 >
                   <span>{faq.q}</span>
                   <ChevronDown className={`w-4 h-4 transition-transform ${activeFaq === idx ? 'rotate-180' : ''}`} />

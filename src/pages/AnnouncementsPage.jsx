@@ -79,7 +79,7 @@ export const AnnouncementsPage = () => {
               <div
                 key={item.id}
                 onClick={() => setActiveModal(item)}
-                className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-soft hover:shadow-xl transition cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6"
+                className="group bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-soft hover:shadow-xl transition cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6"
               >
                 <div className="space-y-2 flex-1">
                   <div className="flex items-center gap-3 flex-wrap">
@@ -103,7 +103,7 @@ export const AnnouncementsPage = () => {
                     <span className="text-xs text-slate-400">{item.date} • {item.time || '10:00 AM'}</span>
                   </div>
 
-                  <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition">
+                  <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     {item.title}
                   </h3>
 
@@ -112,10 +112,10 @@ export const AnnouncementsPage = () => {
                   </p>
                 </div>
 
-                <button className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-blue-600 hover:text-white transition flex items-center gap-1.5 shrink-0 self-start md:self-auto">
+                <span className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 group-hover:bg-blue-600 group-hover:text-white transition-colors flex items-center gap-1.5 shrink-0 self-start md:self-auto pointer-events-none">
                   <span>Read Full Circular</span>
                   <ChevronRight className="w-4 h-4" />
-                </button>
+                </span>
               </div>
             ))
           )}

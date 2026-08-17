@@ -17,7 +17,9 @@ export const CoordinatorHeader = ({ user, activeTab, setActiveTab, onLogout }) =
   const { addToast } = useToast();
 
   const handleSyncData = () => {
-    addToast('Coordinator tournament data synced!', 'success');
+    window.dispatchEvent(new Event('sems-coordinator-sync'));
+    window.dispatchEvent(new Event('storage'));
+    addToast('Coordinator tournament data synced with database!', 'success');
   };
 
   const sportName = user?.sportName || 'Table Tennis';

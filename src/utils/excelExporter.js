@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { getSportResultExportConfig } from './sportResultFormatters';
+import { getSportResultExportConfig } from './sportResultFormatters.js';
 
 /**
  * Universal safe browser file download trigger.

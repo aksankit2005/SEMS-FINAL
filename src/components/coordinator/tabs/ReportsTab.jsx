@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BarChart3, Download, FileSpreadsheet, FileText, CheckCircle2, TrendingUp, Users, MapPin, Award } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import jsPDF from 'jspdf';
+import { coordinatorApi } from '../../../services/coordinatorApi';
+import { exportToExcel } from '../../../utils/excelExporter';
+import { flattenRegistrationRoster } from '../../../utils/rosterHelper';
+import { getSportResultDisplay } from '../../../utils/sportResultFormatters';
 
 export const ReportsTab = ({ user }) => {
   const { addToast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
@@ -26,8 +31,102 @@ export const ReportsTab = ({ user }) => {
     addToast('PDF Report downloaded successfully!', 'success');
   };
 
-  const handleDownloadExcel = () => {
-    addToast(`Excel analytical spreadsheet downloaded for ${user?.sportName}!`, 'success');
+  const handleDownloadExcel = async () => {
+    try {
+      setIsExporting(true);
+      const sportId = (user?.assignedSport || 'badminton').toLowerCase().replace(/_/g, '-');
+      const sportName = user?.sportName || user?.assignedSport || 'Sport';
+      const cleanSportId = sportId.replace(/_/g, '-');
+      const baseSportId = cleanSportId.split('-')[0];
+
+      // Fetch live registrations and matches from DB
+      const [rawRegs, rawMatches] = await Promise.all([
+        coordinatorApi.getRegistrations().catch(() => []),
+        coordinatorApi.getMatches().catch(() => [])
+      ]);
+
+      const filteredRegs = (rawRegs || []).filter((d) => {
+        const rSport = String(d.sport || d.sportId || d.sportName || '').toLowerCase().replace(/_/g, '-');
+        const rEvent = String(d.eventTitle || d.eventType || '').toLowerCase().replace(/_/g, '-');
+        return (
+          rSport.includes(cleanSportId) ||
+          rSport.includes(baseSportId) ||
+          rEvent.includes(cleanSportId) ||
+          rEvent.includes(baseSportId)
+        );
+      });
+
+      const flattenedAthletes = flattenRegistrationRoster(filteredRegs, { defaultSport: sportName });
+
+      const filteredMatches = (rawMatches || []).filter((m) => {
+        const mSport = String(m.sportId || m.sport || '').toLowerCase().replace(/_/g, '-');
+        return mSport.includes(cleanSportId) || mSport.includes(baseSportId);
+      });
+
+      const sheets = {};
+
+      // Sheet 1: Participation & Athletes
+      if (flattenedAthletes.length > 0) {
+        sheets['Athletes Roster'] = flattenedAthletes.map((p, idx) => ({
+          'S.No.': idx + 1,
+          'Registration ID': p.registrationId || 'N/A',
+          'Timestamp': p.timestamp || 'N/A',
+          'Sport': p.sport || sportName,
+          'Team Name': p.teamName || 'Individual',
+          'College Name': p.collegeName || 'N/A',
+          'Player Name': p.name || 'N/A',
+          'Role': p.role || (p.isCaptain ? 'Captain' : 'Player'),
+          'Roll No': p.rollNo ? String(p.rollNo) : 'N/A',
+          'Mobile No': p.phone ? String(p.phone) : 'N/A',
+          'Email': p.email || 'N/A',
+          'Gender': p.gender || 'Male',
+          'Course': p.course || 'N/A',
+          'Year / Semester': p.yearSemester || 'N/A',
+          'Status': p.status || 'VERIFIED'
+        }));
+      } else {
+        sheets['Summary Overview'] = [
+          {
+            'Sport': sportName,
+            'Assigned Coordinator': user?.coordinatorName || 'Official Coordinator',
+            'Generated Date': new Date().toLocaleDateString(),
+            'Total Registered Athletes': 0,
+            'Total Matches': filteredMatches.length,
+            'Status': 'Operational'
+          }
+        ];
+      }
+
+      // Sheet 2: Match Schedule & Results
+      if (filteredMatches.length > 0) {
+        sheets['Match Schedule & Results'] = filteredMatches.map((m, idx) => {
+          const display = getSportResultDisplay(m);
+          return {
+            'Match #': idx + 1,
+            'Match ID': m.id,
+            'Event / Sub-Event': display.eventTitle || `${sportName} Match`,
+            'Format': display.format || 'Standard',
+            'Category': display.category || 'Open',
+            'Team / Player 1': display.team1,
+            'Team / Player 2': display.team2,
+            'Status': m.status || 'SCHEDULED',
+            'Final Score / Summary': display.summaryText || 'Pending',
+            'Official Winner': display.winner || 'TBD',
+            'Venue': m.tableNumber || m.venue || 'Main Ground',
+            'Time': m.time || 'TBD'
+          };
+        });
+      }
+
+      const filename = `${sportName.replace(/\s+/g, '_')}_Analytics_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+      exportToExcel(sheets, filename);
+      addToast(`Official Excel analytical report downloaded for ${sportName}!`, 'success');
+    } catch (err) {
+      console.error('Coordinator Reports Excel export error:', err);
+      addToast(`Export failed: ${err.message || 'Unable to generate Excel file'}`, 'error');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -46,14 +145,17 @@ export const ReportsTab = ({ user }) => {
 
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={handleDownloadExcel}
-            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5"
+            disabled={isExporting}
+            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
           >
-            <FileSpreadsheet className="w-4 h-4" /> Download Excel
+            <FileSpreadsheet className="w-4 h-4" /> {isExporting ? 'Exporting...' : 'Download Excel'}
           </button>
           <button
+            type="button"
             onClick={handleDownloadPDF}
-            className="px-4 py-2.5 rounded-xl bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-bold text-xs hover:bg-slate-800 transition flex items-center gap-1.5"
+            className="px-4 py-2.5 rounded-xl bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-bold text-xs hover:bg-slate-800 transition flex items-center gap-1.5 cursor-pointer"
           >
             <FileText className="w-4 h-4" /> Download PDF
           </button>

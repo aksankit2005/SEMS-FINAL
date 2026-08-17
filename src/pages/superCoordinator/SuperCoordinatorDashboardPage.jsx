@@ -1796,10 +1796,10 @@ export const SuperCoordinatorDashboardPage = () => {
                               <span>🎥 {folder.videos_count || 0} Videos</span>
                             </div>
 
-                            <button className="px-3.5 py-1.5 rounded-xl bg-amber-500 group-hover:bg-amber-400 text-slate-950 text-xs font-black transition flex items-center gap-1.5 shadow-md">
+                            <span className="px-3.5 py-1.5 rounded-xl bg-amber-500 group-hover:bg-amber-400 text-slate-950 text-xs font-black transition flex items-center gap-1.5 shadow-md pointer-events-none">
                               <FolderOpen className="w-3.5 h-3.5" />
                               <span>Open Folder</span>
-                            </button>
+                            </span>
                           </div>
                         </div>
                       </div>
