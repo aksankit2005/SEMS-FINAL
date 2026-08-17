@@ -163,20 +163,44 @@ export const getProfile = (req, res) => {
 };
 
 export const getMatches = async (req, res) => {
-  const sportId = req.user.assignedSport.toLowerCase();
+  const sportId = (req.user?.assignedSport || '').toLowerCase().replace(/_/g, '-');
 
   try {
-    const dbMatches = await prisma.liveMatch.findMany({
-      where: {
-        sportId: {
-          equals: sportId,
-          mode: 'insensitive',
+    const isGully = sportId.includes('gully');
+    const isStandardCricket = sportId === 'cricket' || (sportId.includes('cricket') && !isGully);
+
+    let dbMatches;
+    if (isStandardCricket) {
+      dbMatches = await prisma.liveMatch.findMany({
+        where: {
+          sportId: { equals: 'cricket', mode: 'insensitive' }
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+    } else if (isGully) {
+      dbMatches = await prisma.liveMatch.findMany({
+        where: {
+          sportId: { in: ['gully-cricket', 'gully_cricket', 'gully cricket'], mode: 'insensitive' }
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+    } else {
+      dbMatches = await prisma.liveMatch.findMany({
+        where: {
+          sportId: {
+            equals: sportId,
+            mode: 'insensitive',
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+    }
 
     return res.json(dbMatches || []);
   } catch (err) {
@@ -1008,8 +1032,10 @@ export const updateMatchScore = async (req, res) => {
 };
 
 export const completeMatch = async (req, res) => {
-  const sportId = req.user.assignedSport.toLowerCase();
+  const sportId = (req.user?.assignedSport || '').toLowerCase().replace(/_/g, '-');
   const { id } = req.params;
+  const isGully = sportId.includes('gully');
+  const isStandardCricket = sportId === 'cricket' || (sportId.includes('cricket') && !isGully);
 
   try {
     const existingResult = await queryDb(
@@ -1031,10 +1057,15 @@ export const completeMatch = async (req, res) => {
         details
       FROM live_matches
       WHERE id = $1
-        AND LOWER(sport_id) = $2
+        AND (
+          LOWER(sport_id) = $2
+          OR LOWER(sport_id) = REPLACE($2, '-', '_')
+          OR ($3 = TRUE AND LOWER(sport_id) LIKE '%gully%')
+          OR ($4 = TRUE AND LOWER(sport_id) = 'cricket')
+        )
       LIMIT 1
       `,
-      [id, sportId]
+      [id, sportId, isGully, isStandardCricket]
     );
 
     if (!existingResult || existingResult.rows.length === 0) {
@@ -1230,7 +1261,8 @@ export const getRegistrations = async (req, res) => {
   try {
     const sportId = (req.user?.assignedSport || req.user?.sportName || '').toLowerCase();
     const cleanSportId = sportId.replace(/_/g, '-');
-    const baseSportId = cleanSportId.split('-')[0].split('_')[0]; // e.g. "badminton"
+    const isGully = cleanSportId.includes('gully');
+    const isStandardCricket = cleanSportId === 'cricket' || (cleanSportId.includes('cricket') && !isGully);
 
     // 1. Direct Raw SQL QueryDb from college_registrations
     try {
@@ -1246,8 +1278,14 @@ export const getRegistrations = async (req, res) => {
       let params = [];
 
       if (sportId && sportId !== 'all') {
-        sql += ` WHERE LOWER(sport_id) LIKE $1 OR LOWER(sport_id) LIKE $2 OR LOWER(sport_id) LIKE $3`;
-        params = [`%${sportId}%`, `%${cleanSportId}%`, `%${baseSportId}%`];
+        if (isStandardCricket) {
+          sql += ` WHERE (LOWER(sport_id) = 'cricket' OR LOWER(sport_id) LIKE '%cricket%') AND LOWER(sport_id) NOT LIKE '%gully%'`;
+        } else if (isGully) {
+          sql += ` WHERE LOWER(sport_id) LIKE '%gully%' OR LOWER(sport_id) = 'gully-cricket' OR LOWER(sport_id) = 'gully_cricket'`;
+        } else {
+          sql += ` WHERE LOWER(sport_id) = $1 OR LOWER(sport_id) = $2 OR LOWER(sport_id) LIKE $3`;
+          params = [sportId, cleanSportId, `%${cleanSportId}%`];
+        }
       }
       sql += ` ORDER BY created_at DESC`;
 

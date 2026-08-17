@@ -15,22 +15,29 @@ export const CricketGoLiveSetupModal = ({ match, targetVenue, onClose, onStartMa
     };
   }, []);
 
-  const defaultTeam1 = match?.team1 || 'MPEC XI';
-  const defaultTeam2 = match?.team2 || 'PSIT Super Kings';
+  const isGully = Boolean(
+    (match?.sportId || '').includes('gully') ||
+    (match?.sport || '').includes('gully') ||
+    (match?.sportName || '').includes('Gully') ||
+    (match?.eventTitle || '').includes('Gully')
+  );
+
+  const defaultTeam1 = match?.team1 || (isGully ? 'MPEC Gully Strikers' : 'MPEC XI');
+  const defaultTeam2 = match?.team2 || (isGully ? 'MIPS Box Kings' : 'PSIT Super Kings');
 
   const [currentStep, setCurrentStep] = useState(1);
 
   // Step 1: Match Details
   const [matchDetails, setMatchDetails] = useState({
-    tournamentName: match?.eventTitle || 'Inter-College T20 Cricket Championship 2026',
+    tournamentName: match?.eventTitle || (isGully ? 'Official Gully & Box Cricket Championship 2026' : 'Inter-College T20 Cricket Championship 2026'),
     matchTitle: `${defaultTeam1} vs ${defaultTeam2}`,
-    format: 'T20', // T10, T20, ODI, Test, Custom Overs
-    totalOvers: 20,
-    venue: targetVenue || match?.tableNumber || 'Cricket Ground 1',
+    format: isGully ? '6-Overs Fast Box' : 'T20', // T10, T20, ODI, 6-Overs Fast Box, etc.
+    totalOvers: isGully ? 6 : 20,
+    venue: targetVenue || match?.tableNumber || (isGully ? 'Street Pitch Ground 1' : 'Cricket Ground 1'),
     date: match?.date || new Date().toISOString().split('T')[0],
-    time: match?.time || '09:00 AM',
-    tossWinner: defaultTeam1, // Team A or Team B
-    tossDecision: 'Bat', // Bat or Bowl
+    time: match?.time || '10:00 AM',
+    tossWinner: defaultTeam1,
+    tossDecision: 'Bat',
   });
 
   // Step 2: Team Details
@@ -46,32 +53,39 @@ export const CricketGoLiveSetupModal = ({ match, targetVenue, onClose, onStartMa
     captain: `${defaultTeam2} Captain`,
   });
 
-  // Step 3: Playing XI
+  // Step 3: Playing XI / Playing 6
+  const squadSize = isGully ? 6 : 11;
+  const subsSize = isGully ? 2 : 2;
+
   const [teamAPlayers, setTeamAPlayers] = useState(() => {
-    return Array.from({ length: 11 }, (_, i) => ({
+    return Array.from({ length: squadSize }, (_, i) => ({
       id: `TA-${i + 1}`,
       name: `${defaultTeam1} Player ${i + 1}`,
       isCaptain: i === 0,
       isKeeper: i === 1,
     }));
   });
-  const [teamASubs, setTeamASubs] = useState([
-    { id: 'TA-SUB1', name: `${defaultTeam1} Sub 1` },
-    { id: 'TA-SUB2', name: `${defaultTeam1} Sub 2` },
-  ]);
+  const [teamASubs, setTeamASubs] = useState(() => {
+    return Array.from({ length: subsSize }, (_, i) => ({
+      id: `TA-SUB${i + 1}`,
+      name: `${defaultTeam1} Sub ${i + 1}`,
+    }));
+  });
 
   const [teamBPlayers, setTeamBPlayers] = useState(() => {
-    return Array.from({ length: 11 }, (_, i) => ({
+    return Array.from({ length: squadSize }, (_, i) => ({
       id: `TB-${i + 1}`,
       name: `${defaultTeam2} Player ${i + 1}`,
       isCaptain: i === 0,
       isKeeper: i === 1,
     }));
   });
-  const [teamBSubs, setTeamBSubs] = useState([
-    { id: 'TB-SUB1', name: `${defaultTeam2} Sub 1` },
-    { id: 'TB-SUB2', name: `${defaultTeam2} Sub 2` },
-  ]);
+  const [teamBSubs, setTeamBSubs] = useState(() => {
+    return Array.from({ length: subsSize }, (_, i) => ({
+      id: `TB-SUB${i + 1}`,
+      name: `${defaultTeam2} Sub ${i + 1}`,
+    }));
+  });
 
   // Determine Batting Team & Bowling Team based on Toss
   const isTeamABattingFirst =
@@ -116,7 +130,7 @@ export const CricketGoLiveSetupModal = ({ match, targetVenue, onClose, onStartMa
       const hasEmptyA = teamAPlayers.some((p) => !p.name.trim());
       const hasEmptyB = teamBPlayers.some((p) => !p.name.trim());
       if (hasEmptyA || hasEmptyB) {
-        addToast('Please fill all 11 player names for both teams', 'error');
+        addToast(`Please fill all ${squadSize} player names for both teams`, 'error');
         return;
       }
       prepareStep4Defaults();
@@ -147,7 +161,7 @@ export const CricketGoLiveSetupModal = ({ match, targetVenue, onClose, onStartMa
     const setupPayload = {
       matchDetails: {
         ...matchDetails,
-        totalOvers: Number(matchDetails.totalOvers) || 20,
+        totalOvers: Number(matchDetails.totalOvers) || (isGully ? 6 : 20),
       },
       teamA,
       teamB,
@@ -166,22 +180,30 @@ export const CricketGoLiveSetupModal = ({ match, targetVenue, onClose, onStartMa
   };
 
   const modalJSX = (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/95 backdrop-blur-xl overflow-y-auto font-sans">
-      <div className="w-full max-w-4xl bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-5 sm:p-7 shadow-2xl space-y-6 my-6 max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-md overflow-hidden font-sans">
+      <div className="w-full max-w-4xl bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[92vh] p-5 sm:p-6 space-y-5">
         
-        {/* Modal Top Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4 shrink-0">
-          <div>
-            <span className="text-[10px] font-mono font-bold uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">
-              Cricket Go Live Match Setup Wizard
-            </span>
-            <h2 className="text-xl font-black text-slate-900 dark:text-white">
-              Configure Live Cricket Match
-            </h2>
+        {/* Header */}
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-600/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black text-xl">
+              🏏
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-mono font-bold uppercase">
+                  {isGully ? 'GULLY CRICKET GO-LIVE WIZARD' : 'T20 CRICKET GO-LIVE WIZARD'}
+                </span>
+                <span className="text-xs font-mono text-slate-400">Step {currentStep} of 4</span>
+              </div>
+              <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                Live Match Pre-Game Configuration
+              </h2>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -192,7 +214,7 @@ export const CricketGoLiveSetupModal = ({ match, targetVenue, onClose, onStartMa
           {[
             { num: 1, title: '1. Match Details' },
             { num: 2, title: '2. Team Details' },
-            { num: 3, title: '3. Playing XI' },
+            { num: 3, title: isGully ? '3. Playing Squad' : '3. Playing XI' },
             { num: 4, title: '4. Opening Players' },
           ].map((s) => (
             <button
@@ -262,7 +284,7 @@ export const CricketGoLiveSetupModal = ({ match, targetVenue, onClose, onStartMa
                   <input
                     type="text"
                     readOnly
-                    value="Cricket Ground 1"
+                    value={matchDetails.venue || (isGully ? 'Street Pitch Ground 1' : 'Cricket Ground 1')}
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 text-xs font-bold text-emerald-600 dark:text-emerald-400 cursor-not-allowed"
                   />
                 </div>

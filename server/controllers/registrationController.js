@@ -263,7 +263,7 @@ export const registerPublicEvent = async (req, res) => {
           participantData: participantData || {}
         }
       });
-    });
+    }, { timeout: 20000, maxWait: 10000 });
 
     // Atomically increment registeredCount in coordinator_event_items if event exists
     if (eventId && eventId !== 'DEFAULT') {

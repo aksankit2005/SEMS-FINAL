@@ -48,7 +48,14 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
   const [battingTeam, setBattingTeam] = useState(battingTeamNameInitial);
   const [bowlingTeam, setBowlingTeam] = useState(bowlingTeamNameInitial);
 
-  const totalOversMax = setupData.matchDetails?.totalOvers || 20;
+  const isGully = Boolean(
+    (match?.sportId || '').includes('gully') ||
+    (match?.sport || '').includes('gully') ||
+    (match?.sportName || '').includes('Gully') ||
+    (match?.eventTitle || '').includes('Gully')
+  );
+
+  const totalOversMax = setupData.matchDetails?.totalOvers || (isGully ? 6 : 20);
 
   // Score states
   const [runs, setRuns] = useState(match?.score1 || 0);
@@ -67,18 +74,20 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
   const norm = (str) => String(str || '').trim().toLowerCase();
 
   // Squads and Substitute Lists State
+  const defaultSquadLength = isGully ? 6 : 11;
+  const defaultSubsLength = isGully ? 2 : 4;
   const [teamAPlayerList, setTeamAPlayerList] = useState(
-    setupData.teamAPlayers || Array.from({ length: 11 }, (_, i) => ({ name: `${teamA} Player ${i + 1}` }))
+    setupData.teamAPlayers || Array.from({ length: defaultSquadLength }, (_, i) => ({ name: `${teamA} Player ${i + 1}` }))
   );
   const [teamBPlayerList, setTeamBPlayerList] = useState(
-    setupData.teamBPlayers || Array.from({ length: 11 }, (_, i) => ({ name: `${teamB} Player ${i + 1}` }))
+    setupData.teamBPlayers || Array.from({ length: defaultSquadLength }, (_, i) => ({ name: `${teamB} Player ${i + 1}` }))
   );
 
   const [teamASubsList, setTeamASubsList] = useState(
-    setupData.teamASubs || Array.from({ length: 4 }, (_, i) => ({ name: `${teamA} Sub ${i + 1}` }))
+    setupData.teamASubs || Array.from({ length: defaultSubsLength }, (_, i) => ({ name: `${teamA} Sub ${i + 1}` }))
   );
   const [teamBSubsList, setTeamBSubsList] = useState(
-    setupData.teamBSubs || Array.from({ length: 4 }, (_, i) => ({ name: `${teamB} Sub ${i + 1}` }))
+    setupData.teamBSubs || Array.from({ length: defaultSubsLength }, (_, i) => ({ name: `${teamB} Sub ${i + 1}` }))
   );
 
   const currentBattingSquad = norm(battingTeam) === norm(teamA) ? teamAPlayerList : teamBPlayerList;
