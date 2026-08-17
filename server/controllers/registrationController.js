@@ -41,68 +41,67 @@ export const createPublicRegistrationOrder = async (req, res) => {
         eventName = event.title || eventName;
 
         const regStatus = computeEffectiveRegistrationStatus(event);
-        if (!regStatus.effectiveRegistrationOpen) {
-          return res.status(400).json({
-            success: false,
-            message: regStatus.reason || 'Registration for this event has closed.',
-            code: regStatus.code,
-            effectiveStatus: regStatus,
-          });
-        }
+        return res.status(400).json({
+          success: false,
+          message: regStatus.reason || 'Registration for this event has closed.',
+          code: regStatus.code,
+          effectiveStatus: regStatus,
+        });
       }
     }
+  }
 
     // Fallback to participantData.entryFee if DB event has 0 or not found
     if (authoritativeFee <= 0 && participantData?.entryFee != null && Number(participantData.entryFee) > 0) {
-      authoritativeFee = Number(participantData.entryFee);
-    }
+    authoritativeFee = Number(participantData.entryFee);
+  }
 
-    // Free event - No Razorpay Order needed
-    if (authoritativeFee <= 0) {
-      return res.json({
-        success: true,
-        isFree: true,
-        amount: 0,
-        currency: 'INR',
-        orderId: null,
-      });
-    }
-
-    const { keyId } = getRazorpayCredentials();
-    const studentName = participantData?.fullName || participantData?.captainName || participantData?.studentName || 'Athlete';
-    const college = participantData?.collegeName || participantData?.college || 'MPEC';
-
-    // Create server-side order with auto-capture
-    const order = await createRazorpayOrder({
-      amount: authoritativeFee * 100, // paise
-      currency: 'INR',
-      receipt: `rcpt_${Date.now()}`.substring(0, 40),
-      notes: {
-        eventId: eventId || 'DEFAULT',
-        sportId: targetSportId,
-        studentName,
-        college,
-      },
-      payment_capture: 1,
-    });
-
+  // Free event - No Razorpay Order needed
+  if (authoritativeFee <= 0) {
     return res.json({
       success: true,
-      isFree: false,
-      orderId: order.id,
-      amount: order.amount,
-      currency: order.currency || 'INR',
-      keyId,
-      notes: order.notes,
-    });
-  } catch (err) {
-    console.error('❌ [Razorpay Order Creation Error]:', err.message);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to create payment order. Please try again.',
-      error: err.message,
+      isFree: true,
+      amount: 0,
+      currency: 'INR',
+      orderId: null,
     });
   }
+
+  const { keyId } = getRazorpayCredentials();
+  const studentName = participantData?.fullName || participantData?.captainName || participantData?.studentName || 'Athlete';
+  const college = participantData?.collegeName || participantData?.college || 'MPEC';
+
+  // Create server-side order with auto-capture
+  const order = await createRazorpayOrder({
+    amount: authoritativeFee * 100, // paise
+    currency: 'INR',
+    receipt: `rcpt_${Date.now()}`.substring(0, 40),
+    notes: {
+      eventId: eventId || 'DEFAULT',
+      sportId: targetSportId,
+      studentName,
+      college,
+    },
+    payment_capture: 1,
+  });
+
+  return res.json({
+    success: true,
+    isFree: false,
+    orderId: order.id,
+    amount: order.amount,
+    currency: order.currency || 'INR',
+    keyId,
+    notes: order.notes,
+  });
+} catch (err) {
+  console.error('❌ [Razorpay Order Creation Error]:', err.message);
+  return res.status(500).json({
+    success: false,
+    message: 'Failed to create payment order. Please try again.',
+    error: err.message,
+  });
+}
 };
 
 /**
@@ -173,8 +172,8 @@ export const registerPublicEvent = async (req, res) => {
   let razorpaySignature = paymentData?.razorpaySignature || paymentData?.razorpay_signature || null;
 
   const isRealRazorpayPayment = Boolean(
-    razorpayPaymentId && 
-    typeof razorpayPaymentId === 'string' && 
+    razorpayPaymentId &&
+    typeof razorpayPaymentId === 'string' &&
     razorpayPaymentId.startsWith('pay_')
   );
 
@@ -333,20 +332,20 @@ export const registerPublicEvent = async (req, res) => {
           Array.isArray(participantData.roster) && participantData.roster.length > 0
             ? participantData.roster
             : [
-                {
-                  name: newRegRecord.studentName,
-                  fatherName: participantData.fatherName || 'N/A',
-                  rollNo: newRegRecord.enrollmentNo,
-                  dob: participantData.dob ? new Date(participantData.dob) : new Date('2004-05-15'),
-                  phone: newRegRecord.phone,
-                  email: newRegRecord.email,
-                  aadhaarNumber: participantData.aadhaarNumber || null,
-                  course: participantData.course || newRegRecord.department || 'B.Tech',
-                  yearSemester: participantData.yearSemester || participantData.year || '3rd Year',
-                  gender: (newRegRecord.gender || 'Male').toUpperCase() === 'FEMALE' ? 'FEMALE' : 'MALE',
-                  isCaptain: true,
-                },
-              ];
+              {
+                name: newRegRecord.studentName,
+                fatherName: participantData.fatherName || 'N/A',
+                rollNo: newRegRecord.enrollmentNo,
+                dob: participantData.dob ? new Date(participantData.dob) : new Date('2004-05-15'),
+                phone: newRegRecord.phone,
+                email: newRegRecord.email,
+                aadhaarNumber: participantData.aadhaarNumber || null,
+                course: participantData.course || newRegRecord.department || 'B.Tech',
+                yearSemester: participantData.yearSemester || participantData.year || '3rd Year',
+                gender: (newRegRecord.gender || 'Male').toUpperCase() === 'FEMALE' ? 'FEMALE' : 'MALE',
+                isCaptain: true,
+              },
+            ];
 
         for (let idx = 0; idx < rosterList.length; idx++) {
           const m = rosterList[idx];
@@ -354,8 +353,8 @@ export const registerPublicEvent = async (req, res) => {
             m.isCaptain === true || m.isCaptain === 1 || m.isCaptain === 'true' || m.isCaptain === '1'
               ? true
               : m.isCaptain === false || m.isCaptain === 0 || m.isCaptain === 'false' || m.isCaptain === '0'
-              ? false
-              : null;
+                ? false
+                : null;
           const isCap = parsedCaptain !== null ? parsedCaptain : idx === 0;
 
           await tx.registrationMember.create({
@@ -451,7 +450,7 @@ export const registerPublicEvent = async (req, res) => {
            WHERE id = $1`,
           [eventId]
         );
-      } catch (e) {}
+      } catch (e) { }
     }
   } catch (dbErr) {
     console.error('PostgreSQL Prisma Registration Insert Error:', dbErr);
