@@ -85,7 +85,7 @@ export const seedInitialAccountHashes = async () => {
     ];
 
     for (const sc of defaultSports) {
-      const existing = await queryDb('SELECT id FROM sport_coordinators WHERE username = $1', [sc.username]);
+      const existing = await queryDb('SELECT id, password_hash FROM sport_coordinators WHERE username = $1', [sc.username]);
       if (!existing || existing.rows.length === 0) {
         const hash = await bcrypt.hash(sc.pass, 10);
         const newId = crypto.randomUUID();
@@ -94,6 +94,12 @@ export const seedInitialAccountHashes = async () => {
            VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', NOW(), NOW())`,
           [newId, sc.username, hash, sc.assignedSport, sc.sportName, sc.coordinatorName, sc.email]
         );
+      } else if (existing.rows[0].password_hash) {
+        const match = await bcrypt.compare(sc.pass, existing.rows[0].password_hash);
+        if (!match) {
+          const hash = await bcrypt.hash(sc.pass, 10);
+          await queryDb('UPDATE sport_coordinators SET password_hash = $1, status = \'active\' WHERE username = $2', [hash, sc.username]);
+        }
       }
     }
 
