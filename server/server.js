@@ -86,8 +86,13 @@ app.use(cors({
 app.options('*', cors());
 
 // ─── BODY PARSING ────────────────────────────────────────────────────────────
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: false, limit: '1mb' }));
+app.use(express.json({
+  limit: '2mb',
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
+app.use(express.urlencoded({ extended: false, limit: '2mb' }));
 
 // ─── API ROUTES ──────────────────────────────────────────────────────────────
 // Public spectator routes use publicReadLimiter for high-cadence reading & live updates

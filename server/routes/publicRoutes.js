@@ -1,5 +1,9 @@
 import express from 'express';
-import { registerPublicEvent } from '../controllers/registrationController.js';
+import {
+  registerPublicEvent,
+  createPublicRegistrationOrder,
+  handleRazorpayWebhook,
+} from '../controllers/registrationController.js';
 import { getHeroSlidesDB, getCommitteeDB } from '../controllers/adminController.js';
 import { getLeaderboardStandings } from '../services/leaderboardService.js';
 import { queryDb, prisma, pool } from '../config/db.js';
@@ -543,9 +547,17 @@ router.get('/public/events', publicReadLimiter, async (req, res) => {
   return res.json([]);
 });
 
+// POST /api/public/create-order - Create authoritative Razorpay order with auto-capture
+router.post('/public/create-order', apiLimiter, createPublicRegistrationOrder);
+router.post('/public/create-razorpay-order', apiLimiter, createPublicRegistrationOrder);
+
 // POST /api/public/register-event - Event registration endpoint
 router.post('/public/register-event', apiLimiter, registerPublicEvent);
 router.post('/public/register', apiLimiter, registerPublicEvent);
+
+// POST /api/public/razorpay-webhook - Razorpay lifecycle webhooks
+router.post('/public/razorpay-webhook', handleRazorpayWebhook);
+router.post('/razorpay/webhook', handleRazorpayWebhook);
 
 // GET /api/leaderboard - Spectator college standings endpoint from Supabase college_leaderboards table
 router.get('/leaderboard', publicReadLimiter, async (req, res) => {

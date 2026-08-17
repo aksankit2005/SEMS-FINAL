@@ -1340,6 +1340,24 @@ async deleteMatch(id) {
 
 
 
+  // Create authoritative server Razorpay Order with auto-capture
+  async createRazorpayOrder(eventId, sportId, participantData) {
+    try {
+      const res = await api.post('/public/create-order', {
+        eventId,
+        sportId,
+        participantData
+      });
+      if (res.data && res.data.success) {
+        return res.data;
+      }
+      throw new Error(res.data?.message || 'Failed to generate order ID');
+    } catch (e) {
+      console.warn('Backend create order API failed:', e.response?.data?.message || e.message);
+      throw e;
+    }
+  },
+
   // Register for public event
   async registerForEvent(eventId, sportId, participantData, paymentData) {
     try {
@@ -1347,8 +1365,10 @@ async deleteMatch(id) {
       if (res.data && res.data.success) {
         return res.data;
       }
+      throw new Error(res.data?.message || 'Registration verification failed');
     } catch (e) {
-      console.warn('Backend register event fallback to localStorage', e);
+      console.error('Backend register event error:', e.response?.data?.message || e.message);
+      throw e;
     }
 
     // Local storage fallback for incrementing registered count

@@ -533,7 +533,7 @@ export const RegistrationPage = () => {
         feePaid: activeSport.entryFee,
         rosterCount: formData.roster.length,
         roster: formData.roster,
-        utrNumber: paymentRes.razorpayPaymentId,
+        utrNumber: paymentRes.razorpayPaymentId || paymentRes.razorpay_payment_id,
         screenshotName: 'razorpay_verified.png',
         screenshot: MOCK_RECEIPT_IMAGE,
         declarationAccepted: formData.declarationAccepted,
@@ -549,14 +549,15 @@ export const RegistrationPage = () => {
       setStep(3);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      addToast('Error processing event registration', 'error');
+      console.error('Registration processing error:', err);
+      addToast(err.response?.data?.message || err.message || 'Error processing event registration', 'error');
     } finally {
       setIsProcessingPayment(false);
     }
   };
 
   // Step 2 Submission (Payment Gateway & Declaration)
-  const handlePaymentSubmit = (e) => {
+  const handlePaymentSubmit = async (e) => {
     if (e) e.preventDefault();
 
     if (activeSport) {
@@ -574,25 +575,41 @@ export const RegistrationPage = () => {
     }
 
     if (activeSport.entryFee > 0) {
+      setIsProcessingPayment(true);
       const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
-      
-      // If official Razorpay SDK script is loaded and a live/test key is present, open Razorpay popup
-      if (window.Razorpay && razorpayKey && !razorpayKey.includes('SEMS2026PaymentKey')) {
-        try {
+
+      try {
+        // 1. Create authoritative server-side Razorpay Order with auto-capture at order level
+        const orderData = await coordinatorApi.createRazorpayOrder(
+          activeSport.id,
+          activeSport.sportId || activeSport.id,
+          {
+            fullName: formData.captainName || (formData.roster[0] && formData.roster[0].name) || 'Lead Athlete',
+            captainName: formData.captainName,
+            email: formData.captainEmail || (formData.roster[0] && formData.roster[0].email) || 'athlete@apex.edu',
+            phone: formData.captainPhone || (formData.roster[0] && formData.roster[0].phone) || '+91 98765 43210',
+            collegeName: formData.collegeName || 'MPEC',
+            teamName: formData.teamName
+          }
+        );
+
+        // 2. Open official Razorpay Checkout SDK if available and valid order generated
+        if (orderData && orderData.orderId && window.Razorpay) {
           const options = {
-            key: razorpayKey,
-            amount: activeSport.entryFee * 100, // Amount in paise
-            currency: 'INR',
-            payment_capture: 1, // Auto-capture payment immediately upon authorization
+            key: orderData.keyId || razorpayKey,
+            amount: orderData.amount, // in paise
+            currency: orderData.currency || 'INR',
+            order_id: orderData.orderId, // REAL SERVER-GENERATED ORDER ID
             name: import.meta.env.VITE_RAZORPAY_MERCHANT_NAME || 'APEX Championship 2026',
             description: `Entry Registration Fee for ${activeSport.name}`,
-            handler: function (response) {
-              handleRazorpaySuccess({
-                razorpayPaymentId: response.razorpay_payment_id || `pay_${Math.random().toString(36).substring(2, 12).toUpperCase()}`,
-                orderId: response.razorpay_order_id || `order_${Math.random().toString(36).substring(2, 10).toLowerCase()}`,
+            handler: async function (response) {
+              await handleRazorpaySuccess({
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpayOrderId: response.razorpay_order_id,
+                razorpaySignature: response.razorpay_signature,
                 amount: activeSport.entryFee,
                 status: 'PAID',
-                method: 'Razorpay SDK',
+                method: 'Razorpay Orders API',
                 timestamp: new Date().toISOString()
               });
             },
@@ -606,32 +623,36 @@ export const RegistrationPage = () => {
             },
             modal: {
               ondismiss: function () {
-                // If user closes/cancels Razorpay popup without paying, unlock background screen
                 setIsProcessingPayment(false);
               }
             }
           };
 
-          // Lock screen immediately when Razorpay checkout opens
-          setIsProcessingPayment(true);
           const rzp = new window.Razorpay(options);
+          rzp.on('payment.failed', function (resp) {
+            setIsProcessingPayment(false);
+            addToast(resp.error?.description || 'Payment was unsuccessful or cancelled.', 'error');
+          });
           rzp.open();
           return;
-        } catch (err) {
-          setIsProcessingPayment(false);
-          console.warn('Razorpay SDK failed, opening checkout modal', err);
         }
+      } catch (err) {
+        console.warn('Backend order creation notice:', err);
       }
 
-      // Fallback / Demo Mode: Open interactive Razorpay checkout modal
+      setIsProcessingPayment(false);
+
+      // Fallback / Demo Mode: Open interactive Razorpay checkout modal if SDK not available
       setShowRazorpayModal(true);
     } else {
       // Free events (Entry Fee = 0): Skip payment and confirm instantly
       handleRazorpaySuccess({
-        razorpayPaymentId: `FREE_PASS_${Math.floor(100000 + Math.random() * 900000)}`,
-        orderId: `order_free_${Date.now()}`,
+        razorpayPaymentId: `FREE-${Date.now()}`,
+        orderId: `FREE-ORDER-${Date.now()}`,
         amount: 0,
-        status: 'FREE_CONFIRMED'
+        status: 'FREE_CONFIRMED',
+        method: 'Free Registration',
+        timestamp: new Date().toISOString()
       });
     }
   };
