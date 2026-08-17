@@ -43,6 +43,15 @@ export const AdminMasterDataPage = () => {
 
   useEffect(() => {
     fetchMasterData();
+    const handleUpdate = () => fetchMasterData();
+    window.addEventListener('sems_registrations_updated', handleUpdate);
+    window.addEventListener('sems_events_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('sems_registrations_updated', handleUpdate);
+      window.removeEventListener('sems_events_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
   }, []);
 
   const fetchMasterData = async () => {
@@ -50,7 +59,7 @@ export const AdminMasterDataPage = () => {
     try {
       const [data, eventsList] = await Promise.all([
         superCoordinatorApi.getMasterParticipants(),
-        adminApi.getCoordinatorEvents()
+        superCoordinatorApi.getCoordinatorEvents()
       ]);
       setParticipants(data || []);
       setCoordinatorEvents(eventsList || []);
@@ -65,42 +74,44 @@ export const AdminMasterDataPage = () => {
   const availableEvents = coordinatorEvents.filter((evt) => {
     if (selectedSport === 'ALL') return true;
     return (evt.sportId || '').toLowerCase() === selectedSport.toLowerCase() ||
-           (evt.sportName || '').toLowerCase().includes(selectedSport.toLowerCase());
+           (evt.sportName || '').toLowerCase().includes(selectedSport.toLowerCase()) ||
+           selectedSport.toLowerCase().includes((evt.sportName || '').toLowerCase());
   });
 
-  // Filtered Master Participants
+  // Filtered Master Participants - matching Super Coordinator view logic
   const filteredParticipants = participants.filter((p) => {
-    if (selectedSport !== 'ALL') {
-      const pSport = (p.sportName || p.sportId || '').toLowerCase();
-      if (!pSport.includes(selectedSport.toLowerCase())) return false;
-    }
+    const matchesSport = selectedSport === 'ALL' ||
+      (p.sportId || '').toLowerCase() === selectedSport.toLowerCase() ||
+      (p.sportName || '').toLowerCase().includes(selectedSport.toLowerCase()) ||
+      selectedSport.toLowerCase().includes((p.sportName || '').toLowerCase());
 
-    if (selectedEvent !== 'ALL') {
-      const pEvent = (p.eventTitle || '').toLowerCase();
-      if (!pEvent.includes(selectedEvent.toLowerCase())) return false;
-    }
+    const matchesEvent = selectedEvent === 'ALL' ||
+      (p.eventTitle || '').toLowerCase().includes(selectedEvent.toLowerCase());
 
-    if (selectedGender !== 'ALL') {
-      const pGender = (p.gender || '').toLowerCase();
-      if (!pGender.includes(selectedGender.toLowerCase())) return false;
-    }
+    const matchesGender = selectedGender === 'ALL' ||
+      (p.gender || '').toLowerCase() === selectedGender.toLowerCase() ||
+      (p.gender || '').toLowerCase().includes(selectedGender.toLowerCase());
 
-    if (selectedCollege !== 'ALL') {
-      const pCollege = (p.college || '').toLowerCase();
-      if (!pCollege.includes(selectedCollege.toLowerCase())) return false;
-    }
+    const pCollege = (p.college || '').toLowerCase();
+    const matchesCollege = selectedCollege === 'ALL' ||
+      pCollege.includes(selectedCollege.toLowerCase()) ||
+      selectedCollege.toLowerCase().includes(pCollege) ||
+      (selectedCollege === 'EXTERNAL' && !['mpec', 'mips', 'mpcps', 'mpcp', 'mpdc', 'mpcn', 'mpamc', 'mpcams'].some(c => pCollege.includes(c)));
 
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const matchName = (p.name || p.teamName || '').toLowerCase().includes(q);
-      const matchCollege = (p.college || '').toLowerCase().includes(q);
-      const matchSport = (p.sportName || '').toLowerCase().includes(q);
-      const matchMobile = (p.mobile || '').toLowerCase().includes(q);
-      const matchEmail = (p.email || '').toLowerCase().includes(q);
-      return matchName || matchCollege || matchSport || matchMobile || matchEmail;
-    }
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch = !q ||
+      (p.name || '').toLowerCase().includes(q) ||
+      (p.teamName || '').toLowerCase().includes(q) ||
+      (p.mobile || '').toLowerCase().includes(q) ||
+      (p.email || '').toLowerCase().includes(q) ||
+      (p.college || '').toLowerCase().includes(q) ||
+      (p.sportName || '').toLowerCase().includes(q) ||
+      (p.receiptId || '').toLowerCase().includes(q) ||
+      (p.registrationId || '').toLowerCase().includes(q) ||
+      (p.id || '').toLowerCase().includes(q) ||
+      (p.rollNo || '').toLowerCase().includes(q);
 
-    return true;
+    return matchesSport && matchesEvent && matchesGender && matchesCollege && matchesSearch;
   });
 
   // Fee per participant derived from sport entry fee (or stored feePaid when present)

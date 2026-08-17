@@ -54,18 +54,63 @@ export const superCoordinatorApi = {
     return ALL_12_SPORTS;
   },
 
-  // Get Coordinator Event Creation History — strictly from real database API
+  // Get Coordinator Event Creation History — from real database API & local storage
   getCoordinatorEvents: async () => {
+    let serverEvents = [];
     try {
       const res = await fetch(apiUrl('/super-coordinator/events'), {
         headers: getAuthHeaders()
       });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data)) return data;
+        if (Array.isArray(data)) serverEvents = data;
       }
     } catch (e) {}
-    return [];
+
+    // Collect any local/offline events from localStorage across all sports
+    const localEvents = [];
+    try {
+      const allSportKeys = [
+        'badminton', 'table-tennis', 'cricket', 'football', 'basketball', 
+        'volleyball', 'kabaddi', 'kho-kho', 'athletics', 'tug-of-war', 
+        'gully-cricket', 'chess'
+      ];
+      
+      const seenIds = new Set(serverEvents.map((e) => e.id));
+      const deletedIds = new Set(JSON.parse(localStorage.getItem('sems_deleted_event_ids') || '[]'));
+
+      allSportKeys.forEach((key) => {
+        const sportEvents = JSON.parse(localStorage.getItem(`sems_coord_events_${key}`) || '[]');
+        sportEvents.forEach((ev) => {
+          if (ev && ev.id && !seenIds.has(ev.id) && !deletedIds.has(ev.id)) {
+            seenIds.add(ev.id);
+            localEvents.push({
+              id: ev.id,
+              sportId: ev.sportId || key,
+              sportName: ev.sportName || key.replace(/-/g, ' ').toUpperCase(),
+              eventTitle: ev.title || ev.eventTitle || `${ev.sportName || key} Championship 2026`,
+              coordinatorName: ev.contactInfo?.name || ev.coordinatorName || 'Coordinator',
+              coordinatorEmail: ev.contactInfo?.email || ev.coordinatorEmail || '',
+              createdDate: ev.createdDate || ev.regStartDate || new Date().toISOString().split('T')[0],
+              regStartDate: ev.regStartDate || '',
+              regEndDate: ev.regEndDate || '',
+              tournStartDate: ev.tournStartDate || '',
+              tournEndDate: ev.tournEndDate || '',
+              venue: ev.venue || 'Sports Arena',
+              teamFee: Number(ev.entryFee || ev.teamFee || 0),
+              minPlayers: ev.minPlayers || 1,
+              maxPlayers: ev.maxPlayers || 1,
+              category: ev.category || 'Open',
+              status: ev.status || 'Published',
+              registeredCount: Number(ev.registeredCount || 0),
+              maxRegistrations: Number(ev.maxRegistrations || 64)
+            });
+          }
+        });
+      });
+    } catch (e) {}
+
+    return [...serverEvents, ...localEvents];
   },
 
   // Get Master Participants — strictly from real PostgreSQL database API

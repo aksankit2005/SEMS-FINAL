@@ -4,8 +4,8 @@ import { uploadFileToCloudinary } from '../../services/cloudinaryService';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=200&q=80';
 
-export const CommitteeMemberModal = ({ isOpen, member = null, onSave, onClose }) => {
-  const [formData, setFormData] = useState({ name: '', role: '', image: '', publicId: '' });
+export const CommitteeMemberModal = ({ isOpen, member = null, defaultOrder = 1, onSave, onClose }) => {
+  const [formData, setFormData] = useState({ name: '', role: '', image: '', publicId: '', sortOrder: 1 });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -18,15 +18,16 @@ export const CommitteeMemberModal = ({ isOpen, member = null, onSave, onClose })
         name: member.name || '',
         role: member.role || '',
         image: member.image || '',
-        publicId: member.publicId || ''
+        publicId: member.publicId || '',
+        sortOrder: member.sortOrder !== undefined ? member.sortOrder : defaultOrder
       });
     } else {
-      setFormData({ name: '', role: '', image: '', publicId: '' });
+      setFormData({ name: '', role: '', image: '', publicId: '', sortOrder: defaultOrder });
     }
     setError('');
     setIsUploading(false);
     setUploadProgress(0);
-  }, [member, isOpen]);
+  }, [member, isOpen, defaultOrder]);
 
   if (!isOpen) return null;
 
@@ -171,16 +172,30 @@ export const CommitteeMemberModal = ({ isOpen, member = null, onSave, onClose })
             />
           </div>
 
-          {/* Position / Role */}
-          <div>
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Position / Role *</label>
-            <input
-              type="text"
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-              placeholder="e.g. President, Secretary, Faculty Advisor"
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-            />
+          {/* Position / Role & Display Order */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-2">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Position / Role *</label>
+              <input
+                type="text"
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                placeholder="e.g. President, Secretary, Faculty Advisor"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Display Order #</label>
+              <input
+                type="number"
+                min="1"
+                max="100"
+                value={formData.sortOrder}
+                onChange={(e) => setFormData({ ...formData, sortOrder: e.target.value })}
+                placeholder="1"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
+              />
+            </div>
           </div>
 
           {/* Action Buttons */}

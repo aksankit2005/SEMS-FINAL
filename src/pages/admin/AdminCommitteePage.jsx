@@ -12,7 +12,9 @@ import {
   Trash2,
   Loader2,
   CalendarRange,
-  RotateCcw
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=200&q=80';
@@ -119,6 +121,33 @@ export const AdminCommitteePage = () => {
       addToast('Committee data reset to defaults!', 'success');
     } catch (err) {
       addToast('Failed to reset committee data', 'error');
+    }
+  };
+
+  const handleMoveMember = async (type, index, direction) => {
+    if (!selectedSession) return;
+    const list = [...(selectedSession[type] || [])];
+    const targetIndex = direction === 'left' || direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= list.length) return;
+
+    const memberToMove = list[index];
+    list[index] = list[targetIndex];
+    list[targetIndex] = memberToMove;
+
+    const reordered = list.map((m, idx) => ({ ...m, sortOrder: idx + 1 }));
+
+    // Optimistic UI update
+    const updatedSessions = sessions.map((s) =>
+      s.id === selectedSession.id ? { ...s, [type]: reordered } : s
+    );
+    setSessions(updatedSessions);
+
+    try {
+      await committeeApi.reorderMembers(selectedSession.id, type, reordered);
+      addToast(`Moved ${memberToMove.name} to position #${targetIndex + 1}`, 'info');
+    } catch (err) {
+      addToast('Failed to update order', 'error');
+      fetchData(true);
     }
   };
 
@@ -276,7 +305,7 @@ export const AdminCommitteePage = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-5">
-                {selectedSession.executiveCommittee.map((member) => (
+                {selectedSession.executiveCommittee.map((member, index) => (
                   <div
                     key={member.id}
                     className="rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col hover:border-amber-500/40 transition-all group shadow-sm"
@@ -288,13 +317,39 @@ export const AdminCommitteePage = () => {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_IMAGE; }}
                       />
-                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide bg-amber-500 text-slate-950">
+                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide bg-amber-500 text-slate-950 shadow-sm">
                         {member.role}
+                      </span>
+                      <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[9px] font-black font-mono tracking-wide bg-slate-900/80 dark:bg-black/80 text-amber-400 border border-amber-500/30 backdrop-blur-sm shadow-sm" title={`Display Order: #${index + 1}`}>
+                        #{index + 1}
                       </span>
                     </div>
                     <div className="p-3 flex items-center justify-between gap-2 flex-1">
-                      <h4 className="text-xs font-extrabold text-slate-900 dark:text-white line-clamp-1" title={member.name}>{member.name}</h4>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-xs font-extrabold text-slate-900 dark:text-white line-clamp-1" title={member.name}>{member.name}</h4>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">Pos #{index + 1}</span>
+                      </div>
                       <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center bg-slate-200 dark:bg-slate-800 rounded-lg p-0.5 border border-slate-300 dark:border-slate-700">
+                          <button
+                            type="button"
+                            onClick={() => handleMoveMember('executiveCommittee', index, 'left')}
+                            disabled={index === 0}
+                            className={`p-1 rounded transition-colors ${index === 0 ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed' : 'text-slate-600 hover:text-amber-500 dark:text-slate-300 dark:hover:text-amber-400 hover:bg-slate-300 dark:hover:bg-slate-700 cursor-pointer'}`}
+                            title="Move Left / Earlier"
+                          >
+                            <ChevronLeft className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveMember('executiveCommittee', index, 'right')}
+                            disabled={index === selectedSession.executiveCommittee.length - 1}
+                            className={`p-1 rounded transition-colors ${index === selectedSession.executiveCommittee.length - 1 ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed' : 'text-slate-600 hover:text-amber-500 dark:text-slate-300 dark:hover:text-amber-400 hover:bg-slate-300 dark:hover:bg-slate-700 cursor-pointer'}`}
+                            title="Move Right / Later"
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                         <button
                           onClick={() => openMemberModal('executiveCommittee', member)}
                           className="p-1.5 text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
@@ -355,25 +410,51 @@ export const AdminCommitteePage = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-5">
-                {selectedSession.advisors.map((member) => (
+                {selectedSession.advisors.map((member, index) => (
                   <div
                     key={member.id}
-                    className="rounded-2xl bg-slate-950/60 border border-slate-800 overflow-hidden flex flex-col hover:border-indigo-500/40 transition-all group shadow-sm"
+                    className="rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col hover:border-indigo-500/40 transition-all group shadow-sm"
                   >
-                    <div className="relative w-full h-40 overflow-hidden bg-slate-800">
+                    <div className="relative w-full h-40 overflow-hidden bg-slate-100 dark:bg-slate-800">
                       <img
                         src={member.image || FALLBACK_IMAGE}
                         alt={member.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_IMAGE; }}
                       />
-                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide bg-indigo-500/90 text-white">
+                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide bg-indigo-500/90 text-white shadow-sm">
                         {member.role}
+                      </span>
+                      <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[9px] font-black font-mono tracking-wide bg-slate-900/80 dark:bg-black/80 text-indigo-400 border border-indigo-500/30 backdrop-blur-sm shadow-sm" title={`Display Order: #${index + 1}`}>
+                        #{index + 1}
                       </span>
                     </div>
                     <div className="p-3 flex items-center justify-between gap-2 flex-1">
-                      <h4 className="text-xs font-extrabold text-white line-clamp-1" title={member.name}>{member.name}</h4>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-xs font-extrabold text-slate-900 dark:text-white line-clamp-1" title={member.name}>{member.name}</h4>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">Pos #{index + 1}</span>
+                      </div>
                       <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center bg-slate-200 dark:bg-slate-800 rounded-lg p-0.5 border border-slate-300 dark:border-slate-700">
+                          <button
+                            type="button"
+                            onClick={() => handleMoveMember('advisors', index, 'left')}
+                            disabled={index === 0}
+                            className={`p-1 rounded transition-colors ${index === 0 ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed' : 'text-slate-600 hover:text-indigo-500 dark:text-slate-300 dark:hover:text-indigo-400 hover:bg-slate-300 dark:hover:bg-slate-700 cursor-pointer'}`}
+                            title="Move Left / Earlier"
+                          >
+                            <ChevronLeft className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveMember('advisors', index, 'right')}
+                            disabled={index === selectedSession.advisors.length - 1}
+                            className={`p-1 rounded transition-colors ${index === selectedSession.advisors.length - 1 ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed' : 'text-slate-600 hover:text-indigo-500 dark:text-slate-300 dark:hover:text-indigo-400 hover:bg-slate-300 dark:hover:bg-slate-700 cursor-pointer'}`}
+                            title="Move Right / Later"
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                         <button
                           onClick={() => openMemberModal('advisors', member)}
                           className="p-1.5 text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
@@ -414,6 +495,7 @@ export const AdminCommitteePage = () => {
       <CommitteeMemberModal
         isOpen={isMemberModalOpen}
         member={selectedMember}
+        defaultOrder={selectedMember ? (selectedMember.sortOrder || 1) : ((selectedSession?.[memberType] || []).length + 1)}
         onSave={handleSaveMember}
         onClose={() => { setIsMemberModalOpen(false); setSelectedMember(null); }}
       />

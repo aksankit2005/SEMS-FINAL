@@ -94,14 +94,15 @@ export const verifyCoordinatorToken = async (req, res, next) => {
 export const verifySuperCoordinatorToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'Unauthorized. Super Coordinator token required.' });
+    return res.status(401).json({ message: 'Unauthorized. Super Coordinator or Admin token required.' });
   }
 
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, envConfig.jwtSecret);
-    if (decoded.role !== 'super_coordinator' && decoded.role !== 'Super Coordinator') {
-      return res.status(403).json({ message: 'Access denied. Super Coordinator role required.' });
+    const role = (decoded.role || '').toLowerCase();
+    if (!['super_coordinator', 'super coordinator', 'super_coord', 'admin', 'superadmin'].includes(role)) {
+      return res.status(403).json({ message: 'Access denied. Super Coordinator or Admin role required.' });
     }
     if (decoded.username) {
       try {
@@ -115,7 +116,7 @@ export const verifySuperCoordinatorToken = async (req, res, next) => {
     req.user = decoded;
     next();
   } catch (err) {
-    return res.status(403).json({ message: 'Invalid or expired Super Coordinator token.' });
+    return res.status(403).json({ message: 'Invalid or expired Super Coordinator or Admin token.' });
   }
 };
 

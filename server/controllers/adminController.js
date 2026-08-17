@@ -5,6 +5,7 @@ import { queryDb, prisma } from '../config/db.js';
 import { syncCollegeLeaderboards } from '../services/leaderboardService.js';
 import { deleteCloudinaryAsset, deleteCloudinaryBatch } from '../services/cloudinaryService.js';
 import { logAuditEvent } from '../utils/auditLogger.js';
+import { inMemoryCoordinatorEvents } from './coordinatorController.js';
 
 export const adminLogin = async (req, res) => {
   const { username, password } = req.body;
@@ -296,6 +297,8 @@ export const getMasterParticipants = async (req, res) => {
 };
 
 export const getSuperCoordinatorEvents = async (req, res) => {
+  const eventsMap = new Map();
+
   try {
     const dbRes = await queryDb(`
       SELECT 
@@ -305,6 +308,9 @@ export const getSuperCoordinatorEvents = async (req, res) => {
         title AS "eventTitle",
         venue,
         entry_fee AS "teamFee",
+        singles_fee AS "singlesFee",
+        doubles_fee AS "doublesFee",
+        team_size AS "teamSize",
         max_registrations AS "maxRegistrations",
         registered_count AS "registeredCount",
         status,
@@ -314,23 +320,24 @@ export const getSuperCoordinatorEvents = async (req, res) => {
         tourn_end_date AS "tournEndDate",
         category,
         contact_info AS "contactInfo",
-        created_at AS "createdAt"
+        created_at AS "createdAt",
+        created_by AS "createdBy"
       FROM coordinator_event_items
       ORDER BY created_at DESC
     `);
 
     if (dbRes && dbRes.rows) {
-      const events = dbRes.rows.map((e) => {
+      dbRes.rows.forEach((e) => {
         let contact = e.contactInfo;
         if (typeof contact === 'string') {
           try { contact = JSON.parse(contact); } catch (err) {}
         }
-        return {
+        eventsMap.set(e.id, {
           id: e.id,
           sportId: e.sportId,
           sportName: e.sportName || (e.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
           eventTitle: e.eventTitle || 'Tournament Event',
-          coordinatorName: (contact && contact.name) || 'Coordinator',
+          coordinatorName: (contact && contact.name) || e.createdBy || 'Coordinator',
           coordinatorEmail: (contact && contact.email) || '',
           createdDate: e.createdAt ? new Date(e.createdAt).toLocaleDateString() : (e.regStartDate || ''),
           regStartDate: e.regStartDate || '',
@@ -345,15 +352,51 @@ export const getSuperCoordinatorEvents = async (req, res) => {
           status: e.status || 'Published',
           registeredCount: Number(e.registeredCount || 0),
           maxRegistrations: Number(e.maxRegistrations || 64)
-        };
+        });
       });
-      return res.json(events);
     }
   } catch (err) {
-    console.error('Error fetching coordinator events for SuperCoordinator:', err.message);
+    console.error('Error fetching coordinator events for SuperCoordinator/Admin:', err.message);
   }
 
-  return res.json([]);
+  // Also include any in-memory coordinator events
+  if (inMemoryCoordinatorEvents) {
+    Object.values(inMemoryCoordinatorEvents).forEach((list) => {
+      if (Array.isArray(list)) {
+        list.forEach((e) => {
+          if (e && e.id && !eventsMap.has(e.id)) {
+            let contact = e.contactInfo;
+            if (typeof contact === 'string') {
+              try { contact = JSON.parse(contact); } catch (err) {}
+            }
+            eventsMap.set(e.id, {
+              id: e.id,
+              sportId: e.sportId,
+              sportName: e.sportName || (e.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
+              eventTitle: e.title || e.eventTitle || 'Tournament Event',
+              coordinatorName: (contact && contact.name) || e.createdBy || 'Coordinator',
+              coordinatorEmail: (contact && contact.email) || '',
+              createdDate: e.regStartDate || new Date().toLocaleDateString(),
+              regStartDate: e.regStartDate || '',
+              regEndDate: e.regEndDate || '',
+              tournStartDate: e.tournStartDate || '',
+              tournEndDate: e.tournEndDate || '',
+              venue: e.venue || 'Main Stadium',
+              teamFee: Number(e.entryFee || e.teamFee || 0),
+              minPlayers: 1,
+              maxPlayers: 1,
+              category: e.category || 'Open',
+              status: e.status || 'Published',
+              registeredCount: Number(e.registeredCount || 0),
+              maxRegistrations: Number(e.maxRegistrations || 64)
+            });
+          }
+        });
+      }
+    });
+  }
+
+  return res.json(Array.from(eventsMap.values()));
 };
 
 export const deleteCoordinatorEventDB = async (req, res) => {

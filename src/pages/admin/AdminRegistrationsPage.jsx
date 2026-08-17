@@ -63,11 +63,13 @@ export const AdminRegistrationsPage = () => {
     window.addEventListener('sems_events_updated', handleUpdate);
     window.addEventListener('sems_coord_events_updated', handleUpdate);
     window.addEventListener('sems_registrations_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
 
     return () => {
       window.removeEventListener('sems_events_updated', handleUpdate);
       window.removeEventListener('sems_coord_events_updated', handleUpdate);
       window.removeEventListener('sems_registrations_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
     };
   }, []);
 

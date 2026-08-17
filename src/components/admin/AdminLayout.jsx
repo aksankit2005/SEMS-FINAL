@@ -35,7 +35,6 @@ export const AdminLayout = () => {
 
   const navItems = [
     { label: 'Dashboard', path: '/admin/dashboard', alias: '/admin', icon: LayoutDashboard },
-    { label: 'Profile', path: '/admin/profile', icon: User },
     { label: 'Registrations', path: '/admin/registrations', icon: ClipboardList },
     { label: 'PR Management', path: '/admin/pr-management', icon: FolderGit2 },
     { label: 'Coordinators', path: '/admin/coordinators', icon: Users },
@@ -183,16 +182,13 @@ export const AdminLayout = () => {
 
             <div className="h-6 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
 
-            {/* User Profile Pill */}
-            <Link
-              to="/admin/profile"
-              className="flex items-center gap-2 p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/40 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 text-xs text-slate-800 dark:text-slate-200 transition-colors"
-            >
+            {/* User Badge */}
+            <div className="flex items-center gap-2 p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 text-xs text-slate-800 dark:text-slate-200 select-none">
               <div className="w-6 h-6 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold flex items-center justify-center text-[10px]">
                 AD
               </div>
               <span className="font-semibold hidden sm:inline">{user?.name?.split(' ')[0] || 'Admin'}</span>
-            </Link>
+            </div>
           </div>
         </header>
 

@@ -98,7 +98,9 @@ router.delete('/admin/committee/members/:id', verifyAdminToken, deleteCommitteeM
 // Results & Leaderboard endpoints
 router.get('/admin/results', verifyAdminOrSuperCoordinatorToken, getAdminResultsDB);
 
-// SuperCoordinator Data & Leaderboard endpoints
+// SuperCoordinator & Admin Data & Leaderboard endpoints
+router.get('/admin/master-participants', verifyAdminToken, getMasterParticipants);
+router.get('/admin/coordinator-events', verifyAdminToken, getSuperCoordinatorEvents);
 router.get('/super-coordinator/participants', verifySuperCoordinatorToken, getMasterParticipants);
 router.get('/super-coordinator/events', verifySuperCoordinatorToken, getSuperCoordinatorEvents);
 router.delete('/super-coordinator/events/:id', verifySuperCoordinatorToken, deleteCoordinatorEventDB);

@@ -44,7 +44,7 @@ export const extractYouTubeVideoIdBackend = (url) => {
 const isUuid = (val) => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
 
 let inMemoryCoordinatorMatches = {};
-let inMemoryCoordinatorEvents = {};
+export let inMemoryCoordinatorEvents = {};
 let inMemoryRegistrationSettings = {};
 
 const inMemorySportCoordinators = [
