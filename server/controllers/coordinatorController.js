@@ -1444,6 +1444,7 @@ export const getRegistrations = async (req, res) => {
   try {
     const sportId = (req.user?.assignedSport || req.user?.sportName || '').toLowerCase();
     const cleanSportId = sportId.replace(/_/g, '-');
+    const baseSportId = cleanSportId.split('-')[0].split('_')[0];
     const isGully = cleanSportId.includes('gully');
     const isStandardCricket = cleanSportId === 'cricket' || (cleanSportId.includes('cricket') && !isGully);
 
