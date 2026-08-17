@@ -4,6 +4,7 @@ import { envConfig } from '../config/env.js';
 import { queryDb, prisma } from '../config/db.js';
 import { syncCollegeLeaderboards } from '../services/leaderboardService.js';
 import { deleteCloudinaryAsset, deleteCloudinaryBatch } from '../services/cloudinaryService.js';
+import { logAuditEvent } from '../utils/auditLogger.js';
 
 export const adminLogin = async (req, res) => {
   const { username, password } = req.body;
@@ -31,6 +32,14 @@ export const adminLogin = async (req, res) => {
         envConfig.jwtSecret,
         { expiresIn: '24h' }
       );
+      logAuditEvent({
+        userId: user.id,
+        actorName: user.username,
+        role: 'ADMIN',
+        action: 'Admin Login',
+        entity: 'System Admin Console',
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      });
       return res.json({
         success: true,
         token,
@@ -57,6 +66,13 @@ export const adminLogin = async (req, res) => {
       envConfig.jwtSecret,
       { expiresIn: '24h' }
     );
+    logAuditEvent({
+      actorName: normalizedUser,
+      role: 'ADMIN',
+      action: 'Admin Login',
+      entity: 'System Admin Console',
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    });
     return res.json({
       success: true,
       token,
@@ -109,6 +125,15 @@ export const superCoordinatorLogin = async (req, res) => {
           envConfig.jwtSecret,
           { expiresIn: '24h' }
         );
+
+        logAuditEvent({
+          userId: user.id,
+          actorName: user.username,
+          role: 'SUPER_COORDINATOR',
+          action: 'Super Coordinator Login',
+          entity: 'Super Coordinator Portal',
+          ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+        });
 
         return res.json({
           success: true,
@@ -340,11 +365,27 @@ export const deleteCoordinatorEventDB = async (req, res) => {
   try {
     const dbRes = await queryDb('DELETE FROM coordinator_event_items WHERE id = $1 RETURNING id', [id]);
     if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+      logAuditEvent({
+        actorName: req.user?.username || 'Super Coordinator',
+        role: req.user?.role === 'ADMIN' ? 'ADMIN' : 'SUPER_COORDINATOR',
+        action: 'Event Deleted',
+        entity: `Deleted event: ${id}`,
+        entityId: id,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      });
       return res.json({ success: true, message: 'Coordinator event deleted from database successfully.' });
     }
 
     const prismaRes = await prisma.coordinatorEventItem.deleteMany({ where: { id } }).catch(() => ({ count: 0 }));
     if (prismaRes.count > 0) {
+      logAuditEvent({
+        actorName: req.user?.username || 'Super Coordinator',
+        role: req.user?.role === 'ADMIN' ? 'ADMIN' : 'SUPER_COORDINATOR',
+        action: 'Event Deleted',
+        entity: `Deleted event: ${id}`,
+        entityId: id,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      });
       return res.json({ success: true, message: 'Coordinator event deleted from database successfully.' });
     }
 
@@ -499,6 +540,14 @@ export const saveLeaderboardEntry = async (req, res) => {
         points: Number(row.points || 10),
         date: new Date(row.declared_at).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
       };
+      logAuditEvent({
+        actorName: req.user?.username || 'Super Coordinator',
+        role: 'SUPER_COORDINATOR',
+        action: 'Leaderboard Updated',
+        entity: `Declared winners for ${sportName}: 1st ${winnerCollege} (${winnerName}), 2nd ${runnerUpCollege}`,
+        details: { sportName, winnerCollege, runnerUpCollege },
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      });
       return res.status(201).json({ success: true, entry });
     }
   } catch (err) {
@@ -515,6 +564,14 @@ export const deleteLeaderboardEntry = async (req, res) => {
   try {
     await queryDb('DELETE FROM leaderboard_entries WHERE id = $1', [id]);
     await syncCollegeLeaderboards();
+    logAuditEvent({
+      actorName: req.user?.username || 'Super Coordinator',
+      role: 'SUPER_COORDINATOR',
+      action: 'Leaderboard Entry Deleted',
+      entity: `Deleted leaderboard entry ${id}`,
+      entityId: id,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    });
     return res.json({ success: true, message: 'Leaderboard result deleted successfully' });
   } catch (err) {
     console.error('Error deleting leaderboard entry:', err.message);
@@ -559,6 +616,13 @@ export const saveHeroSlidesDB = async (req, res) => {
       update: { value: slides, updatedAt: new Date() },
       create: { key: 'hero_slides', value: slides }
     });
+    logAuditEvent({
+      actorName: req.user?.username || 'Super Coordinator',
+      role: 'SUPER_COORDINATOR',
+      action: 'Hero Slides Updated',
+      entity: `Saved ${slides.length} hero slides to database`,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    });
     return res.json({ success: true, slides: updated.value });
   } catch (err) {
     console.error('Error saving hero slides via Prisma, attempting raw query fallback:', err.message);
@@ -568,6 +632,13 @@ export const saveHeroSlidesDB = async (req, res) => {
         VALUES ('hero_slides', $1::jsonb, NOW())
         ON CONFLICT (key) DO UPDATE SET value = $1::jsonb, "updatedAt" = NOW()
       `, [JSON.stringify(slides)]);
+      logAuditEvent({
+        actorName: req.user?.username || 'Super Coordinator',
+        role: 'SUPER_COORDINATOR',
+        action: 'Hero Slides Updated',
+        entity: `Saved ${slides.length} hero slides via raw query fallback`,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      });
       return res.json({ success: true, slides });
     } catch (rawErr) {
       console.error('Error saving hero slides via raw query:', rawErr.message);
@@ -799,6 +870,13 @@ export const saveCoordinatorDB = async (req, res) => {
 
         const updated = await queryDb(updateQuery, params);
         if (updated && updated.rowCount > 0) {
+          logAuditEvent({
+            actorName: req.user?.username || 'Admin',
+            role: 'ADMIN',
+            action: 'Coordinator Updated',
+            entity: `${role || 'Coordinator'}: ${name} (${cleanUser})`,
+            ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+          });
           return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
         }
       }
@@ -811,6 +889,13 @@ export const saveCoordinatorDB = async (req, res) => {
       );
     }
 
+    logAuditEvent({
+      actorName: req.user?.username || 'Admin',
+      role: 'ADMIN',
+      action: cleanId ? 'Coordinator Updated' : 'Coordinator Created',
+      entity: `${role || 'Coordinator'}: ${name} (${cleanUser})`,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    });
     return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
   } catch (err) {
     console.error('Error saving coordinator to DB:', err.message);
@@ -831,18 +916,39 @@ export const toggleCoordinatorStatusDB = async (req, res) => {
     if (typeof id === 'string' && id.startsWith('pr_')) {
       const pr = await queryDb(`UPDATE pr_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 OR LOWER(username) = LOWER($2) RETURNING id`, [newStatus, rawId]);
       if (pr && pr.rows && pr.rows.length > 0) {
+        logAuditEvent({
+          actorName: req.user?.username || 'Admin',
+          role: 'ADMIN',
+          action: 'Coordinator Status Toggled',
+          entity: `Toggled ${rawId} status to ${newStatus}`,
+          ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+        });
         return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
       }
     }
     if (typeof id === 'string' && id.startsWith('ch_')) {
       const ch = await queryDb(`UPDATE college_head_users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 OR LOWER(username) = LOWER($2) RETURNING id`, [newStatus, rawId]);
       if (ch && ch.rows && ch.rows.length > 0) {
+        logAuditEvent({
+          actorName: req.user?.username || 'Admin',
+          role: 'ADMIN',
+          action: 'Coordinator Status Toggled',
+          entity: `Toggled ${rawId} status to ${newStatus}`,
+          ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+        });
         return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
       }
     }
     if (typeof id === 'string' && id.startsWith('sc_')) {
       const sc = await queryDb(`UPDATE sport_coordinators SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 OR LOWER(username) = LOWER($2) RETURNING id`, [newStatus, rawId]);
       if (sc && sc.rows && sc.rows.length > 0) {
+        logAuditEvent({
+          actorName: req.user?.username || 'Admin',
+          role: 'ADMIN',
+          action: 'Coordinator Status Toggled',
+          entity: `Toggled ${rawId} status to ${newStatus}`,
+          ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+        });
         return res.json({ success: true, status: newStatus === 'active' ? 'Active' : 'Inactive' });
       }
     }
@@ -922,14 +1028,38 @@ export const deleteCoordinatorDB = async (req, res) => {
   try {
     if (typeof id === 'string' && id.startsWith('pr_')) {
       await queryDb('DELETE FROM pr_users WHERE id = $1 OR LOWER(username) = LOWER($1)', [rawId]);
+      logAuditEvent({
+        actorName: req.user?.username || 'Admin',
+        role: 'ADMIN',
+        action: 'Coordinator Deleted',
+        entity: `Deleted coordinator id: ${id}`,
+        entityId: id,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      });
       return res.json({ success: true, message: 'Coordinator deleted from database successfully.' });
     }
     if (typeof id === 'string' && id.startsWith('ch_')) {
       await queryDb('DELETE FROM college_head_users WHERE id = $1 OR LOWER(username) = LOWER($1)', [rawId]);
+      logAuditEvent({
+        actorName: req.user?.username || 'Admin',
+        role: 'ADMIN',
+        action: 'Coordinator Deleted',
+        entity: `Deleted coordinator id: ${id}`,
+        entityId: id,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      });
       return res.json({ success: true, message: 'Coordinator deleted from database successfully.' });
     }
     if (typeof id === 'string' && id.startsWith('sc_')) {
       await queryDb('DELETE FROM sport_coordinators WHERE id = $1 OR LOWER(username) = LOWER($1)', [rawId]);
+      logAuditEvent({
+        actorName: req.user?.username || 'Admin',
+        role: 'ADMIN',
+        action: 'Coordinator Deleted',
+        entity: `Deleted coordinator id: ${id}`,
+        entityId: id,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      });
       return res.json({ success: true, message: 'Coordinator deleted from database successfully.' });
     }
 
@@ -939,6 +1069,14 @@ export const deleteCoordinatorDB = async (req, res) => {
       await queryDb('DELETE FROM sport_coordinators WHERE id = $1 OR LOWER(username) = LOWER($1)', [rawId]);
     }
 
+    logAuditEvent({
+      actorName: req.user?.username || 'Admin',
+      role: 'ADMIN',
+      action: 'Coordinator Deleted',
+      entity: `Deleted coordinator id: ${id}`,
+      entityId: id,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    });
     return res.json({ success: true, message: 'Coordinator deleted from database successfully.' });
   } catch (err) {
     console.error('Error deleting coordinator from DB:', err.message);
@@ -1041,21 +1179,29 @@ export const getDashboardStatsDB = async (req, res) => {
 // ── Admin Audit Logs ───────────────────────────────────────────────────────
 export const getAuditLogsDB = async (req, res) => {
   try {
-    const dbRes = await queryDb(`
+    const { role } = req.query;
+    let query = `
       SELECT 
         id,
         actor_name AS "user",
         role,
         action,
         entity AS target,
+        details,
         ip_address AS ip,
         TO_CHAR(created_at, 'YYYY-MM-DD') AS date,
         TO_CHAR(created_at, 'HH:MI AM') AS time,
         created_at AS timestamp
       FROM audit_logs
-      ORDER BY created_at DESC
-      LIMIT 100
-    `);
+    `;
+    const params = [];
+    if (role && role !== 'ALL') {
+      params.push(role);
+      query += ` WHERE UPPER(role) = UPPER($1) `;
+    }
+    query += ` ORDER BY created_at DESC LIMIT 250`;
+
+    const dbRes = await queryDb(query, params);
 
     if (dbRes && dbRes.rows) {
       return res.json(dbRes.rows);
@@ -1067,16 +1213,16 @@ export const getAuditLogsDB = async (req, res) => {
 };
 
 export const createAuditLogDB = async (req, res) => {
-  const { user, role, action, target } = req.body;
+  const { user, role, action, target, details } = req.body;
   try {
     const actor = user || req.user?.username || 'System Administrator';
     const actorRole = role || req.user?.role || 'ADMIN';
     const clientIp = req.ip || req.headers['x-forwarded-for'] || '127.0.0.1';
 
     await queryDb(
-      `INSERT INTO audit_logs (id, actor_name, role, action, entity, ip_address, created_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
-      [actor, actorRole, action || 'System Event', target || '', clientIp]
+      `INSERT INTO audit_logs (id, actor_name, role, action, entity, details, ip_address, created_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5::jsonb, $6, CURRENT_TIMESTAMP)`,
+      [actor, actorRole, action || 'System Event', target || '', JSON.stringify(details || {}), clientIp]
     );
 
     return res.status(201).json({ success: true });
@@ -1140,6 +1286,14 @@ export const deleteRegistrationDB = async (req, res) => {
   try {
     await queryDb('DELETE FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1', [String(id)]);
     await queryDb('DELETE FROM registrations WHERE id::text = $1', [String(id)]);
+    logAuditEvent({
+      actorName: req.user?.username || 'Admin',
+      role: 'ADMIN',
+      action: 'Registration Deleted',
+      entity: `Deleted registration ID: ${id}`,
+      entityId: String(id),
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    });
 
     return res.json({ success: true, message: 'Registration deleted from database successfully.' });
   } catch (err) {
@@ -1158,6 +1312,14 @@ export const updateRegistrationStatusDB = async (req, res) => {
     if (paymentStatus) {
       await queryDb('UPDATE college_registrations SET payment_status = $1, updated_at = CURRENT_TIMESTAMP WHERE id::text = $2', [paymentStatus, String(id)]);
     }
+    logAuditEvent({
+      actorName: req.user?.username || 'Admin',
+      role: 'ADMIN',
+      action: 'Registration Status Updated',
+      entity: `Updated registration ${id}: Status=${status || 'unchanged'}, Payment=${paymentStatus || 'unchanged'}`,
+      entityId: String(id),
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    });
     return res.json({ success: true, message: 'Registration status updated in database successfully.' });
   } catch (err) {
     console.error('Error updating registration status in DB:', err.message);

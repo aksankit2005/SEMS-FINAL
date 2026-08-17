@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { envConfig, coordinatorPasswords } from '../config/env.js';
 import { queryDb, prisma } from '../config/db.js';
 import { computeEffectiveRegistrationStatus, parseRegistrationDeadline } from '../utils/registrationLifecycle.js';
+import { logAuditEvent } from '../utils/auditLogger.js';
 
 export const extractYouTubeVideoIdBackend = (url) => {
   if (!url || typeof url !== 'string') return null;
@@ -99,6 +100,14 @@ export const coordinatorLogin = async (req, res) => {
         envConfig.jwtSecret,
         { expiresIn: '24h' }
       );
+      logAuditEvent({
+        userId: user.id,
+        actorName: user.username,
+        role: 'SPORTS_COORDINATOR',
+        action: 'Coordinator Login',
+        entity: `Sport Coordinator: ${user.username} (${user.assigned_sport || user.sport_name})`,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      });
       return res.json({
         success: true,
         token,
@@ -141,6 +150,14 @@ export const coordinatorLogin = async (req, res) => {
         envConfig.jwtSecret,
         { expiresIn: '24h' }
       );
+      logAuditEvent({
+        userId: coord.id,
+        actorName: coord.username,
+        role: 'SPORTS_COORDINATOR',
+        action: 'Coordinator Login',
+        entity: `Sport Coordinator: ${coord.username} (${coord.assignedSport || coord.sportName})`,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      });
       return res.json({
         success: true,
         token,
@@ -492,6 +509,15 @@ export const createMatch = async (req, res) => {
 
   await syncMatchToMatchesTable(newMatch);
 
+  logAuditEvent({
+    actorName: req.user?.coordinatorName || req.user?.username || 'Sport Coordinator',
+    role: 'SPORTS_COORDINATOR',
+    action: 'Match Scheduled',
+    entity: `Scheduled ${sportId} fixture: ${newMatch.matchTitle} (ID: ${newMatch.id})`,
+    details: { matchId: newMatch.id, sportId, eventId },
+    ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+  });
+
   return res.status(201).json({ success: true, match: newMatch });
 };
 
@@ -563,16 +589,14 @@ export const batchSaveMatches = async (req, res) => {
     const isStreaming = Boolean(m.isLiveStreaming || videoId || rawStream);
 
     const detailsObj = {
-      category: m.category || m.gender || 'Open',
-      date: m.date || new Date().toISOString().split('T')[0],
-      eventTitle: matchTitleVal,
-      format: formatVal,
-      team1Name: team1Val,
-      team2Name: team2Val,
-      team1Player1: m.team1Player1 || null,
-      team1Player2: m.team1Player2 || null,
-      team2Player1: m.team2Player1 || null,
-      team2Player2: m.team2Player2 || null,
+      eventId: m.eventId || m.event_id || null,
+      eventTitle: m.eventTitle || m.title || `${sportId.toUpperCase()} Match`,
+      team1Id: m.team1Id || m.team1_id || null,
+      team2Id: m.team2Id || m.team2_id || null,
+      setsHistory: m.setsHistory || null,
+      currentSet: m.currentSet || 1,
+      setsWon1: m.setsWon1 || 0,
+      setsWon2: m.setsWon2 || 0,
       youtubeVideoId: videoId,
       streamUrl: rawStream || null,
       isLiveStreaming: isStreaming,
@@ -581,10 +605,13 @@ export const batchSaveMatches = async (req, res) => {
 
     try {
       await queryDb(
-        `INSERT INTO live_matches (id, sport_id, format, status, team1, team2, match_title, table_number, time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming, details, sets_history, current_set, sets_won1, sets_won2, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, CURRENT_TIMESTAMP)
+        `INSERT INTO live_matches (
+           id, sport_id, format, status, team1, team2, match_title, table_number,
+           time, score1, score2, winner, youtube_video_id, stream_url, is_live_streaming,
+           details, sets_history, current_set, sets_won1, sets_won2, updated_at, created_at
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
          ON CONFLICT (id) DO UPDATE SET
-           sport_id = EXCLUDED.sport_id,
            format = EXCLUDED.format,
            status = CASE
   WHEN LOWER(live_matches.status) IN ('running', 'live', 'in_progress', 'active')
@@ -660,6 +687,17 @@ END,
     } catch (err) {
       console.error('Error batch saving match ID:', matchId, err.message);
     }
+  }
+
+  if (savedMatches.length > 0) {
+    logAuditEvent({
+      actorName: req.user?.coordinatorName || req.user?.username || 'Sport Coordinator',
+      role: 'SPORTS_COORDINATOR',
+      action: 'Matches Batch Scheduled',
+      entity: `Saved ${savedMatches.length} fixtures for ${sportId}`,
+      details: { count: savedMatches.length, sportId },
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    });
   }
 
   return res.json({ success: true, count: savedMatches.length, matches: savedMatches });
@@ -899,6 +937,14 @@ export const deleteMatch = async (req, res) => {
   try { await queryDb('DELETE FROM matches WHERE id = $1 AND LOWER(sport_id) = $2', [id, sportId]); } catch(e){}
 
   if (result && result.rows && result.rows.length > 0) {
+    logAuditEvent({
+      actorName: req.user?.coordinatorName || req.user?.username || 'Sport Coordinator',
+      role: 'SPORTS_COORDINATOR',
+      action: 'Match Deleted',
+      entity: `Deleted ${sportId} match: ${id}`,
+      entityId: id,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    });
     return res.json({ success: true, message: 'Match deleted successfully' });
   }
   return res.status(404).json({ success: false, message: 'Match not found or unauthorized for this sport' });
@@ -1352,6 +1398,16 @@ export const completeMatch = async (req, res) => {
         };
       }
     }
+
+    logAuditEvent({
+      actorName: req.user?.coordinatorName || req.user?.username || 'Sport Coordinator',
+      role: 'SPORTS_COORDINATOR',
+      action: 'Match Completed',
+      entity: `Completed ${mSportId} match: ${mTitle} • Winner: ${winner || 'Declared'} (Score: ${score1} - ${score2})`,
+      details: { matchId: id, sportId: mSportId, winner, score1, score2 },
+      entityId: id,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    });
 
     return res.json({
       success: true,
@@ -1968,10 +2024,29 @@ export const createEvent = async (req, res) => {
       update: newEvent,
       create: newEvent
     });
+    logAuditEvent({
+      actorName: req.user?.coordinatorName || req.user?.username || 'Sport Coordinator',
+      role: 'SPORTS_COORDINATOR',
+      action: 'Event Created',
+      entity: `Created ${sportId} event: ${title} (ID: ${eventId})`,
+      details: { eventId, sportId, title, status, registrationOpen },
+      entityId: eventId,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    });
     return res.status(201).json({ success: true, event: dbEvent });
   } catch (err) {
     console.error('Prisma upsert fallback error:', err.message);
   }
+
+  logAuditEvent({
+    actorName: req.user?.coordinatorName || req.user?.username || 'Sport Coordinator',
+    role: 'SPORTS_COORDINATOR',
+    action: 'Event Created',
+    entity: `Created ${sportId} event: ${title} (ID: ${eventId})`,
+    details: { eventId, sportId, title, status, registrationOpen },
+    entityId: eventId,
+    ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+  });
 
   return res.status(201).json({ success: true, event: newEvent });
 };
@@ -2051,7 +2126,8 @@ export const updateEvent = async (req, res) => {
     rules,
     requiredDocuments,
     contactInfo,
-    createdBy: req.user.username || req.user.coordinatorName
+    createdBy: req.user.username || req.user.coordinatorName,
+    updatedAt: new Date().toISOString()
   };
 
   // If attempting to open/reopen registration, check if deadline has passed
@@ -2068,28 +2144,22 @@ export const updateEvent = async (req, res) => {
   }
 
   if (index !== -1) {
-    list[index] = {
-      ...list[index],
-      ...cleanEvent,
-      updatedAt: new Date().toISOString()
-    };
+    list[index] = cleanEvent;
   } else {
-    list.unshift(cleanEvent);
+    list.push(cleanEvent);
   }
   inMemoryCoordinatorEvents[sportId] = list;
 
   try {
-    const sqlRes = await queryDb(
+    await queryDb(
       `INSERT INTO coordinator_event_items (
         id, sport_id, sport_name, title, cover_image, description,
         reg_start_date, reg_end_date, tourn_start_date, tourn_end_date,
         entry_fee, singles_fee, doubles_fee, team_size, max_registrations,
         registered_count, venue, category, status, registration_open, rules, required_documents,
-        contact_info, created_by, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, CURRENT_TIMESTAMP)
+        contact_info, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, CURRENT_TIMESTAMP)
       ON CONFLICT (id) DO UPDATE SET
-        sport_id = EXCLUDED.sport_id,
-        sport_name = COALESCE(EXCLUDED.sport_name, coordinator_event_items.sport_name),
         title = EXCLUDED.title,
         cover_image = EXCLUDED.cover_image,
         description = EXCLUDED.description,
@@ -2110,74 +2180,34 @@ export const updateEvent = async (req, res) => {
         rules = EXCLUDED.rules,
         required_documents = EXCLUDED.required_documents,
         contact_info = EXCLUDED.contact_info,
-        updated_at = CURRENT_TIMESTAMP
-      RETURNING *`,
+        updated_at = CURRENT_TIMESTAMP`,
       [
         id, sportId, req.user.sportName, title, coverImage, description,
         regStartDate, regEndDate, tournStartDate, tournEndDate,
         entryFee, singlesFee, doublesFee, teamSize, maxRegistrations,
-        registeredCount, venue, category, status, registrationOpen, JSON.stringify(rules), JSON.stringify(requiredDocuments),
-        JSON.stringify(contactInfo), req.user.username || req.user.coordinatorName
+        registeredCount, venue, category, status, registrationOpen,
+        JSON.stringify(rules), JSON.stringify(requiredDocuments),
+        JSON.stringify(contactInfo)
       ]
     );
-
-    if (sqlRes && sqlRes.rows && sqlRes.rows.length > 0) {
-      const row = sqlRes.rows[0];
-      const isRegOpen = row.registration_open !== false;
-      const regStatus = computeEffectiveRegistrationStatus({
-        ...row,
-        regStartDate: row.reg_start_date,
-        regEndDate: row.reg_end_date,
-        registeredCount: row.registered_count,
-        maxRegistrations: row.max_registrations,
-        registrationOpen: isRegOpen
-      });
-
-      const resEvent = {
-        id: row.id,
-        sportId: row.sport_id,
-        sportName: row.sport_name,
-        title: row.title,
-        coverImage: row.cover_image,
-        description: row.description,
-        regStartDate: row.reg_start_date,
-        regEndDate: row.reg_end_date,
-        tournStartDate: row.tourn_start_date,
-        tournEndDate: row.tourn_end_date,
-        entryFee: Number(row.entry_fee || 0),
-        singlesFee: Number(row.singles_fee || 0),
-        doublesFee: Number(row.doubles_fee || 0),
-        teamFee: Number(row.entry_fee || 0),
-        teamSize: row.team_size,
-        maxRegistrations: Number(row.max_registrations || 64),
-        registeredCount: Number(row.registered_count || 0),
-        venue: row.venue,
-        category: row.category,
-        status: row.status,
-        registrationOpen: isRegOpen,
-        effectiveStatus: regStatus.code,
-        effectiveStatusLabel: regStatus.label,
-        effectiveRegistrationOpen: regStatus.effectiveRegistrationOpen,
-        effectiveRegistrationClosed: regStatus.effectiveRegistrationClosed,
-        isDeadlinePassed: regStatus.isDeadlinePassed,
-        canReopen: regStatus.canReopen,
-        canScheduleFixtures: regStatus.canScheduleFixtures,
-        closureReason: regStatus.reason,
-        rules: row.rules,
-        requiredDocuments: row.required_documents,
-        contactInfo: row.contact_info
-      };
-      return res.json({ success: true, event: resEvent });
-    }
   } catch (err) {
-    console.error('Error updating event in DB via queryDb:', err.message);
+    console.error('Direct SQL event upsert error:', err.message);
   }
 
+  logAuditEvent({
+    actorName: req.user?.coordinatorName || req.user?.username || 'Sport Coordinator',
+    role: 'SPORTS_COORDINATOR',
+    action: 'Event Updated',
+    entity: `Updated ${sportId} event: ${title} (ID: ${id}) - Status: ${status}, RegOpen: ${registrationOpen}`,
+    details: { eventId: id, sportId, title, status, registrationOpen },
+    entityId: id,
+    ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+  });
+
   try {
-    const updated = await prisma.coordinatorEventItem.upsert({
+    const updated = await prisma.coordinatorEventItem.update({
       where: { id },
-      update: cleanEvent,
-      create: cleanEvent
+      data: cleanEvent
     });
     const regStatus = computeEffectiveRegistrationStatus(updated);
     return res.json({ 
@@ -2234,6 +2264,14 @@ export const deleteEvent = async (req, res) => {
       [id, sportId]
     );
     if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+      logAuditEvent({
+        actorName: req.user?.coordinatorName || req.user?.username || 'Sport Coordinator',
+        role: 'SPORTS_COORDINATOR',
+        action: 'Event Deleted',
+        entity: `Deleted ${sportId} event: ${id}`,
+        entityId: id,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      });
       return res.json({ success: true, message: 'Event deleted successfully' });
     }
 
@@ -2241,6 +2279,14 @@ export const deleteEvent = async (req, res) => {
       where: { id, sportId: { equals: sportId, mode: 'insensitive' } }
     }).catch(() => ({ count: 0 }));
     if (prismaRes.count > 0) {
+      logAuditEvent({
+        actorName: req.user?.coordinatorName || req.user?.username || 'Sport Coordinator',
+        role: 'SPORTS_COORDINATOR',
+        action: 'Event Deleted',
+        entity: `Deleted ${sportId} event: ${id}`,
+        entityId: id,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      });
       return res.json({ success: true, message: 'Event deleted successfully' });
     }
 

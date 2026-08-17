@@ -1,6 +1,72 @@
 import { getMemberCaptainStatus, normalizeBoolean } from './booleanHelper.js';
 
 /**
+ * Resolves the participation type for a registration or participant record.
+ * Returns strictly: 'INDIVIDUAL' | 'DUO' | 'TEAM'
+ */
+export const getParticipationType = (record) => {
+  if (!record) return 'INDIVIDUAL';
+
+  // 1. Explicit participationType or registrationType
+  const rawType = String(
+    record.participationType ||
+    record.registrationType ||
+    record.registration_type ||
+    record.category ||
+    ''
+  ).toUpperCase();
+
+  if (rawType === 'DUO' || rawType === 'DOUBLES' || rawType === 'PAIR') return 'DUO';
+  if (rawType === 'INDIVIDUAL' || rawType === 'SINGLES' || rawType === 'SOLO') return 'INDIVIDUAL';
+  if (rawType === 'TEAM') {
+    const count = Number(
+      record.membersCount ||
+      record.teamSize ||
+      (Array.isArray(record.members) ? record.members.length : 0) ||
+      (Array.isArray(record.roster) ? record.roster.length : 0) ||
+      0
+    );
+    if (count === 2 || record.player2) return 'DUO';
+    return 'TEAM';
+  }
+
+  // 2. Check for player2 / Pair structure
+  if (record.player2 || (record.player1 && record.player2)) {
+    return 'DUO';
+  }
+
+  // 3. Check members count
+  const memberList = Array.isArray(record.members) ? record.members
+    : Array.isArray(record.roster) ? record.roster
+    : Array.isArray(record.participantData?.roster) ? record.participantData.roster
+    : null;
+
+  if (memberList) {
+    if (memberList.length === 2) return 'DUO';
+    if (memberList.length > 2) return 'TEAM';
+    if (memberList.length === 1) return 'INDIVIDUAL';
+  }
+
+  const count = Number(record.membersCount || record.teamSize || 0);
+  if (count === 2) return 'DUO';
+  if (count > 2) return 'TEAM';
+
+  // 4. Team name check
+  const teamName = String(record.teamName || '').trim();
+  if (teamName && teamName.toLowerCase() !== 'individual' && teamName.toLowerCase() !== 'participant') {
+    return 'TEAM';
+  }
+
+  // 5. Sport type heuristics
+  const sportKey = String(record.sportId || record.sport || record.sportName || '').toLowerCase();
+  if (sportKey.includes('chess') || (sportKey.includes('badminton') && !sportKey.includes('doubles')) || (sportKey.includes('table-tennis') && !sportKey.includes('doubles'))) {
+    return 'INDIVIDUAL';
+  }
+
+  return 'INDIVIDUAL';
+};
+
+/**
  * Standardizes and flattens registration records into individual athlete rows.
  * - Individual sports (e.g. Chess, Athletics 100m, Table Tennis singles, Badminton singles) -> 1 row per participant.
  * - Doubles sports (e.g. Badminton doubles, Table Tennis doubles) -> 2 rows per registration.
@@ -27,7 +93,8 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
     const collegeName = reg.collegeName || reg.college || reg.player1?.college || 'N/A';
     const timestamp = reg.timestamp || reg.registeredDate || (reg.createdAt ? new Date(reg.createdAt).toLocaleDateString() : 'N/A');
     const status = reg.status || 'VERIFIED';
-    const isIndividual = (reg.category === 'SINGLES' || reg.registrationType === 'INDIVIDUAL' || (reg.sportId && String(reg.sportId).toLowerCase().includes('chess')));
+    const participationType = getParticipationType(reg);
+    const isIndividual = participationType === 'INDIVIDUAL' || (reg.category === 'SINGLES' || reg.registrationType === 'INDIVIDUAL' || (reg.sportId && String(reg.sportId).toLowerCase().includes('chess')));
 
     const teamDisplayName = reg.teamName && reg.teamName.trim().length > 0
       ? reg.teamName
@@ -45,6 +112,7 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
           event: eventName,
           teamName: teamDisplayName,
           collegeName,
+          participationType,
           name: m.fullName || m.name || (mIdx === 0 ? (reg.studentName || reg.name) : `Player ${mIdx + 1}`),
           rollNo: m.rollNo || m.roll || (mIdx === 0 ? (reg.enrollmentNo || reg.roll) : 'N/A'),
           phone: m.mobile || m.phone || (mIdx === 0 ? (reg.phone || reg.mobile) : 'N/A'),
@@ -73,6 +141,7 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
           event: eventName,
           teamName: teamDisplayName,
           collegeName,
+          participationType,
           name: m.name || m.fullName || (mIdx === 0 ? (reg.studentName || reg.name) : `Player ${mIdx + 1}`),
           rollNo: m.rollNo || m.roll || 'N/A',
           phone: m.phone || m.mobile || (mIdx === 0 ? (reg.phone || reg.mobile) : 'N/A'),
@@ -102,6 +171,7 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
         event: eventName,
         teamName: teamDisplayName,
         collegeName,
+        participationType,
         name: p1.name || reg.studentName || 'Player 1',
         rollNo: p1.roll || reg.enrollmentNo || 'N/A',
         phone: p1.phone || reg.phone || 'N/A',
@@ -123,6 +193,7 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
         event: eventName,
         teamName: teamDisplayName,
         collegeName,
+        participationType,
         name: p2.name || 'Player 2',
         rollNo: p2.roll || 'N/A',
         phone: p2.phone || 'N/A',
@@ -148,6 +219,7 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
       event: eventName,
       teamName: isIndividual ? 'Individual' : teamDisplayName,
       collegeName,
+      participationType,
       name: p1.name || reg.studentName || reg.name || 'Athlete',
       rollNo: p1.roll || reg.enrollmentNo || reg.roll || 'N/A',
       phone: p1.phone || reg.phone || reg.mobile || 'N/A',
