@@ -9,6 +9,7 @@ import { collegeHeadApi } from '../../services/collegeHeadApi';
 import { useToast } from '../../context/ToastContext';
 import { SPORTS_DATA } from '../../data/sportsData';
 import { exportToCSV } from '../../utils/pdfExporter';
+import { getParticipationType } from '../../utils/rosterHelper';
 
 export const CollegeHeadDashboardPage = () => {
   const navigate = useNavigate();
@@ -248,6 +249,7 @@ export const CollegeHeadDashboardPage = () => {
     const exportData = studentsData.students.map((s, idx) => ({
       'S.No.': idx + 1,
       'Student Name': s.studentName || 'N/A',
+      'Participation Type': s.participationType || getParticipationType(s),
       'Role': (s.isCaptain === true || s.isCaptain === 1 || s.isCaptain === 'true' || s.isCaptain === '1') ? 'Captain' : 'Player',
       'Roll Number': s.rollNumber || 'N/A',
       'Course': s.course || 'N/A',

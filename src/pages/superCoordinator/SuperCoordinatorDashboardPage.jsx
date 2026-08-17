@@ -10,6 +10,7 @@ import { SuperCoordinatorNavbar } from '../../components/superCoordinator/SuperC
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { exportToCSV, exportToPDF } from '../../utils/pdfExporter';
+import { getParticipationType } from '../../utils/rosterHelper';
 import { exportResultsToExcel } from '../../utils/excelExporter';
 import { GoogleDriveImage } from '../../components/common/GoogleDriveImage';
 import { getHeroSlides, saveHeroSlides, DEFAULT_HERO_SLIDES } from '../../data/heroSlidesData';
@@ -394,6 +395,7 @@ export const SuperCoordinatorDashboardPage = () => {
     const headers = [
       'Registration ID',
       'Registration Time',
+      'Participation Type',
       'Game / Sport',
       'Event Registration Title',
       'Team Name',
@@ -408,6 +410,7 @@ export const SuperCoordinatorDashboardPage = () => {
     const rows = filteredParticipants.map((p) => [
       p.id,
       p.time || '10:00 AM',
+      p.participationType || getParticipationType(p),
       p.sportName || 'Sport',
       p.eventTitle || `${p.sportName || 'Sport'} Event`,
       p.teamName || 'N/A',

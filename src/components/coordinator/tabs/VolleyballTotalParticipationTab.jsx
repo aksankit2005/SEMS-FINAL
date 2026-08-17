@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, FileDown, Users } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
@@ -64,6 +64,7 @@ export const VolleyballTotalParticipationTab = ({ user, globalSearch = '' }) => 
       'S.No.': idx + 1,
       'Registration ID': p.registrationId || 'N/A',
       'Timestamp': p.timestamp || 'N/A',
+      'Participation Type': p.participationType || 'TEAM',
       'Game Name': p.sport || sportName,
       'Team Name': p.teamName || 'Individual',
       'College Name': p.collegeName || 'N/A',
