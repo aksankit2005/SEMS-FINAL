@@ -41,20 +41,21 @@ export const createPublicRegistrationOrder = async (req, res) => {
         eventName = event.title || eventName;
 
         const regStatus = computeEffectiveRegistrationStatus(event);
-        return res.status(400).json({
-          success: false,
-          message: regStatus.reason || 'Registration for this event has closed.',
-          code: regStatus.code,
-          effectiveStatus: regStatus,
-        });
+        if (!regStatus.effectiveRegistrationOpen) {
+          return res.status(400).json({
+            success: false,
+            message: regStatus.reason || 'Registration for this event has closed.',
+            code: regStatus.code,
+            effectiveStatus: regStatus,
+          });
+        }
       }
     }
-  }
 
     // Fallback to participantData.entryFee if DB event has 0 or not found
     if (authoritativeFee <= 0 && participantData?.entryFee != null && Number(participantData.entryFee) > 0) {
-    authoritativeFee = Number(participantData.entryFee);
-  }
+      authoritativeFee = Number(participantData.entryFee);
+    }
 
   // Free event - No Razorpay Order needed
   if (authoritativeFee <= 0) {
