@@ -93,8 +93,15 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
   const [currentSetIndex, setCurrentSetIndex] = useState(match?.currentSet || 1);
   const [isPaused, setIsPaused] = useState(match?.isPaused || false);
 
-  const [setsHistory, setSetsHistory] = useState(
-    match?.setsHistory || (isKhoKho ? [
+  const parseSetsHistory = (raw) => {
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    if (Array.isArray(raw) && raw.length > 0) return raw;
+    return isKhoKho ? [
       { set: 1, label: 'Set 1 (Inning 1)', score1: 0, score2: 0, isLocked: false, winner: null },
       { set: 2, label: 'Set 2 (Inning 2)', score1: 0, score2: 0, isLocked: false, winner: null },
     ] : [
@@ -103,16 +110,20 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
       { set: 3, score1: 0, score2: 0, isLocked: false, winner: null },
       { set: 4, score1: 0, score2: 0, isLocked: false, winner: null },
       { set: 5, score1: 0, score2: 0, isLocked: false, winner: null },
-    ])
-  );
+    ];
+  };
+
+  const [setsHistory, setSetsHistory] = useState(() => parseSetsHistory(match?.setsHistory));
 
   const [historyStack, setHistoryStack] = useState([]);
   const [showLockDialog, setShowLockDialog] = useState(null);
   const [matchWinner, setMatchWinner] = useState(null);
 
+  const safeSetsHistory = Array.isArray(setsHistory) ? setsHistory : parseSetsHistory(setsHistory);
+
   // Calculate sets won
-  const setsWon1 = setsHistory.filter((s) => s.isLocked && s.winner === match?.team1).length;
-  const setsWon2 = setsHistory.filter((s) => s.isLocked && s.winner === match?.team2).length;
+  const setsWon1 = safeSetsHistory.filter((s) => s && s.isLocked && s.winner === match?.team1).length;
+  const setsWon2 = safeSetsHistory.filter((s) => s && s.isLocked && s.winner === match?.team2).length;
 
   // Sync state changes to server
   const syncToServer = async (overrideData = {}) => {
@@ -214,13 +225,14 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
 
   // Add Extra Set / Tie-Breaker
   const handleAddExtraSet = () => {
-    const nextSetNum = setsHistory.length + 1;
+    const currentSets = Array.isArray(setsHistory) ? setsHistory : parseSetsHistory(setsHistory);
+    const nextSetNum = currentSets.length + 1;
     const newSetLabel = isKhoKho 
       ? `Set ${nextSetNum} (Extra Turn Tie-Breaker)`
       : `Set ${nextSetNum} (Extra Set Tie-Breaker)`;
 
     const newSet = { set: nextSetNum, label: newSetLabel, score1: 0, score2: 0, isLocked: false, winner: null };
-    const updatedSets = [...setsHistory, newSet];
+    const updatedSets = [...currentSets, newSet];
 
     setSetsHistory(updatedSets);
     setMaxSets(nextSetNum);
@@ -232,10 +244,9 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
     syncToServer({ maxSets: nextSetNum, setsHistory: updatedSets, currentSet: nextSetNum, score1: 0, score2: 0 });
   };
 
-  // Handle + Point / - Point
-  const handlePointChange = (player, delta) => {
+  // Adjust score
+  const handleScoreChange = (player, delta) => {
     if (matchWinner) return;
-
     saveStateToUndo();
 
     let newS1 = score1;
@@ -249,7 +260,8 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
       setScore2(newS2);
     }
 
-    const updatedSets = setsHistory.map((s) => {
+    const currentSets = Array.isArray(setsHistory) ? setsHistory : parseSetsHistory(setsHistory);
+    const updatedSets = currentSets.map((s) => {
       if (s.set === currentSetIndex) {
         return { ...s, score1: newS1, score2: newS2 };
       }
@@ -262,14 +274,15 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
 
   // Lock Set Action
   const handleLockSetConfirm = (targetSetIndex = currentSetIndex) => {
-    const s1 = targetSetIndex === currentSetIndex ? score1 : (setsHistory.find((s) => s.set === targetSetIndex)?.score1 || 0);
-    const s2 = targetSetIndex === currentSetIndex ? score2 : (setsHistory.find((s) => s.set === targetSetIndex)?.score2 || 0);
+    const currentSets = Array.isArray(setsHistory) ? setsHistory : parseSetsHistory(setsHistory);
+    const s1 = targetSetIndex === currentSetIndex ? score1 : (currentSets.find((s) => s.set === targetSetIndex)?.score1 || 0);
+    const s2 = targetSetIndex === currentSetIndex ? score2 : (currentSets.find((s) => s.set === targetSetIndex)?.score2 || 0);
 
     if (!showLockDialog && !window.confirm(`Lock Set ${targetSetIndex} score (${s1}-${s2})?`)) return;
 
     const winner = showLockDialog ? showLockDialog.winner : (s1 > s2 ? match.team1 : s2 > s1 ? match.team2 : 'TIE');
 
-    const updatedSets = setsHistory.map((s) => {
+    const updatedSets = currentSets.map((s) => {
       if (s.set === targetSetIndex) {
         return { ...s, score1: s1, score2: s2, isLocked: true, winner };
       }
@@ -278,8 +291,8 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
 
     setSetsHistory(updatedSets);
 
-    const newSetsWon1 = updatedSets.filter((s) => s.isLocked && s.winner === match?.team1).length;
-    const newSetsWon2 = updatedSets.filter((s) => s.isLocked && s.winner === match?.team2).length;
+    const newSetsWon1 = updatedSets.filter((s) => s && s.isLocked && s.winner === match?.team1).length;
+    const newSetsWon2 = updatedSets.filter((s) => s && s.isLocked && s.winner === match?.team2).length;
 
     setShowLockDialog(null);
 
@@ -328,7 +341,8 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
     const reason = window.prompt(`Enter authorization reason to unlock Set ${setNum}:`, 'Referee score correction');
     if (!reason) return;
 
-    const updatedSets = setsHistory.map((s) => {
+    const currentSets = Array.isArray(setsHistory) ? setsHistory : parseSetsHistory(setsHistory);
+    const updatedSets = currentSets.map((s) => {
       if (s.set === setNum) {
         return { ...s, isLocked: false };
       }
@@ -481,14 +495,15 @@ const handleFinishMatch = async () => {
   const defaultTeam1 = match?.team1 || 'Player 1';
   const defaultTeam2 = match?.team2 || 'Player 2';
 
-  const lockedSets = setsHistory.filter((s) => s.isLocked);
+  const currentSets = Array.isArray(setsHistory) ? setsHistory : parseSetsHistory(setsHistory);
+  const lockedSets = currentSets.filter((s) => s && s.isLocked);
 
   const calculatedSetsWon1 = lockedSets.filter(
-    (s) => s.winner === match?.team1
+    (s) => s && s.winner === match?.team1
   ).length;
 
   const calculatedSetsWon2 = lockedSets.filter(
-    (s) => s.winner === match?.team2
+    (s) => s && s.winner === match?.team2
   ).length;
 
   const requiredSets =
@@ -1059,12 +1074,12 @@ const handleFinishMatch = async () => {
                 onClick={handleAddExtraSet}
                 className="px-3.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
               >
-                <span>➕ Add Extra Set / Tie-Breaker (Set {setsHistory.length + 1})</span>
+                <span>➕ Add Extra Set / Tie-Breaker (Set {(Array.isArray(setsHistory) ? setsHistory : parseSetsHistory(setsHistory)).length + 1})</span>
               </button>
             </div>
 
             <div className="space-y-2.5">
-              {setsHistory.slice(0, maxSets).map((s) => (
+              {(Array.isArray(setsHistory) ? setsHistory : parseSetsHistory(setsHistory)).slice(0, maxSets).map((s) => (
                 <div
                   key={s.set}
                   className={`flex items-center justify-between p-3.5 rounded-2xl border text-xs transition ${

@@ -46,8 +46,8 @@ export const KhoKhoCoordinatorPage = () => {
           coordinatorApi.getRegistrations(),
         ]);
         if (isMounted) {
-          setMatches(mList);
-          setRegistrations(rList);
+          setMatches(Array.isArray(mList) ? mList : []);
+          setRegistrations(Array.isArray(rList) ? rList : []);
         }
       } catch (err) {
         if (showLoading) addToast('Error loading Kho-Kho operations console', 'error');
@@ -77,20 +77,22 @@ export const KhoKhoCoordinatorPage = () => {
   };
 
   const handleUpdateMatches = (updated) => {
-    setMatches(updated);
-    coordinatorApi.saveMatches(updated);
+    const safeUpdated = Array.isArray(updated) ? updated : [];
+    setMatches(safeUpdated);
+    coordinatorApi.saveMatches(safeUpdated);
   };
 
   const handleUpdateRegistrations = (updated) => {
-    setRegistrations(updated);
-    coordinatorApi.saveRegistrations(updated);
+    const safeUpdated = Array.isArray(updated) ? updated : [];
+    setRegistrations(safeUpdated);
+    coordinatorApi.saveRegistrations(safeUpdated);
   };
 
   const handleUpdateLiveScore = (matchId, scoreData) => {
     if (scoreData?.status === 'COMPLETED' || scoreData?.status === 'FINISHED') {
-      setMatches((prev) => prev.filter((m) => m.id !== matchId));
+      setMatches((prev) => (Array.isArray(prev) ? prev : []).filter((m) => m.id !== matchId));
     } else {
-      setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, ...scoreData } : m)));
+      setMatches((prev) => (Array.isArray(prev) ? prev : []).map((m) => (m.id === matchId ? { ...m, ...scoreData } : m)));
     }
   };
 

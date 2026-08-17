@@ -29,6 +29,15 @@ export const KhoKhoRoleSetupModal = ({ match, targetVenue, onClose, onSetupCompl
   const runningTeamName = chasingTeamKey === 'team1' ? team2 : team1;
 
   const handleStartGame = () => {
+    let rawSets = match?.setsHistory;
+    if (typeof rawSets === 'string') {
+      try { rawSets = JSON.parse(rawSets); } catch (e) { rawSets = null; }
+    }
+    const safeSets = Array.isArray(rawSets) && rawSets.length > 0 ? rawSets : [
+      { set: 1, label: 'Set 1 (Inning 1)', score1: 0, score2: 0, isLocked: false, winner: null },
+      { set: 2, label: 'Set 2 (Inning 2)', score1: 0, score2: 0, isLocked: false, winner: null },
+    ];
+
     const roleData = {
       tossWinner: tossWinner === 'team1' ? team1 : team2,
       tossDecision,
@@ -37,10 +46,7 @@ export const KhoKhoRoleSetupModal = ({ match, targetVenue, onClose, onSetupCompl
       runningTeamName,
       activeTurn: 1,
       currentSet: 1,
-      setsHistory: match?.setsHistory || [
-        { set: 1, label: 'Set 1 (Inning 1)', score1: 0, score2: 0, isLocked: false, winner: null },
-        { set: 2, label: 'Set 2 (Inning 2)', score1: 0, score2: 0, isLocked: false, winner: null },
-      ]
+      setsHistory: safeSets
     };
 
     addToast(`🏃‍♂️ Roles set! ${chasingTeamName} starts as CHASER, ${runningTeamName} as RUNNER.`, 'success');

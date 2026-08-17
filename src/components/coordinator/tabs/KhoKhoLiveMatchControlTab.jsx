@@ -18,12 +18,28 @@ export const KhoKhoLiveMatchControlTab = ({ matches, user, onUpdateMatchScore })
 
   const [liveAssignments, setLiveAssignments] = useState(() => {
     const cacheKey = `sems_active_live_matches_${assignedSport}`;
-    const saved = localStorage.getItem(cacheKey) || localStorage.getItem('sems_active_live_matches');
+    const saved = localStorage.getItem(cacheKey);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
-          return parsed;
+          const sanitized = {};
+          Object.entries(parsed).forEach(([k, v]) => {
+            if (v && typeof v === 'object') {
+              let sHistory = v.setsHistory;
+              if (typeof sHistory === 'string') {
+                try { sHistory = JSON.parse(sHistory); } catch (e) { sHistory = null; }
+              }
+              if (!Array.isArray(sHistory) || sHistory.length === 0) {
+                sHistory = [
+                  { set: 1, label: 'Set 1 (Inning 1)', score1: 0, score2: 0, isLocked: false, winner: null },
+                  { set: 2, label: 'Set 2 (Inning 2)', score1: 0, score2: 0, isLocked: false, winner: null },
+                ];
+              }
+              sanitized[k] = { ...v, setsHistory: sHistory };
+            }
+          });
+          return sanitized;
         }
       } catch (e) {}
     }
@@ -61,8 +77,16 @@ export const KhoKhoLiveMatchControlTab = ({ matches, user, onUpdateMatchScore })
     });
   }, [liveAssignments, assignedSport]);
 
-  // PROMOTES MATCH TO LIVE WITH SELECTED CHASER/RUNNER ROLES
   const executePromoteGoLive = async (matchItem, targetVenue, roleData = {}) => {
+    let rawSets = roleData.setsHistory || matchItem.setsHistory;
+    if (typeof rawSets === 'string') {
+      try { rawSets = JSON.parse(rawSets); } catch (e) { rawSets = null; }
+    }
+    const safeSets = Array.isArray(rawSets) && rawSets.length > 0 ? rawSets : [
+      { set: 1, label: 'Set 1 (Inning 1)', score1: 0, score2: 0, isLocked: false, winner: null },
+      { set: 2, label: 'Set 2 (Inning 2)', score1: 0, score2: 0, isLocked: false, winner: null },
+    ];
+
     const liveObj = {
       ...matchItem,
       id: matchItem.id || `M-KHO-${Math.floor(100000 + Math.random() * 900000)}`,
@@ -78,10 +102,7 @@ export const KhoKhoLiveMatchControlTab = ({ matches, user, onUpdateMatchScore })
       chasingTeamKey: roleData.chasingTeamKey || matchItem.chasingTeamKey || 'team1',
       tossWinner: roleData.tossWinner || matchItem.tossWinner || matchItem.team1,
       tossDecision: roleData.tossDecision || matchItem.tossDecision || 'chasing',
-      setsHistory: matchItem.setsHistory || roleData.setsHistory || [
-        { set: 1, label: 'Set 1 (Inning 1)', score1: 0, score2: 0, isLocked: false, winner: null },
-        { set: 2, label: 'Set 2 (Inning 2)', score1: 0, score2: 0, isLocked: false, winner: null },
-      ],
+      setsHistory: safeSets,
       turn: 1,
       isLiveStreaming: true,
       streamStartedAt: new Date().toISOString(),
@@ -210,7 +231,7 @@ export const KhoKhoLiveMatchControlTab = ({ matches, user, onUpdateMatchScore })
     addToast(`Match on ${venue} demoted from live stream`, 'info');
   };
 
-  const scheduledKhoKhoMatches = (matches || []).filter(
+  const scheduledKhoKhoMatches = (Array.isArray(matches) ? matches : []).filter(
     (m) => m && m.status !== 'COMPLETED' && m.status !== 'FINISHED' && m.status !== 'running' && (!m.sport || m.sport.toLowerCase() === assignedSport || m.sportId === assignedSport)
   );
 

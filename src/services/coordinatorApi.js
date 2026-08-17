@@ -237,7 +237,7 @@ export const coordinatorApi = {
   // Read matches for assigned sport from Backend API with localStorage fallback
   async getMatches() {
     const user = this.getCurrentUser();
-    if (!user) throw new Error('Unauthenticated');
+    if (!user) return [];
 
     const sportKey = (user.assignedSport || '').toLowerCase();
     const cacheKey = sportKey === 'basketball'
@@ -275,13 +275,6 @@ export const coordinatorApi = {
     } catch (e) {
       console.warn('Backend matches API fallback:', e.message);
     }
-
-    return savedMatches.map(m => ({
-      ...m,
-      sport: sportKey,
-      sportId: sportKey,
-      sportName: user.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1))
-    }));
 
     return savedMatches.map(m => ({
       ...m,
@@ -917,7 +910,10 @@ async deleteMatch(id) {
     const key = `sems_participants_${sportKey}`;
     try {
       const saved = localStorage.getItem(key);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
     } catch (e) {}
 
     return [];

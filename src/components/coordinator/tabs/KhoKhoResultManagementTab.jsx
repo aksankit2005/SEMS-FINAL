@@ -101,8 +101,8 @@ export const KhoKhoResultManagementTab = ({ user }) => {
 
       try {
         const apiMatches = await coordinatorApi.getMatches();
-        const completedApiMatches = apiMatches.filter((m) =>
-          (m.status === 'COMPLETED' || m.status === 'FINISHED' || m.status === 'WALKOVER') &&
+        const completedApiMatches = (Array.isArray(apiMatches) ? apiMatches : []).filter((m) =>
+          m && (m.status === 'COMPLETED' || m.status === 'FINISHED' || m.status === 'WALKOVER') &&
           (!m.sport || m.sport.toLowerCase().includes('kho') || m.sportId?.toLowerCase().includes('kho'))
         );
 

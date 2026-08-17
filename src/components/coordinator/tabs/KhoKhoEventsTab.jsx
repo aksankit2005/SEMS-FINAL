@@ -69,7 +69,7 @@ export const KhoKhoEventsTab = ({ user }) => {
     try {
       setLoading(true);
       const list = await coordinatorApi.getEvents();
-      setEvents(list);
+      setEvents(Array.isArray(list) ? list : []);
     } catch (err) {
       addToast('Error loading Kho-Kho events console', 'error');
     } finally {
@@ -235,14 +235,14 @@ export const KhoKhoEventsTab = ({ user }) => {
     setSelectedEventForParticipants(eventObj);
     try {
       const allRegs = await coordinatorApi.getRegistrations();
-      const eventRegs = allRegs.filter((r) => r.eventId === eventObj.id || resolveSportKey(r) === 'kho-kho');
+      const eventRegs = (Array.isArray(allRegs) ? allRegs : []).filter((r) => r.eventId === eventObj.id || resolveSportKey(r) === 'kho-kho');
       setParticipants(eventRegs);
     } catch (err) {
       addToast('Failed to load registered teams', 'error');
     }
   };
 
-  const khoKhoEvents = events.filter((e) => {
+  const khoKhoEvents = (Array.isArray(events) ? events : []).filter((e) => {
     if (!e) return false;
     const key = resolveSportKey(e);
     return key === 'kho-kho' || e.sportId === 'kho-kho' || e.assignedSport === 'kho-kho' || e.sportName?.toLowerCase().includes('kho') || !e.sportName;
