@@ -244,8 +244,8 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
     syncToServer({ maxSets: nextSetNum, setsHistory: updatedSets, currentSet: nextSetNum, score1: 0, score2: 0 });
   };
 
-  // Adjust score
-  const handleScoreChange = (player, delta) => {
+  // Adjust score (+ Point / - Point)
+  const handlePointChange = (player, delta) => {
     if (matchWinner) return;
     saveStateToUndo();
 
