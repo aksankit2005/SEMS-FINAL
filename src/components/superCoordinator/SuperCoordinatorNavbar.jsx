@@ -19,6 +19,15 @@ export const SuperCoordinatorNavbar = ({ onRefresh, activeTab, setActiveTab, onO
     navigate('/');
   };
 
+  const superCoordUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('sems_super_coord_user') || '{}');
+    } catch {
+      return {};
+    }
+  })();
+  const superCoordName = superCoordUser?.name || 'Super Coordinator';
+
   return (
     <nav className="sticky top-0 z-40 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white shadow-md transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -31,7 +40,7 @@ export const SuperCoordinatorNavbar = ({ onRefresh, activeTab, setActiveTab, onO
             </div>
             <div>
               <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight block">
-                Super Coordinator Console
+                {superCoordName}
               </span>
               <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide block">
                 President & Host Control Panel
@@ -68,18 +77,6 @@ export const SuperCoordinatorNavbar = ({ onRefresh, activeTab, setActiveTab, onO
               >
                 <User className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 <span className="hidden md:inline">Profile</span>
-              </button>
-            )}
-
-            {/* Change Password Button */}
-            {onOpenPasswordModal && (
-              <button
-                onClick={onOpenPasswordModal}
-                className="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer active:scale-95"
-                title="Change Password"
-              >
-                <Key className="w-3.5 h-3.5 text-amber-500" />
-                <span className="hidden sm:inline">Change Password</span>
               </button>
             )}
 

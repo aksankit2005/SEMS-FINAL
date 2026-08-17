@@ -16,7 +16,14 @@ import { getHeroSlides, saveHeroSlides, DEFAULT_HERO_SLIDES } from '../../data/h
 
 export const SuperCoordinatorDashboardPage = () => {
   const { addToast } = useToast();
-  const { confirmDelete } = useConfirm();
+  const superCoordUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('sems_super_coord_user') || '{}');
+    } catch {
+      return {};
+    }
+  })();
+  const superCoordName = superCoordUser?.name || 'Super Coordinator';
 
   const [loading, setLoading] = useState(true);
   const [coordinatorEvents, setCoordinatorEvents] = useState([]);
@@ -1891,47 +1898,29 @@ export const SuperCoordinatorDashboardPage = () => {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2.5">
                       <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                        Super Coordinator Console
+                        {superCoordName}
                       </h2>
                       <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5" /> Event Host Authority
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                      Username: <strong className="text-amber-600 dark:text-amber-400">@super_coordinator</strong>
+                      Username: <strong className="text-amber-600 dark:text-amber-400">@{superCoordUser?.username || 'super_coordinator'}</strong>
                     </p>
                     <p className="text-xs text-slate-600 dark:text-slate-300">
                       Role: <strong className="text-slate-900 dark:text-white">President & Host Event Executive</strong> • Maharana Pratap Institutions
                     </p>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setShowPasswordModal(true)}
-                    className="px-5 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs shadow-lg transition flex items-center gap-2 cursor-pointer active:scale-95"
-                  >
-                    <Key className="w-4 h-4 text-slate-950" />
-                    <span>Change Account Password</span>
-                  </button>
-                </div>
               </div>
 
               {/* Profile Details Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
                   <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Official Portal</span>
                   <div className="flex items-center gap-2">
                     <Crown className="w-4 h-4 text-amber-500" />
                     <span className="font-extrabold text-xs text-slate-900 dark:text-white">Super Coordinator</span>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
-                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Official Email</span>
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-blue-500" />
-                    <span className="font-bold text-xs text-slate-900 dark:text-white truncate">president.host@apex.edu</span>
                   </div>
                 </div>
 
