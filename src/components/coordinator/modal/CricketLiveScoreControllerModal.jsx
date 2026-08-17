@@ -711,25 +711,55 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
     );
     if (!result) return;
 
+    const finalScore1 = currentInnings === 1 ? runs : (firstInningsScore !== null && firstInningsScore !== undefined ? firstInningsScore : (match?.score1 || 0));
+    const finalScore2 = currentInnings === 2 ? runs : (match?.score2 || 0);
+    const finalWickets1 = currentInnings === 1 ? wickets : (match?.wickets1 !== undefined ? match.wickets1 : 0);
+    const finalWickets2 = currentInnings === 2 ? wickets : (match?.wickets2 !== undefined ? match.wickets2 : 0);
+    const finalOvers1 = currentInnings === 1 ? oversFormatted : (match?.overs1 || '0.0');
+    const finalOvers2 = currentInnings === 2 ? oversFormatted : (match?.overs2 || '0.0');
+
     const completedObj = {
       ...match,
       status: 'COMPLETED',
       winner: result,
-      score1: currentInnings === 1 ? runs : firstInningsScore,
-      score2: currentInnings === 2 ? runs : 0,
-      wickets1: currentInnings === 1 ? wickets : match?.wickets1,
-      wickets2: currentInnings === 2 ? wickets : 0,
-      overs1: currentInnings === 1 ? oversFormatted : match?.overs1,
-      overs2: currentInnings === 2 ? oversFormatted : '0.0',
+      score1: finalScore1,
+      score2: finalScore2,
+      wickets1: finalWickets1,
+      wickets2: finalWickets2,
+      overs1: finalOvers1,
+      overs2: finalOvers2,
       resultString: result,
       completedAt: new Date().toISOString(),
+      battingCard1,
+      bowlingCard1,
+      battingCard2,
+      bowlingCard2,
+      striker,
+      nonStriker,
+      bowler,
+      details: {
+        ...(match?.details || {}),
+        score1: finalScore1,
+        score2: finalScore2,
+        wickets1: finalWickets1,
+        wickets2: finalWickets2,
+        overs1: finalOvers1,
+        overs2: finalOvers2,
+        resultString: result,
+        winner: result,
+        targetRuns: targetRuns || match?.targetRuns,
+        battingCard1,
+        bowlingCard1,
+        battingCard2,
+        bowlingCard2,
+      }
     };
 
     try {
       await coordinatorApi.completeMatch(match.id, completedObj);
-      generateMatchResultPDF(completedObj, 'Cricket');
+      generateMatchResultPDF(completedObj, isGully ? 'Gully Cricket' : 'Cricket');
       if (onMatchUpdated) onMatchUpdated(match.id, completedObj);
-      addToast(`🏆 Cricket Match Completed! ${result}. PDF Downloaded.`, 'success');
+      addToast(`🏆 ${isGully ? 'Gully Cricket' : 'Cricket'} Match Completed! ${result}. PDF Downloaded.`, 'success');
       onClose();
     } catch (err) {
       addToast('Failed to complete match', 'error');
@@ -1388,8 +1418,8 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
                     resultString: matchWinnerResult,
                     winner: matchWinnerResult,
                   };
-                  generateMatchResultPDF(fullMatchData, 'Cricket');
-                  addToast('Downloaded Official Cricket Result & Scorecard PDF', 'success');
+                  generateMatchResultPDF(fullMatchData, isGully ? 'Gully Cricket' : 'Cricket');
+                  addToast(`Downloaded Official ${isGully ? 'Gully Cricket' : 'Cricket'} Result & Scorecard PDF`, 'success');
                 }}
                 className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
               >

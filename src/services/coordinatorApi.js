@@ -842,12 +842,16 @@ async deleteMatch(id) {
     };
 
     try {
-      await api.post(
-  `/coordinator/matches/${matchId}/complete`,
-  winnerData
-);
+      const res = await api.post(
+        `/coordinator/matches/${matchId}/complete`,
+        completedObj
+      );
+      if (res?.data?.match) {
+        Object.assign(completedObj, res.data.match);
+      }
     } catch (e) {
-      console.warn('Backend completeMatch API fallback:', e);
+      console.error('completeMatch API error:', e?.response?.data?.message || e.message);
+      throw e;
     }
 
     // Remove completed match from active match schedule list
