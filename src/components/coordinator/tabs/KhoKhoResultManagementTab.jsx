@@ -231,7 +231,7 @@ export const KhoKhoResultManagementTab = ({ user }) => {
     }
 
     try {
-      exportSportResultPDF('kho-kho', filteredResults, 'SEMS 2026 Kho-Kho Match Results Report');
+      exportSportResultPDF('kho-kho', filteredResults, 'APEX 2026 Kho-Kho Match Results Report');
       addToast('Downloaded official Kho-Kho Results PDF Report!', 'success');
     } catch (err) {
       addToast(err.message || 'Failed to export PDF report', 'error');

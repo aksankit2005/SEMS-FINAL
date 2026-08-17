@@ -23,7 +23,7 @@ export const KhoKhoCoordinatorPage = () => {
       assignedSport: 'kho-kho',
       sportName: 'Kho-Kho',
       coordinatorName: 'Sunita Jadhav',
-      email: 'khokho.coord@sems.edu'
+      email: 'khokho.coord@apex.edu'
     };
   });
 

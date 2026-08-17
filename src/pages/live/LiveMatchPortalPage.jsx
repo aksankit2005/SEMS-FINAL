@@ -172,7 +172,7 @@ export const LiveMatchPortalPage = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">
-                  SEMS 2026 Spectator Live Match Portal
+                  APEX 2026 Spectator Live Match Portal
                 </h1>
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 dark:border-rose-500/30 animate-pulse">
                   🔴 LIVE AUTO-SYNC

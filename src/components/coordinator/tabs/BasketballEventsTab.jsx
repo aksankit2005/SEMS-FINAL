@@ -58,7 +58,7 @@ export const BasketballEventsTab = ({ user }) => {
     ],
     requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'Team Roster Approval Form'],
     contactName: user?.coordinatorName || 'Michael Jordan Singh',
-    contactEmail: user?.email || 'basketball.coord@sems.edu',
+    contactEmail: user?.email || 'basketball.coord@apex.edu',
     contactPhone: '+91 98765 43210'
   });
 
@@ -107,7 +107,7 @@ export const BasketballEventsTab = ({ user }) => {
       rules: eventObj.rules || [],
       requiredDocuments: eventObj.requiredDocuments || ['College Student ID Card'],
       contactName: eventObj.contactInfo?.name || user?.coordinatorName || 'Basketball Coordinator',
-      contactEmail: eventObj.contactInfo?.email || user?.email || 'basketball.coord@sems.edu',
+      contactEmail: eventObj.contactInfo?.email || user?.email || 'basketball.coord@apex.edu',
       contactPhone: eventObj.contactInfo?.phone || '+91 98765 43210'
     });
     setRulesInput(Array.isArray(eventObj.rules) ? eventObj.rules.join('\n') : '');
@@ -149,7 +149,7 @@ export const BasketballEventsTab = ({ user }) => {
       ],
       requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID'],
       contactName: user?.coordinatorName || 'Basketball Coordinator',
-      contactEmail: user?.email || 'basketball.coord@sems.edu',
+      contactEmail: user?.email || 'basketball.coord@apex.edu',
       contactPhone: '+91 98765 43210'
     });
     setRulesInput(`Basketball Tournament Rules

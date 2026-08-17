@@ -287,7 +287,7 @@ export const ResultManagementTab = ({ user }) => {
     }
 
     try {
-      exportSportResultPDF(assignedSport, filteredResults, `SEMS 2026 ${sportName} Match Results Report`);
+      exportSportResultPDF(assignedSport, filteredResults, `APEX 2026 ${sportName} Match Results Report`);
       addToast(`Downloaded official ${sportName} Results PDF Report!`, 'success');
     } catch (err) {
       addToast(err.message || 'Failed to export PDF report', 'error');

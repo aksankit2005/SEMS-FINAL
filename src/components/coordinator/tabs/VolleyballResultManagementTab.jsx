@@ -156,7 +156,7 @@ export const VolleyballResultManagementTab = ({ user }) => {
     }
 
     try {
-      exportSportResultPDF('volleyball', filteredResults, 'SEMS 2026 Volleyball Match Results Report');
+      exportSportResultPDF('volleyball', filteredResults, 'APEX 2026 Volleyball Match Results Report');
       addToast('Downloaded official Volleyball Results PDF Report!', 'success');
     } catch (err) {
       addToast(err.message || 'Failed to export PDF report', 'error');

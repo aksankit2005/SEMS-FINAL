@@ -1352,7 +1352,7 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
 
         {/* Modal Footer */}
         <div className="p-4 bg-slate-50 dark:bg-[#090D16] border-t border-slate-200 dark:border-[#1E293B] text-center text-xs text-slate-500">
-          Spectator Scoreboard • Auto-refreshing real-time updates from SEMS Official Umpires
+          Spectator Scoreboard • Auto-refreshing real-time updates from APEX Official Umpires
         </div>
 
       </div>

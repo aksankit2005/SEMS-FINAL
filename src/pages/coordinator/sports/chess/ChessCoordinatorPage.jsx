@@ -23,7 +23,7 @@ export const ChessCoordinatorPage = () => {
       assignedSport: 'chess',
       sportName: 'Chess',
       coordinatorName: 'Grandmaster Anand Verma',
-      email: 'chess.coord@sems.edu'
+      email: 'chess.coord@apex.edu'
     };
   });
 

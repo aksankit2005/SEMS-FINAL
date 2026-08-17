@@ -23,7 +23,7 @@ export const FootballCoordinatorPage = () => {
       assignedSport: 'football',
       sportName: 'Football',
       coordinatorName: 'Vikram Singh',
-      email: 'football.coord@sems.edu'
+      email: 'football.coord@apex.edu'
     };
   });
 

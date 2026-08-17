@@ -59,7 +59,7 @@ export const ChessEventsTab = ({ user }) => {
     ],
     requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'FIDE / State Chess ID (If applicable)'],
     contactName: user?.coordinatorName || 'Grandmaster Anand Verma',
-    contactEmail: user?.email || 'chess.coord@sems.edu',
+    contactEmail: user?.email || 'chess.coord@apex.edu',
     contactPhone: '+91 98765 43210'
   });
 
@@ -110,7 +110,7 @@ export const ChessEventsTab = ({ user }) => {
       rules: eventObj.rules || [],
       requiredDocuments: eventObj.requiredDocuments || ['College Student ID Card'],
       contactName: eventObj.contactInfo?.name || user?.coordinatorName || 'Chess Coordinator',
-      contactEmail: eventObj.contactInfo?.email || user?.email || 'chess.coord@sems.edu',
+      contactEmail: eventObj.contactInfo?.email || user?.email || 'chess.coord@apex.edu',
       contactPhone: eventObj.contactInfo?.phone || '+91 98765 43210'
     });
     setRulesInput(Array.isArray(eventObj.rules) ? eventObj.rules.join('\n') : '');
@@ -153,7 +153,7 @@ export const ChessEventsTab = ({ user }) => {
       ],
       requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID'],
       contactName: user?.coordinatorName || 'Grandmaster Anand Verma',
-      contactEmail: user?.email || 'chess.coord@sems.edu',
+      contactEmail: user?.email || 'chess.coord@apex.edu',
       contactPhone: '+91 98765 43210'
     });
     setRulesInput(`1. Time Control: Each player gets 10 minutes for the entire game (10+0 unless increment is specified).

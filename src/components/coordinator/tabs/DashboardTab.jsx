@@ -38,7 +38,7 @@ export const DashboardTab = ({ stats, user, onNavigate }) => {
               Welcome back, {user?.coordinatorName}!
             </h1>
             <p className="text-sm text-orange-100 mt-2 max-w-2xl">
-              You are managing all <strong>{user?.sportName}</strong> matches, team approvals, referee assignments, live scores, and official rulebooks for SEMS 2026.
+              You are managing all <strong>{user?.sportName}</strong> matches, team approvals, referee assignments, live scores, and official rulebooks for APEX 2026.
             </p>
           </div>
 

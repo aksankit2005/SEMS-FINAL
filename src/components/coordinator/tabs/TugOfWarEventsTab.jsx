@@ -52,7 +52,7 @@ export const TugOfWarEventsTab = ({ user }) => {
     ],
     requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'Team Roster Approval Form'],
     contactName: user?.coordinatorName || 'Vikram Singh',
-    contactEmail: user?.email || 'tugofwar.coord@sems.edu',
+    contactEmail: user?.email || 'tugofwar.coord@apex.edu',
     contactPhone: '+91 98765 43210'
   });
 
@@ -101,7 +101,7 @@ export const TugOfWarEventsTab = ({ user }) => {
       rules: eventObj.rules || [],
       requiredDocuments: eventObj.requiredDocuments || ['College Student ID Card'],
       contactName: eventObj.contactInfo?.name || user?.coordinatorName || 'Vikram Singh',
-      contactEmail: eventObj.contactInfo?.email || user?.email || 'tugofwar.coord@sems.edu',
+      contactEmail: eventObj.contactInfo?.email || user?.email || 'tugofwar.coord@apex.edu',
       contactPhone: eventObj.contactInfo?.phone || '+91 98765 43210'
     });
     setRulesInput(Array.isArray(eventObj.rules) ? eventObj.rules.join('\n') : '');
@@ -136,7 +136,7 @@ export const TugOfWarEventsTab = ({ user }) => {
       ],
       requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID'],
       contactName: user?.coordinatorName || 'Vikram Singh',
-      contactEmail: user?.email || 'tugofwar.coord@sems.edu',
+      contactEmail: user?.email || 'tugofwar.coord@apex.edu',
       contactPhone: '+91 98765 43210'
     });
     setRulesInput('Official Tug of War tournament pulling rules apply.\nTeam squad must consist of min 8 and max 10 players.\nCollege Student ID Card mandatory.');

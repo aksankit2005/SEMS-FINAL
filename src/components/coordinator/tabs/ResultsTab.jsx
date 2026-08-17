@@ -58,7 +58,7 @@ export const ResultsTab = ({ user }) => {
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(18);
-    doc.text(`SEMS 2026 - ${user?.sportName} Official Final Results & Medal Tally`, 14, 22);
+    doc.text(`APEX 2026 - ${user?.sportName} Official Final Results & Medal Tally`, 14, 22);
     doc.setFontSize(10);
     doc.text(`Certified by: ${user?.coordinatorName} (${user?.sportName} Coordinator)`, 14, 30);
     doc.text(`Published Date: ${new Date().toLocaleDateString()}`, 14, 36);

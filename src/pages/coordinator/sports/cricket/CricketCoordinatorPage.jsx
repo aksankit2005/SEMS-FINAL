@@ -23,7 +23,7 @@ export const CricketCoordinatorPage = () => {
       assignedSport: 'cricket',
       sportName: 'Cricket',
       coordinatorName: 'Vikramaditya Sharma',
-      email: 'cricket.coord@sems.edu'
+      email: 'cricket.coord@apex.edu'
     };
   });
 

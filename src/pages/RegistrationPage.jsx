@@ -480,7 +480,7 @@ export const RegistrationPage = () => {
         {
           fullName: formData.captainName || (formData.roster[0] && formData.roster[0].name) || 'Lead Athlete',
           captainName: formData.captainName,
-          email: formData.captainEmail || (formData.roster[0] && formData.roster[0].email) || 'athlete@sems.edu',
+          email: formData.captainEmail || (formData.roster[0] && formData.roster[0].email) || 'athlete@apex.edu',
           phone: formData.captainPhone || (formData.roster[0] && formData.roster[0].phone) || '+91 98765 43210',
           gender: formData.roster[0]?.gender || 'Male',
           collegeName: formData.collegeName || 'MPEC',
@@ -568,7 +568,7 @@ export const RegistrationPage = () => {
             amount: activeSport.entryFee * 100, // Amount in paise
             currency: 'INR',
             payment_capture: 1, // Auto-capture payment immediately upon authorization
-            name: import.meta.env.VITE_RAZORPAY_MERCHANT_NAME || 'SEMS APEX Championship 2026',
+            name: import.meta.env.VITE_RAZORPAY_MERCHANT_NAME || 'APEX Championship 2026',
             description: `Entry Registration Fee for ${activeSport.name}`,
             handler: function (response) {
               handleRazorpaySuccess({

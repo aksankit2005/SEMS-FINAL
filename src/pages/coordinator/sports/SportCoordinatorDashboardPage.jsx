@@ -129,7 +129,7 @@ export const SportCoordinatorDashboardPage = ({ sportName, sportSlug }) => {
       username: `coord_${sportSlug?.replace(/-/g, '_')}`,
       assignedSport: sportSlug,
       sportName: sportName,
-      email: `${sportSlug?.replace(/-/g, '')}.coord@sems.edu`
+      email: `${sportSlug?.replace(/-/g, '')}.coord@apex.edu`
     });
 
   const handleLogout = () => {

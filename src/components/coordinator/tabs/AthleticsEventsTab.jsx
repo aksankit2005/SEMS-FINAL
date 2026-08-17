@@ -66,7 +66,7 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
     ],
     requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'Medical Fitness Certificate'],
     contactName: user?.coordinatorName || 'PT Usha Pillai',
-    contactEmail: user?.email || 'athletics.coord@sems.edu',
+    contactEmail: user?.email || 'athletics.coord@apex.edu',
     contactPhone: '+91 98765 43210'
   });
 
@@ -123,7 +123,7 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
       ],
       requiredDocuments: eventObj.requiredDocuments || ['College Student ID Card', 'Aadhaar Card / Govt ID'],
       contactName: eventObj.contactInfo?.name || user?.coordinatorName || 'PT Usha Pillai',
-      contactEmail: eventObj.contactInfo?.email || user?.email || 'athletics.coord@sems.edu',
+      contactEmail: eventObj.contactInfo?.email || user?.email || 'athletics.coord@apex.edu',
       contactPhone: eventObj.contactInfo?.phone || '+91 98765 43210'
     });
     setRulesInput(Array.isArray(eventObj.rules) ? eventObj.rules.join('\n') : '');
@@ -160,7 +160,7 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
       ],
       requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'Medical Fitness Certificate'],
       contactName: user?.coordinatorName || 'PT Usha Pillai',
-      contactEmail: user?.email || 'athletics.coord@sems.edu',
+      contactEmail: user?.email || 'athletics.coord@apex.edu',
       contactPhone: '+91 98765 43210'
     });
     setRulesInput(`1. Eligibility: Athletes must be currently enrolled college/university students with valid Student ID.

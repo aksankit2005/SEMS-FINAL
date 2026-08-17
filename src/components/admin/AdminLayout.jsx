@@ -77,7 +77,7 @@ export const AdminLayout = () => {
               </div>
             </div>
             <div>
-              <h1 className="font-extrabold text-base text-slate-900 dark:text-white leading-tight tracking-tight">SEMS ADMIN</h1>
+              <h1 className="font-extrabold text-base text-slate-900 dark:text-white leading-tight tracking-tight">APEX ADMIN</h1>
               <span className="text-[10px] tracking-wider uppercase font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
                 Central Admin Portal
               </span>

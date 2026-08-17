@@ -153,7 +153,7 @@ export const TugOfWarResultManagementTab = ({ user }) => {
     }
 
     try {
-      exportSportResultPDF('tug-of-war', filteredResults, 'SEMS 2026 Tug of War Match Results Report');
+      exportSportResultPDF('tug-of-war', filteredResults, 'APEX 2026 Tug of War Match Results Report');
       addToast('Downloaded official Tug of War Results PDF Report!', 'success');
     } catch (err) {
       addToast(err.message || 'Failed to export PDF report', 'error');

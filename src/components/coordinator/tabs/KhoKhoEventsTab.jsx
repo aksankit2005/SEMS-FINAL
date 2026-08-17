@@ -55,7 +55,7 @@ export const KhoKhoEventsTab = ({ user }) => {
     ],
     requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'Team Roster Approval Form'],
     contactName: user?.coordinatorName || 'Sunita Jadhav',
-    contactEmail: user?.email || 'khokho.coord@sems.edu',
+    contactEmail: user?.email || 'khokho.coord@apex.edu',
     contactPhone: '+91 98765 43210'
   });
 
@@ -107,7 +107,7 @@ export const KhoKhoEventsTab = ({ user }) => {
       ],
       requiredDocuments: eventObj.requiredDocuments || ['College Student ID Card', 'Aadhaar Card / Govt ID'],
       contactName: eventObj.contactName || user?.coordinatorName || 'Sunita Jadhav',
-      contactEmail: eventObj.contactEmail || user?.email || 'khokho.coord@sems.edu',
+      contactEmail: eventObj.contactEmail || user?.email || 'khokho.coord@apex.edu',
       contactPhone: eventObj.contactPhone || '+91 98765 43210'
     });
     setShowCreateModal(true);
@@ -140,7 +140,7 @@ export const KhoKhoEventsTab = ({ user }) => {
       ],
       requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'Team Roster Approval Form'],
       contactName: user?.coordinatorName || 'Sunita Jadhav',
-      contactEmail: user?.email || 'khokho.coord@sems.edu',
+      contactEmail: user?.email || 'khokho.coord@apex.edu',
       contactPhone: '+91 98765 43210'
     });
     setRulesInput('');

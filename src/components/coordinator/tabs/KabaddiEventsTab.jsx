@@ -56,7 +56,7 @@ export const KabaddiEventsTab = ({ user }) => {
     ],
     requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'Team Roster Approval Form'],
     contactName: user?.coordinatorName || 'Pradeep Narwal Kumar',
-    contactEmail: user?.email || 'kabaddi.coord@sems.edu',
+    contactEmail: user?.email || 'kabaddi.coord@apex.edu',
     contactPhone: '+91 98765 43210'
   });
 
@@ -108,7 +108,7 @@ export const KabaddiEventsTab = ({ user }) => {
       ],
       requiredDocuments: eventObj.requiredDocuments || ['College Student ID Card', 'Aadhaar Card / Govt ID'],
       contactName: eventObj.contactName || user?.coordinatorName || 'Pradeep Narwal Kumar',
-      contactEmail: eventObj.contactEmail || user?.email || 'kabaddi.coord@sems.edu',
+      contactEmail: eventObj.contactEmail || user?.email || 'kabaddi.coord@apex.edu',
       contactPhone: eventObj.contactPhone || '+91 98765 43210'
     });
     setShowCreateModal(true);
@@ -141,7 +141,7 @@ export const KabaddiEventsTab = ({ user }) => {
       ],
       requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'Team Roster Approval Form'],
       contactName: user?.coordinatorName || 'Pradeep Narwal Kumar',
-      contactEmail: user?.email || 'kabaddi.coord@sems.edu',
+      contactEmail: user?.email || 'kabaddi.coord@apex.edu',
       contactPhone: '+91 98765 43210'
     });
     setRulesInput('');

@@ -6,9 +6,9 @@ export const ProfileTab = ({ user, matches = [], registrations = [], onLogout })
   const sportName = user?.sportName || user?.sport || 'Badminton';
   const coordName = user?.coordinatorName || user?.name || `${sportName} Head Coordinator`;
   const username = user?.username || `coord_${sportName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
-  const email = user?.email || `${sportName.toLowerCase().replace(/[^a-z0-9]/g, '')}.coord@sems.edu`;
+  const email = user?.email || `${sportName.toLowerCase().replace(/[^a-z0-9]/g, '')}.coord@apex.edu`;
   const venue = user?.venue || 'Main Sports Complex Arena';
-  const college = user?.college || 'SEMS Official Campus';
+  const college = user?.college || 'APEX Official Campus';
 
   return (
     <div className="space-y-6 text-slate-900 dark:text-slate-200 animate-fade-in font-sans">

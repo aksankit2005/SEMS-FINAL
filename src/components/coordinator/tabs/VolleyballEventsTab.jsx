@@ -52,7 +52,7 @@ export const VolleyballEventsTab = ({ user }) => {
     ],
     requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'Team Roster Approval Form'],
     contactName: user?.coordinatorName || 'Siddharth Rao',
-    contactEmail: user?.email || 'volleyball.coord@sems.edu',
+    contactEmail: user?.email || 'volleyball.coord@apex.edu',
     contactPhone: '+91 98765 43210'
   });
 
@@ -101,7 +101,7 @@ export const VolleyballEventsTab = ({ user }) => {
       rules: eventObj.rules || [],
       requiredDocuments: eventObj.requiredDocuments || ['College Student ID Card'],
       contactName: eventObj.contactInfo?.name || user?.coordinatorName || 'Siddharth Rao',
-      contactEmail: eventObj.contactInfo?.email || user?.email || 'volleyball.coord@sems.edu',
+      contactEmail: eventObj.contactInfo?.email || user?.email || 'volleyball.coord@apex.edu',
       contactPhone: eventObj.contactInfo?.phone || '+91 98765 43210'
     });
     setRulesInput(Array.isArray(eventObj.rules) ? eventObj.rules.join('\n') : '');
@@ -136,7 +136,7 @@ export const VolleyballEventsTab = ({ user }) => {
       ],
       requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID'],
       contactName: user?.coordinatorName || 'Siddharth Rao',
-      contactEmail: user?.email || 'volleyball.coord@sems.edu',
+      contactEmail: user?.email || 'volleyball.coord@apex.edu',
       contactPhone: '+91 98765 43210'
     });
     setRulesInput('Official FIVB tournament rules apply.\nTeam squad must consist of min 6 and max 12 players.\nCollege Student ID Card mandatory.');

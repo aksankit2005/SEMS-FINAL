@@ -1931,7 +1931,7 @@ export const SuperCoordinatorDashboardPage = () => {
                   <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Official Email</span>
                   <div className="flex items-center gap-2">
                     <Mail className="w-4 h-4 text-blue-500" />
-                    <span className="font-bold text-xs text-slate-900 dark:text-white truncate">president.host@sems.edu</span>
+                    <span className="font-bold text-xs text-slate-900 dark:text-white truncate">president.host@apex.edu</span>
                   </div>
                 </div>
 
