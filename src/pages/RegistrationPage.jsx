@@ -788,7 +788,7 @@ export const RegistrationPage = () => {
             <Trophy className="w-4 h-4 text-orange-500" /> Multi-Step Sports Registration
           </div>
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight">
-            Athlete & Team <span className="bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent">Registration</span>
+            Athlete & Team <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">Registration</span>
           </h1>
         </div>
 

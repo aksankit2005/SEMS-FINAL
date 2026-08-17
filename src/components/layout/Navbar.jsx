@@ -120,7 +120,7 @@ export const Navbar = () => {
                   to={link.path}
                   className={({ isActive }) =>
                     `relative px-3 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all duration-200 flex items-center gap-1.5 ${isActive
-                      ? 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 font-bold'
+                      ? 'text-blue-600 dark:text-blue-400 bg-blue-500/10 font-bold'
                       : 'text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
                     }`
                   }
@@ -145,7 +145,7 @@ export const Navbar = () => {
                 <div className="flex items-center gap-2">
                   <Link
                     to={activeSession.dashboardPath}
-                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-semibold text-xs shadow-lg shadow-cyan-600/20 transition-all"
+                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-blue-600/20 transition-all"
                   >
                     <LayoutDashboard className="w-4 h-4 text-amber-300" />
                     <span className="max-w-[110px] truncate">{activeSession.name}</span>
@@ -164,10 +164,10 @@ export const Navbar = () => {
                 </div>
               ) : (
                 <div className="relative group">
-                  <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-semibold text-xs shadow-lg shadow-cyan-600/20 transition-all cursor-pointer">
+                  <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-blue-600/20 transition-all cursor-pointer">
                     <User className="w-3.5 h-3.5" />
                     <span>Portal Sign In</span>
-                    <ChevronDown className="w-3.5 h-3.5 text-cyan-200 group-hover:rotate-180 transition-transform duration-200" />
+                    <ChevronDown className="w-3.5 h-3.5 text-blue-200 group-hover:rotate-180 transition-transform duration-200" />
                   </button>
                   <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex flex-col overflow-hidden p-1.5 space-y-1">
                     <div className="px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
@@ -175,9 +175,9 @@ export const Navbar = () => {
                     </div>
                     <Link
                       to="/college-head/login"
-                      className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-slate-800 rounded-xl transition flex items-center gap-2.5 group/item"
+                      className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-xl transition flex items-center gap-2.5 group/item"
                     >
-                      <span className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover/item:bg-emerald-600 group-hover/item:text-white transition">
+                      <span className="p-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover/item:bg-blue-600 group-hover/item:text-white transition">
                         <Building2 className="w-3.5 h-3.5" />
                       </span>
                       <div>
@@ -216,7 +216,7 @@ export const Navbar = () => {
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setIsMobileOpen(true)}
-                className="xl:hidden p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-cyan-500 transition"
+                className="xl:hidden p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-500 transition"
               >
                 <Menu className="w-5 h-5" />
               </button>
