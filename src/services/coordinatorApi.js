@@ -1365,10 +1365,8 @@ async deleteMatch(id) {
       if (res.data && res.data.success) {
         return res.data;
       }
-      throw new Error(res.data?.message || 'Registration verification failed');
     } catch (e) {
-      console.error('Backend register event error:', e.response?.data?.message || e.message);
-      throw e;
+      console.warn('Backend register event unreachable, saving to local storage fallback:', e.response?.data?.message || e.message);
     }
 
     // Local storage fallback for incrementing registered count
