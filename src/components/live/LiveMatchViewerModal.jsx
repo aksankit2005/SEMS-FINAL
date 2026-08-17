@@ -290,11 +290,6 @@ const LiveScoreOverlay = ({ match }) => {
               </div>
               <span className="text-slate-900 dark:text-slate-100 uppercase max-w-[90px] sm:max-w-[140px] truncate">{team2Name}</span>
             </div>
-            <div className="hidden sm:flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 font-bold">
-              <span className="px-2 py-0.5 rounded-md bg-teal-500/10 border border-teal-500/30 text-teal-600 dark:text-teal-300 font-black">
-                {match.quarter || match.turn || 'Innings 1'}
-              </span>
-            </div>
           </div>
         </div>
       </div>
@@ -785,7 +780,7 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
               ) : isKhoKho ? (
                 <div className="text-center bg-white dark:bg-[#090D16] p-5 rounded-2xl border border-teal-500/30 shadow-md space-y-2">
                   <span className="text-[10px] font-mono uppercase font-bold text-teal-600 dark:text-teal-400 tracking-widest block">
-                    🏃 KHO-KHO • {match.quarter || match.turn || 'INNINGS 1'}
+                    🏃 KHO-KHO • {match.currentSet ? `SET ${match.currentSet}` : (match.turn ? `TURN ${match.turn}` : 'INNINGS 1')}
                   </span>
 
                   <div className="flex items-center justify-center gap-4 text-5xl font-black font-mono text-slate-900 dark:text-white">
