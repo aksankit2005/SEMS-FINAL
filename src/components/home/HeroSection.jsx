@@ -106,9 +106,9 @@ export const HeroSection = () => {
               <div className="pt-1.5 sm:pt-3 flex flex-wrap items-center gap-2 sm:gap-4">
                 <Link
                   to={currentSlide.primaryBtnLink || '/registration'}
-                  className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 hover:from-orange-400 hover:to-yellow-400 text-slate-950 font-black text-xs xs:text-sm sm:text-base shadow-xl shadow-orange-500/25 transition flex items-center gap-1.5 sm:gap-2 transform hover:-translate-y-0.5 active:scale-95 shrink-0"
+                  className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs xs:text-sm sm:text-base shadow-xl shadow-blue-600/30 transition flex items-center gap-1.5 sm:gap-2 transform hover:-translate-y-0.5 active:scale-95 shrink-0"
                 >
-                  <Trophy className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-slate-950" />
+                  <Trophy className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-white" />
                   <span>{currentSlide.primaryBtnText || 'REGISTER NOW'}</span>
                   <ChevronRight className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                 </Link>
@@ -152,7 +152,7 @@ export const HeroSection = () => {
                     onClick={() => setActiveIndex(idx)}
                     className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
                       idx === activeIndex
-                        ? 'w-5 sm:w-7 bg-gradient-to-r from-orange-500 to-amber-500'
+                        ? 'w-5 sm:w-7 bg-gradient-to-r from-blue-600 to-indigo-600'
                         : 'w-2 sm:w-2.5 bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-500'
                     }`}
                     title={`Go to slide ${idx + 1}`}
