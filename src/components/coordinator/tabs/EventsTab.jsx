@@ -283,6 +283,26 @@ export const EventsTab = ({ user }) => {
     }
   };
 
+  const handleToggleRegistrationOpen = async (eventObj) => {
+    const isCurrentlyOpen = eventObj.registrationOpen !== false && eventObj.status !== 'Closed';
+    const newRegOpen = !isCurrentlyOpen;
+    const newStatus = newRegOpen ? (eventObj.status === 'Closed' ? 'Published' : eventObj.status) : 'Closed';
+    try {
+      const updated = await coordinatorApi.updateEvent(eventObj.id, {
+        registrationOpen: newRegOpen,
+        status: newStatus
+      });
+      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, registrationOpen: newRegOpen, status: newStatus } : item)));
+      if (!newRegOpen) {
+        addToast(`🔒 Registration closed for "${eventObj.title}". Fixtures can now be scheduled!`, 'success');
+      } else {
+        addToast(`🔓 Registration reopened for "${eventObj.title}". Students can now register.`, 'info');
+      }
+    } catch (err) {
+      addToast('Failed to toggle registration status', 'error');
+    }
+  };
+
   const handleToggleStatus = async (eventObj) => {
     const statusCycle = {
       'Draft': 'Upcoming',
@@ -328,13 +348,13 @@ export const EventsTab = ({ user }) => {
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-emerald-600 dark:text-emerald-400">Active Events</span>
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Active (Published)</span>
           <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">{activeEvents}</p>
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-rose-600 dark:text-rose-400">Closed Events</span>
-          <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">{closedEvents}</p>
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Registration Closed</span>
+          <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight">{closedEvents}</p>
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
@@ -396,6 +416,7 @@ export const EventsTab = ({ user }) => {
               const registered = event.registeredCount || 0;
               const limit = event.maxRegistrations || 64;
               const percent = Math.min(100, Math.round((registered / limit) * 100));
+              const isRegOpen = event.registrationOpen !== false && event.status !== 'Closed';
 
               return (
                 <div
@@ -411,9 +432,9 @@ export const EventsTab = ({ user }) => {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/30 to-transparent" />
 
-                    {/* Status Badge */}
-                    <div className="absolute top-3 left-3 flex items-center gap-2">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase border shadow-md ${
+                    {/* Status Badges */}
+                    <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5">
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase border shadow-md ${
                         event.status === 'Published'
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                           : event.status === 'Upcoming'
@@ -423,6 +444,13 @@ export const EventsTab = ({ user }) => {
                           : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                       }`}>
                         ● {event.status}
+                      </span>
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase border shadow-md ${
+                        isRegOpen
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                          : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                      }`}>
+                        {isRegOpen ? '● Reg: OPEN' : '🔒 Reg: CLOSED (Fixtures Ready)'}
                       </span>
                       <span className="px-2.5 py-1 rounded-full bg-slate-950/70 backdrop-blur-xs text-white text-[10px] font-bold border border-slate-800">
                         {event.category}
@@ -475,15 +503,28 @@ export const EventsTab = ({ user }) => {
                     </div>
 
                     {/* Actions Bar */}
-                    <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5">
+                    <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         <button
-                          onClick={() => handleToggleStatus(event)}
-                          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
-                          title="Toggle Status (Draft -> Published -> Closed)"
+                          onClick={() => handleToggleRegistrationOpen(event)}
+                          className={`px-3 py-1.5 rounded-xl font-bold text-[11px] transition flex items-center gap-1 cursor-pointer border ${
+                            isRegOpen
+                              ? 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-500/40'
+                              : 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/40'
+                          }`}
+                          title={isRegOpen ? 'Close registration to freeze participants and enable match scheduling' : 'Reopen registration for new student signups'}
                         >
-                          {event.status === 'Published' ? <ToggleRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <ToggleLeft className="w-4 h-4 text-amber-600 dark:text-amber-400" />}
-                          <span>Toggle Status</span>
+                          {isRegOpen ? (
+                            <>
+                              <ToggleRight className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                              <span>Close Reg (Enable Fixtures)</span>
+                            </>
+                          ) : (
+                            <>
+                              <ToggleLeft className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                              <span>Reopen Reg</span>
+                            </>
+                          )}
                         </button>
 
                         <button

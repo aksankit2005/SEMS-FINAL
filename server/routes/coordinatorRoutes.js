@@ -18,7 +18,8 @@ import {
   getEvents,
   createEvent,
   updateEvent,
-  deleteEvent
+  deleteEvent,
+  getEligibleCompetitors
 } from '../controllers/coordinatorController.js';
 import { verifyCoordinatorToken } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimiters.js';
@@ -47,5 +48,7 @@ router.get('/coordinator/events', verifyCoordinatorToken, getEvents);
 router.post('/coordinator/events', verifyCoordinatorToken, createEvent);
 router.put('/coordinator/events/:id', verifyCoordinatorToken, updateEvent);
 router.delete('/coordinator/events/:id', verifyCoordinatorToken, deleteEvent);
+router.get('/coordinator/events/:eventId/eligible-competitors', verifyCoordinatorToken, getEligibleCompetitors);
+router.get('/coordinator/eligible-competitors', verifyCoordinatorToken, getEligibleCompetitors);
 
 export default router;

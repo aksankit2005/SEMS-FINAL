@@ -9,17 +9,40 @@ export const AthleticsMatchScheduleTab = ({ user }) => {
   const { addToast } = useToast();
   const { confirmDelete } = useConfirm();
   const [schedules, setSchedules] = useState([]);
+  const [createdEvents, setCreatedEvents] = useState([]);
+  const [selectedEventId, setSelectedEventId] = useState('');
   
   // Form State (NO Player Names!)
   const [selectedSubEvent, setSelectedSubEvent] = useState('100m Race');
   const [roundTitle, setRoundTitle] = useState('Heat 1 (Prelims)');
-  const [scheduledDate, setScheduledDate] = useState('2026-09-01');
+  const [scheduledDate, setScheduledDate] = useState(new Date().toISOString().split('T')[0]);
   const [scheduledTime, setScheduledTime] = useState('10:00 AM');
   const [venueLocation, setVenueLocation] = useState('Main Stadium Track');
 
+  const activeEvents = createdEvents.filter((e) => e && e.status !== 'Draft' && e.status !== 'Completed');
+  const selectedEvent = activeEvents.find((e) => e.id === selectedEventId) || activeEvents[0] || null;
+  const isRegClosed = Boolean(selectedEvent && (selectedEvent.registrationOpen === false || selectedEvent.status === 'Closed'));
+
   useEffect(() => {
     loadSchedules();
+    loadEvents();
   }, []);
+
+  const loadEvents = async () => {
+    try {
+      const list = await coordinatorApi.getEvents();
+      const filtered = (list || []).filter(
+        (e) => (e.sportId || e.sportName || '').toLowerCase().includes('athletics') || (e.title || '').toLowerCase().includes('athletics')
+      );
+      if (filtered && filtered.length > 0) {
+        setCreatedEvents(filtered);
+        const act = filtered.filter((e) => e && e.status !== 'Draft' && e.status !== 'Completed');
+        if (act.length > 0) {
+          setSelectedEventId(act[0].id);
+        }
+      }
+    } catch (e) { }
+  };
 
   const loadSchedules = async () => {
     try {
@@ -32,6 +55,17 @@ export const AthleticsMatchScheduleTab = ({ user }) => {
 
   const handleAddSchedule = async (e) => {
     e.preventDefault();
+
+    if (!selectedEvent) {
+      addToast('No active Athletics event selected.', 'error');
+      return;
+    }
+
+    if (!isRegClosed) {
+      addToast('Registration must be closed before fixtures/heats can be scheduled.', 'error');
+      return;
+    }
+
     if (!selectedSubEvent || !roundTitle.trim()) {
       addToast('Please select sub-event and enter round/phase title', 'info');
       return;
@@ -41,9 +75,10 @@ export const AthleticsMatchScheduleTab = ({ user }) => {
       id: `M-ATH-${Date.now()}`,
       sportId: 'athletics',
       sportName: 'Athletics',
+      eventId: selectedEvent.id,
+      eventTitle: selectedEvent.title,
       subEvent: selectedSubEvent,
       matchTitle: `${selectedSubEvent} — ${roundTitle}`,
-      eventTitle: `${selectedSubEvent} ${roundTitle}`,
       team1: `${selectedSubEvent}`,
       team2: `${roundTitle}`,
       date: scheduledDate,
@@ -56,7 +91,7 @@ export const AthleticsMatchScheduleTab = ({ user }) => {
 
     const updated = [newSchedule, ...schedules];
     setSchedules(updated);
-    coordinatorApi.saveMatches(updated);
+    await coordinatorApi.saveMatches(updated);
     window.dispatchEvent(new Event('sems_matches_updated'));
     window.dispatchEvent(new Event('storage'));
 
@@ -71,16 +106,16 @@ export const AthleticsMatchScheduleTab = ({ user }) => {
     if (!isConfirmed) return;
     const updated = schedules.filter((s) => s.id !== id);
     setSchedules(updated);
-    coordinatorApi.saveMatches(updated);
+    await coordinatorApi.saveMatches(updated);
     window.dispatchEvent(new Event('sems_matches_updated'));
     window.dispatchEvent(new Event('storage'));
     addToast('Schedule slot removed', 'info');
   };
 
-  const handleUpdateStatus = (id, newStatus) => {
+  const handleUpdateStatus = async (id, newStatus) => {
     const updated = schedules.map((s) => (s.id === id ? { ...s, status: newStatus } : s));
     setSchedules(updated);
-    coordinatorApi.saveMatches(updated);
+    await coordinatorApi.saveMatches(updated);
     window.dispatchEvent(new Event('sems_matches_updated'));
     window.dispatchEvent(new Event('storage'));
     addToast(`Status updated to ${newStatus}`, 'success');
@@ -88,9 +123,38 @@ export const AthleticsMatchScheduleTab = ({ user }) => {
 
   return (
     <div className="space-y-6 animate-fade-in font-sans">
+
+      {/* LIFECYCLE GATE BANNER */}
+      {!selectedEvent ? (
+        <div className="p-5 rounded-3xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 space-y-1.5">
+          <h4 className="text-xs font-black uppercase tracking-wider">⚠️ No Active Athletics Event</h4>
+          <p className="text-xs text-slate-600 dark:text-slate-400">
+            Create and publish an Athletics event in the Events tab to enable heat/fixture scheduling.
+          </p>
+        </div>
+      ) : !isRegClosed ? (
+        <div className="p-5 rounded-3xl bg-blue-500/10 border border-blue-500/30 text-blue-700 dark:text-indigo-300 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
+            <h4 className="text-xs font-black uppercase tracking-wider">Event Active • Registration Open — Scheduling Locked</h4>
+          </div>
+          <p className="text-xs text-slate-600 dark:text-slate-400">
+            Athletes are actively registering for <strong>"{selectedEvent.title}"</strong>. Navigate to the <strong>Events tab</strong> and click <strong>"Close Reg"</strong> to freeze participants and enable fixture scheduling.
+          </p>
+        </div>
+      ) : (
+        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 flex items-center justify-between text-xs font-bold">
+          <span className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            <span>Registration Closed — Fixtures Ready for {selectedEvent.title}</span>
+          </span>
+        </div>
+      )}
       
       {/* HEADER & SCHEDULE FORM */}
-      <div className="bg-white dark:bg-[#0B1120] p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-sm space-y-5">
+      <div className={`bg-white dark:bg-[#0B1120] p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-sm space-y-5 ${
+        !isRegClosed ? 'opacity-60 pointer-events-none' : ''
+      }`}>
         <div>
           <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[10px] font-mono font-bold uppercase tracking-wider">
             OFFICIAL ATHLETICS TIME SLOTTING CONSOLE
@@ -99,24 +163,24 @@ export const AthleticsMatchScheduleTab = ({ user }) => {
             Sub-Event Schedule Generator
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Select sub-event game from dropdown, enter heat/round details, date, and timing. (No player names required)
+            Select target event, sub-event game from dropdown, enter heat/round details, date, and timing.
           </p>
         </div>
 
         <form onSubmit={handleAddSchedule} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2">
           
-          {/* Sub-Event Dropdown */}
+          {/* Target Event Dropdown */}
           <div>
             <label className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1.5">
-              Select Athletics Game (Sub-Event) <span className="text-rose-500">*</span>
+              Target Event <span className="text-rose-500">*</span>
             </label>
             <select
-              value={selectedSubEvent}
-              onChange={(e) => setSelectedSubEvent(e.target.value)}
+              value={selectedEventId}
+              onChange={(e) => setSelectedEventId(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none cursor-pointer"
             >
-              {OFFICIAL_ATHLETICS_EVENTS.map((se) => (
-                <option key={se} value={se}>{se}</option>
+              {activeEvents.map((ev) => (
+                <option key={ev.id} value={ev.id}>{ev.title} ({ev.registrationOpen === false || ev.status === 'Closed' ? 'Reg Closed' : 'Reg Open'})</option>
               ))}
             </select>
           </div>

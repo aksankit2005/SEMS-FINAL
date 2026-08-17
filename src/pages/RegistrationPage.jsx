@@ -442,6 +442,11 @@ export const RegistrationPage = () => {
 
   // Step 1 Validation
   const handleDetailsSubmit = () => {
+    if (activeSport && (activeSport.registrationOpen === false || activeSport.status === 'Closed')) {
+      addToast('Registration is closed for this event. No new submissions can be accepted.', 'error');
+      return;
+    }
+
     let formErrors = {};
     const key = resolveSportKey(activeSport);
     const isRacket = isRacketSportCheck(activeSport);

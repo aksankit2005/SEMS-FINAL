@@ -30,33 +30,71 @@ export const CricketMatchScheduleTab = ({ matches, user, onUpdateMatches, global
   });
 
   const [createdEvents, setCreatedEvents] = useState([]);
+  const [selectedEventId, setSelectedEventId] = useState('');
+  const [eligibleCompetitors, setEligibleCompetitors] = useState({ teams: [], participants: [] });
+  const [loadingCompetitors, setLoadingCompetitors] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
   const [form, setForm] = useState({
-    format: 'Team', // Fixed as Team match for Cricket
-    category: 'Open', // Boys, Girls, Open
+    format: 'Team',
+    category: 'Open',
     eventTitle: 'Inter-College T20 Cricket Championship 2026',
-    team1: '', // Team 1 Name
-    team2: '', // Team 2 Name
-    tableNumber: 'Cricket Ground 1', // Cricket Pitch / Venue Allocation
+    team1: '',
+    team2: '',
+    team1Id: '',
+    team2Id: '',
+    tableNumber: 'Cricket Ground 1',
     date: new Date().toISOString().split('T')[0],
     time: '09:00 AM',
   });
+
+  const activeEvents = createdEvents.filter((e) => e && e.status !== 'Draft' && e.status !== 'Completed');
+  const selectedEvent = activeEvents.find((e) => e.id === selectedEventId) || activeEvents[0] || null;
+  const isRegClosed = Boolean(selectedEvent && (selectedEvent.registrationOpen === false || selectedEvent.status === 'Closed'));
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
         const list = await coordinatorApi.getEvents();
-        if (list && list.length > 0) {
-          setCreatedEvents(list);
-          if (!form.eventTitle) {
-            setForm((prev) => ({ ...prev, eventTitle: list[0].title }));
+        const filtered = (list || []).filter(
+          (e) => (e.sportId || e.sportName || '').toLowerCase().includes('cricket') && !(e.sportId || e.sportName || '').toLowerCase().includes('gully')
+        );
+        if (filtered && filtered.length > 0) {
+          setCreatedEvents(filtered);
+          const act = filtered.filter((e) => e && e.status !== 'Draft' && e.status !== 'Completed');
+          if (act.length > 0) {
+            setSelectedEventId(act[0].id);
+            setForm((prev) => ({ ...prev, eventTitle: act[0].title }));
           }
         }
       } catch (e) { }
     };
     fetchEvents();
   }, []);
+
+  useEffect(() => {
+    if (!selectedEvent?.id) {
+      setEligibleCompetitors({ teams: [], participants: [] });
+      return;
+    }
+    const loadCompetitors = async () => {
+      setLoadingCompetitors(true);
+      try {
+        const data = await coordinatorApi.getEligibleCompetitors(selectedEvent.id);
+        if (data) {
+          setEligibleCompetitors({
+            teams: data.teams || [],
+            participants: data.participants || []
+          });
+        }
+      } catch (e) {
+        console.warn('Error loading eligible cricket teams:', e);
+      } finally {
+        setLoadingCompetitors(false);
+      }
+    };
+    loadCompetitors();
+  }, [selectedEvent?.id]);
 
   const getCleanTeamName = (teamStr) => {
     if (!teamStr) return '';
@@ -104,13 +142,30 @@ export const CricketMatchScheduleTab = ({ matches, user, onUpdateMatches, global
   const handleAddSlot = async (e) => {
     e.preventDefault();
 
+    if (!selectedEvent) {
+      addToast('No active event selected for match scheduling.', 'error');
+      return;
+    }
+
+    if (!isRegClosed) {
+      addToast('Registration must be closed before fixtures can be scheduled.', 'error');
+      return;
+    }
+
     if (!form.team1.trim() || !form.team2.trim()) {
-      addToast('Please enter both Team 1 Name and Team 2 Name', 'error');
+      addToast('Please select both Team 1 and Team 2', 'error');
+      return;
+    }
+
+    if (form.team1.trim() === form.team2.trim()) {
+      addToast('Team 1 and Team 2 cannot be the same team', 'error');
       return;
     }
 
     const finalTeam1 = form.team1.trim();
     const finalTeam2 = form.team2.trim();
+    const finalTeam1Id = form.team1Id || null;
+    const finalTeam2Id = form.team2Id || null;
 
     if (editingId) {
       const updated = matches.map((m) =>
@@ -119,12 +174,15 @@ export const CricketMatchScheduleTab = ({ matches, user, onUpdateMatches, global
             ...m,
             team1: finalTeam1,
             team2: finalTeam2,
+            team1Id: finalTeam1Id,
+            team2Id: finalTeam2Id,
+            eventId: selectedEvent.id,
+            eventTitle: selectedEvent.title,
             tableNumber: form.tableNumber,
             date: form.date,
             time: form.time,
             format: 'Team',
             category: form.category,
-            eventTitle: form.eventTitle,
           }
           : m
       );
@@ -132,35 +190,37 @@ export const CricketMatchScheduleTab = ({ matches, user, onUpdateMatches, global
       await coordinatorApi.updateMatchScoring(editingId, {
         team1: finalTeam1,
         team2: finalTeam2,
+        team1Id: finalTeam1Id,
+        team2Id: finalTeam2Id,
+        eventId: selectedEvent.id,
+        eventTitle: selectedEvent.title,
         tableNumber: form.tableNumber,
         date: form.date,
         time: form.time,
         format: 'Team',
         category: form.category,
-        eventTitle: form.eventTitle,
       });
       addToast('Cricket match fixture updated!', 'success');
       setEditingId(null);
     } else {
       const newSlot = {
-        id: `M-CRK-${Math.floor(100000 + Math.random() * 900000)}`,
-        sportId: 'cricket',
-        sportName: 'Cricket',
+        id: `M${Math.floor(100000 + Math.random() * 900000)}`,
+        sportId: assignedSport,
+        sportName: sportName,
+        eventId: selectedEvent.id,
+        eventTitle: selectedEvent.title,
         team1: finalTeam1,
         team2: finalTeam2,
+        team1Id: finalTeam1Id,
+        team2Id: finalTeam2Id,
         tableNumber: form.tableNumber,
         date: form.date,
         time: form.time,
         format: 'Team',
         category: form.category,
-        eventTitle: form.eventTitle,
         status: 'SCHEDULED',
         score1: 0,
         score2: 0,
-        overs1: '0.0',
-        overs2: '0.0',
-        wickets1: 0,
-        wickets2: 0,
       };
       const updated = [...matches, newSlot];
       onUpdateMatches(updated);
@@ -168,27 +228,24 @@ export const CricketMatchScheduleTab = ({ matches, user, onUpdateMatches, global
       addToast('Cricket match fixture scheduled successfully!', 'success');
     }
 
-    setForm({
-      format: 'Team',
-      category: 'Open',
-      eventTitle: createdEvents[0]?.title || 'Inter-College T20 Cricket Championship 2026',
+    setForm((prev) => ({
+      ...prev,
       team1: '',
       team2: '',
-      tableNumber: 'Cricket Ground 1',
-      date: new Date().toISOString().split('T')[0],
-      time: '09:00 AM',
-    });
+      team1Id: '',
+      team2Id: '',
+    }));
   };
 
   const handleDeleteSlot = async (id) => {
     const isConfirmed = await confirmDelete({
-      title: 'Delete Cricket Match',
+      title: 'Delete Cricket Match Fixture',
       message: 'Are you sure you want to delete this scheduled cricket match fixture?'
     });
     if (!isConfirmed) return;
     await coordinatorApi.deleteMatch(id);
     onUpdateMatches(matches.filter((m) => m.id !== id));
-    addToast('Cricket match fixture deleted', 'info');
+    addToast('Cricket fixture deleted from database', 'info');
   };
 
   return (
@@ -210,34 +267,60 @@ export const CricketMatchScheduleTab = ({ matches, user, onUpdateMatches, global
           </button>
         </div>
 
+        {/* LIFECYCLE GATE BANNER */}
+        {!selectedEvent ? (
+          <div className="p-5 rounded-3xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 space-y-1.5">
+            <h4 className="text-xs font-black uppercase tracking-wider">⚠️ No Active Cricket Event</h4>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              Create and publish a Cricket event in the Events tab to enable match scheduling.
+            </p>
+          </div>
+        ) : !isRegClosed ? (
+          <div className="p-5 rounded-3xl bg-blue-500/10 border border-blue-500/30 text-blue-700 dark:text-indigo-300 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
+              <h4 className="text-xs font-black uppercase tracking-wider">Event Active • Registration Open — Scheduling Locked</h4>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              Teams are actively registering for <strong>"{selectedEvent.title}"</strong>. To schedule matches, navigate to the <strong>Events tab</strong> and click <strong>"Close Reg"</strong> to freeze team rosters.
+            </p>
+          </div>
+        ) : (
+          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 flex items-center justify-between text-xs font-bold">
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <span>Registration Closed — Fixtures Ready ({eligibleCompetitors.teams.length} teams)</span>
+            </span>
+          </div>
+        )}
+
         {/* Form Box */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-2xl space-y-4">
+        <div className={`p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-2xl space-y-4 ${
+          !isRegClosed ? 'opacity-60 pointer-events-none' : ''
+        }`}>
           <form onSubmit={handleAddSlot} className="space-y-4">
 
             {/* Event Name */}
             <div>
               <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase">
-                Event Title
+                Target Event
               </label>
-              {createdEvents.length > 0 ? (
+              {activeEvents.length > 0 ? (
                 <select
-                  value={form.eventTitle}
-                  onChange={(e) => setForm({ ...form, eventTitle: e.target.value })}
+                  value={selectedEventId}
+                  onChange={(e) => {
+                    setSelectedEventId(e.target.value);
+                    const ev = activeEvents.find(a => a.id === e.target.value);
+                    if (ev) setForm(prev => ({ ...prev, eventTitle: ev.title }));
+                  }}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
-                  {createdEvents.map((ev) => (
-                    <option key={ev.id} value={ev.title}>{ev.title}</option>
+                  {activeEvents.map((ev) => (
+                    <option key={ev.id} value={ev.id}>{ev.title} ({ev.registrationOpen === false || ev.status === 'Closed' ? 'Reg Closed' : 'Reg Open'})</option>
                   ))}
                 </select>
               ) : (
-                <input
-                  type="text"
-                  required
-                  value={form.eventTitle}
-                  onChange={(e) => setForm({ ...form, eventTitle: e.target.value })}
-                  placeholder="e.g. Inter-College T20 Cricket Championship 2026"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+                <p className="text-xs text-rose-500">No active events found.</p>
               )}
             </div>
 
@@ -257,35 +340,67 @@ export const CricketMatchScheduleTab = ({ matches, user, onUpdateMatches, global
               </select>
             </div>
 
-            {/* TEAM 1 NAME Input */}
+            {/* TEAM 1 Registered Selector */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300">
-                Team 1 Name <span className="text-rose-500">*</span>
+                Team 1 (Registered Team) <span className="text-rose-500">*</span>
               </label>
-              <input
-                type="text"
-                required
+              <select
                 value={form.team1}
-                onChange={(e) => setForm({ ...form, team1: e.target.value })}
-                placeholder="e.g. MPEC XI, PSIT Super Kings"
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
+                onChange={(e) => {
+                  const selected = (eligibleCompetitors.teams.length > 0 ? eligibleCompetitors.teams : eligibleCompetitors.participants).find(
+                    (t) => (t.teamName || t.name) === e.target.value || t.displayName === e.target.value
+                  );
+                  setForm({
+                    ...form,
+                    team1: e.target.value,
+                    team1Id: selected?.id || selected?.registrationId || null
+                  });
+                }}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="">-- Select Registered Team 1 --</option>
+                {(eligibleCompetitors.teams.length > 0 ? eligibleCompetitors.teams : eligibleCompetitors.participants).map((t) => (
+                  <option key={t.id} value={t.teamName || t.name}>
+                    {t.displayName || t.teamName || t.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {/* TEAM 2 NAME Input */}
+            {/* TEAM 2 Registered Selector */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300">
-                Team 2 Name <span className="text-rose-500">*</span>
+                Team 2 (Registered Team) <span className="text-rose-500">*</span>
               </label>
-              <input
-                type="text"
-                required
+              <select
                 value={form.team2}
-                onChange={(e) => setForm({ ...form, team2: e.target.value })}
-                placeholder="e.g. MIPS Strikers, MPCPS Royals"
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
+                onChange={(e) => {
+                  const selected = (eligibleCompetitors.teams.length > 0 ? eligibleCompetitors.teams : eligibleCompetitors.participants).find(
+                    (t) => (t.teamName || t.name) === e.target.value || t.displayName === e.target.value
+                  );
+                  setForm({
+                    ...form,
+                    team2: e.target.value,
+                    team2Id: selected?.id || selected?.registrationId || null
+                  });
+                }}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="">-- Select Registered Team 2 --</option>
+                {(eligibleCompetitors.teams.length > 0 ? eligibleCompetitors.teams : eligibleCompetitors.participants).map((t) => (
+                  <option key={t.id} value={t.teamName || t.name}>
+                    {t.displayName || t.teamName || t.name}
+                  </option>
+                ))}
+              </select>
             </div>
+
+            {isRegClosed && eligibleCompetitors.teams.length === 0 && (
+              <p className="text-[11px] font-bold text-rose-500 dark:text-rose-400">
+                ⚠️ No verified registrations found for this Cricket event.
+              </p>
+            )}
 
             {/* Cricket Pitch / Venue Allocation */}
             <div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, CheckCircle2, ChevronRight, ChevronLeft, Shield, Users, Calendar, Award, UserCheck, AlertCircle } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
+import { coordinatorApi } from '../../../services/coordinatorApi';
 
 export const CricketGoLiveSetupModal = ({ match, targetVenue, onClose, onStartMatch }) => {
   const { addToast } = useToast();
@@ -86,6 +87,79 @@ export const CricketGoLiveSetupModal = ({ match, targetVenue, onClose, onStartMa
       name: `${defaultTeam2} Sub ${i + 1}`,
     }));
   });
+
+  // Fetch actual registered roster members if eventId is available
+  useEffect(() => {
+    const loadRegisteredRoster = async () => {
+      if (!match?.eventId) return;
+      try {
+        const data = await coordinatorApi.getEligibleCompetitors(match.eventId);
+        if (data && data.teams) {
+          const tA = data.teams.find((t) => t.id === match.team1Id || t.teamName === match.team1 || t.displayName?.includes(match.team1));
+          const tB = data.teams.find((t) => t.id === match.team2Id || t.teamName === match.team2 || t.displayName?.includes(match.team2));
+
+          if (tA && tA.members && tA.members.length > 0) {
+            const playersA = tA.members.slice(0, squadSize).map((m, i) => ({
+              id: m.id || `TA-${i + 1}`,
+              name: m.name,
+              isCaptain: m.isCaptain || (i === 0),
+              isKeeper: i === 1,
+              rollNo: m.rollNo,
+              course: m.course
+            }));
+            while (playersA.length < squadSize) {
+              playersA.push({
+                id: `TA-${playersA.length + 1}`,
+                name: `${tA.teamName} Player ${playersA.length + 1}`,
+                isCaptain: false,
+                isKeeper: false
+              });
+            }
+            setTeamAPlayers(playersA);
+            const captainA = playersA.find(p => p.isCaptain)?.name || playersA[0]?.name;
+            setTeamA(prev => ({ ...prev, captain: captainA }));
+
+            const subsA = tA.members.slice(squadSize, squadSize + subsSize).map((m, i) => ({
+              id: m.id || `TA-SUB${i + 1}`,
+              name: m.name
+            }));
+            if (subsA.length > 0) setTeamASubs(subsA);
+          }
+
+          if (tB && tB.members && tB.members.length > 0) {
+            const playersB = tB.members.slice(0, squadSize).map((m, i) => ({
+              id: m.id || `TB-${i + 1}`,
+              name: m.name,
+              isCaptain: m.isCaptain || (i === 0),
+              isKeeper: i === 1,
+              rollNo: m.rollNo,
+              course: m.course
+            }));
+            while (playersB.length < squadSize) {
+              playersB.push({
+                id: `TB-${playersB.length + 1}`,
+                name: `${tB.teamName} Player ${playersB.length + 1}`,
+                isCaptain: false,
+                isKeeper: false
+              });
+            }
+            setTeamBPlayers(playersB);
+            const captainB = playersB.find(p => p.isCaptain)?.name || playersB[0]?.name;
+            setTeamB(prev => ({ ...prev, captain: captainB }));
+
+            const subsB = tB.members.slice(squadSize, squadSize + subsSize).map((m, i) => ({
+              id: m.id || `TB-SUB${i + 1}`,
+              name: m.name
+            }));
+            if (subsB.length > 0) setTeamBSubs(subsB);
+          }
+        }
+      } catch (e) {
+        console.warn('Error loading registered cricket squad:', e);
+      }
+    };
+    loadRegisteredRoster();
+  }, [match?.eventId, match?.team1Id, match?.team2Id, match?.team1, match?.team2]);
 
   // Determine Batting Team & Bowling Team based on Toss
   const isTeamABattingFirst =

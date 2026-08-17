@@ -721,6 +721,7 @@ model CoordinatorEventItem {
   venue             String?
   category          String?
   status            String   @default("Draft")
+  registrationOpen  Boolean  @default(true) @map("registration_open")
   rules             Json?
   requiredDocuments Json?    @map("required_documents")
   contactInfo       Json?    @map("contact_info")

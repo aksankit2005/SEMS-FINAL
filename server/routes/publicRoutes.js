@@ -515,6 +515,7 @@ router.get('/public/events', publicReadLimiter, async (req, res) => {
 
 // POST /api/public/register-event - Event registration endpoint
 router.post('/public/register-event', apiLimiter, registerPublicEvent);
+router.post('/public/register', apiLimiter, registerPublicEvent);
 
 // GET /api/leaderboard - Spectator college standings endpoint from Supabase college_leaderboards table
 router.get('/leaderboard', publicReadLimiter, async (req, res) => {
