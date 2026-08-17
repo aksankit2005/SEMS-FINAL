@@ -14,6 +14,10 @@ cloudinary.config({
  * Ensures the API secret never leaves the server.
  */
 export const generateUploadSignature = (customFolder = null) => {
+  if (!envConfig.cloudinaryCloudName || !envConfig.cloudinaryApiKey || !envConfig.cloudinaryApiSecret) {
+    throw new Error('Cloudinary credentials (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) are not configured on the server.');
+  }
+
   const timestamp = Math.round(Date.now() / 1000);
   const folder = customFolder || envConfig.cloudinaryFolder || 'sems_gallery';
 

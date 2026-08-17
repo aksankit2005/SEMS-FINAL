@@ -123,11 +123,21 @@ export const CollegeHeadDashboardPage = () => {
       return;
     }
 
+    const escapeHtml = (unsafe) => {
+      if (typeof unsafe !== 'string') return unsafe ? String(unsafe) : '';
+      return unsafe
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
     const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>SEMS 2026 - ${user?.college} Sports Participation Report</title>
+        <title>SEMS 2026 - ${escapeHtml(user?.college)} Sports Participation Report</title>
         <style>
           body { font-family: Arial, sans-serif; padding: 20px; color: #0f172a; }
           .header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 10px; margin-bottom: 20px; }
@@ -149,7 +159,7 @@ export const CollegeHeadDashboardPage = () => {
         <div class="header">
           <div class="title">APEX SPORTS FESTIVAL 2026</div>
           <div class="subtitle">Official College Participation & Performance Report</div>
-          <div style="margin-top: 8px;"><span class="badge">ASSIGNED COLLEGE: ${user?.college}</span></div>
+          <div style="margin-top: 8px;"><span class="badge">ASSIGNED COLLEGE: ${escapeHtml(user?.college)}</span></div>
         </div>
 
         <div class="summary-grid">
@@ -192,21 +202,21 @@ export const CollegeHeadDashboardPage = () => {
               return `
               <tr>
                 <td>${idx + 1}</td>
-                <td><strong>${s.studentName || 'N/A'}</strong></td>
+                <td><strong>${escapeHtml(s.studentName || 'N/A')}</strong></td>
                 <td><span style="font-weight: bold; color: ${isCap ? '#2563eb' : '#64748b'};">${isCap ? 'Captain' : 'Player'}</span></td>
-                <td>${s.rollNumber || 'N/A'}</td>
-                <td>${s.course || 'N/A'}</td>
-                <td>${s.yearSemester || s.year || 'N/A'}</td>
-                <td>${s.sportName || 'N/A'}</td>
-                <td>${s.teamName || 'Individual'}</td>
-                <td>${s.status || 'VERIFIED'}</td>
+                <td>${escapeHtml(s.rollNumber || 'N/A')}</td>
+                <td>${escapeHtml(s.course || 'N/A')}</td>
+                <td>${escapeHtml(s.yearSemester || s.year || 'N/A')}</td>
+                <td>${escapeHtml(s.sportName || 'N/A')}</td>
+                <td>${escapeHtml(s.teamName || 'Individual')}</td>
+                <td>${escapeHtml(s.status || 'VERIFIED')}</td>
               </tr>
             `}).join('')}
           </tbody>
         </table>
 
         <div class="footer">
-          Report generated for College Head (${user?.faculty_name || 'Faculty Sports Head'}) on ${new Date().toLocaleDateString()} | Read-Only Access System
+          Report generated for College Head (${escapeHtml(user?.faculty_name || 'Faculty Sports Head')}) on ${new Date().toLocaleDateString()} | Read-Only Access System
         </div>
 
         <script>
@@ -220,6 +230,7 @@ export const CollegeHeadDashboardPage = () => {
     printWindow.document.close();
     addToast('PDF Report window opened ready for printing', 'success');
   };
+
 
   // Export CSV Report helper
   const handleExportCSV = () => {

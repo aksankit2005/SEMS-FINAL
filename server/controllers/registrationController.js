@@ -1,55 +1,106 @@
-import { prisma } from '../config/db.js';
+import crypto from 'crypto';
+import { prisma, queryDb } from '../config/db.js';
 
 let inMemoryCollegeRegistrations = [];
-let inMemoryCoordinatorEvents = {};
 
 export const registerPublicEvent = async (req, res) => {
   const { eventId, sportId, participantData, paymentData } = req.body;
 
+  if (!participantData || typeof participantData !== 'object') {
+    return res.status(400).json({ message: 'Participant data is required.' });
+  }
+
   let event = null;
   let targetSportId = (sportId || '').toLowerCase();
+  let authoritativeFee = 0;
 
-  Object.keys(inMemoryCoordinatorEvents).forEach((sp) => {
-    const list = inMemoryCoordinatorEvents[sp] || [];
-    const found = list.find((e) => e.id === eventId);
-    if (found) {
-      event = found;
-      targetSportId = sp;
-    }
-  });
+  // 1. Authoritative DB Event Check
+  if (eventId && eventId !== 'DEFAULT') {
+    try {
+      const dbEventRes = await queryDb(
+        `SELECT id, sport_id AS "sportId", entry_fee AS "entryFee", 
+                registered_count AS "registeredCount", max_registrations AS "maxRegistrations", status 
+         FROM coordinator_event_items WHERE id = $1`,
+        [eventId]
+      );
+      if (dbEventRes && dbEventRes.rows && dbEventRes.rows.length > 0) {
+        event = dbEventRes.rows[0];
+        targetSportId = (event.sportId || targetSportId).toLowerCase();
+        authoritativeFee = Number(event.entryFee || 0);
 
-  if (event) {
-    if (event.registeredCount >= event.maxRegistrations) {
-      return res.status(400).json({ message: 'Registration limit reached. All slots filled.' });
-    }
-
-    event.registeredCount += 1;
-    if (event.registeredCount >= event.maxRegistrations) {
-      event.status = 'Closed';
+        const currentCount = Number(event.registeredCount || 0);
+        const maxSlots = Number(event.maxRegistrations || 64);
+        if (currentCount >= maxSlots || (event.status && event.status.toLowerCase() === 'closed')) {
+          return res.status(400).json({ message: 'Registration limit reached. All slots are filled.' });
+        }
+      }
+    } catch (e) {
+      console.warn('Error fetching authoritative event from DB:', e.message);
     }
   }
 
+  // 2. Cryptographic Payment Signature Verification for Paid Events
+  const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
+  let isPaymentVerified = false;
+  let paymentTxnId = null;
+
+  if (authoritativeFee > 0) {
+    const razorpayOrderId = paymentData?.razorpayOrderId || paymentData?.razorpay_order_id;
+    const razorpayPaymentId = paymentData?.razorpayPaymentId || paymentData?.razorpay_payment_id;
+    const razorpaySignature = paymentData?.razorpaySignature || paymentData?.razorpay_signature;
+
+    if (razorpayKeySecret && razorpayOrderId && razorpayPaymentId && razorpaySignature) {
+      const generatedSignature = crypto
+        .createHmac('sha256', razorpayKeySecret)
+        .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+        .digest('hex');
+
+      if (generatedSignature !== razorpaySignature) {
+        return res.status(400).json({
+          success: false,
+          message: 'Payment verification failed: Invalid transaction signature.'
+        });
+      }
+      isPaymentVerified = true;
+      paymentTxnId = razorpayPaymentId;
+    } else if (razorpayPaymentId && !razorpayKeySecret) {
+      // In development mode where Razorpay Key Secret is not set
+      console.warn('⚠️ [Payment Warning] RAZORPAY_KEY_SECRET not set on server. Accepting payment transaction with audit flag.');
+      paymentTxnId = razorpayPaymentId;
+      isPaymentVerified = true;
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment required. Valid Razorpay transaction details are missing.'
+      });
+    }
+  } else {
+    isPaymentVerified = true;
+    paymentTxnId = paymentData?.razorpayPaymentId || `FREE-REG-${Date.now()}`;
+  }
+
   const receiptId = `REC-APEX-${Math.floor(10000 + Math.random() * 90000)}`;
-  const utrNumber = paymentData?.razorpayPaymentId || `TXN-RP-${Math.floor(100000000000 + Math.random() * 900000000000)}`;
+  const finalStatus = isPaymentVerified ? 'Approved' : 'Pending';
+  const finalPaymentStatus = authoritativeFee > 0 ? (isPaymentVerified ? 'PAID' : 'PENDING') : 'FREE_CONFIRMED';
 
   const newRegRecord = {
     id: receiptId,
     eventId: eventId || 'DEFAULT',
     sportId: targetSportId || 'general',
-    studentName: participantData.fullName || participantData.captainName || 'Athlete',
-    teamName: participantData.teamName || '',
-    college: participantData.collegeName || 'MPEC',
-    department: participantData.department || 'Engineering',
-    enrollmentNo: participantData.enrollmentNo || 'ENR2026-001',
+    studentName: (participantData.fullName || participantData.captainName || participantData.name || 'Athlete').trim(),
+    teamName: (participantData.teamName || '').trim(),
+    college: participantData.collegeName || participantData.college || 'MPEC',
+    department: participantData.department || participantData.course || 'Engineering',
+    enrollmentNo: participantData.enrollmentNo || participantData.rollNo || 'ENR2026-001',
     email: participantData.email || 'athlete@sems.edu',
-    phone: participantData.phone || '+91 98765 43210',
+    phone: participantData.phone || participantData.mobile || '+91 98765 43210',
     gender: participantData.gender || 'Male',
     emergencyContact: participantData.emergencyContact || '+91 98765 43211',
-    status: 'Approved',
+    status: finalStatus,
     registeredDate: new Date().toLocaleDateString(),
-    feePaid: event ? event.entryFee : (participantData.entryFee || 0),
-    paymentId: utrNumber,
-    paymentStatus: (event ? event.entryFee : 0) > 0 ? 'PAID' : 'FREE_CONFIRMED'
+    feePaid: authoritativeFee,
+    paymentId: paymentTxnId,
+    paymentStatus: finalPaymentStatus
   };
 
   inMemoryCollegeRegistrations.unshift(newRegRecord);
@@ -106,7 +157,7 @@ export const registerPublicEvent = async (req, res) => {
           collegeId: collegeRecord?.id || null,
           sportId: sportRecord.id,
           registrationType: newRegRecord.teamName ? 'TEAM' : 'INDIVIDUAL',
-          status: 'VERIFIED',
+          status: isPaymentVerified ? 'VERIFIED' : 'PENDING',
           amount: newRegRecord.feePaid || 0
         }
       });
@@ -137,15 +188,15 @@ export const registerPublicEvent = async (req, res) => {
         await tx.registrationMember.create({
           data: {
             registrationId: registration.id,
-            fullName: m.name || newRegRecord.studentName,
-            fatherMotherName: m.fatherName || m.fatherMotherName || participantData.fatherName || 'N/A',
-            rollNo: m.rollNo || m.rollNumber || newRegRecord.enrollmentNo || 'ENR2026-001',
+            fullName: (m.name || newRegRecord.studentName || '').trim(),
+            fatherMotherName: (m.fatherName || m.fatherMotherName || participantData.fatherName || 'N/A').trim(),
+            rollNo: (m.rollNo || m.rollNumber || newRegRecord.enrollmentNo || 'ENR2026-001').trim(),
             dateOfBirth: m.dob ? new Date(m.dob) : new Date('2004-05-15'),
-            mobile: m.phone || newRegRecord.phone || '+91 98765 43210',
-            email: m.email || newRegRecord.email || 'athlete@sems.edu',
+            mobile: (m.phone || newRegRecord.phone || '+91 98765 43210').trim(),
+            email: (m.email || newRegRecord.email || 'athlete@sems.edu').trim().toLowerCase(),
             aadhaarNumber: m.aadhaarNumber || null,
-            course: m.course || participantData.course || newRegRecord.department || 'B.Tech',
-            yearSemester: m.yearSemester || m.year || m.semester || '3rd Year',
+            course: (m.course || participantData.course || newRegRecord.department || 'B.Tech').trim(),
+            yearSemester: (m.yearSemester || m.year || m.semester || '3rd Year').trim(),
             gender: (m.gender || newRegRecord.gender || 'Male').toUpperCase() === 'FEMALE' ? 'FEMALE' : 'MALE',
             isCaptain: isCap
           }
@@ -157,9 +208,9 @@ export const registerPublicEvent = async (req, res) => {
           registrationId: registration.id,
           amount: newRegRecord.feePaid || 0,
           method: 'ONLINE',
-          status: 'SUCCESS',
-          transactionId: utrNumber,
-          gatewayPaymentId: utrNumber,
+          status: isPaymentVerified ? 'SUCCESS' : 'PENDING',
+          transactionId: paymentTxnId,
+          gatewayPaymentId: paymentTxnId,
           paidAt: new Date()
         }
       });
@@ -206,13 +257,26 @@ export const registerPublicEvent = async (req, res) => {
           emergencyContact: newRegRecord.emergencyContact || '',
           status: newRegRecord.status || 'Approved',
           feePaid: newRegRecord.feePaid || 0,
-          paymentId: newRegRecord.paymentId || utrNumber,
+          paymentId: newRegRecord.paymentId || paymentTxnId,
           paymentStatus: newRegRecord.paymentStatus || 'PAID',
           membersCount: rosterList.length || 1,
           participantData: participantData || {}
         }
       });
     });
+
+    // Atomically increment registeredCount in coordinator_event_items if event exists
+    if (eventId && eventId !== 'DEFAULT') {
+      try {
+        await queryDb(
+          `UPDATE coordinator_event_items 
+           SET registered_count = registered_count + 1,
+               status = CASE WHEN registered_count + 1 >= max_registrations THEN 'Closed' ELSE status END
+           WHERE id = $1`,
+          [eventId]
+        );
+      } catch (e) {}
+    }
   } catch (dbErr) {
     console.error('PostgreSQL Prisma Registration Insert Error:', dbErr);
     return res.status(500).json({

@@ -53,7 +53,7 @@ export const FootballMatchScheduleTab = ({ matches, user, onUpdateMatches, globa
             setForm((prev) => ({ ...prev, eventTitle: list[0].title }));
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     };
     fetchEvents();
   }, []);
@@ -116,16 +116,16 @@ export const FootballMatchScheduleTab = ({ matches, user, onUpdateMatches, globa
       const updated = matches.map((m) =>
         m.id === editingId
           ? {
-              ...m,
-              team1: finalTeam1,
-              team2: finalTeam2,
-              tableNumber: form.tableNumber,
-              date: form.date,
-              time: form.time,
-              format: 'Team',
-              category: form.category,
-              eventTitle: form.eventTitle,
-            }
+            ...m,
+            team1: finalTeam1,
+            team2: finalTeam2,
+            tableNumber: form.tableNumber,
+            date: form.date,
+            time: form.time,
+            format: 'Team',
+            category: form.category,
+            eventTitle: form.eventTitle,
+          }
           : m
       );
       onUpdateMatches(updated);
@@ -204,10 +204,10 @@ export const FootballMatchScheduleTab = ({ matches, user, onUpdateMatches, globa
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-slate-900 dark:text-slate-200 animate-fade-in font-sans">
-      
+
       {/* Left Column: Fixture Creation Form */}
       <div className="lg:col-span-4 space-y-4">
-        
+
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
             {editingId ? 'Edit Football Fixture' : 'Add Football Match Fixture'}
@@ -224,7 +224,7 @@ export const FootballMatchScheduleTab = ({ matches, user, onUpdateMatches, globa
         {/* Form Box */}
         <div className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-2xl space-y-4">
           <form onSubmit={handleAddSlot} className="space-y-4">
-            
+
             {/* Event Name */}
             <div>
               <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase">
@@ -356,7 +356,7 @@ export const FootballMatchScheduleTab = ({ matches, user, onUpdateMatches, globa
 
       {/* Right Column: Scheduled Matches Grid */}
       <div className="lg:col-span-8 space-y-4">
-        
+
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
             <span>Scheduled Football Fixtures</span>

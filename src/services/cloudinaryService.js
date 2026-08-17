@@ -17,7 +17,11 @@ export const uploadFileToCloudinary = async (file, onProgress = () => { }, folde
 
   // 1. Obtain authenticated upload signature from backend
   const authData = await galleryApi.getCloudinarySignature(folder);
-  const { signature, timestamp, apiKey, cloudName, folder: targetFolder } = authData;
+  const { signature, timestamp, apiKey, cloudName, folder: targetFolder } = authData || {};
+
+  if (!cloudName || !apiKey || !signature) {
+    throw new Error('Cloudinary credentials (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) are missing or not configured on the server.');
+  }
 
   const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
 

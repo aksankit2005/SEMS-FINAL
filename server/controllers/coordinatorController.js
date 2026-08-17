@@ -751,16 +751,24 @@ export const getBasketballMatchPlayersDB = async (req, res) => {
 };
 
 export const deleteMatch = async (req, res) => {
-  const sportId = req.user.assignedSport.toLowerCase();
+  const sportId = (req.user?.assignedSport || '').toLowerCase();
   const { id } = req.params;
+
+  if (!sportId) {
+    return res.status(403).json({ message: 'Sport coordinator authorization missing.' });
+  }
 
   if (inMemoryCoordinatorMatches[sportId]) {
     inMemoryCoordinatorMatches[sportId] = inMemoryCoordinatorMatches[sportId].filter((m) => m.id !== id);
   }
 
-  await queryDb('DELETE FROM live_matches WHERE id = $1', [id]);
-  try { await queryDb('DELETE FROM matches WHERE id = $1', [id]); } catch(e){}
-  return res.json({ success: true, message: 'Match deleted successfully' });
+  const result = await queryDb('DELETE FROM live_matches WHERE id = $1 AND LOWER(sport_id) = $2 RETURNING id', [id, sportId]);
+  try { await queryDb('DELETE FROM matches WHERE id = $1 AND LOWER(sport_id) = $2', [id, sportId]); } catch(e){}
+
+  if (result && result.rows && result.rows.length > 0) {
+    return res.json({ success: true, message: 'Match deleted successfully' });
+  }
+  return res.status(404).json({ success: false, message: 'Match not found or unauthorized for this sport' });
 };
 
 export const deleteAllMatches = async (req, res) => {
@@ -787,6 +795,9 @@ export const updateMatchScore = async (req, res) => {
     const dbRes = await queryDb('SELECT * FROM live_matches WHERE id = $1', [id]);
     if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
       existing = dbRes.rows[0];
+      if (existing.sport_id && existing.sport_id.toLowerCase() !== sportId) {
+        return res.status(403).json({ message: 'Access denied. You cannot modify matches belonging to another sport.' });
+      }
     }
   } catch (e) {
     console.warn('updateMatchScore DB select error:', e.message);
@@ -1458,13 +1469,28 @@ export const getRegistrations = async (req, res) => {
 };
 
 export const deleteRegistration = async (req, res) => {
+  const sportId = (req.user?.assignedSport || '').toLowerCase();
+  const cleanSportId = sportId.replace(/_/g, '-');
+  const baseSportId = cleanSportId.split('-')[0].split('_')[0];
   const { id } = req.params;
+
   try {
+    // Verify that the registration actually belongs to this coordinator's assigned sport
+    const checkSql = `SELECT id, sport_id FROM college_registrations 
+      WHERE (id::text = $1 OR registration_id::text = $1)
+        AND (LOWER(sport_id) LIKE $2 OR LOWER(sport_id) LIKE $3 OR LOWER(sport_id) LIKE $4)`;
+    const checkRes = await queryDb(checkSql, [String(id), `%${sportId}%`, `%${cleanSportId}%`, `%${baseSportId}%`]);
+
+    if (!checkRes || checkRes.rows.length === 0) {
+      return res.status(403).json({ message: 'Access denied. You cannot delete registrations for other sports.' });
+    }
+
     await queryDb('DELETE FROM registration_members WHERE "registrationId"::text = $1 OR id::text = $1', [String(id)]);
     await queryDb(
-  'DELETE FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1',
-  [String(id)]
-);    if (isUuid(id)) {
+      'DELETE FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1',
+      [String(id)]
+    );
+    if (isUuid(id)) {
       try {
         await queryDb('DELETE FROM registrations WHERE id = $1::uuid', [id]);
       } catch (e) {}
@@ -1480,6 +1506,7 @@ export const deleteRegistration = async (req, res) => {
     return res.status(500).json({ message: 'Failed to delete registration from database' });
   }
 };
+
 
 export const toggleRegistrationStatus = (req, res) => {
   const sportId = req.user.assignedSport.toLowerCase();
@@ -1811,6 +1838,7 @@ export const updateEvent = async (req, res) => {
 };
 
 export const deleteEvent = async (req, res) => {
+  const sportId = (req.user?.assignedSport || '').toLowerCase();
   const { id } = req.params;
   if (!id) {
     return res.status(400).json({ message: 'Event ID is required' });
@@ -1823,19 +1851,25 @@ export const deleteEvent = async (req, res) => {
   });
 
   try {
-    const dbRes = await queryDb('DELETE FROM coordinator_event_items WHERE id = $1 RETURNING id', [id]);
+    const dbRes = await queryDb(
+      'DELETE FROM coordinator_event_items WHERE id = $1 AND LOWER(sport_id) = $2 RETURNING id',
+      [id, sportId]
+    );
     if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
       return res.json({ success: true, message: 'Event deleted successfully' });
     }
 
-    const prismaRes = await prisma.coordinatorEventItem.deleteMany({ where: { id } }).catch(() => ({ count: 0 }));
+    const prismaRes = await prisma.coordinatorEventItem.deleteMany({
+      where: { id, sportId: { equals: sportId, mode: 'insensitive' } }
+    }).catch(() => ({ count: 0 }));
     if (prismaRes.count > 0) {
       return res.json({ success: true, message: 'Event deleted successfully' });
     }
 
-    return res.status(404).json({ message: 'Event not found or already deleted.' });
+    return res.status(404).json({ message: 'Event not found or unauthorized for this sport.' });
   } catch (err) {
     console.error('Error deleting event from SQL DB:', err.message);
     return res.status(500).json({ message: 'Error deleting event from database' });
   }
 };
+

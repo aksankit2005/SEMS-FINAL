@@ -14,8 +14,8 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
   const venueLabel = ['table-tennis', 'chess'].includes(assignedSport)
     ? 'Table'
     : ['cricket', 'football'].includes(assignedSport)
-    ? 'Ground'
-    : 'Court';
+      ? 'Ground'
+      : 'Court';
 
   const venueOptions = isChess
     ? Array.from({ length: 10 }, (_, i) => `Table ${i + 1}`)
@@ -58,7 +58,7 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
             setForm((prev) => ({ ...prev, eventTitle: list[0].title }));
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     };
     fetchEvents();
   }, []);
@@ -137,16 +137,16 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
       const updated = matches.map((m) =>
         m.id === editingId
           ? {
-              ...m,
-              team1: finalTeam1,
-              team2: finalTeam2,
-              tableNumber: form.tableNumber,
-              date: form.date,
-              time: form.time,
-              format: form.format,
-              category: form.category,
-              eventTitle: form.eventTitle,
-            }
+            ...m,
+            team1: finalTeam1,
+            team2: finalTeam2,
+            tableNumber: form.tableNumber,
+            date: form.date,
+            time: form.time,
+            format: form.format,
+            category: form.category,
+            eventTitle: form.eventTitle,
+          }
           : m
       );
       onUpdateMatches(updated);
@@ -216,10 +216,10 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-slate-900 dark:text-slate-200 animate-fade-in">
-      
+
       {/* Left Column: Form Box */}
       <div className="lg:col-span-4 space-y-4">
-        
+
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
             Add Match Fixture
@@ -476,7 +476,7 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
           scheduledMatches.map((m) => {
             const rawVenue = m.tableNumber || `${venueLabel} 1`;
             const displayVenue = rawVenue.replace(/Table/gi, venueLabel);
-            
+
             // For Doubles, show Team Name ONLY
             const isDoubles = m.format === 'Doubles';
             const displayTeam1 = isDoubles ? getCleanTeamName(m.team1) : m.team1;

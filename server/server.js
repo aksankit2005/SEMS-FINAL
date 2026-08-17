@@ -26,9 +26,23 @@ app.set('trust proxy', 1);
 
 // ─── SECURITY HEADERS (Helmet.js) ───────────────────────────────────────────
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://checkout.razorpay.com", "https://api.cloudinary.com"],
+      scriptSrcElem: ["'self'", "'unsafe-inline'", "https://checkout.razorpay.com", "https://api.cloudinary.com"],
+      connectSrc: ["'self'", "https://api.cloudinary.com", "https://api.razorpay.com", "https://lumberjack.razorpay.com", "https://*.supabase.co", "wss://*.supabase.co"],
+      imgSrc: ["'self'", "data:", "blob:", "https://res.cloudinary.com", "https://images.unsplash.com", "https://*.googleusercontent.com"],
+      mediaSrc: ["'self'", "blob:", "https://res.cloudinary.com"],
+      frameSrc: ["'self'", "https://api.razorpay.com", "https://www.youtube.com", "https://youtube.com"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+    },
+  },
   crossOriginEmbedderPolicy: false,
+  frameguard: { action: 'sameorigin' },
 }));
+
 
 // ─── COMPRESSION ─────────────────────────────────────────────────────────────
 app.use(compression());

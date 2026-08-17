@@ -31,6 +31,15 @@ const DEFAULT_ADMIN_USER = {
   status: 'ACTIVE'
 };
 
+const getAdminHeaders = () => {
+  const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+};
+
 export const adminApi = {
   // ── Authentication ────────────────────────────────────────────────────────
   isAuthenticated: () => {
@@ -112,7 +121,9 @@ export const adminApi = {
   // ── Central Dashboard Statistics & Audit Trail ───────────────────────────
   getDashboardStats: async () => {
     try {
-      const res = await fetch(apiUrl('/admin/dashboard-stats'));
+      const res = await fetch(apiUrl('/admin/dashboard-stats'), {
+        headers: getAdminHeaders()
+      });
       if (res.ok) {
         const stats = await res.json();
         return stats;
@@ -140,13 +151,9 @@ export const adminApi = {
   },
 
   deleteCoordinatorEvent: async (eventId) => {
-    const token = localStorage.getItem('sems_admin_token') || localStorage.getItem('sems_coordinator_token');
     const res = await fetch(apiUrl(`/admin/coordinator-events/${eventId}`), {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      }
+      headers: getAdminHeaders()
     });
 
     if (!res.ok) {
@@ -167,7 +174,9 @@ export const adminApi = {
   // ── Student & Team Registrations Management ──────────────────────────────
   getRegistrations: async () => {
     try {
-      const res = await fetch(apiUrl('/admin/registrations'));
+      const res = await fetch(apiUrl('/admin/registrations'), {
+        headers: getAdminHeaders()
+      });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) return data;
@@ -181,7 +190,8 @@ export const adminApi = {
   deleteRegistration: async (id, reason) => {
     try {
       const res = await fetch(apiUrl(`/admin/registrations/${id}`), {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAdminHeaders()
       });
       if (res.ok) {
         await adminApi.addAuditLog({
@@ -203,7 +213,9 @@ export const adminApi = {
   // ── PR Media Management ──────────────────────────────────────────────────
   getPRMediaFolders: async () => {
     try {
-      const res = await fetch(apiUrl('/admin/pr-media/folders'));
+      const res = await fetch(apiUrl('/admin/pr-media/folders'), {
+        headers: getAdminHeaders()
+      });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) return data;
@@ -216,7 +228,9 @@ export const adminApi = {
 
   getPRMediaFiles: async (folderId = null) => {
     try {
-      const res = await fetch(apiUrl('/admin/pr-media/files'));
+      const res = await fetch(apiUrl('/admin/pr-media/files'), {
+        headers: getAdminHeaders()
+      });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -235,7 +249,8 @@ export const adminApi = {
   deletePRMediaFile: async (fileId) => {
     try {
       const res = await fetch(apiUrl(`/admin/pr-media/files/${fileId}`), {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAdminHeaders()
       });
       if (res.ok) {
         await adminApi.addAuditLog({
@@ -255,7 +270,8 @@ export const adminApi = {
   deletePRFolder: async (folderId) => {
     try {
       const res = await fetch(apiUrl(`/admin/pr-media/folders/${folderId}`), {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAdminHeaders()
       });
       if (res.ok) {
         await adminApi.addAuditLog({
@@ -275,7 +291,9 @@ export const adminApi = {
   // ── Coordinator Management ────────────────────────────────────────────────
   getCoordinators: async () => {
     try {
-      const res = await fetch(apiUrl('/admin/coordinators'));
+      const res = await fetch(apiUrl('/admin/coordinators'), {
+        headers: getAdminHeaders()
+      });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) return data;
@@ -290,7 +308,7 @@ export const adminApi = {
     try {
       const res = await fetch(apiUrl('/admin/coordinators'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body: JSON.stringify(coordData)
       });
       if (res.ok) {
@@ -313,7 +331,8 @@ export const adminApi = {
   deleteCoordinator: async (id) => {
     try {
       const res = await fetch(apiUrl(`/admin/coordinators/${id}`), {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAdminHeaders()
       });
       if (res.ok) {
         await adminApi.addAuditLog({
@@ -349,7 +368,7 @@ export const adminApi = {
     try {
       const res = await fetch(apiUrl(`/admin/coordinators/${fetchId}/status`), {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body: JSON.stringify({
           status: newStatus,
           username: targetUsername
@@ -388,7 +407,7 @@ export const adminApi = {
     try {
       const res = await fetch(apiUrl(`/admin/coordinators/${fetchId}/reset-password`), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body: JSON.stringify({
           newPassword,
           username: targetUsername
@@ -414,7 +433,9 @@ export const adminApi = {
   // ── Announcements Management ──────────────────────────────────────────────
   getAnnouncements: async () => {
     try {
-      const res = await fetch(apiUrl('/admin/announcements'));
+      const res = await fetch(apiUrl('/admin/announcements'), {
+        headers: getAdminHeaders()
+      });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) return data;
@@ -429,7 +450,7 @@ export const adminApi = {
     try {
       const res = await fetch(apiUrl('/admin/announcements'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body: JSON.stringify(annData)
       });
       if (res.ok) {
@@ -452,7 +473,8 @@ export const adminApi = {
   toggleAnnouncementPublish: async (id) => {
     try {
       const res = await fetch(apiUrl(`/admin/announcements/${id}/publish`), {
-        method: 'PATCH'
+        method: 'PATCH',
+        headers: getAdminHeaders()
       });
       if (res.ok) {
         return await adminApi.getAnnouncements();
@@ -466,7 +488,8 @@ export const adminApi = {
   deleteAnnouncement: async (id) => {
     try {
       const res = await fetch(apiUrl(`/admin/announcements/${id}`), {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAdminHeaders()
       });
       if (res.ok) {
         await adminApi.addAuditLog({
@@ -486,7 +509,9 @@ export const adminApi = {
   // ── Results & Leaderboard Management ─────────────────────────────────────
   getResults: async () => {
     try {
-      const res = await fetch(apiUrl('/super-coordinator/leaderboard'));
+      const res = await fetch(apiUrl('/super-coordinator/leaderboard'), {
+        headers: getAdminHeaders()
+      });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) return data;
@@ -504,7 +529,8 @@ export const adminApi = {
   deleteResult: async (id) => {
     try {
       const res = await fetch(apiUrl(`/super-coordinator/leaderboard/${id}`), {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAdminHeaders()
       });
       if (res.ok) {
         await adminApi.addAuditLog({
@@ -525,7 +551,7 @@ export const adminApi = {
     try {
       const res = await fetch(apiUrl('/super-coordinator/leaderboard'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body: JSON.stringify(resultData)
       });
       if (res.ok) {
@@ -546,7 +572,9 @@ export const adminApi = {
   // ── Audit Logs ────────────────────────────────────────────────────────────
   getAuditLogs: async () => {
     try {
-      const res = await fetch(apiUrl('/admin/audit-logs'));
+      const res = await fetch(apiUrl('/admin/audit-logs'), {
+        headers: getAdminHeaders()
+      });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) return data;
@@ -561,7 +589,7 @@ export const adminApi = {
     try {
       await fetch(apiUrl('/admin/audit-logs'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body: JSON.stringify(logData)
       });
     } catch (err) {
@@ -572,7 +600,9 @@ export const adminApi = {
   // ── System Settings ───────────────────────────────────────────────────────
   getSettings: async () => {
     try {
-      const res = await fetch(apiUrl('/admin/settings'));
+      const res = await fetch(apiUrl('/admin/settings'), {
+        headers: getAdminHeaders()
+      });
       if (res.ok) {
         const data = await res.json();
         if (data) return data;
@@ -595,7 +625,7 @@ export const adminApi = {
     try {
       const res = await fetch(apiUrl('/admin/settings'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body: JSON.stringify(newSettings)
       });
       if (res.ok) {

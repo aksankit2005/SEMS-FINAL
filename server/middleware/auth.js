@@ -129,7 +129,8 @@ export const verifyAdminToken = (req, res, next) => {
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, envConfig.jwtSecret);
-    if (decoded.role !== 'ADMIN' && decoded.role !== 'admin' && decoded.role !== 'superadmin') {
+    const role = (decoded.role || '').toLowerCase();
+    if (!['admin', 'superadmin'].includes(role)) {
       return res.status(403).json({ message: 'Access denied. Admin role required.' });
     }
     req.user = decoded;
@@ -138,3 +139,35 @@ export const verifyAdminToken = (req, res, next) => {
     return res.status(403).json({ message: 'Invalid or expired Admin token.' });
   }
 };
+
+// Admin or Super Coordinator Auth Middleware
+export const verifyAdminOrSuperCoordinatorToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Unauthorized. Admin or Super Coordinator token required.' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, envConfig.jwtSecret);
+    const role = (decoded.role || '').toLowerCase();
+    if (!['admin', 'superadmin', 'super_coordinator'].includes(role)) {
+      return res.status(403).json({ message: 'Access denied. Admin or Super Coordinator role required.' });
+    }
+    if (decoded.username && role === 'super_coordinator') {
+      try {
+        const userKey = decoded.username.toLowerCase();
+        const dbRes = await queryDb('SELECT status FROM pr_users WHERE LOWER(username) = $1', [userKey]);
+        if (dbRes && dbRes.rows.length > 0 && dbRes.rows[0].status && dbRes.rows[0].status.toLowerCase() === 'inactive') {
+          return res.status(403).json({ message: 'Account is deactivated. Access denied.' });
+        }
+      } catch (e) {}
+    }
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(403).json({ message: 'Invalid or expired token.' });
+  }
+};
+
+

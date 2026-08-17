@@ -64,12 +64,15 @@ export const prLogin = async (req, res) => {
  */
 export const getCloudinarySignature = (req, res) => {
   try {
-    const folder = req.query.folder || envConfig.cloudinaryFolder || 'sems_gallery';
+    const requestedFolder = req.query.folder || envConfig.cloudinaryFolder || 'sems_gallery';
+    const allowedFolders = ['sems_gallery', 'sems_event_covers', 'sems_committee'];
+    const folder = allowedFolders.includes(requestedFolder) ? requestedFolder : (envConfig.cloudinaryFolder || 'sems_gallery');
+
     const signatureData = generateUploadSignature(folder);
     return res.json({ success: true, ...signatureData });
   } catch (err) {
     console.error('Error generating Cloudinary signature:', err.message);
-    return res.status(500).json({ message: 'Failed to generate upload signature' });
+    return res.status(500).json({ message: err.message || 'Failed to generate upload signature' });
   }
 };
 
@@ -78,12 +81,20 @@ export const getCloudinarySignature = (req, res) => {
  */
 export const getEvents = async (req, res) => {
   const dbResult = await queryDb(`
-    SELECT e.*,
-      COUNT(CASE WHEN LOWER(m.media_type::text) = 'image' THEN 1 END)::int AS photos_count,
+    SELECT 
+      e.id,
+      e.event_name,
+      TO_CHAR(e.event_date, 'YYYY-MM-DD') AS event_date,
+      e.cover_image,
+      e.public_id,
+      e.description,
+      e.created_at,
+      e.updated_at,
+      GREATEST(COUNT(CASE WHEN LOWER(m.media_type::text) = 'image' THEN 1 END)::int, CASE WHEN e.cover_image IS NOT NULL AND e.cover_image != '' THEN 1 ELSE 0 END) AS photos_count,
       COUNT(CASE WHEN LOWER(m.media_type::text) = 'video' THEN 1 END)::int AS videos_count
     FROM events e
     LEFT JOIN media m ON e.id = m.event_id
-    GROUP BY e.id
+    GROUP BY e.id, e.event_name, e.event_date, e.cover_image, e.public_id, e.description, e.created_at, e.updated_at
     ORDER BY e.event_date DESC
   `);
 
@@ -93,9 +104,10 @@ export const getEvents = async (req, res) => {
 
   const formattedEvents = inMemoryEvents.map((ev) => {
     const evMedia = inMemoryMedia.filter((m) => Number(m.event_id) === Number(ev.id));
+    const directPhotoCount = evMedia.filter((m) => m.media_type === 'image').length;
     return {
       ...ev,
-      photos_count: evMedia.filter((m) => m.media_type === 'image').length,
+      photos_count: Math.max(directPhotoCount, ev.cover_image ? 1 : 0),
       videos_count: evMedia.filter((m) => m.media_type === 'video').length,
     };
   });
@@ -109,12 +121,29 @@ export const getEvents = async (req, res) => {
 export const getEventById = async (req, res) => {
   const { id } = req.params;
 
-  const eventDb = await queryDb('SELECT * FROM events WHERE id = $1', [id]);
-  const mediaDb = await queryDb('SELECT * FROM media WHERE event_id = $1 ORDER BY uploaded_at DESC', [id]);
+  const eventDb = await queryDb(
+    'SELECT id, event_name, TO_CHAR(event_date, \'YYYY-MM-DD\') AS event_date, cover_image, public_id, description, created_at, updated_at FROM events WHERE id = $1',
+    [Number(id)]
+  );
+  const mediaDb = await queryDb('SELECT * FROM media WHERE event_id = $1 ORDER BY uploaded_at DESC', [Number(id)]);
 
   if (eventDb && eventDb.rows.length > 0) {
     const event = eventDb.rows[0];
-    const media = mediaDb ? mediaDb.rows : [];
+    let media = mediaDb ? mediaDb.rows : [];
+    if (media.length === 0 && event.cover_image) {
+      media = [
+        {
+          id: `cover-${event.id}`,
+          event_id: event.id,
+          media_type: 'image',
+          title: `${event.event_name} Cover Photo`,
+          media_url: event.cover_image,
+          public_id: event.public_id || null,
+          uploaded_by: 'PR Coordinator',
+          uploaded_at: event.created_at || new Date().toISOString(),
+        }
+      ];
+    }
     return res.json({
       ...event,
       media,
@@ -126,7 +155,21 @@ export const getEventById = async (req, res) => {
   const event = inMemoryEvents.find((e) => Number(e.id) === Number(id));
   if (!event) return res.status(404).json({ message: 'Event not found' });
 
-  const eventMedia = inMemoryMedia.filter((m) => Number(m.event_id) === Number(id));
+  let eventMedia = inMemoryMedia.filter((m) => Number(m.event_id) === Number(id));
+  if (eventMedia.length === 0 && event.cover_image) {
+    eventMedia = [
+      {
+        id: `cover-${event.id}`,
+        event_id: event.id,
+        media_type: 'image',
+        title: `${event.event_name} Cover Photo`,
+        media_url: event.cover_image,
+        public_id: event.public_id || null,
+        uploaded_by: 'PR Coordinator',
+        uploaded_at: event.created_at || new Date().toISOString(),
+      }
+    ];
+  }
   return res.json({
     ...event,
     media: eventMedia,
@@ -146,7 +189,7 @@ export const createEvent = async (req, res) => {
   }
 
   const dbResult = await queryDb(
-    'INSERT INTO events (event_name, event_date, cover_image, public_id, description) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+    'INSERT INTO events (event_name, event_date, cover_image, public_id, description, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) RETURNING *',
     [event_name, event_date, cover_image, public_id || null, description || '']
   );
 
@@ -269,8 +312,8 @@ export const uploadMedia = async (req, res) => {
   }
 
   const dbResult = await queryDb(
-    'INSERT INTO media (event_id, media_type, title, media_url, public_id, uploaded_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-    [event_id, normalizedType, title, media_url, public_id || null, req.user?.username || 'PR Coordinator']
+    'INSERT INTO media (event_id, media_type, title, media_url, public_id, uploaded_by, uploaded_at) VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING *',
+    [Number(event_id), normalizedType, title, media_url, public_id || null, req.user?.username || 'PR Coordinator']
   );
 
   if (dbResult && dbResult.rows.length > 0) {
@@ -298,7 +341,7 @@ export const uploadMedia = async (req, res) => {
 export const getMediaByEventId = async (req, res) => {
   const { eventId } = req.params;
 
-  const dbResult = await queryDb('SELECT * FROM media WHERE event_id = $1 ORDER BY uploaded_at DESC', [eventId]);
+  const dbResult = await queryDb('SELECT * FROM media WHERE event_id = $1 ORDER BY uploaded_at DESC', [Number(eventId)]);
 
   if (dbResult && dbResult.rows) {
     return res.json(dbResult.rows);

@@ -81,9 +81,10 @@ export const PREventsPage = () => {
 
   const openEditModal = (eventItem) => {
     setSelectedEvent(eventItem);
-    setEventName(eventItem.event_name);
-    setEventDate(eventItem.event_date);
-    setCoverImage(eventItem.cover_image);
+    setEventName(eventItem.event_name || '');
+    const formattedDate = eventItem.event_date ? eventItem.event_date.toString().split('T')[0] : '';
+    setEventDate(formattedDate);
+    setCoverImage(eventItem.cover_image || '');
     setCoverPublicId(eventItem.public_id || '');
     setDescription(eventItem.description || '');
     setCoverImageMode('url');
@@ -120,7 +121,7 @@ export const PREventsPage = () => {
       setCoverPublicId(cloudRes.public_id || '');
       showToast('Cover image uploaded successfully!', 'success');
     } catch (err) {
-      showToast(err.message || 'Failed to upload cover image. Check Cloudinary settings.', 'error');
+      showToast(err.message || 'Failed to upload cover image. You can switch to "Paste URL" mode.', 'error');
     } finally {
       setUploadingCover(false);
       setCoverProgress(0);

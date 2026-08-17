@@ -30,11 +30,22 @@ export const ALL_COLLEGES = [
   { id: 'EXTERNAL', name: 'EXTERNAL' }
 ];
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('sems_super_coord_token') || localStorage.getItem('sems_admin_token');
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+};
+
 export const superCoordinatorApi = {
   // Get Sports & Assigned Coordinators from Backend
   getCoordinators: async () => {
     try {
-      const res = await fetch(apiUrl('/super-coordinator/coordinators'));
+      const res = await fetch(apiUrl('/super-coordinator/coordinators'), {
+        headers: getAuthHeaders()
+      });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) return data;
@@ -46,7 +57,9 @@ export const superCoordinatorApi = {
   // Get Coordinator Event Creation History — strictly from real database API
   getCoordinatorEvents: async () => {
     try {
-      const res = await fetch(apiUrl('/super-coordinator/events'));
+      const res = await fetch(apiUrl('/super-coordinator/events'), {
+        headers: getAuthHeaders()
+      });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) return data;
@@ -58,7 +71,9 @@ export const superCoordinatorApi = {
   // Get Master Participants — strictly from real PostgreSQL database API
   getMasterParticipants: async () => {
     try {
-      const res = await fetch(apiUrl('/super-coordinator/participants'));
+      const res = await fetch(apiUrl('/super-coordinator/participants'), {
+        headers: getAuthHeaders()
+      });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) return data;
@@ -118,7 +133,9 @@ export const superCoordinatorApi = {
   // Get Inter-College Leaderboard Entries strictly from Backend PostgreSQL DB
   getLeaderboardEntries: async () => {
     try {
-      const res = await fetch(apiUrl('/super-coordinator/leaderboard'));
+      const res = await fetch(apiUrl('/super-coordinator/leaderboard'), {
+        headers: getAuthHeaders()
+      });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) return data;
@@ -135,7 +152,7 @@ export const superCoordinatorApi = {
     try {
       const res = await fetch(apiUrl('/super-coordinator/leaderboard'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(latestEntry)
       });
       if (res.ok) {
@@ -152,7 +169,8 @@ export const superCoordinatorApi = {
   deleteLeaderboardEntry: async (entryId) => {
     try {
       const res = await fetch(apiUrl(`/super-coordinator/leaderboard/${entryId}`), {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAuthHeaders()
       });
       if (res.ok) {
         window.dispatchEvent(new Event('sems_leaderboard_updated'));
@@ -167,7 +185,9 @@ export const superCoordinatorApi = {
   // Get Hero Slides from Backend PostgreSQL DB
   getHeroSlides: async () => {
     try {
-      const res = await fetch(apiUrl('/super-coordinator/hero-slides'));
+      const res = await fetch(apiUrl('/super-coordinator/hero-slides'), {
+        headers: getAuthHeaders()
+      });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) return data;
@@ -183,7 +203,7 @@ export const superCoordinatorApi = {
     try {
       const res = await fetch(apiUrl('/super-coordinator/hero-slides'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(slides)
       });
       if (res.ok) {
@@ -201,7 +221,7 @@ export const superCoordinatorApi = {
       const user = JSON.parse(localStorage.getItem('sems_super_coord_user') || '{}');
       const res = await fetch(apiUrl('/super-coordinator/change-password'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ newPass, username: user.username })
       });
       const data = await res.json();

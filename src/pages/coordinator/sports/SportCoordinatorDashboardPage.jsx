@@ -20,12 +20,12 @@ import { useToast } from '../../../context/ToastContext';
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 const TABS = [
-  { id: 'profile',      label: 'My Profile',         icon: User },
-  { id: 'events',       label: 'Registration Events', icon: Layers },
-  { id: 'schedule',     label: 'Match Schedule',      icon: Calendar },
-  { id: 'live-control', label: 'Live Match Control',  icon: Radio,  badge: 'LIVE' },
-  { id: 'results',      label: 'Results Management',  icon: Award },
-  { id: 'participants', label: 'Participants List',    icon: Users },
+  { id: 'profile', label: 'My Profile', icon: User },
+  { id: 'events', label: 'Registration Events', icon: Layers },
+  { id: 'schedule', label: 'Match Schedule', icon: Calendar },
+  { id: 'live-control', label: 'Live Match Control', icon: Radio, badge: 'LIVE' },
+  { id: 'results', label: 'Results Management', icon: Award },
+  { id: 'participants', label: 'Participants List', icon: Users },
 ];
 
 // ─── Placeholder tab content ──────────────────────────────────────────────────
@@ -125,12 +125,12 @@ export const SportCoordinatorDashboardPage = ({ sportName, sportSlug }) => {
   const user = (currentUser?.assignedSport?.toLowerCase() === sportSlug?.toLowerCase())
     ? currentUser
     : (presetUser || {
-        coordinatorName: `${sportName} Coordinator`,
-        username: `coord_${sportSlug?.replace(/-/g, '_')}`,
-        assignedSport: sportSlug,
-        sportName: sportName,
-        email: `${sportSlug?.replace(/-/g, '')}.coord@sems.edu`
-      });
+      coordinatorName: `${sportName} Coordinator`,
+      username: `coord_${sportSlug?.replace(/-/g, '_')}`,
+      assignedSport: sportSlug,
+      sportName: sportName,
+      email: `${sportSlug?.replace(/-/g, '')}.coord@sems.edu`
+    });
 
   const handleLogout = () => {
     coordinatorApi.logout();

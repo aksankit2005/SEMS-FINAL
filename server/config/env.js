@@ -14,9 +14,13 @@ if (isProduction) {
   }
 }
 
+if (!process.env.JWT_SECRET && !isProduction) {
+  console.warn('⚠️ [SECURITY WARNING] JWT_SECRET is not set in environment. Please set JWT_SECRET in your .env file.');
+}
+
 export const envConfig = {
   port: parseInt(process.env.PORT || '5000', 10),
-  jwtSecret: process.env.JWT_SECRET || 'sems_pr_coordinator_secret_key_2026',
+  jwtSecret: process.env.JWT_SECRET || 'sems_development_jwt_secret_key_unsecure',
   nodeEnv: process.env.NODE_ENV || 'development',
   allowedOrigins: process.env.ALLOWED_ORIGINS || '',
   prAdminUsername: process.env.PR_ADMIN_USERNAME || 'pr_admin',
@@ -24,14 +28,15 @@ export const envConfig = {
   commonPassword: process.env.COMMON_PASSWORD || '',
   databaseUrl: process.env.DATABASE_URL || '',
   adminUsername: process.env.ADMIN_USERNAME || 'admin',
-  passAdmin: process.env.PASS_ADMIN || 'admin123',
+  passAdmin: process.env.PASS_ADMIN || '',
   adminPasswordHash: process.env.ADMIN_PASSWORD_HASH || '',
   superCoordUsername: process.env.SUPER_COORD_USERNAME || 'super_coordinator',
-  passSuperCoord: process.env.PASS_SUPER_COORD || 'super#2026',
-  cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME || process.env.VITE_CLOUDINARY_CLOUD_NAME || 'lnrkt6qp',
-  cloudinaryApiKey: process.env.CLOUDINARY_API_KEY || '996182763949582',
-  cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET || 'qKiT0FnkGNvtjBveU3Tu_psg2QI',
+  passSuperCoord: process.env.PASS_SUPER_COORD || '',
+  cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME || process.env.VITE_CLOUDINARY_CLOUD_NAME || '',
+  cloudinaryApiKey: process.env.CLOUDINARY_API_KEY || '',
+  cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET || '',
   cloudinaryFolder: process.env.CLOUDINARY_FOLDER || 'sems_gallery',
+  razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || '',
 };
 
 export const headPasswords = {

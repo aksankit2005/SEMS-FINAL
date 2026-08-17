@@ -36,7 +36,7 @@ export const TableTennisMatchScheduleTab = ({ matches, user, onUpdateMatches, on
             setForm((prev) => ({ ...prev, eventTitle: filtered[0].title }));
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     };
     fetchEvents();
   }, []);
@@ -135,16 +135,16 @@ export const TableTennisMatchScheduleTab = ({ matches, user, onUpdateMatches, on
       const updated = matches.map((m) =>
         m.id === editingId
           ? {
-              ...m,
-              team1: finalTeam1,
-              team2: finalTeam2,
-              tableNumber: form.tableNumber,
-              date: form.date,
-              time: form.time,
-              format: form.format,
-              category: form.category,
-              eventTitle: form.eventTitle,
-            }
+            ...m,
+            team1: finalTeam1,
+            team2: finalTeam2,
+            tableNumber: form.tableNumber,
+            date: form.date,
+            time: form.time,
+            format: form.format,
+            category: form.category,
+            eventTitle: form.eventTitle,
+          }
           : m
       );
       onUpdateMatches(updated);
@@ -215,10 +215,10 @@ export const TableTennisMatchScheduleTab = ({ matches, user, onUpdateMatches, on
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-slate-900 dark:text-white animate-fade-in font-sans">
-      
+
       {/* Left Column: Form Box */}
       <div className="lg:col-span-4 space-y-4">
-        
+
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
             <span>🏓</span>
@@ -473,7 +473,7 @@ export const TableTennisMatchScheduleTab = ({ matches, user, onUpdateMatches, on
         ) : (
           scheduledMatches.map((m) => {
             const rawVenue = m.tableNumber || 'Table 1';
-            
+
             // For Doubles, show Team Name ONLY
             const isDoubles = m.format === 'Doubles';
             const displayTeam1 = isDoubles ? getCleanTeamName(m.team1) : m.team1;
