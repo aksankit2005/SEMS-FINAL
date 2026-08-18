@@ -94,13 +94,13 @@ export const HeroSection = () => {
               }}
             />
 
-            {/* Soft Scrim Gradient Overlays for contrast without drowning out photo */}
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/75 via-slate-950/30 to-transparent pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent pointer-events-none" />
+            {/* Transparent Overlays - Dark shadow removed completely */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-transparent pointer-events-none" />
 
             {/* Main Slide Content Area */}
             <div className="absolute bottom-16 xs:bottom-18 sm:bottom-22 md:bottom-24 left-3.5 right-3.5 xs:left-5 xs:right-5 sm:left-10 sm:right-10 z-20 space-y-1.5 xs:space-y-2 sm:space-y-4 text-left">
-              <h1 className="text-xl xs:text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white/90 uppercase tracking-tight leading-tight max-w-4xl drop-shadow-[0_4px_12px_rgba(0,0,0,0.85)]">
+              <h1 className="text-xl xs:text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-blue-500 dark:text-blue-400 uppercase tracking-tight leading-tight max-w-4xl drop-shadow-[0_4px_12px_rgba(0,0,0,0.85)]">
                 {currentSlide.title}
               </h1>
 
