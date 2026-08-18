@@ -101,11 +101,11 @@ export const HeroSection = () => {
             
             {/* Main Slide Content Area */}
             <div className="absolute bottom-16 xs:bottom-18 sm:bottom-22 md:bottom-24 left-3.5 right-3.5 xs:left-5 xs:right-5 sm:left-10 sm:right-10 z-20 space-y-1.5 xs:space-y-2 sm:space-y-4 text-left">
-              <h1 className="text-xl xs:text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white uppercase tracking-tight leading-tight max-w-4xl drop-shadow-2xl">
+              <h1 className="text-xl xs:text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white uppercase tracking-tight leading-tight max-w-4xl drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)]">
                 {currentSlide.title}
               </h1>
 
-              <p className="text-xs xs:text-sm sm:text-base lg:text-lg text-slate-200 font-normal leading-relaxed max-w-3xl line-clamp-2 drop-shadow-md">
+              <p className="text-xs xs:text-sm sm:text-base lg:text-lg text-white font-medium leading-relaxed max-w-3xl line-clamp-2 drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]">
                 {currentSlide.description}
               </p>
 
@@ -113,7 +113,7 @@ export const HeroSection = () => {
               <div className="pt-1.5 sm:pt-3 flex flex-wrap items-center gap-2 sm:gap-4">
                 <Link
                   to={currentSlide.primaryBtnLink || '/registration'}
-                  className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs xs:text-sm sm:text-base shadow-xl shadow-blue-600/30 transition flex items-center gap-1.5 sm:gap-2 transform hover:-translate-y-0.5 active:scale-95 shrink-0"
+                  className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs xs:text-sm sm:text-base shadow-2xl shadow-blue-600/50 transition flex items-center gap-1.5 sm:gap-2 transform hover:-translate-y-0.5 active:scale-95 shrink-0 border border-blue-400/30"
                 >
                   <Trophy className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-white" />
                   <span>{currentSlide.primaryBtnText || 'REGISTER NOW'}</span>
@@ -122,7 +122,7 @@ export const HeroSection = () => {
 
                 <Link
                   to={currentSlide.secondaryBtnLink || '/live'}
-                  className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-white/95 hover:bg-white text-slate-900 dark:bg-slate-900/85 dark:hover:bg-slate-800 dark:text-white font-bold text-xs xs:text-sm sm:text-base border border-slate-200 dark:border-slate-700/80 backdrop-blur-md transition flex items-center gap-1.5 sm:gap-2 shadow-xl active:scale-95 shrink-0"
+                  className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-white hover:bg-slate-100 text-slate-900 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-white font-bold text-xs xs:text-sm sm:text-base border-2 border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 sm:gap-2 shadow-2xl active:scale-95 shrink-0"
                 >
                   <PlayCircle className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-rose-500 animate-pulse" />
                   <span>{currentSlide.secondaryBtnText || 'Watch Live'}</span>
@@ -137,14 +137,14 @@ export const HeroSection = () => {
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <button
                   onClick={handlePrev}
-                  className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-white/90 hover:bg-white text-slate-900 dark:bg-slate-900/85 dark:hover:bg-slate-800 dark:text-white border border-slate-200 dark:border-slate-700/80 backdrop-blur-md transition cursor-pointer shadow-lg active:scale-95"
+                  className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-white hover:bg-slate-100 text-slate-900 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-white border-2 border-slate-200 dark:border-slate-700 transition cursor-pointer shadow-2xl active:scale-95"
                   title="Previous Slide"
                 >
                   <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
                 <button
                   onClick={handleNext}
-                  className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-white/90 hover:bg-white text-slate-900 dark:bg-slate-900/85 dark:hover:bg-slate-800 dark:text-white border border-slate-200 dark:border-slate-700/80 backdrop-blur-md transition cursor-pointer shadow-lg active:scale-95"
+                  className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-white hover:bg-slate-100 text-slate-900 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-white border-2 border-slate-200 dark:border-slate-700 transition cursor-pointer shadow-2xl active:scale-95"
                   title="Next Slide"
                 >
                   <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -152,7 +152,7 @@ export const HeroSection = () => {
               </div>
 
               {/* Bottom-Right Slide Dots (No 1 of 5 Text) */}
-              <div className="flex items-center gap-1.5 sm:gap-2 bg-white/90 dark:bg-slate-900/85 border border-slate-200 dark:border-slate-700/80 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full backdrop-blur-md shadow-lg">
+              <div className="flex items-center gap-1.5 sm:gap-2 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full shadow-2xl">
                 {slides.map((_, idx) => (
                   <button
                     key={idx}
