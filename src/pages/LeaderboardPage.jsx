@@ -210,9 +210,9 @@ export const LeaderboardPage = () => {
               <thead className="bg-slate-100 dark:bg-slate-950 uppercase text-[11px] font-black text-slate-500 tracking-wider border-b border-slate-200 dark:border-slate-800">
                 <tr>
                   <th className="p-4 text-center">Rank</th>
-                  <th className="p-4">College / University</th>
-                  <th className="p-4 text-center">Firsts 🥇 (+5 pts)</th>
-                  <th className="p-4 text-center">Seconds 🥈 (+3 pts)</th>
+                  <th className="p-4">Institute</th>
+                  <th className="p-4 text-center">Gold 🥇 (+5 pts)</th>
+                  <th className="p-4 text-center">Silver 🥈 (+3 pts)</th>
                   <th className="p-4 text-center font-black text-blue-600 dark:text-blue-400">Total Points</th>
                 </tr>
               </thead>
@@ -228,8 +228,8 @@ export const LeaderboardPage = () => {
                     <tr key={item.id || index} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
                       <td className="p-4 text-center font-black">
                         <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs ${index === 0 ? 'bg-orange-500 text-white font-black' :
-                            index === 1 ? 'bg-slate-300 text-slate-950 font-bold' :
-                              'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                          index === 1 ? 'bg-slate-300 text-slate-950 font-bold' :
+                            'bg-slate-100 dark:bg-slate-800 text-slate-500'
                           }`}>
                           {index + 1}
                         </span>
