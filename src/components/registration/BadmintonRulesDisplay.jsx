@@ -3,6 +3,7 @@ import { ShieldAlert, Info, CheckCircle2, ChevronDown, ChevronUp, Image as Image
 import { CricketRulesDisplay } from './CricketRulesDisplay';
 import { AthleticsRulesDisplay } from './AthleticsRulesDisplay';
 import { coordinatorApi } from '../../services/coordinatorApi';
+import { resolveSportKey } from '../../data/sportsConfig';
 
 export const BADMINTON_RULES_DATA = {
   singles: [
@@ -911,12 +912,35 @@ export const BadmintonRulesModal = ({
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
 
-  const isCoordinator = Boolean(
-    coordinatorApi.isAuthenticated() ||
-    localStorage.getItem('sems_coordinator_token') ||
-    localStorage.getItem('sems_super_coordinator_token') ||
-    localStorage.getItem('pr_user')
-  );
+  const isCoordinator = (() => {
+    // Super Coordinator or Admin can edit rules for all sports
+    const isSuperCoord = Boolean(
+      localStorage.getItem('sems_super_coordinator_token') ||
+      localStorage.getItem('sems_super_coord')
+    );
+    if (isSuperCoord) return true;
+
+    // Sport Coordinator can ONLY edit rules for their assigned sport
+    if (coordinatorApi.isAuthenticated()) {
+      const user = coordinatorApi.getCurrentUser();
+      if (!user) return false;
+
+      const userSportKey = resolveSportKey(user.assignedSport || user.sportName || user.sportId || user.sport || '');
+      const modalSportKey = resolveSportKey(sportName || '');
+
+      if (userSportKey && modalSportKey && userSportKey === modalSportKey) {
+        return true;
+      }
+
+      const cName = (user.sportName || user.assignedSport || '').toLowerCase().trim();
+      const tName = (sportName || '').toLowerCase().trim();
+      if (cName && tName && (cName === tName || tName.includes(cName) || cName.includes(tName))) {
+        return true;
+      }
+    }
+
+    return false;
+  })();
 
   useEffect(() => {
     if (!isOpen) return;
