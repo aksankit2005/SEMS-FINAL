@@ -1,12 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Trophy, ChevronRight, PlayCircle, ChevronLeft } from 'lucide-react';
+import { Trophy, ChevronRight, PlayCircle } from 'lucide-react';
 import { getHeroSlides, fetchHeroSlidesFromDB } from '../../data/heroSlidesData';
 
 export const HeroSection = () => {
   const [slides, setSlides] = useState(() => getHeroSlides());
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+  const touchStartY = useRef(0);
+  const touchEndY = useRef(0);
+
+  const mouseStartX = useRef(0);
+  const mouseEndX = useRef(0);
+  const isDragging = useRef(false);
 
   useEffect(() => {
     // Fetch fresh slides from database on mount to guarantee user sync
@@ -29,14 +37,14 @@ export const HeroSection = () => {
     };
   }, []);
 
-  // Auto-play timer (2.5 seconds interval)
+  // Continuous auto-play timer (slides always advance every 2.5 seconds)
   useEffect(() => {
-    if (isPaused || slides.length === 0) return;
+    if (!slides || slides.length === 0) return;
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % slides.length);
     }, 2500);
     return () => clearInterval(interval);
-  }, [isPaused, slides.length]);
+  }, [slides.length, activeIndex]);
 
   if (!slides || slides.length === 0) return null;
 
@@ -53,124 +61,141 @@ export const HeroSection = () => {
     setActiveIndex(nextIndex);
   };
 
+  // Touch Swipe Handlers
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchEndX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    touchEndY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e) => {
+    touchEndX.current = e.touches[0].clientX;
+    touchEndY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = () => {
+    const diffX = touchStartX.current - touchEndX.current;
+    const diffY = touchStartY.current - touchEndY.current;
+    
+    // Check horizontal swipe threshold (50px) and ensure horizontal motion dominates vertical scroll
+    if (Math.abs(diffX) > 50 && Math.abs(diffX) > Math.abs(diffY)) {
+      if (diffX > 0) {
+        handleNext(); // Swiped left -> next slide
+      } else {
+        handlePrev(); // Swiped right -> previous slide
+      }
+    }
+  };
+
+  // Mouse Drag Swipe Handlers
+  const handleMouseDown = (e) => {
+    isDragging.current = true;
+    mouseStartX.current = e.clientX;
+    mouseEndX.current = e.clientX;
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging.current) return;
+    mouseEndX.current = e.clientX;
+  };
+
+  const handleMouseUp = () => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    const diffX = mouseStartX.current - mouseEndX.current;
+    if (Math.abs(diffX) > 60) {
+      if (diffX > 0) {
+        handleNext();
+      } else {
+        handlePrev();
+      }
+    }
+  };
+
   return (
-    <div className="relative overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white pt-2 pb-4 sm:pt-4 sm:pb-8 xl:py-6 transition-colors duration-300 min-h-0">
+    <section className="relative w-full overflow-hidden bg-slate-950 text-white min-h-0 select-none">
 
-      {/* Dynamic Ambient Background Blur & Glow (Adapts to Light & Dark Theme) */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        {slides.map((slide, idx) => (
-          <div
-            key={slide.id || idx}
-            className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-1000 ease-in-out blur-3xl ${idx === activeIndex ? 'opacity-20 dark:opacity-35 scale-100' : 'opacity-0 scale-100'
-              }`}
-            style={{ backgroundImage: `url('${slide.image}')` }}
-          />
-        ))}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-100/90 via-slate-50/75 to-slate-50 dark:from-slate-950/90 dark:via-slate-950/80 dark:to-slate-950 transition-colors duration-300" />
-      </div>
+      {/* Main Full-Width Hero Slider Container */}
+      <div
+        className="w-full h-[360px] xs:h-[400px] sm:h-[480px] md:h-[540px] lg:h-[580px] xl:h-[620px] 2xl:h-[680px] relative overflow-hidden group cursor-grab active:cursor-grabbing"
+        onMouseLeave={() => {
+          isDragging.current = false;
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+      >
+        {/* Background Image inside card - Full Bleed Edge to Edge */}
+        <img
+          src={currentSlide.image}
+          alt={currentSlide.title}
+          className="w-full h-full object-cover object-center brightness-[1.05] contrast-[1.06] saturate-[1.08] group-hover:scale-105 transition-transform duration-700 select-none pointer-events-none"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=2000&q=80';
+          }}
+          draggable="false"
+        />
 
-      {/* Ambient Radial Accent Light */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-full max-w-[1200px] h-[300px] sm:h-[450px] bg-gradient-to-r from-blue-500/10 via-amber-500/15 to-orange-500/10 dark:from-blue-600/15 dark:via-amber-500/20 dark:to-orange-600/15 blur-3xl rounded-full pointer-events-none z-0" />
+        {/* Gradient Overlays for Readability and Depth */}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/50 to-transparent pointer-events-none z-10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/70 via-slate-950/20 to-transparent pointer-events-none z-10" />
 
-      <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-5 lg:px-6 xl:px-8 relative z-10">
+        {/* Main Slide Content Area */}
+        <div className="absolute bottom-14 xs:bottom-16 sm:bottom-20 md:bottom-22 left-0 right-0 z-20 pointer-events-none">
+          <div className="w-full max-w-[1600px] mx-auto px-4 xs:px-6 sm:px-10 lg:px-12 xl:px-16 space-y-1.5 xs:space-y-2 sm:space-y-4 text-left">
+            <h1 className="text-xl xs:text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white uppercase tracking-tight leading-tight max-w-4xl drop-shadow-2xl pointer-events-auto">
+              {currentSlide.title}
+            </h1>
 
-        {/* Main Hero Card Container */}
-        <div
-          className="flex items-center justify-center py-0 w-full mx-auto"
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => setIsPaused(false)}
-        >
-          {/* Active Main Hero Card - Mobile Optimized (No Crop/Zoom) & 14" Laptop Responsive */}
-          <div className="w-full h-[360px] xs:h-[400px] sm:h-[480px] md:h-[540px] lg:h-[580px] xl:h-[620px] rounded-2xl sm:rounded-[2.5rem] overflow-hidden relative shadow-xl dark:shadow-2xl border border-slate-200 dark:border-slate-800/90 group transition-all duration-500 shrink-0 bg-slate-900">
+            <p className="text-xs xs:text-sm sm:text-base lg:text-lg text-slate-100 font-normal leading-relaxed max-w-3xl line-clamp-2 drop-shadow-md pointer-events-auto">
+              {currentSlide.description}
+            </p>
 
-            {/* Background Image inside card with mobile object position to avoid zooming */}
-            <img
-              src={currentSlide.image}
-              alt={currentSlide.title}
-              className="w-full h-full object-cover object-center brightness-[1.05] contrast-[1.06] saturate-[1.08] group-hover:scale-105 transition-transform duration-700"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=2000&q=80';
-              }}
-            />
+            {/* Action Buttons */}
+            <div className="pt-1.5 sm:pt-3 flex flex-wrap items-center gap-2 sm:gap-4 pointer-events-auto">
+              <Link
+                to={currentSlide.primaryBtnLink || '/registration'}
+                className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs xs:text-sm sm:text-base shadow-xl shadow-blue-600/30 transition flex items-center gap-1.5 sm:gap-2 transform hover:-translate-y-0.5 active:scale-95 shrink-0"
+              >
+                <Trophy className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-white" />
+                <span>{currentSlide.primaryBtnText || 'REGISTER NOW'}</span>
+                <ChevronRight className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+              </Link>
 
-            {/* Smooth Dark Gradient Overlay ONLY behind lower 25-30% content area */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/50 to-transparent pointer-events-none z-10" />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/60 via-transparent to-transparent pointer-events-none z-10" />
-
-            {/* Main Slide Content Area - Anchored to Bottom-Left */}
-            <div className="absolute bottom-16 xs:bottom-18 sm:bottom-22 md:bottom-24 left-3.5 right-3.5 xs:left-5 xs:right-5 sm:left-10 sm:right-10 z-20 space-y-1.5 xs:space-y-2 sm:space-y-4 text-left">
-              <h1 className="text-xl xs:text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white uppercase tracking-tight leading-tight max-w-4xl drop-shadow-2xl">
-                {currentSlide.title}
-              </h1>
-
-              <p className="text-xs xs:text-sm sm:text-base lg:text-lg text-slate-100 font-normal leading-relaxed max-w-3xl line-clamp-2 drop-shadow-md">
-                {currentSlide.description}
-              </p>
-
-              {/* Action Buttons */}
-              <div className="pt-1.5 sm:pt-3 flex flex-wrap items-center gap-2 sm:gap-4">
-                <Link
-                  to={currentSlide.primaryBtnLink || '/registration'}
-                  className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs xs:text-sm sm:text-base shadow-xl shadow-blue-600/30 transition flex items-center gap-1.5 sm:gap-2 transform hover:-translate-y-0.5 active:scale-95 shrink-0"
-                >
-                  <Trophy className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-white" />
-                  <span>{currentSlide.primaryBtnText || 'REGISTER NOW'}</span>
-                  <ChevronRight className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                </Link>
-
-                <Link
-                  to={currentSlide.secondaryBtnLink || '/live'}
-                  className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-slate-900/80 hover:bg-slate-800 text-white font-bold text-xs xs:text-sm sm:text-base border border-slate-700/80 backdrop-blur-md transition flex items-center gap-1.5 sm:gap-2 shadow-xl active:scale-95 shrink-0"
-                >
-                  <PlayCircle className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-rose-500 animate-pulse" />
-                  <span>{currentSlide.secondaryBtnText || 'Watch Live'}</span>
-                </Link>
-              </div>
+              <Link
+                to={currentSlide.secondaryBtnLink || '/live'}
+                className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-transparent hover:bg-white/10 text-white font-bold text-xs xs:text-sm sm:text-base border border-white/40 hover:border-white/80 backdrop-blur-xs transition flex items-center gap-1.5 sm:gap-2 active:scale-95 shrink-0"
+              >
+                <PlayCircle className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-rose-500 animate-pulse" />
+                <span>{currentSlide.secondaryBtnText || 'Watch Live'}</span>
+              </Link>
             </div>
-
-            {/* Bottom Controls Bar - Light & Dark Mode Compatible */}
-            <div className="absolute bottom-3 left-3.5 right-3.5 sm:bottom-6 sm:left-10 sm:right-10 z-30 flex items-center justify-between pointer-events-auto">
-
-              {/* Bottom-Left Arrow Navigation */}
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <button
-                  onClick={handlePrev}
-                  className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-slate-900/80 hover:bg-slate-800 text-white border border-slate-700/80 backdrop-blur-md transition cursor-pointer shadow-lg active:scale-95"
-                  title="Previous Slide"
-                >
-                  <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-                </button>
-                <button
-                  onClick={handleNext}
-                  className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-slate-900/80 hover:bg-slate-800 text-white border border-slate-700/80 backdrop-blur-md transition cursor-pointer shadow-lg active:scale-95"
-                  title="Next Slide"
-                >
-                  <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-                </button>
-              </div>
-
-              {/* Bottom-Right Slide Dots (No 1 of 5 Text) */}
-              <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-900/80 border border-slate-700/80 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full backdrop-blur-md shadow-lg">
-                {slides.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActiveIndex(idx)}
-                    className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 cursor-pointer ${idx === activeIndex
-                      ? 'w-5 sm:w-7 bg-gradient-to-r from-blue-600 to-indigo-600'
-                      : 'w-2 sm:w-2.5 bg-slate-600 hover:bg-slate-500'
-                      }`}
-                    title={`Go to slide ${idx + 1}`}
-                  />
-                ))}
-              </div>
-
-            </div>
-
           </div>
         </div>
 
+        {/* Bottom-Right Slide Indicators / Dots - Clean without background box or border */}
+        <div className="absolute bottom-3.5 right-4 sm:bottom-6 sm:right-8 lg:right-12 z-30 flex items-center gap-1.5 sm:gap-2 pointer-events-auto">
+          {slides.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setActiveIndex(idx)}
+              className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 cursor-pointer ${idx === activeIndex
+                ? 'w-6 sm:w-8 bg-gradient-to-r from-blue-500 to-indigo-500 shadow-md'
+                : 'w-2 sm:w-2.5 bg-white/40 hover:bg-white/70'
+                }`}
+              title={`Go to slide ${idx + 1}`}
+              aria-label={`Slide ${idx + 1}`}
+            />
+          ))}
+        </div>
+
       </div>
-    </div>
+
+    </section>
   );
 };
