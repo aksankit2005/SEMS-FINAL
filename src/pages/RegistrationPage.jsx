@@ -873,7 +873,7 @@ export const RegistrationPage = () => {
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-indigo-500 animate-pulse" />
-                    Official Coordinator Published Events
+                    APEX SPORTS EVENTS
                   </h2>
                   <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-mono text-xs font-bold border border-indigo-500/20">
                     Live Published Events ({coordinatorEvents.length})
@@ -928,7 +928,7 @@ export const RegistrationPage = () => {
 
                           <div className="absolute bottom-3 left-4 right-4">
                             <span className="text-[10px] font-mono font-bold text-indigo-400 uppercase tracking-wider block">
-                              {evt.sportName} Coordinator Event
+                              {evt.sportName} Event
                             </span>
                             <h3 className="text-lg sm:text-xl font-black text-white leading-tight drop-shadow-md">
                               {evt.title}
