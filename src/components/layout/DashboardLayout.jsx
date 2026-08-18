@@ -11,6 +11,7 @@ export const DashboardLayout = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [settings, setSettings] = useState({ maintenanceMode: false });
+  const [isLayoutHidden, setIsLayoutHidden] = useState(false);
 
   const loadSettings = async () => {
     try {
@@ -26,12 +27,18 @@ export const DashboardLayout = () => {
       loadSettings();
     };
 
+    const handleLayoutToggle = (e) => {
+      setIsLayoutHidden(Boolean(e.detail?.hide));
+    };
+
     window.addEventListener('sems_settings_updated', handleSettingsUpdate);
     window.addEventListener('storage', handleSettingsUpdate);
+    window.addEventListener('sems_layout_toggle', handleLayoutToggle);
 
     return () => {
       window.removeEventListener('sems_settings_updated', handleSettingsUpdate);
       window.removeEventListener('storage', handleSettingsUpdate);
+      window.removeEventListener('sems_layout_toggle', handleLayoutToggle);
     };
   }, []);
 
@@ -43,15 +50,19 @@ export const DashboardLayout = () => {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors">
       {/* Sticky Top Navbar */}
-      <HeaderNavbar onOpenMobileDrawer={() => setIsMobileDrawerOpen(true)} />
+      {!isLayoutHidden && (
+        <HeaderNavbar onOpenMobileDrawer={() => setIsMobileDrawerOpen(true)} />
+      )}
 
       {/* Body Area: Sidebar + Content */}
       <div className="flex-1 flex w-full">
         {/* Collapsible Left Sidebar */}
-        <CollapsibleSidebar
-          isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-        />
+        {!isLayoutHidden && (
+          <CollapsibleSidebar
+            isCollapsed={isSidebarCollapsed}
+            onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          />
+        )}
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0">
@@ -60,15 +71,17 @@ export const DashboardLayout = () => {
           </main>
 
           {/* Footer at bottom of content area */}
-          <Footer />
+          {!isLayoutHidden && <Footer />}
         </div>
       </div>
 
       {/* Mobile Navigation Drawer */}
-      <MobileDrawer
-        isOpen={isMobileDrawerOpen}
-        onClose={() => setIsMobileDrawerOpen(false)}
-      />
+      {!isLayoutHidden && (
+        <MobileDrawer
+          isOpen={isMobileDrawerOpen}
+          onClose={() => setIsMobileDrawerOpen(false)}
+        />
+      )}
     </div>
   );
 };

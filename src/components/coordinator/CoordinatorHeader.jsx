@@ -15,6 +15,17 @@ export const OPERATIONAL_TABS = [
 
 export const CoordinatorHeader = ({ user, activeTab, setActiveTab, onLogout }) => {
   const { addToast } = useToast();
+  const [isLayoutHidden, setIsLayoutHidden] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleLayoutToggle = (e) => {
+      setIsLayoutHidden(Boolean(e.detail?.hide));
+    };
+    window.addEventListener('sems_layout_toggle', handleLayoutToggle);
+    return () => window.removeEventListener('sems_layout_toggle', handleLayoutToggle);
+  }, []);
+
+  if (isLayoutHidden) return null;
 
   const handleSyncData = () => {
     window.dispatchEvent(new Event('sems-coordinator-sync'));

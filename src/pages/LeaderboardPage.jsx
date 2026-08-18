@@ -228,8 +228,8 @@ export const LeaderboardPage = () => {
                     <tr key={item.id || index} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
                       <td className="p-4 text-center font-black">
                         <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs ${index === 0 ? 'bg-orange-500 text-white font-black' :
-                          index === 1 ? 'bg-slate-300 text-slate-950 font-bold' :
-                            'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                            index === 1 ? 'bg-slate-300 text-slate-950 font-bold' :
+                              'bg-slate-100 dark:bg-slate-800 text-slate-500'
                           }`}>
                           {index + 1}
                         </span>
