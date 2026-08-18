@@ -55,15 +55,14 @@ export const HeroSection = () => {
 
   return (
     <div className="relative overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white pt-2 pb-4 sm:pt-4 sm:pb-8 xl:py-6 transition-colors duration-300 min-h-0">
-      
+
       {/* Dynamic Ambient Background Blur & Glow (Adapts to Light & Dark Theme) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         {slides.map((slide, idx) => (
           <div
             key={slide.id || idx}
-            className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-1000 ease-in-out blur-3xl ${
-              idx === activeIndex ? 'opacity-20 dark:opacity-35 scale-100' : 'opacity-0 scale-100'
-            }`}
+            className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-1000 ease-in-out blur-3xl ${idx === activeIndex ? 'opacity-20 dark:opacity-35 scale-100' : 'opacity-0 scale-100'
+              }`}
             style={{ backgroundImage: `url('${slide.image}')` }}
           />
         ))}
@@ -74,16 +73,16 @@ export const HeroSection = () => {
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-full max-w-[1200px] h-[300px] sm:h-[450px] bg-gradient-to-r from-blue-500/10 via-amber-500/15 to-orange-500/10 dark:from-blue-600/15 dark:via-amber-500/20 dark:to-orange-600/15 blur-3xl rounded-full pointer-events-none z-0" />
 
       <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-5 lg:px-6 xl:px-8 relative z-10">
-        
+
         {/* Main Hero Card Container */}
-        <div 
+        <div
           className="flex items-center justify-center py-0 w-full mx-auto"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
           {/* Active Main Hero Card - Mobile Optimized (No Crop/Zoom) & 14" Laptop Responsive */}
           <div className="w-full h-[360px] xs:h-[400px] sm:h-[480px] md:h-[540px] lg:h-[580px] xl:h-[620px] rounded-2xl sm:rounded-[2.5rem] overflow-hidden relative shadow-xl dark:shadow-2xl border border-slate-200 dark:border-slate-800/90 group transition-all duration-500 shrink-0 bg-slate-900">
-            
+
             {/* Background Image inside card with mobile object position to avoid zooming */}
             <img
               src={currentSlide.image}
@@ -98,14 +97,14 @@ export const HeroSection = () => {
             {/* Soft Scrim Gradient Overlays for contrast without drowning out photo */}
             <div className="absolute inset-0 bg-gradient-to-r from-slate-950/75 via-slate-950/30 to-transparent pointer-events-none" />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent pointer-events-none" />
-            
+
             {/* Main Slide Content Area */}
             <div className="absolute bottom-16 xs:bottom-18 sm:bottom-22 md:bottom-24 left-3.5 right-3.5 xs:left-5 xs:right-5 sm:left-10 sm:right-10 z-20 space-y-1.5 xs:space-y-2 sm:space-y-4 text-left">
-              <h1 className="text-xl xs:text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white/95 uppercase tracking-tight leading-tight max-w-4xl drop-shadow-[0_4px_12px_rgba(0,0,0,0.85)]">
+              <h1 className="text-xl xs:text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white/90 uppercase tracking-tight leading-tight max-w-4xl drop-shadow-[0_4px_12px_rgba(0,0,0,0.85)]">
                 {currentSlide.title}
               </h1>
 
-              <p className="text-xs xs:text-sm sm:text-base lg:text-lg text-white/85 font-normal leading-relaxed max-w-3xl line-clamp-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+              <p className="text-xs xs:text-sm sm:text-base lg:text-lg text-white/70 font-normal leading-relaxed max-w-3xl line-clamp-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
                 {currentSlide.description}
               </p>
 
@@ -113,16 +112,16 @@ export const HeroSection = () => {
               <div className="pt-1.5 sm:pt-3 flex flex-wrap items-center gap-2 sm:gap-4">
                 <Link
                   to={currentSlide.primaryBtnLink || '/registration'}
-                  className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600/85 to-indigo-600/85 hover:from-blue-600 hover:to-indigo-600 text-white font-black text-xs xs:text-sm sm:text-base shadow-xl shadow-blue-600/30 backdrop-blur-md transition flex items-center gap-1.5 sm:gap-2 transform hover:-translate-y-0.5 active:scale-95 shrink-0 border border-blue-400/30"
+                  className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600/30 to-indigo-600/30 hover:from-blue-600/50 hover:to-indigo-600/50 text-white/80 font-black text-xs xs:text-sm sm:text-base shadow-xl shadow-blue-600/20 backdrop-blur-md transition flex items-center gap-1.5 sm:gap-2 transform hover:-translate-y-0.5 active:scale-95 shrink-0 border border-blue-400/30"
                 >
-                  <Trophy className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-white" />
+                  <Trophy className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-white/80" />
                   <span>{currentSlide.primaryBtnText || 'REGISTER NOW'}</span>
                   <ChevronRight className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                 </Link>
 
                 <Link
                   to={currentSlide.secondaryBtnLink || '/live'}
-                  className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-white/70 hover:bg-white text-slate-900 dark:bg-slate-900/70 dark:hover:bg-slate-900 dark:text-white font-bold text-xs xs:text-sm sm:text-base border border-slate-200/70 dark:border-slate-700/70 backdrop-blur-md transition flex items-center gap-1.5 sm:gap-2 shadow-xl active:scale-95 shrink-0"
+                  className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-white/30 hover:bg-white/50 text-slate-900 dark:bg-slate-900/30 dark:hover:bg-slate-900/50 dark:text-white/80 font-bold text-xs xs:text-sm sm:text-base border border-slate-200/30 dark:border-slate-700/30 backdrop-blur-md transition flex items-center gap-1.5 sm:gap-2 shadow-xl active:scale-95 shrink-0"
                 >
                   <PlayCircle className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-rose-500 animate-pulse" />
                   <span>{currentSlide.secondaryBtnText || 'Watch Live'}</span>
@@ -132,19 +131,19 @@ export const HeroSection = () => {
 
             {/* Bottom Controls Bar - Light & Dark Mode Compatible */}
             <div className="absolute bottom-3 left-3.5 right-3.5 sm:bottom-6 sm:left-10 sm:right-10 z-30 flex items-center justify-between pointer-events-auto">
-              
+
               {/* Bottom-Left Arrow Navigation */}
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <button
                   onClick={handlePrev}
-                  className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-white/70 hover:bg-white text-slate-900 dark:bg-slate-900/70 dark:hover:bg-slate-900 dark:text-white border border-slate-200/70 dark:border-slate-700/70 backdrop-blur-md transition cursor-pointer shadow-lg active:scale-95"
+                  className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-white/30 hover:bg-white/50 text-slate-900 dark:bg-slate-900/30 dark:hover:bg-slate-900/50 dark:text-white border border-slate-200/30 dark:border-slate-700/30 backdrop-blur-md transition cursor-pointer shadow-lg active:scale-95"
                   title="Previous Slide"
                 >
                   <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
                 <button
                   onClick={handleNext}
-                  className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-white/70 hover:bg-white text-slate-900 dark:bg-slate-900/70 dark:hover:bg-slate-900 dark:text-white border border-slate-200/70 dark:border-slate-700/70 backdrop-blur-md transition cursor-pointer shadow-lg active:scale-95"
+                  className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-white/30 hover:bg-white/50 text-slate-900 dark:bg-slate-900/30 dark:hover:bg-slate-900/50 dark:text-white border border-slate-200/30 dark:border-slate-700/30 backdrop-blur-md transition cursor-pointer shadow-lg active:scale-95"
                   title="Next Slide"
                 >
                   <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -152,16 +151,15 @@ export const HeroSection = () => {
               </div>
 
               {/* Bottom-Right Slide Dots (No 1 of 5 Text) */}
-              <div className="flex items-center gap-1.5 sm:gap-2 bg-white/70 dark:bg-slate-900/70 border border-slate-200/70 dark:border-slate-700/70 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full backdrop-blur-md shadow-lg">
+              <div className="flex items-center gap-1.5 sm:gap-2 bg-white/30 dark:bg-slate-900/30 border border-slate-200/30 dark:border-slate-700/30 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full backdrop-blur-md shadow-lg">
                 {slides.map((_, idx) => (
                   <button
                     key={idx}
                     onClick={() => setActiveIndex(idx)}
-                    className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                      idx === activeIndex
+                    className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 cursor-pointer ${idx === activeIndex
                         ? 'w-5 sm:w-7 bg-gradient-to-r from-blue-600 to-indigo-600'
-                        : 'w-2 sm:w-2.5 bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-500'
-                    }`}
+                        : 'w-2 sm:w-2.5 bg-slate-300/40 dark:bg-slate-700/40 hover:bg-slate-400 dark:hover:bg-slate-500'
+                      }`}
                     title={`Go to slide ${idx + 1}`}
                   />
                 ))}
