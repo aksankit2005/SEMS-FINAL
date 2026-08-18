@@ -113,7 +113,7 @@ export const HeroSection = () => {
               <div className="pt-1.5 sm:pt-3 flex flex-wrap items-center gap-2 sm:gap-4">
                 <Link
                   to={currentSlide.primaryBtnLink || '/registration'}
-                  className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs xs:text-sm sm:text-base shadow-2xl shadow-blue-600/50 transition flex items-center gap-1.5 sm:gap-2 transform hover:-translate-y-0.5 active:scale-95 shrink-0 border border-blue-400/30"
+                  className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600/90 to-indigo-600/90 hover:from-blue-600 hover:to-indigo-600 text-white font-black text-xs xs:text-sm sm:text-base shadow-xl shadow-blue-600/30 backdrop-blur-md transition flex items-center gap-1.5 sm:gap-2 transform hover:-translate-y-0.5 active:scale-95 shrink-0 border border-blue-400/30"
                 >
                   <Trophy className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-white" />
                   <span>{currentSlide.primaryBtnText || 'REGISTER NOW'}</span>
@@ -122,7 +122,7 @@ export const HeroSection = () => {
 
                 <Link
                   to={currentSlide.secondaryBtnLink || '/live'}
-                  className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-white hover:bg-slate-100 text-slate-900 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-white font-bold text-xs xs:text-sm sm:text-base border-2 border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 sm:gap-2 shadow-2xl active:scale-95 shrink-0"
+                  className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-white/80 hover:bg-white text-slate-900 dark:bg-slate-900/80 dark:hover:bg-slate-900 dark:text-white font-bold text-xs xs:text-sm sm:text-base border border-slate-200/80 dark:border-slate-700/80 backdrop-blur-md transition flex items-center gap-1.5 sm:gap-2 shadow-xl active:scale-95 shrink-0"
                 >
                   <PlayCircle className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-rose-500 animate-pulse" />
                   <span>{currentSlide.secondaryBtnText || 'Watch Live'}</span>
@@ -137,14 +137,14 @@ export const HeroSection = () => {
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <button
                   onClick={handlePrev}
-                  className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-white hover:bg-slate-100 text-slate-900 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-white border-2 border-slate-200 dark:border-slate-700 transition cursor-pointer shadow-2xl active:scale-95"
+                  className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-white/80 hover:bg-white text-slate-900 dark:bg-slate-900/80 dark:hover:bg-slate-900 dark:text-white border border-slate-200/80 dark:border-slate-700/80 backdrop-blur-md transition cursor-pointer shadow-lg active:scale-95"
                   title="Previous Slide"
                 >
                   <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
                 <button
                   onClick={handleNext}
-                  className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-white hover:bg-slate-100 text-slate-900 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-white border-2 border-slate-200 dark:border-slate-700 transition cursor-pointer shadow-2xl active:scale-95"
+                  className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-white/80 hover:bg-white text-slate-900 dark:bg-slate-900/80 dark:hover:bg-slate-900 dark:text-white border border-slate-200/80 dark:border-slate-700/80 backdrop-blur-md transition cursor-pointer shadow-lg active:scale-95"
                   title="Next Slide"
                 >
                   <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -152,7 +152,7 @@ export const HeroSection = () => {
               </div>
 
               {/* Bottom-Right Slide Dots (No 1 of 5 Text) */}
-              <div className="flex items-center gap-1.5 sm:gap-2 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full shadow-2xl">
+              <div className="flex items-center gap-1.5 sm:gap-2 bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-700/80 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full backdrop-blur-md shadow-lg">
                 {slides.map((_, idx) => (
                   <button
                     key={idx}
