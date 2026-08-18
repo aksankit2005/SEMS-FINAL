@@ -79,6 +79,7 @@ export const BaseRacketRegistration = ({
         if (prev.roster) {
           updated.roster = prev.roster.map((player) => ({
             ...player,
+            college: value,
             branch: ''
           }));
         }
@@ -262,6 +263,7 @@ export const BaseRacketRegistration = ({
                   showRemove={false}
                   errors={playerErrors}
                   availableCourses={availableCourses}
+                  teamCollege={formData.collegeName}
                 />
               );
             })}

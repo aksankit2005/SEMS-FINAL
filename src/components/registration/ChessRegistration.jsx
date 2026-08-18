@@ -62,6 +62,7 @@ export const ChessRegistration = ({
         if (prev.roster) {
           updated.roster = prev.roster.map((player) => ({
             ...player,
+            college: value,
             branch: ''
           }));
         }
@@ -184,6 +185,7 @@ export const ChessRegistration = ({
                 gender: errors.player_0_gender
               }}
               availableCourses={collegeCourses[formData.collegeName] || []}
+              teamCollege={formData.collegeName}
             />
           )}
         </div>

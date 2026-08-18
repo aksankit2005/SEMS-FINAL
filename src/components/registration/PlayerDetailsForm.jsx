@@ -88,6 +88,7 @@ export const PlayerDetailsForm = ({
         if (prev.roster) {
           updated.roster = prev.roster.map((player) => ({
             ...player,
+            college: value,
             branch: ''
           }));
         }
@@ -250,6 +251,7 @@ export const PlayerDetailsForm = ({
               gender: errors[`player_${idx}_gender`]
             }}
             availableCourses={availableCourses}
+            teamCollege={formData.collegeName}
             isFirstPlayer={idx === 0}
             sameAsCaptain={false}
             onToggleSameAsCaptain={null}
