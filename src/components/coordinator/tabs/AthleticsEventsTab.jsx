@@ -79,6 +79,13 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
     fetchEvents();
   }, [user]);
 
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: showCreateModal } }));
+    return () => {
+      window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: false } }));
+    };
+  }, [showCreateModal]);
+
   const fetchEvents = async () => {
     try {
       setLoading(true);
@@ -558,15 +565,15 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
 
       {/* CREATE / EDIT EVENT MODAL WITH SUB-EVENT PRICES & PRIZES */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
-          <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 space-y-6 shadow-2xl animate-fade-in my-8">
+        <div className="fixed inset-0 top-0 left-0 w-full h-full min-h-screen z-[9999] flex items-center justify-center p-3 sm:p-6 bg-slate-950/95 dark:bg-[#090D16]/95 backdrop-blur-md overflow-y-auto animate-fade-in font-sans">
+          <div className="w-[95%] sm:w-[85%] lg:w-[75%] max-w-4xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[88vh] flex flex-col text-slate-900 dark:text-white">
             
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-[#090D16] shrink-0">
               <div>
                 <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-mono font-bold uppercase">
                   {editingEvent ? 'EDIT ATHLETICS EVENT' : 'NEW ATHLETICS CHAMPIONSHIP PUBLISHER'}
                 </span>
-                <h3 className="text-xl font-black text-slate-900 dark:text-white mt-1">
+                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mt-0.5">
                   {editingEvent ? 'Edit Athletics Meet & Sub-Event Prices' : 'Configure Athletics Meet & Sub-Event Prices'}
                 </h3>
               </div>
@@ -579,229 +586,231 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
               </button>
             </div>
 
-            <form onSubmit={handleSaveEvent} className="space-y-6">
-              
-              {/* Event General Info */}
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                    Event Title <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.title}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
-                    placeholder="e.g. Annual Inter-College Athletics Championship 2026"
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                    Cover Banner Image
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleCoverUpload}
-                      className="hidden"
-                      id="athletics-cover-input"
-                    />
-                    <label
-                      htmlFor="athletics-cover-input"
-                      className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition flex items-center gap-2 cursor-pointer"
-                    >
-                      <Upload className="w-4 h-4" /> Upload & Crop Image
+            <form onSubmit={handleSaveEvent} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="p-4 sm:p-6 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
+                
+                {/* Event General Info */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+                      Event Title <span className="text-rose-500">*</span>
                     </label>
-                    {formData.coverImage && (
-                      <span className="text-[11px] text-emerald-500 font-mono font-bold">✓ Banner Attached</span>
-                    )}
+                    <input
+                      type="text"
+                      required
+                      value={formData.title}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
+                      placeholder="e.g. Annual Inter-College Athletics Championship 2026"
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+                      Cover Banner Image
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCoverUpload}
+                        className="hidden"
+                        id="athletics-cover-input"
+                      />
+                      <label
+                        htmlFor="athletics-cover-input"
+                        className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition flex items-center gap-2 cursor-pointer"
+                      >
+                        <Upload className="w-4 h-4" /> Upload & Crop Image
+                      </label>
+                      {formData.coverImage && (
+                        <span className="text-[11px] text-emerald-500 font-mono font-bold">✓ Banner Attached</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+                      Description & Overview
+                    </label>
+                    <textarea
+                      rows="2"
+                      value={formData.description}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                      placeholder="Describe the Athletics championship meet..."
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Venue / Ground</label>
+                      <input
+                        type="text"
+                        value={formData.venue}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, venue: e.target.value }))}
+                        className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Category</label>
+                      <select
+                        value={formData.category}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
+                        className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                      >
+                        <option value="Open">Open Category</option>
+                        <option value="Boys">Boys Only</option>
+                        <option value="Girls">Girls Only</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Status</label>
+                      <select
+                        value={formData.status}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value }))}
+                        className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-emerald-600 dark:text-emerald-400 focus:border-blue-500 focus:outline-none"
+                      >
+                        <option value="Draft">Draft (Hidden)</option>
+                        <option value="Upcoming">Upcoming (Coming Soon)</option>
+                        <option value="Published">Published (Open)</option>
+                        <option value="Closed">Closed</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Reg Start</label>
+                      <input
+                        type="date"
+                        value={formData.regStartDate}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, regStartDate: e.target.value }))}
+                        className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Reg End</label>
+                      <input
+                        type="date"
+                        value={formData.regEndDate}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, regEndDate: e.target.value }))}
+                        className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Meet Start</label>
+                      <input
+                        type="date"
+                        value={formData.tournStartDate}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, tournStartDate: e.target.value }))}
+                        className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Meet End</label>
+                      <input
+                        type="date"
+                        value={formData.tournEndDate}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, tournEndDate: e.target.value }))}
+                        className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+                      />
+                    </div>
                   </div>
                 </div>
 
+                {/* DEDICATED SUB-EVENTS ENTRY FEES CONFIGURATION SECTION */}
+                <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-500/20 pb-3">
+                    <div>
+                      <h4 className="text-sm font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                        <DollarSign className="w-4 h-4 text-amber-500" /> Sub-Event Entry Fees
+                      </h4>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                        Set custom registration entry fee (₹) for each Athletics sub-event.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, subEventsConfig: JSON.parse(JSON.stringify(DEFAULT_SUB_EVENTS_CONFIG)) }))}
+                      className="px-3 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 font-bold text-[11px] transition self-start sm:self-auto cursor-pointer"
+                    >
+                      Reset Default Fees
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {formData.subEventsConfig.map((se, idx) => (
+                      <div
+                        key={se.name}
+                        className="p-3.5 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 space-y-2 flex flex-col justify-between"
+                      >
+                        <div className="flex items-center justify-between">
+                          <label className="flex items-center gap-2 cursor-pointer font-bold text-xs text-slate-900 dark:text-white">
+                            <input
+                              type="checkbox"
+                              checked={se.enabled !== false}
+                              onChange={(e) => handleSubEventConfigChange(idx, 'enabled', e.target.checked)}
+                              className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer shrink-0"
+                            />
+                            <span className="line-clamp-1">{se.name}</span>
+                          </label>
+                          <span className="text-[10px] font-mono text-slate-400 shrink-0">({se.isRelay ? 'Relay' : 'Indiv'})</span>
+                        </div>
+
+                        {se.enabled !== false && (
+                          <div className="text-xs pt-1">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Entry Fee (₹)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={se.entryFee}
+                              onChange={(e) => handleSubEventConfigChange(idx, 'entryFee', parseFloat(e.target.value) || 0)}
+                              className="w-full px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono font-bold text-emerald-600 dark:text-emerald-400"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Rules & Guidelines */}
                 <div>
                   <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                    Description & Overview
+                    Rules & Guidelines (One per line)
+                  </label>
+                  <textarea
+                    rows="4"
+                    value={rulesInput}
+                    onChange={(e) => setRulesInput(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                {/* Required Documents */}
+                <div>
+                  <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+                    Required Documents for Registration (One per line)
                   </label>
                   <textarea
                     rows="2"
-                    value={formData.description}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                    placeholder="Describe the Athletics championship meet..."
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                    value={docInput}
+                    onChange={(e) => setDocInput(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
                   />
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Venue / Ground</label>
-                    <input
-                      type="text"
-                      value={formData.venue}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, venue: e.target.value }))}
-                      className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Category</label>
-                    <select
-                      value={formData.category}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
-                      className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
-                    >
-                      <option value="Open">Open Category</option>
-                      <option value="Boys">Boys Only</option>
-                      <option value="Girls">Girls Only</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Status</label>
-                    <select
-                      value={formData.status}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value }))}
-                      className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-emerald-600 dark:text-emerald-400 focus:border-blue-500 focus:outline-none"
-                    >
-                      <option value="Draft">Draft (Hidden)</option>
-                      <option value="Upcoming">Upcoming (Coming Soon)</option>
-                      <option value="Published">Published (Open)</option>
-                      <option value="Closed">Closed</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Reg Start</label>
-                    <input
-                      type="date"
-                      value={formData.regStartDate}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, regStartDate: e.target.value }))}
-                      className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Reg End</label>
-                    <input
-                      type="date"
-                      value={formData.regEndDate}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, regEndDate: e.target.value }))}
-                      className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Meet Start</label>
-                    <input
-                      type="date"
-                      value={formData.tournStartDate}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, tournStartDate: e.target.value }))}
-                      className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Meet End</label>
-                    <input
-                      type="date"
-                      value={formData.tournEndDate}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, tournEndDate: e.target.value }))}
-                      className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
-                    />
-                  </div>
-                </div>
               </div>
 
-              {/* DEDICATED SUB-EVENTS ENTRY FEES CONFIGURATION SECTION */}
-              <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-500/20 pb-3">
-                  <div>
-                    <h4 className="text-sm font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-2">
-                      <DollarSign className="w-4 h-4 text-amber-500" /> Sub-Event Entry Fees
-                    </h4>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400">
-                      Set custom registration entry fee (₹) for each Athletics sub-event.
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setFormData((prev) => ({ ...prev, subEventsConfig: JSON.parse(JSON.stringify(DEFAULT_SUB_EVENTS_CONFIG)) }))}
-                    className="px-3 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 font-bold text-[11px] transition self-start sm:self-auto cursor-pointer"
-                  >
-                    Reset Default Fees
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {formData.subEventsConfig.map((se, idx) => (
-                    <div
-                      key={se.name}
-                      className="p-3.5 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 space-y-2 flex flex-col justify-between"
-                    >
-                      <div className="flex items-center justify-between">
-                        <label className="flex items-center gap-2 cursor-pointer font-bold text-xs text-slate-900 dark:text-white">
-                          <input
-                            type="checkbox"
-                            checked={se.enabled !== false}
-                            onChange={(e) => handleSubEventConfigChange(idx, 'enabled', e.target.checked)}
-                            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer shrink-0"
-                          />
-                          <span className="line-clamp-1">{se.name}</span>
-                        </label>
-                        <span className="text-[10px] font-mono text-slate-400 shrink-0">({se.isRelay ? 'Relay' : 'Indiv'})</span>
-                      </div>
-
-                      {se.enabled !== false && (
-                        <div className="text-xs pt-1">
-                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Entry Fee (₹)</label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={se.entryFee}
-                            onChange={(e) => handleSubEventConfigChange(idx, 'entryFee', parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono font-bold text-emerald-600 dark:text-emerald-400"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Rules & Guidelines */}
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                  Rules & Guidelines (One per line)
-                </label>
-                <textarea
-                  rows="4"
-                  value={rulesInput}
-                  onChange={(e) => setRulesInput(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
-                />
-              </div>
-
-              {/* Required Documents */}
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                  Required Documents for Registration (One per line)
-                </label>
-                <textarea
-                  rows="2"
-                  value={docInput}
-                  onChange={(e) => setDocInput(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
-                />
-              </div>
-
-              {/* Submit Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+              {/* Submit Buttons Footer Bar */}
+              <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-3 bg-slate-50 dark:bg-[#090D16] shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-300 dark:hover:bg-slate-700 transition cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -812,7 +821,6 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
                   <Check className="w-4 h-4" /> Save & Publish Event
                 </button>
               </div>
-
             </form>
           </div>
         </div>
