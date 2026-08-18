@@ -88,34 +88,32 @@ export const HeroSection = () => {
             <img
               src={currentSlide.image}
               alt={currentSlide.title}
-              className="w-full h-full object-cover object-center contrast-[1.05] saturate-[1.05] group-hover:scale-105 transition-transform duration-700"
+              className="w-full h-full object-cover object-center brightness-[1.05] contrast-[1.06] saturate-[1.08] group-hover:scale-105 transition-transform duration-700"
               onError={(e) => {
                 e.target.onerror = null;
                 e.target.src = 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=2000&q=80';
               }}
             />
 
-            {/* Scrim Gradient Overlays for crystal-clear contrast without drowning out photo */}
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/60 via-45% to-slate-950/20 pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 via-40% to-transparent pointer-events-none" />
+            {/* Soft Scrim Gradient Overlays for contrast without drowning out photo */}
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/75 via-slate-950/30 to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent pointer-events-none" />
             
             {/* Main Slide Content Area */}
-            <div className="absolute bottom-16 xs:bottom-18 sm:bottom-22 md:bottom-24 left-3.5 right-3.5 xs:left-5 xs:right-5 sm:left-10 sm:right-10 z-20 space-y-2 sm:space-y-4 text-left">
-              <div className="p-3 sm:p-4 -ml-3 sm:-ml-4 rounded-2xl sm:rounded-3xl bg-slate-950/40 backdrop-blur-[2px] border border-white/10 max-w-4xl space-y-1.5 sm:space-y-2.5 shadow-2xl">
-                <h1 className="text-xl xs:text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white uppercase tracking-tight leading-tight drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] [text-shadow:_0_2px_10px_rgb(0_0_0_/_90%),_0_4px_24px_rgb(0_0_0_/_80%)]">
-                  {currentSlide.title}
-                </h1>
+            <div className="absolute bottom-16 xs:bottom-18 sm:bottom-22 md:bottom-24 left-3.5 right-3.5 xs:left-5 xs:right-5 sm:left-10 sm:right-10 z-20 space-y-1.5 xs:space-y-2 sm:space-y-4 text-left">
+              <h1 className="text-xl xs:text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white/95 uppercase tracking-tight leading-tight max-w-4xl drop-shadow-[0_4px_12px_rgba(0,0,0,0.85)]">
+                {currentSlide.title}
+              </h1>
 
-                <p className="text-xs xs:text-sm sm:text-base lg:text-lg text-white font-medium leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] [text-shadow:_0_1px_6px_rgb(0_0_0_/_90%)] line-clamp-2">
-                  {currentSlide.description}
-                </p>
-              </div>
+              <p className="text-xs xs:text-sm sm:text-base lg:text-lg text-white/85 font-normal leading-relaxed max-w-3xl line-clamp-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+                {currentSlide.description}
+              </p>
 
               {/* Action Buttons */}
-              <div className="pt-1 flex flex-wrap items-center gap-2 sm:gap-4">
+              <div className="pt-1.5 sm:pt-3 flex flex-wrap items-center gap-2 sm:gap-4">
                 <Link
                   to={currentSlide.primaryBtnLink || '/registration'}
-                  className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs xs:text-sm sm:text-base shadow-xl shadow-blue-600/40 backdrop-blur-md transition flex items-center gap-1.5 sm:gap-2 transform hover:-translate-y-0.5 active:scale-95 shrink-0 border border-blue-400/30"
+                  className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600/85 to-indigo-600/85 hover:from-blue-600 hover:to-indigo-600 text-white font-black text-xs xs:text-sm sm:text-base shadow-xl shadow-blue-600/30 backdrop-blur-md transition flex items-center gap-1.5 sm:gap-2 transform hover:-translate-y-0.5 active:scale-95 shrink-0 border border-blue-400/30"
                 >
                   <Trophy className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-white" />
                   <span>{currentSlide.primaryBtnText || 'REGISTER NOW'}</span>
@@ -124,7 +122,7 @@ export const HeroSection = () => {
 
                 <Link
                   to={currentSlide.secondaryBtnLink || '/live'}
-                  className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-slate-900/80 hover:bg-slate-900 text-white font-bold text-xs xs:text-sm sm:text-base border border-white/20 backdrop-blur-md transition flex items-center gap-1.5 sm:gap-2 shadow-xl active:scale-95 shrink-0"
+                  className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-white/70 hover:bg-white text-slate-900 dark:bg-slate-900/70 dark:hover:bg-slate-900 dark:text-white font-bold text-xs xs:text-sm sm:text-base border border-slate-200/70 dark:border-slate-700/70 backdrop-blur-md transition flex items-center gap-1.5 sm:gap-2 shadow-xl active:scale-95 shrink-0"
                 >
                   <PlayCircle className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-rose-500 animate-pulse" />
                   <span>{currentSlide.secondaryBtnText || 'Watch Live'}</span>
