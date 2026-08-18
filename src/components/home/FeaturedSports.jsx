@@ -56,6 +56,8 @@ export const FeaturedSports = () => {
     });
 
     if (coordEv) {
+      const isUpcoming = (coordEv.status || '').toLowerCase() === 'upcoming' || (coordEv.status || '').toLowerCase() === 'coming soon';
+      const isOpen = !isUpcoming && (coordEv.status === 'Published' || coordEv.status === 'Open' || coordEv.status === 'Active');
       return {
         eventName: coordEv.title || coordEv.eventName || sport.name,
         entryFee: coordEv.entryFee !== undefined ? coordEv.entryFee : sport.entryFee,
@@ -65,7 +67,9 @@ export const FeaturedSports = () => {
         tournStartDate: formatDateToDDMMYYYY(coordEv.tournStartDate),
         tournEndDate: formatDateToDDMMYYYY(coordEv.tournEndDate),
         venue: coordEv.venue || sport.venue,
-        isOpen: true,
+        isOpen: isOpen,
+        isUpcoming: isUpcoming,
+        status: coordEv.status,
         raw: coordEv
       };
     }
@@ -88,6 +92,8 @@ export const FeaturedSports = () => {
         tournEndDate: formatDateToDDMMYYYY(prEv.tournEndDate),
         venue: prEv.venue || sport.venue,
         isOpen: true,
+        isUpcoming: false,
+        status: 'Published',
         raw: prEv
       };
     }
@@ -101,7 +107,9 @@ export const FeaturedSports = () => {
       tournStartDate: null,
       tournEndDate: null,
       venue: sport.venue,
-      isOpen: true,
+      isOpen: false,
+      isUpcoming: false,
+      status: 'Closed',
       raw: null
     };
   };
@@ -109,10 +117,14 @@ export const FeaturedSports = () => {
   const activeSports = SPORTS_DATA.map((sport) => {
     const activeEvent = getActiveEventForSport(sport);
     return { sport, activeEvent };
-  }).filter(({ activeEvent }) => activeEvent.isOpen);
+  }).filter(({ activeEvent }) => activeEvent.isOpen || activeEvent.isUpcoming);
 
-  // Sort by latest event date (newest first)
+  // Sort: Open sports first, then Upcoming sports, newest first
   activeSports.sort((a, b) => {
+    const pA = a.activeEvent.isOpen ? 2 : 1;
+    const pB = b.activeEvent.isOpen ? 2 : 1;
+    if (pA !== pB) return pB - pA;
+
     const aDate = new Date(a.activeEvent.raw?.createdAt || a.activeEvent.raw?.created_at || 0).getTime();
     const bDate = new Date(b.activeEvent.raw?.createdAt || b.activeEvent.raw?.created_at || 0).getTime();
     return bDate - aDate;

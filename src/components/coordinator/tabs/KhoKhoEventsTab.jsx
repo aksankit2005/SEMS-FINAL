@@ -221,7 +221,13 @@ export const KhoKhoEventsTab = ({ user }) => {
   };
 
   const handleToggleStatus = async (eventObj) => {
-    const nextStatus = eventObj.status === 'Published' ? 'Closed' : 'Published';
+    const statusCycle = {
+      'Draft': 'Upcoming',
+      'Upcoming': 'Published',
+      'Published': 'Closed',
+      'Closed': 'Draft'
+    };
+    const nextStatus = statusCycle[eventObj.status] || 'Published';
     try {
       await coordinatorApi.updateEvent(eventObj.id, { ...eventObj, status: nextStatus });
       addToast(`Event status updated to ${nextStatus}`, 'success');
@@ -339,11 +345,13 @@ export const KhoKhoEventsTab = ({ user }) => {
                     <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                       evt.status === 'Published' 
                         ? 'bg-emerald-500 text-white' 
+                        : evt.status === 'Upcoming'
+                        ? 'bg-blue-500 text-white'
                         : evt.status === 'Closed' 
                         ? 'bg-rose-500 text-white' 
-                        : 'bg-amber-500 text-white'
+                        : 'bg-amber-500 text-slate-950 font-black'
                     }`}>
-                      {evt.status || 'Published'}
+                      ● {evt.status || 'Published'}
                     </span>
                   </div>
                   <div className="absolute bottom-3 left-3 right-3 text-white">
@@ -485,7 +493,7 @@ export const KhoKhoEventsTab = ({ user }) => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
                     Event Category
@@ -512,6 +520,22 @@ export const KhoKhoEventsTab = ({ user }) => {
                   >
                     <option value="Kho-Kho Field 1">Kho-Kho Field 1</option>
                     <option value="Kho-Kho Field 2">Kho-Kho Field 2</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-[#1E293B] text-xs font-bold text-emerald-600 dark:text-emerald-400 focus:ring-2 focus:ring-amber-500"
+                  >
+                    <option value="Draft">Draft (Hidden)</option>
+                    <option value="Upcoming">Upcoming (Coming Soon)</option>
+                    <option value="Published">Published (Open)</option>
+                    <option value="Closed">Closed</option>
                   </select>
                 </div>
               </div>

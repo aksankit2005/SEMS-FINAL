@@ -130,6 +130,21 @@ export function computeEffectiveRegistrationStatus(event, now = new Date()) {
     };
   }
 
+  if (normalizedStatus === 'upcoming' || normalizedStatus === 'coming soon') {
+    return {
+      effectiveRegistrationOpen: false,
+      effectiveRegistrationClosed: false,
+      isDeadlinePassed: false,
+      isStarted: false,
+      canReopen: false,
+      canScheduleFixtures: false,
+      code: 'UPCOMING',
+      label: 'Upcoming (Coming Soon)',
+      badgeStyle: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+      reason: 'Event is upcoming. Registration has not opened yet.'
+    };
+  }
+
   if (isDeadlinePassed) {
     return {
       effectiveRegistrationOpen: false,

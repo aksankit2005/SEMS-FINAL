@@ -86,6 +86,9 @@ export const RegistrationStatusBadge = ({ event }) => {
   } else if (regStatus.code === 'CLOSED_CAPACITY_FULL') {
     badgeColor = 'bg-purple-500/20 text-purple-300 border-purple-500/40';
     dotColor = 'bg-purple-400';
+  } else if (regStatus.code === 'UPCOMING') {
+    badgeColor = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+    dotColor = 'bg-amber-400';
   } else if (regStatus.code === 'NOT_STARTED') {
     badgeColor = 'bg-sky-500/20 text-sky-300 border-sky-500/40';
     dotColor = 'bg-sky-400';

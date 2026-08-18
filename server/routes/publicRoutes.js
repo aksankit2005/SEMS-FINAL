@@ -448,7 +448,7 @@ router.get('/public/events', publicReadLimiter, async (req, res) => {
         });
 
         let currentStatus = e.status || 'Published';
-        if (rawStatus === 'upcoming') {
+        if (rawStatus === 'upcoming' || rawStatus === 'coming soon') {
           currentStatus = 'Upcoming';
         } else if (!regStatus.effectiveRegistrationOpen) {
           currentStatus = 'Closed';
@@ -514,7 +514,7 @@ router.get('/public/events', publicReadLimiter, async (req, res) => {
         });
 
         let currentStatus = e.status || 'Published';
-        if (rawStatus === 'upcoming') {
+        if (rawStatus === 'upcoming' || rawStatus === 'coming soon') {
           currentStatus = 'Upcoming';
         } else if (!regStatus.effectiveRegistrationOpen) {
           currentStatus = 'Closed';

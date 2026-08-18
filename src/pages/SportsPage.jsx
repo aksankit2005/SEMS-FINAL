@@ -100,6 +100,8 @@ export const SportsPage = () => {
     });
 
     if (coordEv) {
+      const isUpcoming = (coordEv.status || '').toLowerCase() === 'upcoming' || (coordEv.status || '').toLowerCase() === 'coming soon';
+      const isOpen = !isUpcoming && (coordEv.status === 'Published' || coordEv.status === 'Open' || coordEv.status === 'Active');
       const resolvedFee = typeof coordEv.entryFee === 'number' ? coordEv.entryFee : (typeof coordEv.teamFee === 'number' ? coordEv.teamFee : (coordEv.entryFee ?? coordEv.teamFee ?? sport.entryFee));
       return {
         eventName: coordEv.title || coordEv.eventName || sport.name,
@@ -110,7 +112,10 @@ export const SportsPage = () => {
         tournStartDate: formatDateToDDMMYYYY(coordEv.tournStartDate),
         tournEndDate: formatDateToDDMMYYYY(coordEv.tournEndDate),
         venue: coordEv.venue || sport.venue,
-        isOpen: true,
+        isOpen: isOpen,
+        isUpcoming: isUpcoming,
+        status: coordEv.status,
+        hasActiveEvent: true,
         raw: coordEv
       };
     }
@@ -135,6 +140,9 @@ export const SportsPage = () => {
         tournEndDate: formatDateToDDMMYYYY(prEv.tournEndDate),
         venue: prEv.venue || sport.venue,
         isOpen: true,
+        isUpcoming: false,
+        status: 'Published',
+        hasActiveEvent: true,
         raw: prEv
       };
     }
@@ -149,6 +157,9 @@ export const SportsPage = () => {
       tournEndDate: null,
       venue: sport.venue,
       isOpen: false,
+      isUpcoming: false,
+      status: 'Closed',
+      hasActiveEvent: false,
       raw: null
     };
   };
@@ -189,19 +200,23 @@ export const SportsPage = () => {
   };
 
   const sortedSports = [...filteredSports].sort((a, b) => {
-    const aOpen = isSportOpen(a);
-    const bOpen = isSportOpen(b);
+    const aEv = getActiveEventForSport(a);
+    const bEv = getActiveEventForSport(b);
 
-    if (aOpen && !bOpen) return -1;
-    if (!aOpen && bOpen) return 1;
+    const getPriority = (ev) => {
+      if (ev.isOpen) return 3;
+      if (ev.isUpcoming) return 2;
+      return 1;
+    };
 
-    if (aOpen && bOpen) {
-      const aDate = getLatestEventDate(a);
-      const bDate = getLatestEventDate(b);
-      return bDate - aDate; // newest first
-    }
+    const pA = getPriority(aEv);
+    const pB = getPriority(bEv);
 
-    return 0;
+    if (pA !== pB) return pB - pA;
+
+    const aDate = getLatestEventDate(a);
+    const bDate = getLatestEventDate(b);
+    return bDate - aDate; // newest first
   });
 
   return (

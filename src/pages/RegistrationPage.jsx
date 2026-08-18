@@ -347,6 +347,7 @@ export const RegistrationPage = () => {
             name: foundEv.sportName || foundEv.title || 'Sport Event',
             eventName: foundEv.title || foundEv.eventName,
             category: foundEv.category || 'Open',
+            status: foundEv.status || 'Published',
             type: foundEv.teamSize || 'Team / Individual',
             tagline: foundEv.description || 'Championship Tournament',
             description: foundEv.description || '',
@@ -885,7 +886,8 @@ export const RegistrationPage = () => {
                     const registered = evt.registeredCount || 0;
                     const limit = evt.maxRegistrations || 64;
                     const slotsLeft = Math.max(0, limit - registered);
-                    const isClosed = evt.status === 'Closed' || slotsLeft === 0;
+                    const isUpcoming = evt.status === 'Upcoming' || evt.status === 'Coming Soon';
+                    const isClosed = !isUpcoming && (evt.status === 'Closed' || slotsLeft === 0);
 
                     const isRacket = isRacketSportCheck(evt);
                     const currentFee = typeof evt.entryFee === 'number' ? evt.entryFee : (typeof evt.teamFee === 'number' ? evt.teamFee : (evt.entryFee ?? evt.teamFee ?? 0));
@@ -912,13 +914,13 @@ export const RegistrationPage = () => {
 
                           <div className="absolute top-3 left-3 flex items-center gap-2">
                             <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase shadow-md ${
-                              evt.status === 'Coming Soon'
+                              isUpcoming
                                 ? 'bg-amber-500 text-slate-950 font-black'
                                 : isClosed
                                 ? 'bg-rose-500 text-white'
                                 : 'bg-emerald-500 text-white'
                             }`}>
-                              {evt.status === 'Coming Soon' ? '🟡 Coming Soon' : isClosed ? '● Closed' : '● Open'}
+                              {isUpcoming ? '🟡 Upcoming' : isClosed ? '● Closed' : '● Open'}
                             </span>
                           </div>
 
@@ -968,7 +970,7 @@ export const RegistrationPage = () => {
                             </button>
 
                             <button
-                              disabled={isClosed || evt.status === 'Coming Soon'}
+                              disabled={isClosed || isUpcoming}
                               onClick={() => {
                                 const adaptedSport = {
                                   id: evt.sportId || evt.id,
@@ -979,7 +981,7 @@ export const RegistrationPage = () => {
                                   tagline: evt.title,
                                   description: evt.description,
                                   image: evt.coverImage || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80',
-                                  status: isClosed ? 'Closed' : evt.status === 'Coming Soon' ? 'Coming Soon' : 'Open',
+                                  status: isClosed ? 'Closed' : isUpcoming ? 'Upcoming' : 'Open',
                                   participantsCount: registered,
                                   maxParticipants: limit,
                                   entryFee: sFee,
@@ -998,7 +1000,7 @@ export const RegistrationPage = () => {
                                 handleSportSelect(adaptedSport);
                               }}
                               className={`flex-1 py-2.5 rounded-2xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 ${
-                                evt.status === 'Coming Soon'
+                                isUpcoming
                                   ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 cursor-not-allowed font-extrabold'
                                   : isClosed
                                   ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-300 dark:border-slate-700'
@@ -1006,14 +1008,14 @@ export const RegistrationPage = () => {
                               }`}
                             >
                               <span>
-                                {evt.status === 'Coming Soon'
+                                {isUpcoming
                                   ? '⏳ Coming Soon'
                                   : isClosed
                                   ? (slotsLeft === 0 ? 'Event Full' : 'Registration Closed')
                                   : 'Register Now'
                                 }
                               </span>
-                              {evt.status !== 'Coming Soon' && <Trophy className="w-4 h-4" />}
+                              {!isUpcoming && !isClosed && <Trophy className="w-4 h-4" />}
                             </button>
                           </div>
 
@@ -1063,15 +1065,30 @@ export const RegistrationPage = () => {
               {/* STEP 1: DETAILS */}
               {step === 1 && (
                 <div className="space-y-6">
+                  {activeSport?.status === 'Upcoming' && (
+                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs font-bold flex items-center gap-2.5">
+                      <span className="text-base">⏳</span>
+                      <span>This event is currently <strong>Upcoming (Coming Soon)</strong>. Registration will open on {activeSport.regStartDate || 'the scheduled opening date'}.</span>
+                    </div>
+                  )}
                   {renderDetailsStep()}
                   <div className="flex justify-end pt-6 border-t border-slate-100 dark:border-slate-800">
-                    <button
-                      onClick={handleDetailsSubmit}
-                      className="px-8 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-sm shadow-md shadow-blue-500/20 flex items-center gap-2 transition active:scale-[0.98]"
-                    >
-                      <span>Proceed to Payment</span>
-                      <Trophy className="w-4 h-4" />
-                    </button>
+                    {activeSport?.status === 'Upcoming' ? (
+                      <button
+                        disabled
+                        className="px-8 py-3 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-sm border border-amber-500/40 cursor-not-allowed flex items-center gap-2"
+                      >
+                        <span>⏳ Registration Opening Soon</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleDetailsSubmit}
+                        className="px-8 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-sm shadow-md shadow-blue-500/20 flex items-center gap-2 transition active:scale-[0.98]"
+                      >
+                        <span>Proceed to Payment</span>
+                        <Trophy className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               )}

@@ -1321,7 +1321,7 @@ async deleteMatch(id) {
           .filter((e) => e && e.id && !deletedSet.has(e.id))
           .map((e) => {
             let status = e.status || 'Published';
-            if (e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) {
+            if (status !== 'Upcoming' && status !== 'Coming Soon' && e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) {
               status = 'Closed';
             }
             return {

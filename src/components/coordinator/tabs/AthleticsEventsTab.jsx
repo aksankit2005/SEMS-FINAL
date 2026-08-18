@@ -634,9 +634,9 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Venue</label>
+                    <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Venue / Ground</label>
                     <input
                       type="text"
                       value={formData.venue}
@@ -655,6 +655,20 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
                       <option value="Open">Open Category</option>
                       <option value="Boys">Boys Only</option>
                       <option value="Girls">Girls Only</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Status</label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value }))}
+                      className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-emerald-600 dark:text-emerald-400 focus:border-blue-500 focus:outline-none"
+                    >
+                      <option value="Draft">Draft (Hidden)</option>
+                      <option value="Upcoming">Upcoming (Coming Soon)</option>
+                      <option value="Published">Published (Open)</option>
+                      <option value="Closed">Closed</option>
                     </select>
                   </div>
                 </div>

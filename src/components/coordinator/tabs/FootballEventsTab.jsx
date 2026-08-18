@@ -264,10 +264,16 @@ Equipment: Shin guards and sports/football shoes mandatory for all players.
   };
 
   const handleToggleStatus = async (eventObj) => {
-    const nextStatus = eventObj.status === 'Published' ? 'Draft' : 'Published';
+    const statusCycle = {
+      'Draft': 'Upcoming',
+      'Upcoming': 'Published',
+      'Published': 'Closed',
+      'Closed': 'Draft'
+    };
+    const nextStatus = statusCycle[eventObj.status] || 'Published';
     try {
       const updated = await coordinatorApi.updateEvent(eventObj.id, { status: nextStatus });
-      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? updated : item)));
+      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, status: nextStatus } : item)));
       addToast(`Event status changed to ${nextStatus}`, 'success');
     } catch (err) {
       addToast('Failed to update status', 'error');
@@ -358,10 +364,14 @@ Equipment: Shin guards and sports/football shoes mandatory for all players.
                     className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border backdrop-blur-md transition-all ${
                       eventItem.status === 'Published'
                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                        : eventItem.status === 'Upcoming'
+                        ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                        : eventItem.status === 'Closed'
+                        ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
                         : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                     }`}
                   >
-                    {eventItem.status}
+                    ● {eventItem.status}
                   </button>
                 </div>
 
@@ -597,8 +607,8 @@ Equipment: Shin guards and sports/football shoes mandatory for all players.
                 </div>
               </div>
 
-              {/* Pitch Location & Gender Category */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Pitch Location, Gender Category & Status */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block font-medium text-slate-600 dark:text-slate-400 mb-1">Match Pitch / Venue</label>
                   <input
@@ -620,6 +630,19 @@ Equipment: Shin guards and sports/football shoes mandatory for all players.
                     <option value="Boys">Boys Tournament</option>
                     <option value="Girls">Girls Tournament</option>
                     <option value="Open">Open Tournament</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-medium text-slate-600 dark:text-slate-400 mb-1">Status</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-emerald-600 dark:text-emerald-400 font-bold"
+                  >
+                    <option value="Draft">Draft (Hidden)</option>
+                    <option value="Upcoming">Upcoming (Coming Soon)</option>
+                    <option value="Published">Published (Open)</option>
+                    <option value="Closed">Closed</option>
                   </select>
                 </div>
               </div>
