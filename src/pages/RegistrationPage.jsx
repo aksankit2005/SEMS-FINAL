@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import { Trophy, ArrowLeft, User, Users, Info, ShieldCheck, Sparkles, Calendar, MapPin, Clock, Loader2, Lock } from 'lucide-react';
 import { SPORTS_DATA } from '../data/sportsData';
@@ -229,6 +229,34 @@ export const RegistrationPage = () => {
   }, []);
 
   // Sync sportsList dynamically whenever coordinator published events update
+  const sortedCoordinatorEvents = useMemo(() => {
+    if (!coordinatorEvents || !Array.isArray(coordinatorEvents)) return [];
+    return [...coordinatorEvents].sort((a, b) => {
+      const getPriority = (evt) => {
+        const registered = evt.registeredCount || 0;
+        const limit = evt.maxRegistrations || 64;
+        const slotsLeft = Math.max(0, limit - registered);
+        const isUpcoming = evt.status === 'Upcoming' || evt.status === 'Coming Soon';
+        const isClosed = !isUpcoming && (evt.status === 'Closed' || slotsLeft === 0);
+
+        if (!isUpcoming && !isClosed) return 3; // 1st: Open
+        if (isUpcoming) return 2;               // 2nd: Upcoming
+        return 1;                               // 3rd: Closed
+      };
+
+      const pA = getPriority(a);
+      const pB = getPriority(b);
+
+      if (pA !== pB) return pB - pA; // Higher priority (3 -> 2 -> 1) first
+
+      const dateA = new Date(a.tournStartDate || a.regStartDate || a.createdAt || 0).getTime();
+      const dateB = new Date(b.tournStartDate || b.regStartDate || b.createdAt || 0).getTime();
+      if (dateA !== dateB) return dateB - dateA;
+
+      return (a.title || '').localeCompare(b.title || '');
+    });
+  }, [coordinatorEvents]);
+
   useEffect(() => {
     if (!coordinatorEvents || coordinatorEvents.length === 0) return;
 
@@ -869,7 +897,7 @@ export const RegistrationPage = () => {
           <div className="space-y-8">
             
             {/* DYNAMIC OFFICIAL COORDINATOR PUBLISHED EVENTS SECTION */}
-            {coordinatorEvents && coordinatorEvents.length > 0 && (
+            {sortedCoordinatorEvents && sortedCoordinatorEvents.length > 0 && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase flex items-center gap-2">
@@ -877,12 +905,12 @@ export const RegistrationPage = () => {
                     APEX SPORTS EVENTS
                   </h2>
                   <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-mono text-xs font-bold border border-indigo-500/20">
-                    Live Published Events ({coordinatorEvents.length})
+                    Live Published Events ({sortedCoordinatorEvents.length})
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-4xl mx-auto w-full">
-                  {coordinatorEvents.map((evt) => {
+                  {sortedCoordinatorEvents.map((evt) => {
                     const registered = evt.registeredCount || 0;
                     const limit = evt.maxRegistrations || 64;
                     const slotsLeft = Math.max(0, limit - registered);
@@ -1028,7 +1056,7 @@ export const RegistrationPage = () => {
             )}
 
             {/* EMPTY STATE WHEN NO COORDINATOR EVENTS PUBLISHED YET */}
-            {(!coordinatorEvents || coordinatorEvents.length === 0) && (
+            {(!sortedCoordinatorEvents || sortedCoordinatorEvents.length === 0) && (
               <div className="text-center py-16 px-4 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md space-y-3">
                 <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
                   <Trophy className="w-6 h-6" />

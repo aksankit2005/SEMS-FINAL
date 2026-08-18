@@ -91,18 +91,31 @@ export const SportsPage = () => {
 
   const getActiveEventForSport = (sport) => {
     // 1. Check coordinator events
-    const coordEv = coordEvents.find((ev) => {
+    const matchingCoordEvents = coordEvents.filter((ev) => {
       const sId = (ev.sportId || '').toLowerCase();
       const sName = (ev.sportName || '').toLowerCase();
-      const matches = sId === sport.id.toLowerCase() || sName === sport.name.toLowerCase();
-      const active = ev.status && ev.status !== 'Closed' && ev.status !== 'Draft' && ev.status !== 'Inactive';
-      return matches && active;
+      return sId === sport.id.toLowerCase() || sName === sport.name.toLowerCase();
     });
 
-    if (coordEv) {
-      const isUpcoming = (coordEv.status || '').toLowerCase() === 'upcoming' || (coordEv.status || '').toLowerCase() === 'coming soon';
-      const isOpen = !isUpcoming && (coordEv.status === 'Published' || coordEv.status === 'Open' || coordEv.status === 'Active');
+    if (matchingCoordEvents.length > 0) {
+      // Prioritize: Open (3) > Upcoming (2) > Closed (1)
+      const sortedMatching = [...matchingCoordEvents].sort((a, b) => {
+        const getEvPriority = (ev) => {
+          const s = (ev.status || '').toLowerCase();
+          if (s === 'published' || s === 'open' || s === 'active') return 3;
+          if (s === 'upcoming' || s === 'coming soon') return 2;
+          if (s === 'closed') return 1;
+          return 0;
+        };
+        return getEvPriority(b) - getEvPriority(a);
+      });
+
+      const coordEv = sortedMatching[0];
+      const s = (coordEv.status || '').toLowerCase();
+      const isUpcoming = s === 'upcoming' || s === 'coming soon';
+      const isOpen = !isUpcoming && (s === 'published' || s === 'open' || s === 'active');
       const resolvedFee = typeof coordEv.entryFee === 'number' ? coordEv.entryFee : (typeof coordEv.teamFee === 'number' ? coordEv.teamFee : (coordEv.entryFee ?? coordEv.teamFee ?? sport.entryFee));
+
       return {
         eventName: coordEv.title || coordEv.eventName || sport.name,
         entryFee: resolvedFee,
@@ -114,7 +127,7 @@ export const SportsPage = () => {
         venue: coordEv.venue || sport.venue,
         isOpen: isOpen,
         isUpcoming: isUpcoming,
-        status: coordEv.status,
+        status: isOpen ? 'Open' : isUpcoming ? 'Upcoming' : 'Closed',
         hasActiveEvent: true,
         raw: coordEv
       };
