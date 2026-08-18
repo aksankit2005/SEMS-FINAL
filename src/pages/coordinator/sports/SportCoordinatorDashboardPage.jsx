@@ -49,8 +49,21 @@ const PlaceholderTab = ({ sportName, tabLabel }) => (
 );
 
 // ─── Header ───────────────────────────────────────────────────────────────────
-const Header = ({ sportName, activeTab, setActiveTab }) => (
-  <header className="w-full bg-white dark:bg-[#0B1120] text-slate-900 dark:text-slate-200 border-b border-slate-200 dark:border-slate-800/80 sticky top-0 z-30 shadow-sm transition-colors">
+const Header = ({ sportName, activeTab, setActiveTab }) => {
+  const [isLayoutHidden, setIsLayoutHidden] = useState(false);
+
+  React.useEffect(() => {
+    const handleLayoutToggle = (e) => {
+      setIsLayoutHidden(Boolean(e.detail?.hide));
+    };
+    window.addEventListener('sems_layout_toggle', handleLayoutToggle);
+    return () => window.removeEventListener('sems_layout_toggle', handleLayoutToggle);
+  }, []);
+
+  if (isLayoutHidden) return null;
+
+  return (
+    <header className="w-full bg-white dark:bg-[#0B1120] text-slate-900 dark:text-slate-200 border-b border-slate-200 dark:border-slate-800/80 sticky top-0 z-30 shadow-sm transition-colors">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div className="space-y-1">
         <div className="flex items-center gap-2">
@@ -109,7 +122,8 @@ const Header = ({ sportName, activeTab, setActiveTab }) => (
       </nav>
     </div>
   </header>
-);
+  );
+};
 
 // ─── Main exported page ───────────────────────────────────────────────────────
 export const SportCoordinatorDashboardPage = ({ sportName, sportSlug }) => {
