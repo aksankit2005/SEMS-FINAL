@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { ShieldAlert, Info, CheckCircle2, ChevronDown, ChevronUp, Image as ImageIcon, X, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShieldAlert, Info, CheckCircle2, ChevronDown, ChevronUp, Image as ImageIcon, X, ArrowLeft, Edit3, Plus, Trash2, Save, Check } from 'lucide-react';
 import { CricketRulesDisplay } from './CricketRulesDisplay';
 import { AthleticsRulesDisplay } from './AthleticsRulesDisplay';
+import { coordinatorApi } from '../../services/coordinatorApi';
 
 export const BADMINTON_RULES_DATA = {
   singles: [
@@ -752,9 +753,262 @@ export const GenericRulesDisplay = ({ sportName = "Sport", rules = [] }) => {
   );
 };
 
+export const getDefaultRulesForSport = (sportName = '') => {
+  const sName = (sportName || '').toLowerCase().trim();
+
+  if (sName.includes('cricket') && !sName.includes('gully')) {
+    return [
+      "Matches will consist of 8 overs or 10 overs per innings as announced.",
+      "Squad size is 11 players per team with 2 substitute fielders allowed.",
+      "Maximum of 2 overs allowed per bowler in an 8-over / 10-over match.",
+      "Powerplay rules apply for the first 2 overs of each innings.",
+      "Wide and No-Ball result in 1 extra run plus an additional re-bowled delivery.",
+      "A Free Hit delivery is awarded following any front-foot no-ball.",
+      "In the event of a tie score, winner will be decided via a 1-over Super Over."
+    ];
+  }
+
+  if (sName.includes('gully') || sName.includes('box')) {
+    return [
+      "Each match consists of 5 or 6 overs per innings played in a enclosed box arena.",
+      "Playing squad consists of 5 or 6 players per team.",
+      "Direct hit on boundary net or wall above height line without bounce counts as 6 runs.",
+      "Direct hit on wall below height line counts as 1 or 2 runs as marked.",
+      "One bounce hit off the wall caught by fielder is declared OUT.",
+      "Wide and No-Ball result in 1 extra run; no-ball yields a Free Hit.",
+      "Underarm bowling only; overarm deliveries count as no-ball."
+    ];
+  }
+
+  if (sName.includes('chess')) {
+    return [
+      "Time control: 10-Minute Rapid Chess per player (no increment per move).",
+      "Touch-move rule is strictly enforced (touching a piece means you must move it).",
+      "Pressing the clock before executing a move is considered an illegal action.",
+      "First illegal move receives a warning; second illegal move results in forfeiture.",
+      "Standard FIDE stalemate, 50-move rule, and 3-fold repetition apply for draws.",
+      "Cell phones and electronic devices are strictly prohibited during the game."
+    ];
+  }
+
+  if (sName.includes('basketball')) {
+    return [
+      "Full court match played with 4 quarters of 10 minutes each.",
+      "5 active players per team on court with up to 7 substitutes.",
+      "24-second shot clock and 8-second backcourt transition rule apply.",
+      "Each team foul beyond 4 fouls per quarter awards 2 free throws to opponents.",
+      "Individual player with 5 personal fouls must be substituted out.",
+      "Technical fouls result in 1 free throw plus ball possession."
+    ];
+  }
+
+  if (sName.includes('table') || sName.includes('tt') || sName.includes('ping')) {
+    return [
+      "Matches are played as Best of 5 games, each game to 11 points.",
+      "Must win by a 2-point margin if score reaches 10-10 deuce.",
+      "Service alternates between players after every 2 points scored.",
+      "During service, the ball must rest on open palm and be tossed at least 16 cm vertically.",
+      "Edge balls on the top playing surface count as valid in-play points.",
+      "ITTF approved rackets with two distinct rubber colors are mandatory."
+    ];
+  }
+
+  if (sName.includes('football') || sName.includes('soccer')) {
+    return [
+      "Matches are 5v5 mini-football format with 2 halves of 15 minutes each.",
+      "Maximum squad of 10 players allowed with unlimited rolling substitutions.",
+      "No offside rule in effect; throw-ins replaced by kick-in from touchline.",
+      "Goalkeeper must throw or kick the ball within 4 seconds of possession.",
+      "Direct red card results in 2-minute penalty before a substitute can enter.",
+      "Tied knockouts decided by a 3-penalty shootout per team."
+    ];
+  }
+
+  if (sName.includes('volleyball')) {
+    return [
+      "Best of 3 sets match; first 2 sets to 25 points, deciding 3rd set to 15 points.",
+      "6 players per team on court; team must win by 2 points.",
+      "Maximum of 3 touches allowed per side before returning over the net.",
+      "Touching the net or stepping completely over the center line is a fault.",
+      "Rally Point System applies; point is awarded on every serve.",
+      "Libero player must wear a contrasting jersey and cannot serve or attack."
+    ];
+  }
+
+  if (sName.includes('kabaddi')) {
+    return [
+      "Match duration: Two 20-minute halves with a 5-minute half-time break.",
+      "7 active players on court per team with 5 substitutes.",
+      "Raid time limit is 30 seconds; raider must continuously chant 'Kabaddi'.",
+      "Every 3rd consecutive empty raid by a team is a mandatory 'Do-or-Die' raid.",
+      "Defending team with 3 or fewer players scoring a tackle earns a 'Super Tackle' (2 pts).",
+      "All-out on opposing team awards 2 bonus 'Lona' points."
+    ];
+  }
+
+  if (sName.includes('kho')) {
+    return [
+      "Match consists of 2 innings; each inning has 9 minutes of chasing and running.",
+      "9 players per team (8 seated chasers, 1 active chaser) + 3 runners per batch.",
+      "Chasers must run in the direction faced and cannot cross the central divider line.",
+      "Giving a 'Kho' requires touching a seated teammate's back and shouting 'Kho!'.",
+      "Runner is out if touched by active chaser or if runner steps outside boundary."
+    ];
+  }
+
+  if (sName.includes('athletic') || sName.includes('track')) {
+    return [
+      "Events include 100m, 200m, 400m, 800m, 4x100m Relay, Long Jump, and Shot Put.",
+      "False start rule: Any athlete responsible for a false start is disqualified.",
+      "In sprint races, athletes must stay strictly inside their assigned lanes.",
+      "4x100m relay baton exchange must occur inside the 20-meter exchange zone.",
+      "Finish line timing is recorded when athlete's torso/chest crosses the plane."
+    ];
+  }
+
+  if (sName.includes('tug') || sName.includes('war')) {
+    return [
+      "8 pullers per team; combined team weight limit applies per category.",
+      "Match is Best of 3 pulls; team must pull the rope marker 4 meters over the line.",
+      "Sitting, locking rope around body, or touching ground with knee is a foul.",
+      "Two warnings given for foul positions; 3rd warning results in loss of pull.",
+      "Proper footwear without metal cleats or spikes is mandatory."
+    ];
+  }
+
+  if (sName.includes('badminton')) {
+    return [
+      "Match is Best of 3 games played to 21 points.",
+      "Must win by 2 points; at 29-29, first team to 30 points wins.",
+      "Server serves from right court on even score, left court on odd score.",
+      "Shuttle must be struck below server's waist level during service.",
+      "In doubles, service alternates between partners based on points scored.",
+      "Rally Point System applies for both Singles and Doubles events."
+    ];
+  }
+
+  return [
+    "Official tournament rules and regulations apply for all matches.",
+    "Teams & players must report 15 minutes before scheduled match start time.",
+    "Valid student / college ID cards are mandatory for physical verification.",
+    "Sportsmanship and fair play guidelines must be strictly adhered to.",
+    "Referee or arbiter's decision on match calls is final and binding."
+  ];
+};
+
 /* FULL SCREEN RULEBOOK MODAL WITH GO BACK BUTTON (SUPPORTING ALL 12 GAMES) */
-export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton", rules = [] }) => {
+export const BadmintonRulesModal = ({ 
+  isOpen, 
+  onClose, 
+  sportName = "Badminton", 
+  rules = [],
+  eventId = null,
+  onRulesUpdated = null
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedRules, setEditedRules] = useState([]);
+  const [hasCustomRules, setHasCustomRules] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
+
+  const isCoordinator = Boolean(
+    coordinatorApi.isAuthenticated() ||
+    localStorage.getItem('sems_coordinator_token') ||
+    localStorage.getItem('sems_super_coordinator_token') ||
+    localStorage.getItem('pr_user')
+  );
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setIsEditing(false);
+    setSaveMessage('');
+
+    const key = (sportName || '').toLowerCase().trim();
+    const storedCustom = (eventId && localStorage.getItem(`custom_rules_event_${eventId}`)) || 
+                         localStorage.getItem(`custom_rules_${key}`);
+
+    if (storedCustom) {
+      try {
+        const parsed = JSON.parse(storedCustom);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setEditedRules(parsed);
+          setHasCustomRules(true);
+          return;
+        }
+      } catch (e) {}
+    }
+
+    if (Array.isArray(rules) && rules.length > 0) {
+      setEditedRules([...rules]);
+      setHasCustomRules(true);
+    } else {
+      const defaultSportRules = getDefaultRulesForSport(sportName);
+      setEditedRules(defaultSportRules);
+      setHasCustomRules(false);
+    }
+  }, [isOpen, sportName, eventId, rules]);
+
   if (!isOpen) return null;
+
+  const handleRuleChange = (index, value) => {
+    setEditedRules((prev) => {
+      const updated = [...prev];
+      updated[index] = value;
+      return updated;
+    });
+  };
+
+  const handleAddRule = () => {
+    setEditedRules((prev) => [...prev, '']);
+  };
+
+  const handleRemoveRule = (index) => {
+    setEditedRules((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveRules = async () => {
+    setIsSaving(true);
+    const cleaned = editedRules.map((r) => r.trim()).filter(Boolean);
+    const validRules = cleaned.length > 0 ? cleaned : [
+      "Official tournament rules and regulations apply for all matches."
+    ];
+
+    const key = (sportName || '').toLowerCase().trim();
+    localStorage.setItem(`custom_rules_${key}`, JSON.stringify(validRules));
+    if (eventId) {
+      localStorage.setItem(`custom_rules_event_${eventId}`, JSON.stringify(validRules));
+    }
+
+    if (eventId) {
+      try {
+        await coordinatorApi.updateEvent(eventId, { rules: validRules });
+      } catch (e) {
+        console.warn('Updated event rules locally', e);
+      }
+    }
+
+    try {
+      const storedEvents = JSON.parse(localStorage.getItem('sems_coordinator_events') || '[]');
+      if (Array.isArray(storedEvents) && storedEvents.length > 0) {
+        const updated = storedEvents.map(e => (e.id === eventId || e.sportName === sportName) ? { ...e, rules: validRules } : e);
+        localStorage.setItem('sems_coordinator_events', JSON.stringify(updated));
+      }
+    } catch (e) {}
+
+    window.dispatchEvent(new Event('sems_events_updated'));
+    window.dispatchEvent(new Event('sems_rules_updated'));
+    window.dispatchEvent(new Event('storage'));
+
+    onRulesUpdated?.(validRules);
+    setEditedRules(validRules);
+    setHasCustomRules(true);
+    setIsSaving(false);
+    setSaveMessage('Rules updated successfully!');
+    setTimeout(() => {
+      setSaveMessage('');
+      setIsEditing(false);
+    }, 800);
+  };
 
   const sName = (sportName || '').toLowerCase();
   
@@ -847,7 +1101,7 @@ export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton", 
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 dark:bg-slate-950/95 backdrop-blur-xl p-3 sm:p-6 animate-fade-in flex flex-col items-center justify-center font-sans">
       <div className="w-full max-w-5xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh] text-slate-900 dark:text-white">
         
-        {/* Sticky Header with Go Back Button */}
+        {/* Sticky Header */}
         <div className="sticky top-0 z-20 bg-white/95 dark:bg-slate-950/90 backdrop-blur-md px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4">
           <button
             onClick={onClose}
@@ -866,47 +1120,150 @@ export const BadmintonRulesModal = ({ isOpen, onClose, sportName = "Badminton", 
             </h2>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-full bg-slate-100 dark:bg-slate-800/80 transition shrink-0 cursor-pointer"
-            title="Close Rules"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {/* EDIT RULES BUTTON FOR COORDINATOR */}
+            {isCoordinator && !isEditing && (
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="px-3.5 py-2 rounded-2xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-extrabold text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs"
+                title="Edit Tournament Rules for this event"
+              >
+                <Edit3 className="w-4 h-4 text-amber-500" />
+                <span className="hidden sm:inline">Edit Rules</span>
+              </button>
+            )}
+
+            <button
+              onClick={onClose}
+              className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-full bg-slate-100 dark:bg-slate-800/80 transition shrink-0 cursor-pointer"
+              title="Close Rules"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Modal Scrollable Body */}
         <div className="p-5 sm:p-8 space-y-6 overflow-y-auto">
-          {isCricket ? (
-            <CricketRulesDisplay />
-          ) : isGullyCricket ? (
-            <GullyCricketRulesDisplay />
-          ) : isChess ? (
-            <ChessRulesDisplay />
-          ) : isBasketball ? (
-            <BasketballRulesDisplay />
-          ) : isTableTennis ? (
-            <TableTennisRulesDisplay />
-          ) : isFootball ? (
-            <FootballRulesDisplay />
-          ) : isVolleyball ? (
-            <VolleyballRulesDisplay />
-          ) : isKabaddi ? (
-            <KabaddiRulesDisplay />
-          ) : isKhoKho ? (
-            <KhoKhoRulesDisplay />
-          ) : isAthletics ? (
-            <AthleticsRulesDisplay />
-          ) : isTugOfWar ? (
-            <TugOfWarRulesDisplay />
-          ) : isBadminton ? (
-            <BadmintonRulesDisplay />
+          {saveMessage && (
+            <div className="p-3 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-black flex items-center gap-2 animate-fade-in">
+              <Check className="w-4 h-4" />
+              <span>{saveMessage}</span>
+            </div>
+          )}
+
+          {isEditing ? (
+            <div className="space-y-6 animate-fade-in">
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400">
+                    <Edit3 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-sm uppercase tracking-wider text-slate-900 dark:text-white">
+                      Edit Rules: {sportName}
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      As Sport Coordinator, you can edit rule points or add new guidelines.
+                    </p>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-amber-500 text-slate-950">
+                  Coordinator Mode
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {editedRules.map((ruleText, idx) => (
+                  <div key={idx} className="flex items-start gap-2 p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                    <span className="font-mono font-black text-xs text-amber-600 dark:text-amber-400 mt-2 shrink-0 bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/20">
+                      #{idx + 1}
+                    </span>
+                    <textarea
+                      rows={2}
+                      value={ruleText}
+                      onChange={(e) => handleRuleChange(idx, e.target.value)}
+                      placeholder={`Enter rule #${idx + 1}...`}
+                      className="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none resize-y font-medium"
+                    />
+                    {editedRules.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveRule(idx)}
+                        className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-xl transition mt-1 cursor-pointer"
+                        title="Remove rule line"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAddRule}
+                className="w-full py-3 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-amber-500 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-[0.99] cursor-pointer"
+              >
+                <Plus className="w-4 h-4 text-amber-500" />
+                <span>Add New Rule Line</span>
+              </button>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="px-5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isSaving}
+                  onClick={handleSaveRules}
+                  className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs flex items-center gap-2 shadow-lg shadow-amber-500/20 transition active:scale-95 cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{isSaving ? 'Saving...' : 'Save Rules'}</span>
+                </button>
+              </div>
+            </div>
+          ) : hasCustomRules ? (
+            <GenericRulesDisplay sportName={sportName} rules={editedRules} />
           ) : (
-            <GenericRulesDisplay sportName={sportName} rules={rules} />
+            isCricket ? (
+              <CricketRulesDisplay />
+            ) : isGullyCricket ? (
+              <GullyCricketRulesDisplay />
+            ) : isChess ? (
+              <ChessRulesDisplay />
+            ) : isBasketball ? (
+              <BasketballRulesDisplay />
+            ) : isTableTennis ? (
+              <TableTennisRulesDisplay />
+            ) : isFootball ? (
+              <FootballRulesDisplay />
+            ) : isVolleyball ? (
+              <VolleyballRulesDisplay />
+            ) : isKabaddi ? (
+              <KabaddiRulesDisplay />
+            ) : isKhoKho ? (
+              <KhoKhoRulesDisplay />
+            ) : isAthletics ? (
+              <AthleticsRulesDisplay />
+            ) : isTugOfWar ? (
+              <TugOfWarRulesDisplay />
+            ) : isBadminton ? (
+              <BadmintonRulesDisplay />
+            ) : (
+              <GenericRulesDisplay sportName={sportName} rules={editedRules} />
+            )
           )}
         </div>
 
-        {/* Sticky Footer with Go Back Button */}
+        {/* Sticky Footer */}
         <div className="bg-slate-50 dark:bg-slate-950 px-5 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4">
           <span className="text-xs text-slate-500 dark:text-slate-400 italic hidden sm:inline">
             {getFooterSubtitle()}

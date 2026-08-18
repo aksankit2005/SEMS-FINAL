@@ -1275,6 +1275,12 @@ export const RegistrationPage = () => {
           onClose={() => setRulesModalSport(null)}
           sportName={typeof rulesModalSport === 'object' ? rulesModalSport?.sportName : (rulesModalSport || activeSport?.name || 'Badminton')}
           rules={typeof rulesModalSport === 'object' ? rulesModalSport?.rules : (activeSport?.rules || [])}
+          eventId={typeof rulesModalSport === 'object' ? rulesModalSport?.eventId : activeSport?.eventId}
+          onRulesUpdated={(updatedRules) => {
+            if (typeof rulesModalSport === 'object') {
+              setRulesModalSport((prev) => ({ ...prev, rules: updatedRules }));
+            }
+          }}
         />
 
         {/* FULL SCREEN PAYMENT & DATABASE PROCESSING LOCK OVERLAY */}
