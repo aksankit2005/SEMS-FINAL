@@ -69,6 +69,13 @@ export const GullyCricketEventsTab = ({ user }) => {
     fetchEvents();
   }, [user]);
 
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: showCreateModal } }));
+    return () => {
+      window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: false } }));
+    };
+  }, [showCreateModal]);
+
   const fetchEvents = async () => {
     try {
       setLoading(true);
@@ -363,14 +370,14 @@ export const GullyCricketEventsTab = ({ user }) => {
 
       {/* Create / Edit Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-          <div className="w-full max-w-2xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden my-8">
-            <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-[#090D16]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-hidden animate-fade-in">
+          <div className="w-[95%] sm:w-[85%] lg:w-[75%] max-w-4xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] sm:max-h-[90vh] flex flex-col">
+            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-[#090D16] shrink-0">
               <div>
                 <span className="text-[10px] font-mono font-bold text-emerald-500 uppercase tracking-wider">
                   🏏 GULLY CRICKET TOURNAMENT CONFIG
                 </span>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
                   {editingEvent ? 'Edit Gully Cricket Event' : 'Publish New Gully Cricket Event'}
                 </h3>
               </div>
@@ -382,121 +389,124 @@ export const GullyCricketEventsTab = ({ user }) => {
               </button>
             </div>
 
-            <form onSubmit={handleSaveEvent} className="p-5 sm:p-6 space-y-4 max-h-[75vh] overflow-y-auto">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Event Title *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="e.g. Inter-College Gully & Box Cricket Championship 2026"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <form onSubmit={handleSaveEvent} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="p-4 sm:p-6 space-y-4 flex-1 overflow-y-auto custom-scrollbar">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Pitch / Venue</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Event Title *</label>
                   <input
                     type="text"
-                    value={formData.venue}
-                    onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
+                    required
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="e.g. Inter-College Gully & Box Cricket Championship 2026"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Team Entry Fee (₹)</label>
-                  <input
-                    type="number"
-                    value={formData.teamFee}
-                    onChange={(e) => setFormData({ ...formData, teamFee: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Pitch / Venue</label>
+                    <input
+                      type="text"
+                      value={formData.venue}
+                      onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Team Entry Fee (₹)</label>
+                    <input
+                      type="number"
+                      value={formData.teamFee}
+                      onChange={(e) => setFormData({ ...formData, teamFee: Number(e.target.value) })}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Status</label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-emerald-600 dark:text-emerald-400 font-bold focus:ring-2 focus:ring-emerald-500 outline-none"
+                    >
+                      <option value="Draft">Draft (Hidden)</option>
+                      <option value="Upcoming">Upcoming (Coming Soon)</option>
+                      <option value="Published">Published (Open)</option>
+                      <option value="Closed">Closed</option>
+                    </select>
+                  </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Status</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-emerald-600 dark:text-emerald-400 font-bold focus:ring-2 focus:ring-emerald-500 outline-none"
-                  >
-                    <option value="Draft">Draft (Hidden)</option>
-                    <option value="Upcoming">Upcoming (Coming Soon)</option>
-                    <option value="Published">Published (Open)</option>
-                    <option value="Closed">Closed</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Min Squad Size</label>
+                    <input
+                      type="number"
+                      min="5"
+                      max="8"
+                      value={formData.minPlayers}
+                      onChange={(e) => setFormData({ ...formData, minPlayers: Number(e.target.value) })}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Max Squad Size</label>
+                    <input
+                      type="number"
+                      min="5"
+                      max="8"
+                      value={formData.maxPlayers}
+                      onChange={(e) => setFormData({ ...formData, maxPlayers: Number(e.target.value) })}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Tournament Start Date</label>
+                    <input
+                      type="date"
+                      value={formData.tournStartDate}
+                      onChange={(e) => setFormData({ ...formData, tournStartDate: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Tournament End Date</label>
+                    <input
+                      type="date"
+                      value={formData.tournEndDate}
+                      onChange={(e) => setFormData({ ...formData, tournEndDate: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs space-y-1 text-emerald-800 dark:text-emerald-300">
+                  <strong className="block font-bold">Standard Gully & Box Cricket Rules Applied:</strong>
+                  <p className="text-[11px] leading-relaxed">
+                    6-Overs Fast Box • Direct Hit Out • One-Tip Out • 6 Players on pitch • Box boundary out • No LBW.
+                  </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Min Squad Size</label>
-                  <input
-                    type="number"
-                    min="5"
-                    max="8"
-                    value={formData.minPlayers}
-                    onChange={(e) => setFormData({ ...formData, minPlayers: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Max Squad Size</label>
-                  <input
-                    type="number"
-                    min="5"
-                    max="8"
-                    value={formData.maxPlayers}
-                    onChange={(e) => setFormData({ ...formData, maxPlayers: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Tournament Start Date</label>
-                  <input
-                    type="date"
-                    value={formData.tournStartDate}
-                    onChange={(e) => setFormData({ ...formData, tournStartDate: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Tournament End Date</label>
-                  <input
-                    type="date"
-                    value={formData.tournEndDate}
-                    onChange={(e) => setFormData({ ...formData, tournEndDate: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs space-y-1 text-emerald-800 dark:text-emerald-300">
-                <strong className="block font-bold">Standard Gully & Box Cricket Rules Applied:</strong>
-                <p className="text-[11px] leading-relaxed">
-                  6-Overs Fast Box • Direct Hit Out • One-Tip Out • 6 Players on pitch • Box boundary out • No LBW.
-                </p>
-              </div>
-
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2.5">
+              {/* Fixed Action Footer Bar for Mobile & Desktop */}
+              <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2.5 bg-slate-50 dark:bg-[#090D16] shrink-0">
                 <button
                   type="button"
                   onClick={handleResetForm}
-                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-lg shadow-emerald-600/20 cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-lg shadow-emerald-600/20 cursor-pointer"
                 >
                   {editingEvent ? 'Save Changes' : 'Publish Gully Event'}
                 </button>

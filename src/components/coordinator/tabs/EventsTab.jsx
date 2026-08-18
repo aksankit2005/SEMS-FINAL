@@ -75,6 +75,13 @@ export const EventsTab = ({ user }) => {
     fetchEvents();
   }, [user]);
 
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: showCreateModal } }));
+    return () => {
+      window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: false } }));
+    };
+  }, [showCreateModal]);
+
   const fetchEvents = async () => {
     try {
       setLoading(true);
@@ -542,8 +549,8 @@ export const EventsTab = ({ user }) => {
 
       {/* CREATE / EDIT EVENT MODAL */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto font-sans">
-          <div className="w-full max-w-3xl bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-2xl space-y-6 my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto font-sans animate-fade-in">
+          <div className="w-[92%] sm:w-[85%] lg:w-[75%] max-w-4xl bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-2xl space-y-6 my-auto max-h-[90vh] overflow-y-auto custom-scrollbar">
             
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">

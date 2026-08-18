@@ -69,6 +69,13 @@ export const BasketballEventsTab = ({ user }) => {
     fetchEvents();
   }, [user]);
 
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: showCreateModal } }));
+    return () => {
+      window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: false } }));
+    };
+  }, [showCreateModal]);
+
   const fetchEvents = async () => {
     try {
       setLoading(true);
