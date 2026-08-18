@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UnifiedSportCard } from '../common/UnifiedSportCard';
 import { BadmintonRulesModal } from './BadmintonRulesDisplay';
+import { computeEffectiveRegistrationStatus } from '../../utils/registrationLifecycle';
 
 export const SportCard = ({ sport, onRegisterSelect }) => {
   const [showRulesModal, setShowRulesModal] = useState(false);
@@ -10,13 +11,18 @@ export const SportCard = ({ sport, onRegisterSelect }) => {
     return dStr;
   };
 
-  const startDate = getSafeDate(sport.startDate, '2026-08-01');
-  const endDate = getSafeDate(sport.endDate, '2026-08-30');
+  const startDate = getSafeDate(sport.regStartDate || sport.startDate, '2026-08-01');
+  const endDate = getSafeDate(sport.regEndDate || sport.endDate, '2026-08-30');
 
-  const now = new Date();
-  const startObj = new Date(startDate.includes('T') ? startDate : startDate + 'T00:00:00');
-  const endObj = new Date(endDate.includes('T') ? endDate : endDate + 'T23:59:59');
-  const isOpen = now >= startObj && now <= endObj;
+  const regStatus = computeEffectiveRegistrationStatus({
+    status: sport.status || 'Published',
+    registrationOpen: sport.registrationOpen !== false,
+    regStartDate: startDate,
+    regEndDate: endDate,
+    registeredCount: sport.registeredCount || sport.participantsCount,
+    maxRegistrations: sport.maxRegistrations || sport.maxParticipants
+  });
+  const isOpen = regStatus.effectiveRegistrationOpen;
 
   const activeEvent = {
     entryFee: typeof sport.entryFee === 'number' ? sport.entryFee : (typeof sport.teamFee === 'number' ? sport.teamFee : (sport.entryFee ?? sport.teamFee ?? 0)),

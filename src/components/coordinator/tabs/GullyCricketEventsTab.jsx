@@ -194,6 +194,23 @@ export const GullyCricketEventsTab = ({ user }) => {
     }
   };
 
+  const handleToggleStatus = async (eventObj) => {
+    const statusCycle = {
+      'Draft': 'Upcoming',
+      'Upcoming': 'Published',
+      'Published': 'Closed',
+      'Closed': 'Draft'
+    };
+    const nextStatus = statusCycle[eventObj.status] || 'Published';
+    try {
+      await coordinatorApi.updateEvent(eventObj.id, { ...eventObj, status: nextStatus });
+      addToast(`Event status updated to ${nextStatus}`, 'success');
+      fetchEvents();
+    } catch (err) {
+      addToast('Failed to update event status', 'error');
+    }
+  };
+
   const handleViewParticipants = async (eventObj) => {
     setSelectedEventForParticipants(eventObj);
     try {
@@ -272,8 +289,16 @@ export const GullyCricketEventsTab = ({ user }) => {
                   <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider">
                     {evt.category || 'Open'}
                   </span>
-                  <span className="px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-emerald-400 border border-emerald-500/30 text-[10px] font-mono font-bold">
-                    6-Overs Fast Box
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border shadow-md ${
+                    evt.status === 'Published'
+                      ? 'bg-emerald-500 text-white border-emerald-400'
+                      : evt.status === 'Upcoming'
+                      ? 'bg-blue-500 text-white border-blue-400'
+                      : evt.status === 'Closed'
+                      ? 'bg-rose-500 text-white border-rose-400'
+                      : 'bg-amber-500 text-slate-950 font-black border-amber-400'
+                  }`}>
+                    ● {evt.status || 'Published'}
                   </span>
                 </div>
                 <div className="absolute bottom-3 left-3 right-3">
@@ -307,6 +332,13 @@ export const GullyCricketEventsTab = ({ user }) => {
                     <span>Roster</span>
                   </button>
                   <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleToggleStatus(evt)}
+                      className="p-1.5 rounded-xl text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/10 transition cursor-pointer"
+                      title="Toggle Status (Draft -> Upcoming -> Published -> Closed)"
+                    >
+                      <Clock className="w-4 h-4" />
+                    </button>
                     <button
                       onClick={() => handleOpenEdit(evt)}
                       className="p-1.5 rounded-xl text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/10 transition cursor-pointer"
@@ -363,7 +395,7 @@ export const GullyCricketEventsTab = ({ user }) => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Pitch / Venue</label>
                   <input
@@ -382,6 +414,20 @@ export const GullyCricketEventsTab = ({ user }) => {
                     onChange={(e) => setFormData({ ...formData, teamFee: Number(e.target.value) })}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
                   />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Status</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-emerald-600 dark:text-emerald-400 font-bold focus:ring-2 focus:ring-emerald-500 outline-none"
+                  >
+                    <option value="Draft">Draft (Hidden)</option>
+                    <option value="Upcoming">Upcoming (Coming Soon)</option>
+                    <option value="Published">Published (Open)</option>
+                    <option value="Closed">Closed</option>
+                  </select>
                 </div>
               </div>
 

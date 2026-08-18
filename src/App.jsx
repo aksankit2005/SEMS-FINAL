@@ -102,7 +102,6 @@ function App() {
                 >
                   <Route index element={<AdminDashboardPage />} />
                   <Route path="dashboard" element={<AdminDashboardPage />} />
-                  <Route path="profile" element={<AdminProfilePage />} />
                   <Route path="registrations" element={<AdminRegistrationsPage />} />
                   <Route path="pr-management" element={<AdminPRManagementPage />} />
                   <Route path="pr" element={<AdminPRManagementPage />} />
@@ -127,7 +126,6 @@ function App() {
                 >
                   <Route index element={<AdminDashboardPage />} />
                   <Route path="dashboard" element={<AdminDashboardPage />} />
-                  <Route path="profile" element={<AdminProfilePage />} />
                   <Route path="registrations" element={<AdminRegistrationsPage />} />
                   <Route path="pr-management" element={<AdminPRManagementPage />} />
                   <Route path="pr" element={<AdminPRManagementPage />} />

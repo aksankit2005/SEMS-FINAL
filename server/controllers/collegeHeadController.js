@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { envConfig, headPasswords } from '../config/env.js';
 import { queryDb, prisma } from '../config/db.js';
+import { logAuditEvent } from '../utils/auditLogger.js';
 
 const inMemoryCollegeHeadUsers = [
   { id: 1, username: 'head_mpec', college: 'MPEC', faculty_name: 'Mr. Kaushal Maurya', role: 'college_head' },
@@ -191,6 +192,14 @@ export const collegeHeadLogin = async (req, res) => {
         envConfig.jwtSecret,
         { expiresIn: '24h' }
       );
+      logAuditEvent({
+        userId: user.id,
+        actorName: user.username,
+        role: 'COLLEGE_HEAD',
+        action: 'College Head Login',
+        entity: `College Head: ${user.username} (${user.college})`,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      });
       return res.json({
         success: true,
         token,
@@ -226,6 +235,14 @@ export const collegeHeadLogin = async (req, res) => {
         envConfig.jwtSecret,
         { expiresIn: '24h' }
       );
+      logAuditEvent({
+        userId: memoryUser.id,
+        actorName: memoryUser.username,
+        role: 'COLLEGE_HEAD',
+        action: 'College Head Login',
+        entity: `College Head: ${memoryUser.username} (${memoryUser.college})`,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      });
       return res.json({
         success: true,
         token,

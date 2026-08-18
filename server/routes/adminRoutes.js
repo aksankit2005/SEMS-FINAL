@@ -98,7 +98,9 @@ router.delete('/admin/committee/members/:id', verifyAdminToken, deleteCommitteeM
 // Results & Leaderboard endpoints
 router.get('/admin/results', verifyAdminOrSuperCoordinatorToken, getAdminResultsDB);
 
-// SuperCoordinator Data & Leaderboard endpoints
+// SuperCoordinator & Admin Data & Leaderboard endpoints
+router.get('/admin/master-participants', verifyAdminToken, getMasterParticipants);
+router.get('/admin/coordinator-events', verifyAdminToken, getSuperCoordinatorEvents);
 router.get('/super-coordinator/participants', verifySuperCoordinatorToken, getMasterParticipants);
 router.get('/super-coordinator/events', verifySuperCoordinatorToken, getSuperCoordinatorEvents);
 router.delete('/super-coordinator/events/:id', verifySuperCoordinatorToken, deleteCoordinatorEventDB);
@@ -110,6 +112,7 @@ router.post('/super-coordinator/leaderboard', verifySuperCoordinatorToken, saveL
 router.delete('/super-coordinator/leaderboard/:id', verifySuperCoordinatorToken, deleteLeaderboardEntry);
 router.get('/super-coordinator/hero-slides', verifySuperCoordinatorToken, getHeroSlidesDB);
 router.post('/super-coordinator/hero-slides', verifySuperCoordinatorToken, saveHeroSlidesDB);
+router.get('/super-coordinator/cloudinary-signature', verifySuperCoordinatorToken, getCloudinarySignature);
 router.post('/super-coordinator/change-password', verifySuperCoordinatorToken, changeSuperCoordinatorPasswordDB);
 
 export default router;

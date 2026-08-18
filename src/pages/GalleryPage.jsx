@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { galleryApi } from '../services/galleryApi';
 import { getMediaPreviewUrl, getGoogleDriveFallbackUrl, getVideoThumbnailUrl, getVideoEmbedUrl, triggerMediaDownload } from '../utils/googleDriveHelper';
+import { extractYouTubeVideoId } from '../utils/youtube';
 import { GoogleDriveImage } from '../components/common/GoogleDriveImage';
 import { AdvancedLightboxViewer } from '../components/gallery/AdvancedLightboxViewer';
 import { useToast } from '../context/ToastContext';
@@ -360,7 +361,7 @@ export const GalleryPage = () => {
                       onClick={() => openLightbox(displayedStreamMedia, idx)}
                       className="relative h-56 overflow-hidden bg-slate-950 cursor-pointer"
                     >
-                      {item.media_type === 'video' ? (
+                      {(item.media_type || '').toLowerCase() === 'video' || extractYouTubeVideoId(item.media_url) ? (
                         <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-white relative">
                           <GoogleDriveImage
                             src={getVideoThumbnailUrl(item.media_url, item.cover_image)}
@@ -412,17 +413,19 @@ export const GalleryPage = () => {
                         </span>
                       </div>
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          triggerMediaDownload(item.media_url, `${item.title || 'media'}.${item.media_type === 'video' ? 'mp4' : 'jpg'}`);
-                          showToast('Download started...', 'info');
-                        }}
-                        className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-blue-600 hover:text-white text-slate-700 dark:text-slate-300 font-bold text-xs transition shrink-0"
-                        title="Download Photo / Video"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                      </button>
+                      {!( (item.media_type || '').toLowerCase() === 'video' || extractYouTubeVideoId(item.media_url) ) && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            triggerMediaDownload(item.media_url, `${item.title || 'media'}.jpg`);
+                            showToast('Download started...', 'info');
+                          }}
+                          className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-blue-600 hover:text-white text-slate-700 dark:text-slate-300 font-bold text-xs transition shrink-0 cursor-pointer"
+                          title="Download Photo"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -500,7 +503,7 @@ export const GalleryPage = () => {
                       onClick={() => openLightbox(displayedAlbumMedia, idx)}
                       className="relative h-64 overflow-hidden bg-slate-950 cursor-pointer"
                     >
-                      {item.media_type === 'video' ? (
+                      {(item.media_type || '').toLowerCase() === 'video' || extractYouTubeVideoId(item.media_url) ? (
                         <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-white relative">
                           <GoogleDriveImage
                             src={getVideoThumbnailUrl(item.media_url, item.cover_image)}
@@ -553,19 +556,21 @@ export const GalleryPage = () => {
                         </span>
                       </div>
 
-                      {/* Download Button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          triggerMediaDownload(item.media_url, `${item.title}.${item.media_type === 'video' ? 'mp4' : 'jpg'}`);
-                          showToast('Download started...', 'info');
-                        }}
-                        className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-blue-600 hover:text-white text-slate-700 dark:text-slate-300 font-bold text-xs transition flex items-center gap-1.5 shrink-0"
-                        title="Download Photo / Video"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span className="hidden sm:inline">Download</span>
-                      </button>
+                      {/* Download Button (Photos Only) */}
+                      {!( (item.media_type || '').toLowerCase() === 'video' || extractYouTubeVideoId(item.media_url) ) && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            triggerMediaDownload(item.media_url, `${item.title || 'photo'}.jpg`);
+                            showToast('Download started...', 'info');
+                          }}
+                          className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-blue-600 hover:text-white text-slate-700 dark:text-slate-300 font-bold text-xs transition flex items-center gap-1.5 shrink-0 cursor-pointer"
+                          title="Download Photo"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span className="hidden sm:inline">Download</span>
+                        </button>
+                      )}
                     </div>
 
                   </div>

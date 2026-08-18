@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Info, ArrowRight } from 'lucide-react';
+import { Info, ArrowRight, Clock } from 'lucide-react';
 
 export const UnifiedSportCard = ({
   sport,
@@ -12,10 +12,13 @@ export const UnifiedSportCard = ({
   showEventDuration = true,
   showButtons = true
 }) => {
+  const isUpcoming = Boolean(activeEvent?.isUpcoming || activeEvent?.status === 'Upcoming' || activeEvent?.status === 'Coming Soon');
+  const isCardActive = isOpen || isUpcoming;
+
   return (
     <div
       className={`group bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-soft hover:shadow-xl hover:border-blue-500/50 transition-all duration-300 flex flex-col justify-between ${
-        isOpen ? 'opacity-100' : 'opacity-65 dark:opacity-60'
+        isCardActive ? 'opacity-100' : 'opacity-65 dark:opacity-60'
       }`}
     >
       {/* Hero Image & Badges */}
@@ -32,11 +35,13 @@ export const UnifiedSportCard = ({
             {sport.category}
           </span>
           <span className={`px-3 py-1 rounded-full text-xs font-black backdrop-blur-md border ${
-            isOpen
+            isUpcoming
+              ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.4)]'
+              : isOpen
               ? 'bg-emerald-600 text-white border-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
               : 'bg-slate-500/40 dark:bg-slate-700/45 text-slate-300 border-slate-500/30'
           }`}>
-            {isOpen ? 'OPEN' : 'CLOSED'}
+            {isUpcoming ? 'UPCOMING' : isOpen ? 'OPEN' : 'CLOSED'}
           </span>
         </div>
 
@@ -48,8 +53,8 @@ export const UnifiedSportCard = ({
       {/* Card Body */}
       <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-5">
         
-        {/* Single Information Box (Hidden if closed/no active event) */}
-        {isOpen ? (
+        {/* Single Information Box (Shown if open or upcoming with active event) */}
+        {isCardActive && activeEvent ? (
           <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 space-y-4 text-xs">
             
             {/* Row 1: Registration Fee, Format, Team Size / Roster */}
@@ -138,7 +143,15 @@ export const UnifiedSportCard = ({
               <Info className="w-3.5 h-3.5" /> Rules & Specs
             </button>
             
-            {isOpen && (registerLink || onRegisterClick) ? (
+            {isUpcoming ? (
+              <button
+                disabled
+                className="py-2.5 rounded-xl bg-amber-500/15 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-bold text-xs text-center cursor-not-allowed flex items-center justify-center gap-1.5"
+                title="Registration for this event is opening soon"
+              >
+                <span>⏳ Coming Soon</span>
+              </button>
+            ) : isOpen && (registerLink || onRegisterClick) ? (
               onRegisterClick ? (
                 <button
                   onClick={onRegisterClick}

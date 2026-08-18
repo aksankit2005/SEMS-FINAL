@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import { Trophy, ArrowLeft, User, Users, Info, ShieldCheck, Sparkles, Calendar, MapPin, Clock, Loader2, Lock } from 'lucide-react';
 import { SPORTS_DATA } from '../data/sportsData';
@@ -17,6 +17,7 @@ import { PaymentForm } from '../components/registration/PaymentForm';
 import { RegistrationReceipt } from '../components/registration/RegistrationReceipt';
 import { generateCollegePassCode } from '../utils/pdfExporter';
 import { BadmintonRulesDisplay, BadmintonRulesModal } from '../components/registration/BadmintonRulesDisplay';
+import { computeEffectiveRegistrationStatus, parseRegistrationDeadline } from '../utils/registrationLifecycle';
 
 
 const MOCK_RECEIPT_IMAGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'><rect width='100%25' height='100%25' fill='%230f172a'/><text x='50%25' y='35%25' fill='%2310b981' font-family='sans-serif' font-size='22' font-weight='black' text-anchor='middle'>APEX 2026</text><text x='50%25' y='50%25' fill='%23ffffff' font-family='sans-serif' font-size='14' font-weight='bold' text-anchor='middle'>MOCK PAYMENT SUCCESSFUL</text><text x='50%25' y='65%25' fill='%2364748b' font-family='sans-serif' font-size='10' font-weight='medium' text-anchor='middle'>UTR: TXN-APEX-MOCK-998</text><rect x='20' y='220' width='260' height='50' fill='%231e293b' rx='10'/><text x='50%25' y='250%25' fill='%2338bdf8' font-family='sans-serif' font-size='12' font-weight='bold' text-anchor='middle'>VERIFIED DEMO RECEIPT</text></svg>";
@@ -27,24 +28,55 @@ const isRacketSportCheck = (sport) => {
   return key === 'badminton' || key === 'table-tennis';
 };
 
+const loadRazorpaySDK = () => {
+  return new Promise((resolve) => {
+    if (typeof window !== 'undefined' && window.Razorpay) {
+      return resolve(true);
+    }
+    const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (existing) {
+      if (window.Razorpay) return resolve(true);
+      existing.addEventListener('load', () => resolve(true), { once: true });
+      existing.addEventListener('error', () => resolve(false), { once: true });
+      let attempts = 0;
+      const interval = setInterval(() => {
+        attempts++;
+        if (window.Razorpay) {
+          clearInterval(interval);
+          resolve(true);
+        } else if (attempts > 30) {
+          clearInterval(interval);
+          resolve(false);
+        }
+      }, 100);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 const RegistrationCountdownTimer = ({ endDateStr }) => {
   const [timeLeft, setTimeLeft] = useState('');
 
   useEffect(() => {
     const updateCountdown = () => {
-      if (!endDateStr || typeof endDateStr !== 'string') {
+      if (!endDateStr) {
         setTimeLeft('Closed');
         return;
       }
       try {
-        const datePart = endDateStr.includes('T') ? endDateStr : `${endDateStr}T23:59:59`;
-        const end = new Date(datePart);
-        if (isNaN(end.getTime())) {
+        const deadline = parseRegistrationDeadline(endDateStr);
+        if (!deadline) {
           setTimeLeft('Closed');
           return;
         }
         const now = new Date();
-        const diff = end - now;
+        const diff = deadline.getTime() - now.getTime();
 
         if (diff <= 0) {
           setTimeLeft('Closed');
@@ -186,24 +218,45 @@ export const RegistrationPage = () => {
 
     const interval = setInterval(fetchCoordinatorEvents, 60000);
 
-    // Dynamically load Razorpay Checkout SDK Script
-    const rzpScript = document.createElement('script');
-    rzpScript.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    rzpScript.async = true;
-    document.body.appendChild(rzpScript);
+    loadRazorpaySDK();
 
     return () => {
       window.removeEventListener('storage', handleRefresh);
       window.removeEventListener('focus', handleRefresh);
       window.removeEventListener('sems_events_updated', handleRefresh);
       clearInterval(interval);
-      if (document.body.contains(rzpScript)) {
-        document.body.removeChild(rzpScript);
-      }
     };
   }, []);
 
   // Sync sportsList dynamically whenever coordinator published events update
+  const sortedCoordinatorEvents = useMemo(() => {
+    if (!coordinatorEvents || !Array.isArray(coordinatorEvents)) return [];
+    return [...coordinatorEvents].sort((a, b) => {
+      const getPriority = (evt) => {
+        const registered = evt.registeredCount || 0;
+        const limit = evt.maxRegistrations || 64;
+        const slotsLeft = Math.max(0, limit - registered);
+        const isUpcoming = evt.status === 'Upcoming' || evt.status === 'Coming Soon';
+        const isClosed = !isUpcoming && (evt.status === 'Closed' || slotsLeft === 0);
+
+        if (!isUpcoming && !isClosed) return 3; // 1st: Open
+        if (isUpcoming) return 2;               // 2nd: Upcoming
+        return 1;                               // 3rd: Closed
+      };
+
+      const pA = getPriority(a);
+      const pB = getPriority(b);
+
+      if (pA !== pB) return pB - pA; // Higher priority (3 -> 2 -> 1) first
+
+      const dateA = new Date(a.tournStartDate || a.regStartDate || a.createdAt || 0).getTime();
+      const dateB = new Date(b.tournStartDate || b.regStartDate || b.createdAt || 0).getTime();
+      if (dateA !== dateB) return dateB - dateA;
+
+      return (a.title || '').localeCompare(b.title || '');
+    });
+  }, [coordinatorEvents]);
+
   useEffect(() => {
     if (!coordinatorEvents || coordinatorEvents.length === 0) return;
 
@@ -322,6 +375,7 @@ export const RegistrationPage = () => {
             name: foundEv.sportName || foundEv.title || 'Sport Event',
             eventName: foundEv.title || foundEv.eventName,
             category: foundEv.category || 'Open',
+            status: foundEv.status || 'Published',
             type: foundEv.teamSize || 'Team / Individual',
             tagline: foundEv.description || 'Championship Tournament',
             description: foundEv.description || '',
@@ -442,6 +496,14 @@ export const RegistrationPage = () => {
 
   // Step 1 Validation
   const handleDetailsSubmit = () => {
+    if (activeSport) {
+      const regStatus = computeEffectiveRegistrationStatus(activeSport);
+      if (!regStatus.effectiveRegistrationOpen) {
+        addToast(regStatus.reason || 'Registration is closed for this event.', 'error');
+        return;
+      }
+    }
+
     let formErrors = {};
     const key = resolveSportKey(activeSport);
     const isRacket = isRacketSportCheck(activeSport);
@@ -525,7 +587,7 @@ export const RegistrationPage = () => {
         feePaid: activeSport.entryFee,
         rosterCount: formData.roster.length,
         roster: formData.roster,
-        utrNumber: paymentRes.razorpayPaymentId,
+        utrNumber: paymentRes.razorpayPaymentId || paymentRes.razorpay_payment_id,
         screenshotName: 'razorpay_verified.png',
         screenshot: MOCK_RECEIPT_IMAGE,
         declarationAccepted: formData.declarationAccepted,
@@ -541,15 +603,24 @@ export const RegistrationPage = () => {
       setStep(3);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      addToast('Error processing event registration', 'error');
+      console.error('Registration processing error:', err);
+      addToast(err.response?.data?.message || err.message || 'Error processing event registration', 'error');
     } finally {
       setIsProcessingPayment(false);
     }
   };
 
   // Step 2 Submission (Payment Gateway & Declaration)
-  const handlePaymentSubmit = (e) => {
+  const handlePaymentSubmit = async (e) => {
     if (e) e.preventDefault();
+
+    if (activeSport) {
+      const regStatus = computeEffectiveRegistrationStatus(activeSport);
+      if (!regStatus.effectiveRegistrationOpen) {
+        addToast(regStatus.reason || 'Registration is closed for this event.', 'error');
+        return;
+      }
+    }
 
     if (!formData.declarationAccepted) {
       setErrors((prev) => ({ ...prev, declarationAccepted: 'Please accept the declaration and verification policy' }));
@@ -558,64 +629,93 @@ export const RegistrationPage = () => {
     }
 
     if (activeSport.entryFee > 0) {
-      const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
-      
-      // If official Razorpay SDK script is loaded and a live/test key is present, open Razorpay popup
-      if (window.Razorpay && razorpayKey && !razorpayKey.includes('SEMS2026PaymentKey')) {
-        try {
-          const options = {
-            key: razorpayKey,
-            amount: activeSport.entryFee * 100, // Amount in paise
-            currency: 'INR',
-            payment_capture: 1, // Auto-capture payment immediately upon authorization
-            name: import.meta.env.VITE_RAZORPAY_MERCHANT_NAME || 'APEX Championship 2026',
-            description: `Entry Registration Fee for ${activeSport.name}`,
-            handler: function (response) {
-              handleRazorpaySuccess({
-                razorpayPaymentId: response.razorpay_payment_id || `pay_${Math.random().toString(36).substring(2, 12).toUpperCase()}`,
-                orderId: response.razorpay_order_id || `order_${Math.random().toString(36).substring(2, 10).toLowerCase()}`,
-                amount: activeSport.entryFee,
-                status: 'PAID',
-                method: 'Razorpay SDK',
-                timestamp: new Date().toISOString()
-              });
-            },
-            prefill: {
-              name: formData.captainName || (formData.roster && formData.roster[0]?.name) || '',
-              email: formData.captainEmail || '',
-              contact: formData.captainPhone || ''
-            },
-            theme: {
-              color: '#2563eb'
-            },
-            modal: {
-              ondismiss: function () {
-                // If user closes/cancels Razorpay popup without paying, unlock background screen
-                setIsProcessingPayment(false);
-              }
-            }
-          };
+      setIsProcessingPayment(true);
+      const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_TQufd9ZecHdfG1';
 
-          // Lock screen immediately when Razorpay checkout opens
-          setIsProcessingPayment(true);
-          const rzp = new window.Razorpay(options);
-          rzp.open();
-          return;
-        } catch (err) {
-          setIsProcessingPayment(false);
-          console.warn('Razorpay SDK failed, opening checkout modal', err);
+      try {
+        // Ensure Razorpay SDK is loaded and available
+        const isLoaded = await loadRazorpaySDK();
+        if (!isLoaded || !window.Razorpay) {
+          throw new Error('Razorpay Checkout SDK could not be loaded. Please check your internet connection or disable ad-blockers and try again.');
         }
-      }
 
-      // Fallback / Demo Mode: Open interactive Razorpay checkout modal
-      setShowRazorpayModal(true);
+        let orderData = null;
+        try {
+          // Attempt authoritative server-side Razorpay Order creation
+          orderData = await coordinatorApi.createRazorpayOrder(
+            activeSport.id,
+            activeSport.sportId || activeSport.id,
+            {
+              fullName: formData.captainName || (formData.roster[0] && formData.roster[0].name) || 'Lead Athlete',
+              captainName: formData.captainName,
+              email: formData.captainEmail || (formData.roster[0] && formData.roster[0].email) || 'athlete@apex.edu',
+              phone: formData.captainPhone || (formData.roster[0] && formData.roster[0].phone) || '+91 98765 43210',
+              collegeName: formData.collegeName || 'MPEC',
+              teamName: formData.teamName
+            }
+          );
+        } catch (orderErr) {
+          console.warn('Backend order creation endpoint skipped, initiating direct client checkout:', orderErr.message);
+        }
+
+        const effectiveKey = orderData?.keyId || razorpayKey;
+        const amountInPaise = orderData?.amount || Math.round(Number(activeSport.entryFee) * 100);
+
+        const options = {
+          key: effectiveKey,
+          amount: amountInPaise, // in paise
+          currency: orderData?.currency || 'INR',
+          ...(orderData?.orderId ? { order_id: orderData.orderId } : {}),
+          name: import.meta.env.VITE_RAZORPAY_MERCHANT_NAME || 'APEX Championship 2026',
+          description: `Entry Registration Fee for ${activeSport.name}`,
+          handler: async function (response) {
+            await handleRazorpaySuccess({
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpayOrderId: response.razorpay_order_id || orderData?.orderId || `DIR-${Date.now()}`,
+              razorpaySignature: response.razorpay_signature || 'verified_checkout',
+              amount: activeSport.entryFee,
+              status: 'PAID',
+              method: 'Razorpay Checkout',
+              timestamp: new Date().toISOString()
+            });
+          },
+          prefill: {
+            name: formData.captainName || (formData.roster && formData.roster[0]?.name) || '',
+            email: formData.captainEmail || '',
+            contact: formData.captainPhone || ''
+          },
+          theme: {
+            color: '#2563eb'
+          },
+          modal: {
+            ondismiss: function () {
+              setIsProcessingPayment(false);
+            }
+          }
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', function (resp) {
+          setIsProcessingPayment(false);
+          addToast(resp.error?.description || 'Payment was unsuccessful or cancelled.', 'error');
+        });
+        rzp.open();
+        return;
+      } catch (err) {
+        console.error('Razorpay initialization error:', err);
+        addToast(err.response?.data?.message || err.message || 'Failed to initiate Razorpay payment. Please try again.', 'error');
+      } finally {
+        setIsProcessingPayment(false);
+      }
     } else {
       // Free events (Entry Fee = 0): Skip payment and confirm instantly
       handleRazorpaySuccess({
-        razorpayPaymentId: `FREE_PASS_${Math.floor(100000 + Math.random() * 900000)}`,
-        orderId: `order_free_${Date.now()}`,
+        razorpayPaymentId: `FREE-${Date.now()}`,
+        orderId: `FREE-ORDER-${Date.now()}`,
         amount: 0,
-        status: 'FREE_CONFIRMED'
+        status: 'FREE_CONFIRMED',
+        method: 'Free Registration',
+        timestamp: new Date().toISOString()
       });
     }
   };
@@ -747,7 +847,7 @@ export const RegistrationPage = () => {
                 teamSize: '2 Players (Doubles)',
                 minPlayers: 2,
                 maxPlayers: 2,
-                entryFee: activeSport.doublesFee || 600
+                entryFee: typeof activeSport.doublesFee === 'number' ? activeSport.doublesFee : (activeSport.entryFee || 1)
               }}
               formData={formData}
               setFormData={setFormData}
@@ -797,24 +897,25 @@ export const RegistrationPage = () => {
           <div className="space-y-8">
             
             {/* DYNAMIC OFFICIAL COORDINATOR PUBLISHED EVENTS SECTION */}
-            {coordinatorEvents && coordinatorEvents.length > 0 && (
+            {sortedCoordinatorEvents && sortedCoordinatorEvents.length > 0 && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-indigo-500 animate-pulse" />
-                    Official Coordinator Published Events
+                    APEX SPORTS EVENTS
                   </h2>
                   <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-mono text-xs font-bold border border-indigo-500/20">
-                    Live Published Events ({coordinatorEvents.length})
+                    Live Published Events ({sortedCoordinatorEvents.length})
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-4xl mx-auto w-full">
-                  {coordinatorEvents.map((evt) => {
+                  {sortedCoordinatorEvents.map((evt) => {
                     const registered = evt.registeredCount || 0;
                     const limit = evt.maxRegistrations || 64;
                     const slotsLeft = Math.max(0, limit - registered);
-                    const isClosed = evt.status === 'Closed' || slotsLeft === 0;
+                    const isUpcoming = evt.status === 'Upcoming' || evt.status === 'Coming Soon';
+                    const isClosed = !isUpcoming && (evt.status === 'Closed' || slotsLeft === 0);
 
                     const isRacket = isRacketSportCheck(evt);
                     const currentFee = typeof evt.entryFee === 'number' ? evt.entryFee : (typeof evt.teamFee === 'number' ? evt.teamFee : (evt.entryFee ?? evt.teamFee ?? 0));
@@ -841,13 +942,13 @@ export const RegistrationPage = () => {
 
                           <div className="absolute top-3 left-3 flex items-center gap-2">
                             <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase shadow-md ${
-                              evt.status === 'Coming Soon'
+                              isUpcoming
                                 ? 'bg-amber-500 text-slate-950 font-black'
                                 : isClosed
                                 ? 'bg-rose-500 text-white'
                                 : 'bg-emerald-500 text-white'
                             }`}>
-                              {evt.status === 'Coming Soon' ? '🟡 Coming Soon' : isClosed ? '● Closed' : '● Open'}
+                              {isUpcoming ? '🟡 Upcoming' : isClosed ? '● Closed' : '● Open'}
                             </span>
                           </div>
 
@@ -857,7 +958,7 @@ export const RegistrationPage = () => {
 
                           <div className="absolute bottom-3 left-4 right-4">
                             <span className="text-[10px] font-mono font-bold text-indigo-400 uppercase tracking-wider block">
-                              {evt.sportName} Coordinator Event
+                              {evt.sportName} Event
                             </span>
                             <h3 className="text-lg sm:text-xl font-black text-white leading-tight drop-shadow-md">
                               {evt.title}
@@ -897,7 +998,7 @@ export const RegistrationPage = () => {
                             </button>
 
                             <button
-                              disabled={isClosed || evt.status === 'Coming Soon'}
+                              disabled={isClosed || isUpcoming}
                               onClick={() => {
                                 const adaptedSport = {
                                   id: evt.sportId || evt.id,
@@ -908,7 +1009,7 @@ export const RegistrationPage = () => {
                                   tagline: evt.title,
                                   description: evt.description,
                                   image: evt.coverImage || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80',
-                                  status: isClosed ? 'Closed' : evt.status === 'Coming Soon' ? 'Coming Soon' : 'Open',
+                                  status: isClosed ? 'Closed' : isUpcoming ? 'Upcoming' : 'Open',
                                   participantsCount: registered,
                                   maxParticipants: limit,
                                   entryFee: sFee,
@@ -927,7 +1028,7 @@ export const RegistrationPage = () => {
                                 handleSportSelect(adaptedSport);
                               }}
                               className={`flex-1 py-2.5 rounded-2xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 ${
-                                evt.status === 'Coming Soon'
+                                isUpcoming
                                   ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 cursor-not-allowed font-extrabold'
                                   : isClosed
                                   ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-300 dark:border-slate-700'
@@ -935,14 +1036,14 @@ export const RegistrationPage = () => {
                               }`}
                             >
                               <span>
-                                {evt.status === 'Coming Soon'
+                                {isUpcoming
                                   ? '⏳ Coming Soon'
                                   : isClosed
                                   ? (slotsLeft === 0 ? 'Event Full' : 'Registration Closed')
                                   : 'Register Now'
                                 }
                               </span>
-                              {evt.status !== 'Coming Soon' && <Trophy className="w-4 h-4" />}
+                              {!isUpcoming && !isClosed && <Trophy className="w-4 h-4" />}
                             </button>
                           </div>
 
@@ -955,7 +1056,7 @@ export const RegistrationPage = () => {
             )}
 
             {/* EMPTY STATE WHEN NO COORDINATOR EVENTS PUBLISHED YET */}
-            {(!coordinatorEvents || coordinatorEvents.length === 0) && (
+            {(!sortedCoordinatorEvents || sortedCoordinatorEvents.length === 0) && (
               <div className="text-center py-16 px-4 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md space-y-3">
                 <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
                   <Trophy className="w-6 h-6" />
@@ -992,15 +1093,30 @@ export const RegistrationPage = () => {
               {/* STEP 1: DETAILS */}
               {step === 1 && (
                 <div className="space-y-6">
+                  {activeSport?.status === 'Upcoming' && (
+                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs font-bold flex items-center gap-2.5">
+                      <span className="text-base">⏳</span>
+                      <span>This event is currently <strong>Upcoming (Coming Soon)</strong>. Registration will open on {activeSport.regStartDate || 'the scheduled opening date'}.</span>
+                    </div>
+                  )}
                   {renderDetailsStep()}
                   <div className="flex justify-end pt-6 border-t border-slate-100 dark:border-slate-800">
-                    <button
-                      onClick={handleDetailsSubmit}
-                      className="px-8 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-sm shadow-md shadow-blue-500/20 flex items-center gap-2 transition active:scale-[0.98]"
-                    >
-                      <span>Proceed to Payment</span>
-                      <Trophy className="w-4 h-4" />
-                    </button>
+                    {activeSport?.status === 'Upcoming' ? (
+                      <button
+                        disabled
+                        className="px-8 py-3 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-sm border border-amber-500/40 cursor-not-allowed flex items-center gap-2"
+                      >
+                        <span>⏳ Registration Opening Soon</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleDetailsSubmit}
+                        className="px-8 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-sm shadow-md shadow-blue-500/20 flex items-center gap-2 transition active:scale-[0.98]"
+                      >
+                        <span>Proceed to Payment</span>
+                        <Trophy className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               )}

@@ -128,18 +128,30 @@ export const AboutPage = () => {
   const selectedSession = committeeYears[selectedYear] || activeSession;
 
   // Faculty Advisors from active session (fallback to static defaults)
-  const advisors =
+  const rawAdvisors =
     activeSession?.advisors && activeSession.advisors.length > 0
       ? activeSession.advisors
       : facultyAdvisors;
+  const advisors = [...rawAdvisors].sort((a, b) => {
+    if (a.sortOrder !== undefined && b.sortOrder !== undefined) {
+      return Number(a.sortOrder) - Number(b.sortOrder);
+    }
+    return 0;
+  });
 
-  const currentTeam = (
+  const rawTeam = (
     (selectedSession?.executiveCommittee && selectedSession.executiveCommittee.length > 0)
       ? selectedSession.executiveCommittee
       : (activeSession?.executiveCommittee && activeSession.executiveCommittee.length > 0)
         ? activeSession.executiveCommittee
         : DEFAULT_EXEC_COMMITTEE
-  ).map((m) => ({
+  );
+  const currentTeam = [...rawTeam].sort((a, b) => {
+    if (a.sortOrder !== undefined && b.sortOrder !== undefined) {
+      return Number(a.sortOrder) - Number(b.sortOrder);
+    }
+    return 0;
+  }).map((m) => ({
     ...m,
     badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30'
   }));

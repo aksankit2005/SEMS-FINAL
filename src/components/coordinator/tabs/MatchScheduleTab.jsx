@@ -25,43 +25,10 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
   const scheduledMatches = (matches || []).filter((m) => m && m.status !== 'COMPLETED' && m.status !== 'FINISHED');
 
   const [createdEvents, setCreatedEvents] = useState([]);
-
-  const handleFinishSlot = async (matchItem) => {
-    const defaultWinner = matchItem.team1 || 'Team A';
-    const winnerName = window.prompt(`Enter winning team/player name for "${matchItem.team1} vs ${matchItem.team2}":`, getCleanTeamName(defaultWinner));
-    if (!winnerName) return;
-
-    const completedObj = {
-      ...matchItem,
-      status: 'COMPLETED',
-      winner: winnerName.trim(),
-      completedAt: new Date().toISOString(),
-    };
-
-    try {
-      await coordinatorApi.completeMatch(matchItem.id, completedObj);
-      const updated = matches.filter((m) => m.id !== matchItem.id);
-      onUpdateMatches(updated);
-      addToast(`🏆 Match Finished! Winner: ${winnerName.trim()}. Saved to Results section.`, 'success');
-    } catch (err) {
-      addToast('Failed to finish match', 'error');
-    }
-  };
-
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const list = await coordinatorApi.getEvents();
-        if (list && list.length > 0) {
-          setCreatedEvents(list);
-          if (!form.eventTitle) {
-            setForm((prev) => ({ ...prev, eventTitle: list[0].title }));
-          }
-        }
-      } catch (e) { }
-    };
-    fetchEvents();
-  }, []);
+  const [selectedEventId, setSelectedEventId] = useState('');
+  const [eligibleCompetitors, setEligibleCompetitors] = useState({ teams: [], participants: [] });
+  const [loadingCompetitors, setLoadingCompetitors] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   const sportName = user?.sportName || 'Badminton';
 
@@ -71,6 +38,8 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
     eventTitle: `${sportName} Championship 2026`,
     team1: '',
     team2: '',
+    team1Id: '',
+    team2Id: '',
     team1Name: '',
     team1Player1: '',
     team1Player2: '',
@@ -78,11 +47,57 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
     team2Player1: '',
     team2Player2: '',
     tableNumber: isChess ? 'Table 1' : `${venueLabel} 1`,
-    date: '2026-08-05',
-    time: '05:34 PM',
+    date: new Date().toISOString().split('T')[0],
+    time: '05:30 PM',
   });
 
-  const [editingId, setEditingId] = useState(null);
+  const activeEvents = createdEvents.filter((e) => e && e.status !== 'Draft' && e.status !== 'Completed');
+  const selectedEvent = activeEvents.find((e) => e.id === selectedEventId) || activeEvents[0] || null;
+  const isRegClosed = Boolean(selectedEvent && (selectedEvent.registrationOpen === false || selectedEvent.status === 'Closed'));
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const list = await coordinatorApi.getEvents();
+        if (list && list.length > 0) {
+          setCreatedEvents(list);
+          const act = list.filter((e) => e && e.status !== 'Draft' && e.status !== 'Completed');
+          if (act.length > 0) {
+            setSelectedEventId(act[0].id);
+            setForm((prev) => ({ ...prev, eventTitle: act[0].title }));
+          }
+        }
+      } catch (e) { }
+    };
+    fetchEvents();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedEvent?.id) {
+      setEligibleCompetitors({ teams: [], participants: [], singles: [], doubles: [], teamSquads: [] });
+      return;
+    }
+    const loadCompetitors = async () => {
+      setLoadingCompetitors(true);
+      try {
+        const data = await coordinatorApi.getEligibleCompetitors(selectedEvent.id, form.format);
+        if (data) {
+          setEligibleCompetitors({
+            teams: data.teams || data.doubles || [],
+            participants: data.participants || data.singles || [],
+            singles: data.singles || [],
+            doubles: data.doubles || [],
+            teamSquads: data.teamSquads || []
+          });
+        }
+      } catch (e) {
+        console.warn('Error loading eligible competitors:', e);
+      } finally {
+        setLoadingCompetitors(false);
+      }
+    };
+    loadCompetitors();
+  }, [selectedEvent?.id, form.format]);
 
   const getCleanTeamName = (teamStr) => {
     if (!teamStr) return '';
@@ -90,43 +105,42 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
     return match ? match[1].trim() : teamStr.trim();
   };
 
-  const handleClearAll = async () => {
-    const isConfirmed = await confirmDelete({
-      title: 'Clear All Match Schedules',
-      message: 'Are you sure you want to clear all scheduled matches from the database? This action cannot be undone.'
-    });
-    if (isConfirmed) {
-      await coordinatorApi.clearAllSchedules();
-      onUpdateMatches([]);
-      addToast('All match schedules cleared from database', 'warning');
-    }
-  };
-
   const handleAddSlot = async (e) => {
     e.preventDefault();
 
+    if (!selectedEvent) {
+      addToast('No active event selected for match scheduling.', 'error');
+      return;
+    }
+
+    if (!isRegClosed) {
+      addToast('Registration must be closed before fixtures can be scheduled.', 'error');
+      return;
+    }
+
     let finalTeam1 = '';
     let finalTeam2 = '';
+    let finalTeam1Id = form.team1Id || null;
+    let finalTeam2Id = form.team2Id || null;
 
     if (form.format === 'Doubles') {
-      if (!form.team1Name.trim()) {
-        addToast('Please enter Team 1 Name for Doubles', 'error');
+      if (!form.team1.trim() || !form.team2.trim()) {
+        addToast('Please select both Team 1 and Team 2 for Doubles', 'error');
         return;
       }
-      if (!form.team2Name.trim()) {
-        addToast('Please enter Team 2 Name for Doubles', 'error');
+      if (form.team1.trim() === form.team2.trim()) {
+        addToast('Team 1 and Team 2 cannot be the same competitor', 'error');
         return;
       }
-      const p1a = form.team1Player1.trim() || 'Player 1';
-      const p1b = form.team1Player2.trim() || 'Player 2';
-      const p2a = form.team2Player1.trim() || 'Player 1';
-      const p2b = form.team2Player2.trim() || 'Player 2';
-
-      finalTeam1 = form.team1Name.trim();
-      finalTeam2 = form.team2Name.trim();
+      finalTeam1 = form.team1.trim();
+      finalTeam2 = form.team2.trim();
     } else {
       if (!form.team1.trim() || !form.team2.trim()) {
-        addToast('Please enter both team/player names', 'error');
+        addToast('Please select both Player 1 and Player 2', 'error');
+        return;
+      }
+      if (form.team1.trim() === form.team2.trim()) {
+        addToast('Competitor 1 and Competitor 2 cannot be the same participant', 'error');
         return;
       }
       finalTeam1 = form.team1.trim();
@@ -140,12 +154,15 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
             ...m,
             team1: finalTeam1,
             team2: finalTeam2,
+            team1Id: finalTeam1Id,
+            team2Id: finalTeam2Id,
+            eventId: selectedEvent.id,
+            eventTitle: selectedEvent.title,
             tableNumber: form.tableNumber,
             date: form.date,
             time: form.time,
             format: form.format,
             category: form.category,
-            eventTitle: form.eventTitle,
           }
           : m
       );
@@ -153,12 +170,15 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
       await coordinatorApi.updateMatchScoring(editingId, {
         team1: finalTeam1,
         team2: finalTeam2,
+        team1Id: finalTeam1Id,
+        team2Id: finalTeam2Id,
+        eventId: selectedEvent.id,
+        eventTitle: selectedEvent.title,
         tableNumber: form.tableNumber,
         date: form.date,
         time: form.time,
         format: form.format,
         category: form.category,
-        eventTitle: form.eventTitle,
       });
       addToast('Match slot updated!', 'success');
       setEditingId(null);
@@ -167,14 +187,17 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
         id: `M${Math.floor(100000 + Math.random() * 900000)}`,
         sportId: assignedSport || 'badminton',
         sportName: sportName || 'Badminton',
+        eventId: selectedEvent.id,
+        eventTitle: selectedEvent.title,
         team1: finalTeam1,
         team2: finalTeam2,
+        team1Id: finalTeam1Id,
+        team2Id: finalTeam2Id,
         tableNumber: form.tableNumber,
         date: form.date,
         time: form.time,
         format: form.format,
         category: form.category,
-        eventTitle: form.eventTitle,
         status: 'SCHEDULED',
         score1: 0,
         score2: 0,
@@ -185,22 +208,19 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
       addToast('Match slot added successfully!', 'success');
     }
 
-    setForm({
-      format: isChess ? 'Standard' : 'Singles',
-      category: 'Male',
-      eventTitle: createdEvents[0]?.title || `${sportName} Championship 2026`,
+    setForm((prev) => ({
+      ...prev,
       team1: '',
       team2: '',
+      team1Id: '',
+      team2Id: '',
       team1Name: '',
       team1Player1: '',
       team1Player2: '',
       team2Name: '',
       team2Player1: '',
       team2Player2: '',
-      tableNumber: isChess ? 'Table 1' : `${venueLabel} 1`,
-      date: '2026-08-05',
-      time: '05:34 PM',
-    });
+    }));
   };
 
   const handleDeleteSlot = async (id) => {
@@ -224,40 +244,59 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
           <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
             Add Match Fixture
           </h3>
-          <button
-            onClick={handleClearAll}
-            className="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-600/20 hover:bg-rose-100 dark:hover:bg-rose-600 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 font-bold text-xs transition flex items-center gap-1 cursor-pointer"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Clear Schedules</span>
-          </button>
         </div>
 
-        {/* Form Box: Add Match Slot Manually */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-2xl space-y-4">
+        {/* LIFECYCLE GATE BANNER */}
+        {!selectedEvent ? (
+          <div className="p-5 rounded-3xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 space-y-1.5">
+            <h4 className="text-xs font-black uppercase tracking-wider">⚠️ No Active Event Available</h4>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              Create and publish an event in the Events tab to enable match fixture scheduling.
+            </p>
+          </div>
+        ) : !isRegClosed ? (
+          <div className="p-5 rounded-3xl bg-blue-500/10 border border-blue-500/30 text-blue-700 dark:text-indigo-300 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
+              <h4 className="text-xs font-black uppercase tracking-wider">Event Active • Registration Open — Scheduling Locked</h4>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              Students are actively registering for <strong>"{selectedEvent.title}"</strong>. To schedule matches, navigate to the <strong>Events tab</strong> and click <strong>"Close Reg"</strong> to freeze the participant roster.
+            </p>
+          </div>
+        ) : (
+          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 flex items-center justify-between text-xs font-bold">
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <span>Registration Closed — Fixtures Ready ({eligibleCompetitors.participants.length} athletes)</span>
+            </span>
+          </div>
+        )}
+
+        {/* Form Box: Add Match Slot */}
+        <div className={`p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-2xl space-y-4 ${
+          !isRegClosed ? 'opacity-60 pointer-events-none' : ''
+        }`}>
           <form onSubmit={handleAddSlot} className="space-y-3.5">
             {/* Event Name */}
             <div>
-              <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Event Name</label>
-              {createdEvents.length > 0 ? (
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Target Event</label>
+              {activeEvents.length > 0 ? (
                 <select
-                  value={form.eventTitle}
-                  onChange={(e) => setForm({ ...form, eventTitle: e.target.value })}
+                  value={selectedEventId}
+                  onChange={(e) => {
+                    setSelectedEventId(e.target.value);
+                    const ev = activeEvents.find(a => a.id === e.target.value);
+                    if (ev) setForm(prev => ({ ...prev, eventTitle: ev.title }));
+                  }}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
                 >
-                  {createdEvents.map((ev) => (
-                    <option key={ev.id} value={ev.title}>{ev.title}</option>
+                  {activeEvents.map((ev) => (
+                    <option key={ev.id} value={ev.id}>{ev.title} ({ev.registrationOpen === false || ev.status === 'Closed' ? 'Reg Closed' : 'Reg Open'})</option>
                   ))}
                 </select>
               ) : (
-                <input
-                  type="text"
-                  required
-                  value={form.eventTitle}
-                  onChange={(e) => setForm({ ...form, eventTitle: e.target.value })}
-                  placeholder={`e.g. ${sportName} Championship 2026`}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
-                />
+                <p className="text-xs text-rose-500">No active events found.</p>
               )}
             </div>
 
@@ -268,7 +307,7 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
                   <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Format</label>
                   <select
                     value={form.format}
-                    onChange={(e) => setForm({ ...form, format: e.target.value })}
+                    onChange={(e) => setForm(prev => ({ ...prev, format: e.target.value, team1: '', team2: '', team1Id: null, team2Id: null }))}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
                   >
                     <option value="Singles">Singles</option>
@@ -291,129 +330,141 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
               </div>
             </div>
 
-            {/* Conditional Player / Team Name Inputs */}
+            {/* Competitor Dropdowns from Registered Pool */}
             {!isChess && form.format === 'Doubles' ? (
-              <div className="space-y-4 pt-1">
-                {/* Side A / Team 1 Box */}
-                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 space-y-2.5">
-                  <span className="text-[11px] font-mono font-bold text-blue-600 dark:text-indigo-400 uppercase tracking-wider block">
-                    👥 Side A / Team 1 (Doubles Pair)
-                  </span>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase">
-                      Team 1 Name <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={form.team1Name}
-                      onChange={(e) => setForm({ ...form, team1Name: e.target.value })}
-                      placeholder="e.g. MPEC Strikers"
-                      className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-3 pt-1">
+                {(eligibleCompetitors.teams || eligibleCompetitors.doubles || []).length === 0 ? (
+                  <p className="text-[11px] font-bold text-rose-500 bg-rose-500/10 p-3 rounded-xl border border-rose-500/20">
+                    ⚠️ No verified Doubles/Duo registrations found for this event.
+                  </p>
+                ) : (
+                  <>
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase">
-                        Player 1 Name <span className="text-rose-500">*</span>
+                      <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                        Side A / Team 1 (Registered Pair/Team) <span className="text-rose-500">*</span>
                       </label>
-                      <input
-                        type="text"
-                        value={form.team1Player1}
-                        onChange={(e) => setForm({ ...form, team1Player1: e.target.value })}
-                        placeholder="e.g. Aman Sharma"
-                        className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
-                      />
+                      <select
+                        value={form.team1}
+                        onChange={(e) => {
+                          const duoList = eligibleCompetitors.teams || eligibleCompetitors.doubles || [];
+                          const selected = duoList.find(
+                            (t) => (t.teamName || t.name) === e.target.value || t.displayName === e.target.value
+                          );
+                          setForm({
+                            ...form,
+                            team1: e.target.value,
+                            team1Id: selected?.id || selected?.registrationId || null
+                          });
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                      >
+                        <option value="">-- Select Registered Team 1 --</option>
+                        {(eligibleCompetitors.teams || eligibleCompetitors.doubles || []).map((t) => (
+                          <option key={t.id} value={t.teamName || t.name}>
+                            {t.displayName || t.teamName || t.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase">
-                        Player 2 / Partner <span className="text-rose-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={form.team1Player2}
-                        onChange={(e) => setForm({ ...form, team1Player2: e.target.value })}
-                        placeholder="e.g. Rahul Verma"
-                        className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
 
-                {/* Side B / Team 2 Box */}
-                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 space-y-2.5">
-                  <span className="text-[11px] font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">
-                    👥 Side B / Team 2 (Doubles Pair)
-                  </span>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase">
-                      Team 2 Name <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={form.team2Name}
-                      onChange={(e) => setForm({ ...form, team2Name: e.target.value })}
-                      placeholder="e.g. MIPS Smashers"
-                      className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase">
-                        Player 1 Name <span className="text-rose-500">*</span>
+                      <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                        Side B / Team 2 (Registered Pair/Team) <span className="text-rose-500">*</span>
                       </label>
-                      <input
-                        type="text"
-                        value={form.team2Player1}
-                        onChange={(e) => setForm({ ...form, team2Player1: e.target.value })}
-                        placeholder="e.g. Vikas Gupta"
-                        className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
-                      />
+                      <select
+                        value={form.team2}
+                        onChange={(e) => {
+                          const duoList = eligibleCompetitors.teams || eligibleCompetitors.doubles || [];
+                          const selected = duoList.find(
+                            (t) => (t.teamName || t.name) === e.target.value || t.displayName === e.target.value
+                          );
+                          setForm({
+                            ...form,
+                            team2: e.target.value,
+                            team2Id: selected?.id || selected?.registrationId || null
+                          });
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                      >
+                        <option value="">-- Select Registered Team 2 --</option>
+                        {(eligibleCompetitors.teams || eligibleCompetitors.doubles || []).map((t) => (
+                          <option key={t.id} value={t.teamName || t.name}>
+                            {t.displayName || t.teamName || t.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase">
-                        Player 2 / Partner <span className="text-rose-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={form.team2Player2}
-                        onChange={(e) => setForm({ ...form, team2Player2: e.target.value })}
-                        placeholder="e.g. Rohan Kumar"
-                        className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
             ) : (
-              <>
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                    {isChess ? 'Player 1 Name (White)' : form.format === 'Team' ? 'Team 1 Name' : 'Player 1 Name'} <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={form.team1}
-                    onChange={(e) => setForm({ ...form, team1: e.target.value })}
-                    placeholder={isChess ? 'e.g. Magnus Carlsen (White)' : form.format === 'Team' ? 'e.g. MPEC College Team' : 'e.g. Aman Sharma'}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
-                  />
-                </div>
+              <div className="space-y-3 pt-1">
+                {(eligibleCompetitors.participants || eligibleCompetitors.singles || []).length === 0 ? (
+                  <p className="text-[11px] font-bold text-rose-500 bg-rose-500/10 p-3 rounded-xl border border-rose-500/20">
+                    ⚠️ No verified Singles registrations found for this event.
+                  </p>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                        {isChess ? 'Player 1 (White - Registered)' : 'Competitor 1 (Registered Athlete)'} <span className="text-rose-500">*</span>
+                      </label>
+                      <select
+                        value={form.team1}
+                        onChange={(e) => {
+                          const singleList = eligibleCompetitors.participants || eligibleCompetitors.singles || [];
+                          const p = singleList.find((item) => (item.name === e.target.value || item.displayName === e.target.value));
+                          setForm({
+                            ...form,
+                            team1: e.target.value,
+                            team1Id: p?.id || p?.registrationId || null
+                          });
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                      >
+                        <option value="">-- Select Registered Competitor 1 --</option>
+                        {(eligibleCompetitors.participants || eligibleCompetitors.singles || []).map((p) => (
+                          <option key={p.id} value={p.name}>
+                            {p.displayName || `${p.name} (${p.college})`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                    {isChess ? 'Player 2 Name (Black)' : form.format === 'Team' ? 'Team 2 Name' : 'Player 2 Name'} <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={form.team2}
-                    onChange={(e) => setForm({ ...form, team2: e.target.value })}
-                    placeholder={isChess ? 'e.g. Hikaru Nakamura (Black)' : form.format === 'Team' ? 'e.g. MIPS College Team' : 'e.g. Vikas Gupta'}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
-                  />
-                </div>
-              </>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                        {isChess ? 'Player 2 (Black - Registered)' : 'Competitor 2 (Registered Athlete)'} <span className="text-rose-500">*</span>
+                      </label>
+                      <select
+                        value={form.team2}
+                        onChange={(e) => {
+                          const singleList = eligibleCompetitors.participants || eligibleCompetitors.singles || [];
+                          const p = singleList.find((item) => (item.name === e.target.value || item.displayName === e.target.value));
+                          setForm({
+                            ...form,
+                            team2: e.target.value,
+                            team2Id: p?.id || p?.registrationId || null
+                          });
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                      >
+                        <option value="">-- Select Registered Competitor 2 --</option>
+                        {(eligibleCompetitors.participants || eligibleCompetitors.singles || []).map((p) => (
+                          <option key={p.id} value={p.name}>
+                            {p.displayName || `${p.name} (${p.college})`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {isRegClosed && eligibleCompetitors.participants.length === 0 && (
+              <p className="text-[11px] font-bold text-rose-500 dark:text-rose-400">
+                ⚠️ No verified registrations found for this event. Participants must register before fixtures can be created.
+              </p>
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

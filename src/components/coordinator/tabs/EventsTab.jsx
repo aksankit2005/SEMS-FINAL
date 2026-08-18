@@ -10,6 +10,8 @@ import { useToast } from '../../../context/ToastContext';
 import { exportToPDF, exportToCSV } from '../../../utils/pdfExporter';
 
 import { SPORT_PLAYER_BOUNDS, resolveSportKey } from '../../../data/sportsConfig';
+import { EventStatusBadge, EventStatusActionButton, RegistrationStatusBadge, RegistrationActionButton } from '../events/RegistrationStatusControl';
+import { computeEffectiveRegistrationStatus } from '../../../utils/registrationLifecycle';
 
 export const EventsTab = ({ user }) => {
   const { addToast } = useToast();
@@ -283,20 +285,45 @@ export const EventsTab = ({ user }) => {
     }
   };
 
-  const handleToggleStatus = async (eventObj) => {
-    const statusCycle = {
-      'Draft': 'Upcoming',
-      'Upcoming': 'Published',
-      'Published': 'Closed',
-      'Closed': 'Draft'
-    };
-    const nextStatus = statusCycle[eventObj.status] || 'Published';
+  const handleToggleRegistrationOpen = async (eventObj) => {
+    const regStatus = computeEffectiveRegistrationStatus(eventObj);
+
+    if (regStatus.isDeadlinePassed) {
+      addToast('Registration deadline has passed. Extend the registration end date in edit settings before reopening registration.', 'warning');
+      return;
+    }
+
+    const isCurrentlyOpen = regStatus.effectiveRegistrationOpen;
+    const newRegOpen = !isCurrentlyOpen;
+    try {
+      const updated = await coordinatorApi.updateEvent(eventObj.id, {
+        registrationOpen: newRegOpen
+      });
+      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, registrationOpen: newRegOpen } : item)));
+      if (!newRegOpen) {
+        addToast(`🔒 Registration closed for "${eventObj.title}". Fixtures can now be scheduled!`, 'success');
+      } else {
+        addToast(`🔓 Registration reopened for "${eventObj.title}". Students can now register.`, 'info');
+      }
+      fetchEvents();
+      window.dispatchEvent(new Event('sems_events_updated'));
+    } catch (err) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to toggle registration status';
+      addToast(errMsg, 'error');
+    }
+  };
+
+  const handleToggleEventStatus = async (eventObj, targetStatus) => {
+    const nextStatus = targetStatus || ((eventObj.status === 'Active' || eventObj.status === 'Published') ? 'Inactive' : 'Active');
     try {
       const updated = await coordinatorApi.updateEvent(eventObj.id, { status: nextStatus });
-      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? updated : item)));
-      addToast(`Event status changed to ${nextStatus}`, 'info');
+      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, status: nextStatus } : item)));
+      addToast(`Event is now ${nextStatus}`, nextStatus === 'Active' || nextStatus === 'Published' ? 'success' : 'info');
+      fetchEvents();
+      window.dispatchEvent(new Event('sems_events_updated'));
     } catch (err) {
-      addToast('Status toggle failed', 'error');
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to update event status';
+      addToast(errMsg, 'error');
     }
   };
 
@@ -328,13 +355,13 @@ export const EventsTab = ({ user }) => {
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-emerald-600 dark:text-emerald-400">Active Events</span>
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Active (Published)</span>
           <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">{activeEvents}</p>
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-rose-600 dark:text-rose-400">Closed Events</span>
-          <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">{closedEvents}</p>
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Registration Closed</span>
+          <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight">{closedEvents}</p>
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
@@ -396,6 +423,7 @@ export const EventsTab = ({ user }) => {
               const registered = event.registeredCount || 0;
               const limit = event.maxRegistrations || 64;
               const percent = Math.min(100, Math.round((registered / limit) * 100));
+              const isRegOpen = event.registrationOpen !== false && event.status !== 'Closed';
 
               return (
                 <div
@@ -411,19 +439,10 @@ export const EventsTab = ({ user }) => {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/30 to-transparent" />
 
-                    {/* Status Badge */}
-                    <div className="absolute top-3 left-3 flex items-center gap-2">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase border shadow-md ${
-                        event.status === 'Published'
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                          : event.status === 'Upcoming'
-                          ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
-                          : event.status === 'Closed'
-                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                          : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                      }`}>
-                        ● {event.status}
-                      </span>
+                    {/* Status Badges */}
+                    <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5">
+                      <EventStatusBadge event={event} />
+                      <RegistrationStatusBadge event={event} />
                       <span className="px-2.5 py-1 rounded-full bg-slate-950/70 backdrop-blur-xs text-white text-[10px] font-bold border border-slate-800">
                         {event.category}
                       </span>
@@ -475,17 +494,17 @@ export const EventsTab = ({ user }) => {
                     </div>
 
                     {/* Actions Bar */}
-                    <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => handleToggleStatus(event)}
-                          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
-                          title="Toggle Status (Draft -> Published -> Closed)"
-                        >
-                          {event.status === 'Published' ? <ToggleRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <ToggleLeft className="w-4 h-4 text-amber-600 dark:text-amber-400" />}
-                          <span>Toggle Status</span>
-                        </button>
-
+                    <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <EventStatusActionButton 
+                          event={event} 
+                          onToggleStatus={handleToggleEventStatus} 
+                        />
+                        <RegistrationActionButton 
+                          event={event} 
+                          onToggle={handleToggleRegistrationOpen} 
+                          onOpenEdit={handleOpenEdit} 
+                        />
                         <button
                           onClick={() => handleViewParticipants(event)}
                           className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 text-blue-600 dark:text-indigo-400 border border-blue-200 dark:border-indigo-500/30 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
@@ -745,8 +764,8 @@ export const EventsTab = ({ user }) => {
                     onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value }))}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-emerald-600 dark:text-emerald-400"
                   >
-                    {!isBadminton && <option value="Draft">Draft (Hidden)</option>}
-                    {!isBadminton && <option value="Upcoming">Upcoming (Scheduled)</option>}
+                    <option value="Draft">Draft (Hidden)</option>
+                    <option value="Upcoming">Upcoming (Coming Soon)</option>
                     <option value="Published">Published (Open)</option>
                     <option value="Closed">Closed</option>
                   </select>

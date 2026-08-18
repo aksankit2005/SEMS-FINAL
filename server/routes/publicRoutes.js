@@ -1,10 +1,15 @@
 import express from 'express';
-import { registerPublicEvent } from '../controllers/registrationController.js';
+import {
+  registerPublicEvent,
+  createPublicRegistrationOrder,
+  handleRazorpayWebhook,
+} from '../controllers/registrationController.js';
 import { getHeroSlidesDB, getCommitteeDB } from '../controllers/adminController.js';
 import { getLeaderboardStandings } from '../services/leaderboardService.js';
 import { queryDb, prisma, pool } from '../config/db.js';
 import { extractYouTubeVideoIdBackend } from '../controllers/coordinatorController.js';
 import { publicReadLimiter, apiLimiter } from '../middleware/rateLimiters.js';
+import { computeEffectiveRegistrationStatus } from '../utils/registrationLifecycle.js';
 
 const router = express.Router();
 
@@ -422,6 +427,7 @@ router.get('/public/events', publicReadLimiter, async (req, res) => {
         singles_fee AS "singlesFee", doubles_fee AS "doublesFee", 
         team_size AS "teamSize", max_registrations AS "maxRegistrations", 
         registered_count AS "registeredCount", venue, category, status, 
+        registration_open AS "registrationOpen",
         rules, required_documents AS "requiredDocuments", contact_info AS "contactInfo"
        FROM coordinator_event_items
        ORDER BY created_at DESC`
@@ -435,12 +441,18 @@ router.get('/public/events', publicReadLimiter, async (req, res) => {
           return;
         }
 
+        const isRegOpen = e.registrationOpen !== false && e.registrationOpen !== 'false' && e.registrationOpen !== 0;
+        const regStatus = computeEffectiveRegistrationStatus({
+          ...e,
+          registrationOpen: isRegOpen
+        });
+
         let currentStatus = e.status || 'Published';
-        if (rawStatus === 'upcoming') {
+        if (rawStatus === 'upcoming' || rawStatus === 'coming soon') {
           currentStatus = 'Upcoming';
-        } else if (rawStatus === 'closed' || (e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) || ((Number(e.registeredCount) || 0) >= (Number(e.maxRegistrations) || 64))) {
+        } else if (!regStatus.effectiveRegistrationOpen) {
           currentStatus = 'Closed';
-        } else if (rawStatus === 'public' || rawStatus === 'published') {
+        } else if (rawStatus === 'public' || rawStatus === 'published' || rawStatus === 'active') {
           currentStatus = 'Published';
         }
 
@@ -462,6 +474,14 @@ router.get('/public/events', publicReadLimiter, async (req, res) => {
           maxRegistrations: Number(e.maxRegistrations || 64),
           registeredCount: Number(e.registeredCount || 0),
           status: currentStatus,
+          registrationOpen: isRegOpen,
+          effectiveStatus: regStatus.code,
+          effectiveStatusLabel: regStatus.label,
+          effectiveRegistrationOpen: regStatus.effectiveRegistrationOpen,
+          effectiveRegistrationClosed: regStatus.effectiveRegistrationClosed,
+          isDeadlinePassed: regStatus.isDeadlinePassed,
+          canReopen: regStatus.canReopen,
+          closureReason: regStatus.reason,
           rules: rulesObj || [],
           contactInfo: contact,
           availableSlots: Math.max(0, (Number(e.maxRegistrations) || 64) - (Number(e.registeredCount) || 0))
@@ -487,12 +507,18 @@ router.get('/public/events', publicReadLimiter, async (req, res) => {
         const rawStatus = (e.status || 'Published').toLowerCase();
         if (rawStatus === 'draft') return;
 
+        const isRegOpen = e.registrationOpen !== false;
+        const regStatus = computeEffectiveRegistrationStatus({
+          ...e,
+          registrationOpen: isRegOpen
+        });
+
         let currentStatus = e.status || 'Published';
-        if (rawStatus === 'upcoming') {
+        if (rawStatus === 'upcoming' || rawStatus === 'coming soon') {
           currentStatus = 'Upcoming';
-        } else if (rawStatus === 'closed' || (e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) || ((e.registeredCount || 0) >= (e.maxRegistrations || 64))) {
+        } else if (!regStatus.effectiveRegistrationOpen) {
           currentStatus = 'Closed';
-        } else if (rawStatus === 'public' || rawStatus === 'published') {
+        } else if (rawStatus === 'public' || rawStatus === 'published' || rawStatus === 'active') {
           currentStatus = 'Published';
         }
 
@@ -501,6 +527,14 @@ router.get('/public/events', publicReadLimiter, async (req, res) => {
           entryFee: Number(e.entryFee || 0),
           teamFee: Number(e.entryFee || 0),
           status: currentStatus,
+          registrationOpen: isRegOpen,
+          effectiveStatus: regStatus.code,
+          effectiveStatusLabel: regStatus.label,
+          effectiveRegistrationOpen: regStatus.effectiveRegistrationOpen,
+          effectiveRegistrationClosed: regStatus.effectiveRegistrationClosed,
+          isDeadlinePassed: regStatus.isDeadlinePassed,
+          canReopen: regStatus.canReopen,
+          closureReason: regStatus.reason,
           availableSlots: Math.max(0, (e.maxRegistrations || 64) - (e.registeredCount || 0))
         });
       });
@@ -513,8 +547,17 @@ router.get('/public/events', publicReadLimiter, async (req, res) => {
   return res.json([]);
 });
 
+// POST /api/public/create-order - Create authoritative Razorpay order with auto-capture
+router.post('/public/create-order', apiLimiter, createPublicRegistrationOrder);
+router.post('/public/create-razorpay-order', apiLimiter, createPublicRegistrationOrder);
+
 // POST /api/public/register-event - Event registration endpoint
 router.post('/public/register-event', apiLimiter, registerPublicEvent);
+router.post('/public/register', apiLimiter, registerPublicEvent);
+
+// POST /api/public/razorpay-webhook - Razorpay lifecycle webhooks
+router.post('/public/razorpay-webhook', handleRazorpayWebhook);
+router.post('/razorpay/webhook', handleRazorpayWebhook);
 
 // GET /api/leaderboard - Spectator college standings endpoint from Supabase college_leaderboards table
 router.get('/leaderboard', publicReadLimiter, async (req, res) => {

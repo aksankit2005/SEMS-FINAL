@@ -200,9 +200,46 @@ export const initDatabaseSchema = async () => {
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS current_set INT DEFAULT 1;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won1 INT DEFAULT 0;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won2 INT DEFAULT 0;`);
+    await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS event_id TEXT;`);
+    await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS event_title TEXT;`);
+    await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS team1_id TEXT;`);
+    await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS team2_id TEXT;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`);
     await queryDb(`ALTER TABLE live_matches ALTER COLUMN updated_at SET DEFAULT CURRENT_TIMESTAMP;`);
     await queryDb(`ALTER TABLE live_matches ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP;`);
+
+    // Ensure coordinator_event_items has registration_open column
+    await queryDb(`
+      CREATE TABLE IF NOT EXISTS coordinator_event_items (
+        id VARCHAR(100) PRIMARY KEY,
+        sport_id VARCHAR(50),
+        sport_name VARCHAR(100),
+        title VARCHAR(255),
+        cover_image TEXT,
+        description TEXT,
+        reg_start_date VARCHAR(50),
+        reg_end_date VARCHAR(50),
+        tourn_start_date VARCHAR(50),
+        tourn_end_date VARCHAR(50),
+        entry_fee NUMERIC DEFAULT 0,
+        singles_fee NUMERIC DEFAULT 0,
+        doubles_fee NUMERIC DEFAULT 0,
+        team_size VARCHAR(50),
+        max_registrations INT DEFAULT 64,
+        registered_count INT DEFAULT 0,
+        venue VARCHAR(150),
+        category VARCHAR(50),
+        status VARCHAR(50) DEFAULT 'Draft',
+        registration_open BOOLEAN DEFAULT TRUE,
+        rules JSONB,
+        required_documents JSONB,
+        contact_info JSONB,
+        created_by VARCHAR(150),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await queryDb(`ALTER TABLE coordinator_event_items ADD COLUMN IF NOT EXISTS registration_open BOOLEAN DEFAULT TRUE;`);
 
     // Backfill details JSONB for pre-existing rows where details IS NULL
     await queryDb(`
@@ -357,7 +394,18 @@ export const initDatabaseSchema = async () => {
     `);
     await queryDb(`ALTER TABLE committee_members ADD COLUMN IF NOT EXISTS public_id VARCHAR(255);`);
 
-    // 5. Seed user account tables and password hashes
+    // 6. Ensure system_settings table exists for hero slides and configuration
+    await queryDb(`
+      CREATE TABLE IF NOT EXISTS system_settings (
+        key VARCHAR(255) PRIMARY KEY,
+        value JSONB NOT NULL,
+        "updatedBy" VARCHAR(255),
+        "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 7. Seed user account tables and password hashes
     await seedInitialAccountHashes();
 
   } catch (err) {

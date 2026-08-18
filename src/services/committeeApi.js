@@ -120,15 +120,91 @@ export const committeeApi = {
         publicId: memberData.publicId,
         email: memberData.email || '',
         phone: memberData.phone || '',
-        sortOrder: memberData.sortOrder || 0
+        sortOrder: memberData.sortOrder !== undefined && memberData.sortOrder !== '' ? Number(memberData.sortOrder) : undefined
       };
       await api.post('/admin/committee/members', payload);
     } catch (err) {
       console.error('Failed to save committee member via API:', err.message);
     }
+
+    try {
+      const saved = localStorage.getItem(COMMITTEE_STORAGE_KEY);
+      let data = saved ? JSON.parse(saved) : DEFAULT_SESSIONS;
+      const session = data.find((s) => s.id === sessionId) || data[0];
+      if (session) {
+        let list = session[type] || [];
+        const existingIdx = list.findIndex((m) => m.id === memberData.id);
+        const orderNum = memberData.sortOrder !== undefined && memberData.sortOrder !== ''
+          ? Number(memberData.sortOrder)
+          : (existingIdx >= 0 ? (list[existingIdx].sortOrder || existingIdx + 1) : list.length + 1);
+
+        const memberObj = {
+          ...memberData,
+          id: memberData.id || `${type === 'advisors' ? 'FA' : 'EC'}-${Date.now()}`,
+          sortOrder: orderNum
+        };
+
+        if (existingIdx >= 0) {
+          list[existingIdx] = memberObj;
+        } else {
+          list.push(memberObj);
+        }
+
+        // Sort list by sortOrder
+        list.sort((a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0));
+        // Normalize sortOrder to 1..N
+        list = list.map((m, idx) => ({ ...m, sortOrder: idx + 1 }));
+        session[type] = list;
+        localStorage.setItem(COMMITTEE_STORAGE_KEY, JSON.stringify(data));
+      }
+    } catch (e) {}
+
     const updated = await committeeApi.getCommitteeData();
     window.dispatchEvent(new Event('sems_committee_updated'));
+    window.dispatchEvent(new Event('storage'));
     return updated;
+  },
+
+  // Reorder members inside a session (type: 'advisors' | 'executiveCommittee')
+  reorderMembers: async (sessionId, type, reorderedMembers) => {
+    try {
+      const listWithOrder = reorderedMembers.map((m, idx) => ({
+        ...m,
+        sortOrder: idx + 1
+      }));
+
+      // Update local storage representation
+      const saved = localStorage.getItem(COMMITTEE_STORAGE_KEY);
+      let data = saved ? JSON.parse(saved) : DEFAULT_SESSIONS;
+      const session = data.find((s) => s.id === sessionId);
+      if (session) {
+        session[type] = listWithOrder;
+        localStorage.setItem(COMMITTEE_STORAGE_KEY, JSON.stringify(data));
+      }
+
+      // Persist each member's updated sortOrder via API in background
+      Promise.all(
+        listWithOrder.map((m, idx) =>
+          api.post('/admin/committee/members', {
+            id: m.id && !m.id.startsWith('FA-') && !m.id.startsWith('EC-') ? m.id : undefined,
+            sessionId,
+            type,
+            name: m.name,
+            role: m.role,
+            image: m.image,
+            publicId: m.publicId,
+            sortOrder: idx + 1
+          }).catch(() => {})
+        )
+      ).catch(() => {});
+
+      window.dispatchEvent(new Event('sems_committee_updated'));
+      window.dispatchEvent(new Event('storage'));
+      return data;
+    } catch (e) {
+      console.error('Failed to reorder committee members:', e);
+      return await committeeApi.getCommitteeData();
+    }
   },
 
   // Delete a member from a session

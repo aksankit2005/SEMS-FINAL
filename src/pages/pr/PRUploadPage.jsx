@@ -3,26 +3,26 @@ import { Link, useSearchParams } from 'react-router-dom';
 import {
   UploadCloud,
   Image as ImageIcon,
-  Video,
   ArrowLeft,
-  Link as LinkIcon,
   Sparkles,
   CheckCircle2,
-  Info,
-  Play,
   FileCheck,
-  Plus,
-  FileUp,
   X,
   AlertCircle,
   FolderPlus,
   Layers,
-  Check
+  Play
 } from 'lucide-react';
 import { galleryApi } from '../../services/galleryApi';
-import { uploadMultipleFilesToCloudinary, uploadFileToCloudinary } from '../../services/cloudinaryService';
-import { getMediaPreviewUrl, getVideoEmbedUrl } from '../../utils/googleDriveHelper';
+import { uploadMultipleFilesToCloudinary } from '../../services/cloudinaryService';
+import { extractYouTubeVideoId } from '../../utils/youtube';
 import { useToast } from '../../context/ToastContext';
+
+const YoutubeIcon = ({ className = "w-5 h-5" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+  </svg>
+);
 
 export const PRUploadPage = () => {
   const [searchParams] = useSearchParams();
@@ -30,14 +30,9 @@ export const PRUploadPage = () => {
 
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState(preselectedEventId || '');
-  const [uploadMode, setUploadMode] = useState('direct'); // 'direct' (Cloudinary Multi-file) | 'drive' (Google Drive Link)
+  const [uploadMode, setUploadMode] = useState('direct'); // 'direct' (Cloudinary Multi-Photo) | 'youtube' (YouTube Video Link)
 
-  // Cloudinary Settings State
-  const [showCloudSettings, setShowCloudSettings] = useState(false);
-  const [cloudNameInput, setCloudNameInput] = useState(localStorage.getItem('sems_cloudinary_cloud') || 'lnrkt6qp');
-  const [presetInput, setPresetInput] = useState(localStorage.getItem('sems_cloudinary_preset') || 'ml_default');
-
-  // Multi-File Upload Queue State
+  // Multi-File Upload Queue State (Photos only)
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [filePreviews, setFilePreviews] = useState([]);
   const [customBaseTitle, setCustomBaseTitle] = useState('');
@@ -52,13 +47,15 @@ export const PRUploadPage = () => {
     overallPercent: 0,
   });
 
-  // Google Drive Link State
-  const [mediaType, setMediaType] = useState('image'); // 'image' | 'video'
+  // YouTube Video Link State
   const [singleTitle, setSingleTitle] = useState('');
-  const [driveUrl, setDriveUrl] = useState('');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
 
   const fileInputRef = useRef(null);
   const { showToast } = useToast();
+
+  const youtubeVideoId = extractYouTubeVideoId(youtubeUrl);
+  const isValidYouTubeUrl = !!youtubeVideoId;
 
   useEffect(() => {
     const loadEvents = async () => {
@@ -75,20 +72,32 @@ export const PRUploadPage = () => {
     loadEvents();
   }, []);
 
-  // Handle multi-file selection from computer
+  // Handle multi-file selection from computer (strictly photos)
   const handleMultipleFilesChange = (e) => {
     const filesArray = Array.from(e.target.files || []);
     if (filesArray.length === 0) return;
 
-    // Append to existing selected files or set new
-    const updatedFiles = [...selectedFiles, ...filesArray];
+    // Filter strictly for image files
+    const imageFiles = filesArray.filter((file) => file.type.startsWith('image/'));
+    const nonImageCount = filesArray.length - imageFiles.length;
+
+    if (nonImageCount > 0) {
+      showToast(`${nonImageCount} non-image file(s) were excluded. Video files are not supported for upload.`, 'warning');
+    }
+
+    if (imageFiles.length === 0) {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    const updatedFiles = [...selectedFiles, ...imageFiles];
     setSelectedFiles(updatedFiles);
 
     // Create preview object URLs
     const previews = updatedFiles.map((file) => ({
       name: file.name,
       size: (file.size / (1024 * 1024)).toFixed(2),
-      type: file.type.startsWith('video/') ? 'video' : 'image',
+      type: 'image',
       url: URL.createObjectURL(file),
     }));
 
@@ -116,7 +125,7 @@ export const PRUploadPage = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // Main Submit Handler for Batch & Single Upload
+  // Main Submit Handler for Batch Photos & YouTube Video Upload
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -127,7 +136,7 @@ export const PRUploadPage = () => {
 
     if (uploadMode === 'direct') {
       if (selectedFiles.length === 0) {
-        showToast('Please select one or more image/video files from your computer.', 'error');
+        showToast('Please select one or more photo files from your computer.', 'error');
         return;
       }
 
@@ -140,7 +149,7 @@ export const PRUploadPage = () => {
       });
 
       try {
-        showToast(`Starting batch upload of ${selectedFiles.length} file(s) to Cloudinary...`, 'info');
+        showToast(`Starting batch upload of ${selectedFiles.length} photo(s) to Cloudinary...`, 'info');
 
         const uploadedResults = await uploadMultipleFilesToCloudinary(
           selectedFiles,
@@ -156,7 +165,7 @@ export const PRUploadPage = () => {
           'sems_gallery'
         );
 
-        // Save each uploaded item to the database/API with its public_id
+        // Save each uploaded photo to the database/API with its public_id
         for (let i = 0; i < uploadedResults.length; i++) {
           const item = uploadedResults[i];
 
@@ -167,46 +176,58 @@ export const PRUploadPage = () => {
           } else if (customBaseTitle.trim()) {
             mediaTitle = selectedFiles.length > 1 ? `${customBaseTitle.trim()} #${i + 1}` : customBaseTitle.trim();
           } else {
-            mediaTitle = `Event Shot #${i + 1}`;
+            mediaTitle = `Event Photo #${i + 1}`;
           }
 
           await galleryApi.uploadMedia({
             event_id: selectedEventId,
-            media_type: item.resource_type === 'video' ? 'video' : 'image',
+            media_type: 'image',
             title: mediaTitle,
             media_url: item.url,
             public_id: item.public_id || null,
           });
         }
 
-        showToast(`Successfully uploaded & published ${uploadedResults.length} file(s) to event album!`, 'success');
+        showToast(`Successfully uploaded & published ${uploadedResults.length} photo(s) to event album!`, 'success');
         handleClearQueue();
       } catch (err) {
-        showToast(err.message || 'Failed to complete batch upload.', 'error');
+        showToast(err.message || 'Failed to complete batch photo upload.', 'error');
       } finally {
         setUploadStatus((prev) => ({ ...prev, active: false }));
       }
     } else {
-      // GOOGLE DRIVE LINK MODE
-      if (!singleTitle.trim() || !driveUrl.trim()) {
-        showToast('Please enter both Title and Google Drive Media URL.', 'error');
+      // YOUTUBE VIDEO LINK MODE
+      if (!singleTitle.trim()) {
+        showToast('Please enter a Media Title / Caption for the YouTube video.', 'error');
+        return;
+      }
+
+      if (!youtubeUrl.trim()) {
+        showToast('Please enter a YouTube Video Link.', 'error');
+        return;
+      }
+
+      const videoId = extractYouTubeVideoId(youtubeUrl.trim());
+      if (!videoId) {
+        showToast('Please enter a valid YouTube URL (e.g. https://www.youtube.com/watch?v=... or https://youtu.be/...)', 'error');
         return;
       }
 
       setUploadStatus((prev) => ({ ...prev, active: true }));
       try {
+        const standardYtUrl = `https://www.youtube.com/watch?v=${videoId}`;
         await galleryApi.uploadMedia({
           event_id: selectedEventId,
-          media_type: mediaType,
-          title: singleTitle,
-          media_url: driveUrl,
+          media_type: 'video',
+          title: singleTitle.trim(),
+          media_url: standardYtUrl,
         });
 
-        showToast(`Media (${mediaType.toUpperCase()}) Published Successfully!`, 'success');
+        showToast('YouTube Video Published Successfully!', 'success');
         setSingleTitle('');
-        setDriveUrl('');
+        setYoutubeUrl('');
       } catch (err) {
-        showToast('Failed to save Google Drive media item.', 'error');
+        showToast('Failed to publish YouTube video.', 'error');
       } finally {
         setUploadStatus((prev) => ({ ...prev, active: false }));
       }
@@ -226,10 +247,10 @@ export const PRUploadPage = () => {
             <ArrowLeft className="w-4 h-4" /> Back to PR Dashboard
           </Link>
           <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
-            <UploadCloud className="w-8 h-8 text-orange-500" /> Multi-Image & Media Upload Center
+            <UploadCloud className="w-8 h-8 text-orange-500" /> Multi-Photo & YouTube Media Center
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Upload multiple photos and videos simultaneously from your computer to Cloudinary or link via Google Drive.
+            Upload multiple photos simultaneously from your computer to Cloudinary or link YouTube video highlights.
           </p>
         </div>
 
@@ -238,25 +259,27 @@ export const PRUploadPage = () => {
           <button
             type="button"
             onClick={() => setUploadMode('direct')}
-            className={`flex-1 py-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 ${uploadMode === 'direct'
+            className={`flex-1 py-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer ${
+              uploadMode === 'direct'
                 ? 'bg-blue-600 text-white shadow-md'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
+            }`}
           >
             <Layers className="w-4 h-4" />
-            <span>Multiple Computer Files Upload (Cloudinary)</span>
+            <span>Multiple Computer Photos Upload (Cloudinary)</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setUploadMode('drive')}
-            className={`flex-1 py-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 ${uploadMode === 'drive'
+            onClick={() => setUploadMode('youtube')}
+            className={`flex-1 py-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer ${
+              uploadMode === 'youtube'
                 ? 'bg-orange-500 text-white shadow-md'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
+            }`}
           >
-            <LinkIcon className="w-4 h-4" />
-            <span>Google Drive / Link URL</span>
+            <YoutubeIcon className="w-4 h-4" />
+            <span>YouTube Video Link</span>
           </button>
         </div>
 
@@ -297,14 +320,14 @@ export const PRUploadPage = () => {
                 </select>
               </div>
 
-              {/* DIRECT MULTI-FILE UPLOAD SECTION */}
+              {/* DIRECT MULTI-PHOTO UPLOAD SECTION */}
               {uploadMode === 'direct' ? (
                 <div className="space-y-5">
 
                   {/* Drag and Drop File Picker Box */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                      Select / Drop Multiple Image & Video Files *
+                      Select / Drop Multiple Photos (JPG, PNG, WEBP) *
                     </label>
                     <div
                       onClick={() => fileInputRef.current?.click()}
@@ -315,7 +338,7 @@ export const PRUploadPage = () => {
                       </div>
                       <div>
                         <p className="text-sm font-black text-slate-900 dark:text-white">
-                          Select Multiple Images & Videos
+                          Select Multiple Photos
                         </p>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                           Hold <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-[10px]">Ctrl</code> or <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-[10px]">Shift</code> to pick multiple photos simultaneously.
@@ -325,7 +348,7 @@ export const PRUploadPage = () => {
                         ref={fileInputRef}
                         type="file"
                         multiple
-                        accept="image/*,video/*"
+                        accept="image/*"
                         onChange={handleMultipleFilesChange}
                         className="hidden"
                       />
@@ -338,12 +361,12 @@ export const PRUploadPage = () => {
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
                           <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                          Selected Queue ({filePreviews.length} files)
+                          Selected Queue ({filePreviews.length} photos)
                         </span>
                         <button
                           type="button"
                           onClick={handleClearQueue}
-                          className="text-xs font-bold text-rose-500 hover:underline"
+                          className="text-xs font-bold text-rose-500 hover:underline cursor-pointer"
                         >
                           Clear All
                         </button>
@@ -355,23 +378,16 @@ export const PRUploadPage = () => {
                             key={idx}
                             className="relative group h-24 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-200 dark:bg-slate-800"
                           >
-                            {file.type === 'video' ? (
-                              <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-white p-2 text-center">
-                                <Video className="w-5 h-5 text-orange-400 mb-1" />
-                                <span className="text-[9px] font-bold truncate max-w-full">{file.name}</span>
-                              </div>
-                            ) : (
-                              <img
-                                src={file.url}
-                                alt={file.name}
-                                className="w-full h-full object-cover"
-                              />
-                            )}
+                            <img
+                              src={file.url}
+                              alt={file.name}
+                              className="w-full h-full object-cover"
+                            />
 
                             <button
                               type="button"
                               onClick={() => handleRemoveFileFromQueue(idx)}
-                              className="absolute top-1 right-1 p-1 rounded-full bg-rose-600 text-white opacity-0 group-hover:opacity-100 transition"
+                              className="absolute top-1 right-1 p-1 rounded-full bg-rose-600 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
                               title="Remove file"
                             >
                               <X className="w-3.5 h-3.5" />
@@ -424,34 +440,15 @@ export const PRUploadPage = () => {
 
                 </div>
               ) : (
-                /* GOOGLE DRIVE LINK SECTION */
-                <div className="space-y-4">
+                /* YOUTUBE VIDEO LINK SECTION */
+                <div className="space-y-5">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
                       Media Type *
                     </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setMediaType('image')}
-                        className={`py-3 px-4 rounded-2xl border text-xs font-black flex items-center justify-center gap-2 transition ${mediaType === 'image'
-                            ? 'bg-blue-600 border-blue-600 text-white'
-                            : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                          }`}
-                      >
-                        <ImageIcon className="w-4 h-4" /> Photo (JPG, PNG, WEBP)
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setMediaType('video')}
-                        className={`py-3 px-4 rounded-2xl border text-xs font-black flex items-center justify-center gap-2 transition ${mediaType === 'video'
-                            ? 'bg-orange-500 border-orange-500 text-white'
-                            : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                          }`}
-                      >
-                        <Video className="w-4 h-4" /> Video (MP4, MOV, WEBM)
-                      </button>
+                    <div className="p-3.5 rounded-2xl bg-orange-500/10 border border-orange-500/30 text-orange-600 dark:text-orange-400 text-xs font-bold flex items-center gap-2.5">
+                      <YoutubeIcon className="w-5 h-5 text-red-500" />
+                      <span>YouTube Video (Stream / Match Highlights / Replay)</span>
                     </div>
                   </div>
 
@@ -461,27 +458,45 @@ export const PRUploadPage = () => {
                     </label>
                     <input
                       type="text"
+                      required
                       value={singleTitle}
                       onChange={(e) => setSingleTitle(e.target.value)}
-                      placeholder="e.g. Winning Trophy Moment"
-                      className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g. Football Championship Final Highlights"
+                      className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                      Google Drive Link / Direct Media URL *
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                        YouTube Video Link *
+                      </label>
+                      {youtubeUrl.trim() && (
+                        isValidYouTubeUrl ? (
+                          <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Valid YouTube Video
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-bold text-rose-500 flex items-center gap-1">
+                            <AlertCircle className="w-3.5 h-3.5" /> Invalid YouTube URL
+                          </span>
+                        )
+                      )}
+                    </div>
                     <div className="relative">
-                      <LinkIcon className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
+                      <YoutubeIcon className="w-5 h-5 absolute left-3.5 top-3.5 text-red-500" />
                       <input
                         type="url"
-                        value={driveUrl}
-                        onChange={(e) => setDriveUrl(e.target.value)}
-                        placeholder="Paste Google Drive share URL (e.g. https://drive.google.com/file/d/...)"
-                        className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                        value={youtubeUrl}
+                        onChange={(e) => setYoutubeUrl(e.target.value)}
+                        placeholder="e.g. https://www.youtube.com/watch?v=VIDEO_ID or https://youtu.be/VIDEO_ID"
+                        className="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                       />
                     </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
+                      Supports standard watch URLs, shortlinks (<code className="font-mono text-[10px]">youtu.be</code>), live streams, and YouTube shorts.
+                    </p>
                   </div>
                 </div>
               )}
@@ -491,16 +506,20 @@ export const PRUploadPage = () => {
                 <div className="space-y-2 p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 animate-fade-in">
                   <div className="flex justify-between text-xs font-extrabold text-blue-600 dark:text-blue-400">
                     <span>
-                      Uploading File {uploadStatus.currentFileIndex} of {uploadStatus.totalCount}: {uploadStatus.currentFileName}
+                      {uploadMode === 'direct'
+                        ? `Uploading Photo ${uploadStatus.currentFileIndex} of ${uploadStatus.totalCount}: ${uploadStatus.currentFileName}`
+                        : 'Publishing YouTube Video to Event Album...'}
                     </span>
-                    <span>{uploadStatus.overallPercent}%</span>
+                    {uploadMode === 'direct' && <span>{uploadStatus.overallPercent}%</span>}
                   </div>
-                  <div className="w-full h-3 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 transition-all duration-300"
-                      style={{ width: `${uploadStatus.overallPercent}%` }}
-                    />
-                  </div>
+                  {uploadMode === 'direct' && (
+                    <div className="w-full h-3 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 transition-all duration-300"
+                        style={{ width: `${uploadStatus.overallPercent}%` }}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -508,21 +527,28 @@ export const PRUploadPage = () => {
               <button
                 type="submit"
                 disabled={uploadStatus.active || events.length === 0}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 hover:from-blue-500 hover:to-orange-400 text-white font-black text-sm shadow-xl shadow-blue-600/25 transition flex items-center justify-center gap-2"
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 hover:from-blue-500 hover:to-orange-400 text-white font-black text-sm shadow-xl shadow-blue-600/25 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {uploadStatus.active ? (
                   <span className="flex items-center gap-2">
                     <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                    Uploading Batch ({uploadStatus.overallPercent}%)...
+                    {uploadMode === 'direct'
+                      ? `Uploading Photos (${uploadStatus.overallPercent}%)...`
+                      : 'Publishing YouTube Video...'}
                   </span>
                 ) : (
                   <>
-                    <UploadCloud className="w-5 h-5" />
-                    <span>
-                      {uploadMode === 'direct'
-                        ? `Upload & Publish ${selectedFiles.length > 0 ? selectedFiles.length : ''} File(s)`
-                        : 'Upload & Publish Google Drive Link'}
-                    </span>
+                    {uploadMode === 'direct' ? (
+                      <>
+                        <UploadCloud className="w-5 h-5" />
+                        <span>Upload & Publish {selectedFiles.length > 0 ? `${selectedFiles.length} Photo(s)` : 'Photos'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <YoutubeIcon className="w-5 h-5" />
+                        <span>Publish YouTube Video</span>
+                      </>
+                    )}
                   </>
                 )}
               </button>
@@ -542,36 +568,37 @@ export const PRUploadPage = () => {
                   <div className="w-full h-full grid grid-cols-2 gap-1.5 p-2 overflow-hidden bg-slate-950">
                     {filePreviews.slice(0, 4).map((p, i) => (
                       <div key={i} className="relative h-full w-full rounded-xl overflow-hidden bg-slate-800">
-                        {p.type === 'video' ? (
-                          <div className="w-full h-full flex items-center justify-center bg-slate-900 text-orange-400">
-                            <Video className="w-6 h-6" />
-                          </div>
-                        ) : (
-                          <img src={p.url} alt="p" className="w-full h-full object-cover" />
-                        )}
+                        <img src={p.url} alt="p" className="w-full h-full object-cover" />
                       </div>
                     ))}
                   </div>
-                ) : uploadMode === 'drive' && driveUrl ? (
-                  mediaType === 'video' ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-white p-4 text-center">
-                      <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center mb-2 shadow-lg">
-                        <Play className="w-6 h-6 fill-white text-white ml-0.5" />
-                      </div>
-                      <span className="text-xs font-bold truncate max-w-full">{singleTitle || 'Video Title'}</span>
-                      <span className="text-[10px] text-slate-400 mt-1">Google Drive Link</span>
+                ) : uploadMode === 'youtube' ? (
+                  youtubeVideoId ? (
+                    <div className="w-full h-full rounded-2xl overflow-hidden bg-black flex items-center justify-center">
+                      <iframe
+                        src={`https://www.youtube.com/embed/${youtubeVideoId}`}
+                        title={singleTitle || 'YouTube Video Preview'}
+                        className="w-full h-full border-0 aspect-video rounded-2xl"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : youtubeUrl.trim() ? (
+                    <div className="text-center p-6 text-amber-500 space-y-2">
+                      <AlertCircle className="w-8 h-8 mx-auto opacity-80" />
+                      <p className="text-xs font-bold">Invalid YouTube URL</p>
+                      <p className="text-[11px] text-slate-400">Please enter a valid YouTube video link to preview.</p>
                     </div>
                   ) : (
-                    <img
-                      src={getMediaPreviewUrl(driveUrl)}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
+                    <div className="text-center p-6 text-slate-400 space-y-2">
+                      <YoutubeIcon className="w-8 h-8 mx-auto opacity-50 text-red-500" />
+                      <p className="text-xs font-semibold">Paste a YouTube link to see video preview</p>
+                    </div>
                   )
                 ) : (
                   <div className="text-center p-6 text-slate-400">
                     <ImageIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-xs font-semibold">Select files to see batch preview summary</p>
+                    <p className="text-xs font-semibold">Select photos to see batch preview summary</p>
                   </div>
                 )}
               </div>
@@ -579,7 +606,7 @@ export const PRUploadPage = () => {
               {uploadMode === 'direct' && selectedFiles.length > 0 && (
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-xs flex items-center justify-between">
                   <span className="font-extrabold text-slate-900 dark:text-white">
-                    {selectedFiles.length} File(s) Ready
+                    {selectedFiles.length} Photo(s) Ready
                   </span>
                   <span className="text-[10px] text-blue-500 font-black uppercase">
                     Cloudinary Batch
@@ -592,10 +619,10 @@ export const PRUploadPage = () => {
             <div className="bg-gradient-to-br from-blue-600/10 via-indigo-600/10 to-transparent p-6 rounded-3xl border border-blue-500/20 text-xs space-y-2.5">
               <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-extrabold">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span>Multi-Image Upload Enabled</span>
+                <span>Multi-Photo & YouTube Publishing</span>
               </div>
               <p className="text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
-                You can select dozens of images and videos at once. All files will be uploaded directly to Cloudinary and published to your chosen event album in one click.
+                You can select multiple photos at once to upload directly to Cloudinary, or paste YouTube video links to publish live broadcasts and highlight clips to your event album.
               </p>
             </div>
 

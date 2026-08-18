@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { GoogleDriveImage } from '../common/GoogleDriveImage';
 import { getVideoThumbnailUrl, getVideoEmbedUrl, triggerMediaDownload } from '../../utils/googleDriveHelper';
+import { extractYouTubeVideoId, getYouTubeEmbedUrl } from '../../utils/youtube';
 import { useToast } from '../../context/ToastContext';
 
 export const AdvancedLightboxViewer = ({ mediaList = [], initialIndex = 0, onClose }) => {
@@ -43,7 +44,12 @@ export const AdvancedLightboxViewer = ({ mediaList = [], initialIndex = 0, onClo
   const { showToast } = useToast();
 
   const currentMedia = mediaList[currentIndex] || null;
-  const isVideo = currentMedia?.media_type === 'video';
+  const ytVideoId = extractYouTubeVideoId(currentMedia?.media_url);
+  const isVideo = currentMedia ? (
+    (currentMedia.media_type || '').toLowerCase() === 'video' ||
+    Boolean(ytVideoId) ||
+    (Boolean(currentMedia.media_url?.includes('drive.google.com')) && (currentMedia.media_type || '').toLowerCase() !== 'image')
+  ) : false;
   const totalCount = mediaList.length;
 
   // Reset zoom and pan whenever current media item changes
@@ -266,20 +272,22 @@ export const AdvancedLightboxViewer = ({ mediaList = [], initialIndex = 0, onClo
             </div>
           )}
 
-          {/* Download Original File Button */}
-          <button
-            onClick={handleDownload}
-            className="px-4 py-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs shadow-lg shadow-blue-600/30 transition flex items-center gap-2 active:scale-95"
-            title="Download Original File"
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Download Original</span>
-          </button>
+          {/* Download Original File Button (Photos Only) */}
+          {!isVideo && (
+            <button
+              onClick={handleDownload}
+              className="px-4 py-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs shadow-lg shadow-blue-600/30 transition flex items-center gap-2 active:scale-95 cursor-pointer"
+              title="Download Original Photo"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Download Original</span>
+            </button>
+          )}
 
           {/* Close Viewer */}
           <button
             onClick={onClose}
-            className="p-2.5 rounded-2xl bg-slate-800/80 hover:bg-rose-600 text-slate-300 hover:text-white transition active:scale-95 border border-slate-700/60"
+            className="p-2.5 rounded-2xl bg-slate-800/80 hover:bg-rose-600 text-slate-300 hover:text-white transition active:scale-95 border border-slate-700/60 cursor-pointer"
             title="Close Viewer (Esc)"
           >
             <X className="w-5 h-5" />
@@ -302,7 +310,7 @@ export const AdvancedLightboxViewer = ({ mediaList = [], initialIndex = 0, onClo
         {totalCount > 1 && (
           <button
             onClick={handlePrev}
-            className="absolute left-4 z-40 p-3.5 rounded-full bg-slate-900/70 backdrop-blur-xl border border-slate-700/80 text-white hover:bg-blue-600 hover:scale-110 transition shadow-2xl hidden sm:flex items-center justify-center active:scale-95"
+            className="absolute left-4 z-40 p-3.5 rounded-full bg-slate-900/70 backdrop-blur-xl border border-slate-700/80 text-white hover:bg-blue-600 hover:scale-110 transition shadow-2xl hidden sm:flex items-center justify-center active:scale-95 cursor-pointer"
             title="Previous (Left Arrow)"
           >
             <ChevronLeft className="w-6 h-6" />
@@ -313,11 +321,19 @@ export const AdvancedLightboxViewer = ({ mediaList = [], initialIndex = 0, onClo
         <div className="relative max-w-full max-h-full flex items-center justify-center">
           {isVideo ? (
             <div className="relative w-full max-w-5xl h-[75vh] rounded-3xl overflow-hidden shadow-2xl border border-slate-800 bg-black flex items-center justify-center">
-              {currentMedia.media_url?.includes('drive.google.com') ? (
+              {ytVideoId ? (
+                <iframe
+                  src={`https://www.youtube.com/embed/${ytVideoId}?autoplay=1&rel=0&modestbranding=1`}
+                  title={currentMedia.title || 'YouTube Video'}
+                  className="w-full h-full border-0 aspect-video rounded-3xl"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                  allowFullScreen
+                />
+              ) : currentMedia.media_url?.includes('drive.google.com') ? (
                 <iframe
                   src={getVideoEmbedUrl(currentMedia.media_url)}
-                  title={currentMedia.title}
-                  className="w-full h-full border-0"
+                  title={currentMedia.title || 'Video'}
+                  className="w-full h-full border-0 rounded-3xl"
                   allow="autoplay; encrypted-media; fullscreen"
                   allowFullScreen
                 />
@@ -355,7 +371,7 @@ export const AdvancedLightboxViewer = ({ mediaList = [], initialIndex = 0, onClo
         {totalCount > 1 && (
           <button
             onClick={handleNext}
-            className="absolute right-4 z-40 p-3.5 rounded-full bg-slate-900/70 backdrop-blur-xl border border-slate-700/80 text-white hover:bg-blue-600 hover:scale-110 transition shadow-2xl hidden sm:flex items-center justify-center active:scale-95"
+            className="absolute right-4 z-40 p-3.5 rounded-full bg-slate-900/70 backdrop-blur-xl border border-slate-700/80 text-white hover:bg-blue-600 hover:scale-110 transition shadow-2xl hidden sm:flex items-center justify-center active:scale-95 cursor-pointer"
             title="Next (Right Arrow)"
           >
             <ChevronRight className="w-6 h-6" />
@@ -377,35 +393,38 @@ export const AdvancedLightboxViewer = ({ mediaList = [], initialIndex = 0, onClo
         {/* Horizontal Mini Thumbnail Carousel */}
         {totalCount > 1 && (
           <div className="flex items-center gap-2 max-w-full overflow-x-auto p-1.5 no-scrollbar">
-            {mediaList.map((item, idx) => (
-              <button
-                key={item.id || idx}
-                onClick={() => setCurrentIndex(idx)}
-                className={`relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border-2 transition-all duration-300 ${
-                  idx === currentIndex
-                    ? 'border-blue-500 scale-110 shadow-lg shadow-blue-500/40 ring-2 ring-blue-400/50'
-                    : 'border-slate-800 opacity-50 hover:opacity-100 hover:scale-105'
-                }`}
-              >
-                {item.media_type === 'video' ? (
-                  <div className="w-full h-full bg-slate-950 flex items-center justify-center text-orange-400 relative">
+            {mediaList.map((item, idx) => {
+              const itemIsVideo = (item.media_type || '').toLowerCase() === 'video' || Boolean(extractYouTubeVideoId(item.media_url));
+              return (
+                <button
+                  key={item.id || idx}
+                  onClick={() => setCurrentIndex(idx)}
+                  className={`relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border-2 transition-all duration-300 ${
+                    idx === currentIndex
+                      ? 'border-blue-500 scale-110 shadow-lg shadow-blue-500/40 ring-2 ring-blue-400/50'
+                      : 'border-slate-800 opacity-50 hover:opacity-100 hover:scale-105'
+                  }`}
+                >
+                  {itemIsVideo ? (
+                    <div className="w-full h-full bg-slate-950 flex items-center justify-center text-orange-400 relative">
+                      <GoogleDriveImage
+                        src={getVideoThumbnailUrl(item.media_url, item.cover_image)}
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-slate-950/40" />
+                      <Play className="w-4 h-4 text-orange-400 absolute z-10 fill-orange-400" />
+                    </div>
+                  ) : (
                     <GoogleDriveImage
-                      src={getVideoThumbnailUrl(item.media_url, item.cover_image)}
+                      src={item.media_url}
                       alt={item.title}
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-slate-950/40" />
-                    <Play className="w-4 h-4 text-orange-400 absolute z-10 fill-orange-400" />
-                  </div>
-                ) : (
-                  <GoogleDriveImage
-                    src={item.media_url}
-                    alt={item.title}
-                    className="w-full h-full object-cover"
-                  />
-                )}
-              </button>
-            ))}
+                  )}
+                </button>
+              );
+            })}
           </div>
         )}
 

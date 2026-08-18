@@ -162,8 +162,8 @@ export const LeaderboardPage = () => {
                 <h3 className="font-black text-2xl text-orange-600 dark:text-orange-400">{top2[0].college}</h3>
                 <p className="text-xs text-slate-500 mt-1 mb-4">{top2[0].code}</p>
                 <div className="w-full p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-orange-500/30 flex justify-around text-xs font-bold">
-                  <span>🥇 {top2[0].gold} Wins</span>
-                  <span>🥈 {top2[0].silver} Runner-Ups</span>
+                  <span>🥇 {top2[0].gold} Gold</span>
+                  <span>🥈 {top2[0].silver} Silver</span>
                 </div>
                 <div className="mt-4 text-4xl font-black text-orange-500">{top2[0].totalPoints} Pts</div>
               </div>
@@ -177,8 +177,8 @@ export const LeaderboardPage = () => {
                 <h3 className="font-black text-xl text-slate-900 dark:text-white">{top2[1].college}</h3>
                 <p className="text-xs text-slate-500 mt-1 mb-4">{top2[1].code}</p>
                 <div className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 flex justify-around text-xs font-bold">
-                  <span>🥇 {top2[1].gold} Wins</span>
-                  <span>🥈 {top2[1].silver} Runner-Ups</span>
+                  <span>🥇 {top2[1].gold} Gold</span>
+                  <span>🥈 {top2[1].silver} Silver</span>
                 </div>
                 <div className="mt-4 text-2xl font-black text-slate-900 dark:text-white">{top2[1].totalPoints} Pts</div>
               </div>

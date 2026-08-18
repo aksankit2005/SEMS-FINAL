@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { adminApi } from '../../services/adminApi';
 import { useToast } from '../../context/ToastContext';
 import { exportToCSV, exportToPDF } from '../../utils/pdfExporter';
+import { getParticipationType } from '../../utils/rosterHelper';
 import { RegistrationDetailsModal } from '../../components/admin/RegistrationDetailsModal';
 import { ConfirmationModal } from '../../components/admin/ConfirmationModal';
 import { ALL_12_SPORTS, ALL_COLLEGES } from '../../services/superCoordinatorApi';
@@ -62,11 +63,13 @@ export const AdminRegistrationsPage = () => {
     window.addEventListener('sems_events_updated', handleUpdate);
     window.addEventListener('sems_coord_events_updated', handleUpdate);
     window.addEventListener('sems_registrations_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
 
     return () => {
       window.removeEventListener('sems_events_updated', handleUpdate);
       window.removeEventListener('sems_coord_events_updated', handleUpdate);
       window.removeEventListener('sems_registrations_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
     };
   }, []);
 
@@ -179,9 +182,13 @@ export const AdminRegistrationsPage = () => {
       addToast('No data available to export', 'error');
       return;
     }
-    const exportData = filteredRegistrations.map(r => ({
-      'Reg Time': `${r.registrationDate} ${r.registrationTime || '10:00 AM'}`,
-      'Game & Event Title': `${r.gameSport} - ${r.eventTitle || 'Tournament'}`,
+    const exportData = filteredRegistrations.map((r, idx) => ({
+      'S.No.': idx + 1,
+      'Registration Date': r.registrationDate,
+      'Registration Time': r.registrationTime || '10:00 AM',
+      'Participation Type': r.participationType || getParticipationType(r),
+      'Game Sport': r.gameSport,
+      'Event Title': r.eventTitle || 'Tournament',
       'Team Name': r.teamName || r.participantName,
       'College Name': r.college,
       'Student Name': r.participantName,
@@ -198,15 +205,16 @@ export const AdminRegistrationsPage = () => {
       addToast('No data available to export', 'error');
       return;
     }
-    const headers = [['Reg Time', 'Game & Event Title', 'Team Name', 'College Name', 'Student Name', 'Mobile No', 'Gender', 'Status']];
-    const rows = filteredRegistrations.map(r => [
+    const headers = [['#', 'Reg Date', 'Type', 'Game / Sport', 'Team Name', 'College Name', 'Student Name', 'Mobile No', 'Status']];
+    const rows = filteredRegistrations.map((r, idx) => [
+      idx + 1,
       `${r.registrationDate} ${r.registrationTime || '10:00 AM'}`,
+      r.participationType || getParticipationType(r),
       `${r.gameSport} - ${r.eventTitle || 'Tournament'}`,
       r.teamName || r.participantName,
       r.college,
       r.participantName,
       r.mobile,
-      r.gender,
       r.registrationStatus
     ]);
     exportToPDF('Student Registration Detail Report', headers, rows, `Student_Registrations_${Date.now()}`);
@@ -219,7 +227,7 @@ export const AdminRegistrationsPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl transition-colors">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
               Super Coordinator Replicated View
             </span>
           </div>
@@ -260,7 +268,7 @@ export const AdminRegistrationsPage = () => {
           onClick={() => { setActiveTab('student_registrations'); setCurrentPage(1); }}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'student_registrations'
-              ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
+              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
@@ -271,7 +279,7 @@ export const AdminRegistrationsPage = () => {
           onClick={() => setActiveTab('coordinator_events')}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'coordinator_events'
-              ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
+              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >

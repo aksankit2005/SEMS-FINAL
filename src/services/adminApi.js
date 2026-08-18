@@ -570,9 +570,10 @@ export const adminApi = {
   },
 
   // ── Audit Logs ────────────────────────────────────────────────────────────
-  getAuditLogs: async () => {
+  getAuditLogs: async (params = {}) => {
     try {
-      const res = await fetch(apiUrl('/admin/audit-logs'), {
+      const queryStr = params?.role && params.role !== 'ALL' ? `?role=${encodeURIComponent(params.role)}` : '';
+      const res = await fetch(apiUrl(`/admin/audit-logs${queryStr}`), {
         headers: getAdminHeaders()
       });
       if (res.ok) {

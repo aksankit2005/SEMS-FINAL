@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { galleryApi } from '../../services/galleryApi';
 import { getMediaPreviewUrl, triggerMediaDownload } from '../../utils/googleDriveHelper';
+import { extractYouTubeVideoId } from '../../utils/youtube';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
 
@@ -264,9 +265,15 @@ export const PRDashboardPage = () => {
                     <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
                       <td className="p-4">
                         <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0">
-                          {item.media_type === 'video' ? (
-                            <div className="w-full h-full flex items-center justify-center bg-slate-900 text-orange-400">
-                              <Video className="w-5 h-5" />
+                          {(item.media_type || '').toLowerCase() === 'video' || extractYouTubeVideoId(item.media_url) ? (
+                            <div className="w-full h-full flex items-center justify-center bg-slate-900 text-orange-400 relative">
+                              <img
+                                src={getMediaPreviewUrl(item.media_url)}
+                                alt={item.title}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-slate-950/30" />
+                              <Video className="w-4 h-4 text-white absolute z-10" />
                             </div>
                           ) : (
                             <img
@@ -285,7 +292,7 @@ export const PRDashboardPage = () => {
                       </td>
                       <td className="p-4 text-center">
                         <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                          item.media_type === 'video' 
+                          (item.media_type || '').toLowerCase() === 'video' || extractYouTubeVideoId(item.media_url)
                             ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20' 
                             : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
                         }`}>
@@ -297,13 +304,15 @@ export const PRDashboardPage = () => {
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => triggerMediaDownload(item.media_url, `${item.title}.${item.media_type === 'video' ? 'mp4' : 'jpg'}`)}
-                            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400 transition"
-                            title="Download Media"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
+                          {!( (item.media_type || '').toLowerCase() === 'video' || extractYouTubeVideoId(item.media_url) ) && (
+                            <button
+                              onClick={() => triggerMediaDownload(item.media_url, `${item.title}.jpg`)}
+                              className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400 transition cursor-pointer"
+                              title="Download Photo"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => handleDeleteMedia(item.id)}
                             className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-500/10 hover:text-rose-500 transition"

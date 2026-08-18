@@ -4,6 +4,7 @@ import { superCoordinatorApi, ALL_12_SPORTS, ALL_COLLEGES } from '../../services
 import { SPORTS_DATA } from '../../data/sportsData';
 import { useToast } from '../../context/ToastContext';
 import { exportToCSV, exportToPDF } from '../../utils/pdfExporter';
+import { getParticipationType } from '../../utils/rosterHelper';
 import { RegistrationDetailsModal } from '../../components/admin/RegistrationDetailsModal';
 import {
   Database,
@@ -42,6 +43,15 @@ export const AdminMasterDataPage = () => {
 
   useEffect(() => {
     fetchMasterData();
+    const handleUpdate = () => fetchMasterData();
+    window.addEventListener('sems_registrations_updated', handleUpdate);
+    window.addEventListener('sems_events_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('sems_registrations_updated', handleUpdate);
+      window.removeEventListener('sems_events_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
   }, []);
 
   const fetchMasterData = async () => {
@@ -49,7 +59,7 @@ export const AdminMasterDataPage = () => {
     try {
       const [data, eventsList] = await Promise.all([
         superCoordinatorApi.getMasterParticipants(),
-        adminApi.getCoordinatorEvents()
+        superCoordinatorApi.getCoordinatorEvents()
       ]);
       setParticipants(data || []);
       setCoordinatorEvents(eventsList || []);
@@ -64,42 +74,44 @@ export const AdminMasterDataPage = () => {
   const availableEvents = coordinatorEvents.filter((evt) => {
     if (selectedSport === 'ALL') return true;
     return (evt.sportId || '').toLowerCase() === selectedSport.toLowerCase() ||
-           (evt.sportName || '').toLowerCase().includes(selectedSport.toLowerCase());
+           (evt.sportName || '').toLowerCase().includes(selectedSport.toLowerCase()) ||
+           selectedSport.toLowerCase().includes((evt.sportName || '').toLowerCase());
   });
 
-  // Filtered Master Participants
+  // Filtered Master Participants - matching Super Coordinator view logic
   const filteredParticipants = participants.filter((p) => {
-    if (selectedSport !== 'ALL') {
-      const pSport = (p.sportName || p.sportId || '').toLowerCase();
-      if (!pSport.includes(selectedSport.toLowerCase())) return false;
-    }
+    const matchesSport = selectedSport === 'ALL' ||
+      (p.sportId || '').toLowerCase() === selectedSport.toLowerCase() ||
+      (p.sportName || '').toLowerCase().includes(selectedSport.toLowerCase()) ||
+      selectedSport.toLowerCase().includes((p.sportName || '').toLowerCase());
 
-    if (selectedEvent !== 'ALL') {
-      const pEvent = (p.eventTitle || '').toLowerCase();
-      if (!pEvent.includes(selectedEvent.toLowerCase())) return false;
-    }
+    const matchesEvent = selectedEvent === 'ALL' ||
+      (p.eventTitle || '').toLowerCase().includes(selectedEvent.toLowerCase());
 
-    if (selectedGender !== 'ALL') {
-      const pGender = (p.gender || '').toLowerCase();
-      if (!pGender.includes(selectedGender.toLowerCase())) return false;
-    }
+    const matchesGender = selectedGender === 'ALL' ||
+      (p.gender || '').toLowerCase() === selectedGender.toLowerCase() ||
+      (p.gender || '').toLowerCase().includes(selectedGender.toLowerCase());
 
-    if (selectedCollege !== 'ALL') {
-      const pCollege = (p.college || '').toLowerCase();
-      if (!pCollege.includes(selectedCollege.toLowerCase())) return false;
-    }
+    const pCollege = (p.college || '').toLowerCase();
+    const matchesCollege = selectedCollege === 'ALL' ||
+      pCollege.includes(selectedCollege.toLowerCase()) ||
+      selectedCollege.toLowerCase().includes(pCollege) ||
+      (selectedCollege === 'EXTERNAL' && !['mpec', 'mips', 'mpcps', 'mpcp', 'mpdc', 'mpcn', 'mpamc', 'mpcams'].some(c => pCollege.includes(c)));
 
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const matchName = (p.name || p.teamName || '').toLowerCase().includes(q);
-      const matchCollege = (p.college || '').toLowerCase().includes(q);
-      const matchSport = (p.sportName || '').toLowerCase().includes(q);
-      const matchMobile = (p.mobile || '').toLowerCase().includes(q);
-      const matchEmail = (p.email || '').toLowerCase().includes(q);
-      return matchName || matchCollege || matchSport || matchMobile || matchEmail;
-    }
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch = !q ||
+      (p.name || '').toLowerCase().includes(q) ||
+      (p.teamName || '').toLowerCase().includes(q) ||
+      (p.mobile || '').toLowerCase().includes(q) ||
+      (p.email || '').toLowerCase().includes(q) ||
+      (p.college || '').toLowerCase().includes(q) ||
+      (p.sportName || '').toLowerCase().includes(q) ||
+      (p.receiptId || '').toLowerCase().includes(q) ||
+      (p.registrationId || '').toLowerCase().includes(q) ||
+      (p.id || '').toLowerCase().includes(q) ||
+      (p.rollNo || '').toLowerCase().includes(q);
 
-    return true;
+    return matchesSport && matchesEvent && matchesGender && matchesCollege && matchesSearch;
   });
 
   // Fee per participant derived from sport entry fee (or stored feePaid when present)
@@ -141,6 +153,7 @@ export const AdminMasterDataPage = () => {
       'S.No.': idx + 1,
       'Registration ID': p.receiptId || p.registrationId || p.id || 'N/A',
       'Registration Date': `${p.date || ''} ${p.time || ''}`.trim() || 'N/A',
+      'Participation Type': p.participationType || getParticipationType(p),
       'Sport': p.sportName || 'N/A',
       'Event': p.eventTitle || `${p.sportName || 'Sport'} Championship`,
       'Team Name': p.teamName || p.name || 'N/A',
@@ -164,10 +177,11 @@ export const AdminMasterDataPage = () => {
       addToast('No data available to export', 'error');
       return;
     }
-    const headers = ['#', 'Reg ID', 'Sport', 'Team Name', 'College', 'Player Name', 'Role', 'Roll No', 'Mobile', 'Course', 'Status'];
+    const headers = ['#', 'Reg ID', 'Type', 'Sport', 'Team Name', 'College', 'Player Name', 'Role', 'Roll No', 'Mobile', 'Course', 'Status'];
     const rows = filteredParticipants.map((p, idx) => [
       idx + 1,
       p.receiptId || p.registrationId || p.id || 'N/A',
+      p.participationType || getParticipationType(p),
       p.sportName || 'N/A',
       p.teamName || p.name || 'N/A',
       p.college || 'N/A',
