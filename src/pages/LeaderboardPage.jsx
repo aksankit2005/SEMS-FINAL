@@ -210,7 +210,7 @@ export const LeaderboardPage = () => {
               <thead className="bg-slate-100 dark:bg-slate-950 uppercase text-[11px] font-black text-slate-500 tracking-wider border-b border-slate-200 dark:border-slate-800">
                 <tr>
                   <th className="p-4 text-center">Rank</th>
-                  <th className="p-4">College / University</th>
+                  <th className="p-4">Institute</th>
                   <th className="p-4 text-center">Gold 🥇 (+5 pts)</th>
                   <th className="p-4 text-center">Silver 🥈 (+3 pts)</th>
                   <th className="p-4 text-center font-black text-blue-600 dark:text-blue-400">Total Points</th>
