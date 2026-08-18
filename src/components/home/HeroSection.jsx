@@ -88,7 +88,7 @@ export const HeroSection = () => {
             <img
               src={currentSlide.image}
               alt={currentSlide.title}
-              className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+              className="w-full h-full object-cover object-center brightness-[1.05] contrast-[1.06] saturate-[1.08] group-hover:scale-105 transition-transform duration-700"
               onError={(e) => {
                 e.target.onerror = null;
                 e.target.src = 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=2000&q=80';
@@ -96,8 +96,8 @@ export const HeroSection = () => {
             />
 
             {/* Gradient Overlays for High Legibility in Both Light & Dark Mode */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/60 to-slate-950/15" />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/30 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/40 to-slate-950/10" />
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/50 via-slate-950/20 to-transparent" />
             
             {/* Main Slide Content Area */}
             <div className="absolute bottom-16 xs:bottom-18 sm:bottom-22 md:bottom-24 left-3.5 right-3.5 xs:left-5 xs:right-5 sm:left-10 sm:right-10 z-20 space-y-1.5 xs:space-y-2 sm:space-y-4 text-left">
