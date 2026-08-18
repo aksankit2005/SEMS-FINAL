@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { HeaderNavbar } from './HeaderNavbar';
-import { CollapsibleSidebar } from './CollapsibleSidebar';
 import { MobileDrawer } from './MobileDrawer';
 import { Footer } from './Footer';
 import { MaintenancePage } from '../common/MaintenancePage';
 import { adminApi } from '../../services/adminApi';
 
 export const DashboardLayout = () => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [settings, setSettings] = useState({ maintenanceMode: false });
   const [isLayoutHidden, setIsLayoutHidden] = useState(false);
@@ -54,25 +52,14 @@ export const DashboardLayout = () => {
         <HeaderNavbar onOpenMobileDrawer={() => setIsMobileDrawerOpen(true)} />
       )}
 
-      {/* Body Area: Sidebar + Content */}
-      <div className="flex-1 flex w-full">
-        {/* Collapsible Left Sidebar */}
-        {!isLayoutHidden && (
-          <CollapsibleSidebar
-            isCollapsed={isSidebarCollapsed}
-            onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          />
-        )}
+      {/* Main Full-Width Content Area */}
+      <div className="flex-1 flex flex-col w-full min-w-0">
+        <main className="flex-1 w-full">
+          <Outlet />
+        </main>
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0">
-          <main className="flex-1">
-            <Outlet />
-          </main>
-
-          {/* Footer at bottom of content area */}
-          {!isLayoutHidden && <Footer />}
-        </div>
+        {/* Footer at bottom */}
+        {!isLayoutHidden && <Footer />}
       </div>
 
       {/* Mobile Navigation Drawer */}

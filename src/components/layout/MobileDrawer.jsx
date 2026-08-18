@@ -102,13 +102,12 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
     { name: 'Schedule', path: '/schedule', icon: Calendar },
     { name: 'Results', path: '/results', icon: BarChart3 },
     { name: 'Leaderboard', path: '/leaderboard', icon: Award },
-    { name: 'Announcements', path: '/announcements', icon: Newspaper },
     { name: 'Gallery', path: '/gallery', icon: Image },
     { name: 'About Us', path: '/about', icon: Info },
   ];
 
   return (
-    <div className="fixed inset-0 z-50 lg:hidden flex font-sans">
+    <div className="fixed inset-0 z-50 xl:hidden flex font-sans">
       {/* Backdrop Overlay */}
       <div 
         onClick={onClose} 
@@ -123,14 +122,14 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
         <div className="flex items-center justify-between pb-4 border-b border-slate-200/80 dark:border-slate-800/80">
           <Link to="/" onClick={onClose} className="flex items-center">
             <img 
-              src="/logo-dark.png" 
+              src="/apex-nav-logo-dark.png" 
               alt="APEX Logo" 
-              className="hidden dark:block h-8 w-auto object-contain"
+              className="hidden dark:block h-8 sm:h-9 w-auto object-contain"
             />
             <img 
-              src="/logo-light.png" 
+              src="/apex-nav-logo.png" 
               alt="APEX Logo" 
-              className="block dark:hidden h-8 w-auto object-contain"
+              className="block dark:hidden h-8 sm:h-9 w-auto object-contain"
             />
           </Link>
 
