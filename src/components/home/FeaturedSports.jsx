@@ -146,7 +146,7 @@ export const FeaturedSports = () => {
             </h2>
           </div>
           <Link
-            to="/sports"
+            to="/registration"
             className="inline-flex items-center gap-2 font-bold text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition group"
           >
             <span>Explore All 11 Sports</span>
@@ -161,7 +161,7 @@ export const FeaturedSports = () => {
             <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">No registrations are currently open. Please check back soon.</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">Stay tuned for upcoming championship events and tournament announcements.</p>
             <Link
-              to="/sports"
+              to="/registration"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition"
             >
               <span>View All Sports</span>

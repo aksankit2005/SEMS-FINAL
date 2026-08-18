@@ -11,7 +11,7 @@ import { AuthModal } from './components/common/AuthModal';
 import { ScrollToTop } from './components/common/ScrollToTop';
 
 import { HomePage } from './pages/HomePage';
-import { SportsPage } from './pages/SportsPage';
+
 import { RegistrationPage } from './pages/RegistrationPage';
 import { LiveMatchPortalPage } from './pages/live/LiveMatchPortalPage';
 import { SchedulePage } from './pages/SchedulePage';
@@ -148,7 +148,7 @@ function App() {
 
                 <Route element={<DashboardLayout />}>
                   <Route path="/" element={<HomePage />} />
-                  <Route path="/sports" element={<SportsPage />} />
+
                   <Route path="/registration" element={<RegistrationPage />} />
                   <Route path="/registration/:eventId" element={<RegistrationPage />} />
                   <Route path="/register/:eventId" element={<RegistrationPage />} />

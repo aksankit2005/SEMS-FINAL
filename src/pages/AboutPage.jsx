@@ -367,10 +367,10 @@ export const AboutPage = () => {
               Register Team
             </Link>
             <Link
-              to="/sports"
+              to="/schedule"
               className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-950/40 hover:bg-slate-950/60 text-white font-bold text-sm text-center transition border border-white/20"
             >
-              Explore Sports
+              Explore Schedule
             </Link>
           </div>
         </div>

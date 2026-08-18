@@ -97,7 +97,6 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
 
   const navItems = [
     { name: 'Home', path: '/', icon: Flame },
-    { name: 'Sports Hub', path: '/sports', icon: Trophy },
     { name: 'Registration', path: '/registration', icon: UserCheck },
     { name: 'Live Matches', path: '/live', icon: Radio, badge: 'LIVE' },
     { name: 'Schedule', path: '/schedule', icon: Calendar },

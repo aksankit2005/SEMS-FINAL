@@ -64,9 +64,6 @@ export const Footer = () => {
               Quick Links
             </h4>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-600 dark:text-slate-400">
-              <Link to="/sports" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-0.5">
-                Sports Hub
-              </Link>
               <Link to="/live" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-0.5 flex items-center gap-1.5">
                 Live Scores <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
               </Link>

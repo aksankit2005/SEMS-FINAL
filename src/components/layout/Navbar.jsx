@@ -104,7 +104,6 @@ export const Navbar = () => {
 
   const navLinks = [
     { name: 'Home', path: '/' },
-    { name: 'Sports', path: '/sports' },
     { name: 'Live Matches', path: '/live', badge: 'LIVE' },
     { name: 'Registration', path: '/registration' },
     { name: 'Schedule', path: '/schedule' },

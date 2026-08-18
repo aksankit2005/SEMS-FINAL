@@ -41,15 +41,15 @@ export const DEFAULT_HERO_SLIDES = [
     primaryBtnText: 'CHECK SCHEDULE',
     primaryBtnLink: '/schedule',
     secondaryBtnText: 'View Rules & Specs',
-    secondaryBtnLink: '/sports'
+    secondaryBtnLink: '/registration'
   },
   {
     id: 5,
     title: 'TRACK & FIELD ATHLETICS CHAMPIONSHIP',
     description: 'Sprint, relay, long jump, and field events across 11 disciplines. Check official heat timing slots now.',
     image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=2000&q=80',
-    primaryBtnText: 'EXPLORE SPORTS',
-    primaryBtnLink: '/sports',
+    primaryBtnText: 'REGISTER NOW',
+    primaryBtnLink: '/registration',
     secondaryBtnText: 'Medal Tally',
     secondaryBtnLink: '/leaderboard'
   }

@@ -69,10 +69,10 @@ export const QuickSearchModal = ({ isOpen, onClose }) => {
             </h4>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
-                onClick={() => handleSelect('/sports')}
+                onClick={() => handleSelect('/registration')}
                 className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/60 hover:bg-cyan-500/10 hover:text-cyan-500 text-xs font-medium transition"
               >
-                <Trophy className="w-4 h-4 text-cyan-500" /> Sports Hub
+                <Trophy className="w-4 h-4 text-cyan-500" /> Registration
               </button>
               <button
                 onClick={() => handleSelect('/live')}
@@ -105,7 +105,7 @@ export const QuickSearchModal = ({ isOpen, onClose }) => {
                 {filteredSports.slice(0, 4).map((sport) => (
                   <div
                     key={sport.id}
-                    onClick={() => handleSelect('/sports')}
+                    onClick={() => handleSelect('/registration')}
                     className="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition"
                   >
                     <div className="flex items-center gap-3">
