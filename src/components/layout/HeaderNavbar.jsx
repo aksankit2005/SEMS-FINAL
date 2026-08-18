@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
-  Trophy, Bell, Clock, User, ShieldCheck, 
+  Trophy, Bell, User, ShieldCheck, 
   Menu, X, Sparkles, CheckCircle2, ChevronRight, LogOut, Camera,
-  ChevronDown, Building2, Shield, LayoutDashboard, Crown
+  ChevronDown, Building2, Shield, LayoutDashboard, Crown,
+  Flame, UserCheck, Radio, Calendar, BarChart3, Award, Newspaper, Image, Info
 } from 'lucide-react';
 import { ThemeToggle } from '../common/ThemeToggle';
 import { useAuth } from '../../context/AuthContext';
@@ -17,7 +18,6 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
   const location = useLocation();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isSignInOpen, setIsSignInOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [, setAuthTick] = useState(0);
 
   const notificationRef = useRef(null);
@@ -59,24 +59,6 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
       window.removeEventListener('storage', handleAuthChange);
     };
   }, []);
-
-  // Clock tick interval
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const formattedDate = currentTime.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  });
-
-  const formattedTime = currentTime.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
-  });
 
   // Check active session across all user roles
   const getActiveSession = () => {
@@ -160,17 +142,28 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
 
   const activeSession = getActiveSession();
 
+  const navItems = [
+    { name: 'Home', path: '/', icon: Flame },
+    { name: 'Registration', path: '/registration', icon: UserCheck },
+    { name: 'Live Matches', path: '/live', icon: Radio, badge: 'LIVE' },
+    { name: 'Schedule', path: '/schedule', icon: Calendar },
+    { name: 'Results', path: '/results', icon: BarChart3 },
+    { name: 'Leaderboard', path: '/leaderboard', icon: Award },
+    { name: 'Gallery', path: '/gallery', icon: Image },
+    { name: 'About Us', path: '/about', icon: Info },
+  ];
+
   return (
-    <header className="sticky top-0 z-40 w-full bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 transition-colors duration-200 font-sans">
-      <div className="w-full px-3 sm:px-5 lg:px-6">
-        <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-4">
+    <header className="sticky top-0 z-40 w-full bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 transition-colors duration-200 font-sans shadow-xs">
+      <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6">
+        <div className="flex items-center justify-between h-14 sm:h-16 gap-2 lg:gap-4">
 
           {/* Left Brand & Mobile Toggle Area */}
-          <div className="flex items-center gap-2.5">
-            {/* Mobile Drawer Trigger (Hidden on Desktop) */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            {/* Mobile / Tablet Drawer Trigger (Hidden on Desktop XL+) */}
             <button
               onClick={onOpenMobileDrawer}
-              className="lg:hidden p-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition cursor-pointer active:scale-95"
+              className="xl:hidden p-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition cursor-pointer active:scale-95"
               aria-label="Open mobile navigation menu"
               title="Open Navigation Menu"
             >
@@ -178,30 +171,50 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
             </button>
 
             {/* APEX Logo */}
-            <Link to="/" className="flex items-center group shrink-0">
+            <Link to="/" className="flex items-center group shrink-0 pr-1">
               <img 
-                src="/logo-dark.png" 
+                src="/apex-nav-logo-dark.png" 
                 alt="APEX Logo" 
-                className="hidden dark:block h-7 sm:h-8 w-auto object-contain transition-transform group-hover:scale-105"
+                className="hidden dark:block h-8 sm:h-9 lg:h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
               />
               <img 
-                src="/logo-light.png" 
+                src="/apex-nav-logo.png" 
                 alt="APEX Logo" 
-                className="block dark:hidden h-7 sm:h-8 w-auto object-contain transition-transform group-hover:scale-105"
+                className="block dark:hidden h-8 sm:h-9 lg:h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
               />
             </Link>
           </div>
 
-          {/* Right Quick Actions Area */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5">
+          {/* Center: Desktop Navigation Links (Moved from Sidebar) */}
+          <nav className="hidden xl:flex items-center gap-1 2xl:gap-1.5 overflow-x-auto no-scrollbar py-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `relative px-2.5 2xl:px-3 py-1.5 rounded-xl text-xs 2xl:text-[13px] font-bold tracking-tight transition-all duration-150 flex items-center gap-1.5 shrink-0 ${
+                      isActive
+                        ? 'bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-extrabold shadow-xs border border-blue-500/20'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900/80'
+                    }`
+                  }
+                >
+                  <Icon className="w-3.5 h-3.5 2xl:w-4 2xl:h-4 shrink-0 opacity-80 group-hover:opacity-100" />
+                  <span>{item.name}</span>
+                  {item.badge && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-rose-500 text-white animate-pulse">
+                      {item.badge}
+                    </span>
+                  )}
+                </NavLink>
+              );
+            })}
+          </nav>
 
-            {/* Compact Date & Time Widget (Desktop XL+) */}
-            <div className="hidden xl:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 text-[11px] font-medium text-slate-600 dark:text-slate-400">
-              <Clock className="w-3.5 h-3.5 text-blue-500" />
-              <span>{formattedDate}</span>
-              <span className="text-slate-300 dark:text-slate-700">•</span>
-              <span className="font-bold text-slate-900 dark:text-white font-mono">{formattedTime}</span>
-            </div>
+          {/* Right Quick Actions Area */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
 
             {/* Notification Bell Dropdown */}
             <div className="relative" ref={notificationRef}>
