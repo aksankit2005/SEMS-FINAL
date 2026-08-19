@@ -133,10 +133,10 @@ export const CoordinatorFormModal = ({ isOpen, coordinator = null, onSave, onClo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-2xl lg:max-w-3xl w-full p-6 sm:p-7 shadow-2xl relative space-y-5 max-h-[92vh] overflow-y-auto custom-scrollbar text-slate-900 dark:text-white">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+    <div className="fixed inset-0 top-0 left-0 w-full h-full min-h-screen z-[9999] flex items-center justify-center p-3 sm:p-6 bg-slate-950/95 dark:bg-black/95 backdrop-blur-md overflow-y-auto animate-fade-in font-sans">
+      <div className="w-[95%] sm:w-[85%] lg:w-[75%] max-w-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[88vh] flex flex-col text-slate-900 dark:text-white">
+        {/* Fixed Header */}
+        <div className="flex items-center justify-between p-5 sm:p-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
               <Shield className="w-5 h-5" />
@@ -156,16 +156,16 @@ export const CoordinatorFormModal = ({ isOpen, coordinator = null, onSave, onClo
           </button>
         </div>
 
-        {/* Global Error Banner */}
-        {errors.api && (
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400">
-            {errors.api}
-          </div>
-        )}
+        {/* Scrollable Form Body */}
+        <form id="coordinator-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 sm:p-8 space-y-5 custom-scrollbar">
+          {/* Global Error Banner */}
+          {errors.api && (
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400">
+              {errors.api}
+            </div>
+          )}
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
             {/* Select Role */}
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Select Role *</label>
@@ -280,7 +280,7 @@ export const CoordinatorFormModal = ({ isOpen, coordinator = null, onSave, onClo
               {errors.password && <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{errors.password}</p>}
             </div>
 
-            {/* DYNAMIC FIELD: Sport (when Coordinator) or College (when Head Coordinator) */}
+            {/* DYNAMIC FIELD: Sport or College */}
             {formData.role === 'Coordinator' && (
               <div>
                 <label className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1 mb-1">
@@ -327,26 +327,27 @@ export const CoordinatorFormModal = ({ isOpen, coordinator = null, onSave, onClo
               </div>
             )}
           </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-6 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2 cursor-pointer"
-            >
-              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-              <span>{coordinator ? 'Update Account' : 'Save Account'}</span>
-            </button>
-          </div>
         </form>
+
+        {/* Fixed Footer with Action Buttons */}
+        <div className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-950/60 border-t border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-200/70 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 border border-slate-300/60 dark:border-slate-700 transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="coordinator-form"
+            disabled={isSubmitting}
+            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2 cursor-pointer"
+          >
+            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+            <span>{coordinator ? 'Update Account' : 'Save Account'}</span>
+          </button>
+        </div>
       </div>
     </div>
   );
