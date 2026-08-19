@@ -181,8 +181,8 @@ export const AthleticsRegistration = ({
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-          <div className="sm:col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+          <div>
             <SelectField
               label="Select College / University"
               name="collegeName"
@@ -215,7 +215,7 @@ export const AthleticsRegistration = ({
             error={errors.captainPhone}
           />
 
-          <div className="sm:col-span-2">
+          <div>
             <InputField
               label="Email Address"
               name="captainEmail"

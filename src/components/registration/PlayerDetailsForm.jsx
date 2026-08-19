@@ -187,7 +187,7 @@ export const PlayerDetailsForm = ({
           <label className="block text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
             Select Athletics Sub-Event (Select Exactly 1 Game) <span className="text-rose-500">*</span>
           </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-56 overflow-y-auto pr-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-56 overflow-y-auto pr-1">
             {OFFICIAL_ATHLETICS_EVENTS.map((eventItem) => {
               const isSelected = selectedEvent === eventItem.name;
               return (

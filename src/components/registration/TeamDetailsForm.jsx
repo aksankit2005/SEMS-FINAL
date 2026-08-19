@@ -210,8 +210,8 @@ export const TeamDetailsForm = ({
       <div className="p-5 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-4">
         <h4 className="text-xs font-black uppercase text-blue-600 dark:text-blue-400">1. Team Information & Captain Details</h4>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="sm:col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
             <InputField
               label="Team Name"
               name="teamName"
@@ -223,7 +223,7 @@ export const TeamDetailsForm = ({
             />
           </div>
 
-          <div className="sm:col-span-2">
+          <div>
             <SelectField
               label="College / Institution"
               name="collegeName"
@@ -235,7 +235,7 @@ export const TeamDetailsForm = ({
             />
           </div>
 
-          <div className="sm:col-span-2">
+          <div>
             <SelectField
               label="Gender"
               name="gender"
@@ -268,7 +268,7 @@ export const TeamDetailsForm = ({
             error={errors.captainPhone}
           />
 
-          <div className="sm:col-span-2">
+          <div>
             <InputField
               label="Captain Email Address"
               name="captainEmail"

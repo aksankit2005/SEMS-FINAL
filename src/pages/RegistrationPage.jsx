@@ -879,22 +879,22 @@ export const RegistrationPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white py-12 transition-colors">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white py-4 sm:py-6 transition-colors">
+      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wider mb-2">
-            <Trophy className="w-4 h-4 text-orange-500" /> Multi-Step Sports Registration
+        <div className="text-center mb-4 sm:mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wider mb-1.5">
+            <Trophy className="w-3.5 h-3.5 text-orange-500" /> Multi-Step Sports Registration
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight">
             Athlete & Team <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">Registration</span>
           </h1>
         </div>
 
         {/* SPORTS LIST & COORDINATOR EVENTS STATE */}
         {!activeSport ? (
-          <div className="space-y-8">
+          <div className="space-y-6">
             
             {/* DYNAMIC OFFICIAL COORDINATOR PUBLISHED EVENTS SECTION */}
             {sortedCoordinatorEvents && sortedCoordinatorEvents.length > 0 && (
@@ -909,7 +909,7 @@ export const RegistrationPage = () => {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-4xl mx-auto w-full">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 w-full">
                   {sortedCoordinatorEvents.map((evt) => {
                     const registered = evt.registeredCount || 0;
                     const limit = evt.maxRegistrations || 64;
@@ -1057,7 +1057,7 @@ export const RegistrationPage = () => {
 
             {/* EMPTY STATE WHEN NO COORDINATOR EVENTS PUBLISHED YET */}
             {(!sortedCoordinatorEvents || sortedCoordinatorEvents.length === 0) && (
-              <div className="text-center py-16 px-4 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md space-y-3">
+              <div className="text-center py-12 px-6 sm:px-10 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md space-y-3 w-full">
                 <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
                   <Trophy className="w-6 h-6" />
                 </div>

@@ -110,8 +110,8 @@ export const ChessRegistration = ({
           <Crown className="w-5 h-5 text-blue-600 dark:text-blue-400" /> Chess Participant Details
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="sm:col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
             <SelectField
               label="Select College / University"
               name="collegeName"
@@ -144,7 +144,7 @@ export const ChessRegistration = ({
             error={errors.captainPhone}
           />
 
-          <div className="sm:col-span-2">
+          <div>
             <InputField
               label="Participant Email Address"
               name="captainEmail"

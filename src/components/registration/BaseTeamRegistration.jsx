@@ -139,8 +139,8 @@ export const BaseTeamRegistration = ({
           <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" /> {sportName} Team Information & Captain Details
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="sm:col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
             <InputField
               label="Team Name"
               name="teamName"
@@ -152,7 +152,7 @@ export const BaseTeamRegistration = ({
             />
           </div>
 
-          <div className="sm:col-span-2">
+          <div>
             <SelectField
               label="College / Institution"
               name="collegeName"
@@ -164,7 +164,7 @@ export const BaseTeamRegistration = ({
             />
           </div>
 
-          <div className="sm:col-span-2">
+          <div>
             <SelectField
               label="Gender"
               name="gender"
@@ -197,7 +197,7 @@ export const BaseTeamRegistration = ({
             error={errors.captainPhone}
           />
 
-          <div className="sm:col-span-2">
+          <div>
             <InputField
               label="Captain Email Address"
               name="captainEmail"
