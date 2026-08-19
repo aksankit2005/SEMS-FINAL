@@ -26,16 +26,7 @@ export const AdminLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isLayoutHidden, setIsLayoutHidden] = useState(false);
   const user = adminApi.getCurrentUser();
-
-  React.useEffect(() => {
-    const handleLayoutToggle = (e) => {
-      setIsLayoutHidden(Boolean(e.detail?.hide));
-    };
-    window.addEventListener('sems_layout_toggle', handleLayoutToggle);
-    return () => window.removeEventListener('sems_layout_toggle', handleLayoutToggle);
-  }, []);
 
   const handleLogout = () => {
     adminApi.logout();
@@ -60,7 +51,7 @@ export const AdminLayout = () => {
   ) || navItems[0];
 
   return (
-    <div className={`min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex font-sans antialiased ${isLayoutHidden ? 'h-screen overflow-hidden' : ''}`}>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex font-sans antialiased">
       {/* Mobile Drawer Backdrop */}
       {isSidebarOpen && (
         <div
@@ -70,9 +61,8 @@ export const AdminLayout = () => {
       )}
 
       {/* Sidebar Navigation */}
-      {!isLayoutHidden && (
-        <aside
-          className={`fixed lg:static top-0 bottom-0 left-0 z-50 w-64 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-r border-slate-200 dark:border-slate-800 flex flex-col transition-transform duration-300 ${
+      <aside
+        className={`fixed lg:static top-0 bottom-0 left-0 z-40 w-64 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-r border-slate-200 dark:border-slate-800 flex flex-col transition-transform duration-300 ${
             isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
           }`}
         >
@@ -150,56 +140,53 @@ export const AdminLayout = () => {
             </button>
           </div>
         </aside>
-      )}
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header Bar */}
-        {!isLayoutHidden && (
-          <header className="h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 lg:px-8 flex items-center justify-between sticky top-0 z-30">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setIsSidebarOpen(true)}
-                className="lg:hidden p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                <Menu className="w-6 h-6" />
-              </button>
-              <div>
-                <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight">
-                  {currentNavItem.label}
-                </h2>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">
-                  Manage and monitor central sports fest operations
-                </p>
-              </div>
+        <header className="h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 lg:px-8 flex items-center justify-between sticky top-0 z-30">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="lg:hidden p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight">
+                {currentNavItem.label}
+              </h2>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">
+                Manage and monitor central sports fest operations
+              </p>
             </div>
+          </div>
 
-            <div className="flex items-center gap-3 sm:gap-4">
-              {/* Theme Toggle Button */}
-              <ThemeToggle />
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Theme Toggle Button */}
+            <ThemeToggle />
 
-              {/* System Activity Logs Link */}
-              <Link
-                to="/admin/activity"
-                title="System Activity & Audit Logs"
-                className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                aria-label="View Activity Logs"
-              >
-                <Bell className="w-5 h-5" />
-              </Link>
+            {/* System Activity Logs Link */}
+            <Link
+              to="/admin/activity"
+              title="System Activity & Audit Logs"
+              className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              aria-label="View Activity Logs"
+            >
+              <Bell className="w-5 h-5" />
+            </Link>
 
-              <div className="h-6 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
+            <div className="h-6 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
 
-              {/* User Badge */}
-              <div className="flex items-center gap-2 p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 text-xs text-slate-800 dark:text-slate-200 select-none">
-                <div className="w-6 h-6 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold flex items-center justify-center text-[10px]">
-                  AD
-                </div>
-                <span className="font-semibold hidden sm:inline">{user?.name?.split(' ')[0] || 'Admin'}</span>
+            {/* User Badge */}
+            <div className="flex items-center gap-2 p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 text-xs text-slate-800 dark:text-slate-200 select-none">
+              <div className="w-6 h-6 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold flex items-center justify-center text-[10px]">
+                AD
               </div>
+              <span className="font-semibold hidden sm:inline">{user?.name?.split(' ')[0] || 'Admin'}</span>
             </div>
-          </header>
-        )}
+          </div>
+        </header>
         {/* Main Content Body */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
           <Outlet />

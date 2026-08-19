@@ -29,13 +29,6 @@ export const CommitteeMemberModal = ({ isOpen, member = null, defaultOrder = 1, 
     setUploadProgress(0);
   }, [member, isOpen, defaultOrder]);
 
-  useEffect(() => {
-    window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: isOpen } }));
-    return () => {
-      window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: false } }));
-    };
-  }, [isOpen]);
-
   if (!isOpen) return null;
 
   const handleImageUpload = async (e) => {

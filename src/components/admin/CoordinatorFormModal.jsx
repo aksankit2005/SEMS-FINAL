@@ -51,13 +51,6 @@ export const CoordinatorFormModal = ({ isOpen, coordinator = null, onSave, onClo
     setErrors({});
   }, [coordinator, isOpen]);
 
-  useEffect(() => {
-    window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: isOpen } }));
-    return () => {
-      window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: false } }));
-    };
-  }, [isOpen]);
-
   if (!isOpen) return null;
 
   const handleRoleChange = (newRole) => {
@@ -133,8 +126,8 @@ export const CoordinatorFormModal = ({ isOpen, coordinator = null, onSave, onClo
   };
 
   return (
-    <div className="fixed inset-0 top-0 left-0 w-full h-full min-h-screen z-[9999] flex items-center justify-center p-3 sm:p-6 bg-slate-950/95 dark:bg-black/95 backdrop-blur-md overflow-y-auto animate-fade-in font-sans">
-      <div className="w-[95%] sm:w-[85%] lg:w-[75%] max-w-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[88vh] flex flex-col text-slate-900 dark:text-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm animate-fade-in">
+      <div className="w-full max-w-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col text-slate-900 dark:text-white">
         {/* Fixed Header */}
         <div className="flex items-center justify-between p-5 sm:p-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
           <div className="flex items-center gap-3">
