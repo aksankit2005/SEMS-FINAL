@@ -89,21 +89,14 @@ export const LiveTicker = () => {
               </div>
 
               {/* Match Cards List */}
-              <div className="space-y-3">
-                {(!liveMatches || liveMatches.length === 0) ? (
-                  <div className="py-8 text-center bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
-                    <Activity className="w-8 h-8 text-slate-400 mx-auto mb-2 opacity-60" />
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No Live Matches Right Now</p>
-                    <p className="text-xs text-slate-400 mt-1">Check back soon or explore scheduled tournament matches.</p>
-                    <Link
-                      to="/live"
-                      className="inline-block mt-3 px-4 py-1.5 text-xs font-bold rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white transition"
-                    >
-                      Open Live Portal
-                    </Link>
-                  </div>
-                ) : (
-                  liveMatches.slice(0, 3).map((match) => (
+              {(!liveMatches || liveMatches.length === 0) ? (
+                <div className="py-10 text-center bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                  <Radio className="w-8 h-8 text-slate-400 mx-auto mb-2 opacity-60" />
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No Live Matches Now</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {liveMatches.slice(0, 3).map((match) => (
                     <Link
                       key={match.id}
                       to="/live"
@@ -142,18 +135,20 @@ export const LiveTicker = () => {
                         </div>
                       </div>
                     </Link>
-                  ))
-                )}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Footer summary */}
-            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-              <span>Status: <strong className="text-emerald-500 font-bold">{(liveMatches || []).length} Match(es) Live</strong></span>
-              <Link to="/live" className="font-bold text-rose-500 hover:underline flex items-center gap-1">
-                Go to Live Arena <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
+            {/* Footer summary - shown only when live matches exist */}
+            {Array.isArray(liveMatches) && liveMatches.length > 0 && (
+              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span>Status: <strong className="text-emerald-500 font-bold">{liveMatches.length} Match(es) Live</strong></span>
+                <Link to="/live" className="font-bold text-rose-500 hover:underline flex items-center gap-1">
+                  Go to Live Arena <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Div 2: Leaderboard */}

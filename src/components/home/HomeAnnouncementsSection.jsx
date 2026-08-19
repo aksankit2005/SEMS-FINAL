@@ -19,11 +19,11 @@ export const HomeAnnouncementsSection = () => {
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-8 pb-4 border-b border-slate-200 dark:border-slate-800 gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-black uppercase tracking-wider mb-2">
-              <Bell className="w-3.5 h-3.5 text-orange-500 animate-bounce" /> Official Directorate Alerts
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wider mb-2">
+              <Bell className="w-3.5 h-3.5 text-blue-500 animate-bounce" /> Official Directorate Alerts
             </div>
             <h2 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-              Latest <span className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 bg-clip-text text-transparent">Announcements</span>
+              Latest <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 bg-clip-text text-transparent">Announcements</span>
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
               Important circulars, rule guidelines, and official tournament notices
@@ -32,7 +32,7 @@ export const HomeAnnouncementsSection = () => {
 
           <Link
             to="/announcements"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-900 dark:bg-slate-800 hover:bg-orange-500 dark:hover:bg-orange-500 text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5"
           >
             <span>All Circulars</span>
             <ChevronRight className="w-4 h-4" />
@@ -51,12 +51,12 @@ export const HomeAnnouncementsSection = () => {
               <Link
                 key={item.id || item.title}
                 to="/announcements"
-                className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-orange-500/40 transition duration-300 flex flex-col justify-between group"
+                className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-blue-500/40 transition duration-300 flex flex-col justify-between group"
               >
                 <div>
                   {/* Category & Date */}
                   <div className="flex items-center justify-between mb-3 text-xs">
-                    <span className="px-3 py-1 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 font-bold">
+                    <span className="px-3 py-1 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold">
                       {item.category || 'Official Notice'}
                     </span>
                     <span className="text-slate-400 text-[11px] flex items-center gap-1">
@@ -66,7 +66,7 @@ export const HomeAnnouncementsSection = () => {
                   </div>
 
                   {/* Title */}
-                  <h3 className="text-base font-black text-slate-900 dark:text-white group-hover:text-orange-500 transition line-clamp-2 leading-snug mb-2">
+                  <h3 className="text-base font-black text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition line-clamp-2 leading-snug mb-2">
                     {item.title}
                   </h3>
 
@@ -87,7 +87,7 @@ export const HomeAnnouncementsSection = () => {
                       <FileText className="w-3.5 h-3.5" /> APEX Sports Dept
                     </span>
                   )}
-                  <span className="text-orange-500 group-hover:translate-x-1 transition duration-200 flex items-center gap-0.5">
+                  <span className="text-blue-600 dark:text-blue-400 group-hover:translate-x-1 transition duration-200 flex items-center gap-0.5">
                     Read Notice <ChevronRight className="w-3.5 h-3.5" />
                   </span>
                 </div>

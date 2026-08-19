@@ -154,7 +154,7 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 transition-colors duration-200 font-sans shadow-xs">
+    <header className="sticky top-0 z-40 w-full bg-white/60 dark:bg-slate-950/60 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 transition-colors duration-200 font-sans shadow-xs">
       <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6">
         <div className="flex items-center justify-between h-14 sm:h-16 gap-2 lg:gap-4">
 
@@ -194,10 +194,10 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
                   key={item.path}
                   to={item.path}
                   className={({ isActive }) =>
-                    `relative px-2.5 2xl:px-3 py-1.5 rounded-xl text-xs 2xl:text-[13px] font-bold tracking-tight transition-all duration-150 flex items-center gap-1.5 shrink-0 ${
+                    `relative px-2.5 2xl:px-3 py-1.5 text-xs 2xl:text-[13px] font-bold tracking-tight transition-colors duration-150 flex items-center gap-1.5 shrink-0 ${
                       isActive
-                        ? 'bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-extrabold shadow-xs border border-blue-500/20'
-                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900/80'
+                        ? 'text-blue-600 dark:text-blue-400 font-extrabold'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400'
                     }`
                   }
                 >
