@@ -175,12 +175,13 @@ export const getMasterParticipants = async (req, res) => {
         m.id AS "memberId",
         r.id AS "registrationId",
         cr.id AS "receiptId",
-        TO_CHAR(m."createdAt", 'HH:MI AM') AS time,
-        TO_CHAR(m."createdAt", 'YYYY-MM-DD') AS date,
+        TO_CHAR(m."createdAt" AT TIME ZONE 'Asia/Kolkata', 'HH12:MI AM') AS time,
+        TO_CHAR(m."createdAt" AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM-DD') AS date,
         COALESCE(cr.sport_id, r."sportId", s.slug, s.name, 'sport') AS "sportId",
         COALESCE(s.name, cr.sport_id, r."sportId", 'Sport') AS "sportName",
         COALESCE(cr.team_name, r."teamName", m."fullName") AS "teamName",
         COALESCE(cr.college, c.code, c.name, 'MPEC') AS college,
+        COALESCE(cei.title, e.name, cr.participant_data->>'eventTitle', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb",
         m."fullName" AS name,
         m."rollNo" AS "rollNo",
         m.mobile,
@@ -194,6 +195,8 @@ export const getMasterParticipants = async (req, res) => {
       FROM registration_members m
       JOIN registrations r ON m."registrationId" = r.id
       LEFT JOIN college_registrations cr ON cr.registration_id = r.id
+      LEFT JOIN coordinator_event_items cei ON (cei.id::text = cr.event_id::text OR cei.id::text = r."eventId"::text)
+      LEFT JOIN events e ON (e.id::text = cr.event_id::text OR e.id::text = r."eventId"::text)
       LEFT JOIN sports s ON s.slug = r."sportId" OR s.slug = cr.sport_id OR s.name = r."sportId"
       LEFT JOIN colleges c ON c.id = r."collegeId"
       ORDER BY m."createdAt" DESC
@@ -221,7 +224,7 @@ export const getMasterParticipants = async (req, res) => {
           date: row.date || new Date().toISOString().split('T')[0],
           sportId: (row.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
           sportName: (row.sportName || 'Sport').replace(/-/g, ' ').toUpperCase(),
-          eventTitle: `${(row.sportName || 'Sport').replace(/-/g, ' ').toUpperCase()} Championship`,
+          eventTitle: row.eventTitleFromDb || `${(row.sportName || 'Sport').replace(/-/g, ' ').toUpperCase()} Championship`,
           teamName: row.teamName || row.name || 'Participant',
           college: row.college || 'MPEC',
           name: row.name || 'Student',
@@ -241,22 +244,25 @@ export const getMasterParticipants = async (req, res) => {
     // 2. Include any standalone registrations from college_registrations not already covered
     const crDb = await queryDb(`
       SELECT 
-        id,
-        registration_id AS "registrationId",
-        TO_CHAR(created_at, 'HH:MI AM') AS time,
-        TO_CHAR(created_at, 'YYYY-MM-DD') AS date,
-        sport_id AS "sportId",
-        student_name AS "name",
-        team_name AS "teamName",
-        college,
-        department,
-        email,
-        phone AS mobile,
-        gender,
-        status,
-        fee_paid AS "feePaid"
-      FROM college_registrations
-      ORDER BY created_at DESC
+        cr.id,
+        cr.registration_id AS "registrationId",
+        TO_CHAR(cr.created_at AT TIME ZONE 'Asia/Kolkata', 'HH12:MI AM') AS time,
+        TO_CHAR(cr.created_at AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM-DD') AS date,
+        cr.sport_id AS "sportId",
+        cr.student_name AS "name",
+        cr.team_name AS "teamName",
+        cr.college,
+        cr.department,
+        cr.email,
+        cr.phone AS mobile,
+        cr.gender,
+        cr.status,
+        cr.fee_paid AS "feePaid",
+        COALESCE(cei.title, e.name, cr.participant_data->>'eventTitle', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb"
+      FROM college_registrations cr
+      LEFT JOIN coordinator_event_items cei ON cei.id::text = cr.event_id::text
+      LEFT JOIN events e ON e.id::text = cr.event_id::text
+      ORDER BY cr.created_at DESC
     `).catch(() => null);
 
     if (crDb && crDb.rows) {
@@ -271,7 +277,7 @@ export const getMasterParticipants = async (req, res) => {
             date: row.date || new Date().toISOString().split('T')[0],
             sportId: (row.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
             sportName: (row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
-            eventTitle: `${(row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase()} Championship`,
+            eventTitle: row.eventTitleFromDb || `${(row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase()} Championship`,
             teamName: row.teamName || row.name || 'Participant',
             college: row.college || 'MPEC',
             name: row.name || 'Student',
@@ -1280,30 +1286,33 @@ export const getAdminRegistrationsDB = async (req, res) => {
   try {
     const dbRes = await queryDb(`
       SELECT 
-        id,
-        registration_id AS "registrationId",
-        event_id AS "eventId",
-        sport_id AS "sportId",
-        student_name AS "participantName",
-        team_name AS "teamName",
-        college,
-        department AS branch,
+        cr.id,
+        cr.registration_id AS "registrationId",
+        cr.event_id AS "eventId",
+        cr.sport_id AS "sportId",
+        cr.student_name AS "participantName",
+        cr.team_name AS "teamName",
+        cr.college,
+        cr.department AS branch,
         '' AS "rollNumber",
-        email,
-        phone AS mobile,
-        gender,
-        emergency_contact AS "emergencyContact",
-        status AS "registrationStatus",
-        fee_paid AS "feePaid",
-        payment_id AS "paymentId",
-        payment_status AS "paymentStatus",
-        members_count AS "membersCount",
-        participant_data AS "participantData",
-        TO_CHAR(created_at, 'YYYY-MM-DD') AS "registrationDate",
-        TO_CHAR(created_at, 'HH:MI AM') AS "registrationTime",
-        created_at AS "createdAt"
-      FROM college_registrations
-      ORDER BY created_at DESC
+        cr.email,
+        cr.phone AS mobile,
+        cr.gender,
+        cr.emergency_contact AS "emergencyContact",
+        cr.status AS "registrationStatus",
+        cr.fee_paid AS "feePaid",
+        cr.payment_id AS "paymentId",
+        cr.payment_status AS "paymentStatus",
+        cr.members_count AS "membersCount",
+        cr.participant_data AS "participantData",
+        COALESCE(cei.title, e.name, cr.participant_data->>'eventTitle', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb",
+        TO_CHAR(cr.created_at AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM-DD') AS "registrationDate",
+        TO_CHAR(cr.created_at AT TIME ZONE 'Asia/Kolkata', 'HH12:MI AM') AS "registrationTime",
+        cr.created_at AS "createdAt"
+      FROM college_registrations cr
+      LEFT JOIN coordinator_event_items cei ON cei.id::text = cr.event_id::text
+      LEFT JOIN events e ON e.id::text = cr.event_id::text
+      ORDER BY cr.created_at DESC
     `);
 
     if (dbRes && dbRes.rows) {
@@ -1311,7 +1320,7 @@ export const getAdminRegistrationsDB = async (req, res) => {
         ...r,
         participantName: r.participantName || r.teamName || 'Participant',
         gameSport: (r.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
-        eventTitle: `${(r.sportId || 'Sport').replace(/-/g, ' ').toUpperCase()} Event`,
+        eventTitle: r.eventTitleFromDb || `${(r.sportId || 'Sport').replace(/-/g, ' ').toUpperCase()} Championship`,
         category: r.membersCount > 1 ? 'Team' : 'Single',
         feePaid: Number(r.feePaid || 0),
         membersCount: Number(r.membersCount || 1)

@@ -1508,27 +1508,32 @@ export const getRegistrations = async (req, res) => {
     // 1. Direct Raw SQL QueryDb from college_registrations
     try {
       let sql = `SELECT 
-          id, registration_id AS "registrationId", event_id AS "eventId",
-          sport_id AS "sportId", student_name AS "studentName", team_name AS "teamName",
-          college, department, '' AS "enrollmentNo", email, phone, gender,
-          emergency_contact AS "emergencyContact", status, fee_paid AS "feePaid",
-          payment_id AS "paymentId", payment_status AS "paymentStatus",
-          participant_data AS "participantData",
-          created_at AS "createdAt"
-         FROM college_registrations`;
+          cr.id, cr.registration_id AS "registrationId", cr.event_id AS "eventId",
+          cr.sport_id AS "sportId", cr.student_name AS "studentName", cr.team_name AS "teamName",
+          cr.college, cr.department, '' AS "enrollmentNo", cr.email, cr.phone, cr.gender,
+          cr.emergency_contact AS "emergencyContact", cr.status, cr.fee_paid AS "feePaid",
+          cr.payment_id AS "paymentId", cr.payment_status AS "paymentStatus",
+          cr.participant_data AS "participantData",
+          COALESCE(cei.title, e.name, cr.participant_data->>'eventTitle', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb",
+          TO_CHAR(cr.created_at AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM-DD') AS "formattedDate",
+          TO_CHAR(cr.created_at AT TIME ZONE 'Asia/Kolkata', 'HH12:MI AM') AS "formattedTime",
+          cr.created_at AS "createdAt"
+         FROM college_registrations cr
+         LEFT JOIN coordinator_event_items cei ON cei.id::text = cr.event_id::text
+         LEFT JOIN events e ON e.id::text = cr.event_id::text`;
       let params = [];
 
       if (sportId && sportId !== 'all') {
         if (isStandardCricket) {
-          sql += ` WHERE (LOWER(sport_id) = 'cricket' OR LOWER(sport_id) LIKE '%cricket%') AND LOWER(sport_id) NOT LIKE '%gully%'`;
+          sql += ` WHERE (LOWER(cr.sport_id) = 'cricket' OR LOWER(cr.sport_id) LIKE '%cricket%') AND LOWER(cr.sport_id) NOT LIKE '%gully%'`;
         } else if (isGully) {
-          sql += ` WHERE LOWER(sport_id) LIKE '%gully%' OR LOWER(sport_id) = 'gully-cricket' OR LOWER(sport_id) = 'gully_cricket'`;
+          sql += ` WHERE LOWER(cr.sport_id) LIKE '%gully%' OR LOWER(cr.sport_id) = 'gully-cricket' OR LOWER(cr.sport_id) = 'gully_cricket'`;
         } else {
-          sql += ` WHERE LOWER(sport_id) = $1 OR LOWER(sport_id) = $2 OR LOWER(sport_id) LIKE $3`;
+          sql += ` WHERE LOWER(cr.sport_id) = $1 OR LOWER(cr.sport_id) = $2 OR LOWER(cr.sport_id) LIKE $3`;
           params = [sportId, cleanSportId, `%${cleanSportId}%`];
         }
       }
-      sql += ` ORDER BY created_at DESC`;
+      sql += ` ORDER BY cr.created_at DESC`;
 
       const sqlRes = await queryDb(sql, params);
 
@@ -1615,6 +1620,7 @@ export const getRegistrations = async (req, res) => {
               receiptId: r.id,
               eventId: r.eventId,
               sportId: r.sportId,
+              eventTitle: r.eventTitleFromDb || `${(r.sportId || 'Sport').replace(/-/g, ' ').toUpperCase()} Championship`,
               participationType,
               category: isDoubles ? 'DOUBLES' : (participationType === 'TEAM' ? 'TEAM' : 'SINGLES'),
               studentName: r.studentName,
@@ -1633,7 +1639,11 @@ export const getRegistrations = async (req, res) => {
               paymentId: r.paymentId,
               paymentStatus: r.paymentStatus,
               createdAt: r.createdAt,
-              registeredDate: r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+              date: r.formattedDate || (r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+              time: r.formattedTime || '10:00 AM',
+              registrationDate: r.formattedDate || (r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+              registrationTime: r.formattedTime || '10:00 AM',
+              registeredDate: r.formattedDate || (r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
               player1,
               player2,
               members: members || []
