@@ -51,6 +51,13 @@ export const CoordinatorFormModal = ({ isOpen, coordinator = null, onSave, onClo
     setErrors({});
   }, [coordinator, isOpen]);
 
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: isOpen } }));
+    return () => {
+      window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: false } }));
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleRoleChange = (newRole) => {

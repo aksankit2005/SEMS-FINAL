@@ -111,14 +111,10 @@ export const AdminProfilePage = () => {
     <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
       {/* Profile Banner */}
       <div className="p-6 sm:p-8 rounded-2xl bg-white dark:bg-gradient-to-r dark:from-slate-900 dark:via-slate-900/90 dark:to-purple-950/40 border border-slate-200 dark:border-slate-800 shadow-xl relative flex flex-col sm:flex-row items-center sm:items-start gap-6 transition-colors">
-        {/* Avatar */}
+        {/* Avatar Icon */}
         <div className="relative group shrink-0">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-500 to-purple-600 p-1 shadow-xl">
-            <img
-              src={profile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
-              alt={profile.name}
-              className="w-full h-full rounded-full object-cover"
-            />
+          <div className="w-20 h-20 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-md">
+            <Shield className="w-9 h-9 text-amber-500" />
           </div>
         </div>
 

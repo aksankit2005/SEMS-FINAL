@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AlertTriangle, X, Loader2 } from 'lucide-react';
 
 export const ConfirmationModal = ({
@@ -14,6 +14,13 @@ export const ConfirmationModal = ({
   isLoading = false
 }) => {
   const [reason, setReason] = useState('');
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: isOpen } }));
+    return () => {
+      window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: false } }));
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

@@ -53,6 +53,13 @@ export const ResultEditModal = ({ isOpen, result = null, onSave, onClose }) => {
     setError('');
   }, [result, isOpen]);
 
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: isOpen } }));
+    return () => {
+      window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: false } }));
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleSportChange = (sId) => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, KeyRound, Lock, Eye, EyeOff, Loader2, CheckCircle2 } from 'lucide-react';
 
 export const ResetPasswordModal = ({ isOpen, coordinator, onReset, onClose }) => {
@@ -6,6 +6,13 @@ export const ResetPasswordModal = ({ isOpen, coordinator, onReset, onClose }) =>
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: isOpen } }));
+    return () => {
+      window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: false } }));
+    };
+  }, [isOpen]);
 
   if (!isOpen || !coordinator) return null;
 

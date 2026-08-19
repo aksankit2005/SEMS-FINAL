@@ -1,7 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, User, Phone, Mail, Building, BookOpen, Calendar, CheckCircle2, ShieldCheck, Tag } from 'lucide-react';
 
 export const RegistrationDetailsModal = ({ isOpen, registration, onClose }) => {
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: isOpen } }));
+    return () => {
+      window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: false } }));
+    };
+  }, [isOpen]);
+
   if (!isOpen || !registration) return null;
 
   return (

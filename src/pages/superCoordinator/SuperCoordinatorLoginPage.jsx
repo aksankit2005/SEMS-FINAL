@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Crown, Lock, User, ArrowRight, ShieldCheck, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Crown, Lock, User, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 
 import axios from 'axios';
@@ -9,6 +9,7 @@ import { API_BASE_URL } from '../../services/apiConfig';
 export const SuperCoordinatorLoginPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -21,6 +22,7 @@ export const SuperCoordinatorLoginPage = () => {
 
     if (!username.trim() || !password.trim()) {
       setError('Please enter both username and password.');
+      addToast('Please enter both username and password.', 'warning');
       return;
     }
 
@@ -40,8 +42,10 @@ export const SuperCoordinatorLoginPage = () => {
         return;
       }
       throw new Error('Invalid authentication response.');
-      setError(err.response?.data?.message || err.message || 'Invalid Super Coordinator credentials.');
-      addToast('Login Failed. Please check your credentials.', 'error');
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message || 'Invalid Super Coordinator credentials.';
+      setError(errorMsg);
+      addToast(errorMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -101,13 +105,22 @@ export const SuperCoordinatorLoginPage = () => {
               <div className="relative">
                 <Lock className="w-5 h-5 absolute left-3.5 top-3.5 text-slate-400" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                  className="w-full pl-11 pr-11 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition cursor-pointer"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
             </div>
           </div>

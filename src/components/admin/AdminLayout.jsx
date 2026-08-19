@@ -133,16 +133,12 @@ export const AdminLayout = () => {
           {/* User Card & Logout Button */}
           <div className="p-4 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-900/60 shrink-0">
             <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 mb-3 shadow-xs">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-amber-500 p-0.5 shrink-0">
-                <img
-                  src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
-                  alt={user?.name || 'Admin'}
-                  className="w-full h-full rounded-full object-cover"
-                />
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 font-bold flex items-center justify-center shrink-0">
+                <Shield className="w-4 h-4 text-amber-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.name || 'Admin'}</p>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user?.email || 'admin@mpec.ac.in'}</p>
+                <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.name || 'System Administrator'}</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user?.email || 'admin.sports@mpec.ac.in'}</p>
               </div>
             </div>
             <button
