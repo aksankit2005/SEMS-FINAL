@@ -181,7 +181,7 @@ export const getMasterParticipants = async (req, res) => {
         COALESCE(s.name, cr.sport_id, r."sportId", 'Sport') AS "sportName",
         COALESCE(cr.team_name, r."teamName", m."fullName") AS "teamName",
         COALESCE(cr.college, c.code, c.name, 'MPEC') AS college,
-        COALESCE(cei.title, e.name, cr.participant_data->>'eventTitle', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb",
+        COALESCE(cei.title, cr.participant_data->>'eventTitle', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb",
         m."fullName" AS name,
         m."rollNo" AS "rollNo",
         m.mobile,
@@ -196,7 +196,6 @@ export const getMasterParticipants = async (req, res) => {
       JOIN registrations r ON m."registrationId" = r.id
       LEFT JOIN college_registrations cr ON cr.registration_id = r.id
       LEFT JOIN coordinator_event_items cei ON (cei.id::text = cr.event_id::text OR cei.id::text = r."eventId"::text)
-      LEFT JOIN events e ON (e.id::text = cr.event_id::text OR e.id::text = r."eventId"::text)
       LEFT JOIN sports s ON s.slug = r."sportId" OR s.slug = cr.sport_id OR s.name = r."sportId"
       LEFT JOIN colleges c ON c.id = r."collegeId"
       ORDER BY m."createdAt" DESC
@@ -258,10 +257,9 @@ export const getMasterParticipants = async (req, res) => {
         cr.gender,
         cr.status,
         cr.fee_paid AS "feePaid",
-        COALESCE(cei.title, e.name, cr.participant_data->>'eventTitle', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb"
+        COALESCE(cei.title, cr.participant_data->>'eventTitle', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb"
       FROM college_registrations cr
       LEFT JOIN coordinator_event_items cei ON cei.id::text = cr.event_id::text
-      LEFT JOIN events e ON e.id::text = cr.event_id::text
       ORDER BY cr.created_at DESC
     `).catch(() => null);
 
@@ -1305,13 +1303,12 @@ export const getAdminRegistrationsDB = async (req, res) => {
         cr.payment_status AS "paymentStatus",
         cr.members_count AS "membersCount",
         cr.participant_data AS "participantData",
-        COALESCE(cei.title, e.name, cr.participant_data->>'eventTitle', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb",
+        COALESCE(cei.title, cr.participant_data->>'eventTitle', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb",
         TO_CHAR(cr.created_at AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM-DD') AS "registrationDate",
         TO_CHAR(cr.created_at AT TIME ZONE 'Asia/Kolkata', 'HH12:MI AM') AS "registrationTime",
         cr.created_at AS "createdAt"
       FROM college_registrations cr
       LEFT JOIN coordinator_event_items cei ON cei.id::text = cr.event_id::text
-      LEFT JOIN events e ON e.id::text = cr.event_id::text
       ORDER BY cr.created_at DESC
     `);
 

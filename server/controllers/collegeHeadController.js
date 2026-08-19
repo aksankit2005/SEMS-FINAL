@@ -518,14 +518,13 @@ export const getRegistrations = async (req, res) => {
         cr.status,
         cr.members_count AS "membersCount",
         cr.participant_data AS "participantData",
-        COALESCE(cei.title, e.name, cr.participant_data->>'eventTitle', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb",
+        COALESCE(cei.title, cr.participant_data->>'eventTitle', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb",
         TO_CHAR(cr.created_at AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM-DD') AS "registrationDate",
         TO_CHAR(cr.created_at AT TIME ZONE 'Asia/Kolkata', 'HH12:MI AM') AS "registrationTime",
         cr.created_at AS "createdAt"
       FROM college_registrations cr
       LEFT JOIN coordinator_event_items cei ON cei.id::text = cr.event_id::text
       LEFT JOIN registrations r ON cr.registration_id = r.id
-      LEFT JOIN events e ON (e.id::text = cr.event_id::text OR e.id::text = r."eventId"::text)
       LEFT JOIN colleges c ON r."collegeId" = c.id
       WHERE (
         ($1::text IS NOT NULL AND r."collegeId"::text = $1)

@@ -1514,13 +1514,12 @@ export const getRegistrations = async (req, res) => {
           cr.emergency_contact AS "emergencyContact", cr.status, cr.fee_paid AS "feePaid",
           cr.payment_id AS "paymentId", cr.payment_status AS "paymentStatus",
           cr.participant_data AS "participantData",
-          COALESCE(cei.title, e.name, cr.participant_data->>'eventTitle', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb",
+          COALESCE(cei.title, cr.participant_data->>'eventTitle', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb",
           TO_CHAR(cr.created_at AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM-DD') AS "formattedDate",
           TO_CHAR(cr.created_at AT TIME ZONE 'Asia/Kolkata', 'HH12:MI AM') AS "formattedTime",
           cr.created_at AS "createdAt"
          FROM college_registrations cr
-         LEFT JOIN coordinator_event_items cei ON cei.id::text = cr.event_id::text
-         LEFT JOIN events e ON e.id::text = cr.event_id::text`;
+         LEFT JOIN coordinator_event_items cei ON cei.id::text = cr.event_id::text`;
       let params = [];
 
       if (sportId && sportId !== 'all') {
