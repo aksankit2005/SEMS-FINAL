@@ -54,3 +54,7 @@ scripts/clear_*.js
 scripts/sync_*.js
 scripts/populate_*.js
 scripts/generate_*.py
+scripts/generate_pdf.js
+
+# Project documentation / exports
+PROJECT_DEEP_DIVE.*
