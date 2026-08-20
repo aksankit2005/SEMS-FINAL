@@ -175,13 +175,16 @@ export const getMasterParticipants = async (req, res) => {
         m.id AS "memberId",
         r.id AS "registrationId",
         cr.id AS "receiptId",
-        TO_CHAR(m."createdAt" AT TIME ZONE 'Asia/Kolkata', 'HH12:MI AM') AS time,
-        TO_CHAR(m."createdAt" AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM-DD') AS date,
+        TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', m."createdAt")), 'HH12:MI AM') AS time,
+        TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', m."createdAt")), 'YYYY-MM-DD') AS date,
+        m."createdAt" AS "createdAt",
+        r."registrationType" AS "participationType",
         COALESCE(cr.sport_id, r."sportId", s.slug, s.name, 'sport') AS "sportId",
         COALESCE(s.name, cr.sport_id, r."sportId", 'Sport') AS "sportName",
         COALESCE(cr.team_name, r."teamName", m."fullName") AS "teamName",
         COALESCE(cr.college, c.code, c.name, 'MPEC') AS college,
-        COALESCE(cei.title, cr.participant_data->>'eventTitle', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb",
+        COALESCE(cei.title, cr.participant_data->>'eventTitle', cr.participant_data->>'selectedEvent', cr.participant_data->>'subEvent', cr.participant_data->>'category', cr.participant_data->>'eventType', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb",
+        cr.participant_data AS "participantData",
         m."fullName" AS name,
         m."rollNo" AS "rollNo",
         m.mobile,
@@ -204,15 +207,63 @@ export const getMasterParticipants = async (req, res) => {
       return null;
     });
 
+    // Load coordinator created events to match event titles exactly
+    const coordEventsRes = await queryDb('SELECT id, sport_id, title FROM coordinator_event_items').catch(() => null);
+    const coordEventMap = new Map();
+    if (coordEventsRes && coordEventsRes.rows) {
+      coordEventsRes.rows.forEach(e => {
+        if (e.sport_id && e.title) {
+          coordEventMap.set(e.sport_id.toLowerCase().replace(/[^a-z0-9]/g, '-'), e.title);
+          coordEventMap.set(e.sport_id.toLowerCase().trim(), e.title);
+          coordEventMap.set(e.id.toString(), e.title);
+        }
+      });
+    }
+
     const participantList = [];
     const seenMemberIds = new Set();
     const coveredRegIds = new Set();
 
     if (membersDb && membersDb.rows && membersDb.rows.length > 0) {
+      // Group members by registrationId to accurately determine team vs duo vs individual count
+      const regMemberCounts = new Map();
+      membersDb.rows.forEach(r => {
+        if (r.registrationId) {
+          regMemberCounts.set(r.registrationId, (regMemberCounts.get(r.registrationId) || 0) + 1);
+        }
+      });
+
       membersDb.rows.forEach((row) => {
         seenMemberIds.add(row.id);
         if (row.registrationId) coveredRegIds.add(row.registrationId);
         if (row.receiptId) coveredRegIds.add(row.receiptId);
+
+        const mCount = regMemberCounts.get(row.registrationId) || 1;
+        let resolvedPartType = String(row.participationType || '').trim().toUpperCase();
+        if (!resolvedPartType || resolvedPartType === 'UNDEFINED') {
+          const sKey = (row.sportId || '').toLowerCase();
+          if (['cricket', 'football', 'basketball', 'volleyball', 'kabaddi', 'kho-kho', 'tug-of-war'].some(ts => sKey.includes(ts))) {
+            resolvedPartType = 'TEAM';
+          } else if (sKey.includes('chess')) {
+            resolvedPartType = 'INDIVIDUAL';
+          } else if (mCount === 2) {
+            resolvedPartType = 'DUO';
+          } else if (mCount > 2) {
+            resolvedPartType = 'TEAM';
+          } else {
+            resolvedPartType = 'INDIVIDUAL';
+          }
+        }
+
+        const sportKey = (row.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-');
+        const sportDisplayName = (row.sportName || 'Sport').replace(/-/g, ' ').toUpperCase();
+        
+        // Priority for eventTitle: Exact coordinator created event title -> DB eventTitle -> APEX 2026 title
+        const matchedCoordTitle = coordEventMap.get(sportKey) || coordEventMap.get((row.sportId || '').toLowerCase());
+        let displayEventTitle = row.eventTitleFromDb;
+        if (!displayEventTitle || displayEventTitle.toLowerCase().endsWith('championship')) {
+          displayEventTitle = matchedCoordTitle || `APEX ${sportDisplayName} 2026`;
+        }
 
         participantList.push({
           id: row.id,
@@ -221,9 +272,11 @@ export const getMasterParticipants = async (req, res) => {
           receiptId: row.receiptId,
           time: row.time || '10:00 AM',
           date: row.date || new Date().toISOString().split('T')[0],
-          sportId: (row.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
-          sportName: (row.sportName || 'Sport').replace(/-/g, ' ').toUpperCase(),
-          eventTitle: row.eventTitleFromDb || `${(row.sportName || 'Sport').replace(/-/g, ' ').toUpperCase()} Championship`,
+          createdAt: row.createdAt,
+          sportId: sportKey,
+          sportName: sportDisplayName,
+          eventTitle: displayEventTitle,
+          participationType: resolvedPartType,
           teamName: row.teamName || row.name || 'Participant',
           college: row.college || 'MPEC',
           name: row.name || 'Student',
@@ -245,8 +298,9 @@ export const getMasterParticipants = async (req, res) => {
       SELECT 
         cr.id,
         cr.registration_id AS "registrationId",
-        TO_CHAR(cr.created_at AT TIME ZONE 'Asia/Kolkata', 'HH12:MI AM') AS time,
-        TO_CHAR(cr.created_at AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM-DD') AS date,
+        TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', cr.created_at)), 'HH12:MI AM') AS time,
+        TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', cr.created_at)), 'YYYY-MM-DD') AS date,
+        cr.created_at AS "createdAt",
         cr.sport_id AS "sportId",
         cr.student_name AS "name",
         cr.team_name AS "teamName",
@@ -257,7 +311,9 @@ export const getMasterParticipants = async (req, res) => {
         cr.gender,
         cr.status,
         cr.fee_paid AS "feePaid",
-        COALESCE(cei.title, cr.participant_data->>'eventTitle', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb"
+        cr.members_count AS "membersCount",
+        cr.participant_data AS "participantData",
+        COALESCE(cei.title, cr.participant_data->>'eventTitle', cr.participant_data->>'selectedEvent', cr.participant_data->>'subEvent', cr.participant_data->>'category', cr.participant_data->>'eventType', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb"
       FROM college_registrations cr
       LEFT JOIN coordinator_event_items cei ON cei.id::text = cr.event_id::text
       ORDER BY cr.created_at DESC
@@ -266,6 +322,32 @@ export const getMasterParticipants = async (req, res) => {
     if (crDb && crDb.rows) {
       crDb.rows.forEach((row) => {
         if (!coveredRegIds.has(row.id) && !coveredRegIds.has(row.registrationId)) {
+          const mCount = Number(row.membersCount || 1);
+          let resolvedPartType = (row.participantData?.participationType || row.participantData?.registrationType || '').trim().toUpperCase();
+          if (!resolvedPartType) {
+            const sKey = (row.sportId || '').toLowerCase();
+            if (['cricket', 'football', 'basketball', 'volleyball', 'kabaddi', 'kho-kho', 'tug-of-war'].some(ts => sKey.includes(ts))) {
+              resolvedPartType = 'TEAM';
+            } else if (sKey.includes('chess')) {
+              resolvedPartType = 'INDIVIDUAL';
+            } else if (mCount === 2) {
+              resolvedPartType = 'DUO';
+            } else if (mCount > 2) {
+              resolvedPartType = 'TEAM';
+            } else {
+              resolvedPartType = 'INDIVIDUAL';
+            }
+          }
+
+          const sportKey = (row.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-');
+          const sportDisplayName = (row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase();
+          
+          const matchedCoordTitle = coordEventMap.get(sportKey) || coordEventMap.get((row.sportId || '').toLowerCase());
+          let displayEventTitle = row.eventTitleFromDb;
+          if (!displayEventTitle || displayEventTitle.toLowerCase().endsWith('championship')) {
+            displayEventTitle = matchedCoordTitle || `APEX ${sportDisplayName} 2026`;
+          }
+
           participantList.push({
             id: row.id,
             memberId: row.id,
@@ -273,9 +355,11 @@ export const getMasterParticipants = async (req, res) => {
             receiptId: row.id,
             time: row.time || '10:00 AM',
             date: row.date || new Date().toISOString().split('T')[0],
-            sportId: (row.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
-            sportName: (row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
-            eventTitle: row.eventTitleFromDb || `${(row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase()} Championship`,
+            createdAt: row.createdAt,
+            sportId: sportKey,
+            sportName: sportDisplayName,
+            eventTitle: displayEventTitle,
+            participationType: resolvedPartType,
             teamName: row.teamName || row.name || 'Participant',
             college: row.college || 'MPEC',
             name: row.name || 'Student',
@@ -1303,9 +1387,9 @@ export const getAdminRegistrationsDB = async (req, res) => {
         cr.payment_status AS "paymentStatus",
         cr.members_count AS "membersCount",
         cr.participant_data AS "participantData",
-        COALESCE(cei.title, cr.participant_data->>'eventTitle', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb",
-        TO_CHAR(cr.created_at AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM-DD') AS "registrationDate",
-        TO_CHAR(cr.created_at AT TIME ZONE 'Asia/Kolkata', 'HH12:MI AM') AS "registrationTime",
+        COALESCE(cei.title, cr.participant_data->>'eventTitle', cr.participant_data->>'selectedEvent', cr.participant_data->>'subEvent', cr.participant_data->>'category', cr.participant_data->>'eventType', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb",
+        TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', cr.created_at)), 'YYYY-MM-DD') AS "registrationDate",
+        TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', cr.created_at)), 'HH12:MI AM') AS "registrationTime",
         cr.created_at AS "createdAt"
       FROM college_registrations cr
       LEFT JOIN coordinator_event_items cei ON cei.id::text = cr.event_id::text
@@ -1313,15 +1397,28 @@ export const getAdminRegistrationsDB = async (req, res) => {
     `);
 
     if (dbRes && dbRes.rows) {
-      const list = dbRes.rows.map(r => ({
-        ...r,
-        participantName: r.participantName || r.teamName || 'Participant',
-        gameSport: (r.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
-        eventTitle: r.eventTitleFromDb || `${(r.sportId || 'Sport').replace(/-/g, ' ').toUpperCase()} Championship`,
-        category: r.membersCount > 1 ? 'Team' : 'Single',
-        feePaid: Number(r.feePaid || 0),
-        membersCount: Number(r.membersCount || 1)
-      }));
+      const list = dbRes.rows.map(r => {
+        const sportName = (r.sportId || 'Sport').replace(/-/g, ' ').toUpperCase();
+        let displayEvent = r.eventTitleFromDb;
+        if (!displayEvent) {
+          const isFemale = String(r.gender || '').toLowerCase().includes('female');
+          const genderLabel = isFemale ? "Women's" : "Men's";
+          if (sportName.includes('BADMINTON') || sportName.includes('TABLE TENNIS')) {
+            displayEvent = `${sportName} (${Number(r.membersCount) === 2 ? 'Doubles' : genderLabel + ' Singles'})`;
+          } else {
+            displayEvent = `${sportName} Championship`;
+          }
+        }
+        return {
+          ...r,
+          participantName: r.participantName || r.teamName || 'Participant',
+          gameSport: sportName,
+          eventTitle: displayEvent,
+          category: r.membersCount > 1 ? (Number(r.membersCount) === 2 ? 'Duo' : 'Team') : 'Single',
+          feePaid: Number(r.feePaid || 0),
+          membersCount: Number(r.membersCount || 1)
+        };
+      });
       return res.json(list);
     }
   } catch (err) {

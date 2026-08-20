@@ -389,6 +389,10 @@ export const SuperCoordinatorDashboardPage = () => {
   // Filtered Participants Logic
   const filteredParticipants = masterParticipants.filter((p) => {
     const matchesSport = selectedSport === 'ALL' || (p.sportId || '').toLowerCase() === selectedSport.toLowerCase() || (p.sportName || '').toLowerCase().includes(selectedSport.toLowerCase());
+    const matchesEvent = selectedEvent === 'ALL' ||
+      (p.eventTitle || '').toLowerCase().trim() === selectedEvent.toLowerCase().trim() ||
+      (p.eventTitle || '').toLowerCase().includes(selectedEvent.toLowerCase()) ||
+      selectedEvent.toLowerCase().includes((p.eventTitle || '').toLowerCase());
     const matchesGender = selectedGender === 'ALL' || (p.gender || '').toLowerCase() === selectedGender.toLowerCase();
     const pCollege = (p.college || '').toLowerCase();
     const matchesCollege = selectedCollege === 'ALL' || 
@@ -404,7 +408,7 @@ export const SuperCoordinatorDashboardPage = () => {
       (p.email || '').toLowerCase().includes(q) ||
       (p.college || '').toLowerCase().includes(q);
 
-    return matchesSport && matchesGender && matchesCollege && matchesSearch;
+    return matchesSport && matchesEvent && matchesGender && matchesCollege && matchesSearch;
   });
 
   // Handle Export Filtered Excel (CSV) Report
@@ -416,6 +420,7 @@ export const SuperCoordinatorDashboardPage = () => {
 
     const headers = [
       'Registration ID',
+      'Registration Date',
       'Registration Time',
       'Participation Type',
       'Game / Sport',
@@ -430,7 +435,8 @@ export const SuperCoordinatorDashboardPage = () => {
     ];
 
     const rows = filteredParticipants.map((p) => [
-      p.id,
+      p.receiptId || p.registrationId || p.id || 'N/A',
+      p.date || 'N/A',
       p.time || '10:00 AM',
       p.participationType || getParticipationType(p),
       p.sportName || 'Sport',
@@ -1682,7 +1688,10 @@ export const SuperCoordinatorDashboardPage = () => {
                     ) : (
                       filteredParticipants.map((p) => (
                         <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition font-mono">
-                          <td className="p-4 text-slate-500 dark:text-slate-400">{p.time || '10:00 AM'}</td>
+                          <td className="p-4 text-slate-700 dark:text-slate-300 font-mono">
+                            <div>{p.date || '2026-08-20'}</div>
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400">{p.time || '10:00 AM'}</div>
+                          </td>
                           <td className="p-4">
                             <div className="font-bold text-amber-600 dark:text-amber-400">{p.sportName}</div>
                             <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">{p.eventTitle || `${p.sportName} Event`}</div>

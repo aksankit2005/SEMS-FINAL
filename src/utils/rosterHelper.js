@@ -97,8 +97,11 @@ export const normalizeParticipationType = (record, explicitSportId = null) => {
       : Array.isArray(record.participantData?.roster) ? record.participantData.roster
       : null;
     const mCount = roster ? roster.length : Number(record.membersCount || record.members_count || 0);
-    if (mCount === 2 || (teamName && teamName !== 'individual' && teamName !== 'participant')) {
+    if (mCount === 2) {
       return 'DUO';
+    }
+    if (mCount > 2) {
+      return 'TEAM';
     }
     return 'INDIVIDUAL';
   }

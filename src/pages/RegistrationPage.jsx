@@ -544,14 +544,21 @@ export const RegistrationPage = () => {
           captainName: formData.captainName,
           email: formData.captainEmail || (formData.roster[0] && formData.roster[0].email) || 'athlete@apex.edu',
           phone: formData.captainPhone || (formData.roster[0] && formData.roster[0].phone) || '+91 98765 43210',
-          gender: formData.roster[0]?.gender || 'Male',
+          gender: formData.roster[0]?.gender || formData.gender || 'Male',
           collegeName: formData.collegeName || 'MPEC',
           department: formData.roster[0]?.branch || formData.roster[0]?.department || 'Engineering',
           enrollmentNo: formData.roster[0]?.rollNo || formData.roster[0]?.rollNumber || formData.captainRoll || 'ENR2026-001',
           teamName: formData.teamName,
           emergencyContact: formData.captainPhone || (formData.roster[0] && formData.roster[0].phone) || '+91 98765 43210',
           entryFee: activeSport.entryFee,
-          roster: formData.roster || []
+          roster: formData.roster || [],
+          eventTitle: isRacketSportCheck(activeSport) ? `${activeSport.name} (${formData.eventType})` : (activeSport.title || activeSport.name),
+          eventType: formData.eventType,
+          participationType: isRacketSportCheck(activeSport) 
+            ? (formData.eventType === 'Doubles' ? 'DUO' : 'INDIVIDUAL')
+            : (formData.roster?.length > 2 ? 'TEAM' : (formData.roster?.length === 2 ? 'DUO' : 'INDIVIDUAL')),
+          category: activeSport.category,
+          subEvent: formData.selectedEvents?.join(', ') || formData.eventType || ''
         },
         paymentRes
       );

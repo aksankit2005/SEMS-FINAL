@@ -86,7 +86,9 @@ export const AdminMasterDataPage = () => {
       selectedSport.toLowerCase().includes((p.sportName || '').toLowerCase());
 
     const matchesEvent = selectedEvent === 'ALL' ||
-      (p.eventTitle || '').toLowerCase().includes(selectedEvent.toLowerCase());
+      (p.eventTitle || '').toLowerCase().trim() === selectedEvent.toLowerCase().trim() ||
+      (p.eventTitle || '').toLowerCase().includes(selectedEvent.toLowerCase()) ||
+      selectedEvent.toLowerCase().includes((p.eventTitle || '').toLowerCase());
 
     const matchesGender = selectedGender === 'ALL' ||
       (p.gender || '').toLowerCase() === selectedGender.toLowerCase() ||
@@ -152,7 +154,8 @@ export const AdminMasterDataPage = () => {
     const exportData = filteredParticipants.map((p, idx) => ({
       'S.No.': idx + 1,
       'Registration ID': p.receiptId || p.registrationId || p.id || 'N/A',
-      'Registration Date': `${p.date || ''} ${p.time || ''}`.trim() || 'N/A',
+      'Registration Date': p.date || 'N/A',
+      'Registration Time': p.time || 'N/A',
       'Participation Type': p.participationType || getParticipationType(p),
       'Sport': p.sportName || 'N/A',
       'Event': p.eventTitle || `${p.sportName || 'Sport'} Championship`,
