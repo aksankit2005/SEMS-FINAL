@@ -66,7 +66,49 @@ export const seedInitialAccountHashes = async () => {
     await queryDb(`ALTER TABLE pr_users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active';`);
     await queryDb(`ALTER TABLE pr_users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;`);
 
-
+    // 4. Ensure live_matches table has all required columns
+    await queryDb(`
+      CREATE TABLE IF NOT EXISTS live_matches (
+        id TEXT PRIMARY KEY,
+        sport_id VARCHAR(50),
+        event_id TEXT,
+        event_title TEXT,
+        team1_id TEXT,
+        team2_id TEXT,
+        format VARCHAR(50),
+        status VARCHAR(50) DEFAULT 'SCHEDULED',
+        team1 TEXT,
+        team2 TEXT,
+        match_title TEXT,
+        table_number VARCHAR(100),
+        time VARCHAR(50),
+        score1 INT DEFAULT 0,
+        score2 INT DEFAULT 0,
+        winner TEXT,
+        youtube_video_id TEXT,
+        stream_url TEXT,
+        is_live_streaming BOOLEAN DEFAULT FALSE,
+        details JSONB,
+        sets_history TEXT,
+        current_set INT DEFAULT 1,
+        sets_won1 INT DEFAULT 0,
+        sets_won2 INT DEFAULT 0,
+        current_quarter TEXT DEFAULT 'Quarter 1',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS event_id TEXT;`);
+    await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS event_title TEXT;`);
+    await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS team1_id TEXT;`);
+    await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS team2_id TEXT;`);
+    await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS details JSONB;`);
+    await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_history TEXT;`);
+    await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS current_set INT DEFAULT 1;`);
+    await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won1 INT DEFAULT 0;`);
+    await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won2 INT DEFAULT 0;`);
+    await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS current_quarter TEXT DEFAULT 'Quarter 1';`);
+    await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;`);
 
     // 5. Seed Initial Sport Coordinators if not present
     const defaultSports = [

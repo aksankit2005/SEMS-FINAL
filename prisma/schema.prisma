@@ -507,6 +507,10 @@ model MatchResult {
 model LiveMatch {
   id              String   @id
   sportId         String?  @map("sport_id")
+  eventId         String?  @map("event_id")
+  eventTitle      String?  @map("event_title")
+  team1Id         String?  @map("team1_id")
+  team2Id         String?  @map("team2_id")
   format          String?
   status          String?
   team1           String?
@@ -525,6 +529,7 @@ model LiveMatch {
   currentSet      Int      @default(1) @map("current_set")
   setsWon1        Int      @default(0) @map("sets_won1")
   setsWon2        Int      @default(0) @map("sets_won2")
+  currentQuarter  String?  @map("current_quarter")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
