@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Users, Plus, ShieldAlert, Award } from 'lucide-react';
 import { InputField, SelectField, PlayerDetailsCard } from './SharedFormComponents';
 import { collegeCourses } from '../../data/collegeCourses';
+import { resolveSportKey } from '../../data/sportsConfig';
 
 export const TeamDetailsForm = ({
   sport,
@@ -10,10 +11,18 @@ export const TeamDetailsForm = ({
   errors,
   setErrors
 }) => {
-  const colleges = [
-    { value: '', label: 'Select College / University' },
-    ...Object.keys(collegeCourses).map((c) => ({ value: c, label: c }))
-  ];
+  const isTugOfWar = resolveSportKey(sport) === 'tug-of-war';
+
+  const colleges = isTugOfWar
+    ? [
+        { value: '', label: 'Select College / University' },
+        { value: 'MPEC', label: 'MPEC' },
+        { value: 'MIPS', label: 'MIPS' }
+      ]
+    : [
+        { value: '', label: 'Select College / University' },
+        ...Object.keys(collegeCourses).map((c) => ({ value: c, label: c }))
+      ];
 
   const genders = [
     { value: '', label: 'Select Gender' },
@@ -131,30 +140,35 @@ export const TeamDetailsForm = ({
   }
 
   const handlePlayerChange = (index, field, value) => {
-    const updatedRoster = [...effectiveRoster];
-    updatedRoster[index] = {
-      ...updatedRoster[index],
-      [field]: value
-    };
+    setFormData((prev) => {
+      const currentRoster = prev.roster || [];
+      const updatedRoster = [...currentRoster];
+      updatedRoster[index] = {
+        ...updatedRoster[index],
+        [field]: value
+      };
 
-    // Keep top-level captain details synced if updating player #1 (and sameAsCaptain is active)
-    const syncUpdates = {};
-    if (index === 0 && formData.sameAsCaptain !== false) {
-      if (field === 'name') syncUpdates.captainName = value;
-      if (field === 'phone') syncUpdates.captainPhone = value;
-      if (field === 'email') syncUpdates.captainEmail = value;
-    }
+      const syncUpdates = {};
+      if (index === 0 && prev.sameAsCaptain !== false) {
+        if (field === 'name') syncUpdates.captainName = value;
+        if (field === 'phone') syncUpdates.captainPhone = value;
+        if (field === 'email') syncUpdates.captainEmail = value;
+      }
 
-    setFormData((prev) => ({
-      ...prev,
-      ...syncUpdates,
-      roster: updatedRoster
-    }));
+      return {
+        ...prev,
+        ...syncUpdates,
+        roster: updatedRoster
+      };
+    });
 
     const errorKey = `player_${index}_${field}`;
-    if (errors[errorKey]) {
-      setErrors((prev) => ({ ...prev, [errorKey]: null }));
-    }
+    setErrors((prev) => ({
+      ...prev,
+      [errorKey]: null,
+      [`player_${index}_rollNo`]: null,
+      [`player_${index}_lt`]: null
+    }));
   };
 
   const handleAddPlayer = () => {
@@ -304,7 +318,7 @@ export const TeamDetailsForm = ({
         <div className="space-y-5">
           {effectiveRoster.map((player, idx) => {
               const playerErrors = {};
-              const fields = ['name', 'rollNo', 'aadhaar', 'branch', 'semester', 'phone', 'email'];
+              const fields = ['name', 'rollNo', 'lt', 'section', 'aadhaar', 'branch', 'semester', 'phone', 'email'];
               fields.forEach((field) => {
                 const key = `player_${idx}_${field}`;
                 if (errors[key]) {
@@ -326,6 +340,7 @@ export const TeamDetailsForm = ({
                   teamGender={formData.gender}
                   isFirstPlayer={idx === 0}
                   sameAsCaptain={formData.sameAsCaptain !== false}
+                  isTugOfWar={isTugOfWar}
                   onToggleSameAsCaptain={(val) => {
                     setFormData((prev) => {
                       const updatedRoster = [...prev.roster];
@@ -366,6 +381,7 @@ export const TeamDetailsForm = ({
 export const validateTeamForm = (sport, formData) => {
   const errors = {};
 
+  const isTugOfWar = resolveSportKey(sport) === 'tug-of-war';
   const minPlayers = sport.minPlayers || 2;
   const maxPlayers = sport.maxPlayers || 2;
 
@@ -420,8 +436,16 @@ export const validateTeamForm = (sport, formData) => {
     if (!player.name?.trim()) {
       errors[`player_${idx}_name`] = 'Full Name is required';
     }
-    if (!player.rollNo?.trim()) {
-      errors[`player_${idx}_rollNo`] = 'Roll Number is required';
+
+    if (isTugOfWar) {
+      if (!player.rollNo?.trim() && !player.lt?.trim()) {
+        errors[`player_${idx}_lt`] = 'LT is required';
+        errors[`player_${idx}_rollNo`] = 'LT is required';
+      }
+    } else {
+      if (!player.rollNo?.trim()) {
+        errors[`player_${idx}_rollNo`] = 'Roll Number is required';
+      }
     }
 
     const aadhaar = player.aadhaar?.trim();
@@ -454,3 +478,4 @@ export const validateTeamForm = (sport, formData) => {
 
   return errors;
 };
+
