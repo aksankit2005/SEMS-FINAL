@@ -19,6 +19,75 @@ export const AnnouncementsPage = () => {
     return matchesQuery && matchesCat;
   });
 
+  const handleViewPdf = (pdf) => {
+    if (!pdf || !pdf.url || pdf.url === '#') return;
+    const url = pdf.url;
+    if (url.startsWith('data:application/pdf') || url.startsWith('data:')) {
+      try {
+        const parts = url.split(',');
+        const base64Str = parts[1] || parts[0];
+        const binaryStr = atob(base64Str);
+        const len = binaryStr.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'application/pdf' });
+        const blobUrl = URL.createObjectURL(blob);
+        const newWin = window.open(blobUrl, '_blank');
+        if (newWin) newWin.focus();
+      } catch (e) {
+        console.warn('Blob conversion error, falling back to direct window.open', e);
+        window.open(url, '_blank');
+      }
+    } else {
+      window.open(url, '_blank');
+    }
+  };
+
+  const handleDownloadPdf = (pdf) => {
+    if (!pdf || !pdf.url || pdf.url === '#') return;
+    const fileName = pdf.name || 'Announcement_Document.pdf';
+    const url = pdf.url;
+
+    if (url.startsWith('data:application/pdf') || url.startsWith('data:')) {
+      try {
+        const parts = url.split(',');
+        const base64Str = parts[1] || parts[0];
+        const binaryStr = atob(base64Str);
+        const len = binaryStr.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'application/pdf' });
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+      } catch (e) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } else {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white py-12 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -177,23 +246,22 @@ export const AnnouncementsPage = () => {
                       <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                         {pdf.url && pdf.url !== '#' ? (
                           <>
-                            <a
-                              href={pdf.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="px-3 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold text-xs flex items-center gap-1 transition-colors border border-blue-500/20"
+                            <button
+                              type="button"
+                              onClick={() => handleViewPdf(pdf)}
+                              className="px-3 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold text-xs flex items-center gap-1 transition-colors border border-blue-500/20 cursor-pointer"
                             >
                               <Eye className="w-3.5 h-3.5" />
                               <span>View PDF</span>
-                            </a>
-                            <a
-                              href={pdf.url}
-                              download={pdf.name || 'Announcement_Document.pdf'}
-                              className="px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold text-xs flex items-center gap-1 transition-colors border border-emerald-500/20"
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadPdf(pdf)}
+                              className="px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold text-xs flex items-center gap-1 transition-colors border border-emerald-500/20 cursor-pointer"
                             >
                               <Download className="w-3.5 h-3.5" />
                               <span>Download</span>
-                            </a>
+                            </button>
                           </>
                         ) : (
                           <span className="text-[10px] text-slate-400 italic">Document File Attached</span>

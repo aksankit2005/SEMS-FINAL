@@ -203,15 +203,14 @@ export const AdminAnnouncementsPage = () => {
 
                         <div className="flex items-center gap-1">
                           {att.url && att.url !== '#' && (
-                            <a
-                              href={att.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-700 transition-colors"
-                              title="Preview PDF"
+                            <button
+                              type="button"
+                              onClick={() => handleViewPdf(att)}
+                              className="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer"
+                              title="View PDF"
                             >
                               <Eye className="w-4 h-4" />
-                            </a>
+                            </button>
                           )}
                           <a
                             href={att.url || '#'}
