@@ -1155,6 +1155,8 @@ export const completeMatch = async (req, res) => {
           existing = matchesResult.rows[0];
         }
       } catch (e) {}
+    }
+
     if (existing && existing.sport_id) {
       const matchSport = existing.sport_id.toLowerCase().replace(/_/g, '-');
       const userRole = (req.user?.role || '').toLowerCase();
