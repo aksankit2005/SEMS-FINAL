@@ -112,7 +112,8 @@ export const PlayerDetailsCard = ({
   teamGender = '',
   isFirstPlayer = false,
   sameAsCaptain = false,
-  onToggleSameAsCaptain = null
+  onToggleSameAsCaptain = null,
+  isTugOfWar = false
 }) => {
   const allSemesters = [
     { value: '', label: 'Select Semester/Year' },
@@ -127,16 +128,31 @@ export const PlayerDetailsCard = ({
     { value: 'Intern', label: 'Intern' }
   ];
 
+  const tugOfWarSemesters = [
+    { value: '', label: 'Select Semester' },
+    { value: 'Semester 1', label: 'Semester 1' }
+  ];
+
+  const ltOptions = [
+    { value: '', label: 'Select LT' },
+    ...Array.from({ length: 12 }, (_, i) => ({
+      value: `LT ${i + 1}`,
+      label: `LT ${i + 1}`
+    }))
+  ];
+
   const course = (player.branch || '').trim().toLowerCase();
-  let semesters = allSemesters;
-  if (course === 'bba' || course === 'bca') {
-    semesters = allSemesters.slice(0, 7);
-  } else if (course === 'mca' || course === 'mba') {
-    semesters = allSemesters.slice(0, 5);
+  let semesters = isTugOfWar ? tugOfWarSemesters : allSemesters;
+  if (!isTugOfWar) {
+    if (course === 'bba' || course === 'bca') {
+      semesters = allSemesters.slice(0, 7);
+    } else if (course === 'mca' || course === 'mba') {
+      semesters = allSemesters.slice(0, 5);
+    }
   }
 
   const handleChange = (field, val) => {
-    if (field === 'branch') {
+    if (field === 'branch' && !isTugOfWar) {
       const c = (val || '').trim().toLowerCase();
       if ((c === 'mca' || c === 'mba') && ['5th Sem (3rd Year)', '6th Sem (3rd Year)', '7th Sem (4th Year)', '8th Sem (4th Year)', 'Intern'].includes(player.semester)) {
         onChange(index, 'semester', '');
@@ -206,15 +222,31 @@ export const PlayerDetailsCard = ({
           icon={User}
         />
 
-        <InputField
-          label="Roll / Student ID"
-          value={player.rollNo}
-          onChange={(e) => handleChange('rollNo', e.target.value)}
-          placeholder="e.g. 23CS045"
-          required
-          error={errors.rollNo}
-          icon={Award}
-        />
+        {isTugOfWar ? (
+          <SelectField
+            label="LT"
+            value={player.lt || player.rollNo || ''}
+            onChange={(e) => {
+              const val = e.target.value;
+              handleChange('lt', val);
+              handleChange('rollNo', val);
+            }}
+            options={ltOptions}
+            required
+            error={errors.lt || errors.rollNo}
+            icon={Award}
+          />
+        ) : (
+          <InputField
+            label="Roll / Student ID"
+            value={player.rollNo}
+            onChange={(e) => handleChange('rollNo', e.target.value)}
+            placeholder="e.g. 23CS045"
+            required
+            error={errors.rollNo}
+            icon={Award}
+          />
+        )}
 
         <InputField
           label="Date of Birth"
