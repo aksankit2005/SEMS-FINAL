@@ -3,7 +3,6 @@ import { User, Flame, Crown, Check, Users } from 'lucide-react';
 import { InputField, SelectField, PlayerDetailsCard } from './SharedFormComponents';
 import { collegeCourses } from '../../data/collegeCourses';
 import { OFFICIAL_ATHLETICS_EVENTS } from './AthleticsRegistration';
-import { resolveSportKey } from '../../data/sportsConfig';
 
 export const PlayerDetailsForm = ({
   sport,
@@ -12,18 +11,10 @@ export const PlayerDetailsForm = ({
   errors,
   setErrors
 }) => {
-  const isTugOfWar = resolveSportKey(sport) === 'tug-of-war';
-
-  const colleges = isTugOfWar
-    ? [
-        { value: '', label: 'Select College / University' },
-        { value: 'MPEC', label: 'MPEC' },
-        { value: 'MIPS', label: 'MIPS' }
-      ]
-    : [
-        { value: '', label: 'Select College / University' },
-        ...Object.keys(collegeCourses).map((c) => ({ value: c, label: c }))
-      ];
+  const colleges = [
+    { value: '', label: 'Select College / University' },
+    ...Object.keys(collegeCourses).map((c) => ({ value: c, label: c }))
+  ];
 
   const selectedEvent = (formData.selectedEvents && formData.selectedEvents[0]) || '';
   const isRelay = selectedEvent === '4*100m relay Race';
@@ -145,35 +136,29 @@ export const PlayerDetailsForm = ({
   }
 
   const handlePlayerChange = (index, field, value) => {
-    setFormData((prev) => {
-      const currentRoster = prev.roster || [];
-      const updatedRoster = [...currentRoster];
-      updatedRoster[index] = {
-        ...updatedRoster[index],
-        [field]: value
-      };
+    const updatedRoster = [...effectiveRoster];
+    updatedRoster[index] = {
+      ...updatedRoster[index],
+      [field]: value
+    };
 
-      const syncUpdates = {};
-      if (index === 0) {
-        if (field === 'name') syncUpdates.captainName = value;
-        if (field === 'phone') syncUpdates.captainPhone = value;
-        if (field === 'email') syncUpdates.captainEmail = value;
-      }
+    const syncUpdates = {};
+    if (index === 0) {
+      if (field === 'name') syncUpdates.captainName = value;
+      if (field === 'phone') syncUpdates.captainPhone = value;
+      if (field === 'email') syncUpdates.captainEmail = value;
+    }
 
-      return {
-        ...prev,
-        ...syncUpdates,
-        roster: updatedRoster
-      };
-    });
+    setFormData((prev) => ({
+      ...prev,
+      ...syncUpdates,
+      roster: updatedRoster
+    }));
 
     const errorKey = `player_${index}_${field}`;
-    setErrors((prev) => ({
-      ...prev,
-      [errorKey]: null,
-      [`player_${index}_rollNo`]: null,
-      [`player_${index}_lt`]: null
-    }));
+    if (errors[errorKey]) {
+      setErrors((prev) => ({ ...prev, [errorKey]: null }));
+    }
   };
 
   const availableCourses = collegeCourses[formData.collegeName] || [];
@@ -259,8 +244,6 @@ export const PlayerDetailsForm = ({
             errors={{
               name: errors[`player_${idx}_name`],
               rollNo: errors[`player_${idx}_rollNo`],
-              lt: errors[`player_${idx}_lt`],
-              section: errors[`player_${idx}_section`],
               branch: errors[`player_${idx}_branch`],
               semester: errors[`player_${idx}_semester`],
               phone: errors[`player_${idx}_phone`],
@@ -272,14 +255,12 @@ export const PlayerDetailsForm = ({
             isFirstPlayer={idx === 0}
             sameAsCaptain={false}
             onToggleSameAsCaptain={null}
-            isTugOfWar={isTugOfWar}
           />
         ))}
       </div>
     </div>
   );
 };
-
 
 // Common individual validation
 export const validateIndividualForm = (sport, formData) => {

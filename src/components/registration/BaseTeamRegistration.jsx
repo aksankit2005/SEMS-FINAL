@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { Users, Plus, ShieldAlert } from 'lucide-react';
 import { InputField, SelectField, PlayerDetailsCard } from './SharedFormComponents';
 import { collegeCourses } from '../../data/collegeCourses';
-import { resolveSportKey } from '../../data/sportsConfig';
 
 export const BaseTeamRegistration = ({
   step,
@@ -14,18 +13,10 @@ export const BaseTeamRegistration = ({
   minPlayers,
   maxPlayers
 }) => {
-  const isTugOfWar = resolveSportKey(sportName) === 'tug-of-war';
-
-  const colleges = isTugOfWar
-    ? [
-        { value: '', label: 'Select College / University' },
-        { value: 'MPEC', label: 'MPEC' },
-        { value: 'MIPS', label: 'MIPS' }
-      ]
-    : [
-        { value: '', label: 'Select College / University' },
-        ...Object.keys(collegeCourses).map((c) => ({ value: c, label: c }))
-      ];
+  const colleges = [
+    { value: '', label: 'Select College / University' },
+    ...Object.keys(collegeCourses).map((c) => ({ value: c, label: c }))
+  ];
 
   const genders = [
     { value: '', label: 'Select Gender' },
@@ -91,26 +82,21 @@ export const BaseTeamRegistration = ({
   };
 
   const handlePlayerChange = (index, field, value) => {
-    setFormData((prev) => {
-      const currentRoster = prev.roster || [];
-      const updatedRoster = [...currentRoster];
-      updatedRoster[index] = {
-        ...updatedRoster[index],
-        [field]: value
-      };
-      return {
-        ...prev,
-        roster: updatedRoster
-      };
-    });
-
-    const errorKey = `player_${index}_${field}`;
-    setErrors((prev) => ({
+    const updatedRoster = [...formData.roster];
+    updatedRoster[index] = {
+      ...updatedRoster[index],
+      [field]: value
+    };
+    setFormData((prev) => ({
       ...prev,
-      [errorKey]: null,
-      [`player_${index}_rollNo`]: null,
-      [`player_${index}_lt`]: null
+      roster: updatedRoster
     }));
+
+    // Clear roster validation error for this player & field if present
+    const errorKey = `player_${index}_${field}`;
+    if (errors[errorKey]) {
+      setErrors((prev) => ({ ...prev, [errorKey]: null }));
+    }
   };
 
   const handleAddPlayer = () => {
@@ -257,7 +243,7 @@ export const BaseTeamRegistration = ({
             formData.roster.map((player, idx) => {
               const playerErrors = {};
               // Gather errors specific to this player
-              const fields = ['name', 'rollNo', 'lt', 'section', 'aadhaar', 'branch', 'semester', 'phone', 'email'];
+              const fields = ['name', 'rollNo', 'aadhaar', 'branch', 'semester', 'phone', 'email'];
               fields.forEach((field) => {
                 const key = `player_${idx}_${field}`;
                 if (errors[key]) {
@@ -277,7 +263,6 @@ export const BaseTeamRegistration = ({
                   availableCourses={availableCourses}
                   teamCollege={formData.collegeName}
                   teamGender={formData.gender}
-                  isTugOfWar={isTugOfWar}
                 />
               );
             })}
@@ -302,10 +287,8 @@ export const BaseTeamRegistration = ({
 };
 
 // Reusable validation function for team sports
-export const validateTeamSport = (step, formData, minPlayers, maxPlayers, sportName = '') => {
+export const validateTeamSport = (step, formData, minPlayers, maxPlayers) => {
   const errors = {};
-
-  const isTugOfWar = resolveSportKey(sportName) === 'tug-of-war';
 
   if (step === 2) {
     if (!formData.teamName?.trim()) {
@@ -361,16 +344,8 @@ export const validateTeamSport = (step, formData, minPlayers, maxPlayers, sportN
       if (!player.name?.trim()) {
         errors[`player_${idx}_name`] = 'Full Name is required';
       }
-
-      if (isTugOfWar) {
-        if (!player.rollNo?.trim() && !player.lt?.trim()) {
-          errors[`player_${idx}_lt`] = 'LT is required';
-          errors[`player_${idx}_rollNo`] = 'LT is required';
-        }
-      } else {
-        if (!player.rollNo?.trim()) {
-          errors[`player_${idx}_rollNo`] = 'Roll Number is required';
-        }
+      if (!player.rollNo?.trim()) {
+        errors[`player_${idx}_rollNo`] = 'Roll Number is required';
       }
 
       const aadhaar = player.aadhaar?.trim();
@@ -404,4 +379,3 @@ export const validateTeamSport = (step, formData, minPlayers, maxPlayers, sportN
 
   return errors;
 };
-

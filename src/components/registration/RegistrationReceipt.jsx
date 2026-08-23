@@ -169,7 +169,7 @@ export const RegistrationReceipt = ({ receipt, onGoToDashboard }) => {
                     <span className="text-white">#{idx + 1} {player.name}</span>
                     <span className="text-slate-400">{player.gender}</span>
                   </div>
-                  <div className="text-slate-400">{player.lt ? `LT: ${player.lt}` : `ID/Roll: ${player.rollNo}`}{player.section ? ` • Sec: ${player.section}` : ''} • {player.branch}</div>
+                  <div className="text-slate-400">ID/Roll: {player.rollNo} • {player.branch}</div>
                   <div className="text-slate-400">Semester: {player.semester} • Ph: {player.phone}</div>
                 </div>
               ))}
