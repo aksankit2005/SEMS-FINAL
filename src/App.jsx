@@ -21,6 +21,7 @@ import { CoordinatorsPage } from './pages/CoordinatorsPage';
 import { AnnouncementsPage } from './pages/AnnouncementsPage';
 import { GalleryPage } from './pages/GalleryPage';
 import { AboutPage } from './pages/AboutPage';
+import { ContactPage } from './pages/ContactPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { FAQPage } from './pages/FAQPage';
 import { TermsPage } from './pages/TermsPage';
@@ -161,7 +162,7 @@ function App() {
                   <Route path="/announcements" element={<AnnouncementsPage />} />
                   <Route path="/gallery" element={<GalleryPage />} />
                   <Route path="/about" element={<AboutPage />} />
-                  <Route path="/contact" element={<AboutPage />} />
+                  <Route path="/contact" element={<ContactPage />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/faq" element={<FAQPage />} />
                   <Route path="/terms" element={<TermsPage />} />

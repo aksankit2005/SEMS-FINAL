@@ -94,27 +94,9 @@ export const ResultManagementTab = ({ user }) => {
         });
       } catch (e) {}
 
-      // Purge legacy mock test entries
-      const mockIds = ['M540746', 'M635812', 'M741299', 'M882104', 'M645537', 'M-CHESS-101', 'M-CHESS-102', 'M-BADM-101', 'M-BADM-102'];
-      const mockNames = [
-        '1', '2', 'a', 'b', 'player 1', 'player 2', 'team 1', 'team 2', 'team a', 'team b',
-        'aarav sharma (mpec)', 'rohan gupta (mips)', 'priya verma (psit)', 'sneha patel (hbti)'
-      ];
-
-      let cleaned = Array.isArray(list)
-        ? list.filter((r) => {
-            if (!r) return false;
-            if (mockIds.includes(r.id)) return false;
-            const t1 = (r.team1 || '').trim().toLowerCase();
-            const t2 = (r.team2 || '').trim().toLowerCase();
-            const w = (r.winner || '').trim().toLowerCase();
-            return !mockNames.includes(t1) && !mockNames.includes(t2) && !mockNames.includes(w);
-          })
+      const cleaned = Array.isArray(list)
+        ? list.filter((r) => r && r.id && r.team1 && r.team2)
         : [];
-
-      if (cleaned.length === 0 && !isBadminton) {
-        cleaned = getMockResultsData();
-      }
 
       setResultsList(cleaned);
       localStorage.setItem(resultsKey, JSON.stringify(cleaned));

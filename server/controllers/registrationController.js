@@ -164,7 +164,59 @@ export const registerPublicEvent = async (req, res) => {
     }
   }
 
-  // 2. Cryptographic Payment Signature & Razorpay Capture Verification for Paid Events
+  // 2. Duplicate Registration Prevention (BUG-MED-002)
+  const rosterArray = Array.isArray(participantData?.roster) && participantData.roster.length > 0
+    ? participantData.roster
+    : [participantData];
+
+  const rollNosToCheck = rosterArray
+    .map(p => (p.rollNo || p.rollNumber || p.enrollmentNo || participantData.rollNo || participantData.enrollmentNo || '').trim())
+    .filter(Boolean);
+
+  const emailsToCheck = rosterArray
+    .map(p => (p.email || participantData.email || '').trim().toLowerCase())
+    .filter(e => e && e !== 'athlete@sems.edu');
+
+  const mobilesToCheck = rosterArray
+    .map(p => (p.mobile || p.phone || participantData.phone || participantData.mobile || '').trim())
+    .filter(m => m && m !== '+91 98765 43210');
+
+  if (eventId && eventId !== 'DEFAULT') {
+    try {
+      const dupMemberRes = await queryDb(
+        `SELECT m."fullName", m."rollNo", m.email, m.mobile 
+         FROM registration_members m
+         JOIN registrations r ON m."registrationId" = r.id
+         LEFT JOIN college_registrations cr ON cr.registration_id = r.id
+         WHERE (r."eventId"::text = $1 OR cr.event_id::text = $1)
+           AND (cr.status IS NULL OR LOWER(cr.status) NOT IN ('rejected', 'cancelled'))
+           AND (
+             ($2::text[] IS NOT NULL AND array_length($2::text[], 1) > 0 AND m."rollNo" = ANY($2::text[]))
+             OR ($3::text[] IS NOT NULL AND array_length($3::text[], 1) > 0 AND LOWER(m.email) = ANY($3::text[]))
+             OR ($4::text[] IS NOT NULL AND array_length($4::text[], 1) > 0 AND m.mobile = ANY($4::text[]))
+           )
+         LIMIT 1`,
+        [eventId, rollNosToCheck, emailsToCheck, mobilesToCheck]
+      );
+
+      if (dupMemberRes && dupMemberRes.rows && dupMemberRes.rows.length > 0) {
+        const dup = dupMemberRes.rows[0];
+        return res.status(409).json({
+          success: false,
+          message: `Participant "${dup.fullName || 'Athlete'}" (Roll: ${dup.rollNo || 'N/A'}) is already registered for this event.`,
+          duplicate: {
+            name: dup.fullName,
+            rollNo: dup.rollNo,
+            email: dup.email
+          }
+        });
+      }
+    } catch (dupErr) {
+      console.warn('Duplicate check warning:', dupErr.message);
+    }
+  }
+
+  // 3. Cryptographic Payment Signature & Razorpay Capture Verification for Paid Events (BUG-CRIT-001)
   const { keySecret } = getRazorpayCredentials();
   let isPaymentVerified = false;
   let paymentTxnId = null;
@@ -178,56 +230,115 @@ export const registerPublicEvent = async (req, res) => {
     razorpayPaymentId.startsWith('pay_')
   );
 
-  if (isRealRazorpayPayment) {
-    try {
-      let rzpPayment = await fetchRazorpayPayment(razorpayPaymentId);
-      if (rzpPayment) {
-        if (rzpPayment.status === 'authorized') {
-          console.log(`ℹ️ [Razorpay Auto-Capture] Capturing authorized payment ${razorpayPaymentId}...`);
-          try {
-            rzpPayment = await captureRazorpayPayment(
-              razorpayPaymentId,
-              rzpPayment.amount || (authoritativeFee * 100),
-              rzpPayment.currency || 'INR'
-            );
-          } catch (captureErr) {
-            console.error(`⚠️ [Razorpay Capture Warning]:`, captureErr.message);
+  if (authoritativeFee > 0) {
+    if (!razorpayPaymentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment ID is required for paid event registrations.',
+      });
+    }
+
+    if (isRealRazorpayPayment) {
+      try {
+        let rzpPayment = await fetchRazorpayPayment(razorpayPaymentId);
+        if (rzpPayment) {
+          if (rzpPayment.status === 'authorized') {
+            console.log(`ℹ️ [Razorpay Auto-Capture] Capturing authorized payment ${razorpayPaymentId}...`);
+            try {
+              rzpPayment = await captureRazorpayPayment(
+                razorpayPaymentId,
+                rzpPayment.amount || (authoritativeFee * 100),
+                rzpPayment.currency || 'INR'
+              );
+            } catch (captureErr) {
+              console.error(`⚠️ [Razorpay Capture Warning]:`, captureErr.message);
+            }
+          }
+
+          if (rzpPayment.status === 'captured' || rzpPayment.status === 'authorized') {
+            isPaymentVerified = true;
+            paymentTxnId = razorpayPaymentId;
+            if (rzpPayment.amount && authoritativeFee <= 0) {
+              authoritativeFee = Number(rzpPayment.amount) / 100;
+            }
+          } else {
+            console.error(`🔴 [Payment Error] Payment status is '${rzpPayment.status}' (expected captured/authorized)`);
+            return res.status(400).json({
+              success: false,
+              message: `Payment status is ${rzpPayment.status}. Registration cannot be confirmed without captured payment.`,
+            });
+          }
+        } else {
+          return res.status(400).json({
+            success: false,
+            message: 'Payment record could not be found on Razorpay.',
+          });
+        }
+      } catch (apiErr) {
+        console.error('🔴 [Razorpay API Error]:', apiErr.message);
+        if (process.env.NODE_ENV === 'production') {
+          return res.status(402).json({
+            success: false,
+            message: 'Payment verification with payment gateway failed. Please contact support if money was debited.',
+            error: apiErr.message,
+          });
+        } else {
+          // In development mode, check cryptographic signature fallback
+          const isSigValid = verifyPaymentSignature({
+            razorpayOrderId,
+            razorpayPaymentId,
+            razorpaySignature,
+          });
+          if (isSigValid) {
+            isPaymentVerified = true;
+            paymentTxnId = razorpayPaymentId;
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: 'Invalid payment signature.',
+            });
           }
         }
-        if (rzpPayment.amount && authoritativeFee <= 0) {
-          authoritativeFee = Number(rzpPayment.amount) / 100;
-        }
-        isPaymentVerified = rzpPayment.status === 'captured' || rzpPayment.status === 'authorized' || true;
-        paymentTxnId = razorpayPaymentId;
       }
-    } catch (apiErr) {
-      console.warn('⚠️ [Razorpay Fetch Notice]:', apiErr.message);
-      isPaymentVerified = true;
-      paymentTxnId = razorpayPaymentId;
-    }
-  } else if (authoritativeFee > 0) {
-    if (keySecret && razorpayOrderId && razorpayPaymentId && razorpaySignature && razorpaySignature !== 'verified_checkout') {
-      const isSigValid = verifyPaymentSignature({
-        razorpayOrderId,
-        razorpayPaymentId,
-        razorpaySignature,
-      });
-      if (isSigValid) {
+    } else {
+      // Non 'pay_' payment ID on a paid event
+      if (keySecret && razorpayOrderId && razorpayPaymentId && razorpaySignature && razorpaySignature !== 'verified_checkout') {
+        const isSigValid = verifyPaymentSignature({
+          razorpayOrderId,
+          razorpayPaymentId,
+          razorpaySignature,
+        });
+        if (isSigValid) {
+          isPaymentVerified = true;
+          paymentTxnId = razorpayPaymentId;
+        } else {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid Razorpay signature for payment verification.',
+          });
+        }
+      } else if (process.env.NODE_ENV !== 'production') {
+        // Development mode test fallback only
         isPaymentVerified = true;
         paymentTxnId = razorpayPaymentId;
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'Valid payment transaction and cryptographic signature are required for paid events.',
+        });
       }
-    } else if (razorpayPaymentId) {
-      isPaymentVerified = true;
-      paymentTxnId = razorpayPaymentId;
     }
   } else {
+    // Free event - no payment needed
     isPaymentVerified = true;
     paymentTxnId = paymentData?.razorpayPaymentId || `FREE-REG-${Date.now()}`;
   }
 
-  // Ensure authoritativeFee matches what was actually paid
-  if (authoritativeFee <= 0 && isRealRazorpayPayment) {
-    authoritativeFee = Number(paymentData?.amount || participantData?.entryFee || 1);
+  if (authoritativeFee > 0 && !isPaymentVerified) {
+    return res.status(400).json({
+      success: false,
+      message: 'Payment verification failed. Registration rejected.',
+    });
   }
 
   const receiptId = `REC-APEX-${Math.floor(10000 + Math.random() * 90000)}`;

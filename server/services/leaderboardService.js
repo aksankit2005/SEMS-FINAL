@@ -1,30 +1,44 @@
 import { queryDb } from '../config/db.js';
 
 export const ALL_COLLEGES_MASTER = [
-  { id: 'MPEC', code: 'MPEC', name: 'Maharana Pratap Engineering College', dbId: '978ec774-13e6-4271-9747-0ecf89a38723' },
-  { id: 'MPCAMS', code: 'MPCAMS', name: 'Maharana Pratap College of Applied Medical Sciences', dbId: '72bbc0b0-7404-4ac3-817b-46cb6bb4d8a0' },
-  { id: 'MIPS', code: 'MIPS', name: 'Maharana Institute of Professional Studies', dbId: '6ca592c3-5a66-44ed-a016-c727bdf02bb2' },
-  { id: 'MPDC', code: 'MPDC', name: 'Maharana Pratap Dental College', dbId: 'f7220225-36fd-4b37-a728-24d8f68c1a4a' },
-  { id: 'MPCPS (BPharmacy)', code: 'MPCPS (BPharmacy)', name: 'MPCPS (BPharmacy)', dbId: 'a84b0111-1111-4000-8000-000000000005' },
-  { id: 'MPCPS (KN142)', code: 'MPCPS (KN142)', name: 'MPCPS (KN142)', dbId: '2a130322-bb34-4a02-8027-2dc7552b5673' },
-  { id: 'MPCP', code: 'MPCP', name: 'Maharana Pratap College of Pharmacy', dbId: '3cfc1774-1d0f-409d-8222-1f8f339ad56c' },
-  { id: 'MPCN&PS', code: 'MPCN&PS', name: 'Maharana Pratap College of Nursing & Paramedical Sciences', dbId: '80799547-19fb-45be-adf3-ab1a8802c2fe' },
-  { id: 'MPAMC', code: 'MPAMC', name: 'Maharana Pratap Ayurvedic Medical College', dbId: 'b95c0222-2222-4000-8000-000000000009' }
+  { id: 'MPEC', code: 'MPEC', name: 'Maharana Pratap Engineering College' },
+  { id: 'MPCAMS', code: 'MPCAMS', name: 'Maharana Pratap College of Applied Medical Sciences' },
+  { id: 'MIPS', code: 'MIPS', name: 'Maharana Institute of Professional Studies' },
+  { id: 'MPDC', code: 'MPDC', name: 'Maharana Pratap Dental College' },
+  { id: 'MPCPS (BPharmacy)', code: 'MPCPS (BPharmacy)', name: 'MPCPS (BPharmacy)' },
+  { id: 'MPCPS (KN142)', code: 'MPCPS (KN142)', name: 'MPCPS (KN142)' },
+  { id: 'MPCP', code: 'MPCP', name: 'Maharana Pratap College of Pharmacy' },
+  { id: 'MPCN&PS', code: 'MPCN&PS', name: 'Maharana Pratap College of Nursing & Paramedical Sciences' },
+  { id: 'MPAMC', code: 'MPAMC', name: 'Maharana Pratap Ayurvedic Medical College' }
 ];
 
 export async function syncCollegeLeaderboards(eventId = null) {
   try {
-    // 1. Fetch all declared match results from DB
+    // 1. Dynamically resolve real college IDs from colleges table
+    const dynamicCollegesMap = new Map();
+    try {
+      const dbCollegesRes = await queryDb('SELECT id, code, name FROM colleges');
+      if (dbCollegesRes && dbCollegesRes.rows) {
+        dbCollegesRes.rows.forEach(c => {
+          dynamicCollegesMap.set(c.code.toUpperCase().trim(), c.id);
+          dynamicCollegesMap.set(c.name.toLowerCase().trim(), c.id);
+        });
+      }
+    } catch (dbColErr) {
+      console.warn('Dynamic colleges fetch notice:', dbColErr.message);
+    }
+
+    // 2. Fetch all declared match results from DB
     const entriesRes = await queryDb(
       `SELECT winner_college AS "winnerCollege", runner_up_college AS "runnerUpCollege" FROM leaderboard_entries`
     );
 
     const tally = {};
     ALL_COLLEGES_MASTER.forEach(c => {
-      const stats = { wins: 0, runnerUps: 0, code: c.code, name: c.name, dbId: c.dbId };
+      const resolvedId = dynamicCollegesMap.get(c.code.toUpperCase().trim()) || null;
+      const stats = { wins: 0, runnerUps: 0, code: c.code, name: c.name, dbId: resolvedId };
       tally[c.code.toLowerCase().trim()] = stats;
       tally[c.name.toLowerCase().trim()] = stats;
-      tally[c.dbId.toLowerCase().trim()] = stats;
     });
 
     if (entriesRes && entriesRes.rows) {
@@ -41,18 +55,19 @@ export async function syncCollegeLeaderboards(eventId = null) {
       });
     }
 
-    // 2. Clean external or invalid rows from college_leaderboards so ONLY 9 colleges exist
+    // 3. Clean external or invalid rows from college_leaderboards so ONLY 9 colleges exist
     await queryDb(
       `DELETE FROM college_leaderboards WHERE college_code NOT IN ('MPEC', 'MPCAMS', 'MIPS', 'MPDC', 'MPCPS (BPharmacy)', 'MPCPS (KN142)', 'MPCP', 'MPCN&PS', 'MPAMC')`
     ).catch(() => {});
 
-    // 3. Upsert exact tallies for 9 canonical colleges
+    // 4. Upsert exact tallies for 9 canonical colleges
     for (const col of ALL_COLLEGES_MASTER) {
       const stats = tally[col.code.toLowerCase()] || { wins: 0, runnerUps: 0 };
       const wins = stats.wins;
       const runnerUps = stats.runnerUps;
       // Formula: Winner = 5 pts, Runner-Up = 3 pts
       const totalPoints = (wins * 5) + (runnerUps * 3);
+      const resolvedDbId = dynamicCollegesMap.get(col.code.toUpperCase().trim()) || null;
 
       const existing = await queryDb(
         `SELECT id FROM college_leaderboards WHERE college_code = $1`,
@@ -64,18 +79,18 @@ export async function syncCollegeLeaderboards(eventId = null) {
           `UPDATE college_leaderboards
            SET college_id = $1, college_name = $2, gold_count = $3, silver_count = $4, total_points = $5, updated_at = CURRENT_TIMESTAMP
            WHERE id = $6`,
-          [col.dbId, col.name, wins, runnerUps, totalPoints, existing.rows[0].id]
+          [resolvedDbId, col.name, wins, runnerUps, totalPoints, existing.rows[0].id]
         );
       } else {
         await queryDb(
           `INSERT INTO college_leaderboards (college_id, college_code, college_name, gold_count, silver_count, total_points, rank)
            VALUES ($1, $2, $3, $4, $5, $6, 0)`,
-          [col.dbId, col.code, col.name, wins, runnerUps, totalPoints]
+          [resolvedDbId, col.code, col.name, wins, runnerUps, totalPoints]
         );
       }
     }
 
-    // 4. Update rank order physically based on total_points DESC, gold_count DESC, silver_count DESC, college_code ASC
+    // 5. Update rank order physically based on total_points DESC, gold_count DESC, silver_count DESC, college_code ASC
     await queryDb(`
       WITH ranked AS (
         SELECT id, ROW_NUMBER() OVER (

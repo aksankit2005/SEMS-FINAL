@@ -76,11 +76,11 @@ app.use(cors({
     const cleanOrigin = origin.replace(/\/+$/, '');
     if (
       allowedOrigins.includes(cleanOrigin) || 
-      allowedOrigins.includes('*') ||
-      cleanOrigin.endsWith('.vercel.app') ||
       cleanOrigin === 'https://mpgisports.in' ||
       cleanOrigin === 'http://mpgisports.in' ||
-      cleanOrigin.endsWith('.mpgisports.in')
+      cleanOrigin === 'https://www.mpgisports.in' ||
+      cleanOrigin === 'http://www.mpgisports.in' ||
+      cleanOrigin === 'https://sems-final.vercel.app'
     ) {
       return callback(null, true);
     }

@@ -130,19 +130,8 @@ export const collegeHeadApi = {
       const res = await api.get('/college-head/dashboard-stats');
       return res.data;
     } catch (err) {
-      const user = this.getUser();
-      const college = user?.college || 'MPEC';
-      const students = MOCK_REGISTRATIONS.filter((s) => s.college.toLowerCase() === college.toLowerCase());
-      const sportsSet = new Set(students.map((s) => s.sportId));
-      const medals = MOCK_MEDAL_TALLY[college] || { gold: 0, silver: 0, bronze: 0, totalPoints: 0, topSport: 'N/A' };
-      return {
-        college,
-        facultyName: user?.faculty_name || 'College Head Faculty',
-        totalStudents: students.length,
-        totalRegistrations: students.length,
-        sportsCount: sportsSet.size,
-        medals,
-      };
+      console.error('Failed to load college head dashboard stats:', err.message);
+      throw new Error(err.response?.data?.message || 'Failed to load college dashboard statistics');
     }
   },
 
@@ -152,46 +141,8 @@ export const collegeHeadApi = {
       const res = await api.get('/college-head/students', { params });
       return res.data;
     } catch (err) {
-      const user = this.getUser();
-      const college = user?.college || 'MPEC';
-      let students = MOCK_REGISTRATIONS.filter((s) => s.college.toLowerCase() === college.toLowerCase());
-
-      if (params.search) {
-        const q = params.search.toLowerCase();
-        students = students.filter(
-          (s) =>
-            s.studentName.toLowerCase().includes(q) ||
-            s.rollNumber.toLowerCase().includes(q) ||
-            (s.course && s.course.toLowerCase().includes(q)) ||
-            (s.branch && s.branch.toLowerCase().includes(q)) ||
-            (s.sportName && s.sportName.toLowerCase().includes(q))
-        );
-      }
-
-      if (params.sport && params.sport !== 'all') {
-        students = students.filter((s) => s.sportId.toLowerCase() === params.sport.toLowerCase());
-      }
-
-      if (params.status && params.status !== 'all') {
-        students = students.filter((s) => s.status.toLowerCase() === params.status.toLowerCase());
-      }
-
-      // Sanitize payment details
-      const sanitized = students.map((s) => {
-        const item = { ...s };
-        delete item.feePaid;
-        delete item.paymentMethod;
-        delete item.receiptId;
-        delete item.transactionId;
-        delete item.cardNumber;
-        delete item.cardHolder;
-        delete item.cardExpiry;
-        delete item.cardCvv;
-        delete item.selectedBank;
-        delete item.upiId;
-        return item;
-      });
-      return { college, count: sanitized.length, students: sanitized };
+      console.error('Failed to load college student roster:', err.message);
+      throw new Error(err.response?.data?.message || 'Failed to load student participation roster');
     }
   },
 
@@ -201,19 +152,8 @@ export const collegeHeadApi = {
       const res = await api.get('/college-head/sports-participation');
       return res.data;
     } catch (err) {
-      const user = this.getUser();
-      const college = user?.college || 'MPEC';
-      const students = MOCK_REGISTRATIONS.filter((s) => s.college.toLowerCase() === college.toLowerCase());
-      const map = {};
-      students.forEach((s) => {
-        if (!map[s.sportName]) {
-          map[s.sportName] = { sportName: s.sportName, sportId: s.sportId, total: 0, male: 0, female: 0 };
-        }
-        map[s.sportName].total += 1;
-        if (s.gender === 'Female') map[s.sportName].female += 1;
-        else map[s.sportName].male += 1;
-      });
-      return Object.values(map);
+      console.error('Failed to load sports participation data:', err.message);
+      throw new Error(err.response?.data?.message || 'Failed to load sports distribution');
     }
   },
 
@@ -223,10 +163,8 @@ export const collegeHeadApi = {
       const res = await api.get('/college-head/medal-summary');
       return res.data;
     } catch (err) {
-      const user = this.getUser();
-      const college = user?.college || 'MPEC';
-      const medals = MOCK_MEDAL_TALLY[college] || { gold: 0, silver: 0, bronze: 0, totalPoints: 0, topSport: 'N/A' };
-      return { college, ...medals };
+      console.error('Failed to load medal summary:', err.message);
+      throw new Error(err.response?.data?.message || 'Failed to load college medal standings');
     }
   }
 };

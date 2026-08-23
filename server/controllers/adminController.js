@@ -1429,19 +1429,55 @@ export const getAdminRegistrationsDB = async (req, res) => {
 
 export const deleteRegistrationDB = async (req, res) => {
   const { id } = req.params;
+  const isUuid = (val) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(val || ''));
+
   try {
+    // 1. Locate the parent registration UUID from college_registrations or registrations
+    let parentRegUuid = isUuid(id) ? id : null;
+    let collegeRegId = String(id);
+
+    const lookupRes = await queryDb(
+      'SELECT id, registration_id FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1 LIMIT 1',
+      [String(id)]
+    );
+
+    if (lookupRes && lookupRes.rows && lookupRes.rows.length > 0) {
+      if (lookupRes.rows[0].registration_id) {
+        parentRegUuid = String(lookupRes.rows[0].registration_id);
+      }
+      if (lookupRes.rows[0].id) {
+        collegeRegId = String(lookupRes.rows[0].id);
+      }
+    }
+
+    // 2. Cascade delete parent registration and all related records if UUID found
+    if (parentRegUuid && isUuid(parentRegUuid)) {
+      try {
+        await queryDb('DELETE FROM team_members WHERE "registrationId" = $1', [parentRegUuid]);
+        await queryDb('DELETE FROM teams WHERE "registrationId" = $1 OR "captainRegistrationId" = $1', [parentRegUuid]);
+        await queryDb('DELETE FROM receipts WHERE "paymentId" IN (SELECT id FROM payments WHERE "registrationId" = $1)', [parentRegUuid]);
+        await queryDb('DELETE FROM payments WHERE "registrationId" = $1', [parentRegUuid]);
+        await queryDb('DELETE FROM registration_members WHERE "registrationId" = $1', [parentRegUuid]);
+        await queryDb('DELETE FROM registrations WHERE id = $1::uuid', [parentRegUuid]);
+      } catch (cascadeErr) {
+        console.warn('Parent registration cascade delete warning:', cascadeErr.message);
+      }
+    }
+
+    // 3. Delete from college_registrations and any remaining registration_members
     await queryDb('DELETE FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1', [String(id)]);
-    await queryDb('DELETE FROM registrations WHERE id::text = $1', [String(id)]);
+    await queryDb('DELETE FROM registration_members WHERE "registrationId"::text = $1 OR id::text = $1', [String(id)]);
+
     logAuditEvent({
       actorName: req.user?.username || 'Admin',
       role: 'ADMIN',
       action: 'Registration Deleted',
-      entity: `Deleted registration ID: ${id}`,
+      entity: `Deleted registration ID: ${id} (Parent UUID: ${parentRegUuid || 'N/A'})`,
       entityId: String(id),
       ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
     });
 
-    return res.json({ success: true, message: 'Registration deleted from database successfully.' });
+    return res.json({ success: true, message: 'Registration and associated records deleted from database successfully.' });
   } catch (err) {
     console.error('Error deleting registration from DB:', err.message);
     return res.status(500).json({ message: 'Failed to delete registration from database' });

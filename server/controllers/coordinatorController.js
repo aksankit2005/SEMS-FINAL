@@ -236,106 +236,17 @@ export const getMatches = async (req, res) => {
 
 const syncMatchToMatchesTable = async (m) => {
   if (!m || !m.id) return;
-  const statusLower = String(m.status || '').toLowerCase();
-  const isScheduled = statusLower === 'scheduled' || statusLower === 'upcoming' || statusLower === 'draft';
-
-  if (!isScheduled) {
-    // Keep ONLY scheduled matches in matches table; purge live/completed/cancelled
-    try {
-      await queryDb('DELETE FROM matches WHERE id = $1', [String(m.id)]);
-    } catch (e) {}
-    return;
-  }
-
-  const matchId = String(m.id);
-  const mSportId = (m.sportId || m.sport || 'badminton').toLowerCase();
-  const t1 = typeof m.team1 === 'object' ? (m.team1?.name || '') : String(m.team1 || '').trim();
-  const t2 = typeof m.team2 === 'object' ? (m.team2?.name || '') : String(m.team2 || '').trim();
-  const team1Val = t1 || m.team1Name || m.subEvent || m.eventTitle || 'TBD';
-  const team2Val = t2 || m.team2Name || (m.subEvent ? '' : 'TBD');
-  const matchTitleVal = m.eventTitle || m.matchTitle || m.title || `${team1Val} vs ${team2Val}`;
-  const tableNumberVal = m.tableNumber || m.venue || 'Table 1';
-  const timeVal = m.time || m.scheduledTime || '05:30 PM';
-  const statusVal = (m.status || 'SCHEDULED').toUpperCase();
-  const formatVal = (m.format || 'SINGLES').toUpperCase();
-  const eventIdVal = m.eventId || m.event_id || null;
-  const eventTitleVal = m.eventTitle || m.event_title || matchTitleVal;
-  const team1IdVal = m.team1Id || m.team1_id || null;
-  const team2IdVal = m.team2Id || m.team2_id || null;
-
-  const detailsObj = {
-    category: m.category || m.gender || 'Open',
-    date: m.date || new Date().toISOString().split('T')[0],
-    eventTitle: matchTitleVal,
-    eventId: eventIdVal,
-    team1Id: team1IdVal,
-    team2Id: team2IdVal,
-    format: formatVal,
-    team1Name: team1Val,
-    team2Name: team2Val,
-    ...(m.details && typeof m.details === 'object' ? m.details : {})
-  };
-
+  // live_matches is the authoritative active store for live and scheduled matches.
+  // This helper safely ensures data synchronization without executing conflicting legacy DDL queries.
   try {
-    await queryDb(
-  `INSERT INTO matches (
-     id,
-     sport_id,
-     format,
-     status,
-     team1,
-     team2,
-     match_title,
-     table_number,
-     time,
-     score1,
-     score2,
-     winner,
-     details,
-     event_id,
-     "createdAt",
-     "updatedAt"
-   )
-   VALUES (
-     $1, $2, $3, $4, $5, $6, $7, $8, $9,
-     $10, $11, $12, $13, $14,
-     CURRENT_TIMESTAMP,
-     CURRENT_TIMESTAMP
-   )
-   ON CONFLICT (id) DO UPDATE SET
-     sport_id = EXCLUDED.sport_id,
-     format = EXCLUDED.format,
-     status = EXCLUDED.status,
-     team1 = EXCLUDED.team1,
-     team2 = EXCLUDED.team2,
-     match_title = EXCLUDED.match_title,
-     table_number = EXCLUDED.table_number,
-     time = EXCLUDED.time,
-     score1 = EXCLUDED.score1,
-     score2 = EXCLUDED.score2,
-     winner = EXCLUDED.winner,
-     details = EXCLUDED.details,
-     event_id = COALESCE(EXCLUDED.event_id, matches.event_id),
-     "updatedAt" = CURRENT_TIMESTAMP`,
-  [
-    matchId,
-    mSportId,
-    formatVal,
-    statusVal,
-    team1Val,
-    team2Val,
-    matchTitleVal,
-    tableNumberVal,
-    timeVal,
-    Number(m.score1 || 0),
-    Number(m.score2 || 0),
-    m.winner || null,
-    JSON.stringify(detailsObj),
-    eventIdVal
-  ]
-);
+    const statusLower = String(m.status || '').toLowerCase();
+    const isCompleted = statusLower === 'completed' || statusLower === 'finished';
+    if (isCompleted) {
+      // Completed matches are archived in live_matches with status='COMPLETED'
+      return;
+    }
   } catch (err) {
-    console.warn('Sync to matches table warning:', err.message);
+    // Non-blocking sync notice
   }
 };
 
@@ -1244,6 +1155,17 @@ export const completeMatch = async (req, res) => {
           existing = matchesResult.rows[0];
         }
       } catch (e) {}
+    if (existing && existing.sport_id) {
+      const matchSport = existing.sport_id.toLowerCase().replace(/_/g, '-');
+      const userRole = (req.user?.role || '').toLowerCase();
+      const isAdminOrSuper = ['admin', 'super_coordinator', 'super_admin'].includes(userRole);
+
+      if (!isAdminOrSuper && sportId && matchSport !== sportId) {
+        return res.status(403).json({
+          success: false,
+          message: `Access denied. You cannot complete matches belonging to another sport (${existing.sport_id}).`,
+        });
+      }
     }
 
     const t1 = req.body.team1 || existing?.team1 || 'Team 1';
@@ -1765,8 +1687,8 @@ export const deleteRegistration = async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Verify that the registration actually belongs to this coordinator's assigned sport
-    const checkSql = `SELECT id, sport_id FROM college_registrations 
+    // 1. Verify that the registration belongs to this coordinator's sport & retrieve registration_id
+    const checkSql = `SELECT id, sport_id, registration_id FROM college_registrations 
       WHERE (id::text = $1 OR registration_id::text = $1)
         AND (LOWER(sport_id) LIKE $2 OR LOWER(sport_id) LIKE $3 OR LOWER(sport_id) LIKE $4)`;
     const checkRes = await queryDb(checkSql, [String(id), `%${sportId}%`, `%${cleanSportId}%`, `%${baseSportId}%`]);
@@ -1775,22 +1697,40 @@ export const deleteRegistration = async (req, res) => {
       return res.status(403).json({ message: 'Access denied. You cannot delete registrations for other sports.' });
     }
 
-    await queryDb('DELETE FROM registration_members WHERE "registrationId"::text = $1 OR id::text = $1', [String(id)]);
-    await queryDb(
-      'DELETE FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1',
-      [String(id)]
-    );
-    if (isUuid(id)) {
+    const parentRegUuid = checkRes.rows[0].registration_id || (isUuid(id) ? id : null);
+
+    // 2. Cascade delete parent registration and child records
+    if (parentRegUuid && isUuid(parentRegUuid)) {
       try {
-        await queryDb('DELETE FROM registrations WHERE id = $1::uuid', [id]);
-      } catch (e) {}
+        await queryDb('DELETE FROM team_members WHERE "registrationId" = $1', [parentRegUuid]);
+        await queryDb('DELETE FROM teams WHERE "registrationId" = $1 OR "captainRegistrationId" = $1', [parentRegUuid]);
+        await queryDb('DELETE FROM receipts WHERE "paymentId" IN (SELECT id FROM payments WHERE "registrationId" = $1)', [parentRegUuid]);
+        await queryDb('DELETE FROM payments WHERE "registrationId" = $1', [parentRegUuid]);
+        await queryDb('DELETE FROM registration_members WHERE "registrationId" = $1', [parentRegUuid]);
+        await queryDb('DELETE FROM registrations WHERE id = $1::uuid', [parentRegUuid]);
+      } catch (cascadeErr) {
+        console.warn('Coordinator registration cascade delete warning:', cascadeErr.message);
+      }
     }
 
+    // 3. Delete from college_registrations and remaining members
+    await queryDb('DELETE FROM registration_members WHERE "registrationId"::text = $1 OR id::text = $1', [String(id)]);
+    await queryDb('DELETE FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1', [String(id)]);
+
     try {
-      await prisma.collegeRegistration.deleteMany({ where: { id } });
+      await prisma.collegeRegistration.deleteMany({ where: { id: String(id) } });
     } catch (e) {}
 
-    return res.json({ success: true, message: 'Registration deleted successfully from database' });
+    logAuditEvent({
+      actorName: req.user?.coordinatorName || req.user?.username || 'Sport Coordinator',
+      role: 'SPORTS_COORDINATOR',
+      action: 'Registration Deleted',
+      entity: `Deleted ${sportId} registration ID: ${id}`,
+      entityId: String(id),
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    });
+
+    return res.json({ success: true, message: 'Registration and associated records deleted successfully from database' });
   } catch (err) {
     console.error('Error deleting registration from DB:', err.message);
     return res.status(500).json({ message: 'Failed to delete registration from database' });
@@ -1798,19 +1738,54 @@ export const deleteRegistration = async (req, res) => {
 };
 
 
-export const toggleRegistrationStatus = (req, res) => {
-  const sportId = req.user.assignedSport.toLowerCase();
+export const toggleRegistrationStatus = async (req, res) => {
+  const sportId = (req.user?.assignedSport || '').toLowerCase();
+  const normalizedSportId = sportId.replace(/_/g, '-');
+  const underscoreSportId = sportId.replace(/-/g, '_');
   const { status, deadline } = req.body;
 
+  const isClosed = status && (status.toLowerCase() === 'closed' || status === 'false' || status === false);
+  const isOpen = !isClosed;
+  const newStatus = isOpen ? 'Published' : 'Closed';
+
   inMemoryRegistrationSettings[sportId] = {
-    status: status || 'Open',
+    status: newStatus,
     deadline: deadline || '2026-08-15',
     updatedAt: new Date().toISOString()
   };
 
+  try {
+    if (deadline) {
+      await queryDb(
+        `UPDATE coordinator_event_items 
+         SET registration_open = $1, status = $2, reg_end_date = $3, updated_at = CURRENT_TIMESTAMP 
+         WHERE LOWER(sport_id) IN ($4, $5, $6)`,
+        [isOpen, newStatus, deadline, sportId, normalizedSportId, underscoreSportId]
+      );
+    } else {
+      await queryDb(
+        `UPDATE coordinator_event_items 
+         SET registration_open = $1, status = $2, updated_at = CURRENT_TIMESTAMP 
+         WHERE LOWER(sport_id) IN ($3, $4, $5)`,
+        [isOpen, newStatus, sportId, normalizedSportId, underscoreSportId]
+      );
+    }
+  } catch (dbErr) {
+    console.error('Error persisting registration toggle to DB:', dbErr.message);
+  }
+
+  logAuditEvent({
+    actorName: req.user?.coordinatorName || req.user?.username || 'Sport Coordinator',
+    role: 'SPORTS_COORDINATOR',
+    action: 'Registration Status Toggled',
+    entity: `Toggled registration for ${req.user?.sportName || sportId} to ${newStatus}`,
+    entityId: sportId,
+    ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+  });
+
   return res.json({
     success: true,
-    message: `Registration status updated to ${status} for ${req.user.sportName}`,
+    message: `Registration status updated to ${newStatus} for ${req.user?.sportName || sportId}`,
     settings: inMemoryRegistrationSettings[sportId]
   });
 };

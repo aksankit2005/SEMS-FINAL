@@ -65,10 +65,12 @@ async function main() {
     create: { username: "pr_admin", passwordHash, role: "pr_coordinator", name: "PR Admin" },
   });
 
+  const mpec = await prisma.college.findUnique({ where: { code: "MPEC" } });
+
   await prisma.collegeHeadAccount.upsert({
     where: { username: "head_mpec" },
-    update: { passwordHash, college: "MPEC", facultyName: "Dr. Rajesh Sharma", collegeId: mpec.id },
-    create: { username: "head_mpec", passwordHash, college: "MPEC", facultyName: "Dr. Rajesh Sharma", collegeId: mpec.id },
+    update: { passwordHash, college: "MPEC", facultyName: "Dr. Rajesh Sharma", collegeId: mpec?.id || null },
+    create: { username: "head_mpec", passwordHash, college: "MPEC", facultyName: "Dr. Rajesh Sharma", collegeId: mpec?.id || null },
   });
 
   for (const account of [
