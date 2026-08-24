@@ -4,55 +4,55 @@ import { generatePassHtml, generatePassPlainText } from './emailTemplates.js';
 import { generatePassPdfBuffer } from './pdfService.js';
 
 /**
- * Creates and configures the Nodemailer transporter pool
+ * Creates and configures a clean, secure Nodemailer transporter for Gmail SSL (Port 465)
  */
 const createTransporter = () => {
-  const user = envConfig.emailUser?.trim();
-  const pass = envConfig.emailPass?.trim();
+  const user = (process.env.EMAIL_USER || envConfig.emailUser || '').trim();
+  const pass = (process.env.EMAIL_PASS || envConfig.emailPass || '').replace(/\s+/g, '').trim();
 
   if (!user || !pass) {
     console.warn('⚠️ [Email Service] EMAIL_USER or EMAIL_PASS not configured. Automated emails will be logged only.');
     return null;
   }
 
-  const isGmail = user.toLowerCase().endsWith('@gmail.com') || (envConfig.smtpHost || '').includes('gmail');
-
-  if (isGmail) {
-    return nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user,
-        pass,
-      },
-      pool: true,
-      maxConnections: 5,
-      maxMessages: 100,
-    });
-  }
-
+  // Direct SSL transport on Port 465 - most reliable across cloud platforms (Render, Heroku, AWS, Vercel)
   return nodemailer.createTransport({
-    host: envConfig.smtpHost || 'smtp.gmail.com',
-    port: envConfig.smtpPort || 587,
-    secure: envConfig.smtpSecure,
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // SSL
     auth: {
       user,
       pass,
     },
+    tls: {
+      rejectUnauthorized: false,
+    },
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
   });
 };
 
-let transporter = createTransporter();
+let transporter = null;
+
+const getTransporter = () => {
+  if (!transporter) {
+    transporter = createTransporter();
+  }
+  return transporter;
+};
 
 /**
  * Re-verifies connection status on startup
  */
 export const verifyEmailConnection = async () => {
-  if (!transporter) transporter = createTransporter();
-  if (!transporter) return false;
+  const transport = getTransporter();
+  if (!transport) return false;
 
   try {
-    await transporter.verify();
-    console.log(`✅ [Email Service] Connected to SMTP server successfully (${envConfig.emailUser}).`);
+    await transport.verify();
+    const user = process.env.EMAIL_USER || envConfig.emailUser;
+    console.log(`✅ [Email Service] Connected to SMTP server successfully (${user}).`);
     return true;
   } catch (err) {
     console.error('❌ [Email Service Connection Error]:', err.message);
@@ -64,18 +64,22 @@ export const verifyEmailConnection = async () => {
  * Sends a single pass email to an athlete or captain with PDF attachment & plain-text fallback
  */
 export const sendSinglePassEmail = async (emailOptions) => {
-  if (!transporter) transporter = createTransporter();
-  if (!transporter) {
+  const transport = getTransporter();
+  const user = (process.env.EMAIL_USER || envConfig.emailUser || '').trim();
+
+  if (!transport || !user) {
     console.log(`ℹ️ [Mock Email] Would have sent pass to ${emailOptions.to} (${emailOptions.subject})`);
     return { success: true, mocked: true };
   }
 
-  const fromAddress = `"${envConfig.emailFromName || 'MPGI SPORTS'}" <${envConfig.emailUser}>`;
+  const fromName = process.env.EMAIL_FROM_NAME || envConfig.emailFromName || 'MPGI SPORTS';
+  const fromAddress = `"${fromName}" <${user}>`;
+  const helpline = process.env.EMAIL_HELPLINE || envConfig.emailHelpline || 'sports@mpgi.edu.in';
 
   const mailOptions = {
     from: fromAddress,
     to: emailOptions.to,
-    replyTo: envConfig.emailHelpline || 'sports@mpgi.edu.in',
+    replyTo: helpline,
     subject: emailOptions.subject,
     text: emailOptions.text || '',
     html: emailOptions.html,
@@ -83,7 +87,8 @@ export const sendSinglePassEmail = async (emailOptions) => {
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
+    console.log(`⏳ [Email Service] Sending pass to ${emailOptions.to}...`);
+    const info = await transport.sendMail(mailOptions);
     console.log(`📨 [Email Sent] Successfully delivered pass to ${emailOptions.to} (MessageId: ${info.messageId})`);
     return { success: true, messageId: info.messageId };
   } catch (err) {
@@ -130,7 +135,10 @@ export const dispatchRegistrationEmails = async ({
       ''
     ).trim();
 
+    const helpline = process.env.EMAIL_HELPLINE || envConfig.emailHelpline || 'sports@mpgi.edu.in';
     const sentEmails = new Set();
+
+    console.log(`🚀 [Email Dispatcher] Initiating pass dispatch for "${captainName}" (${captainEmail}), Sport: ${finalSportName}, Team: ${teamName || 'Solo'}`);
 
     // 1. Send Captain / Solo Player Master Pass, Receipt & Attached PDF Pass
     if (captainEmail && captainEmail.includes('@')) {
@@ -154,7 +162,7 @@ export const dispatchRegistrationEmails = async ({
         isTeamMember: false,
         captainName,
         roster,
-        helpline: envConfig.emailHelpline,
+        helpline,
       };
 
       const captainHtml = generatePassHtml(captainPassData);
@@ -223,7 +231,7 @@ export const dispatchRegistrationEmails = async ({
           isTeamMember: true,
           captainName,
           roster: roster,
-          helpline: envConfig.emailHelpline,
+          helpline,
         };
 
         const playerHtml = generatePassHtml(playerPassData);
