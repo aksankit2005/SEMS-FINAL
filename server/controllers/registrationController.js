@@ -470,18 +470,16 @@ export const registerPublicEvent = async (req, res) => {
     });
   }
 
-  // Dispatch automated passes and receipts to Captain and all team players
-  try {
-    await dispatchRegistrationEmails({
-      receipt: newRegRecord,
-      participantData,
-      sportName: event?.title || targetSportId || 'APEX 2026 Sport',
-      category: participantData.category || 'Championship',
-      passCode: newRegRecord.passCode,
-    });
-  } catch (emailErr) {
-    console.error('⚠️ [Registration Email Warning]:', emailErr.message);
-  }
+  // Dispatch automated passes and receipts to Captain and all team players asynchronously (Non-blocking)
+  dispatchRegistrationEmails({
+    receipt: newRegRecord,
+    participantData,
+    sportName: event?.title || targetSportId || 'APEX 2026 Sport',
+    category: participantData.category || 'Championship',
+    passCode: newRegRecord.passCode,
+  }).catch((emailErr) => {
+    console.error('⚠️ [Registration Email Background Warning]:', emailErr.message);
+  });
 
   return res.status(201).json({
     success: true,
