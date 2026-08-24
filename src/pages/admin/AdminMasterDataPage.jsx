@@ -19,7 +19,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Users,
-  IndianRupee
+  IndianRupee,
+  Trash2
 } from 'lucide-react';
 
 export const AdminMasterDataPage = () => {
@@ -67,6 +68,24 @@ export const AdminMasterDataPage = () => {
       addToast('Failed to load Master Data participants', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteParticipant = async (p) => {
+    const targetId = p.receiptId || p.registrationId || p.memberId || p.id;
+    if (window.confirm(`Are you sure you want to delete "${p.name}" (${p.sportName}) from Master Data?`)) {
+      try {
+        await adminApi.deleteRegistration(targetId, 'Deleted from Master Data view');
+        setParticipants((prev) => prev.filter((item) => 
+          item.id !== p.id && 
+          item.receiptId !== targetId && 
+          item.registrationId !== targetId &&
+          item.memberId !== p.id
+        ));
+        addToast(`Participant "${p.name}" deleted successfully!`, 'success');
+      } catch (err) {
+        addToast(err.response?.data?.message || err.message || 'Failed to delete participant', 'error');
+      }
     }
   };
 
@@ -453,8 +472,8 @@ export const AdminMasterDataPage = () => {
                       </span>
                     </td>
 
-                    {/* 9. Details Action */}
-                    <td className="py-3 px-3 whitespace-nowrap text-right">
+                    {/* 9. Details & Delete Action */}
+                    <td className="py-3 px-3 whitespace-nowrap text-right flex items-center justify-end gap-1">
                       <button
                         onClick={() => {
                           setSelectedParticipant({
@@ -483,6 +502,13 @@ export const AdminMasterDataPage = () => {
                         title="View Full Participant Details"
                       >
                         <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteParticipant(p)}
+                        className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
+                        title="Delete Participant Record from Master Data"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </td>
                   </tr>
