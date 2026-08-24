@@ -10,6 +10,7 @@ import { queryDb, prisma, pool } from '../config/db.js';
 import { extractYouTubeVideoIdBackend } from '../controllers/coordinatorController.js';
 import { publicReadLimiter, apiLimiter } from '../middleware/rateLimiters.js';
 import { computeEffectiveRegistrationStatus } from '../utils/registrationLifecycle.js';
+import { generatePassPdfBuffer } from '../services/pdfService.js';
 
 const router = express.Router();
 
@@ -558,6 +559,48 @@ router.post('/public/register', apiLimiter, registerPublicEvent);
 // POST /api/public/razorpay-webhook - Razorpay lifecycle webhooks
 router.post('/public/razorpay-webhook', handleRazorpayWebhook);
 router.post('/razorpay/webhook', handleRazorpayWebhook);
+
+// GET /api/public/download-pass-pdf - Direct PDF download stream
+router.get('/public/download-pass-pdf', async (req, res) => {
+  const { receiptId, passCode } = req.query;
+  try {
+    let reg = null;
+    if (receiptId) {
+      const dbRes = await queryDb('SELECT * FROM college_registrations WHERE id = $1', [receiptId]);
+      if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+        reg = dbRes.rows[0];
+      }
+    }
+    const pdfData = {
+      passCode: passCode || reg?.id || 'APEX-PASS-2026',
+      receiptId: reg?.id || receiptId || 'REC-APEX-VERIFIED',
+      sportName: reg?.sport_id || 'Sports Championship',
+      category: reg?.participant_data?.category || 'Championship',
+      participantName: reg?.student_name || 'Athlete',
+      college: reg?.college || 'MPGI',
+      teamName: reg?.team_name || '',
+      feePaid: reg?.fee_paid || 0,
+      roster: reg?.participant_data?.roster || [],
+      rollNo: reg?.participant_data?.rollNo || reg?.enrollment_no || '',
+      phone: reg?.phone || '',
+      gender: reg?.gender || 'Male',
+      dob: reg?.participant_data?.dob || '',
+      fatherName: reg?.participant_data?.fatherName || '',
+    };
+
+    const pdfBuffer = generatePassPdfBuffer(pdfData);
+    if (!pdfBuffer) {
+      return res.status(500).send('Failed to generate pass PDF');
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="APEX_Pass_${passCode || receiptId || 'Official'}.pdf"`);
+    return res.send(pdfBuffer);
+  } catch (err) {
+    console.error('Error generating pass PDF download:', err.message);
+    return res.status(500).send('Error generating PDF');
+  }
+});
 
 // GET /api/leaderboard - Spectator college standings endpoint from Supabase college_leaderboards table
 router.get('/leaderboard', publicReadLimiter, async (req, res) => {

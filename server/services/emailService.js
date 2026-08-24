@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { envConfig } from '../config/env.js';
-import { generatePassHtml } from './emailTemplates.js';
+import { generatePassHtml, generatePassPlainText } from './emailTemplates.js';
+import { generatePassPdfBuffer } from './pdfService.js';
 
 /**
  * Creates and configures the Nodemailer transporter pool
@@ -60,7 +61,7 @@ export const verifyEmailConnection = async () => {
 };
 
 /**
- * Sends a single pass email to an athlete or captain
+ * Sends a single pass email to an athlete or captain with PDF attachment & plain-text fallback
  */
 export const sendSinglePassEmail = async (emailOptions) => {
   if (!transporter) transporter = createTransporter();
@@ -76,7 +77,9 @@ export const sendSinglePassEmail = async (emailOptions) => {
     to: emailOptions.to,
     replyTo: envConfig.emailHelpline || 'sports@mpgi.edu.in',
     subject: emailOptions.subject,
+    text: emailOptions.text || '',
     html: emailOptions.html,
+    attachments: emailOptions.attachments || [],
   };
 
   try {
@@ -90,7 +93,7 @@ export const sendSinglePassEmail = async (emailOptions) => {
 };
 
 /**
- * Dispatches automated passes & receipts for all players upon registration
+ * Dispatches automated passes & receipts with attached PDF files for all players upon registration
  * Runs asynchronously in the background.
  */
 export const dispatchRegistrationEmails = async ({
@@ -129,9 +132,9 @@ export const dispatchRegistrationEmails = async ({
 
     const sentEmails = new Set();
 
-    // 1. Send Captain / Solo Player Master Pass & Receipt
+    // 1. Send Captain / Solo Player Master Pass, Receipt & Attached PDF Pass
     if (captainEmail && captainEmail.includes('@')) {
-      const captainHtml = generatePassHtml({
+      const captainPassData = {
         passCode: basePassCode,
         receiptId: receipt.id || receipt.receiptId,
         sportName: finalSportName,
@@ -152,23 +155,38 @@ export const dispatchRegistrationEmails = async ({
         captainName,
         roster,
         helpline: envConfig.emailHelpline,
-      });
+      };
+
+      const captainHtml = generatePassHtml(captainPassData);
+      const captainText = generatePassPlainText(captainPassData);
+      const captainPdfBuffer = generatePassPdfBuffer(captainPassData);
 
       const subject = isTeam
-        ? `🏆 [APEX 2026] Team Pass & Registration Receipt: ${teamName} (${finalSportName})`
-        : `🏆 [APEX 2026] Official Athlete Pass & Receipt: ${captainName} (${finalSportName})`;
+        ? `[APEX 2026] Official Team Pass & Registration Receipt: ${teamName} (${finalSportName})`
+        : `[APEX 2026] Official Athlete Pass & Registration Receipt: ${captainName} (${finalSportName})`;
+
+      const attachments = [];
+      if (captainPdfBuffer) {
+        attachments.push({
+          filename: `APEX_Pass_${basePassCode}.pdf`,
+          content: captainPdfBuffer,
+          contentType: 'application/pdf',
+        });
+      }
 
       await sendSinglePassEmail({
         to: captainEmail,
         subject,
+        text: captainText,
         html: captainHtml,
+        attachments,
       });
       sentEmails.add(captainEmail.toLowerCase());
     }
 
-    // 2. If Team Sport with multiple roster members, send individual Athlete Pass to each player
+    // 2. If Team Sport with multiple roster members, send individual Athlete Pass & Attached PDF to each player
     if (isTeam && roster.length > 0) {
-      console.log(`ℹ️ [Email Service] Dispatching individual passes to ${roster.length} roster players for Team '${teamName}'...`);
+      console.log(`ℹ️ [Email Service] Dispatching full passes, PDF attachments & rosters to ${roster.length} team members for '${teamName}'...`);
 
       const playerEmailPromises = [];
 
@@ -176,7 +194,7 @@ export const dispatchRegistrationEmails = async ({
         const player = roster[i];
         const playerEmail = (player.email || '').trim().toLowerCase();
 
-        // Skip if invalid email or already sent to captain
+        // Skip if invalid email or already sent
         if (!playerEmail || !playerEmail.includes('@') || sentEmails.has(playerEmail)) {
           continue;
         }
@@ -185,7 +203,7 @@ export const dispatchRegistrationEmails = async ({
         const playerName = (player.name || `Player ${i + 1}`).trim();
         const playerPassCode = `${basePassCode}-P${i + 1}`;
 
-        const playerHtml = generatePassHtml({
+        const playerPassData = {
           passCode: playerPassCode,
           receiptId: receipt.id || receipt.receiptId,
           sportName: finalSportName,
@@ -204,17 +222,32 @@ export const dispatchRegistrationEmails = async ({
           paymentId: receipt.paymentId || '',
           isTeamMember: true,
           captainName,
-          roster: [],
+          roster: roster,
           helpline: envConfig.emailHelpline,
-        });
+        };
 
-        const playerSubject = `🎟️ [APEX 2026] Athlete Entry Pass: ${playerName} • Team ${teamName} (${finalSportName})`;
+        const playerHtml = generatePassHtml(playerPassData);
+        const playerText = generatePassPlainText(playerPassData);
+        const playerPdfBuffer = generatePassPdfBuffer(playerPassData);
+
+        const playerSubject = `[APEX 2026] Official Team Entry Pass: ${playerName} • Team ${teamName} (${finalSportName})`;
+
+        const playerAttachments = [];
+        if (playerPdfBuffer) {
+          playerAttachments.push({
+            filename: `APEX_Athlete_Pass_${playerPassCode}.pdf`,
+            content: playerPdfBuffer,
+            contentType: 'application/pdf',
+          });
+        }
 
         playerEmailPromises.push(
           sendSinglePassEmail({
             to: playerEmail,
             subject: playerSubject,
+            text: playerText,
             html: playerHtml,
+            attachments: playerAttachments,
           })
         );
       }
