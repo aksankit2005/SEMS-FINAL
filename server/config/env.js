@@ -42,8 +42,8 @@ export const envConfig = {
   smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
   smtpPort: parseInt(process.env.SMTP_PORT || '465', 10),
   smtpSecure: process.env.SMTP_SECURE !== 'false',
-  emailUser: process.env.EMAIL_USER || process.env.SMTP_USER || 'mpgisports@gmail.com',
-  emailPass: (process.env.EMAIL_PASS || process.env.SMTP_PASS || 'qvnu jfre sswt nxul').replace(/\s+/g, ''),
+  emailUser: process.env.EMAIL_USER || process.env.SMTP_USER || '',
+  emailPass: (process.env.EMAIL_PASS || process.env.SMTP_PASS || '').replace(/\s+/g, ''),
   emailFromName: process.env.EMAIL_FROM_NAME || 'MPGI SPORTS',
   emailHelpline: process.env.EMAIL_HELPLINE || 'sports@mpgi.edu.in',
 };
