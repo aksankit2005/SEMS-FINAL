@@ -6,8 +6,8 @@ import { generatePassHtml, generatePassPlainText } from './emailTemplates.js';
  * Creates and configures a clean, robust Nodemailer transporter for Gmail
  */
 const createTransporter = () => {
-  const user = (process.env.EMAIL_USER || envConfig.emailUser || 'mpgisports@gmail.com').trim();
-  const pass = (process.env.EMAIL_PASS || envConfig.emailPass || 'qvnujfresswtnxul').replace(/\s+/g, '').trim();
+  const user = (process.env.EMAIL_USER || envConfig.emailUser || 'sports@mpgi.edu.in').trim();
+  const pass = (process.env.EMAIL_PASS || envConfig.emailPass || '').replace(/\s+/g, '').trim();
 
   if (!user || !pass) {
     console.warn('⚠️ [Email Service] EMAIL_USER or EMAIL_PASS not configured.');
@@ -15,17 +15,26 @@ const createTransporter = () => {
   }
 
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
     auth: {
       user,
       pass,
     },
+    tls: {
+      rejectUnauthorized: false,
+    },
+    family: 4,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   });
 };
 
 let transporter = null;
 
-const getTransporter = () => {
+export const getTransporter = () => {
   if (!transporter) {
     transporter = createTransporter();
   }
@@ -37,16 +46,16 @@ const getTransporter = () => {
  */
 export const verifyEmailConnection = async () => {
   const transport = getTransporter();
-  if (!transport) return false;
+  if (!transport) return { success: false, message: 'Transporter not configured' };
 
   try {
     await transport.verify();
-    const user = process.env.EMAIL_USER || envConfig.emailUser || 'mpgisports@gmail.com';
+    const user = process.env.EMAIL_USER || envConfig.emailUser || 'sports@mpgi.edu.in';
     console.log(`✅ [Email Service] Connected to SMTP server successfully (${user}).`);
-    return true;
+    return { success: true, user };
   } catch (err) {
     console.error('❌ [Email Service Connection Error]:', err.message);
-    return false;
+    return { success: false, error: err.message };
   }
 };
 
@@ -55,7 +64,7 @@ export const verifyEmailConnection = async () => {
  */
 export const sendSinglePassEmail = async (emailOptions) => {
   const transport = getTransporter();
-  const user = (process.env.EMAIL_USER || envConfig.emailUser || 'mpgisports@gmail.com').trim();
+  const user = (process.env.EMAIL_USER || envConfig.emailUser || 'sports@mpgi.edu.in').trim();
 
   if (!transport || !user) {
     console.log(`ℹ️ [Mock Email] Would have sent pass to ${emailOptions.to} (${emailOptions.subject})`);
@@ -236,4 +245,22 @@ export const dispatchRegistrationEmails = async ({
   } catch (outerErr) {
     console.error('❌ [Email Dispatcher Error]:', outerErr.message);
   }
+};
+
+/**
+ * Diagnostic helper to test email delivery instantly
+ */
+export const testEmailDelivery = async (targetEmail) => {
+  const to = (targetEmail || 'mpgisports@gmail.com').trim();
+  const subject = `[SEMS Test Email] SMTP Delivery Verification - ${new Date().toLocaleTimeString()}`;
+  const html = `
+    <div style="font-family: Arial, sans-serif; padding: 20px; background: #0f172a; color: #ffffff; border-radius: 8px;">
+      <h2 style="color: #38bdf8;">🎉 SEMS Email System is Working!</h2>
+      <p>This is a live test email sent from the SEMS backend server to verify that SMTP delivery is operational.</p>
+      <p><strong>Recipient:</strong> ${to}</p>
+      <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
+      <p><strong>Sender:</strong> MPGI SPORTS</p>
+    </div>
+  `;
+  return await sendSinglePassEmail({ to, subject, html, text: 'SEMS Email System is Working!' });
 };

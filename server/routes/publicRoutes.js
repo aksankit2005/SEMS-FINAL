@@ -11,6 +11,7 @@ import { extractYouTubeVideoIdBackend } from '../controllers/coordinatorControll
 import { publicReadLimiter, apiLimiter } from '../middleware/rateLimiters.js';
 import { computeEffectiveRegistrationStatus } from '../utils/registrationLifecycle.js';
 import { generatePassPdfBuffer } from '../services/pdfService.js';
+import { verifyEmailConnection, testEmailDelivery } from '../services/emailService.js';
 
 const router = express.Router();
 
@@ -636,6 +637,23 @@ router.get('/health', publicReadLimiter, async (req, res) => {
   } catch {
     res.status(503).json({ status: 'degraded', service: 'SEMS API Server', db: 'disconnected' });
   }
+});
+
+// Diagnostic Email Verification Endpoint: GET /api/verify-email
+router.get('/verify-email', async (req, res) => {
+  const result = await verifyEmailConnection();
+  return res.json(result);
+});
+
+// Live Test Email Endpoint: GET /api/test-email?to=your_email@gmail.com
+router.get('/test-email', async (req, res) => {
+  const targetEmail = req.query.to || process.env.EMAIL_USER || 'sports@mpgi.edu.in';
+  const result = await testEmailDelivery(targetEmail);
+  return res.json({
+    status: result.success ? 'success' : 'failed',
+    targetEmail,
+    details: result,
+  });
 });
 
 export default router;
