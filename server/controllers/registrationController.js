@@ -470,16 +470,21 @@ export const registerPublicEvent = async (req, res) => {
     });
   }
 
-  // Dispatch automated passes and receipts to Captain and all team players asynchronously (Non-blocking)
-  dispatchRegistrationEmails({
-    receipt: newRegRecord,
-    participantData,
-    sportName: event?.title || targetSportId || 'APEX 2026 Sport',
-    category: participantData.category || 'Championship',
-    passCode: newRegRecord.passCode,
-  }).catch((emailErr) => {
-    console.error('⚠️ [Registration Email Background Warning]:', emailErr.message);
-  });
+  // Dispatch automated passes and receipts with a safe 3s window for Serverless environments (Vercel)
+  try {
+    await Promise.race([
+      dispatchRegistrationEmails({
+        receipt: newRegRecord,
+        participantData,
+        sportName: event?.title || targetSportId || 'APEX 2026 Sport',
+        category: participantData.category || 'Championship',
+        passCode: newRegRecord.passCode,
+      }),
+      new Promise((resolve) => setTimeout(resolve, 3000)),
+    ]);
+  } catch (emailErr) {
+    console.error('⚠️ [Registration Email Warning]:', emailErr.message);
+  }
 
   return res.status(201).json({
     success: true,

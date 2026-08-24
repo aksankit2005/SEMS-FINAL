@@ -1,6 +1,14 @@
+import dns from 'dns';
 import nodemailer from 'nodemailer';
 import { envConfig } from '../config/env.js';
 import { generatePassHtml, generatePassPlainText } from './emailTemplates.js';
+
+// Force Node.js to prioritize IPv4 (prevents ENETUNREACH on cloud hosts like Render & Vercel)
+try {
+  if (dns.setDefaultResultOrder) {
+    dns.setDefaultResultOrder('ipv4first');
+  }
+} catch (e) {}
 
 /**
  * Creates and configures a clean, robust Nodemailer transporter for Gmail
@@ -24,6 +32,9 @@ const createTransporter = () => {
     },
     tls: {
       rejectUnauthorized: false,
+    },
+    lookup: (hostname, options, callback) => {
+      dns.lookup(hostname, { family: 4 }, callback);
     },
     family: 4,
     connectionTimeout: 10000,

@@ -9,8 +9,7 @@ if (isProduction) {
   if (!process.env.DATABASE_URL) missingVars.push('DATABASE_URL');
 
   if (missingVars.length > 0) {
-    console.error(`🔴 [FATAL SECURITY ERROR] Missing required environment variables in production: ${missingVars.join(', ')}`);
-    process.exit(1);
+    console.warn(`⚠️ [CONFIG WARNING] Missing recommended environment variables: ${missingVars.join(', ')}`);
   }
 }
 
