@@ -1,9 +1,10 @@
 import dns from 'dns';
+import net from 'net';
 import nodemailer from 'nodemailer';
 import { envConfig } from '../config/env.js';
 import { generatePassHtml, generatePassPlainText } from './emailTemplates.js';
 
-// Force Node.js to prioritize IPv4 (prevents ENETUNREACH on cloud hosts like Render & Vercel)
+// Force Node.js to always resolve DNS to IPv4 first (critical on Render/Vercel IPv6 hosts)
 try {
   if (dns.setDefaultResultOrder) {
     dns.setDefaultResultOrder('ipv4first');
@@ -12,6 +13,7 @@ try {
 
 /**
  * Creates and configures a clean, robust Nodemailer transporter for Gmail
+ * Uses port 587 (STARTTLS) instead of 465 (SSL) — Render blocks IPv6 on port 465
  */
 const createTransporter = () => {
   const user = (process.env.EMAIL_USER || envConfig.emailUser || 'sports@mpgi.edu.in').trim();
@@ -24,8 +26,9 @@ const createTransporter = () => {
 
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
+    port: 587,
+    secure: false,       // STARTTLS — upgrades to TLS after connect (works on Render)
+    requireTLS: true,    // Force TLS upgrade — never send plaintext
     auth: {
       user,
       pass,
@@ -33,22 +36,21 @@ const createTransporter = () => {
     tls: {
       rejectUnauthorized: false,
     },
+    // Force IPv4 DNS resolution to prevent ENETUNREACH on Render's IPv6 network
     lookup: (hostname, options, callback) => {
       dns.lookup(hostname, { family: 4 }, callback);
     },
-    family: 4,
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 30000,
   });
 };
 
 let transporter = null;
 
 export const getTransporter = () => {
-  if (!transporter) {
-    transporter = createTransporter();
-  }
+  // Always create fresh transporter (no caching) so config changes take effect immediately
+  transporter = createTransporter();
   return transporter;
 };
 
