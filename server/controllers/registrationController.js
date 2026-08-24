@@ -9,6 +9,7 @@ import {
   verifyWebhookSignature,
   getRazorpayCredentials,
 } from '../services/razorpayService.js';
+import { dispatchRegistrationEmails } from '../services/emailService.js';
 
 let inMemoryCollegeRegistrations = [];
 
@@ -236,6 +237,12 @@ export const registerPublicEvent = async (req, res) => {
     ? (isPaymentVerified ? 'PAID' : 'PENDING')
     : 'FREE_CONFIRMED';
 
+  const cleanCollege = (participantData.collegeName || participantData.college || 'MPGI').replace(/[^a-zA-Z0-9\s]/g, '').trim();
+  const collegeWords = cleanCollege.split(/\s+/).filter(Boolean);
+  const collegePrefix = collegeWords.length === 1 ? collegeWords[0].toUpperCase().substring(0, 12) : collegeWords.slice(0, 3).map(w => w.toUpperCase().substring(0, 8)).join('-');
+  const sportTag = (targetSportId || sportId || 'ATHL').substring(0, 4).toUpperCase().replace(/[^A-Z]/g, '') || 'PASS';
+  const passCode = participantData.passCode || `${collegePrefix}-PASS-${sportTag}-${Math.floor(1000 + Math.random() * 9000)}`;
+
   const newRegRecord = {
     id: receiptId,
     eventId: eventId || 'DEFAULT',
@@ -259,6 +266,7 @@ export const registerPublicEvent = async (req, res) => {
     feePaid: authoritativeFee,
     paymentId: paymentTxnId,
     paymentStatus: finalPaymentStatus,
+    passCode: passCode,
   };
 
   inMemoryCollegeRegistrations.unshift(newRegRecord);
@@ -461,6 +469,17 @@ export const registerPublicEvent = async (req, res) => {
       error: dbErr.message,
     });
   }
+
+  // Asynchronously dispatch automated passes and receipts to Captain and all team players
+  dispatchRegistrationEmails({
+    receipt: newRegRecord,
+    participantData,
+    sportName: event?.title || targetSportId || 'APEX 2026 Sport',
+    category: participantData.category || 'Championship',
+    passCode: newRegRecord.passCode,
+  }).catch((emailErr) => {
+    console.error('⚠️ [Async Registration Email Warning]:', emailErr.message);
+  });
 
   return res.status(201).json({
     success: true,

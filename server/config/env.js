@@ -39,6 +39,13 @@ export const envConfig = {
   razorpayKeyId: process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || '',
   razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || '',
   razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET || '',
+  smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
+  smtpPort: parseInt(process.env.SMTP_PORT || '465', 10),
+  smtpSecure: process.env.SMTP_SECURE !== 'false',
+  emailUser: process.env.EMAIL_USER || process.env.SMTP_USER || '',
+  emailPass: (process.env.EMAIL_PASS || process.env.SMTP_PASS || '').replace(/\s+/g, ''),
+  emailFromName: process.env.EMAIL_FROM_NAME || 'MPGI SPORTS',
+  emailHelpline: process.env.EMAIL_HELPLINE || 'sports@mpgi.edu.in',
 };
 
 export const headPasswords = {
