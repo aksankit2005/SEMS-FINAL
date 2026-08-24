@@ -136,13 +136,16 @@ export const dispatchRegistrationEmails = async ({
       'Team Captain'
     ).trim();
 
-    const captainEmail = (
+    // Resolve actual captain email — reject known placeholder/fallback values
+    const PLACEHOLDER_EMAILS = ['athlete@apex.edu', 'athlete@sems.edu', 'athlete@college.edu', 'player@college.edu'];
+    const rawCaptainEmail = (
       participantData.captainEmail ||
       participantData.email ||
       receipt.email ||
       (roster[0] && roster[0].email) ||
       ''
     ).trim();
+    const captainEmail = PLACEHOLDER_EMAILS.includes(rawCaptainEmail.toLowerCase()) ? '' : rawCaptainEmail;
 
     const helpline = process.env.EMAIL_HELPLINE || envConfig.emailHelpline || 'sports@mpgi.edu.in';
     const sentEmails = new Set();

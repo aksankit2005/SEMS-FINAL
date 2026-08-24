@@ -542,7 +542,7 @@ export const RegistrationPage = () => {
         {
           fullName: formData.captainName || (formData.roster[0] && formData.roster[0].name) || 'Lead Athlete',
           captainName: formData.captainName,
-          email: formData.captainEmail || (formData.roster[0] && formData.roster[0].email) || 'athlete@apex.edu',
+          email: formData.captainEmail || (formData.roster[0] && formData.roster[0].email) || '',
           phone: formData.captainPhone || (formData.roster[0] && formData.roster[0].phone) || '+91 98765 43210',
           gender: formData.roster[0]?.gender || formData.gender || 'Male',
           collegeName: formData.collegeName || 'MPEC',
@@ -588,7 +588,7 @@ export const RegistrationPage = () => {
         dob: (firstRosterPlayer && firstRosterPlayer.dob) || formData.dob || '2004-05-15',
         college: selectedCollegeName,
         districtState: selectedCollegeName,
-        email: formData.captainEmail || (firstRosterPlayer && firstRosterPlayer.email) || 'athlete@college.edu',
+        email: formData.captainEmail || (firstRosterPlayer && firstRosterPlayer.email) || '',
         phone: formData.captainPhone || (firstRosterPlayer && firstRosterPlayer.phone) || '+91 98765 43210',
         teamName: formData.teamName || '',
         feePaid: activeSport.entryFee,

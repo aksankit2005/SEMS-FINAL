@@ -257,7 +257,7 @@ export const registerPublicEvent = async (req, res) => {
     college: participantData.collegeName || participantData.college || 'MPEC',
     department: participantData.department || participantData.course || 'Engineering',
     enrollmentNo: participantData.enrollmentNo || participantData.rollNo || 'ENR2026-001',
-    email: participantData.email || 'athlete@sems.edu',
+    email: (participantData.email || participantData.captainEmail || (Array.isArray(participantData.roster) && participantData.roster[0] && participantData.roster[0].email) || '').trim(),
     phone: participantData.phone || participantData.mobile || '+91 98765 43210',
     gender: participantData.gender || 'Male',
     emergencyContact: participantData.emergencyContact || '+91 98765 43211',
