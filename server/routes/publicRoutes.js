@@ -11,7 +11,7 @@ import { extractYouTubeVideoIdBackend } from '../controllers/coordinatorControll
 import { publicReadLimiter, apiLimiter } from '../middleware/rateLimiters.js';
 import { computeEffectiveRegistrationStatus } from '../utils/registrationLifecycle.js';
 import { generatePassPdfBuffer } from '../services/pdfService.js';
-import { verifyEmailConnection, testEmailDelivery } from '../services/emailService.js';
+import { verifyEmailConnection, testEmailDelivery, testFullPassEmail } from '../services/emailService.js';
 
 const router = express.Router();
 
@@ -651,6 +651,17 @@ router.get('/test-email', async (req, res) => {
   const result = await testEmailDelivery(targetEmail);
   return res.json({
     status: result.success ? 'success' : 'failed',
+    targetEmail,
+    details: result,
+  });
+});
+
+// Live Test Full Pass Email Endpoint: GET /api/test-pass-email?to=your_email@gmail.com
+router.get('/test-pass-email', async (req, res) => {
+  const targetEmail = req.query.to || process.env.EMAIL_USER || 'sports@mpgi.edu.in';
+  const result = await testFullPassEmail(targetEmail);
+  return res.json({
+    status: 'dispatched',
     targetEmail,
     details: result,
   });

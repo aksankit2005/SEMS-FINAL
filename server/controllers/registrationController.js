@@ -470,18 +470,15 @@ export const registerPublicEvent = async (req, res) => {
     });
   }
 
-  // Dispatch automated passes and receipts with a safe 3s window for Serverless environments (Vercel)
+  // Dispatch automated passes and receipts to Captain and all team players (Fast & Guaranteed)
   try {
-    await Promise.race([
-      dispatchRegistrationEmails({
-        receipt: newRegRecord,
-        participantData,
-        sportName: event?.title || targetSportId || 'APEX 2026 Sport',
-        category: participantData.category || 'Championship',
-        passCode: newRegRecord.passCode,
-      }),
-      new Promise((resolve) => setTimeout(resolve, 3000)),
-    ]);
+    await dispatchRegistrationEmails({
+      receipt: newRegRecord,
+      participantData,
+      sportName: event?.title || targetSportId || 'APEX 2026 Sport',
+      category: participantData.category || 'Championship',
+      passCode: newRegRecord.passCode,
+    });
   } catch (emailErr) {
     console.error('⚠️ [Registration Email Warning]:', emailErr.message);
   }

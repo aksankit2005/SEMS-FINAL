@@ -275,3 +275,43 @@ export const testEmailDelivery = async (targetEmail) => {
   `;
   return await sendSinglePassEmail({ to, subject, html, text: 'SEMS Email System is Working!' });
 };
+
+/**
+ * Diagnostic helper to test full official pass & receipt dispatching
+ */
+export const testFullPassEmail = async (targetEmail) => {
+  const to = (targetEmail || 'mpgisports@gmail.com').trim();
+  const mockReceipt = {
+    id: `REC-APEX-${Math.floor(10000 + Math.random() * 90000)}`,
+    studentName: 'Test Athlete',
+    college: 'MPGI Kanpur',
+    email: to,
+    feePaid: 100,
+    paymentStatus: 'PAID',
+    paymentId: `pay_test_${Date.now()}`,
+    passCode: `MPGI-PASS-ATHL-${Math.floor(1000 + Math.random() * 9000)}`,
+  };
+
+  const mockParticipantData = {
+    fullName: 'Test Athlete',
+    captainName: 'Test Athlete',
+    email: to,
+    captainEmail: to,
+    phone: '+91 98765 43210',
+    collegeName: 'MPGI Kanpur',
+    department: 'Computer Science',
+    rollNo: 'ENR2026-TEST',
+    gender: 'Male',
+    entryFee: 100,
+  };
+
+  await dispatchRegistrationEmails({
+    receipt: mockReceipt,
+    participantData: mockParticipantData,
+    sportName: 'Badminton Championship',
+    category: 'Championship',
+    passCode: mockReceipt.passCode,
+  });
+
+  return { success: true, targetEmail: to, receiptId: mockReceipt.id, passCode: mockReceipt.passCode };
+};
