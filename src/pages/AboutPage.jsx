@@ -80,34 +80,34 @@ export const AboutPage = () => {
     {
       name: 'Praveen Rai',
       role: 'Team Lead',
-      image: '/team/praveen_dev.jpg',
+      image: '/team/praveen.jpg',
       badgeColor: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30',
       linkedin: 'https://linkedin.com/in/praveen-rai-409400280'
     },
     {
       name: 'Ankit Kumar Singh',
-      role: 'Frontend',
+      role: 'Frontend Developer',
       image: '/team/ankit.jpg',
       badgeColor: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30',
       linkedin: 'https://linkedin.com/in/ankit-kumar-singh-a7433b328'
     },
     {
       name: 'Divya Singh',
-      role: 'Frontend',
+      role: 'Frontend Developer',
       image: '/team/divya.jpg',
       badgeColor: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/30',
       linkedin: 'https://www.linkedin.com/in/divya-singh0210'
     },
     {
       name: 'Ritik Kumar Singh',
-      role: 'Backend',
+      role: 'Backend Developer',
       image: '/team/ritik.jpg',
       badgeColor: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30',
       linkedin: 'https://linkedin.com/in/ritik-kumar-singh-1784a328a'
     },
     {
       name: 'Harshit Singh',
-      role: 'Database',
+      role: 'Database Engineer',
       image: '/team/harshit.jpg',
       badgeColor: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
       linkedin: 'https://linkedin.com/in/harshit-singh-21jan2004'
