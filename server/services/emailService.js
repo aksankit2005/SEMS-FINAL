@@ -1,35 +1,25 @@
 import nodemailer from 'nodemailer';
 import { envConfig } from '../config/env.js';
 import { generatePassHtml, generatePassPlainText } from './emailTemplates.js';
-import { generatePassPdfBuffer } from './pdfService.js';
 
 /**
- * Creates and configures a clean, secure Nodemailer transporter for Gmail SSL (Port 465)
+ * Creates and configures a clean, robust Nodemailer transporter for Gmail
  */
 const createTransporter = () => {
-  const user = (process.env.EMAIL_USER || envConfig.emailUser || '').trim();
-  const pass = (process.env.EMAIL_PASS || envConfig.emailPass || '').replace(/\s+/g, '').trim();
+  const user = (process.env.EMAIL_USER || envConfig.emailUser || 'mpgisports@gmail.com').trim();
+  const pass = (process.env.EMAIL_PASS || envConfig.emailPass || 'qvnujfresswtnxul').replace(/\s+/g, '').trim();
 
   if (!user || !pass) {
-    console.warn('⚠️ [Email Service] EMAIL_USER or EMAIL_PASS not configured. Automated emails will be logged only.');
+    console.warn('⚠️ [Email Service] EMAIL_USER or EMAIL_PASS not configured.');
     return null;
   }
 
-  // Direct SSL transport on Port 465 - most reliable across cloud platforms (Render, Heroku, AWS, Vercel)
   return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // SSL
+    service: 'gmail',
     auth: {
       user,
       pass,
     },
-    tls: {
-      rejectUnauthorized: false,
-    },
-    connectionTimeout: 15000,
-    greetingTimeout: 15000,
-    socketTimeout: 20000,
   });
 };
 
@@ -51,7 +41,7 @@ export const verifyEmailConnection = async () => {
 
   try {
     await transport.verify();
-    const user = process.env.EMAIL_USER || envConfig.emailUser;
+    const user = process.env.EMAIL_USER || envConfig.emailUser || 'mpgisports@gmail.com';
     console.log(`✅ [Email Service] Connected to SMTP server successfully (${user}).`);
     return true;
   } catch (err) {
@@ -61,11 +51,11 @@ export const verifyEmailConnection = async () => {
 };
 
 /**
- * Sends a single pass email to an athlete or captain with PDF attachment & plain-text fallback
+ * Sends a single pass email to an athlete or captain with plain-text fallback
  */
 export const sendSinglePassEmail = async (emailOptions) => {
   const transport = getTransporter();
-  const user = (process.env.EMAIL_USER || envConfig.emailUser || '').trim();
+  const user = (process.env.EMAIL_USER || envConfig.emailUser || 'mpgisports@gmail.com').trim();
 
   if (!transport || !user) {
     console.log(`ℹ️ [Mock Email] Would have sent pass to ${emailOptions.to} (${emailOptions.subject})`);
@@ -83,7 +73,6 @@ export const sendSinglePassEmail = async (emailOptions) => {
     subject: emailOptions.subject,
     text: emailOptions.text || '',
     html: emailOptions.html,
-    attachments: emailOptions.attachments || [],
   };
 
   try {
@@ -98,8 +87,8 @@ export const sendSinglePassEmail = async (emailOptions) => {
 };
 
 /**
- * Dispatches automated passes & receipts with attached PDF files for all players upon registration
- * Runs asynchronously in the background.
+ * Dispatches automated passes & receipts for all players upon registration
+ * Runs asynchronously and reliably.
  */
 export const dispatchRegistrationEmails = async ({
   receipt,
@@ -140,7 +129,7 @@ export const dispatchRegistrationEmails = async ({
 
     console.log(`🚀 [Email Dispatcher] Initiating pass dispatch for "${captainName}" (${captainEmail}), Sport: ${finalSportName}, Team: ${teamName || 'Solo'}`);
 
-    // 1. Send Captain / Solo Player Master Pass, Receipt & Attached PDF Pass
+    // 1. Send Captain / Solo Player Master Pass & Receipt
     if (captainEmail && captainEmail.includes('@')) {
       const captainPassData = {
         passCode: basePassCode,
@@ -167,34 +156,23 @@ export const dispatchRegistrationEmails = async ({
 
       const captainHtml = generatePassHtml(captainPassData);
       const captainText = generatePassPlainText(captainPassData);
-      const captainPdfBuffer = generatePassPdfBuffer(captainPassData);
 
       const subject = isTeam
         ? `[APEX 2026] Official Team Pass & Registration Receipt: ${teamName} (${finalSportName})`
         : `[APEX 2026] Official Athlete Pass & Registration Receipt: ${captainName} (${finalSportName})`;
-
-      const attachments = [];
-      if (captainPdfBuffer) {
-        attachments.push({
-          filename: `APEX_Pass_${basePassCode}.pdf`,
-          content: captainPdfBuffer,
-          contentType: 'application/pdf',
-        });
-      }
 
       await sendSinglePassEmail({
         to: captainEmail,
         subject,
         text: captainText,
         html: captainHtml,
-        attachments,
       });
       sentEmails.add(captainEmail.toLowerCase());
     }
 
-    // 2. If Team Sport with multiple roster members, send individual Athlete Pass & Attached PDF to each player
+    // 2. If Team Sport with multiple roster members, send individual Athlete Pass to each player
     if (isTeam && roster.length > 0) {
-      console.log(`ℹ️ [Email Service] Dispatching full passes, PDF attachments & rosters to ${roster.length} team members for '${teamName}'...`);
+      console.log(`ℹ️ [Email Service] Dispatching full passes & rosters to ${roster.length} team members for '${teamName}'...`);
 
       const playerEmailPromises = [];
 
@@ -236,18 +214,8 @@ export const dispatchRegistrationEmails = async ({
 
         const playerHtml = generatePassHtml(playerPassData);
         const playerText = generatePassPlainText(playerPassData);
-        const playerPdfBuffer = generatePassPdfBuffer(playerPassData);
 
         const playerSubject = `[APEX 2026] Official Team Entry Pass: ${playerName} • Team ${teamName} (${finalSportName})`;
-
-        const playerAttachments = [];
-        if (playerPdfBuffer) {
-          playerAttachments.push({
-            filename: `APEX_Athlete_Pass_${playerPassCode}.pdf`,
-            content: playerPdfBuffer,
-            contentType: 'application/pdf',
-          });
-        }
 
         playerEmailPromises.push(
           sendSinglePassEmail({
@@ -255,7 +223,6 @@ export const dispatchRegistrationEmails = async ({
             subject: playerSubject,
             text: playerText,
             html: playerHtml,
-            attachments: playerAttachments,
           })
         );
       }
