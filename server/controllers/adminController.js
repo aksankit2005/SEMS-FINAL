@@ -197,10 +197,11 @@ export const getMasterParticipants = async (req, res) => {
         COALESCE(cr.fee_paid, r.amount, 0) AS "feePaid"
       FROM registration_members m
       JOIN registrations r ON m."registrationId" = r.id
-      LEFT JOIN college_registrations cr ON cr.registration_id = r.id
+      JOIN college_registrations cr ON (cr.registration_id = r.id OR cr.id::text = r.id::text OR cr.id::text = m."registrationId"::text)
       LEFT JOIN coordinator_event_items cei ON (cei.id::text = cr.event_id::text OR cei.id::text = r."eventId"::text)
       LEFT JOIN sports s ON s.slug = r."sportId" OR s.slug = cr.sport_id OR s.name = r."sportId"
       LEFT JOIN colleges c ON c.id = r."collegeId"
+      WHERE cr.id IS NOT NULL
       ORDER BY m."createdAt" DESC
     `).catch((err) => {
       console.warn('Registration members join query error:', err.message);
@@ -1430,21 +1431,190 @@ export const getAdminRegistrationsDB = async (req, res) => {
 export const deleteRegistrationDB = async (req, res) => {
   const { id } = req.params;
   try {
-    await queryDb('DELETE FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1', [String(id)]);
-    await queryDb('DELETE FROM registrations WHERE id::text = $1', [String(id)]);
+    const targetId = String(id).trim();
+
+    // 1. Resolve associated registration_id UUIDs from college_registrations or registration_members
+    const crRes = await queryDb(
+      'SELECT id, registration_id FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1',
+      [targetId]
+    ).catch(() => null);
+
+    const regIds = new Set([targetId]);
+    if (crRes && crRes.rows) {
+      crRes.rows.forEach(r => {
+        if (r.id) regIds.add(String(r.id));
+        if (r.registration_id) regIds.add(String(r.registration_id));
+      });
+    }
+
+    const memRes = await queryDb(
+      'SELECT id, "registrationId" FROM registration_members WHERE id::text = $1 OR "registrationId"::text = $1',
+      [targetId]
+    ).catch(() => null);
+
+    if (memRes && memRes.rows) {
+      memRes.rows.forEach(m => {
+        if (m.id) regIds.add(String(m.id));
+        if (m.registrationId) regIds.add(String(m.registrationId));
+      });
+    }
+
+    for (const rid of regIds) {
+      await queryDb('DELETE FROM registration_members WHERE "registrationId"::text = $1 OR id::text = $1', [rid]);
+      await queryDb('DELETE FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1', [rid]);
+      await queryDb('DELETE FROM registrations WHERE id::text = $1', [rid]);
+    }
+
     logAuditEvent({
       actorName: req.user?.username || 'Admin',
       role: 'ADMIN',
       action: 'Registration Deleted',
-      entity: `Deleted registration ID: ${id}`,
-      entityId: String(id),
+      entity: `Deleted registration ID: ${targetId}`,
+      entityId: targetId,
       ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
     });
 
-    return res.json({ success: true, message: 'Registration deleted from database successfully.' });
+    return res.json({ success: true, message: 'Registration and associated member records deleted from database successfully.' });
   } catch (err) {
     console.error('Error deleting registration from DB:', err.message);
     return res.status(500).json({ message: 'Failed to delete registration from database' });
+  }
+};
+
+/**
+ * Single Master Data Deletion Endpoint
+ * DELETE /api/admin/master-data/:id
+ */
+export const deleteMasterDataDB = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const targetId = String(id).trim();
+    if (!targetId) {
+      return res.status(400).json({ success: false, message: 'Invalid or missing participant ID' });
+    }
+
+    const regIds = new Set([targetId]);
+
+    const crRes = await queryDb(
+      'SELECT id, registration_id FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1',
+      [targetId]
+    ).catch(() => null);
+
+    if (crRes && crRes.rows) {
+      crRes.rows.forEach(r => {
+        if (r.id) regIds.add(String(r.id));
+        if (r.registration_id) regIds.add(String(r.registration_id));
+      });
+    }
+
+    const memRes = await queryDb(
+      'SELECT id, "registrationId" FROM registration_members WHERE id::text = $1 OR "registrationId"::text = $1',
+      [targetId]
+    ).catch(() => null);
+
+    if (memRes && memRes.rows) {
+      memRes.rows.forEach(m => {
+        if (m.id) regIds.add(String(m.id));
+        if (m.registrationId) regIds.add(String(m.registrationId));
+      });
+    }
+
+    for (const rid of regIds) {
+      await queryDb('DELETE FROM registration_members WHERE "registrationId"::text = $1 OR id::text = $1', [rid]);
+      await queryDb('DELETE FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1', [rid]);
+      await queryDb('DELETE FROM registrations WHERE id::text = $1', [rid]);
+    }
+
+    logAuditEvent({
+      actorName: req.user?.username || 'Admin',
+      role: req.user?.role || 'ADMIN',
+      action: 'Master Data Participant Deleted',
+      entity: `Deleted participant ID: ${targetId}`,
+      entityId: targetId,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    });
+
+    return res.json({
+      success: true,
+      message: 'Participant record deleted from Master Data successfully.',
+      targetId
+    });
+  } catch (err) {
+    console.error('Error deleting master data participant from DB:', err.message);
+    return res.status(500).json({ success: false, message: 'Failed to delete participant from Master Data', error: err.message });
+  }
+};
+
+/**
+ * Bulk Master Data Deletion Endpoint
+ * DELETE /api/admin/master-data/bulk
+ * Request body: { ids: ["id1", "id2", "id3"] }
+ */
+export const bulkDeleteMasterDataDB = async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ success: false, message: 'No participant IDs provided for bulk deletion.' });
+  }
+
+  try {
+    const cleanIds = ids.map(i => String(i).trim()).filter(Boolean);
+    const allTargetRegIds = new Set(cleanIds);
+
+    for (const tid of cleanIds) {
+      const crRes = await queryDb(
+        'SELECT id, registration_id FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1',
+        [tid]
+      ).catch(() => null);
+
+      if (crRes && crRes.rows) {
+        crRes.rows.forEach(r => {
+          if (r.id) allTargetRegIds.add(String(r.id));
+          if (r.registration_id) allTargetRegIds.add(String(r.registration_id));
+        });
+      }
+
+      const memRes = await queryDb(
+        'SELECT id, "registrationId" FROM registration_members WHERE id::text = $1 OR "registrationId"::text = $1',
+        [tid]
+      ).catch(() => null);
+
+      if (memRes && memRes.rows) {
+        memRes.rows.forEach(m => {
+          if (m.id) allTargetRegIds.add(String(m.id));
+          if (m.registrationId) allTargetRegIds.add(String(m.registrationId));
+        });
+      }
+    }
+
+    const regIdArray = Array.from(allTargetRegIds);
+    for (const rid of regIdArray) {
+      await queryDb('DELETE FROM registration_members WHERE "registrationId"::text = $1 OR id::text = $1', [rid]);
+      await queryDb('DELETE FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1', [rid]);
+      await queryDb('DELETE FROM registrations WHERE id::text = $1', [rid]);
+    }
+
+    logAuditEvent({
+      actorName: req.user?.username || 'Admin',
+      role: req.user?.role || 'ADMIN',
+      action: 'Bulk Master Data Participants Deleted',
+      entity: `Bulk deleted ${cleanIds.length} participant records`,
+      entityId: cleanIds.join(','),
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    });
+
+    return res.json({
+      success: true,
+      message: `Successfully deleted ${cleanIds.length} records from Master Data database.`,
+      requestedCount: cleanIds.length,
+      deletedCount: cleanIds.length
+    });
+  } catch (err) {
+    console.error('Error executing bulk delete in DB:', err.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to complete bulk deletion in database.',
+      error: err.message
+    });
   }
 };
 

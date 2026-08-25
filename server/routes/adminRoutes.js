@@ -39,7 +39,9 @@ import {
   saveCommitteeMemberDB,
   deleteCommitteeMemberDB,
   getAdminResultsDB,
-  deleteCoordinatorEventDB
+  deleteCoordinatorEventDB,
+  deleteMasterDataDB,
+  bulkDeleteMasterDataDB
 } from '../controllers/adminController.js';
 import { getCloudinarySignature } from '../controllers/prController.js';
 import {
@@ -114,5 +116,11 @@ router.get('/super-coordinator/hero-slides', verifySuperCoordinatorToken, getHer
 router.post('/super-coordinator/hero-slides', verifySuperCoordinatorToken, saveHeroSlidesDB);
 router.get('/super-coordinator/cloudinary-signature', verifySuperCoordinatorToken, getCloudinarySignature);
 router.post('/super-coordinator/change-password', verifySuperCoordinatorToken, changeSuperCoordinatorPasswordDB);
+
+// Master Data Single and Bulk Delete Endpoints
+router.delete('/admin/master-data/bulk', verifyAdminOrSuperCoordinatorToken, bulkDeleteMasterDataDB);
+router.delete('/admin/master-data/:id', verifyAdminOrSuperCoordinatorToken, deleteMasterDataDB);
+router.delete('/super-coordinator/master-data/bulk', verifyAdminOrSuperCoordinatorToken, bulkDeleteMasterDataDB);
+router.delete('/super-coordinator/master-data/:id', verifyAdminOrSuperCoordinatorToken, deleteMasterDataDB);
 
 export default router;
