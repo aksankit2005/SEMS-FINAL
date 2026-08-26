@@ -447,7 +447,12 @@ export const initDatabaseSchema = async () => {
       );
     `);
 
-    // 7. Seed user account tables and password hashes
+    // 7. Ensure college_registrations has email status tracking columns
+    await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS email_status VARCHAR(20) DEFAULT 'pending';`);
+    await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS email_error TEXT;`);
+    await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS email_sent_at TIMESTAMP WITH TIME ZONE;`);
+
+    // 8. Seed user account tables and password hashes
     await seedInitialAccountHashes();
 
   } catch (err) {

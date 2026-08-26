@@ -39,6 +39,9 @@ export const envConfig = {
   razorpayKeyId: process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || '',
   razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || '',
   razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET || '',
+  resendApiKey: process.env.RESEND_API_KEY || '',
+  resendFromEmail: process.env.RESEND_FROM_EMAIL || 'MPGI Sports <noreply@mpgisports.in>',
+  appUrl: process.env.APP_URL || process.env.VITE_APP_URL || 'https://mpgisports.in',
 };
 
 export const headPasswords = {

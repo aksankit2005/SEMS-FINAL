@@ -3,6 +3,7 @@ import {
   registerPublicEvent,
   createPublicRegistrationOrder,
   handleRazorpayWebhook,
+  getRegistrationPassPDF,
 } from '../controllers/registrationController.js';
 import { getHeroSlidesDB, getCommitteeDB } from '../controllers/adminController.js';
 import { getLeaderboardStandings } from '../services/leaderboardService.js';
@@ -558,6 +559,12 @@ router.post('/public/register', apiLimiter, registerPublicEvent);
 // POST /api/public/razorpay-webhook - Razorpay lifecycle webhooks
 router.post('/public/razorpay-webhook', handleRazorpayWebhook);
 router.post('/razorpay/webhook', handleRazorpayWebhook);
+
+// GET /api/public/registration-pass/:id - Direct vector PDF pass stream / download
+router.get('/public/registration-pass/:id', publicReadLimiter, getRegistrationPassPDF);
+router.get('/public/pass/:id', publicReadLimiter, getRegistrationPassPDF);
+router.get('/pass/:id', publicReadLimiter, getRegistrationPassPDF);
+router.get('/registration-pass/:id', publicReadLimiter, getRegistrationPassPDF);
 
 // GET /api/leaderboard - Spectator college standings endpoint from Supabase college_leaderboards table
 router.get('/leaderboard', publicReadLimiter, async (req, res) => {

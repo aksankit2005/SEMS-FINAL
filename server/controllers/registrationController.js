@@ -9,6 +9,8 @@ import {
   verifyWebhookSignature,
   getRazorpayCredentials,
 } from '../services/razorpayService.js';
+import { triggerAsyncRegistrationEmail } from '../services/emailService.js';
+import { generateRegistrationPassPDFBuffer } from '../services/pdfService.js';
 
 let inMemoryCollegeRegistrations = [];
 
@@ -453,6 +455,19 @@ export const registerPublicEvent = async (req, res) => {
         );
       } catch (e) { }
     }
+    // Trigger non-blocking detached asynchronous email delivery via Resend
+    triggerAsyncRegistrationEmail({
+      registration: newRegRecord,
+      participantData,
+      event,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Event registration successful!',
+      receipt: newRegRecord,
+      updatedEvent: event,
+    });
   } catch (dbErr) {
     console.error('PostgreSQL Prisma Registration Insert Error:', dbErr);
     return res.status(500).json({
@@ -461,13 +476,6 @@ export const registerPublicEvent = async (req, res) => {
       error: dbErr.message,
     });
   }
-
-  return res.status(201).json({
-    success: true,
-    message: 'Event registration successful!',
-    receipt: newRegRecord,
-    updatedEvent: event,
-  });
 };
 
 /**
@@ -580,3 +588,97 @@ export const handleRazorpayWebhook = async (req, res) => {
     return res.status(500).json({ success: false, error: err.message });
   }
 };
+
+/**
+ * 4. Direct Public Registration Pass PDF Endpoint
+ * GET /api/public/registration-pass/:id
+ * GET /api/public/pass/:id
+ */
+export const getRegistrationPassPDF = async (req, res) => {
+  const rawId = (req.params.id || req.query.id || '').trim();
+  if (!rawId) {
+    return res.status(400).send('Registration ID or Receipt number is required.');
+  }
+
+  try {
+    // 1. Check in college_registrations table
+    let regRecord = null;
+    try {
+      const dbRes = await queryDb(
+        `SELECT id, registration_id AS "registrationId", event_id AS "eventId", sport_id AS "sportId",
+                student_name AS "studentName", team_name AS "teamName", college, department,
+                email, phone, gender, emergency_contact AS "emergencyContact", status,
+                fee_paid AS "feePaid", payment_id AS "paymentId", payment_status AS "paymentStatus",
+                members_count AS "membersCount", participant_data AS "participantData",
+                created_at AS "createdAt"
+         FROM college_registrations 
+         WHERE id = $1 OR registration_id::text = $1`,
+        [rawId]
+      );
+
+      if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+        regRecord = dbRes.rows[0];
+      }
+    } catch (dbErr) {
+      console.warn('DB lookup for registration pass notice:', dbErr.message);
+    }
+
+    if (!regRecord) {
+      // Fallback to in-memory store
+      regRecord = inMemoryCollegeRegistrations.find(r => r.id === rawId || r.receiptId === rawId);
+    }
+
+    if (!regRecord) {
+      return res.status(404).send('Registration pass not found for the specified ID.');
+    }
+
+    // Format pass payload
+    const participantData = regRecord.participantData || {};
+    const roster = Array.isArray(participantData.roster) && participantData.roster.length > 0
+      ? participantData.roster
+      : [
+          {
+            name: regRecord.studentName || participantData.fullName || participantData.name || 'Lead Athlete',
+            fatherName: participantData.fatherName || 'N/A',
+            gender: regRecord.gender || participantData.gender || 'Male',
+            dob: participantData.dob || '2004-05-15',
+            phone: regRecord.phone || participantData.phone || '+91 98765 43210',
+            email: regRecord.email || participantData.email || 'athlete@mpgisports.in',
+            rollNo: participantData.rollNo || participantData.enrollmentNo || 'ENR2026-001',
+            isCaptain: true,
+          }
+        ];
+
+    const passPayload = {
+      receiptId: regRecord.id,
+      college: regRecord.college || participantData.collegeName || 'MPGI Group of Institutions',
+      sportName: participantData.sportName || regRecord.sportId || 'APEX Championship',
+      category: participantData.category || regRecord.sportId || 'Championship',
+      participantName: regRecord.studentName || participantData.fullName || participantData.name,
+      fatherName: participantData.fatherName || 'N/A',
+      gender: regRecord.gender,
+      dob: participantData.dob || '2004-05-15',
+      phone: regRecord.phone,
+      email: regRecord.email,
+      teamName: regRecord.teamName || regRecord.college,
+      utrNumber: regRecord.paymentId || 'TXN-APEX-VERIFIED',
+      feePaid: regRecord.feePaid || '0',
+      date: new Date(regRecord.createdAt || Date.now()).toLocaleDateString('en-US'),
+      status: regRecord.status || 'CONFIRMED',
+      roster,
+    };
+
+    const pdfBuffer = generateRegistrationPassPDFBuffer(passPayload);
+
+    const isDownload = req.query.view !== 'true';
+    const disposition = isDownload ? 'attachment' : 'inline';
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `${disposition}; filename="APEX-Pass-${regRecord.id}.pdf"`);
+    return res.send(pdfBuffer);
+  } catch (err) {
+    console.error('Error generating registration pass PDF:', err);
+    return res.status(500).send('An error occurred while generating the registration pass PDF.');
+  }
+};
+

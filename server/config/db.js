@@ -30,6 +30,7 @@ export const prisma = new PrismaClient({ adapter: prismaAdapter });
 
 // Helper to execute SQL query with fallback
 export const queryDb = async (text, params) => {
+  if (!databaseUrl) return null;
   try {
     const res = await pool.query(text, params);
     return res;
