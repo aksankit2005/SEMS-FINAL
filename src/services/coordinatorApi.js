@@ -1205,6 +1205,15 @@ async deleteMatch(id) {
     const newRegCount = eventData.registeredCount !== undefined ? eventData.registeredCount : target.registeredCount;
     const newMaxReg = eventData.maxRegistrations !== undefined ? eventData.maxRegistrations : target.maxRegistrations;
 
+    // If regEndDate is updated to a future date, auto-reopen if status was Closed
+    const regEndDate = eventData.regEndDate || target.regEndDate;
+    if (regEndDate && newStatus === 'Closed' && newRegCount < newMaxReg) {
+      const parsedEnd = Date.parse(`${regEndDate}T23:59:59.999+05:30`);
+      if (!isNaN(parsedEnd) && parsedEnd >= Date.now()) {
+        newStatus = 'Published';
+      }
+    }
+
     if (newRegCount >= newMaxReg) {
       newStatus = 'Closed';
     }
@@ -1213,6 +1222,7 @@ async deleteMatch(id) {
       ...target,
       ...eventData,
       status: newStatus,
+      registrationOpen: newStatus !== 'Closed' && newStatus !== 'Draft',
       updatedAt: new Date().toISOString()
     };
 
@@ -1321,7 +1331,8 @@ async deleteMatch(id) {
           .filter((e) => e && e.id && !deletedSet.has(e.id))
           .map((e) => {
             let status = e.status || 'Published';
-            if (status !== 'Upcoming' && status !== 'Coming Soon' && e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) {
+            const parsedEnd = e.regEndDate ? Date.parse(`${e.regEndDate}T23:59:59.999+05:30`) : null;
+            if (status !== 'Upcoming' && status !== 'Coming Soon' && parsedEnd && !isNaN(parsedEnd) && parsedEnd < currentDate.getTime()) {
               status = 'Closed';
             }
             return {

@@ -33,9 +33,9 @@ export const TugOfWarEventsTab = ({ user }) => {
     coverImage: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=800&q=80',
     description: '',
     regStartDate: new Date().toISOString().split('T')[0],
-    regEndDate: '2026-08-25',
-    tournStartDate: '2026-09-01',
-    tournEndDate: '2026-09-03',
+    regEndDate: '2026-09-15',
+    tournStartDate: '2026-09-16',
+    tournEndDate: '2026-09-18',
     teamFee: 1500, // Team registration fee ONLY
     minPlayers: 8,  // Min players per squad
     maxPlayers: 10, // Max players per squad
@@ -87,9 +87,9 @@ export const TugOfWarEventsTab = ({ user }) => {
       coverImage: eventObj.coverImage || 'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=800&q=80',
       description: eventObj.description || '',
       regStartDate: eventObj.regStartDate || new Date().toISOString().split('T')[0],
-      regEndDate: eventObj.regEndDate || '2026-08-25',
-      tournStartDate: eventObj.tournStartDate || '2026-09-01',
-      tournEndDate: eventObj.tournEndDate || '2026-09-03',
+      regEndDate: eventObj.regEndDate || '2026-09-15',
+      tournStartDate: eventObj.tournStartDate || '2026-09-16',
+      tournEndDate: eventObj.tournEndDate || '2026-09-18',
       teamFee: typeof eventObj.teamFee === 'number' ? eventObj.teamFee : (typeof eventObj.entryFee === 'number' ? eventObj.entryFee : (eventObj.teamFee ?? eventObj.entryFee ?? 1500)),
       minPlayers: minP,
       maxPlayers: maxP,
@@ -118,9 +118,9 @@ export const TugOfWarEventsTab = ({ user }) => {
       coverImage: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=800&q=80',
       description: 'Official inter-college Tug of War tournament. Register team entries (8 - 10 players) today!',
       regStartDate: new Date().toISOString().split('T')[0],
-      regEndDate: '2026-08-25',
-      tournStartDate: '2026-09-01',
-      tournEndDate: '2026-09-03',
+      regEndDate: '2026-09-15',
+      tournStartDate: '2026-09-16',
+      tournEndDate: '2026-09-18',
       teamFee: 1500,
       minPlayers: 8,
       maxPlayers: 10,
@@ -191,8 +191,19 @@ export const TugOfWarEventsTab = ({ user }) => {
 
     const calculatedTeamSize = `${formData.minPlayers} - ${formData.maxPlayers} Players`;
 
+    // Auto-reopen event if deadline was extended to a future date and status was Closed
+    let targetStatus = formData.status || 'Published';
+    if (formData.regEndDate) {
+      const parsedEnd = Date.parse(`${formData.regEndDate}T23:59:59.999+05:30`);
+      if (!isNaN(parsedEnd) && parsedEnd >= Date.now() && targetStatus === 'Closed') {
+        targetStatus = 'Published';
+      }
+    }
+
     const eventPayload = {
       ...formData,
+      status: targetStatus,
+      registrationOpen: targetStatus !== 'Closed' && targetStatus !== 'Draft',
       entryFee: formData.teamFee,
       teamSize: calculatedTeamSize,
       rules: rulesArr,
