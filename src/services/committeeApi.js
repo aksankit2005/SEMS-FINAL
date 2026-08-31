@@ -63,6 +63,16 @@ const DEFAULT_SESSIONS = [
 ];
 
 export const committeeApi = {
+  // Get cached sessions synchronously without network delay
+  getCachedData: () => {
+    try {
+      const saved = localStorage.getItem(COMMITTEE_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : DEFAULT_SESSIONS;
+    } catch (e) {
+      return DEFAULT_SESSIONS;
+    }
+  },
+
   // Get all sessions with advisors & executive committee from database
   getCommitteeData: async () => {
     try {

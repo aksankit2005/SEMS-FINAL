@@ -26,6 +26,22 @@ export const CollapsibleSidebar = ({ isCollapsed, onToggleCollapse }) => {
   }, []);
 
   const getActiveSession = () => {
+    if (localStorage.getItem('sems_admin_token')) {
+      const adUser = JSON.parse(localStorage.getItem('sems_admin_user') || '{}');
+      return {
+        name: adUser?.name || 'System Administrator',
+        roleLabel: 'Admin Portal',
+        dashboardPath: '/admin/dashboard'
+      };
+    }
+    if (localStorage.getItem('sems_super_coord_token')) {
+      const scUser = JSON.parse(localStorage.getItem('sems_super_coord_user') || '{}');
+      return {
+        name: scUser?.name || 'Super Coordinator',
+        roleLabel: 'Super Coord Portal',
+        dashboardPath: '/super-coordinator/dashboard'
+      };
+    }
     if (user) {
       return {
         name: user.name || 'User Profile',

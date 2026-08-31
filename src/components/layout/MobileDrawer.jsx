@@ -37,6 +37,36 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
   }, [isOpen, onClose]);
 
   const getActiveSession = () => {
+    if (localStorage.getItem('sems_admin_token')) {
+      const adUser = JSON.parse(localStorage.getItem('sems_admin_user') || '{}');
+      return {
+        name: adUser?.name || 'System Administrator',
+        roleLabel: 'Admin',
+        dashboardPath: '/admin/dashboard',
+        logoutHandler: () => {
+          localStorage.removeItem('sems_admin_token');
+          localStorage.removeItem('sems_admin_user');
+          window.dispatchEvent(new Event('sems-auth-change'));
+          onClose();
+          navigate('/');
+        }
+      };
+    }
+    if (localStorage.getItem('sems_super_coord_token')) {
+      const scUser = JSON.parse(localStorage.getItem('sems_super_coord_user') || '{}');
+      return {
+        name: scUser?.name || 'Super Coordinator',
+        roleLabel: 'Super Coord',
+        dashboardPath: '/super-coordinator/dashboard',
+        logoutHandler: () => {
+          localStorage.removeItem('sems_super_coord_token');
+          localStorage.removeItem('sems_super_coord_user');
+          window.dispatchEvent(new Event('sems-auth-change'));
+          onClose();
+          navigate('/');
+        }
+      };
+    }
     if (user) {
       return {
         name: user.name || 'User Profile',

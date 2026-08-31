@@ -131,13 +131,10 @@ export const HeroSection = () => {
       >
         {/* Background Image inside card - Full Bleed Edge to Edge */}
         <img
+          key={currentSlide.id || currentSlide.image || activeIndex}
           src={currentSlide.image}
-          alt={currentSlide.title}
-          className="w-full h-full object-cover object-center brightness-[1.05] contrast-[1.06] saturate-[1.08] group-hover:scale-105 transition-transform duration-700 select-none pointer-events-none"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=2000&q=80';
-          }}
+          alt={currentSlide.title || 'APEX Sports Tournament'}
+          className="w-full h-full object-cover object-center brightness-[1.05] contrast-[1.06] saturate-[1.08] group-hover:scale-105 transition-all duration-700 select-none pointer-events-none"
           draggable="false"
         />
 

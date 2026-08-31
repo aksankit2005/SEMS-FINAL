@@ -31,12 +31,14 @@ const LinkedinIcon = (props) => (
 
 export const AboutPage = () => {
   const [selectedYear, setSelectedYear] = useState('2025');
-  const [sessions, setSessions] = useState([]);
+  const [sessions, setSessions] = useState(() => committeeApi.getCachedData());
 
   useEffect(() => {
     const load = () => {
       committeeApi.getCommitteeData().then((data) => {
-        setSessions(data || []);
+        if (Array.isArray(data) && data.length > 0) {
+          setSessions(data);
+        }
       });
     };
     load();
@@ -47,34 +49,6 @@ export const AboutPage = () => {
       window.removeEventListener('storage', load);
     };
   }, []);
-
-  const facultyAdvisors = [
-    {
-      name: 'Dr. Ajay kr Singh',
-      role: 'Sports Coach',
-      image: '/team/faculty_ajay.jpg'
-    },
-    {
-      name: 'Mr. Kaushal Maurya',
-      role: 'Co-Faculty Advisor',
-      image: '/team/faculty_kaushal.jpg'
-    },
-    {
-      name: 'Mr. Sushil Kushwaha',
-      role: 'Faculty Advisor',
-      image: '/team/faculty_susil.jpg'
-    },
-    {
-      name: 'Mr. Rahul Kumar',
-      role: 'Co-Faculty Advisor',
-      image: '/team/faculty_rahul.jpg'
-    },
-    {
-      name: 'Mr. Amit kr Verma',
-      role: 'Co-Faculty Advisor',
-      image: '/team/faculty_amit.jpg'
-    }
-  ];
 
   const developersData = [
     {
@@ -127,11 +101,8 @@ export const AboutPage = () => {
   const activeSession = sessions.find((s) => s.isActive) || sessions[0] || null;
   const selectedSession = committeeYears[selectedYear] || activeSession;
 
-  // Faculty Advisors from active session (fallback to static defaults)
-  const rawAdvisors =
-    activeSession?.advisors && activeSession.advisors.length > 0
-      ? activeSession.advisors
-      : facultyAdvisors;
+  // Faculty Advisors from active session
+  const rawAdvisors = activeSession?.advisors || [];
   const advisors = [...rawAdvisors].sort((a, b) => {
     if (a.sortOrder !== undefined && b.sortOrder !== undefined) {
       return Number(a.sortOrder) - Number(b.sortOrder);
