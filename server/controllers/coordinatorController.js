@@ -2130,8 +2130,8 @@ export const updateEvent = async (req, res) => {
   const category = req.body.category || existing.category || 'Open';
   let status = req.body.status !== undefined ? req.body.status : (existing.status || 'Draft');
 
-  // If regEndDate is updated to a future date, auto-reopen if status was Closed
-  if (regEndDate && status === 'Closed' && registeredCount < maxRegistrations) {
+  // Only auto-reopen if regEndDate was specifically modified in this payload and status was not explicitly specified
+  if (req.body.regEndDate && req.body.status === undefined && existing.status === 'Closed' && registeredCount < maxRegistrations) {
     const parsedEnd = Date.parse(`${regEndDate}T23:59:59.999+05:30`);
     if (!isNaN(parsedEnd) && parsedEnd >= Date.now()) {
       status = 'Published';
@@ -2141,10 +2141,7 @@ export const updateEvent = async (req, res) => {
   if (registeredCount >= maxRegistrations && req.body.status === undefined) {
     status = 'Closed';
   }
-  let registrationOpen = req.body.registrationOpen !== undefined ? Boolean(req.body.registrationOpen) : (existing.registrationOpen !== undefined ? existing.registrationOpen : true);
-  if (status === 'Published') {
-    registrationOpen = true;
-  }
+  let registrationOpen = req.body.registrationOpen !== undefined ? Boolean(req.body.registrationOpen) : (status !== 'Closed' && status !== 'Draft' && status !== 'Completed');
   const rules = req.body.rules || existing.rules || [];
   const requiredDocuments = req.body.requiredDocuments || existing.requiredDocuments || ['College ID Card', 'Student Aadhaar/Govt ID'];
   const contactInfo = req.body.contactInfo || existing.contactInfo || {

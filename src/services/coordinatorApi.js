@@ -1205,16 +1205,16 @@ async deleteMatch(id) {
     const newRegCount = eventData.registeredCount !== undefined ? eventData.registeredCount : target.registeredCount;
     const newMaxReg = eventData.maxRegistrations !== undefined ? eventData.maxRegistrations : target.maxRegistrations;
 
-    // If regEndDate is updated to a future date, auto-reopen if status was Closed
-    const regEndDate = eventData.regEndDate || target.regEndDate;
-    if (regEndDate && newStatus === 'Closed' && newRegCount < newMaxReg) {
+    // Only auto-reopen if regEndDate was specifically modified in this payload and status was not explicitly specified
+    const regEndDate = eventData.regEndDate;
+    if (regEndDate && eventData.status === undefined && target.status === 'Closed' && newRegCount < newMaxReg) {
       const parsedEnd = Date.parse(`${regEndDate}T23:59:59.999+05:30`);
       if (!isNaN(parsedEnd) && parsedEnd >= Date.now()) {
         newStatus = 'Published';
       }
     }
 
-    if (newRegCount >= newMaxReg) {
+    if (newRegCount >= newMaxReg && eventData.status === undefined) {
       newStatus = 'Closed';
     }
 
@@ -1222,7 +1222,7 @@ async deleteMatch(id) {
       ...target,
       ...eventData,
       status: newStatus,
-      registrationOpen: newStatus !== 'Closed' && newStatus !== 'Draft',
+      registrationOpen: eventData.registrationOpen !== undefined ? Boolean(eventData.registrationOpen) : (newStatus !== 'Closed' && newStatus !== 'Draft' && newStatus !== 'Completed'),
       updatedAt: new Date().toISOString()
     };
 
