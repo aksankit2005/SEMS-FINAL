@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { ImageCropperModal } from '../../common/ImageCropperModal';
+import { useToast } from '../../../context/ToastContext';
 import { exportToCSV } from '../../../utils/pdfExporter';
 import { EventStatusBadge, EventStatusActionButton, RegistrationStatusBadge, RegistrationActionButton } from '../events/RegistrationStatusControl';
 import { computeEffectiveRegistrationStatus } from '../../../utils/registrationLifecycle';
