@@ -6,8 +6,9 @@ import {
 } from 'lucide-react';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { ImageCropperModal } from '../../common/ImageCropperModal';
-import { useToast } from '../../../context/ToastContext';
 import { exportToCSV } from '../../../utils/pdfExporter';
+import { EventStatusBadge, EventStatusActionButton, RegistrationStatusBadge, RegistrationActionButton } from '../events/RegistrationStatusControl';
+import { computeEffectiveRegistrationStatus } from '../../../utils/registrationLifecycle';
 
 export const TugOfWarEventsTab = ({ user }) => {
   const { addToast } = useToast();
@@ -190,20 +191,12 @@ export const TugOfWarEventsTab = ({ user }) => {
     const docsArr = docInput.split('\n').map((d) => d.trim()).filter(Boolean);
 
     const calculatedTeamSize = `${formData.minPlayers} - ${formData.maxPlayers} Players`;
-
-    // Auto-reopen event if deadline was extended to a future date and status was Closed
-    let targetStatus = formData.status || 'Published';
-    if (formData.regEndDate) {
-      const parsedEnd = Date.parse(`${formData.regEndDate}T23:59:59.999+05:30`);
-      if (!isNaN(parsedEnd) && parsedEnd >= Date.now() && targetStatus === 'Closed') {
-        targetStatus = 'Published';
-      }
-    }
+    const targetStatus = formData.status || 'Published';
 
     const eventPayload = {
       ...formData,
       status: targetStatus,
-      registrationOpen: targetStatus !== 'Closed' && targetStatus !== 'Draft',
+      registrationOpen: targetStatus !== 'Closed' && targetStatus !== 'Draft' && targetStatus !== 'Completed',
       entryFee: formData.teamFee,
       teamSize: calculatedTeamSize,
       rules: rulesArr,
@@ -218,18 +211,19 @@ export const TugOfWarEventsTab = ({ user }) => {
     try {
       if (editingEvent) {
         const updated = await coordinatorApi.updateEvent(editingEvent.id, eventPayload);
-        setEvents((prev) => prev.map((item) => (item.id === editingEvent.id ? updated : item)));
-        addToast(`Tug of War registration event "${updated.title}" updated!`, 'success');
+        setEvents((prev) => prev.map((item) => (item.id === editingEvent.id ? { ...item, ...updated } : item)));
+        addToast(`Tug of War event "${updated.title || formData.title}" updated!`, 'success');
       } else {
         const created = await coordinatorApi.createEvent(eventPayload);
         setEvents((prev) => [created, ...prev]);
-        addToast(`New tug of war registration event "${created.title}" published!`, 'success');
+        addToast(`New tug of war event "${created.title || formData.title}" published!`, 'success');
       }
 
       setShowCreateModal(false);
       fetchEvents();
+      window.dispatchEvent(new Event('sems_events_updated'));
     } catch (err) {
-      addToast('Failed to save tug of war registration event', 'error');
+      addToast('Failed to save tug of war event', 'error');
     }
   };
 
@@ -239,27 +233,56 @@ export const TugOfWarEventsTab = ({ user }) => {
         await coordinatorApi.deleteEvent(id);
         setEvents((prev) => prev.filter((item) => item.id !== id));
         addToast('Tug of war event deleted successfully', 'info');
+        window.dispatchEvent(new Event('sems_events_updated'));
       } catch (err) {
         addToast('Failed to delete event', 'error');
       }
     }
   };
 
-  const handleToggleStatus = async (eventObj) => {
-    const statusCycle = {
-      'Draft': 'Upcoming',
-      'Upcoming': 'Published',
-      'Published': 'Closed',
-      'Closed': 'Draft'
-    };
-    const nextStatus = statusCycle[eventObj.status] || 'Published';
+  const handleToggleRegistrationOpen = async (eventObj) => {
+    const regStatus = computeEffectiveRegistrationStatus(eventObj);
 
+    if (regStatus.isDeadlinePassed) {
+      addToast('Registration deadline has passed. Extend the registration end date in edit settings before reopening registration.', 'warning');
+      return;
+    }
+
+    const isCurrentlyOpen = regStatus.effectiveRegistrationOpen;
+    const newRegOpen = !isCurrentlyOpen;
     try {
-      const updated = await coordinatorApi.updateEvent(eventObj.id, { status: nextStatus });
-      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? updated : item)));
-      addToast(`Event status changed to ${nextStatus}`, 'info');
+      const updated = await coordinatorApi.updateEvent(eventObj.id, {
+        registrationOpen: newRegOpen,
+        status: newRegOpen ? 'Published' : 'Closed'
+      });
+      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, registrationOpen: newRegOpen, status: newRegOpen ? 'Published' : 'Closed' } : item)));
+      if (!newRegOpen) {
+        addToast(`🔒 Registration closed for "${eventObj.title}". Fixtures can now be scheduled!`, 'success');
+      } else {
+        addToast(`🔓 Registration reopened for "${eventObj.title}". Teams can now register.`, 'info');
+      }
+      fetchEvents();
+      window.dispatchEvent(new Event('sems_events_updated'));
     } catch (err) {
-      addToast('Status toggle failed', 'error');
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to toggle registration status';
+      addToast(errMsg, 'error');
+    }
+  };
+
+  const handleToggleEventStatus = async (eventObj, targetStatus) => {
+    const nextStatus = targetStatus || ((eventObj.status === 'Active' || eventObj.status === 'Published') ? 'Closed' : 'Published');
+    try {
+      const updated = await coordinatorApi.updateEvent(eventObj.id, { 
+        status: nextStatus,
+        registrationOpen: nextStatus === 'Published' || nextStatus === 'Active'
+      });
+      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, status: nextStatus } : item)));
+      addToast(`Event is now ${nextStatus}`, nextStatus === 'Active' || nextStatus === 'Published' ? 'success' : 'info');
+      fetchEvents();
+      window.dispatchEvent(new Event('sems_events_updated'));
+    } catch (err) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to update event status';
+      addToast(errMsg, 'error');
     }
   };
 
@@ -385,19 +408,10 @@ export const TugOfWarEventsTab = ({ user }) => {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/30 to-transparent" />
 
-                    {/* Status Badge */}
-                    <div className="absolute top-3 left-3 flex items-center gap-2">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase border shadow-md ${
-                        event.status === 'Published'
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                          : event.status === 'Upcoming'
-                          ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
-                          : event.status === 'Closed'
-                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                          : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                      }`}>
-                        ● {event.status}
-                      </span>
+                    {/* Status Badges */}
+                    <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5">
+                      <EventStatusBadge event={event} />
+                      <RegistrationStatusBadge event={event} />
                       <span className="px-2.5 py-1 rounded-full bg-slate-950/70 backdrop-blur-xs text-white text-[10px] font-bold border border-slate-800">
                         {event.category || 'Open'}
                       </span>
@@ -452,23 +466,17 @@ export const TugOfWarEventsTab = ({ user }) => {
                     </div>
 
                     {/* Actions Bar */}
-                    <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => handleToggleStatus(event)}
-                          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
-                          title="Toggle Status (Draft -> Upcoming -> Published -> Closed)"
-                        >
-                          {event.status === 'Published' ? (
-                            <ToggleRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                          ) : event.status === 'Upcoming' ? (
-                            <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                          ) : (
-                            <ToggleLeft className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                          )}
-                          <span>Toggle Status</span>
-                        </button>
-
+                    <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <EventStatusActionButton 
+                          event={event} 
+                          onToggleStatus={handleToggleEventStatus} 
+                        />
+                        <RegistrationActionButton 
+                          event={event} 
+                          onToggle={handleToggleRegistrationOpen} 
+                          onOpenEdit={handleOpenEdit} 
+                        />
                         <button
                           onClick={() => handleViewParticipants(event)}
                           className="px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 dark:bg-orange-500/20 dark:hover:bg-orange-500/30 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-500/30 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
@@ -756,8 +764,9 @@ export const TugOfWarEventsTab = ({ user }) => {
                   >
                     <option value="Draft">Draft (Hidden)</option>
                     <option value="Upcoming">Upcoming (Coming Soon)</option>
-                    <option value="Published">Published (Open)</option>
-                    <option value="Closed">Closed</option>
+                    <option value="Published">Published (Open / Active)</option>
+                    <option value="Closed">Closed (Registration Closed)</option>
+                    <option value="Completed">Completed (Event Finished)</option>
                   </select>
                 </div>
               </div>
