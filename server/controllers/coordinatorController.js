@@ -218,6 +218,8 @@ export const getMatches = async (req, res) => {
           createdAt: 'desc',
         },
       });
+    }
+
     const formatted = (dbMatches || []).map((m) => {
       let detailsObj = m.details;
       if (typeof detailsObj === 'string') {
