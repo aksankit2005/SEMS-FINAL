@@ -207,8 +207,8 @@ export const LiveMatchPortalPage = () => {
 
         {/* Live Matches Section */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2 uppercase">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2 uppercase">
               <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
               Currently Live Matches ({filteredLiveMatches.length})
             </h2>
@@ -391,12 +391,12 @@ export const LiveMatchPortalPage = () => {
                             </div>
 
                             <div className="space-y-1">
-                              <div className="flex items-baseline gap-1 font-mono">
-                                <span className="text-2xl sm:text-3xl font-black text-emerald-400">
+                              <div className="flex items-baseline gap-1 font-mono tabular-nums whitespace-nowrap">
+                                <span className="text-xl sm:text-2xl md:text-3xl font-black text-emerald-400">
                                   {t1Cricket.runs}
                                 </span>
-                                <span className="text-lg font-bold text-slate-400">/</span>
-                                <span className="text-xl sm:text-2xl font-black text-rose-400">
+                                <span className="text-base sm:text-lg font-bold text-slate-400">/</span>
+                                <span className="text-lg sm:text-xl md:text-2xl font-black text-rose-400">
                                   {t1Cricket.wickets}
                                 </span>
                               </div>
@@ -431,12 +431,12 @@ export const LiveMatchPortalPage = () => {
                                 </div>
                               ) : (
                                 <>
-                                  <div className="flex items-baseline gap-1 font-mono">
-                                    <span className="text-2xl sm:text-3xl font-black text-emerald-400">
+                                  <div className="flex items-baseline gap-1 font-mono tabular-nums whitespace-nowrap">
+                                    <span className="text-xl sm:text-2xl md:text-3xl font-black text-emerald-400">
                                       {t2Cricket.runs}
                                     </span>
-                                    <span className="text-lg font-bold text-slate-400">/</span>
-                                    <span className="text-xl sm:text-2xl font-black text-rose-400">
+                                    <span className="text-base sm:text-lg font-bold text-slate-400">/</span>
+                                    <span className="text-lg sm:text-xl md:text-2xl font-black text-rose-400">
                                       {t2Cricket.wickets}
                                     </span>
                                   </div>

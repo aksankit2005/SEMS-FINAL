@@ -12,6 +12,15 @@ export const SchedulePage = () => {
   const [dynamicSchedules, setDynamicSchedules] = useState([]);
 
   useEffect(() => {
+    if (!activeVenueModal) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setActiveVenueModal(null);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeVenueModal]);
+
+  useEffect(() => {
     const fetchSchedules = async () => {
       const allSchedules = [];
       const completedMatchIds = new Set();
@@ -389,22 +398,30 @@ export const SchedulePage = () => {
 
       {/* Venue Modal */}
       {activeVenueModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md text-slate-900 dark:text-white">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl">
-            <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm text-slate-900 dark:text-white animate-fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setActiveVenueModal(null);
+          }}
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-emerald-500" />
-                <h3 className="font-black text-lg">Venue Access Directions</h3>
+                <h3 className="font-extrabold text-lg">Venue Access Directions</h3>
               </div>
-              <button onClick={() => setActiveVenueModal(null)} className="p-1 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl">
+              <button 
+                onClick={() => setActiveVenueModal(null)} 
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Assigned Court / Venue</span>
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-1">
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Assigned Court / Venue</span>
               <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">{activeVenueModal.venue}</p>
             </div>
-            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-700 dark:text-emerald-400 space-y-1">
+            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-700 dark:text-emerald-400 space-y-1">
               <p className="font-bold">📍 Access Gate & Facilities:</p>
               <p>Main Sports Complex Entrance 2. Shuttle available from Campus Gate A. First Aid & Refreshment Tent adjacent to Court Entry.</p>
             </div>

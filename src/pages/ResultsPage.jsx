@@ -441,12 +441,12 @@ export const ResultsPage = () => {
                         <h4 className="text-sm font-black uppercase tracking-wide text-orange-600 dark:text-orange-400 truncate">
                           {res.sport}
                         </h4>
-                        <span className="text-[10px] font-mono font-bold text-slate-400 block">#{res.id}</span>
+                        <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 block">#{res.id}</span>
                       </div>
                     </div>
 
-                    <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-extrabold text-[10px] border border-slate-200 dark:border-slate-700/60 uppercase flex items-center gap-1 shrink-0">
-                      <Calendar className="w-3 h-3 text-slate-400" />
+                    <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-extrabold text-[10px] border border-slate-200 dark:border-slate-700/60 uppercase flex items-center gap-1 shrink-0">
+                      <Calendar className="w-3 h-3 text-slate-500 dark:text-slate-400" />
                       <span>{res.date}</span>
                     </span>
                   </div>
@@ -469,7 +469,7 @@ export const ResultsPage = () => {
 
                     {/* Sport-Specific Score Summary Box */}
                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800 space-y-2">
-                      <span className="text-[10px] font-mono uppercase font-black tracking-wider text-slate-400 dark:text-slate-500 block">
+                      <span className="text-[10px] font-mono uppercase font-black tracking-wider text-slate-500 dark:text-slate-400 block">
                         Official Score & Match Summary
                       </span>
                       <SportResultSummary resultData={res} />

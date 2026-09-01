@@ -435,29 +435,29 @@ export const AdminRegistrationsPage = () => {
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-bold text-[10px] tracking-wider">
-                    <th className="py-3 px-3">Reg Time</th>
-                    <th className="py-3 px-3">Game & Event Title</th>
-                    <th className="py-3 px-3">Team Name</th>
-                    <th className="py-3 px-3">College Name</th>
-                    <th className="py-3 px-3">Student Name</th>
-                    <th className="py-3 px-3">Mobile No</th>
-                    <th className="py-3 px-3">Gender</th>
-                    <th className="py-3 px-3">Status</th>
-                    <th className="py-3 px-3 text-right">Actions</th>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] tracking-wider bg-slate-50/75 dark:bg-slate-900/60">
+                    <th className="py-3 px-3.5 sticky left-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-xs shadow-[2px_0_6px_-2px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_6px_-2px_rgba(0,0,0,0.35)]">Reg Time</th>
+                    <th className="py-3 px-3.5">Game & Event Title</th>
+                    <th className="py-3 px-3.5">Team Name</th>
+                    <th className="py-3 px-3.5">College Name</th>
+                    <th className="py-3 px-3.5">Student Name</th>
+                    <th className="py-3 px-3.5">Mobile No</th>
+                    <th className="py-3 px-3.5">Gender</th>
+                    <th className="py-3 px-3.5">Status</th>
+                    <th className="py-3 px-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200">
                   {paginatedRegistrations.map((reg) => (
                     <tr key={reg.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                       {/* 1. Reg Time */}
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300 font-mono">
+                      <td className="py-3 px-3.5 whitespace-nowrap text-slate-700 dark:text-slate-300 font-mono sticky left-0 z-10 bg-white dark:bg-slate-900 shadow-[2px_0_6px_-2px_rgba(0,0,0,0.06)] dark:shadow-[2px_0_6px_-2px_rgba(0,0,0,0.3)]">
                         <div>{reg.registrationDate}</div>
                         <div className="text-[10px] text-slate-500 dark:text-slate-400">{reg.registrationTime || '10:00 AM'}</div>
                       </td>
 
                       {/* 2. Game & Event Title */}
-                      <td className="py-3 px-3 whitespace-nowrap">
+                      <td className="py-3 px-3.5 whitespace-nowrap">
                         <div className="font-bold text-slate-900 dark:text-white">{reg.gameSport}</div>
                         <div className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold max-w-[200px] truncate" title={reg.eventTitle}>
                           {reg.eventTitle || `${reg.gameSport} Championship`}

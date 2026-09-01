@@ -196,7 +196,7 @@ export const Navbar = () => {
                       ? 'opacity-100 visible'
                       : 'opacity-0 invisible group-hover:opacity-100 group-hover:visible'
                   }`}>
-                    <div className="px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    <div className="px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
                       Official Access Portals
                     </div>
                     <Link
@@ -208,7 +208,7 @@ export const Navbar = () => {
                       </span>
                       <div>
                         <p className="font-extrabold text-slate-900 dark:text-white">College Head Login</p>
-                        <p className="text-[10px] text-slate-400 font-medium">Faculty college stats & medals</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Faculty college stats & medals</p>
                       </div>
                     </Link>
                     <Link
@@ -221,7 +221,7 @@ export const Navbar = () => {
                       </span>
                       <div>
                         <p className="font-extrabold text-slate-900 dark:text-white">Coordinator Login</p>
-                        <p className="text-[10px] text-slate-400 font-medium">Sport matches & control panel</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Sport matches & control panel</p>
                       </div>
                     </Link>
                     <Link
@@ -234,7 +234,7 @@ export const Navbar = () => {
                       </span>
                       <div>
                         <p className="font-extrabold text-slate-900 dark:text-white">PR Portal Login</p>
-                        <p className="text-[10px] text-slate-400 font-medium">Media, gallery & album coverage</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Media, gallery & album coverage</p>
                       </div>
                     </Link>
                   </div>

@@ -318,14 +318,14 @@ export const AdminCoordinatorsPage = () => {
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-bold text-[10px] tracking-wider">
-                    <th className="py-3 px-3">Sport / Game</th>
-                    <th className="py-3 px-3">Coordinator Name</th>
-                    <th className="py-3 px-3">Username</th>
-                    <th className="py-3 px-3">Email</th>
-                    <th className="py-3 px-3">Phone</th>
-                    <th className="py-3 px-3">Status</th>
-                    <th className="py-3 px-3 text-right">Actions</th>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] tracking-wider bg-slate-50/75 dark:bg-slate-900/60">
+                    <th className="py-3 px-3.5">Sport / Game</th>
+                    <th className="py-3 px-3.5">Coordinator Name</th>
+                    <th className="py-3 px-3.5">Username</th>
+                    <th className="py-3 px-3.5">Email</th>
+                    <th className="py-3 px-3.5">Phone</th>
+                    <th className="py-3 px-3.5">Status</th>
+                    <th className="py-3 px-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200">
@@ -337,22 +337,22 @@ export const AdminCoordinatorsPage = () => {
                     ) || { icon: '🎯', name: coordinator.sportName || 'General' };
                     return (
                       <tr key={coordinator.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                        <td className="py-3 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                        <td className="py-3 px-3.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">
                           <span className="mr-1.5">{sportObj.icon}</span> {sportObj.name}
                         </td>
-                        <td className="py-3 px-3 font-semibold whitespace-nowrap">
+                        <td className="py-3 px-3.5 font-semibold whitespace-nowrap">
                           <span className="text-blue-600 dark:text-blue-400">{coordinator.name}</span>
                         </td>
-                        <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                        <td className="py-3 px-3.5 whitespace-nowrap text-slate-700 dark:text-slate-300">
                           {coordinator.username}
                         </td>
-                        <td className="py-3 px-3 whitespace-nowrap text-slate-500 dark:text-slate-400">
+                        <td className="py-3 px-3.5 whitespace-nowrap text-slate-500 dark:text-slate-400">
                           {coordinator.email}
                         </td>
-                        <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                        <td className="py-3 px-3.5 whitespace-nowrap text-slate-700 dark:text-slate-300">
                           {coordinator.phone}
                         </td>
-                        <td className="py-3 px-3 whitespace-nowrap">
+                        <td className="py-3 px-3.5 whitespace-nowrap">
                           <span
                             className={`px-2 py-0.5 text-[10px] font-bold rounded ${
                               coordinator.status === 'Active'
@@ -423,25 +423,25 @@ export const AdminCoordinatorsPage = () => {
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-bold text-[10px] tracking-wider">
-                    <th className="py-3 px-3">College Name</th>
-                    <th className="py-3 px-3">Head Coordinator Name</th>
-                    <th className="py-3 px-3">Username</th>
-                    <th className="py-3 px-3">Email</th>
-                    <th className="py-3 px-3">Phone</th>
-                    <th className="py-3 px-3">Status</th>
-                    <th className="py-3 px-3 text-right">Actions</th>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] tracking-wider bg-slate-50/75 dark:bg-slate-900/60">
+                    <th className="py-3 px-3.5">College Name</th>
+                    <th className="py-3 px-3.5">Head Coordinator Name</th>
+                    <th className="py-3 px-3.5">Username</th>
+                    <th className="py-3 px-3.5">Email</th>
+                    <th className="py-3 px-3.5">Phone</th>
+                    <th className="py-3 px-3.5">Status</th>
+                    <th className="py-3 px-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200">
                   {headCoordinators.map((c) => (
                     <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3 px-3 font-bold text-purple-600 dark:text-purple-400 whitespace-nowrap">{c.college || 'MPEC'}</td>
-                      <td className="py-3 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">{c.name}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.username}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-500 dark:text-slate-400">{c.email}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.phone}</td>
-                      <td className="py-3 px-3 whitespace-nowrap">
+                      <td className="py-3 px-3.5 font-bold text-purple-600 dark:text-purple-400 whitespace-nowrap">{c.college || 'MPEC'}</td>
+                      <td className="py-3 px-3.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">{c.name}</td>
+                      <td className="py-3 px-3.5 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.username}</td>
+                      <td className="py-3 px-3.5 whitespace-nowrap text-slate-500 dark:text-slate-400">{c.email}</td>
+                      <td className="py-3 px-3.5 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.phone}</td>
+                      <td className="py-3 px-3.5 whitespace-nowrap">
                         <span
                           className={`px-2 py-0.5 text-[10px] font-bold rounded ${
                             c.status === 'Active'
@@ -509,23 +509,23 @@ export const AdminCoordinatorsPage = () => {
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-bold text-[10px] tracking-wider">
-                    <th className="py-3 px-3">Super Coordinator Name</th>
-                    <th className="py-3 px-3">Username</th>
-                    <th className="py-3 px-3">Email</th>
-                    <th className="py-3 px-3">Phone</th>
-                    <th className="py-3 px-3">Status</th>
-                    <th className="py-3 px-3 text-right">Actions</th>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] tracking-wider bg-slate-50/75 dark:bg-slate-900/60">
+                    <th className="py-3 px-3.5">Super Coordinator Name</th>
+                    <th className="py-3 px-3.5">Username</th>
+                    <th className="py-3 px-3.5">Email</th>
+                    <th className="py-3 px-3.5">Phone</th>
+                    <th className="py-3 px-3.5">Status</th>
+                    <th className="py-3 px-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200">
                   {superCoordinators.map((c) => (
                     <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">{c.name}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.username}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-500 dark:text-slate-400">{c.email}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.phone}</td>
-                      <td className="py-3 px-3 whitespace-nowrap">
+                      <td className="py-3 px-3.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">{c.name}</td>
+                      <td className="py-3 px-3.5 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.username}</td>
+                      <td className="py-3 px-3.5 whitespace-nowrap text-slate-500 dark:text-slate-400">{c.email}</td>
+                      <td className="py-3 px-3.5 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.phone}</td>
+                      <td className="py-3 px-3.5 whitespace-nowrap">
                         <span
                           className={`px-2 py-0.5 text-[10px] font-bold rounded ${
                             c.status === 'Active'
