@@ -264,24 +264,50 @@ export const coordinatorApi = {
     try {
       const res = await api.get('/coordinator/matches');
       if (res.data && Array.isArray(res.data)) {
-        const serverData = res.data.map(m => ({
-          ...m,
-          sport: sportKey,
-          sportId: sportKey,
-          sportName: user.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1))
-        }));
+        const serverData = res.data.map(m => {
+          let detailsObj = m.details;
+          if (typeof detailsObj === 'string') {
+            try { detailsObj = JSON.parse(detailsObj); } catch (e) {}
+          }
+          if (!detailsObj || typeof detailsObj !== 'object') detailsObj = {};
+
+          return {
+            ...detailsObj,
+            ...m,
+            date: m.date || detailsObj.date || (m.createdAt ? new Date(m.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+            time: m.time || detailsObj.time || '04:00 PM',
+            category: m.category || detailsObj.category || 'Open',
+            eventTitle: m.eventTitle || detailsObj.eventTitle || m.matchTitle || `${user.sportName || 'Championship'} Match`,
+            sport: sportKey,
+            sportId: sportKey,
+            sportName: user.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1))
+          };
+        });
         return serverData;
       }
     } catch (e) {
       console.warn('Backend matches API fallback:', e.message);
     }
 
-    return savedMatches.map(m => ({
-      ...m,
-      sport: sportKey,
-      sportId: sportKey,
-      sportName: user.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1))
-    }));
+    return savedMatches.map(m => {
+      let detailsObj = m.details;
+      if (typeof detailsObj === 'string') {
+        try { detailsObj = JSON.parse(detailsObj); } catch (e) {}
+      }
+      if (!detailsObj || typeof detailsObj !== 'object') detailsObj = {};
+
+      return {
+        ...detailsObj,
+        ...m,
+        date: m.date || detailsObj.date || new Date().toISOString().split('T')[0],
+        time: m.time || detailsObj.time || '04:00 PM',
+        category: m.category || detailsObj.category || 'Open',
+        eventTitle: m.eventTitle || detailsObj.eventTitle || m.matchTitle || `${user.sportName || 'Championship'} Match`,
+        sport: sportKey,
+        sportId: sportKey,
+        sportName: user.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1))
+      };
+    });
   },
 
   // Save matches array to localStorage & sync to Backend PostgreSQL DB
