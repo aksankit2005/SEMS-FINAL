@@ -346,15 +346,15 @@ export const ResultsPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white py-10 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white py-8 sm:py-10 transition-colors">
+      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8">
         
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-10">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wider mb-3 border border-blue-500/20 shadow-xs">
             <Trophy className="w-4 h-4 text-orange-500" /> Tournament Match Results
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
             Official <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">Match Results</span>
           </h1>
           <p className="mt-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium">
@@ -375,7 +375,7 @@ export const ResultsPage = () => {
           </div>
 
           {/* 12 Games Horizontal Filter Chips */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-2 no-scrollbar scroll-smooth -mx-1 px-1">
             {sportsList.map((s) => {
               const cfg = s === 'All' ? null : resolveSportConfig(s);
               const icon = s === 'All' ? '⚡' : cfg?.icon || '🏆';

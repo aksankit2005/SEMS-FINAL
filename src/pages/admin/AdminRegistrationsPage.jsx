@@ -231,14 +231,14 @@ export const AdminRegistrationsPage = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl transition-colors">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl transition-colors">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
               Super Coordinator Replicated View
             </span>
           </div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white">Student Registration Details & Events</h1>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">Student Registration Details & Events</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             View student registration records ({filteredRegistrations.length}) & coordinator event creations ({coordinatorEvents.length})
           </p>
@@ -270,7 +270,7 @@ export const AdminRegistrationsPage = () => {
       </div>
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto no-scrollbar">
         <button
           onClick={() => { setActiveTab('student_registrations'); setCurrentPage(1); }}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${

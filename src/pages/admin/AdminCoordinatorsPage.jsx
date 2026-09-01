@@ -164,7 +164,7 @@ export const AdminCoordinatorsPage = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl transition-colors">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl transition-colors">
         <div className="space-y-1">
           <h1 className="text-2xl font-black text-slate-900 dark:text-white">Coordinator & Role Management</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -214,7 +214,7 @@ export const AdminCoordinatorsPage = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 text-xs">
           {/* Live Search */}
           <div>
             <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">🔍 Search Account</label>
