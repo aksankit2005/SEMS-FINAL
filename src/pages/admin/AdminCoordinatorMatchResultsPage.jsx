@@ -223,10 +223,13 @@ export const AdminCoordinatorMatchResultsPage = () => {
   const filtered = allMatches.filter(m => {
     if (filterSport !== 'ALL' && m.sportId !== filterSport) return false;
     if (filterGender !== 'ALL') {
-      const g = (m.gender || '').toLowerCase();
-      const fg = filterGender.toLowerCase();
-      if (fg === 'boys' && !g.includes('boy') && !g.includes('male') && !g.includes('men')) return false;
-      if (fg === 'girls' && !g.includes('girl') && !g.includes('female') && !g.includes('women')) return false;
+      const g = (m.gender || '').toLowerCase().trim();
+      const fg = filterGender.toLowerCase().trim();
+      const isFemale = g.includes('female') || g.includes('girl') || g.includes('women') || g.includes('woman') || g === 'f';
+      const isMale = !isFemale && (g.includes('male') || g.includes('boy') || g.includes('men') || g.includes('man') || g === 'm');
+
+      if ((fg === 'boys' || fg === 'male') && !isMale) return false;
+      if ((fg === 'girls' || fg === 'female') && !isFemale) return false;
       if (fg === 'mixed' && !g.includes('mix')) return false;
     }
     if (filterEvent !== 'ALL' && m.eventTitle !== filterEvent) return false;

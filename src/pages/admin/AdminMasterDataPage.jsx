@@ -183,11 +183,13 @@ export const AdminMasterDataPage = () => {
       (p.eventTitle || '').toLowerCase().includes(selectedEvent.toLowerCase()) ||
       selectedEvent.toLowerCase().includes((p.eventTitle || '').toLowerCase());
 
-    const pGender = (p.gender || '').toLowerCase();
-    const sGender = selectedGender.toLowerCase();
+    const pGender = (p.gender || '').toLowerCase().trim();
+    const sGender = selectedGender.toLowerCase().trim();
+    const isFemale = pGender.includes('female') || pGender.includes('girl') || pGender.includes('women') || pGender.includes('woman') || pGender === 'f';
+    const isMale = !isFemale && (pGender.includes('male') || pGender.includes('boy') || pGender.includes('men') || pGender.includes('man') || pGender === 'm');
     const matchesGender = selectedGender === 'ALL' ||
-      (sGender === 'male' ? (pGender.includes('male') || pGender.includes('boy')) :
-       sGender === 'female' ? (pGender.includes('female') || pGender.includes('girl')) :
+      (sGender === 'male' ? isMale :
+       sGender === 'female' ? isFemale :
        pGender.includes(sGender));
 
     const pCollege = (p.college || '').toLowerCase();

@@ -131,12 +131,15 @@ export const AdminRegistrationsPage = () => {
     }
 
     if (selectedGender !== 'ALL') {
-      const pGender = (reg.gender || '').toLowerCase();
-      const sGender = selectedGender.toLowerCase();
+      const pGender = (reg.gender || '').toLowerCase().trim();
+      const sGender = selectedGender.toLowerCase().trim();
+      const isFemale = pGender.includes('female') || pGender.includes('girl') || pGender.includes('women') || pGender.includes('woman') || pGender === 'f';
+      const isMale = !isFemale && (pGender.includes('male') || pGender.includes('boy') || pGender.includes('men') || pGender.includes('man') || pGender === 'm');
+
       if (sGender === 'male') {
-        if (!pGender.includes('male') && !pGender.includes('boy')) return false;
+        if (!isMale) return false;
       } else if (sGender === 'female') {
-        if (!pGender.includes('female') && !pGender.includes('girl')) return false;
+        if (!isFemale) return false;
       } else if (!pGender.includes(sGender)) {
         return false;
       }

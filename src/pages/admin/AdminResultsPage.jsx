@@ -188,9 +188,18 @@ export const AdminResultsPage = () => {
 
     // 2. Gender Filter
     if (filterGender !== 'ALL') {
-      const resGender = (res.gender || '').toLowerCase();
-      const targetGender = filterGender.toLowerCase();
-      if (!resGender.includes(targetGender) && !targetGender.includes(resGender)) return false;
+      const resGender = (res.gender || '').toLowerCase().trim();
+      const targetGender = filterGender.toLowerCase().trim();
+      const isFemale = resGender.includes('female') || resGender.includes('girl') || resGender.includes('women') || resGender.includes('woman') || resGender === 'f';
+      const isMale = !isFemale && (resGender.includes('male') || resGender.includes('boy') || resGender.includes('men') || resGender.includes('man') || resGender === 'm');
+
+      if (targetGender === 'male') {
+        if (!isMale) return false;
+      } else if (targetGender === 'female') {
+        if (!isFemale) return false;
+      } else if (!resGender.includes(targetGender) && !targetGender.includes(resGender)) {
+        return false;
+      }
     }
 
     // 3. Search Query
