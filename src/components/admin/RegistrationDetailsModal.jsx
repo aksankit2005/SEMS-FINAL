@@ -11,7 +11,7 @@ export const RegistrationDetailsModal = ({ isOpen, registration, onClose }) => {
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                 Registration Card
               </span>
               <span className="text-xs text-slate-500 dark:text-slate-400">ID: {registration.id || registration.registrationId}</span>
@@ -29,7 +29,7 @@ export const RegistrationDetailsModal = ({ isOpen, registration, onClose }) => {
         {/* Detailed Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
               <User className="w-4 h-4" />
             </div>
             <div>

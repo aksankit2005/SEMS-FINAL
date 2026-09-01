@@ -256,7 +256,7 @@ export const AdminCommitteePage = () => {
                 onClick={() => { setEditingSession(selectedSession); setIsSessionModalOpen(true); }}
                 className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1 cursor-pointer"
               >
-                <Edit className="w-3.5 h-3.5 text-amber-500" /> Edit Session
+                <Edit className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> Edit Session
               </button>
               <button
                 onClick={() => setConfirmState({
@@ -276,7 +276,7 @@ export const AdminCommitteePage = () => {
           <div className="rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm transition-colors">
             <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
@@ -286,7 +286,7 @@ export const AdminCommitteePage = () => {
               </div>
               <button
                 onClick={() => openMemberModal('executiveCommittee')}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-lg shadow-amber-500/20 transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-blue-500/20 transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
               >
                 <Plus className="w-4 h-4" /> Add Member
               </button>
@@ -298,7 +298,7 @@ export const AdminCommitteePage = () => {
                 <p className="text-xs font-bold text-slate-500 dark:text-slate-400">No executive committee members yet.</p>
                 <button
                   onClick={() => openMemberModal('executiveCommittee')}
-                  className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline inline-block cursor-pointer"
+                  className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline inline-block cursor-pointer"
                 >
                   + Add First Member
                 </button>
@@ -308,7 +308,7 @@ export const AdminCommitteePage = () => {
                 {selectedSession.executiveCommittee.map((member, index) => (
                   <div
                     key={member.id}
-                    className="rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col hover:border-amber-500/40 transition-all group shadow-sm"
+                    className="rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col hover:border-blue-500/40 transition-all group shadow-sm"
                   >
                     <div className="relative w-full h-40 overflow-hidden bg-slate-100 dark:bg-slate-800">
                       <img
@@ -317,10 +317,10 @@ export const AdminCommitteePage = () => {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_IMAGE; }}
                       />
-                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide bg-amber-500 text-slate-950 shadow-sm">
+                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide bg-blue-600 text-white shadow-sm">
                         {member.role}
                       </span>
-                      <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[9px] font-black font-mono tracking-wide bg-slate-900/80 dark:bg-black/80 text-amber-400 border border-amber-500/30 backdrop-blur-sm shadow-sm" title={`Display Order: #${index + 1}`}>
+                      <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[9px] font-black font-mono tracking-wide bg-slate-900/80 dark:bg-black/80 text-blue-400 border border-blue-500/30 backdrop-blur-sm shadow-sm" title={`Display Order: #${index + 1}`}>
                         #{index + 1}
                       </span>
                     </div>
@@ -335,7 +335,7 @@ export const AdminCommitteePage = () => {
                             type="button"
                             onClick={() => handleMoveMember('executiveCommittee', index, 'left')}
                             disabled={index === 0}
-                            className={`p-1 rounded transition-colors ${index === 0 ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed' : 'text-slate-600 hover:text-amber-500 dark:text-slate-300 dark:hover:text-amber-400 hover:bg-slate-300 dark:hover:bg-slate-700 cursor-pointer'}`}
+                            className={`p-1 rounded transition-colors ${index === 0 ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed' : 'text-slate-600 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400 hover:bg-slate-300 dark:hover:bg-slate-700 cursor-pointer'}`}
                             title="Move Left / Earlier"
                           >
                             <ChevronLeft className="w-3.5 h-3.5" />
@@ -344,7 +344,7 @@ export const AdminCommitteePage = () => {
                             type="button"
                             onClick={() => handleMoveMember('executiveCommittee', index, 'right')}
                             disabled={index === selectedSession.executiveCommittee.length - 1}
-                            className={`p-1 rounded transition-colors ${index === selectedSession.executiveCommittee.length - 1 ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed' : 'text-slate-600 hover:text-amber-500 dark:text-slate-300 dark:hover:text-amber-400 hover:bg-slate-300 dark:hover:bg-slate-700 cursor-pointer'}`}
+                            className={`p-1 rounded transition-colors ${index === selectedSession.executiveCommittee.length - 1 ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed' : 'text-slate-600 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400 hover:bg-slate-300 dark:hover:bg-slate-700 cursor-pointer'}`}
                             title="Move Right / Later"
                           >
                             <ChevronRight className="w-3.5 h-3.5" />
@@ -352,7 +352,7 @@ export const AdminCommitteePage = () => {
                         </div>
                         <button
                           onClick={() => openMemberModal('executiveCommittee', member)}
-                          className="p-1.5 text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                          className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                           title="Edit Member"
                         >
                           <Edit className="w-3.5 h-3.5" />

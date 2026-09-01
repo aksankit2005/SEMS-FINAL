@@ -29,7 +29,7 @@ export const ConfirmationModal = ({
     if (confirmVariant === 'warning') {
       return 'bg-amber-600 hover:bg-amber-500 text-white focus:ring-amber-500 shadow-amber-600/20';
     }
-    return 'bg-indigo-600 hover:bg-indigo-500 text-white focus:ring-indigo-500 shadow-indigo-600/20';
+    return 'bg-blue-600 hover:bg-blue-500 text-white focus:ring-blue-500 shadow-blue-600/20';
   };
 
   return (

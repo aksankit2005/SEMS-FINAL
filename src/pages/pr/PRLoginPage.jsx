@@ -55,7 +55,7 @@ export const PRLoginPage = () => {
         
         {/* Background glow */}
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-32 h-32 bg-blue-500/20 rounded-full blur-2xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-32 h-32 bg-orange-500/20 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none" />
 
         <div className="text-center relative z-10">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white mb-4 shadow-lg shadow-blue-500/30">
@@ -88,7 +88,7 @@ export const PRLoginPage = () => {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="e.g. pr_admin"
+                  placeholder="Enter your username"
                   className="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                 />
               </div>
@@ -124,7 +124,7 @@ export const PRLoginPage = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 hover:from-blue-500 hover:to-orange-400 text-white font-extrabold text-sm shadow-xl shadow-blue-600/25 transition-all flex items-center justify-center gap-2"
+            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-sm shadow-xl shadow-blue-600/25 transition-all flex items-center justify-center gap-2"
           >
             {loading ? (
               <span className="flex items-center gap-2">

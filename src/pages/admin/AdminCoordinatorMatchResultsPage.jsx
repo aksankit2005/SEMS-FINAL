@@ -331,7 +331,7 @@ export const AdminCoordinatorMatchResultsPage = () => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Total Completed', value: allMatches.length, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
-          { label: 'Showing Now', value: filtered.length, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
+          { label: 'Showing Now', value: filtered.length, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' },
           { label: 'Sports Covered', value: [...new Set(allMatches.map(m => m.sportId))].length, color: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-500/10 border-cyan-500/20' },
           { label: 'Active Filters', value: [filterSport, filterGender, filterEvent].filter(f => f !== 'ALL').length + (searchQuery ? 1 : 0), color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20' },
         ].map(stat => (
@@ -460,7 +460,7 @@ export const AdminCoordinatorMatchResultsPage = () => {
                   <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-600 dark:text-slate-400 whitespace-nowrap">Match (Team 1 vs Team 2)</th>
                   <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-600 dark:text-slate-400 whitespace-nowrap">Gender</th>
                   <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-600 dark:text-slate-400 whitespace-nowrap">Score / Result</th>
-                  <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-amber-600 dark:text-amber-400 whitespace-nowrap">🥇 Winner</th>
+                  <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-blue-600 dark:text-blue-400 whitespace-nowrap">🥇 Winner</th>
                   <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-600 dark:text-slate-400 whitespace-nowrap">🥈 Runner-Up</th>
                   <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-600 dark:text-slate-400 whitespace-nowrap">Venue</th>
                   <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-600 dark:text-slate-400 whitespace-nowrap">Completed At</th>
@@ -483,7 +483,7 @@ export const AdminCoordinatorMatchResultsPage = () => {
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5">
                           <span className="text-sm">{m.sportIcon}</span>
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide border bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide border bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">
                             {m.sportName}
                           </span>
                         </div>
@@ -533,9 +533,9 @@ export const AdminCoordinatorMatchResultsPage = () => {
                     {/* Winner */}
                     <td className="px-4 py-3 whitespace-nowrap max-w-[180px]">
                       <div className="flex items-center gap-1.5">
-                        <Trophy className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                        <Trophy className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                         <div>
-                          <p className="font-bold text-amber-600 dark:text-amber-400 text-xs line-clamp-1" title={m.winner}>{m.winner || '—'}</p>
+                          <p className="font-bold text-blue-600 dark:text-blue-400 text-xs line-clamp-1" title={m.winner}>{m.winner || '—'}</p>
                           {m.winnerCollege && (
                             <p className="text-[10px] text-slate-500 font-mono">{m.winnerCollege}</p>
                           )}

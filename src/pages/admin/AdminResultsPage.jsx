@@ -288,7 +288,7 @@ export const AdminResultsPage = () => {
         /* LEADERBOARD STANDINGS CARD */
         <div className="p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-6 shadow-sm transition-colors">
           <div className="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
-            <Crown className="w-6 h-6 text-amber-500 dark:text-amber-400" />
+            <Crown className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-white">Overall Inter-College Championship Standings</h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">Points tally based on 🥇 1st Position (5 pts) & 🥈 2nd Position (3 pts)</p>
@@ -301,7 +301,7 @@ export const AdminResultsPage = () => {
                 key={col.id}
                 className={`p-5 rounded-2xl border flex flex-col justify-between space-y-3 relative overflow-hidden ${
                   idx === 0
-                    ? 'bg-gradient-to-br from-amber-500/10 via-white to-white dark:from-amber-500/20 dark:via-slate-900 dark:to-slate-900 border-amber-500/40'
+                    ? 'bg-gradient-to-br from-blue-500/10 via-white to-white dark:from-blue-500/20 dark:via-slate-900 dark:to-slate-900 border-blue-500/40'
                     : 'bg-gradient-to-br from-slate-100 via-white to-white dark:from-slate-300/20 dark:via-slate-900 dark:to-slate-900 border-slate-200 dark:border-slate-600/40'
                 }`}
               >
@@ -309,7 +309,7 @@ export const AdminResultsPage = () => {
                   <span className="text-2xl">
                     {idx === 0 ? '🥇' : '🥈'}
                   </span>
-                  <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-amber-600 dark:text-amber-400">
+                  <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400">
                     Rank #{idx + 1}
                   </span>
                 </div>
@@ -321,7 +321,7 @@ export const AdminResultsPage = () => {
 
                 <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200 dark:border-slate-800">
                   <span className="text-slate-500 dark:text-slate-400">G: {col.goldCount} | S: {col.silverCount}</span>
-                  <span className="text-sm font-black text-amber-600 dark:text-amber-400">{col.totalPoints} PTS</span>
+                  <span className="text-sm font-black text-blue-600 dark:text-blue-400">{col.totalPoints} PTS</span>
                 </div>
               </div>
             ))}
@@ -342,13 +342,13 @@ export const AdminResultsPage = () => {
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200">
                 {collegeStandings.map((col, idx) => (
                   <tr key={col.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                    <td className="py-3 px-3 font-black text-amber-600 dark:text-amber-400">#{idx + 1}</td>
+                    <td className="py-3 px-3 font-black text-blue-600 dark:text-blue-400">#{idx + 1}</td>
                     <td className="py-3 px-3 font-bold text-slate-900 dark:text-white">
                       {col.id}
                     </td>
-                    <td className="py-3 px-3 font-semibold text-amber-600 dark:text-amber-400">{col.goldCount}</td>
+                    <td className="py-3 px-3 font-semibold text-blue-600 dark:text-blue-400">{col.goldCount}</td>
                     <td className="py-3 px-3 font-semibold text-slate-700 dark:text-slate-300">{col.silverCount}</td>
-                    <td className="py-3 px-3 font-black text-amber-600 dark:text-amber-400 text-right">{col.totalPoints} PTS</td>
+                    <td className="py-3 px-3 font-black text-blue-600 dark:text-blue-400 text-right">{col.totalPoints} PTS</td>
                   </tr>
                 ))}
               </tbody>
@@ -361,7 +361,7 @@ export const AdminResultsPage = () => {
           {/* Filters Control Bar */}
           <div className="p-4 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-3 shadow-sm transition-colors">
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800/80 pb-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-amber-600 dark:text-amber-400">
+              <div className="flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400">
                 <Filter className="w-4 h-4" />
                 <span>Filter Declared Results</span>
               </div>
@@ -385,7 +385,7 @@ export const AdminResultsPage = () => {
                 <select
                   value={filterSport}
                   onChange={(e) => setFilterSport(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
                 >
                   <option value="ALL" className="bg-white dark:bg-slate-900">All 12 Sports</option>
                   {ALL_12_SPORTS.map(s => (
@@ -402,7 +402,7 @@ export const AdminResultsPage = () => {
                 <select
                   value={filterGender}
                   onChange={(e) => setFilterGender(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
                 >
                   <option value="ALL" className="bg-white dark:bg-slate-900">All Genders</option>
                   <option value="Boys" className="bg-white dark:bg-slate-900">Boys (Male)</option>
@@ -423,7 +423,7 @@ export const AdminResultsPage = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search team, winner, college..."
-                    className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+                    className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
                   />
                 </div>
               </div>
@@ -434,7 +434,7 @@ export const AdminResultsPage = () => {
           <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 px-1">
             <span>
               Showing {filteredResults.length} declared result{filteredResults.length !== 1 ? 's' : ''}
-              {filterSport !== 'ALL' && <> for <span className="text-amber-600 dark:text-amber-400">{filterSport}</span></>}
+              {filterSport !== 'ALL' && <> for <span className="text-blue-600 dark:text-blue-400">{filterSport}</span></>}
               {filterGender !== 'ALL' && <> ({filterGender} Gender)</>}
             </span>
             <button
@@ -449,7 +449,7 @@ export const AdminResultsPage = () => {
           {/* Results Table */}
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16 space-y-3">
-              <Loader2 className="w-8 h-8 text-amber-500 dark:text-amber-400 animate-spin" />
+              <Loader2 className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" />
               <p className="text-xs text-slate-500 dark:text-slate-400">Loading Super Coordinator declared results...</p>
             </div>
           ) : filteredResults.length === 0 ? (
@@ -458,7 +458,7 @@ export const AdminResultsPage = () => {
               <p className="text-xs text-slate-500 dark:text-slate-400">Only results declared by the Super Coordinator appear here.</p>
               <button
                 onClick={() => { setSelectedResult(null); setIsEditOpen(true); }}
-                className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline mt-2 inline-block cursor-pointer"
+                className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline mt-2 inline-block cursor-pointer"
               >
                 + Declare First Match Result Manually
               </button>
@@ -473,7 +473,7 @@ export const AdminResultsPage = () => {
                       <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Sport & Event</th>
                       <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Gender</th>
                       <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Format</th>
-                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-amber-600 dark:text-amber-400 whitespace-nowrap">🥇 Winner</th>
+                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-blue-600 dark:text-blue-400 whitespace-nowrap">🥇 Winner</th>
                       <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">🥈 Runner-Up</th>
                       <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Score / Result</th>
                       <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Declared By</th>
@@ -492,7 +492,7 @@ export const AdminResultsPage = () => {
                           <div className="space-y-1">
                             <div className="flex items-center gap-1.5">
                               <span className="text-sm">{res.sportIcon}</span>
-                              <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide border bg-amber-500/10 text-amber-400 border-amber-500/20">
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide border bg-blue-500/10 text-blue-400 border-blue-500/20">
                                 {res.sportName}
                               </span>
                             </div>
@@ -526,9 +526,9 @@ export const AdminResultsPage = () => {
                         {/* Winner */}
                         <td className="px-4 py-3 whitespace-nowrap max-w-[180px]">
                           <div className="flex items-center gap-1.5">
-                            <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <Trophy className="w-3.5 h-3.5 text-blue-400 shrink-0" />
                             <div>
-                              <p className="font-bold text-amber-400 text-xs line-clamp-1" title={res.winnerName}>{res.winnerName}</p>
+                              <p className="font-bold text-blue-400 text-xs line-clamp-1" title={res.winnerName}>{res.winnerName}</p>
                               <p className="text-[10px] text-slate-500 font-mono">{res.winnerCollege}</p>
                             </div>
                           </div>
@@ -574,7 +574,7 @@ export const AdminResultsPage = () => {
                           <div className="flex items-center gap-1.5">
                             <button
                               onClick={() => { setSelectedResult(res); setIsEditOpen(true); }}
-                              className="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                              className="p-1.5 text-slate-400 hover:text-blue-400 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
                               title="Edit Result"
                             >
                               <Edit className="w-4 h-4" />

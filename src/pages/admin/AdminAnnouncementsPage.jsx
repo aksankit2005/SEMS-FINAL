@@ -100,7 +100,7 @@ export const AdminAnnouncementsPage = () => {
 
         <button
           onClick={() => { setSelectedAnn(null); setIsFormOpen(true); }}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-lg shadow-amber-500/20 transition-all shrink-0 cursor-pointer"
+          className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-blue-500/20 transition-all shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Create Announcement</span>
@@ -110,7 +110,7 @@ export const AdminAnnouncementsPage = () => {
       {/* Announcement Cards List */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-16 space-y-3">
-          <Loader2 className="w-8 h-8 text-amber-500 dark:text-amber-400 animate-spin" />
+          <Loader2 className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" />
           <p className="text-xs text-slate-500 dark:text-slate-400">Loading announcements...</p>
         </div>
       ) : announcements.length === 0 ? (
@@ -159,7 +159,7 @@ export const AdminAnnouncementsPage = () => {
                   </button>
                   <button
                     onClick={() => { setSelectedAnn(ann); setIsFormOpen(true); }}
-                    className="p-2 text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer"
+                    className="p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer"
                     title="Edit Announcement"
                   >
                     <Edit className="w-4 h-4" />
@@ -181,7 +181,7 @@ export const AdminAnnouncementsPage = () => {
               {ann.attachments && ann.attachments.length > 0 && (
                 <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
                   <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Paperclip className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                    <Paperclip className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                     <span>Attached Documents ({ann.attachments.length}/2)</span>
                   </span>
 
@@ -206,7 +206,7 @@ export const AdminAnnouncementsPage = () => {
                             <button
                               type="button"
                               onClick={() => handleViewPdf(att)}
-                              className="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer"
+                              className="p-1.5 text-slate-400 hover:text-blue-400 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer"
                               title="View PDF"
                             >
                               <Eye className="w-4 h-4" />

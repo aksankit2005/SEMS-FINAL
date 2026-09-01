@@ -183,9 +183,12 @@ export const AdminMasterDataPage = () => {
       (p.eventTitle || '').toLowerCase().includes(selectedEvent.toLowerCase()) ||
       selectedEvent.toLowerCase().includes((p.eventTitle || '').toLowerCase());
 
+    const pGender = (p.gender || '').toLowerCase();
+    const sGender = selectedGender.toLowerCase();
     const matchesGender = selectedGender === 'ALL' ||
-      (p.gender || '').toLowerCase() === selectedGender.toLowerCase() ||
-      (p.gender || '').toLowerCase().includes(selectedGender.toLowerCase());
+      (sGender === 'male' ? (pGender.includes('male') || pGender.includes('boy')) :
+       sGender === 'female' ? (pGender.includes('female') || pGender.includes('girl')) :
+       pGender.includes(sGender));
 
     const pCollege = (p.college || '').toLowerCase();
     const matchesCollege = selectedCollege === 'ALL' ||
@@ -367,7 +370,7 @@ export const AdminMasterDataPage = () => {
             <select
               value={selectedSport}
               onChange={(e) => { setSelectedSport(e.target.value); setSelectedEvent('ALL'); setCurrentPage(1); }}
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
             >
               <option value="ALL" className="bg-white dark:bg-slate-900">All 12 Sports</option>
               {ALL_12_SPORTS.map((s) => (
@@ -380,13 +383,13 @@ export const AdminMasterDataPage = () => {
 
           {/* 2. 📋 Filter by Event Title */}
           <div>
-            <label className="block text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase mb-1">
+            <label className="block text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase mb-1">
               📋 Filter by Event Title
             </label>
             <select
               value={selectedEvent}
               onChange={(e) => { setSelectedEvent(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-amber-500/40 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-blue-500/40 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
             >
               <option value="ALL" className="bg-white dark:bg-slate-900">All Created Events ({availableEvents.length})</option>
               {availableEvents.map((evt) => (
@@ -405,12 +408,11 @@ export const AdminMasterDataPage = () => {
             <select
               value={selectedGender}
               onChange={(e) => { setSelectedGender(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
             >
               <option value="ALL" className="bg-white dark:bg-slate-900">All Genders</option>
-              <option value="Boys" className="bg-white dark:bg-slate-900">Boys (Male)</option>
-              <option value="Girls" className="bg-white dark:bg-slate-900">Girls (Female)</option>
-              <option value="Mixed" className="bg-white dark:bg-slate-900">Mixed</option>
+              <option value="Male" className="bg-white dark:bg-slate-900">Male</option>
+              <option value="Female" className="bg-white dark:bg-slate-900">Female</option>
             </select>
           </div>
 
@@ -422,7 +424,7 @@ export const AdminMasterDataPage = () => {
             <select
               value={selectedCollege}
               onChange={(e) => { setSelectedCollege(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
             >
               <option value="ALL" className="bg-white dark:bg-slate-900">All Colleges</option>
               {ALL_COLLEGES.map((c) => (
@@ -444,7 +446,7 @@ export const AdminMasterDataPage = () => {
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                 placeholder="Search name, mobile, team..."
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
               />
               <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-2.5" />
             </div>
@@ -571,7 +573,7 @@ export const AdminMasterDataPage = () => {
                       </td>
 
                       {/* 4. College Name */}
-                      <td className="py-3 px-3 whitespace-nowrap font-medium text-amber-600 dark:text-amber-400">
+                      <td className="py-3 px-3 whitespace-nowrap font-medium text-blue-600 dark:text-blue-400">
                         {p.college}
                       </td>
 
@@ -580,7 +582,7 @@ export const AdminMasterDataPage = () => {
                         <div className="flex items-center gap-1.5">
                           <span>{p.name}</span>
                           {p.isCaptain && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                               Captain
                             </span>
                           )}
@@ -718,7 +720,7 @@ export const AdminMasterDataPage = () => {
                   {confirmModal.item && (
                     <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/80 font-mono text-[11px] space-y-1">
                       <div>Student: <span className="text-purple-600 dark:text-purple-400 font-semibold">{confirmModal.item.name}</span></div>
-                      <div>Sport: <span className="text-amber-600 dark:text-amber-400 font-semibold">{confirmModal.item.sportName}</span></div>
+                      <div>Sport: <span className="text-blue-600 dark:text-blue-400 font-semibold">{confirmModal.item.sportName}</span></div>
                       <div>College: {confirmModal.item.college}</div>
                       {confirmModal.item.mobile && <div>Mobile: {confirmModal.item.mobile}</div>}
                     </div>

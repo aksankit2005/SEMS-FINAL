@@ -89,7 +89,7 @@ export const ResultEditModal = ({ isOpen, result = null, onSave, onClose }) => {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center">
               <Trophy className="w-5 h-5" />
             </div>
             <div>
@@ -120,7 +120,7 @@ export const ResultEditModal = ({ isOpen, result = null, onSave, onClose }) => {
               <select
                 value={formData.sportId}
                 onChange={(e) => handleSportChange(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
               >
                 {ALL_12_SPORTS.map(s => (
                   <option key={s.id} value={s.id}>
@@ -137,7 +137,7 @@ export const ResultEditModal = ({ isOpen, result = null, onSave, onClose }) => {
                 value={formData.eventTitle}
                 onChange={(e) => setFormData({ ...formData, eventTitle: e.target.value })}
                 placeholder="e.g. Mens Cricket Championship Finals"
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500"
               />
             </div>
           </div>
@@ -148,7 +148,7 @@ export const ResultEditModal = ({ isOpen, result = null, onSave, onClose }) => {
               <select
                 value={formData.matchFormat}
                 onChange={(e) => setFormData({ ...formData, matchFormat: e.target.value })}
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
               >
                 <option value="Team">Team Game</option>
                 <option value="Single">Single</option>
@@ -162,7 +162,7 @@ export const ResultEditModal = ({ isOpen, result = null, onSave, onClose }) => {
               <select
                 value={formData.gender}
                 onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
               >
                 <option value="Boys">Boys</option>
                 <option value="Girls">Girls</option>
@@ -172,8 +172,8 @@ export const ResultEditModal = ({ isOpen, result = null, onSave, onClose }) => {
           </div>
 
           {/* Winner (🥇 1st Position) */}
-          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-2">
-            <label className="text-xs font-extrabold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+          <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 space-y-2">
+            <label className="text-xs font-extrabold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
               <span>🥇</span>
               <span>FIRST POSITION (WINNER) *</span>
             </label>
@@ -183,12 +183,12 @@ export const ResultEditModal = ({ isOpen, result = null, onSave, onClose }) => {
                 value={formData.winnerName}
                 onChange={(e) => setFormData({ ...formData, winnerName: e.target.value })}
                 placeholder="Winner Player or Team Name"
-                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500"
               />
               <select
                 value={formData.winnerCollege}
                 onChange={(e) => setFormData({ ...formData, winnerCollege: e.target.value })}
-                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
               >
                 {ALL_COLLEGES.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
@@ -209,12 +209,12 @@ export const ResultEditModal = ({ isOpen, result = null, onSave, onClose }) => {
                 value={formData.runnerUpName}
                 onChange={(e) => setFormData({ ...formData, runnerUpName: e.target.value })}
                 placeholder="Runner-up Player or Team Name"
-                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500"
               />
               <select
                 value={formData.runnerUpCollege}
                 onChange={(e) => setFormData({ ...formData, runnerUpCollege: e.target.value })}
-                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
               >
                 {ALL_COLLEGES.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
@@ -231,7 +231,7 @@ export const ResultEditModal = ({ isOpen, result = null, onSave, onClose }) => {
               value={formData.score}
               onChange={(e) => setFormData({ ...formData, score: e.target.value })}
               placeholder="e.g. 21-18, 19-21, 21-16 or 164/5 (20.0)"
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500"
             />
           </div>
 
@@ -247,7 +247,7 @@ export const ResultEditModal = ({ isOpen, result = null, onSave, onClose }) => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
+              className="px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2"
             >
               {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
               <span>Save & Update Leaderboard</span>
