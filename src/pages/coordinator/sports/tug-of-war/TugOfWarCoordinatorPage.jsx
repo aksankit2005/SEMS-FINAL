@@ -91,9 +91,17 @@ export const TugOfWarCoordinatorPage = () => {
 
   const handleUpdateLiveScore = (matchId, scoreData) => {
     if (scoreData?.status === 'COMPLETED' || scoreData?.status === 'FINISHED') {
-      setMatches((prev) => prev.filter((m) => m.id !== matchId));
+      setMatches((prev) => {
+        const updated = prev.filter((m) => m.id !== matchId);
+        coordinatorApi.saveMatches(updated);
+        return updated;
+      });
     } else {
-      setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, ...scoreData } : m)));
+      setMatches((prev) => {
+        const updated = prev.map((m) => (m.id === matchId ? { ...m, ...scoreData } : m));
+        coordinatorApi.saveMatches(updated);
+        return updated;
+      });
     }
   };
 

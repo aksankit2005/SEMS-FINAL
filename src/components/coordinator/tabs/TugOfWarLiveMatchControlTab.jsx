@@ -175,13 +175,67 @@ export const TugOfWarLiveMatchControlTab = ({ matches, user, onUpdateMatchScore 
       roundsWon2: r2,
       status: 'COMPLETED',
       tableNumber: null,
+      venue: null,
       isLiveStreaming: false,
       completedAt: new Date().toISOString(),
     };
 
-    await coordinatorApi.completeMatch(active.id, completedObj);
+    try {
+      await coordinatorApi.completeMatch(active.id, completedObj);
+    } catch (e) {
+      console.warn('Error completing match:', e);
+    }
 
-    onUpdateMatchScore(active.id, { status: 'COMPLETED', roundsWon1: r1, roundsWon2: r2 });
+    // Save to Tug of War Results Storage
+    try {
+      const resultsKey = 'sems_completed_results_tug-of-war';
+      const existing = localStorage.getItem(resultsKey);
+      let parsed = [];
+      if (existing) {
+        try { parsed = JSON.parse(existing); } catch (e) {}
+      }
+      if (!Array.isArray(parsed)) parsed = [];
+      const updatedResults = [completedObj, ...parsed.filter((r) => r.id !== active.id)];
+      localStorage.setItem(resultsKey, JSON.stringify(updatedResults));
+
+      // Remove from global and sport live match assignments
+      const sportKey = 'sems_active_live_matches_tug-of-war';
+      const sportLive = localStorage.getItem(sportKey);
+      if (sportLive) {
+        try {
+          const p = JSON.parse(sportLive);
+          if (venue && p[venue]) delete p[venue];
+          Object.keys(p).forEach((k) => {
+            if (p[k]?.id === active.id) delete p[k];
+          });
+          localStorage.setItem(sportKey, JSON.stringify(p));
+        } catch (e) {}
+      }
+
+      const globalLiveKey = 'sems_active_live_matches';
+      const globalLive = localStorage.getItem(globalLiveKey);
+      if (globalLive) {
+        try {
+          const gp = JSON.parse(globalLive);
+          if (venue && gp[venue]) delete gp[venue];
+          Object.keys(gp).forEach((k) => {
+            if (gp[k]?.id === active.id) delete gp[k];
+          });
+          localStorage.setItem(globalLiveKey, JSON.stringify(gp));
+        } catch (e) {}
+      }
+
+      window.dispatchEvent(new Event('sems_results_updated'));
+      window.dispatchEvent(new Event('sems_live_matches_updated'));
+      window.dispatchEvent(new Event('storage'));
+    } catch (e) {
+      console.warn('Error saving completed match to local result stores:', e);
+    }
+
+    if (onUpdateMatchScore) {
+      onUpdateMatchScore(active.id, completedObj);
+    }
+
     setLiveAssignments((prev) => {
       const copy = { ...prev };
       delete copy[venue];
@@ -189,7 +243,7 @@ export const TugOfWarLiveMatchControlTab = ({ matches, user, onUpdateMatchScore 
     });
 
     generateMatchResultPDF(completedObj, 'Tug of War');
-    addToast(`Match on ${venue} completed! Result PDF downloaded.`, 'success');
+    addToast(`🏆 Match on ${venue} completed! ${winnerName} won the match. Result PDF downloaded.`, 'success');
   };
 
   const handleDemoteMatch = async (venue) => {

@@ -63,6 +63,12 @@ export const TugOfWarResultManagementTab = ({ user }) => {
     };
 
     loadData();
+    window.addEventListener('sems_results_updated', loadData);
+    window.addEventListener('focus', loadData);
+    return () => {
+      window.removeEventListener('sems_results_updated', loadData);
+      window.removeEventListener('focus', loadData);
+    };
   }, [resultsKey]);
 
   const handleSetWinner = async (id, winnerName) => {
