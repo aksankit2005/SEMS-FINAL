@@ -133,6 +133,24 @@ export const getParticipationType = (record, explicitSportId = null) => {
  * - Preserves shared registration metadata (registrationId, teamName, college, sport, event, status, timestamp).
  * - No mock data injection, no obsolete branch/section fields.
  */
+const resolveGender = (m, reg) => {
+  const explicit = m?.gender || reg?.gender || reg?.participantData?.gender || reg?.participantData?.teamGender || reg?.genderCategory || reg?.category;
+  if (explicit && typeof explicit === 'string' && explicit.trim()) {
+    const el = explicit.trim().toLowerCase();
+    if (el === 'female' || el === 'girl' || el === 'girls' || el === 'women' || el === 'woman' || el === 'f') return 'Female';
+    if (el === 'male' || el === 'boy' || el === 'boys' || el === 'men' || el === 'man' || el === 'm') return 'Male';
+    return explicit.trim().charAt(0).toUpperCase() + explicit.trim().slice(1);
+  }
+  const eventStr = `${reg?.eventTitle || ''} ${reg?.eventType || ''} ${reg?.event || ''}`.toLowerCase();
+  if (eventStr.includes('girl') || eventStr.includes('female') || eventStr.includes('women') || eventStr.includes('woman')) {
+    return 'Female';
+  }
+  if (eventStr.includes('boy') || eventStr.includes('male') || eventStr.includes('men') || eventStr.includes('man')) {
+    return 'Male';
+  }
+  return 'Male';
+};
+
 export const flattenRegistrationRoster = (registrations = [], options = {}) => {
   const { defaultSport = 'Sport' } = options;
   const flattened = [];
@@ -172,7 +190,7 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
           rollNo: m.rollNo || m.roll || (mIdx === 0 ? (reg.enrollmentNo || reg.roll) : 'N/A'),
           phone: m.mobile || m.phone || (mIdx === 0 ? (reg.phone || reg.mobile) : 'N/A'),
           email: m.email || (mIdx === 0 ? reg.email : 'N/A'),
-          gender: m.gender || reg.gender || 'Male',
+          gender: resolveGender(m, reg),
           course: m.course || reg.department || 'N/A',
           yearSemester: m.yearSemester || 'N/A',
           isCaptain: isCap,
@@ -201,7 +219,7 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
           rollNo: m.rollNo || m.roll || 'N/A',
           phone: m.phone || m.mobile || (mIdx === 0 ? (reg.phone || reg.mobile) : 'N/A'),
           email: m.email || (mIdx === 0 ? reg.email : 'N/A'),
-          gender: m.gender || reg.gender || 'Male',
+          gender: resolveGender(m, reg),
           course: m.course || reg.department || 'N/A',
           yearSemester: m.semester || m.year || m.yearSemester || 'N/A',
           isCaptain: isCap,
@@ -231,7 +249,7 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
         rollNo: p1.roll || reg.enrollmentNo || 'N/A',
         phone: p1.phone || reg.phone || 'N/A',
         email: p1.email || reg.email || 'N/A',
-        gender: p1.gender || reg.gender || 'Male',
+        gender: resolveGender(p1, reg),
         course: p1.department || reg.department || 'N/A',
         yearSemester: p1.year || 'N/A',
         isCaptain: true,
@@ -253,7 +271,7 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
         rollNo: p2.roll || 'N/A',
         phone: p2.phone || 'N/A',
         email: p2.email || 'N/A',
-        gender: p2.gender || reg.gender || 'Male',
+        gender: resolveGender(p2, reg),
         course: p2.department || reg.department || 'N/A',
         yearSemester: p2.year || 'N/A',
         isCaptain: false,
@@ -279,7 +297,7 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
       rollNo: p1.roll || reg.enrollmentNo || reg.roll || 'N/A',
       phone: p1.phone || reg.phone || reg.mobile || 'N/A',
       email: p1.email || reg.email || 'N/A',
-      gender: p1.gender || reg.gender || 'Male',
+      gender: resolveGender(p1, reg),
       course: p1.department || reg.department || reg.course || 'N/A',
       yearSemester: p1.year || reg.yearSemester || 'N/A',
       isCaptain: true,

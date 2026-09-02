@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, FileDown, Users } from 'lucide-react';
+import { Search, FileDown, Users, Filter } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { flattenRegistrationRoster } from '../../../utils/rosterHelper';
@@ -8,6 +8,7 @@ import { exportToCSV } from '../../../utils/pdfExporter';
 export const TugOfWarTotalParticipationTab = ({ user, globalSearch = '' }) => {
   const { addToast } = useToast();
   const [search, setSearch] = useState('');
+  const [genderFilter, setGenderFilter] = useState('ALL');
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,6 +42,17 @@ export const TugOfWarTotalParticipationTab = ({ user, globalSearch = '' }) => {
   const flattenedAthletes = flattenRegistrationRoster(registrations, { defaultSport: sportName });
 
   const filtered = flattenedAthletes.filter((p) => {
+    // Gender Filter
+    if (genderFilter !== 'ALL') {
+      const pGender = (p.gender || '').toUpperCase();
+      if (genderFilter === 'MALE' && !pGender.includes('MALE') && !pGender.includes('BOY') && !pGender.includes('MEN')) {
+        return false;
+      }
+      if (genderFilter === 'FEMALE' && (!pGender.includes('FEMALE') && !pGender.includes('GIRL') && !pGender.includes('WOMEN') || pGender === 'MALE')) {
+        return false;
+      }
+    }
+
     const activeSearch = (search || globalSearch || '').toLowerCase().trim();
     if (!activeSearch) return true;
 
@@ -50,17 +62,19 @@ export const TugOfWarTotalParticipationTab = ({ user, globalSearch = '' }) => {
       (p.collegeName && p.collegeName.toLowerCase().includes(activeSearch)) ||
       (p.rollNo && p.rollNo.toLowerCase().includes(activeSearch)) ||
       (p.phone && p.phone.toLowerCase().includes(activeSearch)) ||
-      (p.email && p.email.toLowerCase().includes(activeSearch))
+      (p.email && p.email.toLowerCase().includes(activeSearch)) ||
+      (p.gender && p.gender.toLowerCase().includes(activeSearch))
     );
   });
 
   const handleExportExcel = () => {
-    if (!flattenedAthletes || flattenedAthletes.length === 0) {
+    const exportList = filtered;
+    if (!exportList || exportList.length === 0) {
       addToast('No participant records to export', 'warning');
       return;
     }
 
-    const exportData = flattenedAthletes.map((p, idx) => ({
+    const exportData = exportList.map((p, idx) => ({
       'S.No.': idx + 1,
       'Registration ID': p.registrationId || 'N/A',
       'Timestamp': p.timestamp || 'N/A',
@@ -69,18 +83,19 @@ export const TugOfWarTotalParticipationTab = ({ user, globalSearch = '' }) => {
       'Team Name': p.teamName || 'Individual',
       'College Name': p.collegeName || 'N/A',
       'Player Name': p.name || 'N/A',
+      'Gender': p.gender || 'Male',
       'Role': p.role || (p.isCaptain ? 'Captain' : 'Player'),
       'Roll No': p.rollNo || 'N/A',
       'Mobile No': p.phone || 'N/A',
       'Email': p.email || 'N/A',
-      'Gender': p.gender || 'Male',
       'Course': p.course || 'N/A',
       'Year / Semester': p.yearSemester || 'N/A',
       'Status': p.status || 'VERIFIED'
     }));
 
-    exportToCSV(exportData, `TugOfWar_Official_Roster_${new Date().toISOString().split('T')[0]}`);
-    addToast('Tug of War official roster exported to CSV successfully!', 'success');
+    const genderSuffix = genderFilter !== 'ALL' ? `_${genderFilter}` : '';
+    exportToCSV(exportData, `TugOfWar_Official_Roster${genderSuffix}_${new Date().toISOString().split('T')[0]}`);
+    addToast(`Tug of War roster (${genderFilter !== 'ALL' ? genderFilter : 'All'}) exported to CSV successfully!`, 'success');
   };
 
   return (
@@ -110,6 +125,8 @@ export const TugOfWarTotalParticipationTab = ({ user, globalSearch = '' }) => {
       {/* FILTER & EXPORT BAR */}
       <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+          
+          {/* Search bar */}
           <div className="relative w-full sm:max-w-md">
             <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
             <input
@@ -121,7 +138,21 @@ export const TugOfWarTotalParticipationTab = ({ user, globalSearch = '' }) => {
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          {/* Gender Filter & Export Actions */}
+          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
+            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-950 px-3 py-1 rounded-xl border border-slate-200 dark:border-slate-800">
+              <Filter className="w-3.5 h-3.5 text-slate-400" />
+              <select
+                value={genderFilter}
+                onChange={(e) => setGenderFilter(e.target.value)}
+                className="text-xs font-bold bg-transparent text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer py-1"
+              >
+                <option value="ALL" className="bg-white dark:bg-slate-900">All Genders</option>
+                <option value="MALE" className="bg-white dark:bg-slate-900">Male (Boys)</option>
+                <option value="FEMALE" className="bg-white dark:bg-slate-900">Female (Girls)</option>
+              </select>
+            </div>
+
             <button
               onClick={handleExportExcel}
               className="px-4 py-2 rounded-xl text-white text-xs font-black bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0"
@@ -142,6 +173,7 @@ export const TugOfWarTotalParticipationTab = ({ user, globalSearch = '' }) => {
                 <th className="p-4">Team Name</th>
                 <th className="p-4">College Name</th>
                 <th className="p-4">Player Name</th>
+                <th className="p-4">Gender</th>
                 <th className="p-4">Roll No</th>
                 <th className="p-4">Mobile No</th>
                 <th className="p-4">Email & Academic</th>
@@ -151,60 +183,72 @@ export const TugOfWarTotalParticipationTab = ({ user, globalSearch = '' }) => {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="p-12 text-center text-slate-400 dark:text-slate-500 font-mono text-xs">
-                    {loading ? 'Loading participants from database...' : 'No registered Tug of War student athletes found in database.'}
+                  <td colSpan={10} className="p-12 text-center text-slate-400 dark:text-slate-500 font-mono text-xs">
+                    {loading ? 'Loading participants from database...' : 'No registered Tug of War student athletes found.'}
                   </td>
                 </tr>
               ) : (
-                filtered.map((p, idx) => (
-                  <tr key={p.id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                    <td className="p-4 text-slate-600 dark:text-slate-400 font-mono text-xs whitespace-nowrap">
-                      {p.timestamp}
-                    </td>
-                    <td className="p-4 whitespace-nowrap">
-                      <span className="px-2.5 py-0.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold text-[11px]">
-                        Tug of War
-                      </span>
-                    </td>
-                    <td className="p-4 font-black text-slate-900 dark:text-white whitespace-nowrap">
-                      {p.teamName || 'Individual'}
-                    </td>
-                    <td className="p-4 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                      {p.collegeName}
-                    </td>
-                    <td className="p-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-extrabold text-slate-900 dark:text-white">{p.name}</span>
-                        {p.isCaptain ? (
-                          <span className="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                            Captain
-                          </span>
-                        ) : (
-                          <span className="px-1.5 py-0.2 rounded text-[8px] font-bold uppercase bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                            Player
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-4 font-mono font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                      {p.rollNo && p.rollNo !== 'N/A' ? p.rollNo : '—'}
-                    </td>
-                    <td className="p-4 font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                      {p.phone}
-                    </td>
-                    <td className="p-4 whitespace-nowrap text-slate-600 dark:text-slate-400">
-                      <div className="font-mono text-[11px]">{p.email}</div>
-                      <div className="text-[10px] text-slate-400">
-                        {p.course && p.course !== 'N/A' ? p.course : ''} {p.yearSemester && p.yearSemester !== 'N/A' ? `• ${p.yearSemester}` : ''}
-                      </div>
-                    </td>
-                    <td className="p-4 text-right whitespace-nowrap">
-                      <span className="px-2.5 py-0.5 text-[10px] font-bold rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase">
-                        {p.status || 'VERIFIED'}
-                      </span>
-                    </td>
-                  </tr>
-                ))
+                filtered.map((p, idx) => {
+                  const isFemale = (p.gender || '').toLowerCase().startsWith('f') || (p.gender || '').toLowerCase().includes('girl');
+                  return (
+                    <tr key={p.id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                      <td className="p-4 text-slate-600 dark:text-slate-400 font-mono text-xs whitespace-nowrap">
+                        {p.timestamp}
+                      </td>
+                      <td className="p-4 whitespace-nowrap">
+                        <span className="px-2.5 py-0.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold text-[11px]">
+                          Tug of War
+                        </span>
+                      </td>
+                      <td className="p-4 font-black text-slate-900 dark:text-white whitespace-nowrap">
+                        {p.teamName || 'Individual'}
+                      </td>
+                      <td className="p-4 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                        {p.collegeName}
+                      </td>
+                      <td className="p-4 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-extrabold text-slate-900 dark:text-white">{p.name}</span>
+                          {p.isCaptain ? (
+                            <span className="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                              Captain
+                            </span>
+                          ) : (
+                            <span className="px-1.5 py-0.2 rounded text-[8px] font-bold uppercase bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                              Player
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-4 whitespace-nowrap">
+                        <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] uppercase tracking-wider ${
+                          isFemale 
+                            ? 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20' 
+                            : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20'
+                        }`}>
+                          {p.gender || 'Male'}
+                        </span>
+                      </td>
+                      <td className="p-4 font-mono font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                        {p.rollNo && p.rollNo !== 'N/A' ? p.rollNo : '—'}
+                      </td>
+                      <td className="p-4 font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                        {p.phone}
+                      </td>
+                      <td className="p-4 whitespace-nowrap text-slate-600 dark:text-slate-400">
+                        <div className="font-mono text-[11px]">{p.email}</div>
+                        <div className="text-[10px] text-slate-400">
+                          {p.course && p.course !== 'N/A' ? p.course : ''} {p.yearSemester && p.yearSemester !== 'N/A' ? `• ${p.yearSemester}` : ''}
+                        </div>
+                      </td>
+                      <td className="p-4 text-right whitespace-nowrap">
+                        <span className="px-2.5 py-0.5 text-[10px] font-bold rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase">
+                          {p.status || 'VERIFIED'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
