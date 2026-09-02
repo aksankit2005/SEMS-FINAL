@@ -638,7 +638,7 @@ export const getSportResultDisplay = (r) => {
   const winner = str(r.winner || r.winnerName || details.winner, '');
   const format = str(r.format || details.format, '');
   const category = str(r.category || r.gender || details.category, 'Open');
-  const date = formatDate(r.completedAt || r.date || r.updatedAt || details.completedAt);
+  const date = formatDate(r.date || details.date || r.completedAt || r.updatedAt || details.completedAt);
   const mvp = str(details.mvp || details.playerOfMatch || details.playerOfTheMatch || r.mvpPlayer, '');
 
   // 1. CRICKET / GULLY CRICKET

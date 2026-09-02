@@ -334,7 +334,7 @@ router.get('/results', publicReadLimiter, async (req, res) => {
           winner: winnerStr,
           scoreSummary,
           setsDetail: formattedSetsStr,
-          date: m.updatedAt ? new Date(m.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          date: detailsObj.date || (m.updatedAt ? new Date(m.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
           completedAt: m.updatedAt,
           score1: m.score1,
           score2: m.score2,

@@ -1303,8 +1303,11 @@ export const completeMatch = async (req, res) => {
       try { setsHistory = JSON.parse(existing.sets_history); } catch (e) {}
     }
 
+    const matchDate = req.body.date || req.body.scheduledDate || existingDetails.date || (existing?.created_at ? new Date(existing.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+
     const details = {
       ...existingDetails,
+      date: matchDate,
       ...(req.body.details && typeof req.body.details === 'object' ? req.body.details : {}),
       ...(req.body.striker !== undefined ? { striker: req.body.striker } : {}),
       ...(req.body.nonStriker !== undefined ? { nonStriker: req.body.nonStriker } : {}),

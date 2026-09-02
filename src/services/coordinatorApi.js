@@ -863,6 +863,7 @@ async deleteMatch(id) {
       status: 'COMPLETED',
       tableNumber: null,
       isLiveStreaming: false,
+      date: winnerData.date || target.date || target.details?.date || new Date().toISOString().split('T')[0],
       completedAt: new Date().toISOString(),
       winner: winnerData.winner || (target.score1 >= target.score2 ? target.team1 : target.team2),
     };

@@ -5,7 +5,6 @@ import {
   RefreshCw, Clock, Construction
 } from 'lucide-react';
 import { coordinatorApi } from '../../../services/coordinatorApi';
-import { ThemeToggle } from '../../../components/common/ThemeToggle';
 import { ProfileTab } from '../../../components/coordinator/tabs/ProfileTab';
 import { EventsTab } from '../../../components/coordinator/tabs/EventsTab';
 import { MatchScheduleTab } from '../../../components/coordinator/tabs/MatchScheduleTab';
@@ -80,7 +79,6 @@ const Header = ({ sportName, activeTab, setActiveTab }) => {
         </p>
       </div>
       <div className="flex items-center gap-2.5">
-        <ThemeToggle />
         <button
           onClick={() => {
             window.location.reload();
