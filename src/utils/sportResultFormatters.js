@@ -885,9 +885,9 @@ export const getSportResultDisplay = (r) => {
 
   // 8. TUG OF WAR
   if (sportId.includes('tug')) {
-    // 1. Resolve Team 1 and Team 2 (even if stored inside eventTitle e.g. "Team A vs Team B")
-    let resolvedTeam1 = team1 !== 'Team 1' ? team1 : '';
-    let resolvedTeam2 = team2 !== 'Team 2' ? team2 : '';
+    // 1. Resolve Team 1 and Team 2 (direct fields or from eventTitle e.g. "Team A vs Team B")
+    let resolvedTeam1 = r.team1 || details.team1 || (team1 !== 'Team 1' ? team1 : '');
+    let resolvedTeam2 = r.team2 || details.team2 || (team2 !== 'Team 2' ? team2 : '');
     if ((!resolvedTeam1 || !resolvedTeam2) && eventTitle && eventTitle.includes(' vs ')) {
       const parts = eventTitle.split(' vs ');
       if (parts.length === 2) {
@@ -900,7 +900,7 @@ export const getSportResultDisplay = (r) => {
 
     const rw1 = Number(r.roundsWon1 ?? details.roundsWon1 ?? (r.score1 || 0));
     const rw2 = Number(r.roundsWon2 ?? details.roundsWon2 ?? (r.score2 || 0));
-    const finalWinner = winner || (rw1 >= rw2 ? resolvedTeam1 : resolvedTeam2);
+    const finalWinner = r.winner || details.winner || winner || (rw1 >= rw2 ? resolvedTeam1 : resolvedTeam2);
 
     const rawRounds = (Array.isArray(r.roundsHistory) ? r.roundsHistory : details.roundsHistory) || [];
     let validRounds = rawRounds.filter(

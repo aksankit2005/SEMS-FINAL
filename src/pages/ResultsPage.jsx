@@ -282,23 +282,59 @@ export const ResultsPage = () => {
       const list = [];
       const seenIds = new Set();
 
-      // 1. Fetch real completed results from Supabase PostgreSQL database
+      // 0. Deleted result IDs to filter out permanently
+      let deletedIds = new Set();
+      try {
+        const deletedStr = localStorage.getItem('sems_deleted_result_ids');
+        if (deletedStr) {
+          const parsed = JSON.parse(deletedStr);
+          if (Array.isArray(parsed)) {
+            deletedIds = new Set(parsed);
+          }
+        }
+      } catch (e) {}
+
+      // 1. Gather all local storage edited results
+      const localResultsMap = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sems_completed_results_')) {
+          try {
+            const parsed = JSON.parse(localStorage.getItem(key));
+            if (Array.isArray(parsed)) {
+              parsed.forEach((item) => {
+                if (item && item.id) {
+                  localResultsMap[item.id] = item;
+                }
+              });
+            }
+          } catch (e) {}
+        }
+      }
+
+      // 2. Fetch real completed results from Supabase PostgreSQL database
       try {
         const dbResults = await coordinatorApi.getPublicResults();
         if (dbResults && Array.isArray(dbResults)) {
           dbResults.forEach((item) => {
-            if (!item || !item.id || seenIds.has(item.id)) return;
+            if (!item || !item.id || seenIds.has(item.id) || deletedIds.has(item.id)) return;
             seenIds.add(item.id);
-            const display = getSportResultDisplay(item.rawMatch || item);
+
+            // Merge with local edited version if available so coordinator edits take immediate precedence
+            const mergedItem = localResultsMap[item.id]
+              ? { ...item, ...localResultsMap[item.id], rawMatch: { ...(item.rawMatch || item), ...localResultsMap[item.id] } }
+              : item;
+
+            const display = getSportResultDisplay(mergedItem.rawMatch || mergedItem);
             list.push({
-              id: item.id,
-              sport: display.sportName || item.sport || 'Sports Event',
-              event: display.eventTitle || item.event || 'Championship Match',
-              winner: display.winner || item.winner || 'Declared Winner',
-              scoreSummary: display.summaryText || item.scoreSummary || 'Completed',
-              date: display.date || item.date,
+              id: mergedItem.id,
+              sport: display.sportName || mergedItem.sport || 'Sports Event',
+              event: display.eventTitle || mergedItem.event || 'Championship Match',
+              winner: display.winner || mergedItem.winner || 'Declared Winner',
+              scoreSummary: display.summaryText || mergedItem.scoreSummary || 'Completed',
+              date: display.date || mergedItem.date,
               mvp: display.mvp,
-              rawMatch: item.rawMatch || item
+              rawMatch: mergedItem.rawMatch || mergedItem
             });
           });
         }
@@ -306,34 +342,22 @@ export const ResultsPage = () => {
         console.warn('Could not fetch DB results:', e);
       }
 
-      // 2. Merge local storage results if offline
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('sems_completed_results_')) {
-          try {
-            const parsed = JSON.parse(localStorage.getItem(key));
-            if (Array.isArray(parsed)) {
-              const sportId = key.replace('sems_completed_results_', '');
-              const sportName = sportId.charAt(0).toUpperCase() + sportId.slice(1).replace('-', ' ');
-              parsed.forEach((item) => {
-                if (!item || !item.id || seenIds.has(item.id)) return;
-                seenIds.add(item.id);
-                const display = getSportResultDisplay(item);
-                list.push({
-                  id: item.id,
-                  sport: display.sportName || item.sportName || sportName,
-                  event: display.eventTitle || item.eventTitle || `${sportName} Final`,
-                  winner: display.winner || item.winner || 'Declared Winner',
-                  scoreSummary: display.summaryText || item.scoreSummary || 'Match Completed',
-                  date: display.date || (item.completedAt ? item.completedAt.split('T')[0] : new Date().toISOString().split('T')[0]),
-                  mvp: display.mvp,
-                  rawMatch: item
-                });
-              });
-            }
-          } catch (e) {}
-        }
-      }
+      // 3. Add any remaining local results that were not returned by DB
+      Object.values(localResultsMap).forEach((item) => {
+        if (!item || !item.id || seenIds.has(item.id) || deletedIds.has(item.id)) return;
+        seenIds.add(item.id);
+        const display = getSportResultDisplay(item);
+        list.push({
+          id: item.id,
+          sport: display.sportName || item.sportName || 'Sports Event',
+          event: display.eventTitle || item.eventTitle || 'Championship Final',
+          winner: display.winner || item.winner || 'Declared Winner',
+          scoreSummary: display.summaryText || item.scoreSummary || 'Match Completed',
+          date: display.date || (item.completedAt ? item.completedAt.split('T')[0] : new Date().toISOString().split('T')[0]),
+          mvp: display.mvp,
+          rawMatch: item
+        });
+      });
 
       setDynamicResults(list);
     };

@@ -138,6 +138,8 @@ export const TugOfWarResultManagementTab = ({ user }) => {
       ...editingResult,
       team1: editForm.team1.trim(),
       team2: editForm.team2.trim(),
+      team1Name: editForm.team1.trim(),
+      team2Name: editForm.team2.trim(),
       eventTitle: editForm.eventTitle.trim(),
       category: editForm.category,
       gender: editForm.category,
@@ -150,7 +152,25 @@ export const TugOfWarResultManagementTab = ({ user }) => {
       score1: Number(editForm.roundsWon1),
       score2: Number(editForm.roundsWon2),
       winner: editForm.winner.trim() || editForm.team1.trim(),
+      winnerName: editForm.winner.trim() || editForm.team1.trim(),
       roundsHistory: constructedRoundsHistory,
+      details: {
+        ...(editingResult.details || {}),
+        team1: editForm.team1.trim(),
+        team2: editForm.team2.trim(),
+        team1Name: editForm.team1.trim(),
+        team2Name: editForm.team2.trim(),
+        roundsWon1: Number(editForm.roundsWon1),
+        roundsWon2: Number(editForm.roundsWon2),
+        score1: Number(editForm.roundsWon1),
+        score2: Number(editForm.roundsWon2),
+        winner: editForm.winner.trim() || editForm.team1.trim(),
+        roundsHistory: constructedRoundsHistory,
+        category: editForm.category,
+        venue: editForm.venue,
+        date: editForm.date,
+        time: editForm.time,
+      },
       status: 'COMPLETED',
       completedAt: editingResult.completedAt || new Date().toISOString(),
     };
@@ -158,6 +178,18 @@ export const TugOfWarResultManagementTab = ({ user }) => {
     const updatedList = resultsList.map((r) => (r.id === editingResult.id ? updatedObj : r));
     setResultsList(updatedList);
     localStorage.setItem(resultsKey, JSON.stringify(updatedList));
+
+    // Remove from deleted IDs set if it was there
+    try {
+      const deletedStr = localStorage.getItem('sems_deleted_result_ids');
+      if (deletedStr) {
+        const deletedArr = JSON.parse(deletedStr);
+        if (Array.isArray(deletedArr)) {
+          const filteredDeleted = deletedArr.filter((did) => did !== editingResult.id);
+          localStorage.setItem('sems_deleted_result_ids', JSON.stringify(filteredDeleted));
+        }
+      }
+    } catch (e) {}
 
     try {
       await coordinatorApi.completeMatch(editingResult.id, updatedObj);
@@ -193,7 +225,28 @@ export const TugOfWarResultManagementTab = ({ user }) => {
     const updated = resultsList.filter((r) => r.id !== id);
     setResultsList(updated);
     localStorage.setItem(resultsKey, JSON.stringify(updated));
-    addToast('Result entry deleted', 'info');
+
+    // Add to deleted IDs set so it never reappears on public pages
+    try {
+      const deletedStr = localStorage.getItem('sems_deleted_result_ids');
+      let deletedArr = [];
+      if (deletedStr) {
+        try { deletedArr = JSON.parse(deletedStr); } catch (e) {}
+      }
+      if (!Array.isArray(deletedArr)) deletedArr = [];
+      if (!deletedArr.includes(id)) {
+        deletedArr.push(id);
+        localStorage.setItem('sems_deleted_result_ids', JSON.stringify(deletedArr));
+      }
+    } catch (e) {}
+
+    try {
+      await coordinatorApi.deleteMatch(id);
+    } catch (e) {}
+
+    window.dispatchEvent(new Event('sems_results_updated'));
+    window.dispatchEvent(new Event('storage'));
+    addToast('Result entry deleted successfully', 'info');
   };
 
   const handleClearResults = async () => {
