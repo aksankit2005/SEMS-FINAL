@@ -431,6 +431,7 @@ export const TugOfWarEventsTab = ({ user }) => {
               const registered = event.registeredCount || 0;
               const fee = typeof event.teamFee === 'number' ? event.teamFee : (typeof event.entryFee === 'number' ? event.entryFee : (event.teamFee ?? event.entryFee ?? 1500));
               const minP = event.minPlayers !== undefined ? event.minPlayers : 8;
+              const maxP = event.maxPlayers !== undefined ? event.maxPlayers : 10;
               const teamSizeStr = event.teamSize || `${minP} - ${maxP} Players`;
               const statusInfo = computeEffectiveRegistrationStatus(event);
 
