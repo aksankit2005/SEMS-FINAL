@@ -193,80 +193,22 @@ export const TugOfWarLiveScoreControllerModal = ({ match, venueName, onClose, on
   };
 
   const handleCompleteMatchFinal = async () => {
-    const calculatedRoundsWon1 = roundsHistory.filter((s) => s.isLocked && s.winner === match?.team1).length;
-    const calculatedRoundsWon2 = roundsHistory.filter((s) => s.isLocked && s.winner === match?.team2).length;
-    const r1 = roundsWon1 || calculatedRoundsWon1;
-    const r2 = roundsWon2 || calculatedRoundsWon2;
-    const winnerName = matchWinner || (r1 >= r2 ? match?.team1 : match?.team2);
-
     const completedObj = {
       ...match,
-      winner: winnerName,
-      roundsWon1: r1,
-      roundsWon2: r2,
+      winner: matchWinner || (roundsWon1 >= roundsWon2 ? match.team1 : match.team2),
+      roundsWon1,
+      roundsWon2,
       roundsHistory,
       status: 'COMPLETED',
       tableNumber: null,
-      venue: null,
       isLiveStreaming: false,
       completedAt: new Date().toISOString(),
     };
 
-    try {
-      await coordinatorApi.completeMatch(match.id, completedObj);
-    } catch (e) {
-      console.warn('Error completing match via API:', e);
-    }
-
-    // Save to Tug of War Results Storage
-    try {
-      const resultsKey = 'sems_completed_results_tug-of-war';
-      const existing = localStorage.getItem(resultsKey);
-      let parsed = [];
-      if (existing) {
-        try { parsed = JSON.parse(existing); } catch (e) {}
-      }
-      if (!Array.isArray(parsed)) parsed = [];
-      const updatedResults = [completedObj, ...parsed.filter((r) => r.id !== match.id)];
-      localStorage.setItem(resultsKey, JSON.stringify(updatedResults));
-
-      // Remove from global and sport live match assignments
-      const sportKey = 'sems_active_live_matches_tug-of-war';
-      const sportLive = localStorage.getItem(sportKey);
-      if (sportLive) {
-        try {
-          const p = JSON.parse(sportLive);
-          if (venueName && p[venueName]) delete p[venueName];
-          Object.keys(p).forEach((k) => {
-            if (p[k]?.id === match.id) delete p[k];
-          });
-          localStorage.setItem(sportKey, JSON.stringify(p));
-        } catch (e) {}
-      }
-
-      const globalLiveKey = 'sems_active_live_matches';
-      const globalLive = localStorage.getItem(globalLiveKey);
-      if (globalLive) {
-        try {
-          const gp = JSON.parse(globalLive);
-          if (venueName && gp[venueName]) delete gp[venueName];
-          Object.keys(gp).forEach((k) => {
-            if (gp[k]?.id === match.id) delete gp[k];
-          });
-          localStorage.setItem(globalLiveKey, JSON.stringify(gp));
-        } catch (e) {}
-      }
-
-      window.dispatchEvent(new Event('sems_results_updated'));
-      window.dispatchEvent(new Event('sems_live_matches_updated'));
-      window.dispatchEvent(new Event('storage'));
-    } catch (e) {
-      console.warn('Error saving completed match to local result stores:', e);
-    }
-
-    if (onMatchUpdated) onMatchUpdated(match.id, completedObj);
+    await coordinatorApi.completeMatch(match.id, completedObj);
+    if (onMatchUpdated) onMatchUpdated(match.id, { status: 'COMPLETED', roundsWon1, roundsWon2 });
     generateMatchResultPDF(completedObj, 'Tug of War');
-    addToast(`🏆 Match Completed! ${winnerName} declared winner! Result PDF downloaded.`, 'success');
+    addToast('Tug of War match completed and PDF exported!', 'success');
     onClose();
   };
 

@@ -91,17 +91,9 @@ export const TugOfWarCoordinatorPage = () => {
 
   const handleUpdateLiveScore = (matchId, scoreData) => {
     if (scoreData?.status === 'COMPLETED' || scoreData?.status === 'FINISHED') {
-      setMatches((prev) => {
-        const updated = prev.filter((m) => m.id !== matchId);
-        coordinatorApi.saveMatches(updated);
-        return updated;
-      });
+      setMatches((prev) => prev.filter((m) => m.id !== matchId));
     } else {
-      setMatches((prev) => {
-        const updated = prev.map((m) => (m.id === matchId ? { ...m, ...scoreData } : m));
-        coordinatorApi.saveMatches(updated);
-        return updated;
-      });
+      setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, ...scoreData } : m)));
     }
   };
 
