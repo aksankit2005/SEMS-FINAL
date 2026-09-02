@@ -42,13 +42,16 @@ export const TugOfWarTotalParticipationTab = ({ user, globalSearch = '' }) => {
   const flattenedAthletes = flattenRegistrationRoster(registrations, { defaultSport: sportName });
 
   const filtered = flattenedAthletes.filter((p) => {
-    // Gender Filter
+    // Strict Gender Filter
     if (genderFilter !== 'ALL') {
-      const pGender = (p.gender || '').toUpperCase();
-      if (genderFilter === 'MALE' && !pGender.includes('MALE') && !pGender.includes('BOY') && !pGender.includes('MEN')) {
+      const g = (p.gender || '').trim().toUpperCase();
+      const isFemale = g === 'FEMALE' || g === 'GIRLS' || g === 'WOMEN' || g === 'GIRL' || g === 'F';
+      const isMale = g === 'MALE' || g === 'BOYS' || g === 'MEN' || g === 'BOY' || g === 'M';
+
+      if (genderFilter === 'MALE' && !isMale) {
         return false;
       }
-      if (genderFilter === 'FEMALE' && (!pGender.includes('FEMALE') && !pGender.includes('GIRL') && !pGender.includes('WOMEN') || pGender === 'MALE')) {
+      if (genderFilter === 'FEMALE' && !isFemale) {
         return false;
       }
     }
