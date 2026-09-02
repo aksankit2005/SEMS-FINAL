@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Trash2, Download, Filter, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { Trophy, Trash2, Download, Filter, RefreshCw, FileSpreadsheet, Edit, X, CheckCircle2, Calendar } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { useConfirm } from '../../../context/ConfirmContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
@@ -15,6 +15,24 @@ export const TugOfWarResultManagementTab = ({ user }) => {
   const [selectedEvent, setSelectedEvent] = useState('ALL');
   const [selectedGender, setSelectedGender] = useState('ALL');
   const [availableEvents, setAvailableEvents] = useState([]);
+
+  // Edit Result Modal State
+  const [editingResult, setEditingResult] = useState(null);
+  const [editForm, setEditForm] = useState({
+    team1: '',
+    team2: '',
+    eventTitle: '',
+    category: 'Open',
+    venue: 'Tug of War Ground 1',
+    date: '',
+    time: '04:00 PM',
+    roundsWon1: 0,
+    roundsWon2: 0,
+    winner: '',
+    round1Winner: '',
+    round2Winner: '',
+    round3Winner: '',
+  });
 
   const sportId = 'tug-of-war';
   const sportName = 'Tug of War';
@@ -63,7 +81,96 @@ export const TugOfWarResultManagementTab = ({ user }) => {
     };
 
     loadData();
+    window.addEventListener('sems_results_updated', loadData);
+    window.addEventListener('focus', loadData);
+    return () => {
+      window.removeEventListener('sems_results_updated', loadData);
+      window.removeEventListener('focus', loadData);
+    };
   }, [resultsKey]);
+
+  const handleOpenEdit = (res) => {
+    setEditingResult(res);
+
+    const rHistory = Array.isArray(res.roundsHistory) ? res.roundsHistory : [];
+    const r1 = rHistory.find((r) => r.round === 1)?.winner || '';
+    const r2 = rHistory.find((r) => r.round === 2)?.winner || '';
+    const r3 = rHistory.find((r) => r.round === 3)?.winner || '';
+
+    const t1 = res.team1 || res.team1Name || 'Team 1';
+    const t2 = res.team2 || res.team2Name || 'Team 2';
+    const rw1 = Number(res.roundsWon1 ?? 0);
+    const rw2 = Number(res.roundsWon2 ?? 0);
+
+    setEditForm({
+      team1: t1,
+      team2: t2,
+      eventTitle: res.eventTitle || res.title || 'TUG OF WAR 2026',
+      category: res.category || res.gender || 'Open',
+      venue: res.tableNumber || res.venue || 'Tug of War Ground 1',
+      date: res.date || (res.completedAt ? res.completedAt.split('T')[0] : new Date().toISOString().split('T')[0]),
+      time: res.time || '04:00 PM',
+      roundsWon1: rw1,
+      roundsWon2: rw2,
+      winner: res.winner || (rw1 >= rw2 ? t1 : t2),
+      round1Winner: r1 || (rw1 > 0 ? t1 : ''),
+      round2Winner: r2 || (rw2 > 0 ? t2 : (rw1 > 1 ? t1 : '')),
+      round3Winner: r3,
+    });
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editingResult) return;
+
+    if (!editForm.team1.trim() || !editForm.team2.trim()) {
+      addToast('Both Team 1 and Team 2 names are required', 'error');
+      return;
+    }
+
+    const constructedRoundsHistory = [
+      { round: 1, winner: editForm.round1Winner || null, isLocked: Boolean(editForm.round1Winner) },
+      { round: 2, winner: editForm.round2Winner || null, isLocked: Boolean(editForm.round2Winner) },
+      { round: 3, winner: editForm.round3Winner || null, isLocked: Boolean(editForm.round3Winner) },
+    ];
+
+    const updatedObj = {
+      ...editingResult,
+      team1: editForm.team1.trim(),
+      team2: editForm.team2.trim(),
+      eventTitle: editForm.eventTitle.trim(),
+      category: editForm.category,
+      gender: editForm.category,
+      venue: editForm.venue,
+      tableNumber: editForm.venue,
+      date: editForm.date,
+      time: editForm.time,
+      roundsWon1: Number(editForm.roundsWon1),
+      roundsWon2: Number(editForm.roundsWon2),
+      score1: Number(editForm.roundsWon1),
+      score2: Number(editForm.roundsWon2),
+      winner: editForm.winner.trim() || editForm.team1.trim(),
+      roundsHistory: constructedRoundsHistory,
+      status: 'COMPLETED',
+      completedAt: editingResult.completedAt || new Date().toISOString(),
+    };
+
+    const updatedList = resultsList.map((r) => (r.id === editingResult.id ? updatedObj : r));
+    setResultsList(updatedList);
+    localStorage.setItem(resultsKey, JSON.stringify(updatedList));
+
+    try {
+      await coordinatorApi.completeMatch(editingResult.id, updatedObj);
+    } catch (err) {
+      console.warn('API sync completed with local save');
+    }
+
+    window.dispatchEvent(new Event('sems_results_updated'));
+    window.dispatchEvent(new Event('storage'));
+
+    addToast(`Match result updated! Declared Winner: ${updatedObj.winner}`, 'success');
+    setEditingResult(null);
+  };
 
   const handleSetWinner = async (id, winnerName) => {
     try {
@@ -327,10 +434,18 @@ export const TugOfWarResultManagementTab = ({ user }) => {
                           <span>PDF</span>
                         </button>
                         <button
-                          onClick={() => handleSetWinner(r.id, r.winner || r.team1)}
-                          className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
+                          onClick={() => handleOpenEdit(r)}
+                          className="px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
                         >
-                          Set Winner
+                          <Edit className="w-3.5 h-3.5" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteResult(r.id)}
+                          className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/20 dark:hover:bg-rose-500/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 transition cursor-pointer"
+                          title="Delete Result"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -342,6 +457,256 @@ export const TugOfWarResultManagementTab = ({ user }) => {
         </div>
 
       </div>
+
+      {/* Edit Result Modal */}
+      {editingResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs font-sans animate-fade-in overflow-y-auto">
+          <div className="w-full max-w-2xl bg-white dark:bg-[#111827] text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5 my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div>
+                <span className="text-[10px] font-mono uppercase font-bold text-orange-600 dark:text-orange-400">
+                  EDIT TUG OF WAR MATCH RESULT
+                </span>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                  Match #{editingResult.id}
+                </h3>
+              </div>
+              <button
+                onClick={() => setEditingResult(null)}
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4 text-xs">
+              
+              {/* Contestant Teams */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-orange-500/5 border border-orange-500/20">
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase text-orange-600 dark:text-orange-400 mb-1">
+                    Team 1 Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editForm.team1}
+                    onChange={(e) => setEditForm({ ...editForm, team1: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase text-blue-600 dark:text-blue-400 mb-1">
+                    Team 2 Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editForm.team2}
+                    onChange={(e) => setEditForm({ ...editForm, team2: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Event Title & Category */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase text-slate-500 mb-1">
+                    Event Title
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.eventTitle}
+                    onChange={(e) => setEditForm({ ...editForm, eventTitle: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase text-slate-500 mb-1">
+                    Category / Gender
+                  </label>
+                  <select
+                    value={editForm.category}
+                    onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-orange-500"
+                  >
+                    <option value="Open">Open</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Venue, Date & Time */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase text-slate-500 mb-1">
+                    Venue / Ground
+                  </label>
+                  <select
+                    value={editForm.venue}
+                    onChange={(e) => setEditForm({ ...editForm, venue: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-orange-500"
+                  >
+                    <option value="Tug of War Ground 1">Tug of War Ground 1</option>
+                    <option value="Tug of War Ground 2">Tug of War Ground 2</option>
+                    <option value="Tug of War Ground 3">Tug of War Ground 3</option>
+                    <option value="Tug of War Ground 4">Tug of War Ground 4</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase text-slate-500 mb-1">
+                    Match Date
+                  </label>
+                  <input
+                    type="date"
+                    value={editForm.date}
+                    onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase text-slate-500 mb-1">
+                    Match Time
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.time}
+                    onChange={(e) => setEditForm({ ...editForm, time: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+              </div>
+
+              {/* Sets Won & Winner */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-slate-800">
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase text-orange-600 dark:text-orange-400 mb-1">
+                    {editForm.team1 || 'Team 1'} Sets Won
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="5"
+                    value={editForm.roundsWon1}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setEditForm((prev) => ({
+                        ...prev,
+                        roundsWon1: val,
+                        winner: val > prev.roundsWon2 ? prev.team1 : (prev.roundsWon2 > val ? prev.team2 : prev.winner)
+                      }));
+                    }}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase text-blue-600 dark:text-blue-400 mb-1">
+                    {editForm.team2 || 'Team 2'} Sets Won
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="5"
+                    value={editForm.roundsWon2}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setEditForm((prev) => ({
+                        ...prev,
+                        roundsWon2: val,
+                        winner: prev.roundsWon1 > val ? prev.team1 : (val > prev.roundsWon1 ? prev.team2 : prev.winner)
+                      }));
+                    }}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase text-emerald-600 dark:text-emerald-400 mb-1">
+                    Declared Winner *
+                  </label>
+                  <select
+                    value={editForm.winner}
+                    onChange={(e) => setEditForm({ ...editForm, winner: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#111827] border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value={editForm.team1}>{editForm.team1 || 'Team 1'}</option>
+                    <option value={editForm.team2}>{editForm.team2 || 'Team 2'}</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Round-by-Round Winners */}
+              <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] font-mono uppercase font-bold text-slate-500 block">
+                  Round-by-Round Winner Selection
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1">Round 1</label>
+                    <select
+                      value={editForm.round1Winner}
+                      onChange={(e) => setEditForm({ ...editForm, round1Winner: e.target.value })}
+                      className="w-full px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold"
+                    >
+                      <option value="">None / Pending</option>
+                      <option value={editForm.team1}>{editForm.team1}</option>
+                      <option value={editForm.team2}>{editForm.team2}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1">Round 2</label>
+                    <select
+                      value={editForm.round2Winner}
+                      onChange={(e) => setEditForm({ ...editForm, round2Winner: e.target.value })}
+                      className="w-full px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold"
+                    >
+                      <option value="">None / Pending</option>
+                      <option value={editForm.team1}>{editForm.team1}</option>
+                      <option value={editForm.team2}>{editForm.team2}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1">Round 3</label>
+                    <select
+                      value={editForm.round3Winner}
+                      onChange={(e) => setEditForm({ ...editForm, round3Winner: e.target.value })}
+                      className="w-full px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold"
+                    >
+                      <option value="">None / Pending</option>
+                      <option value={editForm.team1}>{editForm.team1}</option>
+                      <option value={editForm.team2}>{editForm.team2}</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Form Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setEditingResult(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Save & Update Result</span>
+                </button>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 };
