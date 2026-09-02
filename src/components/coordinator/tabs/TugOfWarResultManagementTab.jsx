@@ -10,7 +10,7 @@ export const TugOfWarResultManagementTab = ({ user }) => {
   const { addToast } = useToast();
   const { confirmDelete } = useConfirm();
   const [resultsList, setResultsList] = useState([]);
-  
+
   // Filter States
   const [selectedEvent, setSelectedEvent] = useState('ALL');
   const [selectedGender, setSelectedGender] = useState('ALL');
@@ -44,13 +44,13 @@ export const TugOfWarResultManagementTab = ({ user }) => {
           const parsed = JSON.parse(saved);
           const cleaned = Array.isArray(parsed)
             ? parsed.filter((r) => {
-                if (!r) return false;
-                if (mockIds.includes(r.id)) return false;
-                const t1 = (r.team1 || '').trim().toLowerCase();
-                const t2 = (r.team2 || '').trim().toLowerCase();
-                const w = (r.winner || '').trim().toLowerCase();
-                return !mockNames.includes(t1) && !mockNames.includes(t2) && !mockNames.includes(w);
-              })
+              if (!r) return false;
+              if (mockIds.includes(r.id)) return false;
+              const t1 = (r.team1 || '').trim().toLowerCase();
+              const t2 = (r.team2 || '').trim().toLowerCase();
+              const w = (r.winner || '').trim().toLowerCase();
+              return !mockNames.includes(t1) && !mockNames.includes(t2) && !mockNames.includes(w);
+            })
             : [];
           setResultsList(cleaned);
           localStorage.setItem(resultsKey, JSON.stringify(cleaned));
@@ -161,9 +161,9 @@ export const TugOfWarResultManagementTab = ({ user }) => {
 
   return (
     <div className="space-y-6 text-slate-900 dark:text-slate-200 animate-fade-in font-sans">
-      
+
       <div className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-2xl space-y-5">
-        
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
           <div>
             <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
@@ -266,7 +266,7 @@ export const TugOfWarResultManagementTab = ({ user }) => {
               ) : (
                 filteredResults.map((r) => (
                   <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                    
+
                     <td className="p-4 space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">#{r.id}</span>

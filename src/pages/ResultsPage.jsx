@@ -170,23 +170,59 @@ const SportResultSummary = ({ resultData }) => {
 
     case 'tug':
       return (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-mono font-black text-purple-600 dark:text-purple-400">
-              {display.tug.pullsScoreText}
+        <div className="space-y-3">
+          {/* Match Contestants */}
+          <div className="p-3 rounded-2xl bg-orange-500/10 dark:bg-orange-500/15 border border-orange-500/20">
+            <span className="text-[9px] font-mono uppercase font-black tracking-wider text-orange-600 dark:text-orange-400 block mb-1">
+              MATCH CONTESTANTS
             </span>
-            <span className="text-[10px] font-mono font-bold text-slate-400">BEST OF 3</span>
+            <div className="flex items-center justify-between text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+              <span className="text-orange-600 dark:text-orange-400 truncate max-w-[45%]">
+                {display.team1}
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-500 font-bold shrink-0">
+                VS
+              </span>
+              <span className="text-blue-600 dark:text-blue-400 truncate max-w-[45%] text-right">
+                {display.team2}
+              </span>
+            </div>
           </div>
-          {display.tug.roundsBreakdown && display.tug.roundsBreakdown.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {display.tug.roundsBreakdown.map((rStr, idx) => (
-                <span
-                  key={idx}
-                  className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-300"
-                >
-                  {rStr}
-                </span>
-              ))}
+
+          {/* Sets Won Summary */}
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div className="space-y-0.5">
+              <span className="text-[10px] font-mono uppercase text-slate-500 font-bold block">
+                Sets Won
+              </span>
+              <div className="text-xs sm:text-sm font-mono font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <span>{display.team1}: <strong className="text-orange-600 dark:text-orange-400">{display.tug?.roundsWon1 ?? 0}</strong></span>
+                <span className="text-slate-400">—</span>
+                <span>{display.team2}: <strong className="text-blue-600 dark:text-blue-400">{display.tug?.roundsWon2 ?? 0}</strong></span>
+              </div>
+            </div>
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-extrabold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shrink-0">
+              {display.tug?.pullsScoreText || 'Sets Won'}
+            </span>
+          </div>
+
+          {/* Round Breakdown */}
+          {display.tug?.roundsBreakdown && display.tug.roundsBreakdown.length > 0 && (
+            <div className="space-y-1.5 pt-1">
+              <span className="text-[10px] font-mono uppercase font-black text-slate-500 dark:text-slate-400 block">
+                Rounds Won Breakdown
+              </span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {display.tug.roundsBreakdown.map((rObj, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800/90 text-[11px] font-mono font-bold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 shadow-xs"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span>{typeof rObj === 'string' ? rObj : rObj.label}</span>
+                  </span>
+                ))}
+              </div>
             </div>
           )}
         </div>
