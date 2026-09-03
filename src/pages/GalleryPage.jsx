@@ -169,12 +169,14 @@ export const GalleryPage = () => {
           VIEW 2: FULLSCREEN IMMERSIVE ALBUM OPEN EXPERIENCE (Image 2)
           ========================================================================= */}
       {selectedEvent ? (
-        <div className={`fixed inset-0 z-50 flex flex-col justify-between p-3 sm:p-5 lg:p-6 overflow-hidden select-none transition-colors ${
+        <div className={`fixed inset-0 z-50 flex flex-col justify-between p-3 sm:p-5 lg:p-6 select-none transition-colors ${
+          albumDisplayMode === 'grid' ? 'overflow-y-auto' : 'overflow-hidden'
+        } ${
           isDark ? 'spatial-nebula-dark text-slate-100' : 'spatial-nebula-light text-slate-900'
         }`}>
           
           {/* Top Context Navbar Capsule */}
-          <div className={`w-full max-w-7xl mx-auto rounded-full px-5 sm:px-7 py-3 sm:py-3.5 flex items-center justify-between gap-4 shadow-2xl z-30 transition-all ${
+          <div className={`w-full max-w-7xl mx-auto rounded-full px-5 sm:px-7 py-3 sm:py-3.5 flex items-center justify-between gap-4 shadow-2xl sticky top-0 z-30 shrink-0 transition-all ${
             isDark ? 'spatial-glass-card-dark' : 'spatial-glass-card-light'
           }`}>
             
@@ -266,7 +268,9 @@ export const GalleryPage = () => {
           </div>
 
           {/* Main Stage */}
-          <div className="flex-1 flex flex-col justify-center my-auto">
+          <div className={`flex-1 flex flex-col ${
+            albumDisplayMode === 'grid' ? 'justify-start w-full' : 'justify-center my-auto'
+          }`}>
             {mediaLoading ? (
               <div className="py-24 flex flex-col items-center justify-center space-y-4">
                 <div className={`w-12 h-12 border-4 border-t-amber-400 rounded-full animate-spin ${
@@ -297,7 +301,7 @@ export const GalleryPage = () => {
                 event={selectedEvent}
               />
             ) : (
-              <div className="max-w-7xl mx-auto w-full py-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="max-w-7xl mx-auto w-full py-8 pb-32 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {displayedAlbumMedia.map((item, idx) => {
                   const isItemVideo = (item.media_type || '').toLowerCase() === 'video' || extractYouTubeVideoId(item.media_url);
                   const imageSrc = isItemVideo 
