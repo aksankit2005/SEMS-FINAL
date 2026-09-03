@@ -621,9 +621,34 @@ router.get('/announcements', publicReadLimiter, async (req, res) => {
       include: { attachments: true },
       orderBy: { createdAt: 'desc' }
     });
-    return res.json(list || []);
+    if (list && list.length > 0) {
+      return res.json(list.map(a => ({
+        ...a,
+        category: a.category || 'Schedule'
+      })));
+    }
   } catch (err) {
-    console.error('Error fetching public announcements from DB:', err);
+    console.warn('Prisma fetching announcements notice, trying pool query:', err.message);
+  }
+
+  try {
+    const rawRes = await pool.query(`
+      SELECT 
+        a.id, 
+        a.title, 
+        a.description, 
+        COALESCE(a.category, 'Schedule') AS category, 
+        a."publishDate", 
+        a."expiryDate", 
+        a."isPublished", 
+        a."createdAt"
+      FROM announcements a
+      WHERE a."isPublished" = true
+      ORDER BY a."createdAt" DESC
+    `);
+    return res.json((rawRes && rawRes.rows) || []);
+  } catch (err2) {
+    console.error('Error fetching public announcements from DB fallback:', err2.message);
     return res.json([]);
   }
 });

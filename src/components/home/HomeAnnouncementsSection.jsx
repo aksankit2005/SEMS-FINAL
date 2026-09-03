@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Bell, ChevronRight, FileText, Calendar, Paperclip, Sparkles } from 'lucide-react';
 import { useSportsData } from '../../context/SportsDataContext';
 import { ANNOUNCEMENTS_DATA } from '../../data/announcementsData';
+import { getCategoryMeta } from '../../pages/AnnouncementsPage';
 
 export const HomeAnnouncementsSection = () => {
   const { announcements } = useSportsData();
@@ -47,23 +48,27 @@ export const HomeAnnouncementsSection = () => {
               <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No Announcements Published Yet</p>
             </div>
           ) : (
-            displayAnnouncements.map((item) => (
-              <Link
-                key={item.id || item.title}
-                to="/announcements"
-                className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-blue-500/40 transition duration-300 flex flex-col justify-between group"
-              >
-                <div>
-                  {/* Category & Date */}
-                  <div className="flex items-center justify-between mb-3 text-xs">
-                    <span className="px-3 py-1 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold">
-                      {item.category || 'Official Notice'}
-                    </span>
-                    <span className="text-slate-400 text-[11px] flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-slate-400" />
-                      {item.date || item.createdAt || 'Aug 2026'}
-                    </span>
-                  </div>
+            displayAnnouncements.map((item) => {
+              const meta = getCategoryMeta(item.category);
+              const Icon = meta.icon;
+              return (
+                <Link
+                  key={item.id || item.title}
+                  to="/announcements"
+                  className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-blue-500/40 transition duration-300 flex flex-col justify-between group"
+                >
+                  <div>
+                    {/* Category & Date */}
+                    <div className="flex items-center justify-between mb-3 text-xs">
+                      <span className={`px-2.5 py-0.5 rounded-lg font-bold border text-[11px] flex items-center gap-1 ${meta.badgeClass}`}>
+                        <Icon className="w-3 h-3" />
+                        <span>{meta.label}</span>
+                      </span>
+                      <span className="text-slate-400 text-[11px] flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-slate-400" />
+                        {item.date || item.createdAt || 'Aug 2026'}
+                      </span>
+                    </div>
 
                   {/* Title */}
                   <h3 className="text-base font-black text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition line-clamp-2 leading-snug mb-2">
@@ -92,8 +97,9 @@ export const HomeAnnouncementsSection = () => {
                   </span>
                 </div>
               </Link>
-            ))
-          )}
+            );
+          })
+        )}
         </div>
 
       </div>

@@ -1,11 +1,50 @@
 import React, { useState, useEffect } from 'react';
-import { X, FileText, Upload, Trash2, Download, Eye, AlertCircle, CheckCircle2, Loader2, Paperclip } from 'lucide-react';
+import { 
+  X, FileText, Upload, Trash2, Download, Eye, AlertCircle, CheckCircle2, 
+  Loader2, Paperclip, Calendar, BookOpen, AlertTriangle, Sparkles 
+} from 'lucide-react';
 import { useConfirm } from '../../context/ConfirmContext';
+
+const CATEGORY_OPTIONS = [
+  {
+    id: 'Schedule',
+    label: 'Schedule',
+    desc: 'Match timings, fixtures & venue changes',
+    icon: Calendar,
+    color: 'text-blue-500',
+    borderActive: 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400 ring-1 ring-blue-500/30'
+  },
+  {
+    id: 'Rules & Guidelines',
+    label: 'Rules & Guidelines',
+    desc: 'Tournament rulebooks, eligibility & conduct',
+    icon: BookOpen,
+    color: 'text-purple-500',
+    borderActive: 'border-purple-500 bg-purple-500/10 text-purple-600 dark:text-purple-400 ring-1 ring-purple-500/30'
+  },
+  {
+    id: 'Emergency & Safety',
+    label: 'Emergency & Safety',
+    desc: 'Urgent alerts, weather & medical notices',
+    icon: AlertTriangle,
+    color: 'text-rose-500',
+    borderActive: 'border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400 ring-1 ring-rose-500/30'
+  },
+  {
+    id: 'Event Highlight',
+    label: 'Event Highlight',
+    desc: 'Ceremony alerts, star matches & results',
+    icon: Sparkles,
+    color: 'text-amber-500',
+    borderActive: 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/30'
+  }
+];
 
 export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onClose }) => {
   const { confirmDelete } = useConfirm();
   const [formData, setFormData] = useState({
     title: '',
+    category: 'Schedule',
     description: '',
     publishDate: new Date().toISOString().split('T')[0],
     expiryDate: '2026-08-20',
@@ -29,6 +68,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
       setFormData({
         id: announcement.id,
         title: announcement.title || '',
+        category: announcement.category || 'Schedule',
         description: announcement.description || '',
         publishDate: announcement.publishDate || new Date().toISOString().split('T')[0],
         expiryDate: announcement.expiryDate || '2026-08-20',
@@ -38,6 +78,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
     } else {
       setFormData({
         title: '',
+        category: 'Schedule',
         description: '',
         publishDate: new Date().toISOString().split('T')[0],
         expiryDate: '2026-08-20',
@@ -174,6 +215,48 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
                 className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
               />
               {errors.title && <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{errors.title}</p>}
+            </div>
+
+            {/* Target Category Selection */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Target Section / Category *
+                </label>
+                <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md">
+                  Active: {formData.category}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                {CATEGORY_OPTIONS.map((cat) => {
+                  const Icon = cat.icon;
+                  const isSelected = formData.category === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, category: cat.id })}
+                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        isSelected
+                          ? cat.borderActive
+                          : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="flex items-center gap-1.5 text-xs font-bold">
+                          <Icon className={`w-4 h-4 ${cat.color}`} />
+                          <span>{cat.label}</span>
+                        </span>
+                        {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />}
+                      </div>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                        {cat.desc}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div>

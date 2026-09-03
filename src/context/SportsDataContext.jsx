@@ -105,7 +105,7 @@ export const SportsDataProvider = ({ children }) => {
           title: a.title,
           summary: a.description || 'Official announcement notice',
           content: a.description || 'Official announcement notice',
-          category: 'Rules & Guidelines',
+          category: a.category || 'Schedule',
           date: a.createdAt ? new Date(a.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           time: '10:00 AM',
           author: 'System Administrator (Admin)',
