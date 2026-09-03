@@ -78,7 +78,7 @@ export const SpatialFolderCard = ({ event, index, onOpenEvent, mediaItems = [] }
       </div>
 
       {/* ─── MAIN FOLDER BODY ─── */}
-      <div className={`rounded-b-3xl rounded-tr-3xl p-6 sm:p-7 relative overflow-hidden transition-all duration-500 ${
+      <div className={`rounded-b-3xl rounded-tr-3xl p-4 sm:p-7 relative overflow-hidden transition-all duration-500 ${
         isDark ? 'spatial-glass-card-dark' : 'spatial-glass-card-light'
       }`}>
         
@@ -91,8 +91,8 @@ export const SpatialFolderCard = ({ event, index, onOpenEvent, mediaItems = [] }
 
         {/* Top Dynamic Media Badges */}
         <div className="flex items-center justify-between relative z-10 mb-2">
-          <div className="flex items-center gap-2">
-            <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full backdrop-blur-md border text-[11px] font-bold ${
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full backdrop-blur-md border text-[10px] sm:text-[11px] font-bold ${
               isDark 
                 ? 'bg-white/5 border-white/10 text-slate-300' 
                 : 'bg-slate-100 border-slate-200 text-slate-700'
@@ -102,7 +102,7 @@ export const SpatialFolderCard = ({ event, index, onOpenEvent, mediaItems = [] }
             </span>
 
             {videosCount > 0 && (
-              <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full backdrop-blur-md border text-[11px] font-bold ${
+              <span className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full backdrop-blur-md border text-[10px] sm:text-[11px] font-bold ${
                 isDark 
                   ? 'bg-white/5 border-white/10 text-slate-300' 
                   : 'bg-slate-100 border-slate-200 text-slate-700'
@@ -115,7 +115,7 @@ export const SpatialFolderCard = ({ event, index, onOpenEvent, mediaItems = [] }
 
           {/* Dynamic Event Date */}
           {event.event_date && (
-            <span className={`flex items-center gap-1 text-[11px] font-bold font-spatial-sans ${
+            <span className={`flex items-center gap-1 text-[10px] sm:text-[11px] font-bold font-spatial-sans ${
               isDark ? 'text-slate-400' : 'text-slate-500'
             }`}>
               <Calendar className="w-3 h-3" />
@@ -125,12 +125,12 @@ export const SpatialFolderCard = ({ event, index, onOpenEvent, mediaItems = [] }
         </div>
 
         {/* ─── 3D LANDSCAPE FINE-ART PRINT STACK (WIDE RECTANGLE) ─── */}
-        <div className="relative w-full h-52 sm:h-60 flex items-center justify-center my-5">
+        <div className="relative w-full h-44 sm:h-60 flex items-center justify-center my-3 sm:my-5">
           {/* Floor Shadow Under Stack */}
-          <div className="absolute bottom-1 w-64 sm:w-72 h-8 bg-black/70 blur-xl rounded-full" />
+          <div className="absolute bottom-1 w-52 sm:w-72 h-8 bg-black/70 blur-xl rounded-full" />
 
           {/* BACK PRINT */}
-          <div className="absolute w-60 h-38 sm:w-72 sm:h-44 md:w-80 md:h-48 fine-art-card-landscape folder-stack-back-landscape bg-slate-950">
+          <div className="absolute w-52 h-32 sm:w-72 sm:h-44 md:w-80 md:h-48 fine-art-card-landscape folder-stack-back-landscape bg-slate-950">
             <GoogleDriveImage
               src={card3Url}
               alt={event.event_name}
@@ -142,7 +142,7 @@ export const SpatialFolderCard = ({ event, index, onOpenEvent, mediaItems = [] }
           </div>
 
           {/* MIDDLE PRINT */}
-          <div className="absolute w-60 h-38 sm:w-72 sm:h-44 md:w-80 md:h-48 fine-art-card-landscape folder-stack-middle-landscape bg-slate-950">
+          <div className="absolute w-52 h-32 sm:w-72 sm:h-44 md:w-80 md:h-48 fine-art-card-landscape folder-stack-middle-landscape bg-slate-950">
             <GoogleDriveImage
               src={card2Url}
               alt={event.event_name}
@@ -150,11 +150,11 @@ export const SpatialFolderCard = ({ event, index, onOpenEvent, mediaItems = [] }
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-slate-950/15" />
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/15 to-transparent opacity-60 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/15 to-transparent opacity-50 pointer-events-none" />
           </div>
 
-          {/* FRONT PRINT */}
-          <div className="absolute w-60 h-38 sm:w-72 sm:h-44 md:w-80 md:h-48 fine-art-card-landscape folder-stack-front-landscape bg-slate-950">
+          {/* FRONT HERO PRINT */}
+          <div className="absolute w-52 h-32 sm:w-72 sm:h-44 md:w-80 md:h-48 fine-art-card-landscape folder-stack-front-landscape bg-slate-950">
             <GoogleDriveImage
               src={card1Url}
               alt={event.event_name}
@@ -166,10 +166,10 @@ export const SpatialFolderCard = ({ event, index, onOpenEvent, mediaItems = [] }
         </div>
 
         {/* ─── CARD DETAILS & METADATA (PURE DYNAMIC) ─── */}
-        <div className="relative z-10 space-y-2.5 pt-1">
+        <div className="relative z-10 space-y-2 pt-1">
           <div>
             {/* Dynamic Event Name */}
-            <h3 className={`text-xl sm:text-2xl font-black tracking-wide leading-tight font-spatial-display uppercase transition-colors duration-300 ${
+            <h3 className={`text-lg sm:text-2xl font-black tracking-wide leading-tight font-spatial-display uppercase transition-colors duration-300 ${
               isDark 
                 ? 'text-white group-hover:text-amber-200' 
                 : 'text-slate-900 group-hover:text-blue-600'

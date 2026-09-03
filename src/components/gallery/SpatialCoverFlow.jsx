@@ -138,10 +138,10 @@ export const SpatialCoverFlow = ({ items = [], onOpenLightbox, event = null }) =
       className="relative w-full flex-1 flex flex-col items-center justify-between select-none overflow-hidden py-4 sm:py-6"
     >
       {/* ─── 3D CYLINDRICAL VIEWPORT ─── */}
-      <div className="spatial-coverflow-viewport w-full max-w-7xl relative flex-1 min-h-[460px] sm:min-h-[560px] flex items-center justify-center">
+      <div className="spatial-coverflow-viewport w-full max-w-7xl relative flex-1 min-h-[380px] sm:min-h-[520px] md:min-h-[560px] flex items-center justify-center">
         
         {/* Floor Glow */}
-        <div className={`absolute bottom-8 w-[380px] sm:w-[520px] h-28 rounded-full z-0 ${
+        <div className={`absolute bottom-8 w-[280px] sm:w-[520px] h-20 sm:h-28 rounded-full z-0 ${
           isDark ? 'spatial-floor-glow-dark' : 'spatial-floor-glow-light'
         }`} />
 
@@ -173,7 +173,8 @@ export const SpatialCoverFlow = ({ items = [], onOpenLightbox, event = null }) =
               const direction = isLeft ? -1 : 1;
               const arcAngle = Math.min(absOffset * 28, 50) * -direction;
               
-              const xStep = typeof window !== 'undefined' && window.innerWidth < 640 ? 150 : 250;
+              const screenW = typeof window !== 'undefined' ? window.innerWidth : 1024;
+              const xStep = screenW < 420 ? 110 : screenW < 640 ? 145 : 250;
               translateX = offset * xStep;
               translateZ = -absOffset * 95 - 40;
               rotateY = arcAngle;
@@ -199,7 +200,7 @@ export const SpatialCoverFlow = ({ items = [], onOpenLightbox, event = null }) =
                   zIndex,
                   opacity,
                 }}
-                className={`spatial-flow-card absolute w-[290px] sm:w-[360px] md:w-[410px] aspect-[3/4] rounded-[28px] sm:rounded-[34px] overflow-hidden cursor-pointer ${
+                className={`spatial-flow-card absolute w-[260px] xs:w-[280px] sm:w-[360px] md:w-[410px] aspect-[3/4] rounded-[24px] sm:rounded-[34px] overflow-hidden cursor-pointer ${
                   isCenter 
                     ? isDark
                       ? 'ring-1 ring-white/30 shadow-[0_30px_70px_rgba(0,0,0,0.98)]'
@@ -230,7 +231,7 @@ export const SpatialCoverFlow = ({ items = [], onOpenLightbox, event = null }) =
 
                   {/* ─── ACTIVE CENTER CARD OVERLAY ─── */}
                   {isCenter && (
-                    <div className="absolute inset-0 p-6 sm:p-7 flex flex-col justify-between pointer-events-auto">
+                    <div className="absolute inset-0 p-4 sm:p-7 flex flex-col justify-between pointer-events-auto">
                       
                       {/* Top Action Pills: Sharp Non-Blurry Expand on Left, Download on Right */}
                       <div className="flex items-center justify-between">
@@ -241,10 +242,10 @@ export const SpatialCoverFlow = ({ items = [], onOpenLightbox, event = null }) =
                               onOpenLightbox(items, activeIndex);
                             }
                           }}
-                          className="px-4 py-2 rounded-full bg-black/90 hover:bg-black border border-white/40 text-white text-xs font-black tracking-wider flex items-center gap-2 shadow-2xl transition-all active:scale-95 cursor-pointer"
+                          className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-black/90 hover:bg-black border border-white/40 text-white text-[11px] sm:text-xs font-black tracking-wider flex items-center gap-1.5 sm:gap-2 shadow-2xl transition-all active:scale-95 cursor-pointer"
                           title="Expand Fullscreen Lightbox"
                         >
-                          <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
+                          <Maximize2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400" />
                           <span>Expand</span>
                         </button>
 
@@ -255,21 +256,21 @@ export const SpatialCoverFlow = ({ items = [], onOpenLightbox, event = null }) =
                               triggerMediaDownload(item.media_url, `${item.title || 'photo'}.jpg`);
                               showToast('Downloading fine-art photograph...', 'info');
                             }}
-                            className="w-9 h-9 rounded-full bg-black/90 hover:bg-black border border-white/40 text-white flex items-center justify-center transition-all shadow-2xl cursor-pointer active:scale-95"
+                            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/90 hover:bg-black border border-white/40 text-white flex items-center justify-center transition-all shadow-2xl cursor-pointer active:scale-95"
                             title="Download High-Res Print"
                           >
-                            <Download className="w-4 h-4" />
+                            <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </button>
                         )}
                       </div>
 
                       {/* Bottom Text Details: Clean Dynamic Title & Index Count */}
                       <div className="space-y-1">
-                        <div className="flex items-baseline justify-between gap-3">
-                          <h3 className="text-base sm:text-lg md:text-xl font-black text-white tracking-wide leading-snug font-spatial-display uppercase line-clamp-2 drop-shadow-md">
+                        <div className="flex items-baseline justify-between gap-2 sm:gap-3">
+                          <h3 className="text-sm sm:text-lg md:text-xl font-black text-white tracking-wide leading-snug font-spatial-display uppercase line-clamp-2 drop-shadow-md">
                             {item.title || `${event?.event_name || 'Media'} #${idx + 1}`}
                           </h3>
-                          <span className="text-xs font-black text-slate-300 font-spatial-sans shrink-0 drop-shadow">
+                          <span className="text-[10px] sm:text-xs font-black text-slate-300 font-spatial-sans shrink-0 drop-shadow">
                             {String(idx + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
                           </span>
                         </div>
@@ -290,13 +291,13 @@ export const SpatialCoverFlow = ({ items = [], onOpenLightbox, event = null }) =
       </div>
 
       {/* ─── FLOATING SPATIAL CONTROLLER DOCK ─── */}
-      <div className="w-full max-w-2xl px-4 z-40 mt-4 mb-2">
-        <div className={`rounded-full px-5 py-3 flex items-center justify-between gap-4 shadow-2xl transition-colors ${
+      <div className="w-full max-w-2xl px-2 sm:px-4 z-40 mt-2 sm:mt-4 mb-1 sm:mb-2">
+        <div className={`rounded-full px-3 sm:px-5 py-2 sm:py-3 flex items-center justify-between gap-2 sm:gap-4 shadow-2xl transition-colors ${
           isDark ? 'spatial-dock-dark' : 'spatial-dock-light'
         }`}>
           
-          <div className="flex items-center gap-3 min-w-0">
-            <div className={`w-10 h-10 rounded-full overflow-hidden ring-2 shadow-md shrink-0 bg-slate-950 ${
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden ring-2 shadow-md shrink-0 bg-slate-950 ${
               isDark ? 'ring-amber-400/60' : 'ring-slate-300'
             }`}>
               <GoogleDriveImage
@@ -306,7 +307,7 @@ export const SpatialCoverFlow = ({ items = [], onOpenLightbox, event = null }) =
               />
             </div>
             <div className="min-w-0">
-              <p className={`text-xs font-black truncate font-spatial-display uppercase ${
+              <p className={`text-[11px] sm:text-xs font-black truncate max-w-[80px] xs:max-w-[130px] sm:max-w-[200px] font-spatial-display uppercase ${
                 isDark ? 'text-white' : 'text-slate-900'
               }`}>
                 {activeItem?.title || 'Fine-Art Photograph'}
@@ -314,17 +315,17 @@ export const SpatialCoverFlow = ({ items = [], onOpenLightbox, event = null }) =
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <button
               onClick={handlePrev}
-              className={`w-8 h-8 rounded-full border flex items-center justify-center transition active:scale-90 cursor-pointer ${
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border flex items-center justify-center transition active:scale-90 cursor-pointer ${
                 isDark 
                   ? 'bg-white/10 hover:bg-white/20 border-white/10 text-white' 
                   : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700'
               }`}
               title="Previous Frame (Left Arrow)"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
 
             <div className="hidden sm:flex items-center gap-1.5 px-2">
@@ -351,7 +352,7 @@ export const SpatialCoverFlow = ({ items = [], onOpenLightbox, event = null }) =
               )}
             </div>
 
-            <div className={`px-2.5 py-1 rounded-full border text-[10px] font-black tracking-wider font-spatial-sans ${
+            <div className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border text-[9px] sm:text-[10px] font-black tracking-wider font-spatial-sans ${
               isDark 
                 ? 'bg-white/10 border-white/10 text-slate-200' 
                 : 'bg-slate-100 border-slate-300 text-slate-800'
@@ -361,19 +362,19 @@ export const SpatialCoverFlow = ({ items = [], onOpenLightbox, event = null }) =
 
             <button
               onClick={handleNext}
-              className={`w-8 h-8 rounded-full border flex items-center justify-center transition active:scale-90 cursor-pointer ${
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border flex items-center justify-center transition active:scale-90 cursor-pointer ${
                 isDark 
                   ? 'bg-white/10 hover:bg-white/20 border-white/10 text-white' 
                   : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700'
               }`}
               title="Next Frame (Right Arrow)"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
 
             <button
               onClick={() => setIsAutoplay((prev) => !prev)}
-              className={`w-8 h-8 rounded-full border flex items-center justify-center transition active:scale-90 cursor-pointer ${
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border flex items-center justify-center transition active:scale-90 cursor-pointer ${
                 isAutoplay 
                   ? isDark
                     ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.7)]' 
@@ -384,7 +385,7 @@ export const SpatialCoverFlow = ({ items = [], onOpenLightbox, event = null }) =
               }`}
               title={isAutoplay ? 'Pause Slideshow (Spacebar)' : 'Play Slideshow (Spacebar)'}
             >
-              {isAutoplay ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current ml-0.5" />}
+              {isAutoplay ? <Pause className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current" /> : <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current ml-0.5" />}
             </button>
           </div>
 
