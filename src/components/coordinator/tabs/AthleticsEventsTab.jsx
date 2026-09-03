@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Calendar, Layers, CheckCircle2, Clock, XCircle, Edit, Trash2, Eye, 
   Upload, Crop, Image as ImageIcon, Users, DollarSign, ShieldAlert, Download, 
-  Search, Filter, ToggleLeft, ToggleRight, X, AlertCircle, Sparkles, FileText, Phone, Mail, Award, Check
+  Search, Filter, ToggleLeft, ToggleRight, X, AlertCircle, Sparkles, FileText, Phone, Mail, Award, Check, ChevronDown
 } from 'lucide-react';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { ImageCropperModal } from '../../common/ImageCropperModal';
@@ -31,6 +31,7 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
+  const [activeDropdownEventId, setActiveDropdownEventId] = useState(null);
   
   // Participant Roster Drawer/Modal state
   const [selectedEventForParticipants, setSelectedEventForParticipants] = useState(null);
@@ -291,6 +292,50 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
     }
   };
 
+  const handleSetEventStatus = async (eventObj, actionKey) => {
+    setActiveDropdownEventId(null);
+    try {
+      if (actionKey === 'OPEN') {
+        const nowStr = new Date().toISOString().split('T')[0];
+        let newEndDate = eventObj.regEndDate;
+        if (!eventObj.regEndDate || eventObj.regEndDate < nowStr) {
+          const futureDate = new Date();
+          futureDate.setDate(futureDate.getDate() + 7);
+          newEndDate = futureDate.toISOString().split('T')[0];
+        }
+        const updated = await coordinatorApi.updateEvent(eventObj.id, {
+          status: 'Published',
+          registrationOpen: true,
+          regEndDate: newEndDate
+        });
+        setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, status: 'Published', registrationOpen: true, regEndDate: newEndDate } : item)));
+        addToast(`🔓 Registration is now OPEN for "${eventObj.title}"! (Deadline: ${newEndDate})`, 'success');
+      } else if (actionKey === 'CLOSE') {
+        const updated = await coordinatorApi.updateEvent(eventObj.id, {
+          status: 'Closed',
+          registrationOpen: false
+        });
+        setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, status: 'Closed', registrationOpen: false } : item)));
+        addToast(`🔒 Registration CLOSED for "${eventObj.title}". Fixtures can now be scheduled!`, 'info');
+      } else if (actionKey === 'UPCOMING') {
+        const updated = await coordinatorApi.updateEvent(eventObj.id, {
+          status: 'Upcoming',
+          registrationOpen: false
+        });
+        setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, status: 'Upcoming', registrationOpen: false } : item)));
+        addToast(`⏳ Event marked as UPCOMING for "${eventObj.title}".`, 'info');
+      } else if (actionKey === 'EXTEND') {
+        handleOpenEdit(eventObj);
+        return;
+      }
+      fetchEvents();
+      window.dispatchEvent(new Event('sems_events_updated'));
+    } catch (err) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to update event status';
+      addToast(errMsg, 'error');
+    }
+  };
+
   const handleToggleRegistrationOpen = async (eventObj) => {
     const regStatus = computeEffectiveRegistrationStatus(eventObj);
 
@@ -516,36 +561,107 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
 
                   {/* Actions Bar */}
                   <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <EventStatusActionButton 
-                        event={evt} 
-                        onToggleStatus={handleToggleEventStatus} 
-                      />
-                      <RegistrationActionButton 
-                        event={evt} 
-                        onToggle={handleToggleRegistrationOpen} 
-                        onOpenEdit={handleOpenEdit} 
-                      />
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* Unified Status Roll-Down Menu */}
+                      <div className="relative">
+                        {(() => {
+                          const statusInfo = computeEffectiveRegistrationStatus(evt);
+                          const isRegOpen = statusInfo.effectiveRegistrationOpen;
+                          const isUpcoming = statusInfo.code === 'UPCOMING' || statusInfo.code === 'NOT_STARTED' || (evt.status || '').toLowerCase() === 'upcoming';
 
+                          return (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => setActiveDropdownEventId(activeDropdownEventId === evt.id ? null : evt.id)}
+                                className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                                  isRegOpen
+                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                                    : isUpcoming
+                                    ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 hover:bg-blue-500/20'
+                                    : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30 hover:bg-rose-500/20'
+                                }`}
+                              >
+                                <span className={`w-2 h-2 rounded-full ${
+                                  isRegOpen ? 'bg-emerald-500 animate-pulse' : isUpcoming ? 'bg-blue-500' : 'bg-rose-500'
+                                }`} />
+                                <span>
+                                  {isRegOpen ? 'Registration Open' : isUpcoming ? 'Upcoming' : 'Closed'}
+                                </span>
+                                <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+                              </button>
+
+                              {activeDropdownEventId === evt.id && (
+                                <div className="absolute left-0 bottom-full mb-2 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 z-40 animate-fade-in text-xs space-y-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSetEventStatus(evt, 'OPEN')}
+                                    className="w-full px-3 py-2 rounded-xl text-left font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    <span>Open / Activate Registration</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSetEventStatus(evt, 'CLOSE')}
+                                    className="w-full px-3 py-2 rounded-xl text-left font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <XCircle className="w-3.5 h-3.5" />
+                                    <span>Close Registration</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSetEventStatus(evt, 'UPCOMING')}
+                                    className="w-full px-3 py-2 rounded-xl text-left font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <Clock className="w-3.5 h-3.5" />
+                                    <span>Mark as Upcoming</span>
+                                  </button>
+
+                                  <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSetEventStatus(evt, 'EXTEND')}
+                                    className="w-full px-3 py-2 rounded-xl text-left font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <Calendar className="w-3.5 h-3.5 text-orange-500" />
+                                    <span>Extend End Date (Edit)</span>
+                                  </button>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Roster Button */}
                       <button
+                        type="button"
                         onClick={() => handleOpenParticipants(evt)}
-                        className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                        className="px-3.5 py-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
                       >
-                        <Eye className="w-3.5 h-3.5" /> Athletes Roster ({evt.registeredCount || 0})
+                        <Users className="w-3.5 h-3.5" />
+                        <span>Roster ({evt.registeredCount || 0})</span>
                       </button>
                     </div>
 
+                    {/* Edit & Delete Action Buttons */}
                     <div className="flex items-center gap-1.5">
                       <button
+                        type="button"
                         onClick={() => handleOpenEdit(evt)}
-                        className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                        className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                         title="Edit Event & Sub-Event Prices"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleDeleteEvent(evt.id)}
-                        className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition cursor-pointer"
+                        className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition cursor-pointer"
                         title="Delete Athletics Event"
                       >
                         <Trash2 className="w-4 h-4" />
