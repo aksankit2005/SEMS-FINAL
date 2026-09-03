@@ -38,7 +38,7 @@ export const TugOfWarResultManagementTab = ({ user }) => {
   const sportName = 'Tug of War';
   const resultsKey = `sems_completed_results_${sportId}`;
 
-  // Load results & events on mount
+  // Load results & events on mount + from DB
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -56,28 +56,112 @@ export const TugOfWarResultManagementTab = ({ user }) => {
       const mockNames = [
         '1', '2', 'a', 'b', 'player 1', 'player 2', 'player 3', 'player 4', 'team 1', 'team 2', 'team a', 'team b', 'albert', 'romi'
       ];
+
+      // 0. Deleted result IDs to filter out permanently
+      let deletedIds = new Set();
+      try {
+        const deletedStr = localStorage.getItem('sems_deleted_result_ids');
+        if (deletedStr) {
+          const parsed = JSON.parse(deletedStr);
+          if (Array.isArray(parsed)) {
+            deletedIds = new Set(parsed);
+          }
+        }
+      } catch (e) {}
+
+      // 1. Gather local storage edited results
+      const localResultsMap = {};
       const saved = localStorage.getItem(resultsKey);
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          const cleaned = Array.isArray(parsed)
-            ? parsed.filter((r) => {
-              if (!r) return false;
-              if (mockIds.includes(r.id)) return false;
-              const t1 = (r.team1 || '').trim().toLowerCase();
-              const t2 = (r.team2 || '').trim().toLowerCase();
-              const w = (r.winner || '').trim().toLowerCase();
-              return !mockNames.includes(t1) && !mockNames.includes(t2) && !mockNames.includes(w);
-            })
-            : [];
-          setResultsList(cleaned);
-          localStorage.setItem(resultsKey, JSON.stringify(cleaned));
-        } catch (e) {
-          setResultsList([]);
-        }
-      } else {
-        setResultsList([]);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((r) => {
+              if (r && r.id && !deletedIds.has(r.id)) {
+                localResultsMap[r.id] = r;
+              }
+            });
+          }
+        } catch (e) {}
       }
+
+      const mergedMap = { ...localResultsMap };
+
+      // 2. Fetch real completed results from Supabase PostgreSQL database
+      try {
+        const dbResults = await coordinatorApi.getPublicResults();
+        if (dbResults && Array.isArray(dbResults)) {
+          dbResults.forEach((m) => {
+            if (!m || !m.id || deletedIds.has(m.id)) return;
+            const rawSport = (m.sportId || m.sport || m.sportName || '').toLowerCase().replace(/_/g, '-');
+            if (rawSport.includes('tug') || rawSport.includes('tow')) {
+              let detailsObj = {};
+              if (m.details) {
+                try {
+                  detailsObj = typeof m.details === 'object' ? m.details : JSON.parse(m.details);
+                } catch (e) {}
+              }
+
+              const t1 = m.team1 || detailsObj.team1 || detailsObj.team1Name || 'Team 1';
+              const t2 = m.team2 || detailsObj.team2 || detailsObj.team2Name || 'Team 2';
+              const rw1 = m.roundsWon1 !== undefined && m.roundsWon1 !== null 
+                ? Number(m.roundsWon1) 
+                : (detailsObj.roundsWon1 !== undefined ? Number(detailsObj.roundsWon1) : Number(m.score1 || 0));
+              const rw2 = m.roundsWon2 !== undefined && m.roundsWon2 !== null 
+                ? Number(m.roundsWon2) 
+                : (detailsObj.roundsWon2 !== undefined ? Number(detailsObj.roundsWon2) : Number(m.score2 || 0));
+
+              const itemNormalized = {
+                id: m.id,
+                team1: t1,
+                team2: t2,
+                team1Name: t1,
+                team2Name: t2,
+                eventTitle: m.eventTitle || m.event || m.matchTitle || detailsObj.eventTitle || 'Tug of War Championship',
+                category: m.category || m.gender || detailsObj.category || 'Open',
+                gender: m.category || m.gender || detailsObj.category || 'Open',
+                venue: m.tableNumber || m.venue || detailsObj.venue || 'Tug of War Ground 1',
+                tableNumber: m.tableNumber || m.venue || detailsObj.venue || 'Tug of War Ground 1',
+                date: m.date || (m.completedAt ? m.completedAt.split('T')[0] : (m.updatedAt ? m.updatedAt.split('T')[0] : new Date().toISOString().split('T')[0])),
+                time: m.time || detailsObj.time || 'Completed',
+                roundsWon1: rw1,
+                roundsWon2: rw2,
+                score1: rw1,
+                score2: rw2,
+                winner: m.winner || detailsObj.winner || (rw1 >= rw2 ? t1 : t2),
+                roundsHistory: Array.isArray(m.roundsHistory) ? m.roundsHistory : (Array.isArray(detailsObj.roundsHistory) ? detailsObj.roundsHistory : []),
+                format: m.format || detailsObj.format || 'TEAM MATCH (8v8)',
+                status: 'COMPLETED',
+                completedAt: m.completedAt || m.updatedAt || new Date().toISOString(),
+                details: detailsObj,
+                rawMatch: m,
+              };
+
+              // If coordinator edited locally, keep local version, else use DB version
+              if (!mergedMap[m.id]) {
+                mergedMap[m.id] = itemNormalized;
+              } else {
+                mergedMap[m.id] = { ...itemNormalized, ...mergedMap[m.id] };
+              }
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Could not fetch DB results for Tug of War:', e);
+      }
+
+      // 3. Clean and set list
+      const finalList = Object.values(mergedMap).filter((r) => {
+        if (!r || !r.id || deletedIds.has(r.id)) return false;
+        if (mockIds.includes(r.id)) return false;
+        const t1 = (r.team1 || '').trim().toLowerCase();
+        const t2 = (r.team2 || '').trim().toLowerCase();
+        const w = (r.winner || '').trim().toLowerCase();
+        return !mockNames.includes(t1) && !mockNames.includes(t2) && !mockNames.includes(w);
+      });
+
+      setResultsList(finalList);
+      localStorage.setItem(resultsKey, JSON.stringify(finalList));
     };
 
     loadData();
@@ -194,7 +278,7 @@ export const TugOfWarResultManagementTab = ({ user }) => {
     try {
       await coordinatorApi.completeMatch(editingResult.id, updatedObj);
     } catch (err) {
-      console.warn('API sync completed with local save');
+      console.warn('API sync completed with local save:', err);
     }
 
     window.dispatchEvent(new Event('sems_results_updated'));
@@ -219,7 +303,7 @@ export const TugOfWarResultManagementTab = ({ user }) => {
   const handleDeleteResult = async (id) => {
     const isConfirmed = await confirmDelete({
       title: 'Delete Result Entry',
-      message: 'Are you sure you want to delete this Tug of War match result entry?'
+      message: 'Are you sure you want to delete this Tug of War match result entry? It will be removed from database and public portal.'
     });
     if (!isConfirmed) return;
     const updated = resultsList.filter((r) => r.id !== id);
@@ -242,11 +326,13 @@ export const TugOfWarResultManagementTab = ({ user }) => {
 
     try {
       await coordinatorApi.deleteMatch(id);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Delete match API error:', e);
+    }
 
     window.dispatchEvent(new Event('sems_results_updated'));
     window.dispatchEvent(new Event('storage'));
-    addToast('Result entry deleted successfully', 'info');
+    addToast('Result entry deleted successfully from database and public view', 'info');
   };
 
   const handleClearResults = async () => {

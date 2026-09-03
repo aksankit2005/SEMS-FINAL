@@ -923,6 +923,17 @@ async deleteMatch(id) {
     return completedObj;
   },
 
+  // Delete match from backend PostgreSQL database and memory
+  async deleteMatch(matchId) {
+    try {
+      const res = await api.delete(`/coordinator/matches/${matchId}`);
+      return res.data;
+    } catch (e) {
+      console.warn('deleteMatch API error:', e?.response?.data?.message || e.message);
+      return null;
+    }
+  },
+
 
   // Fetch all registrations from backend server PostgreSQL DB
   async getRegistrations() {

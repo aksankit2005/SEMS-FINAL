@@ -154,7 +154,7 @@ export const AdminSettingsPage = () => {
                 type="email"
                 value={settings.adminEmail || ''}
                 onChange={(e) => setSettings({ ...settings, adminEmail: e.target.value })}
-                placeholder="Enter your email"
+                placeholder="Enter support email"
                 className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
               />
             </div>
@@ -165,9 +165,10 @@ export const AdminSettingsPage = () => {
                 type="text"
                 value={settings.contactPhone || ''}
                 onChange={(e) => setSettings({ ...settings, contactPhone: e.target.value })}
-                placeholder="Enter your phone number"
+                placeholder="Enter support phone number"
                 className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
               />
+
             </div>
           </div>
 
