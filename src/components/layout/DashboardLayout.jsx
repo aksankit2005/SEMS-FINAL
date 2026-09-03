@@ -8,7 +8,7 @@ import { adminApi } from '../../services/adminApi';
 
 export const DashboardLayout = () => {
   const location = useLocation();
-  const isGalleryPage = location.pathname.startsWith('/gallery');
+  const isHomePage = location.pathname === '/' || location.pathname === '';
 
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [settings, setSettings] = useState({ maintenanceMode: false });
@@ -61,8 +61,8 @@ export const DashboardLayout = () => {
           <Outlet />
         </main>
 
-        {/* Footer at bottom (hidden on Gallery Page) */}
-        {!isLayoutHidden && !isGalleryPage && <Footer />}
+        {/* Footer at bottom (visible ONLY on Home page) */}
+        {!isLayoutHidden && isHomePage && <Footer />}
       </div>
 
       {/* Mobile Navigation Drawer */}
