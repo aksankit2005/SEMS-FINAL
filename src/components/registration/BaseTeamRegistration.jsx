@@ -14,18 +14,10 @@ export const BaseTeamRegistration = ({
   minPlayers,
   maxPlayers
 }) => {
-  const isTugOfWar = resolveSportKey(sportName) === 'tug-of-war';
-
-  const colleges = isTugOfWar
-    ? [
-        { value: '', label: 'Select College / University' },
-        { value: 'MPEC', label: 'MPEC' },
-        { value: 'MIPS', label: 'MIPS' }
-      ]
-    : [
-        { value: '', label: 'Select College / University' },
-        ...Object.keys(collegeCourses).map((c) => ({ value: c, label: c }))
-      ];
+  const colleges = [
+    { value: '', label: 'Select College / University' },
+    ...Object.keys(collegeCourses).map((c) => ({ value: c, label: c }))
+  ];
 
   const genders = [
     { value: '', label: 'Select Gender' },
@@ -277,7 +269,6 @@ export const BaseTeamRegistration = ({
                   availableCourses={availableCourses}
                   teamCollege={formData.collegeName}
                   teamGender={formData.gender}
-                  isTugOfWar={isTugOfWar}
                 />
               );
             })}
@@ -304,8 +295,6 @@ export const BaseTeamRegistration = ({
 // Reusable validation function for team sports
 export const validateTeamSport = (step, formData, minPlayers, maxPlayers, sportName = '') => {
   const errors = {};
-
-  const isTugOfWar = resolveSportKey(sportName) === 'tug-of-war';
 
   if (step === 2) {
     if (!formData.teamName?.trim()) {
@@ -362,15 +351,8 @@ export const validateTeamSport = (step, formData, minPlayers, maxPlayers, sportN
         errors[`player_${idx}_name`] = 'Full Name is required';
       }
 
-      if (isTugOfWar) {
-        if (!player.rollNo?.trim() && !player.lt?.trim()) {
-          errors[`player_${idx}_lt`] = 'LT is required';
-          errors[`player_${idx}_rollNo`] = 'LT is required';
-        }
-      } else {
-        if (!player.rollNo?.trim()) {
-          errors[`player_${idx}_rollNo`] = 'Roll Number is required';
-        }
+      if (!player.rollNo?.trim()) {
+        errors[`player_${idx}_rollNo`] = 'Roll Number is required';
       }
 
       const aadhaar = player.aadhaar?.trim();
