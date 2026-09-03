@@ -80,7 +80,7 @@ export const ProfileTab = ({ user, matches = [], registrations = [], onLogout })
       <div className="grid grid-cols-1 gap-6">
         
         {/* Account Details Box */}
-        <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-xl space-y-5 w-full">
+        <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-xl space-y-5 max-w-2xl w-full">
           <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" /> COORDINATOR CREDENTIALS
           </h3>
