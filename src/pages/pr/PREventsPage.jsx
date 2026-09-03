@@ -40,6 +40,7 @@ export const PREventsPage = () => {
   // Form State
   const [eventName, setEventName] = useState('');
   const [eventDate, setEventDate] = useState('');
+  const [category, setCategory] = useState('');
   const [coverImageMode, setCoverImageMode] = useState('upload'); // 'upload' | 'url'
   const [coverImage, setCoverImage] = useState('');
   const [coverPublicId, setCoverPublicId] = useState('');
@@ -73,6 +74,7 @@ export const PREventsPage = () => {
     setSelectedEvent(null);
     setEventName('');
     setEventDate(new Date().toISOString().split('T')[0]);
+    setCategory('');
     setCoverImage('https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=1200&q=80');
     setCoverPublicId('');
     setDescription('');
@@ -85,6 +87,7 @@ export const PREventsPage = () => {
     setEventName(eventItem.event_name || '');
     const formattedDate = eventItem.event_date ? eventItem.event_date.toString().split('T')[0] : '';
     setEventDate(formattedDate);
+    setCategory(eventItem.category || '');
     setCoverImage(eventItem.cover_image || '');
     setCoverPublicId(eventItem.public_id || '');
     setDescription(eventItem.description || '');
@@ -165,6 +168,7 @@ export const PREventsPage = () => {
           cover_image: coverImage,
           public_id: coverPublicId || null,
           description,
+          category: category || null,
         });
         showToast('Event Album Created Successfully!', 'success');
       } else if (activeModal === 'edit' && selectedEvent) {
@@ -174,6 +178,7 @@ export const PREventsPage = () => {
           cover_image: coverImage,
           public_id: coverPublicId || null,
           description,
+          category: category || null,
         });
         showToast('Event Details Updated Successfully!', 'success');
       }
@@ -350,6 +355,31 @@ export const PREventsPage = () => {
               <form onSubmit={handleSave} className="space-y-4 pt-1">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                    Sport / Game Category
+                  </label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  >
+                    <option value="">-- Choose Sport (Optional) --</option>
+                    <option value="Football">Football</option>
+                    <option value="Cricket">Cricket</option>
+                    <option value="Badminton">Badminton</option>
+                    <option value="Basketball">Basketball</option>
+                    <option value="Athletics">Athletics</option>
+                    <option value="Volleyball">Volleyball</option>
+                    <option value="Kabaddi">Kabaddi</option>
+                    <option value="Chess">Chess</option>
+                    <option value="Table Tennis">Table Tennis</option>
+                    <option value="Kho Kho">Kho Kho</option>
+                    <option value="Tug of War">Tug of War</option>
+                    <option value="General">General / Tournament Wide</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                     Event Name *
                   </label>
                   <input
@@ -357,7 +387,7 @@ export const PREventsPage = () => {
                     required
                     value={eventName}
                     onChange={(e) => setEventName(e.target.value)}
-                    placeholder="e.g. Football Championship 2026"
+                    placeholder="e.g. Championship Finals 2026"
                     className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>

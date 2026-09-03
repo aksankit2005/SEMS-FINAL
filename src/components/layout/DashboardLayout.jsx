@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { HeaderNavbar } from './HeaderNavbar';
 import { MobileDrawer } from './MobileDrawer';
 import { Footer } from './Footer';
@@ -7,6 +7,9 @@ import { MaintenancePage } from '../common/MaintenancePage';
 import { adminApi } from '../../services/adminApi';
 
 export const DashboardLayout = () => {
+  const location = useLocation();
+  const isGalleryPage = location.pathname.startsWith('/gallery');
+
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [settings, setSettings] = useState({ maintenanceMode: false });
   const [isLayoutHidden, setIsLayoutHidden] = useState(false);
@@ -58,8 +61,8 @@ export const DashboardLayout = () => {
           <Outlet />
         </main>
 
-        {/* Footer at bottom */}
-        {!isLayoutHidden && <Footer />}
+        {/* Footer at bottom (hidden on Gallery Page) */}
+        {!isLayoutHidden && !isGalleryPage && <Footer />}
       </div>
 
       {/* Mobile Navigation Drawer */}

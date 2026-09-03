@@ -375,6 +375,7 @@ export const initDatabaseSchema = async () => {
     `);
     await queryDb(`ALTER TABLE events ADD COLUMN IF NOT EXISTS public_id VARCHAR(255);`);
     await queryDb(`ALTER TABLE events ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;`);
+    await queryDb(`ALTER TABLE events ADD COLUMN IF NOT EXISTS category VARCHAR(100);`).catch(() => {});
     await queryDb(`ALTER TABLE events ALTER COLUMN updated_at SET DEFAULT CURRENT_TIMESTAMP;`);
     await queryDb(`ALTER TABLE events ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP;`);
 
