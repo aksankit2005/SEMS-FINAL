@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, FileDown, Users, Trophy } from 'lucide-react';
+import { Search, FileDown, Users, Trophy, Filter } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { flattenRegistrationRoster } from '../../../utils/rosterHelper';
@@ -8,6 +8,7 @@ import { exportToCSV } from '../../../utils/pdfExporter';
 export const TotalParticipationTab = ({ user, assignedSport, globalSearch = '' }) => {
   const { addToast } = useToast();
   const [search, setSearch] = useState('');
+  const [genderFilter, setGenderFilter] = useState('ALL');
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,6 +54,20 @@ export const TotalParticipationTab = ({ user, assignedSport, globalSearch = '' }
   const flattenedAthletes = flattenRegistrationRoster(registrations, { defaultSport: sportName });
 
   const filtered = flattenedAthletes.filter((p) => {
+    // Gender Filter
+    if (genderFilter !== 'ALL') {
+      const pGender = (p.gender || '').toUpperCase();
+      const pCategory = (p.category || '').toUpperCase();
+      if (genderFilter === 'MALE' && !pGender.includes('MALE') && !pGender.includes('BOY') && !pCategory.includes('BOY') && !pCategory.includes('MALE')) {
+        if (pGender.includes('FEMALE') || pGender.includes('GIRL') || pCategory.includes('GIRL') || pCategory.includes('FEMALE')) {
+          return false;
+        }
+      }
+      if (genderFilter === 'FEMALE' && !pGender.includes('FEMALE') && !pGender.includes('GIRL') && !pCategory.includes('GIRL') && !pCategory.includes('FEMALE')) {
+        return false;
+      }
+    }
+
     const activeSearch = (search || globalSearch || '').toLowerCase().trim();
     if (!activeSearch) return true;
 
@@ -134,7 +149,21 @@ export const TotalParticipationTab = ({ user, assignedSport, globalSearch = '' }
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          {/* Gender Filter & Export Actions */}
+          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
+            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-950 px-3 py-1 rounded-xl border border-slate-200 dark:border-slate-800">
+              <Filter className="w-3.5 h-3.5 text-slate-400" />
+              <select
+                value={genderFilter}
+                onChange={(e) => setGenderFilter(e.target.value)}
+                className="text-xs font-bold bg-transparent text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer py-1"
+              >
+                <option value="ALL" className="bg-white dark:bg-slate-900">All Genders</option>
+                <option value="MALE" className="bg-white dark:bg-slate-900">Male (Boys)</option>
+                <option value="FEMALE" className="bg-white dark:bg-slate-900">Female (Girls)</option>
+              </select>
+            </div>
+
             <button
               onClick={handleExportExcel}
               className="px-4 py-2 rounded-xl text-white text-xs font-black bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0"
@@ -155,6 +184,7 @@ export const TotalParticipationTab = ({ user, assignedSport, globalSearch = '' }
                 <th className="p-4">Team Name</th>
                 <th className="p-4">College Name</th>
                 <th className="p-4">Player Name</th>
+                <th className="p-4">Gender</th>
                 <th className="p-4">Roll No</th>
                 <th className="p-4">Mobile No</th>
                 <th className="p-4">Email & Academic</th>
@@ -164,7 +194,7 @@ export const TotalParticipationTab = ({ user, assignedSport, globalSearch = '' }
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="p-12 text-center text-slate-400 dark:text-slate-500 font-mono text-xs">
+                  <td colSpan={10} className="p-12 text-center text-slate-400 dark:text-slate-500 font-mono text-xs">
                     {loading ? 'Loading participants from database...' : `No registered ${sportName} student athletes found in database.`}
                   </td>
                 </tr>
@@ -198,6 +228,15 @@ export const TotalParticipationTab = ({ user, assignedSport, globalSearch = '' }
                           </span>
                         )}
                       </div>
+                    </td>
+                    <td className="p-4 whitespace-nowrap">
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                        (p.gender || '').toLowerCase() === 'female' || (p.gender || '').toLowerCase() === 'girl'
+                          ? 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20'
+                          : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
+                      }`}>
+                        {p.gender || 'Male'}
+                      </span>
                     </td>
                     <td className="p-4 font-mono font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
                       {p.rollNo && p.rollNo !== 'N/A' ? p.rollNo : '—'}

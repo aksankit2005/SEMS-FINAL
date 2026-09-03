@@ -37,6 +37,7 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
   const [selectedEventForParticipants, setSelectedEventForParticipants] = useState(null);
   const [participants, setParticipants] = useState([]);
   const [participantSearch, setParticipantSearch] = useState('');
+  const [participantGenderFilter, setParticipantGenderFilter] = useState('ALL');
 
   // Image Cropper Modal state
   const [showCropper, setShowCropper] = useState(false);
@@ -390,6 +391,19 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
   };
 
   const filteredParticipants = participants.filter((p) => {
+    if (participantGenderFilter !== 'ALL') {
+      const pGender = (p.gender || '').toUpperCase();
+      const pCategory = (p.category || '').toUpperCase();
+      if (participantGenderFilter === 'MALE' && !pGender.includes('MALE') && !pGender.includes('BOY') && !pCategory.includes('BOY') && !pCategory.includes('MALE')) {
+        if (pGender.includes('FEMALE') || pGender.includes('GIRL') || pCategory.includes('GIRL') || pCategory.includes('FEMALE')) {
+          return false;
+        }
+      }
+      if (participantGenderFilter === 'FEMALE' && !pGender.includes('FEMALE') && !pGender.includes('GIRL') && !pCategory.includes('GIRL') && !pCategory.includes('FEMALE')) {
+        return false;
+      }
+    }
+
     const q = participantSearch.toLowerCase();
     return (
       (p.name || p.captainName || '').toLowerCase().includes(q) ||
@@ -975,13 +989,28 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
                 />
               </div>
 
-              <button
-                onClick={handleExportCSV}
-                disabled={filteredParticipants.length === 0}
-                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" /> Export Athletes CSV
-              </button>
+              <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
+                <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-950 px-3 py-1 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <Filter className="w-3.5 h-3.5 text-slate-400" />
+                  <select
+                    value={participantGenderFilter}
+                    onChange={(e) => setParticipantGenderFilter(e.target.value)}
+                    className="text-xs font-bold bg-transparent text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer py-1"
+                  >
+                    <option value="ALL" className="bg-white dark:bg-slate-900">All Genders</option>
+                    <option value="MALE" className="bg-white dark:bg-slate-900">Male (Boys)</option>
+                    <option value="FEMALE" className="bg-white dark:bg-slate-900">Female (Girls)</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={handleExportCSV}
+                  disabled={filteredParticipants.length === 0}
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" /> Export Athletes CSV
+                </button>
+              </div>
             </div>
 
             {/* Athletes Table */}
