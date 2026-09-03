@@ -92,7 +92,7 @@ export const AdminPRManagementPage = () => {
             {selectedFolder && (
               <button
                 onClick={() => setSelectedFolder(null)}
-                className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Back to Folders</span>
@@ -117,7 +117,7 @@ export const AdminPRManagementPage = () => {
       {/* Content Rendering: Folders View OR File Media Grid */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-16 space-y-3">
-          <Loader2 className="w-8 h-8 text-amber-500 dark:text-amber-400 animate-spin" />
+          <Loader2 className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" />
           <p className="text-xs text-slate-500 dark:text-slate-400">Loading PR media contents...</p>
         </div>
       ) : !selectedFolder ? (
@@ -132,11 +132,11 @@ export const AdminPRManagementPage = () => {
             {folders.map((folder) => (
               <div
                 key={folder.id}
-                className="p-5 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:border-amber-500/40 transition-all group flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md"
+                className="p-5 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:border-blue-500/40 transition-all group flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md"
               >
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                    <div className="w-11 h-11 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                       <Folder className="w-6 h-6 group-hover:scale-110 transition-transform" />
                     </div>
                     <button
@@ -149,10 +149,10 @@ export const AdminPRManagementPage = () => {
                   </div>
 
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-amber-600 dark:text-amber-400 border border-slate-200 dark:border-slate-700">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-700">
                       {folder.sport}
                     </span>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white mt-1.5 line-clamp-1 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white mt-1.5 line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                       {folder.title}
                     </h3>
                   </div>
@@ -173,7 +173,7 @@ export const AdminPRManagementPage = () => {
                   onClick={() => setSelectedFolder(folder)}
                   className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700 transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <FolderOpen className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                  <FolderOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   <span>Open Folder ({folder.itemCount || 5} Files)</span>
                 </button>
               </div>
@@ -187,7 +187,7 @@ export const AdminPRManagementPage = () => {
             <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No media files inside this PR folder.</p>
             <button
               onClick={() => setSelectedFolder(null)}
-              className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline mt-2 inline-block cursor-pointer"
+              className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline mt-2 inline-block cursor-pointer"
             >
               ← Return to Folder List
             </button>
@@ -209,7 +209,7 @@ export const AdminPRManagementPage = () => {
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <button
                       onClick={() => setPreviewMedia(file)}
-                      className="p-2 rounded-xl bg-slate-900/90 text-white hover:bg-amber-500 transition-colors cursor-pointer"
+                      className="p-2 rounded-xl bg-slate-900/90 text-white hover:bg-blue-600 transition-colors cursor-pointer"
                       title="Preview Media"
                     >
                       <Maximize2 className="w-4 h-4" />
@@ -276,7 +276,7 @@ export const AdminPRManagementPage = () => {
                 download
                 target="_blank"
                 rel="noreferrer"
-                className="px-4 py-2 rounded-xl bg-amber-500 text-white font-bold hover:bg-amber-600 transition-colors flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-500 transition-colors flex items-center gap-1.5"
               >
                 <Download className="w-4 h-4" />
                 <span>Download High-Res</span>

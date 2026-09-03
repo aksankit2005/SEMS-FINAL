@@ -393,7 +393,14 @@ export const SuperCoordinatorDashboardPage = () => {
       (p.eventTitle || '').toLowerCase().trim() === selectedEvent.toLowerCase().trim() ||
       (p.eventTitle || '').toLowerCase().includes(selectedEvent.toLowerCase()) ||
       selectedEvent.toLowerCase().includes((p.eventTitle || '').toLowerCase());
-    const matchesGender = selectedGender === 'ALL' || (p.gender || '').toLowerCase() === selectedGender.toLowerCase();
+    const pGender = (p.gender || '').toLowerCase().trim();
+    const sGender = selectedGender.toLowerCase().trim();
+    const isFemale = pGender.includes('female') || pGender.includes('girl') || pGender.includes('women') || pGender.includes('woman') || pGender === 'f';
+    const isMale = !isFemale && (pGender.includes('male') || pGender.includes('boy') || pGender.includes('men') || pGender.includes('man') || pGender === 'm');
+    const matchesGender = selectedGender === 'ALL' ||
+      (sGender === 'male' ? isMale :
+       sGender === 'female' ? isFemale :
+       pGender.includes(sGender));
     const pCollege = (p.college || '').toLowerCase();
     const matchesCollege = selectedCollege === 'ALL' || 
       pCollege.includes(selectedCollege.toLowerCase()) ||
@@ -485,7 +492,7 @@ export const SuperCoordinatorDashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] text-slate-900 dark:text-slate-200 transition-colors font-sans pb-16">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] text-slate-900 dark:text-slate-200 transition-colors font-sans pb-16 w-full overflow-x-hidden">
       
       {/* HEADER NAVBAR */}
       <SuperCoordinatorNavbar
@@ -495,91 +502,91 @@ export const SuperCoordinatorDashboardPage = () => {
         onOpenPasswordModal={() => setShowPasswordModal(true)}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 pt-4 sm:pt-6 space-y-4 sm:space-y-6">
         
         {/* Navigation Tabs Bar */}
-        <div className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm overflow-x-auto whitespace-nowrap scrollbar-none">
+        <div className="flex items-center gap-2 p-2 sm:p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm overflow-x-auto whitespace-nowrap scrollbar-none w-full max-w-full">
           <button
             onClick={() => setActiveTab('leaderboard')}
-            className={`px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-extrabold text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0 ${
+            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-extrabold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
               activeTab === 'leaderboard'
-                ? 'bg-amber-500 text-slate-950 shadow-md'
+                ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <Trophy className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
             <span>🏆 Leaderboard & Winner Entry</span>
           </button>
 
           <button
             onClick={() => setActiveTab('hero_slider')}
-            className={`px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-extrabold text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0 ${
+            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-extrabold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
               activeTab === 'hero_slider'
-                ? 'bg-amber-500 text-slate-950 shadow-md'
+                ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <Sparkles className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
             <span>🎨 Home Hero Slider (5 Slides)</span>
           </button>
 
           <button
             onClick={() => setActiveTab('match_results')}
-            className={`px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-extrabold text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0 ${
+            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-extrabold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
               activeTab === 'match_results'
-                ? 'bg-amber-500 text-slate-950 shadow-md'
+                ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <Award className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
             <span>📜 Declared Match Results ({leaderboardEntries.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('coordinator_creations')}
-            className={`px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-extrabold text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0 ${
+            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-extrabold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
               activeTab === 'coordinator_creations'
-                ? 'bg-amber-500 text-slate-950 shadow-md'
+                ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <BookOpen className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
             <span>Coordinator Event Creations ({coordinatorEvents.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('participants')}
-            className={`px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-extrabold text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0 ${
+            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-extrabold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
               activeTab === 'participants'
-                ? 'bg-amber-500 text-slate-950 shadow-md'
+                ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <Users className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
             <span>Master Participant Database ({filteredParticipants.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('pr_gallery')}
-            className={`px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-extrabold text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0 ${
+            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-extrabold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
               activeTab === 'pr_gallery'
-                ? 'bg-amber-500 text-slate-950 shadow-md'
+                ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <ImageIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <ImageIcon className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
             <span>PR Media Gallery ({prPhotos.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('profile')}
-            className={`px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-extrabold text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0 ${
+            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-extrabold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
               activeTab === 'profile'
-                ? 'bg-amber-500 text-slate-950 shadow-md'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <User className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
             <span>👤 Profile & Security</span>
           </button>
         </div>
@@ -587,35 +594,35 @@ export const SuperCoordinatorDashboardPage = () => {
         {/* SECTION: HOME HERO SLIDER MANAGEMENT */}
         {activeTab === 'hero_slider' && (
           <div className="space-y-6 animate-fade-in">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-mono font-bold uppercase">
+                  <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[11px] font-mono font-bold uppercase">
                     SUPER COORDINATOR CONTROL
                   </span>
-                  <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                     Home Hero 5-Slide Carousel Management
                   </h2>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5">
                   Update Title, Description, Image URL, and Buttons for each of the 5 Home Page Hero Slides.
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={handleResetHeroSlides}
-                  className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs transition border border-slate-200 dark:border-slate-700 cursor-pointer"
+                  className="px-5 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs sm:text-sm transition border border-slate-200 dark:border-slate-700 cursor-pointer min-h-[46px]"
                 >
                   Reset Defaults
                 </button>
                 <button
                   type="button"
                   onClick={handleSaveHeroSlides}
-                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 transition flex items-center gap-2 cursor-pointer active:scale-95"
+                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs sm:text-sm shadow-md shadow-blue-500/25 transition flex items-center gap-2 cursor-pointer active:scale-95 min-h-[46px]"
                 >
-                  <Sparkles className="w-4 h-4 text-slate-950" />
+                  <Sparkles className="w-4 h-4 text-white" />
                   <span>Save All 5 Slides</span>
                 </button>
               </div>
@@ -626,201 +633,199 @@ export const SuperCoordinatorDashboardPage = () => {
               {editableHeroSlides.map((slide, idx) => (
                 <div
                   key={slide.id || idx}
-                  className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4"
+                  className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5"
                 >
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                    <div className="flex items-center gap-2">
-                      <span className="w-7 h-7 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 font-black text-xs flex items-center justify-center">
+                  <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-black text-sm flex items-center justify-center">
                         {idx + 1}
                       </span>
-                      <h3 className="font-black text-sm text-slate-900 dark:text-white uppercase tracking-wide">
+                      <h3 className="font-black text-sm sm:text-base text-slate-900 dark:text-white uppercase tracking-wide">
                         Slide {idx + 1} Settings
                       </h3>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <img
                         src={slide.image || DEFAULT_HERO_SLIDES[idx]?.image}
                         alt={slide.title}
-                        className="w-12 h-8 rounded-lg object-cover border border-slate-700 bg-slate-900"
+                        className="w-14 h-9 rounded-xl object-cover border border-slate-700 bg-slate-900 shadow-sm"
                         onError={(e) => {
                           e.target.onerror = null;
                           e.target.src = DEFAULT_HERO_SLIDES[idx]?.image || DEFAULT_HERO_SLIDES[0].image;
                         }}
                       />
-                      <span className="px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-500 font-mono text-[10px] font-bold border border-amber-500/20">
+                      <span className="px-3 py-1.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono text-xs font-bold border border-blue-500/20">
                         Slide #{idx + 1}
                       </span>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     {/* Title / Heading */}
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-mono font-bold uppercase text-slate-600 dark:text-slate-400 block">
                         Heading Title <span className="text-rose-500">*</span>
                       </label>
                       <input
                         type="text"
                         value={slide.title || ''}
                         onChange={(e) => handleUpdateSlideField(idx, 'title', e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 min-h-[48px]"
                         placeholder="Slide Heading..."
                       />
                     </div>
 
                     {/* Image URL & File Upload */}
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-mono font-bold uppercase text-slate-600 dark:text-slate-400 block">
                         Background Image (URL or Local File Upload) <span className="text-rose-500">*</span>
                       </label>
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
                         <input
                           type="text"
                           value={slide.image || ''}
                           onChange={(e) => handleUpdateSlideField(idx, 'image', e.target.value)}
-                          className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                          className="flex-1 px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 min-h-[48px]"
                           placeholder="Paste image URL or click upload..."
                         />
-                        <label className={`px-4 py-2.5 rounded-xl text-slate-950 font-black text-xs cursor-pointer flex items-center justify-center gap-1.5 shrink-0 transition active:scale-95 shadow-sm ${
-                          uploadingSlideIdx === idx ? 'bg-amber-400 opacity-80 cursor-wait' : 'bg-amber-500 hover:bg-amber-400'
+                        <label className={`px-5 py-3 rounded-2xl text-white font-black text-xs sm:text-sm cursor-pointer flex items-center justify-center gap-2 shrink-0 transition active:scale-95 shadow-sm min-h-[48px] ${
+                          uploadingSlideIdx === idx ? 'bg-blue-400 opacity-80 cursor-wait' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500'
                         }`}>
                           {uploadingSlideIdx === idx ? (
                             <>
-                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <RefreshCw className="w-4 h-4 animate-spin" />
                               <span>Uploading...</span>
                             </>
                           ) : (
                             <>
-                              <Upload className="w-3.5 h-3.5" />
+                              <Upload className="w-4 h-4" />
                               <span>Upload File</span>
                             </>
                           )}
                           <input
                             type="file"
                             accept="image/*"
-                            disabled={uploadingSlideIdx === idx}
-                            className="hidden"
                             onChange={async (e) => {
                               const file = e.target.files?.[0];
                               if (file) {
                                 try {
                                   setUploadingSlideIdx(idx);
-                                  addToast(`Uploading image for Slide ${idx + 1} to Cloudinary...`, 'info');
+                                  addToast(`Uploading image for Slide ${idx + 1}...`, 'info');
                                   const cloudRes = await uploadFileToCloudinary(file, () => {}, 'sems_gallery');
                                   if (cloudRes && cloudRes.url) {
                                     handleUpdateSlideField(idx, 'image', cloudRes.url);
-                                    addToast(`Uploaded custom image for Slide ${idx + 1} to Cloudinary! Click 'Save All 5 Slides' to save live.`, 'success');
+                                    addToast(`Uploaded custom image for Slide ${idx + 1}! Click 'Save All 5 Slides' to save live.`, 'success');
                                   }
                                 } catch (err) {
-                                  addToast(err.message || 'Failed to upload image to Cloudinary', 'error');
+                                  addToast(err.message || 'Failed to upload image', 'error');
                                 } finally {
                                   setUploadingSlideIdx(null);
                                 }
                               }
                             }}
+                            className="hidden"
+                            disabled={uploadingSlideIdx === idx}
                           />
                         </label>
                       </div>
                     </div>
+                  </div>
 
-                    {/* Description */}
-                    <div className="space-y-1 md:col-span-2">
-                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
-                        Subtitle / Description Text <span className="text-rose-500">*</span>
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={slide.description || ''}
-                        onChange={(e) => handleUpdateSlideField(idx, 'description', e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        placeholder="Slide description text..."
-                      />
-                    </div>
+                  {/* Description / Subtitle */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-mono font-bold uppercase text-slate-600 dark:text-slate-400 block">
+                      Subtitle / Description Text <span className="text-rose-500">*</span>
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={slide.description || ''}
+                      onChange={(e) => handleUpdateSlideField(idx, 'description', e.target.value)}
+                      className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      placeholder="Slide description text..."
+                    />
+                  </div>
 
-                    {/* Primary Button Text */}
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                  {/* Buttons Settings */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-mono font-bold text-slate-500 uppercase block">
                         Primary Button Text
                       </label>
                       <input
                         type="text"
                         value={slide.primaryBtnText || ''}
                         onChange={(e) => handleUpdateSlideField(idx, 'primaryBtnText', e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white"
-                        placeholder="e.g. REGISTER YOUR TEAM"
+                        className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 min-h-[48px]"
+                        placeholder="e.g. Register Your Team"
                       />
                     </div>
-
-                    {/* Primary Button Link */}
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-mono font-bold text-slate-500 uppercase block">
                         Primary Button Route/Link
                       </label>
                       <input
                         type="text"
                         value={slide.primaryBtnLink || ''}
                         onChange={(e) => handleUpdateSlideField(idx, 'primaryBtnLink', e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
+                        className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 min-h-[48px]"
                         placeholder="e.g. /registration"
                       />
                     </div>
 
-                    {/* Secondary Button Text */}
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-mono font-bold text-slate-500 uppercase block">
                         Secondary Button Text
                       </label>
                       <input
                         type="text"
                         value={slide.secondaryBtnText || ''}
                         onChange={(e) => handleUpdateSlideField(idx, 'secondaryBtnText', e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white"
-                        placeholder="e.g. Watch Live Scoreboard"
+                        className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 min-h-[48px]"
+                        placeholder="e.g. View Live Score"
                       />
                     </div>
-
-                    {/* Secondary Button Link */}
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-mono font-bold text-slate-500 uppercase block">
                         Secondary Button Route/Link
                       </label>
                       <input
                         type="text"
                         value={slide.secondaryBtnLink || ''}
                         onChange={(e) => handleUpdateSlideField(idx, 'secondaryBtnLink', e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-white"
+                        className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 min-h-[48px]"
                         placeholder="e.g. /live"
                       />
                     </div>
+                  </div>
 
-                    {/* Live Slide Card Preview */}
-                    {slide.image && (
-                      <div className="relative w-full h-32 sm:h-40 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 group md:col-span-2">
-                        <img
-                          src={slide.image}
-                          alt={slide.title || `Slide ${idx + 1} Card`}
-                          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = DEFAULT_HERO_SLIDES[idx]?.image || DEFAULT_HERO_SLIDES[0].image;
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/50 to-transparent flex items-end p-4">
-                          <div className="space-y-1">
-                            <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 text-[9px] font-mono font-bold uppercase border border-amber-500/30">
-                              Slide #{idx + 1} Visual Card Preview
-                            </span>
-                            <h4 className="text-sm sm:text-base font-black text-white uppercase tracking-tight line-clamp-1">
-                              {slide.title || 'Slide Title'}
-                            </h4>
-                            <p className="text-xs text-slate-300 line-clamp-1 max-w-2xl font-normal">
-                              {slide.description || 'Slide subtitle text...'}
-                            </p>
-                          </div>
+                  {/* Card Visual Preview Footer */}
+                  <div className="pt-2">
+                    <div className="relative rounded-2xl overflow-hidden h-28 sm:h-36 border border-slate-800 shadow-inner">
+                      <img
+                        src={slide.image || DEFAULT_HERO_SLIDES[idx]?.image}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = DEFAULT_HERO_SLIDES[idx]?.image || DEFAULT_HERO_SLIDES[0].image;
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/50 to-transparent flex items-end p-4 sm:p-5">
+                        <div className="space-y-1">
+                          <span className="px-2.5 py-1 rounded-md bg-blue-500/20 text-blue-400 text-[10px] font-mono font-bold uppercase border border-blue-500/30">
+                            Slide #{idx + 1} Visual Card Preview
+                          </span>
+                          <h4 className="text-sm sm:text-base font-black text-white uppercase tracking-tight line-clamp-1">
+                            {slide.title || 'Slide Title Preview'}
+                          </h4>
+                          <p className="text-xs text-slate-300 line-clamp-1 font-normal">
+                            {slide.description || 'Slide description preview text.'}
+                          </p>
                         </div>
                       </div>
-                    )}
+                    </div>
                   </div>
+
                 </div>
               ))}
             </div>
@@ -829,46 +834,46 @@ export const SuperCoordinatorDashboardPage = () => {
 
         {/* SECTION 0: INTER-COLLEGE CHAMPIONSHIP LEADERBOARD */}
         {(activeTab === 'leaderboard' || activeTab === 'dashboard') && (
-          <div className="space-y-6">
+          <div className="space-y-6 sm:space-y-8">
             
             {/* Header & Award Form Card */}
-            <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md dark:shadow-xl space-y-4 sm:space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+            <div className="p-6 sm:p-8 md:p-10 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md dark:shadow-xl space-y-6 sm:space-y-8">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
                 <div>
-                  <h3 className="text-base sm:text-xl font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                    <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500 dark:text-amber-400 shrink-0" />
+                  <h3 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2.5">
+                    <Trophy className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600 dark:text-blue-400 shrink-0" />
                     <span>Super Coordinator Winner Declaration Console</span>
                   </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                    Select Game, Match Format & Gender, enter 1st & 2nd Place details, then click <strong className="text-amber-600 dark:text-amber-400">Done</strong> to credit points (<strong className="text-emerald-600 dark:text-emerald-400">1st = 5 Pts</strong> • <strong className="text-blue-600 dark:text-blue-400">2nd = 3 Pts</strong>).
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1.5">
+                    Select Game, Match Format & Gender, enter 1st & 2nd Place details, then click <strong className="text-blue-600 dark:text-blue-400 font-bold">Done</strong> to credit points (<strong className="text-emerald-600 dark:text-emerald-400 font-bold">1st = 5 Pts</strong> • <strong className="text-blue-600 dark:text-blue-400 font-bold">2nd = 3 Pts</strong>).
                   </p>
                 </div>
 
                 <button
                   type="button"
                   onClick={handleExportLeaderboardPDF}
-                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 shrink-0"
+                  className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-2.5 cursor-pointer active:scale-95 shrink-0 min-h-[48px]"
                   title="Export Championship Leaderboard Standings as a PDF report"
                 >
-                  <Download className="w-4 h-4 text-slate-950" />
+                  <Download className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-white" />
                   <span>Export Leaderboard PDF</span>
                 </button>
               </div>
 
               {/* Multi-Step Winner Declaration Form */}
-              <form onSubmit={handleAddLeaderboardPoints} className="space-y-5">
+              <form onSubmit={handleAddLeaderboardPoints} className="space-y-6 sm:space-y-7">
                 
                 {/* ROW 1: Game Selection, Match Format (Dynamic per Sport), and Gender */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   {/* 1. Select Game / Sport */}
-                  <div>
-                    <label className="block text-[11px] font-mono font-bold text-amber-600 dark:text-amber-400 uppercase mb-1">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-mono font-bold text-blue-600 dark:text-blue-400 uppercase">
                       🎯 Select Game / Sport
                     </label>
                     <select
                       value={awardSportId}
                       onChange={(e) => handleAwardSportChange(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold focus:border-amber-500 outline-none"
+                      className="w-full px-4 py-3 sm:py-3.5 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
                     >
                       {ALL_12_SPORTS.map((s) => (
                         <option key={s.id} value={s.id}>
@@ -879,19 +884,19 @@ export const SuperCoordinatorDashboardPage = () => {
                   </div>
 
                   {/* 2. Select Match Format (Dynamically restricted based on Sport) */}
-                  <div>
-                    <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
                       🎾 Match Format
                     </label>
-                    <div className="flex flex-wrap gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800">
+                    <div className="flex flex-wrap gap-2 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 min-h-[48px] items-center">
                       {getFormatsForSport(awardSportId).map((fmt) => (
                         <button
                           key={fmt.id}
                           type="button"
                           onClick={() => setMatchFormat(fmt.id)}
-                          className={`flex-1 py-1.5 px-3 rounded-lg text-[11px] font-extrabold transition cursor-pointer text-center ${
+                          className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-extrabold transition cursor-pointer text-center min-h-[38px] ${
                             matchFormat === fmt.id
-                              ? 'bg-amber-500 text-slate-950 shadow-xs'
+                              ? 'bg-blue-600 text-white shadow-xs'
                               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                           }`}
                         >
@@ -902,11 +907,11 @@ export const SuperCoordinatorDashboardPage = () => {
                   </div>
 
                   {/* 3. Select Gender Category (Always shown for all sports) */}
-                  <div>
-                    <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
                       ⚧️ Gender Category
                     </label>
-                    <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800">
+                    <div className="grid grid-cols-3 gap-2 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 min-h-[48px] items-center">
                       {[
                         { id: 'Boys', label: 'Boys' },
                         { id: 'Girls', label: 'Girls' },
@@ -916,7 +921,7 @@ export const SuperCoordinatorDashboardPage = () => {
                           key={g.id}
                           type="button"
                           onClick={() => setMatchGender(g.id)}
-                          className={`py-1.5 px-2 rounded-lg text-[11px] font-extrabold transition cursor-pointer text-center ${
+                          className={`py-2.5 px-2 rounded-xl text-xs sm:text-sm font-extrabold transition cursor-pointer text-center min-h-[38px] ${
                             matchGender === g.id
                               ? 'bg-indigo-600 text-white shadow-xs'
                               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -931,14 +936,14 @@ export const SuperCoordinatorDashboardPage = () => {
 
                 {/* ROW 1.5: Athletics Sub-Event Dropdown Selector (Shown ONLY when Athletics is selected) */}
                 {awardSportId.toLowerCase().includes('athletics') && (
-                  <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2 animate-fade-in">
-                    <label className="block text-xs font-mono font-black text-amber-600 dark:text-amber-400 uppercase">
+                  <div className="p-4 sm:p-5 rounded-2xl bg-blue-500/10 border border-blue-500/30 space-y-2 animate-fade-in">
+                    <label className="block text-xs sm:text-sm font-mono font-black text-blue-600 dark:text-blue-400 uppercase">
                       🏃 Select Athletics Event / Discipline (Row-wise Selection) *
                     </label>
                     <select
                       value={athleticsSubEvent}
                       onChange={(e) => setAthleticsSubEvent(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-amber-500/50 text-slate-900 dark:text-white text-xs font-bold focus:border-amber-500 outline-none"
+                      className="w-full px-4 py-3 sm:py-3.5 rounded-2xl bg-white dark:bg-slate-950 border border-blue-500/50 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
                     >
                       {ATHLETICS_SUB_EVENTS.map((subEv) => (
                         <option key={subEv} value={subEv}>
@@ -950,22 +955,22 @@ export const SuperCoordinatorDashboardPage = () => {
                 )}
 
                 {/* ROW 2: Winner & Runner-Up Details */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6 pt-3 border-t border-slate-200 dark:border-slate-800">
                   
                   {/* Winner Box (1st Place) */}
-                  <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-800/60 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono font-black text-emerald-700 dark:text-emerald-400 uppercase flex items-center gap-1.5">
+                  <div className="p-5 sm:p-6 md:p-7 rounded-3xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-800/60 space-y-4 shadow-sm">
+                    <div className="flex items-center justify-between pb-2 border-b border-emerald-200/50 dark:border-emerald-800/40">
+                      <span className="text-xs sm:text-sm font-mono font-black text-emerald-700 dark:text-emerald-400 uppercase flex items-center gap-2">
                         🥇 Winner Details (1st Place)
                       </span>
-                      <span className="px-2 py-0.5 rounded-md bg-emerald-500 text-slate-950 font-mono font-black text-[10px]">
+                      <span className="px-3 py-1.5 rounded-xl bg-emerald-500 text-slate-950 font-mono font-black text-xs shadow-xs">
                         +5 POINTS
                       </span>
                     </div>
 
-                    <div className="space-y-2 text-xs">
-                      <div>
-                        <label className="block text-[10px] font-mono font-bold text-slate-600 dark:text-slate-400 mb-1">
+                    <div className="space-y-3.5 text-xs sm:text-sm">
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
                           👤 Winner Player Name {matchFormat === 'Single' || matchFormat === 'Individual' ? '*' : '(Optional)'}
                         </label>
                         <input
@@ -974,12 +979,12 @@ export const SuperCoordinatorDashboardPage = () => {
                           value={winnerName}
                           onChange={(e) => setWinnerName(e.target.value)}
                           placeholder="Enter Winner Player Name"
-                          className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950 border border-emerald-400 dark:border-emerald-700/60 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-emerald-500 outline-none"
+                          className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-slate-950 border border-emerald-400 dark:border-emerald-700/60 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-emerald-500 outline-none min-h-[48px]"
                         />
                       </div>
 
-                      <div>
-                        <label className="block text-[10px] font-mono font-bold text-slate-600 dark:text-slate-400 mb-1">
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
                           🛡️ Winner Team Name {matchFormat === 'Team' || matchFormat === 'Double' ? '*' : '(Optional)'}
                         </label>
                         <input
@@ -988,18 +993,18 @@ export const SuperCoordinatorDashboardPage = () => {
                           value={winnerTeamName}
                           onChange={(e) => setWinnerTeamName(e.target.value)}
                           placeholder="e.g. MPEC Titans"
-                          className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950 border border-emerald-400 dark:border-emerald-700/60 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-emerald-500 outline-none"
+                          className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-slate-950 border border-emerald-400 dark:border-emerald-700/60 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-emerald-500 outline-none min-h-[48px]"
                         />
                       </div>
 
-                      <div>
-                        <label className="block text-[10px] font-mono font-bold text-slate-600 dark:text-slate-400 mb-1">
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
                           🏫 Winner College Name *
                         </label>
                         <select
                           value={winnerCollegeId}
                           onChange={(e) => setWinnerCollegeId(e.target.value)}
-                          className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950 border border-emerald-400 dark:border-emerald-700/60 text-emerald-800 dark:text-emerald-300 font-bold focus:ring-2 focus:ring-emerald-500 outline-none"
+                          className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-slate-950 border border-emerald-400 dark:border-emerald-700/60 text-emerald-800 dark:text-emerald-300 font-bold focus:ring-2 focus:ring-emerald-500 outline-none min-h-[48px]"
                         >
                           {ALL_COLLEGES.map((c) => (
                             <option key={c.id} value={c.id}>
@@ -1012,19 +1017,19 @@ export const SuperCoordinatorDashboardPage = () => {
                   </div>
 
                   {/* Runner-Up Box (2nd Place) */}
-                  <div className="p-3.5 sm:p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-300 dark:border-blue-800/60 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono font-black text-blue-700 dark:text-blue-400 uppercase flex items-center gap-1.5">
+                  <div className="p-5 sm:p-6 md:p-7 rounded-3xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-300 dark:border-blue-800/60 space-y-4 shadow-sm">
+                    <div className="flex items-center justify-between pb-2 border-b border-blue-200/50 dark:border-blue-800/40">
+                      <span className="text-xs sm:text-sm font-mono font-black text-blue-700 dark:text-blue-400 uppercase flex items-center gap-2">
                         🥈 Runner-Up Details (2nd Place)
                       </span>
-                      <span className="px-2 py-0.5 rounded-md bg-blue-500 text-white font-mono font-black text-[10px]">
+                      <span className="px-3 py-1.5 rounded-xl bg-blue-500 text-white font-mono font-black text-xs shadow-xs">
                         +3 POINTS
                       </span>
                     </div>
 
-                    <div className="space-y-2 text-xs">
-                      <div>
-                        <label className="block text-[10px] font-mono font-bold text-slate-600 dark:text-slate-400 mb-1">
+                    <div className="space-y-3.5 text-xs sm:text-sm">
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
                           👤 Runner-Up Player Name {matchFormat === 'Single' || matchFormat === 'Individual' ? '*' : '(Optional)'}
                         </label>
                         <input
@@ -1033,12 +1038,12 @@ export const SuperCoordinatorDashboardPage = () => {
                           value={runnerUpName}
                           onChange={(e) => setRunnerUpName(e.target.value)}
                           placeholder="Enter Runner-Up Player Name"
-                          className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950 border border-blue-400 dark:border-blue-700/60 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                          className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-slate-950 border border-blue-400 dark:border-blue-700/60 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-blue-500 outline-none min-h-[48px]"
                         />
                       </div>
 
-                      <div>
-                        <label className="block text-[10px] font-mono font-bold text-slate-600 dark:text-slate-400 mb-1">
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
                           🛡️ Runner-Up Team Name {matchFormat === 'Team' || matchFormat === 'Double' ? '*' : '(Optional)'}
                         </label>
                         <input
@@ -1047,18 +1052,18 @@ export const SuperCoordinatorDashboardPage = () => {
                           value={runnerUpTeamName}
                           onChange={(e) => setRunnerUpTeamName(e.target.value)}
                           placeholder="e.g. MIPS Strikers"
-                          className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950 border border-blue-400 dark:border-blue-700/60 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                          className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-slate-950 border border-blue-400 dark:border-blue-700/60 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-blue-500 outline-none min-h-[48px]"
                         />
                       </div>
 
-                      <div>
-                        <label className="block text-[10px] font-mono font-bold text-slate-600 dark:text-slate-400 mb-1">
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
                           🏫 Runner-Up College Name *
                         </label>
                         <select
                           value={runnerUpCollegeId}
                           onChange={(e) => setRunnerUpCollegeId(e.target.value)}
-                          className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-950 border border-blue-400 dark:border-blue-700/60 text-blue-800 dark:text-blue-300 font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                          className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-slate-950 border border-blue-400 dark:border-blue-700/60 text-blue-800 dark:text-blue-300 font-bold focus:ring-2 focus:ring-blue-500 outline-none min-h-[48px]"
                         >
                           {ALL_COLLEGES.map((c) => (
                             <option key={c.id} value={c.id}>
@@ -1073,12 +1078,12 @@ export const SuperCoordinatorDashboardPage = () => {
                 </div>
 
                 {/* ROW 3: Submit / Done Button */}
-                <div className="pt-2 flex justify-end">
+                <div className="pt-3 flex justify-end">
                   <button
                     type="submit"
-                    className="w-full sm:w-auto px-8 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs sm:text-sm shadow-xl transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 border border-amber-400/40"
+                    className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-sm sm:text-base shadow-xl transition flex items-center justify-center gap-2.5 cursor-pointer active:scale-95 border border-blue-500/40 min-h-[52px]"
                   >
-                    <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950" />
+                    <CheckCircle2 className="w-5 h-5 text-white shrink-0" />
                     <span>Done / Save Result Entry & Award Points (+5 & +3 Pts)</span>
                   </button>
                 </div>
@@ -1096,13 +1101,13 @@ export const SuperCoordinatorDashboardPage = () => {
                   <button
                     type="button"
                     onClick={handleExportLeaderboardPDF}
-                    className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[11px] sm:text-xs font-bold transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 text-[11px] sm:text-xs font-bold transition flex items-center gap-1.5 cursor-pointer active:scale-95"
                     title="Download Leaderboard PDF Report"
                   >
-                    <Download className="w-3.5 h-3.5 text-amber-500" />
+                    <Download className="w-3.5 h-3.5 text-blue-500" />
                     <span>Export PDF</span>
                   </button>
-                  <span className="text-[11px] sm:text-xs font-mono font-bold text-amber-600 dark:text-amber-400">Updated Live</span>
+                  <span className="text-[11px] sm:text-xs font-mono font-bold text-blue-600 dark:text-blue-400">Updated Live</span>
                 </div>
               </div>
 
@@ -1132,7 +1137,7 @@ export const SuperCoordinatorDashboardPage = () => {
                         <td className="px-3 py-3 sm:p-4 font-mono font-bold text-blue-600 dark:text-blue-400 text-[11px] sm:text-xs whitespace-nowrap">
                           {c.runnerUpCount} Finishes ({c.runnerUpCount * 3} Pts)
                         </td>
-                        <td className="px-3 py-3 sm:p-4 font-mono font-black text-sm sm:text-lg text-right text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                        <td className="px-3 py-3 sm:p-4 font-mono font-black text-sm sm:text-lg text-right text-blue-600 dark:text-blue-400 whitespace-nowrap">
                           {c.totalPoints} PTS
                         </td>
                       </tr>
@@ -1142,7 +1147,6 @@ export const SuperCoordinatorDashboardPage = () => {
               </div>
             </div>
 
-            {/* Declared Match Result Entries Log */}
             {/* Declared Match Result Entries Log */}
             <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 p-3.5 sm:p-6 space-y-4 shadow-md dark:shadow-xl">
               <div className="flex items-center justify-between">
@@ -1156,12 +1160,12 @@ export const SuperCoordinatorDashboardPage = () => {
                   <p className="text-xs text-slate-500 italic text-center py-6">No match result entries recorded yet.</p>
                 ) : (
                   leaderboardEntries.map((entry) => (
-                    <div key={entry.id} className="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3 shadow-xs hover:border-amber-500/40 transition">
+                    <div key={entry.id} className="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3 shadow-xs hover:border-blue-500/40 transition">
                       
                       {/* Top Meta Bar: Game, Format, Gender & Date */}
                       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-2.5">
                         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                          <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold text-[11px] sm:text-xs border border-amber-500/20 flex items-center gap-1">
+                          <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 font-extrabold text-[11px] sm:text-xs border border-blue-500/20 flex items-center gap-1">
                             🎯 {entry.sportName}
                           </span>
                           <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono font-bold text-[11px] sm:text-xs">
@@ -1256,45 +1260,49 @@ export const SuperCoordinatorDashboardPage = () => {
           return (
             <div className="space-y-6">
               {/* Header Bar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md">
-                <div>
-                  <h3 className="text-base sm:text-xl font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                    <Award className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500 shrink-0" />
-                    <span>Official Declared Match Results Table</span>
-                  </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                    Comprehensive column-wise view of declared match outcomes with live filtering by Game Name and Gender.
-                  </p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center shrink-0">
+                    <Award className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600 dark:text-blue-400 shrink-0" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2.5">
+                      <span>Official Declared Match Results Table</span>
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1.5">
+                      Comprehensive column-wise view of declared match outcomes with live filtering by Game Name and Gender.
+                    </p>
+                  </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="button"
                     onClick={() => handleExportResultsExcel(filteredDeclaredResults)}
-                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-extrabold text-xs shadow-md transition flex items-center gap-2 cursor-pointer active:scale-95 shrink-0"
+                    className="px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs sm:text-sm shadow-md transition flex items-center gap-2 cursor-pointer active:scale-95 shrink-0 min-h-[46px]"
                     title="Export Declared Match Results report with full details to Excel"
                   >
                     <Download className="w-4 h-4 text-white" />
                     <span>Export Excel (Full Details)</span>
                   </button>
-                  <span className="px-3.5 py-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-mono font-bold">
+                  <span className="px-4 py-3 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs sm:text-sm font-mono font-bold min-h-[46px] flex items-center">
                     Results: {filteredDeclaredResults.length} / {leaderboardEntries.length}
                   </span>
                 </div>
               </div>
 
               {/* Filter Controls Bar */}
-              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
                 
                 {/* 1. Filter by Game / Sport */}
-                <div>
-                  <label className="block text-[11px] font-mono font-bold text-amber-600 dark:text-amber-400 uppercase mb-1">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono font-bold text-blue-600 dark:text-blue-400 uppercase">
                     🎯 Filter by Game / Sport
                   </label>
                   <select
                     value={resultFilterSport}
                     onChange={(e) => setResultFilterSport(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:border-amber-500 outline-none"
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
                   >
                     <option value="ALL">All Games / Sports ({leaderboardEntries.length})</option>
                     {ALL_12_SPORTS.map((s) => (
@@ -1306,14 +1314,14 @@ export const SuperCoordinatorDashboardPage = () => {
                 </div>
 
                 {/* 2. Filter by Gender */}
-                <div>
-                  <label className="block text-[11px] font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-1">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase">
                     ⚧️ Filter by Gender
                   </label>
                   <select
                     value={resultFilterGender}
                     onChange={(e) => setResultFilterGender(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:border-indigo-500 outline-none"
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-indigo-500 outline-none min-h-[48px]"
                   >
                     <option value="ALL">All Genders</option>
                     <option value="Boys">Boys</option>
@@ -1330,7 +1338,7 @@ export const SuperCoordinatorDashboardPage = () => {
                       setResultFilterSport('ALL');
                       setResultFilterGender('ALL');
                     }}
-                    className="w-full py-2 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-extrabold text-xs transition cursor-pointer"
+                    className="w-full py-3 px-5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-extrabold text-xs sm:text-sm transition cursor-pointer min-h-[48px]"
                   >
                     Reset Filters
                   </button>
@@ -1338,21 +1346,21 @@ export const SuperCoordinatorDashboardPage = () => {
 
               </div>
 
-              {/* Column-wise Results Table (Without Action Column) */}
+              {/* Column-wise Results Table */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-md dark:shadow-xl">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 text-[11px] uppercase font-mono font-bold border-b border-slate-200 dark:border-slate-800">
-                        <th className="p-4 whitespace-nowrap">Date</th>
-                        <th className="p-4 whitespace-nowrap">Game Name</th>
-                        <th className="p-4 whitespace-nowrap">Format</th>
-                        <th className="p-4 whitespace-nowrap">Gender</th>
-                        <th className="p-4 min-w-[240px]">🥇 Winner (1st Place)</th>
-                        <th className="p-4 min-w-[240px]">🥈 Runner-Up (2nd Place)</th>
+                      <tr className="bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 text-xs uppercase font-mono font-bold border-b border-slate-200 dark:border-slate-800">
+                        <th className="p-4 sm:p-5 whitespace-nowrap">Date</th>
+                        <th className="p-4 sm:p-5 whitespace-nowrap">Game Name</th>
+                        <th className="p-4 sm:p-5 whitespace-nowrap">Format</th>
+                        <th className="p-4 sm:p-5 whitespace-nowrap">Gender</th>
+                        <th className="p-4 sm:p-5 min-w-[260px]">🥇 Winner (1st Place)</th>
+                        <th className="p-4 sm:p-5 min-w-[260px]">🥈 Runner-Up (2nd Place)</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-xs">
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-xs sm:text-sm">
                       {filteredDeclaredResults.length === 0 ? (
                         <tr>
                           <td colSpan="6" className="p-12 text-center text-slate-500 italic">
@@ -1362,50 +1370,50 @@ export const SuperCoordinatorDashboardPage = () => {
                       ) : (
                         filteredDeclaredResults.map((entry) => (
                           <tr key={entry.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                            <td className="p-4 font-mono text-slate-500 dark:text-slate-400 whitespace-nowrap text-[11px]">
+                            <td className="p-4 sm:p-5 font-mono text-slate-500 dark:text-slate-400 whitespace-nowrap text-xs">
                               {entry.date}
                             </td>
-                            <td className="p-4 font-extrabold text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                            <td className="p-4 sm:p-5 font-extrabold text-blue-600 dark:text-blue-400 whitespace-nowrap">
                               🎯 {entry.sportName}
                             </td>
-                            <td className="p-4 whitespace-nowrap">
-                              <span className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono font-extrabold text-[11px]">
+                            <td className="p-4 sm:p-5 whitespace-nowrap">
+                              <span className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono font-extrabold text-xs">
                                 {entry.matchFormat || 'Single'}
                               </span>
                             </td>
-                            <td className="p-4 whitespace-nowrap">
-                              <span className="px-2.5 py-1 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-mono font-bold text-[11px]">
+                            <td className="p-4 sm:p-5 whitespace-nowrap">
+                              <span className="px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-mono font-bold text-xs">
                                 {entry.gender || 'Boys'}
                               </span>
                             </td>
                             
                             {/* Winner Details Column */}
-                            <td className="p-4">
-                              <div className="space-y-0.5">
-                                <div className="font-extrabold text-slate-900 dark:text-white text-xs flex items-center gap-1">
+                            <td className="p-4 sm:p-5">
+                              <div className="space-y-1">
+                                <div className="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
                                   <span className="text-emerald-600 dark:text-emerald-400">👤 {entry.winnerName || 'Winner'}</span>
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-mono font-bold">+5 Pts</span>
+                                  <span className="text-xs px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 font-mono font-bold">+5 Pts</span>
                                 </div>
-                                <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                                <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
                                   🛡️ Team: <span className="text-slate-900 dark:text-white">{entry.winnerTeamName || entry.winnerName || 'N/A'}</span>
                                 </div>
-                                <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                                <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
                                   🏫 College: <span className="font-bold text-slate-700 dark:text-slate-300">{entry.winnerCollegeName || entry.winnerCollege}</span>
                                 </div>
                               </div>
                             </td>
 
                             {/* Runner-Up Details Column */}
-                            <td className="p-4">
-                              <div className="space-y-0.5">
-                                <div className="font-extrabold text-slate-900 dark:text-white text-xs flex items-center gap-1">
+                            <td className="p-4 sm:p-5">
+                              <div className="space-y-1">
+                                <div className="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
                                   <span className="text-blue-600 dark:text-blue-400">👤 {entry.runnerUpName || 'Runner-Up'}</span>
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 font-mono font-bold">+3 Pts</span>
+                                  <span className="text-xs px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 font-mono font-bold">+3 Pts</span>
                                 </div>
-                                <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                                <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
                                   🛡️ Team: <span className="text-slate-900 dark:text-white">{entry.runnerUpTeamName || entry.runnerUpName || 'N/A'}</span>
                                 </div>
-                                <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                                <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
                                   🏫 College: <span className="font-bold text-slate-700 dark:text-slate-300">{entry.runnerUpCollegeName || entry.runnerUpCollege}</span>
                                 </div>
                               </div>
@@ -1427,7 +1435,7 @@ export const SuperCoordinatorDashboardPage = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+                  <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   Coordinator Event Creation Tracker
                   <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-mono font-bold flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
@@ -1440,7 +1448,7 @@ export const SuperCoordinatorDashboardPage = () => {
               </div>
               <button
                 onClick={fetchDashboardData}
-                className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs shadow-md transition flex items-center gap-2 cursor-pointer active:scale-95 shrink-0"
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs shadow-md shadow-blue-500/25 transition flex items-center gap-2 cursor-pointer active:scale-95 shrink-0"
               >
                 <RefreshCw className="w-4 h-4" />
                 Refresh ({coordinatorEvents.length})
@@ -1475,8 +1483,8 @@ export const SuperCoordinatorDashboardPage = () => {
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-xs">
                       {coordinatorEvents.map((evt) => (
-                        <tr key={evt.id} className="hover:bg-amber-50/40 dark:hover:bg-amber-950/10 transition">
-                          <td className="p-4 font-mono font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                        <tr key={evt.id} className="hover:bg-blue-50/40 dark:hover:bg-blue-950/10 transition">
+                          <td className="p-4 font-mono font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">
                             {evt.sportName}
                           </td>
                           <td className="p-4 font-extrabold text-slate-900 dark:text-white max-w-[200px]">
@@ -1526,7 +1534,7 @@ export const SuperCoordinatorDashboardPage = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                  <Users className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+                  <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   Master Participant Database & Multi-Filter Control
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400">
@@ -1536,27 +1544,27 @@ export const SuperCoordinatorDashboardPage = () => {
 
               <button
                 onClick={handleExportFilteredExcel}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-md transition flex items-center gap-2 cursor-pointer active:scale-95 shrink-0"
+                className="px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm shadow-md transition flex items-center gap-2 cursor-pointer active:scale-95 shrink-0 min-h-[46px]"
                 title="Export ONLY the displayed filtered student records below"
               >
-                <Download className="w-4 h-4 text-slate-950" />
+                <Download className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-slate-950" />
                 <span>Export Filtered Excel ({filteredParticipants.length})</span>
               </button>
             </div>
 
             {/* Filter Control Bar */}
-            <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md dark:shadow-xl space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md dark:shadow-xl space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 
                 {/* 1. Sport / Game Filter */}
-                <div>
-                  <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
                     🎯 Filter by Game
                   </label>
                   <select
                     value={selectedSport}
                     onChange={(e) => handleSportChange(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold focus:border-amber-500 outline-none"
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
                   >
                     <option value="ALL">All 12 Sports</option>
                     {ALL_12_SPORTS.map((s) => (
@@ -1568,14 +1576,14 @@ export const SuperCoordinatorDashboardPage = () => {
                 </div>
 
                 {/* 2. Event Title Filter (Populated dynamically) */}
-                <div>
-                  <label className="block text-[11px] font-mono font-bold text-amber-600 dark:text-amber-400 uppercase mb-1">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono font-bold text-blue-600 dark:text-blue-400 uppercase">
                     📋 Filter by Event Title
                   </label>
                   <select
                     value={selectedEvent}
                     onChange={(e) => setSelectedEvent(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-950 border border-amber-500/40 text-slate-900 dark:text-white text-xs font-bold focus:border-amber-500 outline-none"
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-blue-500/40 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
                   >
                     <option value="ALL">All Created Events ({availableEvents.length})</option>
                     {availableEvents.map((evt) => (
@@ -1587,30 +1595,30 @@ export const SuperCoordinatorDashboardPage = () => {
                 </div>
 
                 {/* 3. Gender Filter */}
-                <div>
-                  <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
                     ⚧️ Filter by Gender
                   </label>
                   <select
                     value={selectedGender}
                     onChange={(e) => setSelectedGender(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold focus:border-amber-500 outline-none"
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
                   >
                     <option value="ALL">All Genders</option>
-                    <option value="Boys">Boys (Male)</option>
-                    <option value="Girls">Girls (Female)</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
                   </select>
                 </div>
 
                 {/* 3. College Filter */}
-                <div>
-                  <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
                     🏫 Filter by College
                   </label>
                   <select
                     value={selectedCollege}
                     onChange={(e) => setSelectedCollege(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold focus:border-amber-500 outline-none"
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
                   >
                     <option value="ALL">All Colleges</option>
                     {ALL_COLLEGES.map((c) => (
@@ -1622,8 +1630,8 @@ export const SuperCoordinatorDashboardPage = () => {
                 </div>
 
                 {/* 4. Live Search Input */}
-                <div>
-                  <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
                     🔍 Search Participant
                   </label>
                   <div className="relative">
@@ -1632,18 +1640,18 @@ export const SuperCoordinatorDashboardPage = () => {
                       placeholder="Search name, mobile, team..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full px-3 py-2 pl-9 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold focus:border-amber-500 outline-none"
+                      className="w-full px-4 py-3 pl-10 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
                     />
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                   </div>
                 </div>
 
               </div>
 
               {/* Active Filter Chips */}
-              <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between text-xs sm:text-sm pt-3 border-t border-slate-200 dark:border-slate-800">
                 <span className="font-mono text-slate-600 dark:text-slate-400">
-                  Showing <strong className="text-amber-600 dark:text-amber-400">{filteredParticipants.length}</strong> of {masterParticipants.length} Participants
+                  Showing <strong className="text-blue-600 dark:text-blue-400 font-bold">{filteredParticipants.length}</strong> of {masterParticipants.length} Participants
                 </span>
                 {(selectedSport !== 'ALL' || selectedEvent !== 'ALL' || selectedGender !== 'ALL' || selectedCollege !== 'ALL' || searchQuery) && (
                   <button
@@ -1654,7 +1662,7 @@ export const SuperCoordinatorDashboardPage = () => {
                       setSelectedCollege('ALL');
                       setSearchQuery('');
                     }}
-                    className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
+                    className="text-xs sm:text-sm font-bold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
                   >
                     Reset All Filters
                   </button>
@@ -1667,42 +1675,42 @@ export const SuperCoordinatorDashboardPage = () => {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 text-[11px] uppercase font-mono font-bold border-b border-slate-200 dark:border-slate-800">
-                      <th className="p-4">Reg Time</th>
-                      <th className="p-4">Game & Event Title</th>
-                      <th className="p-4">Team Name</th>
-                      <th className="p-4">College Name</th>
-                      <th className="p-4">Student Name</th>
-                      <th className="p-4">Mobile No</th>
-                      <th className="p-4">Gender</th>
-                      <th className="p-4">Status</th>
+                    <tr className="bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 text-xs uppercase font-mono font-bold border-b border-slate-200 dark:border-slate-800">
+                      <th className="p-4 sm:p-5">Reg Time</th>
+                      <th className="p-4 sm:p-5">Game & Event Title</th>
+                      <th className="p-4 sm:p-5">Team Name</th>
+                      <th className="p-4 sm:p-5">College Name</th>
+                      <th className="p-4 sm:p-5">Student Name</th>
+                      <th className="p-4 sm:p-5">Mobile No</th>
+                      <th className="p-4 sm:p-5">Gender</th>
+                      <th className="p-4 sm:p-5">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-xs">
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-xs sm:text-sm">
                     {filteredParticipants.length === 0 ? (
                       <tr>
-                        <td colSpan="8" className="p-8 text-center text-slate-500 italic">
+                        <td colSpan="8" className="p-12 text-center text-slate-500 italic">
                           No participant records matching selected filter criteria.
                         </td>
                       </tr>
                     ) : (
                       filteredParticipants.map((p) => (
                         <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition font-mono">
-                          <td className="p-4 text-slate-700 dark:text-slate-300 font-mono">
+                          <td className="p-4 sm:p-5 text-slate-700 dark:text-slate-300 font-mono">
                             <div>{p.date || '2026-08-20'}</div>
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400">{p.time || '10:00 AM'}</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">{p.time || '10:00 AM'}</div>
                           </td>
-                          <td className="p-4">
-                            <div className="font-bold text-amber-600 dark:text-amber-400">{p.sportName}</div>
-                            <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">{p.eventTitle || `${p.sportName} Event`}</div>
+                          <td className="p-4 sm:p-5">
+                            <div className="font-bold text-blue-600 dark:text-blue-400">{p.sportName}</div>
+                            <div className="text-xs font-semibold text-slate-700 dark:text-slate-300">{p.eventTitle || `${p.sportName} Event`}</div>
                           </td>
-                          <td className="p-4 font-bold text-slate-900 dark:text-white">{p.teamName}</td>
-                          <td className="p-4 font-bold text-slate-700 dark:text-slate-300">{p.college}</td>
-                          <td className="p-4 font-extrabold text-emerald-600 dark:text-emerald-400">{p.name}</td>
-                          <td className="p-4 text-slate-700 dark:text-slate-300">{p.mobile}</td>
-                          <td className="p-4 text-slate-700 dark:text-slate-300">{p.gender}</td>
-                          <td className="p-4">
-                            <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
+                          <td className="p-4 sm:p-5 font-bold text-slate-900 dark:text-white">{p.teamName}</td>
+                          <td className="p-4 sm:p-5 font-bold text-slate-700 dark:text-slate-300">{p.college}</td>
+                          <td className="p-4 sm:p-5 font-extrabold text-emerald-600 dark:text-emerald-400">{p.name}</td>
+                          <td className="p-4 sm:p-5 text-slate-700 dark:text-slate-300">{p.mobile}</td>
+                          <td className="p-4 sm:p-5 text-slate-700 dark:text-slate-300">{p.gender}</td>
+                          <td className="p-4 sm:p-5">
+                            <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold">
                               {p.status || 'VERIFIED'}
                             </span>
                           </td>
@@ -1721,33 +1729,23 @@ export const SuperCoordinatorDashboardPage = () => {
           <div className="space-y-6">
             
             {/* Header & Controls Bar */}
-            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                  <FolderOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                    <FolderOpen className="w-6 h-6 text-amber-500" />
-                    PR Media Folders & Photo Gallery Monitor
-                  </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wide">
+                      PR Media Folders & Photo Gallery Monitor
+                    </h2>
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-mono font-bold">
+                      Live Sync Active
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     Review all photo folders created by PR members and inspect uploaded photos in real-time.
                   </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-mono font-bold">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                    Live Sync Active
-                  </span>
-
-                  {selectedPRFolder && (
-                    <button
-                      onClick={() => setSelectedPRFolder(null)}
-                      className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-900 dark:text-white font-extrabold text-xs transition flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      <span>Back to All PR Folders</span>
-                    </button>
-                  )}
                 </div>
               </div>
 
@@ -1758,7 +1756,7 @@ export const SuperCoordinatorDashboardPage = () => {
                     onClick={() => setPrViewMode('folders')}
                     className={`px-4 py-2 rounded-xl font-black text-xs transition flex items-center gap-2 cursor-pointer ${
                       prViewMode === 'folders'
-                        ? 'bg-amber-500 text-slate-950 shadow-md'
+                        ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
                         : 'bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
@@ -1770,7 +1768,7 @@ export const SuperCoordinatorDashboardPage = () => {
                     onClick={() => setPrViewMode('feed')}
                     className={`px-4 py-2 rounded-xl font-black text-xs transition flex items-center gap-2 cursor-pointer ${
                       prViewMode === 'feed'
-                        ? 'bg-amber-500 text-slate-950 shadow-md'
+                        ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
                         : 'bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
@@ -1789,7 +1787,7 @@ export const SuperCoordinatorDashboardPage = () => {
                 <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 sm:p-8 text-white border border-slate-800 shadow-xl">
                   <div className="relative z-10 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-mono font-bold">
+                      <span className="px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-300 text-xs font-mono font-bold">
                         📁 PR Event Album Folder
                       </span>
                       <span className="text-xs text-slate-400 font-mono">Date: {selectedPRFolder.event_date}</span>
@@ -1800,7 +1798,7 @@ export const SuperCoordinatorDashboardPage = () => {
                       {selectedPRFolder.description || 'Official media folder created by PR Team.'}
                     </p>
 
-                    <div className="flex items-center gap-4 pt-2 text-xs font-mono font-bold text-amber-400">
+                    <div className="flex items-center gap-4 pt-2 text-xs font-mono font-bold text-blue-400">
                       <span>📸 {selectedFolderMedia.photos?.length || 0} Photos</span>
                       <span>🎥 {selectedFolderMedia.videos?.length || 0} Videos</span>
                       <span>Total: {selectedFolderMedia.all?.length || 0} Items</span>
@@ -1823,7 +1821,7 @@ export const SuperCoordinatorDashboardPage = () => {
                       <div
                         key={item.id}
                         onClick={() => setActiveLightboxMedia({ url: item.media_url, title: item.title, uploadedBy: item.uploaded_by, uploadDate: item.uploaded_at, folderName: selectedPRFolder.event_name })}
-                        className="group relative rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden shadow-md hover:border-amber-500/50 transition cursor-pointer flex flex-col justify-between"
+                        className="group relative rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden shadow-md hover:border-blue-500/50 transition cursor-pointer flex flex-col justify-between"
                       >
                         <div className="relative aspect-square bg-slate-950 overflow-hidden">
                           <GoogleDriveImage
@@ -1832,11 +1830,11 @@ export const SuperCoordinatorDashboardPage = () => {
                             className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition flex items-end p-3">
-                            <span className="px-3 py-1 rounded-xl bg-amber-500 text-slate-950 text-[10px] font-black flex items-center gap-1">
+                            <span className="px-3 py-1 rounded-xl bg-blue-600 text-white text-[10px] font-black flex items-center gap-1">
                               <Maximize2 className="w-3 h-3" /> View Fullscreen
                             </span>
                           </div>
-                          <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-slate-900/90 text-amber-400 text-[10px] font-mono font-bold border border-slate-700">
+                          <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-slate-900/90 text-blue-400 text-[10px] font-mono font-bold border border-slate-700">
                             {item.media_type === 'video' ? '🎥 Video' : '📸 Photo'}
                           </span>
                         </div>
@@ -1869,7 +1867,7 @@ export const SuperCoordinatorDashboardPage = () => {
                       <div
                         key={folder.id}
                         onClick={() => handleOpenPRFolder(folder)}
-                        className="group relative h-80 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 shadow-md hover:shadow-2xl hover:border-amber-500/40 transition cursor-pointer flex flex-col justify-between"
+                        className="group relative h-80 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 shadow-md hover:shadow-2xl hover:border-blue-500/40 transition cursor-pointer flex flex-col justify-between"
                       >
                         {/* Folder Cover Image */}
                         <GoogleDriveImage
@@ -1881,10 +1879,10 @@ export const SuperCoordinatorDashboardPage = () => {
 
                         {/* Top Date & Folder Badge */}
                         <div className="relative z-10 p-5 flex items-center justify-between">
-                          <span className="px-3 py-1 rounded-full text-[10px] font-black bg-amber-500 text-slate-950 flex items-center gap-1 shadow-md">
+                          <span className="px-3 py-1 rounded-full text-[10px] font-black bg-blue-600 text-white flex items-center gap-1 shadow-md">
                             <Calendar className="w-3 h-3" /> {folder.event_date}
                           </span>
-                          <span className="px-2.5 py-1 rounded-full bg-slate-900/90 text-amber-400 text-[10px] font-mono font-bold border border-slate-700 flex items-center gap-1">
+                          <span className="px-2.5 py-1 rounded-full bg-slate-900/90 text-blue-400 text-[10px] font-mono font-bold border border-slate-700 flex items-center gap-1">
                             <Folder className="w-3 h-3" /> PR Folder
                           </span>
                         </div>
@@ -1892,7 +1890,7 @@ export const SuperCoordinatorDashboardPage = () => {
                         {/* Bottom Info & Open Folder Button */}
                         <div className="relative z-10 p-6 space-y-3">
                           <div>
-                            <h3 className="text-lg font-black text-white group-hover:text-amber-400 transition line-clamp-1">
+                            <h3 className="text-lg font-black text-white group-hover:text-blue-400 transition line-clamp-1">
                               {folder.event_name}
                             </h3>
                             <p className="text-xs text-slate-300 line-clamp-2 mt-1 font-normal">
@@ -1901,12 +1899,12 @@ export const SuperCoordinatorDashboardPage = () => {
                           </div>
 
                           <div className="flex items-center justify-between pt-2 border-t border-slate-700/60">
-                            <div className="flex items-center gap-3 text-xs font-mono font-bold text-amber-300">
+                            <div className="flex items-center gap-3 text-xs font-mono font-bold text-blue-300">
                               <span>📸 {folder.photos_count || 0} Photos</span>
                               <span>🎥 {folder.videos_count || 0} Videos</span>
                             </div>
 
-                            <span className="px-3.5 py-1.5 rounded-xl bg-amber-500 group-hover:bg-amber-400 text-slate-950 text-xs font-black transition flex items-center gap-1.5 shadow-md pointer-events-none">
+                            <span className="px-3.5 py-1.5 rounded-xl bg-blue-600 group-hover:bg-blue-500 text-white text-xs font-black transition flex items-center gap-1.5 shadow-md pointer-events-none">
                               <FolderOpen className="w-3.5 h-3.5" />
                               <span>Open Folder</span>
                             </span>
@@ -1925,7 +1923,7 @@ export const SuperCoordinatorDashboardPage = () => {
                   <div
                     key={photo.id}
                     onClick={() => setActiveLightboxMedia({ url: photo.url, title: photo.title, uploadedBy: photo.uploadedBy, uploadDate: photo.uploadDate, folderName: photo.eventTitle || photo.sportName })}
-                    className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden shadow-md hover:border-amber-500/40 transition cursor-pointer group"
+                    className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden shadow-md hover:border-blue-500/40 transition cursor-pointer group"
                   >
                     <div className="relative aspect-video bg-black overflow-hidden">
                       <GoogleDriveImage
@@ -1933,7 +1931,7 @@ export const SuperCoordinatorDashboardPage = () => {
                         alt={photo.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                       />
-                      <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-md text-amber-400 text-[10px] font-mono font-bold border border-slate-700">
+                      <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-md text-blue-400 text-[10px] font-mono font-bold border border-slate-700">
                         {photo.sportName}
                       </span>
                     </div>
@@ -1957,7 +1955,7 @@ export const SuperCoordinatorDashboardPage = () => {
                   <div className="flex items-center justify-between p-4 border-b border-slate-800">
                     <div>
                       <h3 className="text-base font-bold text-white">{activeLightboxMedia.title}</h3>
-                      <p className="text-xs text-amber-400 font-mono">Folder: {activeLightboxMedia.folderName || 'PR Folder'}</p>
+                      <p className="text-xs text-blue-400 font-mono">Folder: {activeLightboxMedia.folderName || 'PR Folder'}</p>
                     </div>
                     <button
                       onClick={() => setActiveLightboxMedia(null)}
@@ -1988,29 +1986,29 @@ export const SuperCoordinatorDashboardPage = () => {
 
         {/* SECTION 5: SUPER COORDINATOR PROFILE & SECURITY */}
         {(activeTab === 'profile') && (
-          <div className="space-y-6 animate-fade-in">
+          <div className="space-y-6 sm:space-y-8 animate-fade-in">
             {/* Main Profile Header Banner */}
-            <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md dark:shadow-xl space-y-6">
+            <div className="p-6 sm:p-8 md:p-10 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md dark:shadow-xl space-y-6 sm:space-y-8">
               
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-6 border-b border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-5">
-                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-amber-500 via-orange-500 to-yellow-400 text-slate-950 font-black text-3xl flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
+                <div className="flex items-center gap-5 sm:gap-6">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-blue-700 text-white font-black text-3xl sm:text-4xl flex items-center justify-center shadow-lg shadow-blue-500/25 shrink-0">
                     👑
                   </div>
                   
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2.5">
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-2.5">
                       <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                         {superCoordName}
                       </h2>
-                      <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Event Host Authority
+                      <span className="px-3.5 py-1 rounded-full text-xs font-mono font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400" /> Event Host Authority
                       </span>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                      Username: <strong className="text-amber-600 dark:text-amber-400">@{superCoordUser?.username || 'super_coordinator'}</strong>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-mono">
+                      Username: <strong className="text-blue-600 dark:text-blue-400">@{superCoordUser?.username || 'super_coordinator'}</strong>
                     </p>
-                    <p className="text-xs text-slate-600 dark:text-slate-300">
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
                       Role: <strong className="text-slate-900 dark:text-white">President & Host Event Executive</strong> • Maharana Pratap Institutions
                     </p>
                   </div>
@@ -2018,28 +2016,28 @@ export const SuperCoordinatorDashboardPage = () => {
               </div>
 
               {/* Profile Details Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
-                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Official Portal</span>
-                  <div className="flex items-center gap-2">
-                    <Crown className="w-4 h-4 text-amber-500" />
-                    <span className="font-extrabold text-xs text-slate-900 dark:text-white">Super Coordinator</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5 shadow-xs">
+                  <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider block">Official Portal</span>
+                  <div className="flex items-center gap-2.5">
+                    <Crown className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <span className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">Super Coordinator</span>
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
-                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Participating Colleges</span>
-                  <div className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-emerald-500" />
-                    <span className="font-extrabold text-xs text-emerald-600 dark:text-emerald-400">{ALL_COLLEGES.length} Institutions</span>
+                <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5 shadow-xs">
+                  <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider block">Participating Colleges</span>
+                  <div className="flex items-center gap-2.5">
+                    <Building2 className="w-5 h-5 text-emerald-500" />
+                    <span className="font-extrabold text-sm sm:text-base text-emerald-600 dark:text-emerald-400">{ALL_COLLEGES.length} Institutions</span>
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
-                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Active Sports Leagues</span>
-                  <div className="flex items-center gap-2">
-                    <Trophy className="w-4 h-4 text-orange-500" />
-                    <span className="font-extrabold text-xs text-orange-600 dark:text-orange-400">{ALL_12_SPORTS.length} Sports</span>
+                <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5 shadow-xs">
+                  <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider block">Active Sports Leagues</span>
+                  <div className="flex items-center gap-2.5">
+                    <Trophy className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <span className="font-extrabold text-sm sm:text-base text-blue-600 dark:text-blue-400">{ALL_12_SPORTS.length} Sports</span>
                   </div>
                 </div>
               </div>
@@ -2048,30 +2046,30 @@ export const SuperCoordinatorDashboardPage = () => {
 
             {/* Quick System Summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2 shadow-sm">
-                <div className="flex items-center justify-between text-xs font-mono text-slate-400 uppercase font-bold">
+              <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5 shadow-sm">
+                <div className="flex items-center justify-between text-xs sm:text-sm font-mono text-slate-400 uppercase font-bold">
                   <span>Coordinator Event Creations</span>
-                  <BookOpen className="w-4 h-4 text-amber-500" />
+                  <BookOpen className="w-5 h-5 text-blue-500" />
                 </div>
-                <div className="text-3xl font-black text-slate-900 dark:text-white">{coordinatorEvents.length} Events</div>
-                <p className="text-xs text-slate-500">Live tournaments created across all 12 sports</p>
+                <div className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white">{coordinatorEvents.length} Events</div>
+                <p className="text-xs sm:text-sm text-slate-500">Live tournaments created across all 12 sports</p>
               </div>
 
-              <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2 shadow-sm">
-                <div className="flex items-center justify-between text-xs font-mono text-slate-400 uppercase font-bold">
+              <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5 shadow-sm">
+                <div className="flex items-center justify-between text-xs sm:text-sm font-mono text-slate-400 uppercase font-bold">
                   <span>Master Participants Database</span>
-                  <Users className="w-4 h-4 text-emerald-500" />
+                  <Users className="w-5 h-5 text-emerald-500" />
                 </div>
-                <div className="text-3xl font-black text-slate-900 dark:text-white">{masterParticipants.length} Athletes</div>
-                <p className="text-xs text-slate-500">Verified participant entries registered</p>
+                <div className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white">{masterParticipants.length} Athletes</div>
+                <p className="text-xs sm:text-sm text-slate-500">Verified participant entries registered</p>
               </div>
 
-              <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2 shadow-sm">
-                <div className="flex items-center justify-between text-xs font-mono text-slate-400 uppercase font-bold">
+              <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5 shadow-sm">
+                <div className="flex items-center justify-between text-xs sm:text-sm font-mono text-slate-400 uppercase font-bold">
                   <span>PR Photo Media Folders</span>
-                  <FolderOpen className="w-4 h-4 text-blue-500" />
+                  <FolderOpen className="w-5 h-5 text-blue-500" />
                 </div>
-                <div className="text-3xl font-black text-slate-900 dark:text-white">{prFolders.length} Folders</div>
+                <div className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white">{prFolders.length} Folders</div>
                 <p className="text-xs text-slate-500">Official PR event folders & media albums</p>
               </div>
             </div>
@@ -2087,7 +2085,7 @@ export const SuperCoordinatorDashboardPage = () => {
             
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-500">
+                <div className="p-2.5 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
                   <Key className="w-5 h-5" />
                 </div>
                 <div>
@@ -2115,7 +2113,7 @@ export const SuperCoordinatorDashboardPage = () => {
                     value={passwordForm.current}
                     onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
                     placeholder="Enter current password"
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-600"
                   />
                   <button
                     type="button"
@@ -2138,7 +2136,7 @@ export const SuperCoordinatorDashboardPage = () => {
                     value={passwordForm.newPass}
                     onChange={(e) => setPasswordForm({ ...passwordForm, newPass: e.target.value })}
                     placeholder="Enter new password (min 6 characters)"
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-600"
                   />
                   <button
                     type="button"
@@ -2160,7 +2158,7 @@ export const SuperCoordinatorDashboardPage = () => {
                   value={passwordForm.confirm}
                   onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
                   placeholder="Confirm new password"
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-600"
                 />
               </div>
 
@@ -2174,7 +2172,7 @@ export const SuperCoordinatorDashboardPage = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black shadow-md transition cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-black shadow-md transition cursor-pointer"
                 >
                   Update Password
                 </button>

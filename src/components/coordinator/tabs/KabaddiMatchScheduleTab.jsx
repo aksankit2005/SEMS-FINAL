@@ -493,7 +493,7 @@ export const KabaddiMatchScheduleTab = ({ matches, user, onUpdateMatches, global
                   </h4>
 
                   <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                    📍 {displayVenue} | Date: {m.date || '2026-08-05'} | Time: {m.time || '04:00 PM'} | Event: {m.eventTitle || 'Kabaddi Championship'}
+                    📍 {displayVenue} | Date: {m.date || new Date().toISOString().split('T')[0]} | Time: {m.time || '04:00 PM'} | Event: {m.eventTitle || 'Kabaddi Championship'}
                   </p>
                 </div>
 

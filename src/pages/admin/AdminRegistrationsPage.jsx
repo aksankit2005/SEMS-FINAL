@@ -131,8 +131,18 @@ export const AdminRegistrationsPage = () => {
     }
 
     if (selectedGender !== 'ALL') {
-      const pGender = (reg.gender || '').toLowerCase();
-      if (!pGender.includes(selectedGender.toLowerCase())) return false;
+      const pGender = (reg.gender || '').toLowerCase().trim();
+      const sGender = selectedGender.toLowerCase().trim();
+      const isFemale = pGender.includes('female') || pGender.includes('girl') || pGender.includes('women') || pGender.includes('woman') || pGender === 'f';
+      const isMale = !isFemale && (pGender.includes('male') || pGender.includes('boy') || pGender.includes('men') || pGender.includes('man') || pGender === 'm');
+
+      if (sGender === 'male') {
+        if (!isMale) return false;
+      } else if (sGender === 'female') {
+        if (!isFemale) return false;
+      } else if (!pGender.includes(sGender)) {
+        return false;
+      }
     }
 
     if (selectedCollege !== 'ALL') {
@@ -224,14 +234,14 @@ export const AdminRegistrationsPage = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl transition-colors">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl transition-colors">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
               Super Coordinator Replicated View
             </span>
           </div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white">Student Registration Details & Events</h1>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">Student Registration Details & Events</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             View student registration records ({filteredRegistrations.length}) & coordinator event creations ({coordinatorEvents.length})
           </p>
@@ -263,7 +273,7 @@ export const AdminRegistrationsPage = () => {
       </div>
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto no-scrollbar">
         <button
           onClick={() => { setActiveTab('student_registrations'); setCurrentPage(1); }}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
@@ -292,7 +302,7 @@ export const AdminRegistrationsPage = () => {
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm transition-colors">
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
-            <Filter className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+            <Filter className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <span>Master Registration Filters</span>
           </div>
 
@@ -322,7 +332,7 @@ export const AdminRegistrationsPage = () => {
             <select
               value={selectedSport}
               onChange={(e) => { setSelectedSport(e.target.value); setSelectedEvent('ALL'); setCurrentPage(1); }}
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
             >
               <option value="ALL" className="bg-white dark:bg-slate-900">All 12 Sports</option>
               {ALL_12_SPORTS.map((s) => (
@@ -335,13 +345,13 @@ export const AdminRegistrationsPage = () => {
 
           {/* 2. 📋 Filter by Event Title */}
           <div>
-            <label className="block text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase mb-1">
+            <label className="block text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase mb-1">
               📋 Filter by Event Title
             </label>
             <select
               value={selectedEvent}
               onChange={(e) => { setSelectedEvent(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-amber-500/40 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-blue-500/40 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
             >
               <option value="ALL" className="bg-white dark:bg-slate-900">All Created Events ({availableEvents.length})</option>
               {availableEvents.map((evt) => (
@@ -360,12 +370,11 @@ export const AdminRegistrationsPage = () => {
             <select
               value={selectedGender}
               onChange={(e) => { setSelectedGender(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
             >
               <option value="ALL" className="bg-white dark:bg-slate-900">All Genders</option>
-              <option value="Boys" className="bg-white dark:bg-slate-900">Boys (Male)</option>
-              <option value="Girls" className="bg-white dark:bg-slate-900">Girls (Female)</option>
-              <option value="Mixed" className="bg-white dark:bg-slate-900">Mixed</option>
+              <option value="Male" className="bg-white dark:bg-slate-900">Male</option>
+              <option value="Female" className="bg-white dark:bg-slate-900">Female</option>
             </select>
           </div>
 
@@ -377,7 +386,7 @@ export const AdminRegistrationsPage = () => {
             <select
               value={selectedCollege}
               onChange={(e) => { setSelectedCollege(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
             >
               <option value="ALL" className="bg-white dark:bg-slate-900">All Colleges</option>
               {ALL_COLLEGES.map((c) => (
@@ -399,7 +408,7 @@ export const AdminRegistrationsPage = () => {
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                 placeholder="Search name, mobile, team..."
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
               />
               <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-2.5" />
             </div>
@@ -412,12 +421,12 @@ export const AdminRegistrationsPage = () => {
         <div className="p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm transition-colors">
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
             <span className="text-xs font-bold text-slate-900 dark:text-white">Student Registration Details ({filteredRegistrations.length})</span>
-            <span className="text-[11px] text-amber-600 dark:text-amber-400 font-mono">Delete action removes registration from every store</span>
+            <span className="text-[11px] text-blue-600 dark:text-blue-400 font-mono">Delete action removes registration from every store</span>
           </div>
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-3">
-              <Loader2 className="w-6 h-6 text-amber-500 dark:text-amber-400 animate-spin" />
+              <Loader2 className="w-6 h-6 text-blue-600 dark:text-blue-400 animate-spin" />
               <p className="text-xs text-slate-500 dark:text-slate-400">Loading student registration details...</p>
             </div>
           ) : paginatedRegistrations.length === 0 ? (
@@ -429,31 +438,31 @@ export const AdminRegistrationsPage = () => {
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-bold text-[10px] tracking-wider">
-                    <th className="py-3 px-3">Reg Time</th>
-                    <th className="py-3 px-3">Game & Event Title</th>
-                    <th className="py-3 px-3">Team Name</th>
-                    <th className="py-3 px-3">College Name</th>
-                    <th className="py-3 px-3">Student Name</th>
-                    <th className="py-3 px-3">Mobile No</th>
-                    <th className="py-3 px-3">Gender</th>
-                    <th className="py-3 px-3">Status</th>
-                    <th className="py-3 px-3 text-right">Actions</th>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] tracking-wider bg-slate-50/75 dark:bg-slate-900/60">
+                    <th className="py-3 px-3.5 sticky left-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-xs shadow-[2px_0_6px_-2px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_6px_-2px_rgba(0,0,0,0.35)]">Reg Time</th>
+                    <th className="py-3 px-3.5">Game & Event Title</th>
+                    <th className="py-3 px-3.5">Team Name</th>
+                    <th className="py-3 px-3.5">College Name</th>
+                    <th className="py-3 px-3.5">Student Name</th>
+                    <th className="py-3 px-3.5">Mobile No</th>
+                    <th className="py-3 px-3.5">Gender</th>
+                    <th className="py-3 px-3.5">Status</th>
+                    <th className="py-3 px-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200">
                   {paginatedRegistrations.map((reg) => (
                     <tr key={reg.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                       {/* 1. Reg Time */}
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300 font-mono">
+                      <td className="py-3 px-3.5 whitespace-nowrap text-slate-700 dark:text-slate-300 font-mono sticky left-0 z-10 bg-white dark:bg-slate-900 shadow-[2px_0_6px_-2px_rgba(0,0,0,0.06)] dark:shadow-[2px_0_6px_-2px_rgba(0,0,0,0.3)]">
                         <div>{reg.registrationDate}</div>
                         <div className="text-[10px] text-slate-500 dark:text-slate-400">{reg.registrationTime || '10:00 AM'}</div>
                       </td>
 
                       {/* 2. Game & Event Title */}
-                      <td className="py-3 px-3 whitespace-nowrap">
+                      <td className="py-3 px-3.5 whitespace-nowrap">
                         <div className="font-bold text-slate-900 dark:text-white">{reg.gameSport}</div>
-                        <div className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold max-w-[200px] truncate" title={reg.eventTitle}>
+                        <div className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold max-w-[200px] truncate" title={reg.eventTitle}>
                           {reg.eventTitle || `${reg.gameSport} Championship`}
                         </div>
                       </td>
@@ -464,7 +473,7 @@ export const AdminRegistrationsPage = () => {
                       </td>
 
                       {/* 4. College Name */}
-                      <td className="py-3 px-3 whitespace-nowrap font-medium text-amber-600 dark:text-amber-400">
+                      <td className="py-3 px-3 whitespace-nowrap font-medium text-blue-600 dark:text-blue-400">
                         {reg.college}
                       </td>
 
@@ -495,7 +504,7 @@ export const AdminRegistrationsPage = () => {
                       <td className="py-3 px-3 whitespace-nowrap text-right space-x-1">
                         <button
                           onClick={() => { setSelectedReg(reg); setIsDetailsOpen(true); }}
-                          className="p-1.5 text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                          className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                           title="View Full Details"
                         >
                           <Eye className="w-4 h-4" />
@@ -556,7 +565,7 @@ export const AdminRegistrationsPage = () => {
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-3">
-              <Loader2 className="w-6 h-6 text-amber-500 dark:text-amber-400 animate-spin" />
+              <Loader2 className="w-6 h-6 text-blue-600 dark:text-blue-400 animate-spin" />
               <p className="text-xs text-slate-500 dark:text-slate-400">Loading coordinator events...</p>
             </div>
           ) : filteredCoordinatorEvents.length === 0 ? (
@@ -583,7 +592,7 @@ export const AdminRegistrationsPage = () => {
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200">
                   {filteredCoordinatorEvents.map((evt) => (
                     <tr key={evt.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3 px-3 font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">{evt.sportName}</td>
+                      <td className="py-3 px-3 font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">{evt.sportName}</td>
                       <td className="py-3 px-3 font-extrabold text-slate-900 dark:text-white max-w-[200px]">
                         <div className="truncate" title={evt.eventTitle}>{evt.eventTitle}</div>
                       </td>

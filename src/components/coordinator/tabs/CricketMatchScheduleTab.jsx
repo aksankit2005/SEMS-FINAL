@@ -498,7 +498,7 @@ export const CricketMatchScheduleTab = ({ matches, user, onUpdateMatches, global
                   </h4>
 
                   <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                    📍 {displayVenue} | Date: {m.date || '2026-08-05'} | Time: {m.time || '09:00 AM'} | Event: {m.eventTitle || 'T20 Cricket Championship'}
+                    📍 {displayVenue} | Date: {m.date || new Date().toISOString().split('T')[0]} | Time: {m.time || '09:00 AM'} | Event: {m.eventTitle || 'T20 Cricket Championship'}
                   </p>
                 </div>
 

@@ -170,23 +170,59 @@ const SportResultSummary = ({ resultData }) => {
 
     case 'tug':
       return (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-mono font-black text-purple-600 dark:text-purple-400">
-              {display.tug.pullsScoreText}
+        <div className="space-y-3">
+          {/* Match Contestants */}
+          <div className="p-3 rounded-2xl bg-orange-500/10 dark:bg-orange-500/15 border border-orange-500/20">
+            <span className="text-[9px] font-mono uppercase font-black tracking-wider text-orange-600 dark:text-orange-400 block mb-1">
+              MATCH CONTESTANTS
             </span>
-            <span className="text-[10px] font-mono font-bold text-slate-400">BEST OF 3</span>
+            <div className="flex items-center justify-between text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+              <span className="text-orange-600 dark:text-orange-400 truncate max-w-[45%]">
+                {display.team1}
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-500 font-bold shrink-0">
+                VS
+              </span>
+              <span className="text-blue-600 dark:text-blue-400 truncate max-w-[45%] text-right">
+                {display.team2}
+              </span>
+            </div>
           </div>
-          {display.tug.roundsBreakdown && display.tug.roundsBreakdown.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {display.tug.roundsBreakdown.map((rStr, idx) => (
-                <span
-                  key={idx}
-                  className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-300"
-                >
-                  {rStr}
-                </span>
-              ))}
+
+          {/* Sets Won Summary */}
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div className="space-y-0.5">
+              <span className="text-[10px] font-mono uppercase text-slate-500 font-bold block">
+                Sets Won
+              </span>
+              <div className="text-xs sm:text-sm font-mono font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <span>{display.team1}: <strong className="text-orange-600 dark:text-orange-400">{display.tug?.roundsWon1 ?? 0}</strong></span>
+                <span className="text-slate-400">—</span>
+                <span>{display.team2}: <strong className="text-blue-600 dark:text-blue-400">{display.tug?.roundsWon2 ?? 0}</strong></span>
+              </div>
+            </div>
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-extrabold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shrink-0">
+              {display.tug?.pullsScoreText || 'Sets Won'}
+            </span>
+          </div>
+
+          {/* Round Breakdown */}
+          {display.tug?.roundsBreakdown && display.tug.roundsBreakdown.length > 0 && (
+            <div className="space-y-1.5 pt-1">
+              <span className="text-[10px] font-mono uppercase font-black text-slate-500 dark:text-slate-400 block">
+                Rounds Won Breakdown
+              </span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {display.tug.roundsBreakdown.map((rObj, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800/90 text-[11px] font-mono font-bold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 shadow-xs"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span>{typeof rObj === 'string' ? rObj : rObj.label}</span>
+                  </span>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -246,23 +282,59 @@ export const ResultsPage = () => {
       const list = [];
       const seenIds = new Set();
 
-      // 1. Fetch real completed results from Supabase PostgreSQL database
+      // 0. Deleted result IDs to filter out permanently
+      let deletedIds = new Set();
+      try {
+        const deletedStr = localStorage.getItem('sems_deleted_result_ids');
+        if (deletedStr) {
+          const parsed = JSON.parse(deletedStr);
+          if (Array.isArray(parsed)) {
+            deletedIds = new Set(parsed);
+          }
+        }
+      } catch (e) {}
+
+      // 1. Gather all local storage edited results
+      const localResultsMap = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sems_completed_results_')) {
+          try {
+            const parsed = JSON.parse(localStorage.getItem(key));
+            if (Array.isArray(parsed)) {
+              parsed.forEach((item) => {
+                if (item && item.id) {
+                  localResultsMap[item.id] = item;
+                }
+              });
+            }
+          } catch (e) {}
+        }
+      }
+
+      // 2. Fetch real completed results from Supabase PostgreSQL database
       try {
         const dbResults = await coordinatorApi.getPublicResults();
         if (dbResults && Array.isArray(dbResults)) {
           dbResults.forEach((item) => {
-            if (!item || !item.id || seenIds.has(item.id)) return;
+            if (!item || !item.id || seenIds.has(item.id) || deletedIds.has(item.id)) return;
             seenIds.add(item.id);
-            const display = getSportResultDisplay(item.rawMatch || item);
+
+            // Merge with local edited version if available so coordinator edits take immediate precedence
+            const mergedItem = localResultsMap[item.id]
+              ? { ...item, ...localResultsMap[item.id], rawMatch: { ...(item.rawMatch || item), ...localResultsMap[item.id] } }
+              : item;
+
+            const display = getSportResultDisplay(mergedItem.rawMatch || mergedItem);
             list.push({
-              id: item.id,
-              sport: display.sportName || item.sport || 'Sports Event',
-              event: display.eventTitle || item.event || 'Championship Match',
-              winner: display.winner || item.winner || 'Declared Winner',
-              scoreSummary: display.summaryText || item.scoreSummary || 'Completed',
-              date: display.date || item.date,
+              id: mergedItem.id,
+              sport: display.sportName || mergedItem.sport || 'Sports Event',
+              event: display.eventTitle || mergedItem.event || 'Championship Match',
+              winner: display.winner || mergedItem.winner || 'Declared Winner',
+              scoreSummary: display.summaryText || mergedItem.scoreSummary || 'Completed',
+              date: display.date || mergedItem.date,
               mvp: display.mvp,
-              rawMatch: item.rawMatch || item
+              rawMatch: mergedItem.rawMatch || mergedItem
             });
           });
         }
@@ -270,34 +342,22 @@ export const ResultsPage = () => {
         console.warn('Could not fetch DB results:', e);
       }
 
-      // 2. Merge local storage results if offline
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('sems_completed_results_')) {
-          try {
-            const parsed = JSON.parse(localStorage.getItem(key));
-            if (Array.isArray(parsed)) {
-              const sportId = key.replace('sems_completed_results_', '');
-              const sportName = sportId.charAt(0).toUpperCase() + sportId.slice(1).replace('-', ' ');
-              parsed.forEach((item) => {
-                if (!item || !item.id || seenIds.has(item.id)) return;
-                seenIds.add(item.id);
-                const display = getSportResultDisplay(item);
-                list.push({
-                  id: item.id,
-                  sport: display.sportName || item.sportName || sportName,
-                  event: display.eventTitle || item.eventTitle || `${sportName} Final`,
-                  winner: display.winner || item.winner || 'Declared Winner',
-                  scoreSummary: display.summaryText || item.scoreSummary || 'Match Completed',
-                  date: display.date || (item.completedAt ? item.completedAt.split('T')[0] : new Date().toISOString().split('T')[0]),
-                  mvp: display.mvp,
-                  rawMatch: item
-                });
-              });
-            }
-          } catch (e) {}
-        }
-      }
+      // 3. Add any remaining local results that were not returned by DB
+      Object.values(localResultsMap).forEach((item) => {
+        if (!item || !item.id || seenIds.has(item.id) || deletedIds.has(item.id)) return;
+        seenIds.add(item.id);
+        const display = getSportResultDisplay(item);
+        list.push({
+          id: item.id,
+          sport: display.sportName || item.sportName || 'Sports Event',
+          event: display.eventTitle || item.eventTitle || 'Championship Final',
+          winner: display.winner || item.winner || 'Declared Winner',
+          scoreSummary: display.summaryText || item.scoreSummary || 'Match Completed',
+          date: display.date || (item.completedAt ? item.completedAt.split('T')[0] : new Date().toISOString().split('T')[0]),
+          mvp: display.mvp,
+          rawMatch: item
+        });
+      });
 
       setDynamicResults(list);
     };
@@ -346,15 +406,15 @@ export const ResultsPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white py-10 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white py-8 sm:py-10 transition-colors">
+      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8">
         
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-10">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wider mb-3 border border-blue-500/20 shadow-xs">
             <Trophy className="w-4 h-4 text-orange-500" /> Tournament Match Results
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
             Official <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">Match Results</span>
           </h1>
           <p className="mt-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium">
@@ -375,7 +435,7 @@ export const ResultsPage = () => {
           </div>
 
           {/* 12 Games Horizontal Filter Chips */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-2 no-scrollbar scroll-smooth -mx-1 px-1">
             {sportsList.map((s) => {
               const cfg = s === 'All' ? null : resolveSportConfig(s);
               const icon = s === 'All' ? '⚡' : cfg?.icon || '🏆';
@@ -441,12 +501,12 @@ export const ResultsPage = () => {
                         <h4 className="text-sm font-black uppercase tracking-wide text-orange-600 dark:text-orange-400 truncate">
                           {res.sport}
                         </h4>
-                        <span className="text-[10px] font-mono font-bold text-slate-400 block">#{res.id}</span>
+                        <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 block">#{res.id}</span>
                       </div>
                     </div>
 
-                    <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-extrabold text-[10px] border border-slate-200 dark:border-slate-700/60 uppercase flex items-center gap-1 shrink-0">
-                      <Calendar className="w-3 h-3 text-slate-400" />
+                    <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-extrabold text-[10px] border border-slate-200 dark:border-slate-700/60 uppercase flex items-center gap-1 shrink-0">
+                      <Calendar className="w-3 h-3 text-slate-500 dark:text-slate-400" />
                       <span>{res.date}</span>
                     </span>
                   </div>
@@ -469,7 +529,7 @@ export const ResultsPage = () => {
 
                     {/* Sport-Specific Score Summary Box */}
                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800 space-y-2">
-                      <span className="text-[10px] font-mono uppercase font-black tracking-wider text-slate-400 dark:text-slate-500 block">
+                      <span className="text-[10px] font-mono uppercase font-black tracking-wider text-slate-500 dark:text-slate-400 block">
                         Official Score & Match Summary
                       </span>
                       <SportResultSummary resultData={res} />

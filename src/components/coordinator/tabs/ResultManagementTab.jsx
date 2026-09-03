@@ -249,14 +249,13 @@ export const ResultManagementTab = ({ user }) => {
     }
 
     if (selectedGender !== 'ALL') {
-      const cat = (r.category || r.gender || 'Open').toLowerCase();
-      const filterG = selectedGender.toLowerCase();
+      const cat = (r.category || r.gender || 'Open').toLowerCase().trim();
+      const filterG = selectedGender.toLowerCase().trim();
+      const isFemale = cat.includes('female') || cat.includes('girl') || cat.includes('women') || cat.includes('woman') || cat === 'f';
+      const isMale = !isFemale && (cat.includes('male') || cat.includes('boy') || cat.includes('men') || cat.includes('man') || cat === 'm');
 
-      if (filterG === 'male') {
-        if (!cat.includes('male') && !cat.includes('boy') && !cat.includes('men')) return false;
-      } else if (filterG === 'female') {
-        if (!cat.includes('female') && !cat.includes('girl') && !cat.includes('women')) return false;
-      }
+      if (filterG === 'male' && !isMale) return false;
+      if (filterG === 'female' && !isFemale) return false;
     }
 
     return true;

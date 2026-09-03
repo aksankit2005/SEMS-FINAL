@@ -220,7 +220,23 @@ export const getMatches = async (req, res) => {
       });
     }
 
-    return res.json(dbMatches || []);
+    const formatted = (dbMatches || []).map((m) => {
+      let detailsObj = m.details;
+      if (typeof detailsObj === 'string') {
+        try { detailsObj = JSON.parse(detailsObj); } catch (e) {}
+      }
+      if (!detailsObj || typeof detailsObj !== 'object') detailsObj = {};
+      return {
+        ...detailsObj,
+        ...m,
+        date: detailsObj.date || (m.createdAt ? new Date(m.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+        time: m.time || detailsObj.time || '04:00 PM',
+        category: detailsObj.category || 'Open',
+        details: detailsObj
+      };
+    });
+
+    return res.json(formatted);
   } catch (err) {
     console.error(
       'Error fetching coordinator matches from DB:',
@@ -440,6 +456,9 @@ export const createMatch = async (req, res) => {
   ];
 
   const detailsObj = {
+    date: req.body.date || req.body.scheduledDate || new Date().toISOString().split('T')[0],
+    category: req.body.category || req.body.gender || 'Open',
+    format: (req.body.format || 'SINGLES').toUpperCase(),
     eventId: eventId,
     eventTitle: newMatch.eventTitle,
     team1Id: team1Id,
@@ -589,6 +608,9 @@ export const batchSaveMatches = async (req, res) => {
     const isStreaming = Boolean(m.isLiveStreaming || videoId || rawStream);
 
     const detailsObj = {
+      date: m.date || m.scheduledDate || new Date().toISOString().split('T')[0],
+      category: m.category || m.gender || 'Open',
+      format: formatVal,
       eventId: m.eventId || m.event_id || null,
       eventTitle: m.eventTitle || m.title || `${sportId.toUpperCase()} Match`,
       team1Id: m.team1Id || m.team1_id || null,
@@ -777,6 +799,9 @@ export const updateMatch = async (req, res) => {
 
   const detailsObj = {
     ...existingDetails,
+    date: req.body.date || req.body.scheduledDate || existingDetails.date || new Date().toISOString().split('T')[0],
+    category: req.body.category || req.body.gender || existingDetails.category || 'Open',
+    format: req.body.format || existingDetails.format || 'SINGLES',
     setsHistory: setsHistoryArr,
     currentSet: currentSetVal,
     setsWon1: setsWon1Val,
@@ -1278,8 +1303,11 @@ export const completeMatch = async (req, res) => {
       try { setsHistory = JSON.parse(existing.sets_history); } catch (e) {}
     }
 
+    const matchDate = req.body.date || req.body.scheduledDate || existingDetails.date || (existing?.created_at ? new Date(existing.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+
     const details = {
       ...existingDetails,
+      date: matchDate,
       ...(req.body.details && typeof req.body.details === 'object' ? req.body.details : {}),
       ...(req.body.striker !== undefined ? { striker: req.body.striker } : {}),
       ...(req.body.nonStriker !== undefined ? { nonStriker: req.body.nonStriker } : {}),
@@ -2129,10 +2157,19 @@ export const updateEvent = async (req, res) => {
   const venue = req.body.venue || existing.venue || 'Main Venue';
   const category = req.body.category || existing.category || 'Open';
   let status = req.body.status !== undefined ? req.body.status : (existing.status || 'Draft');
+
+  // Only auto-reopen if regEndDate was specifically modified in this payload and status was not explicitly specified
+  if (req.body.regEndDate && req.body.status === undefined && existing.status === 'Closed' && registeredCount < maxRegistrations) {
+    const parsedEnd = Date.parse(`${regEndDate}T23:59:59.999+05:30`);
+    if (!isNaN(parsedEnd) && parsedEnd >= Date.now()) {
+      status = 'Published';
+    }
+  }
+
   if (registeredCount >= maxRegistrations && req.body.status === undefined) {
     status = 'Closed';
   }
-  const registrationOpen = req.body.registrationOpen !== undefined ? Boolean(req.body.registrationOpen) : (existing.registrationOpen !== undefined ? existing.registrationOpen : true);
+  let registrationOpen = req.body.registrationOpen !== undefined ? Boolean(req.body.registrationOpen) : (status !== 'Closed' && status !== 'Draft' && status !== 'Completed');
   const rules = req.body.rules || existing.rules || [];
   const requiredDocuments = req.body.requiredDocuments || existing.requiredDocuments || ['College ID Card', 'Student Aadhaar/Govt ID'];
   const contactInfo = req.body.contactInfo || existing.contactInfo || {

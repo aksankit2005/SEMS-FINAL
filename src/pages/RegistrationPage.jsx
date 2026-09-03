@@ -75,8 +75,9 @@ const RegistrationCountdownTimer = ({ endDateStr }) => {
           setTimeLeft('Closed');
           return;
         }
-        const now = new Date();
-        const diff = deadline.getTime() - now.getTime();
+        const nowMs = Date.now();
+        const deadlineMs = typeof deadline === 'number' ? deadline : (deadline.getTime ? deadline.getTime() : new Date(deadline).getTime());
+        const diff = deadlineMs - nowMs;
 
         if (diff <= 0) {
           setTimeLeft('Closed');

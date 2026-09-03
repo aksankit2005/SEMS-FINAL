@@ -10,7 +10,7 @@ export const AdminLoginPage = () => {
   const location = useLocation();
   const { addToast } = useToast();
 
-  const [username, setUsername] = useState('admin');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -53,14 +53,14 @@ export const AdminLoginPage = () => {
       </div>
 
       {/* Background Decorative Glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-tr from-amber-500/20 via-purple-600/20 to-indigo-600/20 blur-3xl rounded-full pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-tr from-blue-500/20 via-indigo-600/20 to-blue-600/20 blur-3xl rounded-full pointer-events-none" />
 
       <div className="w-full max-w-md bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl relative z-10 space-y-6 transition-colors">
         {/* Header Branding */}
         <div className="text-center space-y-2">
-          <div className="inline-flex p-3 rounded-2xl bg-gradient-to-br from-amber-500 via-purple-600 to-indigo-600 p-0.5 shadow-lg shadow-purple-500/20 mb-2">
+          <div className="inline-flex p-3 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/25 mb-2">
             <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-xl flex items-center justify-center">
-              <Shield className="w-6 h-6 text-amber-500 dark:text-amber-400" />
+              <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">Admin Portal</h1>
@@ -84,8 +84,8 @@ export const AdminLoginPage = () => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="admin"
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-10 pr-4 py-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                placeholder="Enter your username"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-10 pr-4 py-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors"
               />
             </div>
           </div>
@@ -99,7 +99,7 @@ export const AdminLoginPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-10 pr-10 py-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-10 pr-10 py-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors"
               />
               <button
                 type="button"
@@ -113,13 +113,13 @@ export const AdminLoginPage = () => {
 
           {/* Security Notice */}
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
-            <span>Security Notice: <strong className="text-amber-600 dark:text-amber-400">Authorized Admin Access Only</strong></span>
+            <span>Security Notice: <strong className="text-blue-600 dark:text-blue-400">Authorized Admin Access Only</strong></span>
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 px-4 rounded-xl text-xs font-extrabold bg-gradient-to-r from-amber-500 via-amber-600 to-purple-600 hover:from-amber-600 hover:to-purple-700 text-white shadow-xl shadow-amber-500/20 transition-all flex items-center justify-center gap-2 group cursor-pointer"
+            className="w-full py-3 px-4 rounded-xl text-xs font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white shadow-xl shadow-blue-600/25 transition-all flex items-center justify-center gap-2 group cursor-pointer"
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />

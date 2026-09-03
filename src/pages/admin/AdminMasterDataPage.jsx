@@ -19,7 +19,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Users,
-  IndianRupee
+  IndianRupee,
+  Trash2,
+  CheckSquare,
+  Square,
+  AlertTriangle,
+  X
 } from 'lucide-react';
 
 export const AdminMasterDataPage = () => {
@@ -40,6 +45,16 @@ export const AdminMasterDataPage = () => {
   const itemsPerPage = 10;
   const [selectedParticipant, setSelectedParticipant] = useState(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
+  // Multi-Select & Delete Modal State
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    type: 'SINGLE', // 'SINGLE' or 'BULK'
+    item: null,
+    count: 0
+  });
 
   useEffect(() => {
     fetchMasterData();
@@ -70,6 +85,84 @@ export const AdminMasterDataPage = () => {
     }
   };
 
+  const getItemId = (p) => String(p.receiptId || p.registrationId || p.memberId || p.id).trim();
+
+  const handleToggleSelectRow = (p) => {
+    const idVal = getItemId(p);
+    setSelectedIds((prev) =>
+      prev.includes(idVal) ? prev.filter((id) => id !== idVal) : [...prev, idVal]
+    );
+  };
+
+  const handleToggleSelectAll = (isChecked, currentList) => {
+    if (isChecked) {
+      const pageIds = currentList.map(getItemId).filter(Boolean);
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...pageIds])));
+    } else {
+      const pageIds = new Set(currentList.map(getItemId));
+      setSelectedIds((prev) => prev.filter((id) => !pageIds.has(id)));
+    }
+  };
+
+  const handleOpenSingleDelete = (p) => {
+    setConfirmModal({
+      isOpen: true,
+      type: 'SINGLE',
+      item: p,
+      count: 1
+    });
+  };
+
+  const handleOpenBulkDelete = () => {
+    if (selectedIds.length === 0) {
+      addToast('Please select at least one record to delete.', 'warning');
+      return;
+    }
+    setConfirmModal({
+      isOpen: true,
+      type: 'BULK',
+      item: null,
+      count: selectedIds.length
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      if (confirmModal.type === 'SINGLE' && confirmModal.item) {
+        const targetId = getItemId(confirmModal.item);
+        await superCoordinatorApi.deleteMasterDataParticipant(targetId);
+        setParticipants((prev) =>
+          prev.filter(
+            (item) =>
+              getItemId(item) !== targetId &&
+              item.id !== targetId &&
+              item.receiptId !== targetId &&
+              item.registrationId !== targetId &&
+              item.memberId !== targetId
+          )
+        );
+        setSelectedIds((prev) => prev.filter((id) => id !== targetId));
+        addToast(`Participant "${confirmModal.item.name || 'Record'}" deleted successfully!`, 'success');
+      } else if (confirmModal.type === 'BULK') {
+        const res = await superCoordinatorApi.bulkDeleteMasterData(selectedIds);
+        const deletedNum = res?.deletedCount || selectedIds.length;
+        const selectedSet = new Set(selectedIds);
+        setParticipants((prev) =>
+          prev.filter((item) => !selectedSet.has(getItemId(item)))
+        );
+        setSelectedIds([]);
+        addToast(`Successfully deleted ${deletedNum} participant records from database!`, 'success');
+      }
+      await fetchMasterData();
+    } catch (err) {
+      addToast(err.message || 'Failed to delete record(s) from database', 'error');
+    } finally {
+      setIsDeleting(false);
+      setConfirmModal({ isOpen: false, type: 'SINGLE', item: null, count: 0 });
+    }
+  };
+
   // Available Coordinator Events matching selected sport
   const availableEvents = coordinatorEvents.filter((evt) => {
     if (selectedSport === 'ALL') return true;
@@ -90,9 +183,14 @@ export const AdminMasterDataPage = () => {
       (p.eventTitle || '').toLowerCase().includes(selectedEvent.toLowerCase()) ||
       selectedEvent.toLowerCase().includes((p.eventTitle || '').toLowerCase());
 
+    const pGender = (p.gender || '').toLowerCase().trim();
+    const sGender = selectedGender.toLowerCase().trim();
+    const isFemale = pGender.includes('female') || pGender.includes('girl') || pGender.includes('women') || pGender.includes('woman') || pGender === 'f';
+    const isMale = !isFemale && (pGender.includes('male') || pGender.includes('boy') || pGender.includes('men') || pGender.includes('man') || pGender === 'm');
     const matchesGender = selectedGender === 'ALL' ||
-      (p.gender || '').toLowerCase() === selectedGender.toLowerCase() ||
-      (p.gender || '').toLowerCase().includes(selectedGender.toLowerCase());
+      (sGender === 'male' ? isMale :
+       sGender === 'female' ? isFemale :
+       pGender.includes(sGender));
 
     const pCollege = (p.college || '').toLowerCase();
     const matchesCollege = selectedCollege === 'ALL' ||
@@ -274,7 +372,7 @@ export const AdminMasterDataPage = () => {
             <select
               value={selectedSport}
               onChange={(e) => { setSelectedSport(e.target.value); setSelectedEvent('ALL'); setCurrentPage(1); }}
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
             >
               <option value="ALL" className="bg-white dark:bg-slate-900">All 12 Sports</option>
               {ALL_12_SPORTS.map((s) => (
@@ -287,13 +385,13 @@ export const AdminMasterDataPage = () => {
 
           {/* 2. 📋 Filter by Event Title */}
           <div>
-            <label className="block text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase mb-1">
+            <label className="block text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase mb-1">
               📋 Filter by Event Title
             </label>
             <select
               value={selectedEvent}
               onChange={(e) => { setSelectedEvent(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-amber-500/40 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-blue-500/40 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
             >
               <option value="ALL" className="bg-white dark:bg-slate-900">All Created Events ({availableEvents.length})</option>
               {availableEvents.map((evt) => (
@@ -312,12 +410,11 @@ export const AdminMasterDataPage = () => {
             <select
               value={selectedGender}
               onChange={(e) => { setSelectedGender(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
             >
               <option value="ALL" className="bg-white dark:bg-slate-900">All Genders</option>
-              <option value="Boys" className="bg-white dark:bg-slate-900">Boys (Male)</option>
-              <option value="Girls" className="bg-white dark:bg-slate-900">Girls (Female)</option>
-              <option value="Mixed" className="bg-white dark:bg-slate-900">Mixed</option>
+              <option value="Male" className="bg-white dark:bg-slate-900">Male</option>
+              <option value="Female" className="bg-white dark:bg-slate-900">Female</option>
             </select>
           </div>
 
@@ -329,7 +426,7 @@ export const AdminMasterDataPage = () => {
             <select
               value={selectedCollege}
               onChange={(e) => { setSelectedCollege(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
             >
               <option value="ALL" className="bg-white dark:bg-slate-900">All Colleges</option>
               {ALL_COLLEGES.map((c) => (
@@ -351,7 +448,7 @@ export const AdminMasterDataPage = () => {
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                 placeholder="Search name, mobile, team..."
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
               />
               <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-2.5" />
             </div>
@@ -361,12 +458,45 @@ export const AdminMasterDataPage = () => {
 
       {/* Participants Table */}
       <div className="p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm transition-colors">
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-          <span className="text-xs font-bold text-slate-900 dark:text-white">
-            Showing {filteredParticipants.length} of {participants.length} Participants
-          </span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-slate-900 dark:text-white">
+              Showing {filteredParticipants.length} of {participants.length} Participants
+            </span>
+            {selectedIds.length > 0 && (
+              <span className="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                {selectedIds.length} Selected
+              </span>
+            )}
+          </div>
           <span className="text-[11px] text-purple-600 dark:text-purple-400 font-mono">Master Database Records</span>
         </div>
+
+        {/* Multi-Select Bulk Action Bar */}
+        {selectedIds.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-xs shadow-sm transition-all animate-fadeIn">
+            <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-bold">
+              <CheckSquare className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <span>Selected: {selectedIds.length} participant record{selectedIds.length > 1 ? 's' : ''}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSelectedIds([])}
+                className="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 font-semibold transition-colors"
+              >
+                Clear Selection
+              </button>
+              <button
+                disabled={isDeleting}
+                onClick={handleOpenBulkDelete}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-bold transition-all shadow-sm disabled:opacity-50"
+              >
+                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                <span>Delete Selected ({selectedIds.length})</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12 space-y-3">
@@ -382,111 +512,148 @@ export const AdminMasterDataPage = () => {
           <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-bold text-[10px] tracking-wider">
-                  <th className="py-3 px-3">Reg Time</th>
-                  <th className="py-3 px-3">Game & Event Title</th>
-                  <th className="py-3 px-3">Team Name</th>
-                  <th className="py-3 px-3">College Name</th>
-                  <th className="py-3 px-3">Student Name</th>
-                  <th className="py-3 px-3">Mobile No</th>
-                  <th className="py-3 px-3">Gender</th>
-                  <th className="py-3 px-3">Status</th>
-                  <th className="py-3 px-3 text-right">Details</th>
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] tracking-wider bg-slate-50/75 dark:bg-slate-900/60">
+                  <th className="py-3 px-3.5 w-10 text-center">
+                    <input
+                      type="checkbox"
+                      checked={
+                        paginatedParticipants.length > 0 &&
+                        paginatedParticipants.every((p) => selectedIds.includes(getItemId(p)))
+                      }
+                      onChange={(e) => handleToggleSelectAll(e.target.checked, paginatedParticipants)}
+                      className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-purple-600 focus:ring-purple-500/20 cursor-pointer accent-purple-600"
+                      title="Select All Records on Current Page"
+                    />
+                  </th>
+                  <th className="py-3 px-3.5 sticky left-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-xs shadow-[2px_0_6px_-2px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_6px_-2px_rgba(0,0,0,0.35)]">Reg Time</th>
+                  <th className="py-3 px-3.5">Game & Event Title</th>
+                  <th className="py-3 px-3.5">Team Name</th>
+                  <th className="py-3 px-3.5">College Name</th>
+                  <th className="py-3 px-3.5">Student Name</th>
+                  <th className="py-3 px-3.5">Mobile No</th>
+                  <th className="py-3 px-3.5">Gender</th>
+                  <th className="py-3 px-3.5">Status</th>
+                  <th className="py-3 px-3.5 text-right">Details & Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200">
-                {paginatedParticipants.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                    {/* 1. Reg Time */}
-                    <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300 font-mono">
-                      <div>{p.date || '2026-08-05'}</div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400">{p.time || '10:00 AM'}</div>
-                    </td>
+                {paginatedParticipants.map((p) => {
+                  const pId = getItemId(p);
+                  const isSelected = selectedIds.includes(pId);
+                  return (
+                    <tr
+                      key={p.id || p.memberId || pId}
+                      className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors ${isSelected ? 'bg-purple-500/5 dark:bg-purple-500/10' : ''}`}
+                    >
+                      {/* Checkbox */}
+                      <td className="py-3 px-3.5 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleSelectRow(p)}
+                          className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-purple-600 focus:ring-purple-500/20 cursor-pointer accent-purple-600"
+                        />
+                      </td>
 
-                    {/* 2. Game & Event Title */}
-                    <td className="py-3 px-3 whitespace-nowrap">
-                      <div className="font-bold text-slate-900 dark:text-white">{p.sportName}</div>
-                      <div className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold max-w-[200px] truncate" title={p.eventTitle}>
-                        {p.eventTitle || `${p.sportName} Championship`}
-                      </div>
-                    </td>
+                      {/* 1. Reg Time */}
+                      <td className="py-3 px-3.5 whitespace-nowrap text-slate-700 dark:text-slate-300 font-mono sticky left-0 z-10 bg-white dark:bg-slate-900 shadow-[2px_0_6px_-2px_rgba(0,0,0,0.06)] dark:shadow-[2px_0_6px_-2px_rgba(0,0,0,0.3)]">
+                        <div>{p.date || '2026-08-05'}</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400">{p.time || '10:00 AM'}</div>
+                      </td>
 
-                    {/* 3. Team Name */}
-                    <td className="py-3 px-3 whitespace-nowrap font-bold text-slate-800 dark:text-slate-200">
-                      {p.teamName || p.name}
-                    </td>
+                      {/* 2. Game & Event Title */}
+                      <td className="py-3 px-3.5 whitespace-nowrap">
+                        <div className="font-bold text-slate-900 dark:text-white">{p.sportName}</div>
+                        <div className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold max-w-[200px] truncate" title={p.eventTitle}>
+                          {p.eventTitle || `${p.sportName} Championship`}
+                        </div>
+                      </td>
 
-                    {/* 4. College Name */}
-                    <td className="py-3 px-3 whitespace-nowrap font-medium text-amber-600 dark:text-amber-400">
-                      {p.college}
-                    </td>
+                      {/* 3. Team Name */}
+                      <td className="py-3 px-3 whitespace-nowrap font-bold text-slate-800 dark:text-slate-200">
+                        {p.teamName || p.name}
+                      </td>
 
-                    {/* 5. Student Name */}
-                    <td className="py-3 px-3 whitespace-nowrap font-semibold text-slate-900 dark:text-white">
-                      <div className="flex items-center gap-1.5">
-                        <span>{p.name}</span>
-                        {p.isCaptain && (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                            Captain
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">
-                        {p.rollNo && p.rollNo !== 'N/A' ? `Roll: ${p.rollNo} • ` : ''}{p.email}
-                      </div>
-                    </td>
+                      {/* 4. College Name */}
+                      <td className="py-3 px-3 whitespace-nowrap font-medium text-blue-600 dark:text-blue-400">
+                        {p.college}
+                      </td>
 
-                    {/* 6. Mobile No */}
-                    <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300 font-mono">
-                      {p.mobile}
-                    </td>
+                      {/* 5. Student Name */}
+                      <td className="py-3 px-3 whitespace-nowrap font-semibold text-slate-900 dark:text-white">
+                        <div className="flex items-center gap-1.5">
+                          <span>{p.name}</span>
+                          {p.isCaptain && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                              Captain
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">
+                          {p.rollNo && p.rollNo !== 'N/A' ? `Roll: ${p.rollNo} • ` : ''}{p.email}
+                        </div>
+                      </td>
 
-                    {/* 7. Gender */}
-                    <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300 font-medium">
-                      {p.gender}
-                    </td>
+                      {/* 6. Mobile No */}
+                      <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300 font-mono">
+                        {p.mobile}
+                      </td>
 
-                    {/* 8. Status */}
-                    <td className="py-3 px-3 whitespace-nowrap">
-                      <span className="px-2.5 py-0.5 text-[10px] font-bold rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                        {p.status || 'VERIFIED'}
-                      </span>
-                    </td>
+                      {/* 7. Gender */}
+                      <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300 font-medium">
+                        {p.gender}
+                      </td>
 
-                    {/* 9. Details Action */}
-                    <td className="py-3 px-3 whitespace-nowrap text-right">
-                      <button
-                        onClick={() => {
-                          setSelectedParticipant({
-                            id: p.id,
-                            participantName: p.name || p.teamName,
-                            rollNumber: p.rollNo || 'N/A',
-                            college: p.college,
-                            course: p.course || 'N/A',
-                            yearSemester: p.yearSemester || 'N/A',
-                            year: p.yearSemester || 'N/A',
-                            gender: p.gender,
-                            gameSport: p.sportName,
-                            category: p.teamName ? 'Team Event' : 'Individual',
-                            mobile: p.mobile,
-                            email: p.email,
-                            registrationDate: p.date || '2026-08-05',
-                            registrationTime: p.time || '10:00 AM',
-                            paymentStatus: 'PAID',
-                            registrationStatus: p.status || 'VERIFIED',
-                            registeredBy: 'Super Coordinator Roster',
-                            isCaptain: p.isCaptain
-                          });
-                          setIsDetailsOpen(true);
-                        }}
-                        className="p-1.5 text-slate-400 hover:text-purple-400 rounded-lg hover:bg-slate-800 transition-colors"
-                        title="View Full Participant Details"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      {/* 8. Status */}
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <span className="px-2.5 py-0.5 text-[10px] font-bold rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          {p.status || 'VERIFIED'}
+                        </span>
+                      </td>
+
+                      {/* 9. Details & Delete Action */}
+                      <td className="py-3 px-3 whitespace-nowrap text-right flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => {
+                            setSelectedParticipant({
+                              id: p.id,
+                              participantName: p.name || p.teamName,
+                              rollNumber: p.rollNo || 'N/A',
+                              college: p.college,
+                              course: p.course || 'N/A',
+                              yearSemester: p.yearSemester || 'N/A',
+                              year: p.yearSemester || 'N/A',
+                              gender: p.gender,
+                              gameSport: p.sportName,
+                              category: p.teamName ? 'Team Event' : 'Individual',
+                              mobile: p.mobile,
+                              email: p.email,
+                              registrationDate: p.date || '2026-08-05',
+                              registrationTime: p.time || '10:00 AM',
+                              paymentStatus: 'PAID',
+                              registrationStatus: p.status || 'VERIFIED',
+                              registeredBy: 'Super Coordinator Roster',
+                              isCaptain: p.isCaptain
+                            });
+                            setIsDetailsOpen(true);
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-purple-400 rounded-lg hover:bg-slate-800 transition-colors"
+                          title="View Full Participant Details"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          disabled={isDeleting}
+                          onClick={() => handleOpenSingleDelete(p)}
+                          className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-40"
+                          title="Delete Participant Record from Master Data"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -527,6 +694,81 @@ export const AdminMasterDataPage = () => {
         registration={selectedParticipant}
         onClose={() => { setIsDetailsOpen(false); setSelectedParticipant(null); }}
       />
+
+      {/* Confirmation Modal */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5 text-rose-600 dark:text-rose-400 font-bold text-sm">
+                <AlertTriangle className="w-5 h-5 text-rose-500" />
+                <span>Confirm Database Deletion</span>
+              </div>
+              <button
+                disabled={isDeleting}
+                onClick={() => setConfirmModal({ isOpen: false, type: 'SINGLE', item: null, count: 0 })}
+                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg disabled:opacity-50"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              {confirmModal.type === 'SINGLE' ? (
+                <>
+                  <p>
+                    Are you sure you want to delete participant <strong className="text-slate-900 dark:text-white font-bold">{confirmModal.item?.name}</strong> ({confirmModal.item?.sportName}) from Master Data?
+                  </p>
+                  {confirmModal.item && (
+                    <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/80 font-mono text-[11px] space-y-1">
+                      <div>Student: <span className="text-purple-600 dark:text-purple-400 font-semibold">{confirmModal.item.name}</span></div>
+                      <div>Sport: <span className="text-blue-600 dark:text-blue-400 font-semibold">{confirmModal.item.sportName}</span></div>
+                      <div>College: {confirmModal.item.college}</div>
+                      {confirmModal.item.mobile && <div>Mobile: {confirmModal.item.mobile}</div>}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p>
+                    Are you sure you want to delete <strong className="text-rose-600 dark:text-rose-400 font-bold">{confirmModal.count} selected records</strong> from Master Data?
+                  </p>
+                  <p className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 font-medium">
+                    ⚠️ Warning: This will permanently remove all selected registrations and associated roster members from the PostgreSQL database. This action cannot be undone.
+                  </p>
+                </>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <button
+                disabled={isDeleting}
+                onClick={() => setConfirmModal({ isOpen: false, type: 'SINGLE', item: null, count: 0 })}
+                className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white text-xs font-bold transition-all shadow-md disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{confirmModal.type === 'SINGLE' ? 'Delete Record' : `Delete (${confirmModal.count}) Records`}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

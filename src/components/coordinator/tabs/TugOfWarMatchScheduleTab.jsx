@@ -501,7 +501,7 @@ export const TugOfWarMatchScheduleTab = ({ matches, user, onUpdateMatches, globa
                   </h4>
 
                   <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                    📍 {displayVenue} | Date: {m.date || '2026-08-05'} | Time: {m.time || '04:00 PM'} | Event: {m.eventTitle || 'Tug of War Championship'}
+                    📍 {displayVenue} | Date: {m.date || new Date().toISOString().split('T')[0]} | Time: {m.time || '04:00 PM'} | Event: {m.eventTitle || 'Tug of War Championship'}
                   </p>
                 </div>
 

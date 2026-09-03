@@ -16,6 +16,15 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!isOpen || isSubmitting) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isSubmitting, onClose]);
+
+  useEffect(() => {
     if (announcement) {
       setFormData({
         id: announcement.id,
@@ -119,12 +128,17 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm animate-fade-in font-sans">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/60 backdrop-blur-sm animate-fade-in font-sans"
+      onClick={(e) => {
+        if (!isSubmitting && e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="w-full max-w-4xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col text-slate-900 dark:text-white">
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/90 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
               <FileText className="w-5 h-5" />
             </div>
             <div>
@@ -136,7 +150,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -157,7 +171,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="e.g. Basketball Tournament Schedule & Venue Update"
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
               />
               {errors.title && <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{errors.title}</p>}
             </div>
@@ -169,7 +183,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Enter full notice text, rules, timing details..."
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors resize-none"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors resize-none"
               />
               {errors.description && <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{errors.description}</p>}
             </div>
@@ -181,7 +195,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
                   type="date"
                   value={formData.publishDate}
                   onChange={(e) => setFormData({ ...formData, publishDate: e.target.value })}
-                  className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
 
@@ -191,7 +205,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
                   type="date"
                   value={formData.expiryDate}
                   onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
-                  className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
             </div>
@@ -200,7 +214,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
             <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                  <Paperclip className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                  <Paperclip className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   <span>PDF Document Attachments (Max 2 PDFs)</span>
                 </label>
                 <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
@@ -239,7 +253,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
                             href={att.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="p-1.5 text-slate-400 hover:text-amber-500 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                            className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                             title="Preview PDF"
                           >
                             <Eye className="w-4 h-4" />
@@ -261,8 +275,8 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
 
               {/* Upload Button */}
               {formData.attachments.length < 2 && (
-                <label className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-amber-500/50 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors group">
-                  <Upload className="w-6 h-6 text-slate-400 dark:text-slate-500 group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors mb-1" />
+                <label className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500/50 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors group">
+                  <Upload className="w-6 h-6 text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-1" />
                   <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white">
                     Click to select PDF document
                   </span>
@@ -287,7 +301,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
                 type="checkbox"
                 checked={formData.isPublished}
                 onChange={(e) => setFormData({ ...formData, isPublished: e.target.checked })}
-                className="w-4 h-4 accent-amber-500 rounded cursor-pointer"
+                className="w-4 h-4 accent-blue-600 rounded cursor-pointer"
               />
             </div>
           </div>
@@ -304,7 +318,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
+              className="px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2"
             >
               {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
               <span>{announcement ? 'Update Announcement' : 'Publish Announcement'}</span>

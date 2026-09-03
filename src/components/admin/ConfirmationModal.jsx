@@ -15,6 +15,15 @@ export const ConfirmationModal = ({
 }) => {
   const [reason, setReason] = useState('');
 
+  useEffect(() => {
+    if (!isOpen || isLoading) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isLoading, onClose]);
+
   if (!isOpen) return null;
 
   const handleConfirm = () => {
@@ -29,14 +38,19 @@ export const ConfirmationModal = ({
     if (confirmVariant === 'warning') {
       return 'bg-amber-600 hover:bg-amber-500 text-white focus:ring-amber-500 shadow-amber-600/20';
     }
-    return 'bg-indigo-600 hover:bg-indigo-500 text-white focus:ring-indigo-500 shadow-indigo-600/20';
+    return 'bg-blue-600 hover:bg-blue-500 text-white focus:ring-blue-500 shadow-blue-600/20';
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-slate-900 dark:text-white">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in"
+      onClick={(e) => {
+        if (!isLoading && e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="w-full max-w-[calc(100vw-1.5rem)] sm:max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-slate-900 dark:text-white">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 sm:p-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
               confirmVariant === 'danger' ? 'bg-rose-500/10 border border-rose-500/20 text-rose-500' : 'bg-amber-500/10 border border-amber-500/20 text-amber-500'
@@ -50,14 +64,14 @@ export const ConfirmationModal = ({
           <button
             onClick={onClose}
             disabled={isLoading}
-            className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content Body */}
-        <div className="p-5 sm:p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{message}</p>
 
           {warningNote && (
@@ -82,7 +96,7 @@ export const ConfirmationModal = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-950/60 border-t border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-end gap-3">
+        <div className="p-3 sm:p-6 bg-slate-50 dark:bg-slate-950/60 border-t border-slate-200 dark:border-slate-800 shrink-0 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3">
           <button
             type="button"
             onClick={onClose}

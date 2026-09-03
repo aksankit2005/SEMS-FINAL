@@ -26,7 +26,7 @@ const DEFAULT_ADMIN_USER = {
   id: 'ADM-1001',
   name: 'System Administrator',
   username: 'admin',
-  email: 'admin.sports@mpec.ac.in',
+  email: 'sports@mpgi.edu.in',
   role: 'ADMIN',
   status: 'ACTIVE'
 };
@@ -189,7 +189,7 @@ export const adminApi = {
 
   deleteRegistration: async (id, reason) => {
     try {
-      const res = await fetch(apiUrl(`/admin/registrations/${id}`), {
+      const res = await fetch(apiUrl(`/admin/master-data/${id}`), {
         method: 'DELETE',
         headers: getAdminHeaders()
       });
@@ -200,12 +200,53 @@ export const adminApi = {
           action: 'Registration Deleted',
           target: `Deleted registration #${id} from database. Reason: ${reason || 'Admin Action'}`
         });
-        return true;
+        return await res.json();
       }
+      // Fallback endpoint
+      const fbRes = await fetch(apiUrl(`/admin/registrations/${id}`), {
+        method: 'DELETE',
+        headers: getAdminHeaders(),
+        body: JSON.stringify({ reason })
+      });
+      if (fbRes.ok) return await fbRes.json();
       const errData = await res.json().catch(() => ({}));
       throw new Error(errData.message || 'Failed to delete registration from database');
     } catch (err) {
       console.error('Error deleting registration from DB:', err);
+      throw err;
+    }
+  },
+
+  deleteMasterDataParticipant: async (id) => {
+    try {
+      const res = await fetch(apiUrl(`/admin/master-data/${id}`), {
+        method: 'DELETE',
+        headers: getAdminHeaders()
+      });
+      if (res.ok) return await res.json();
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Failed to delete participant from Master Data');
+    } catch (err) {
+      console.error('Error deleting master data participant:', err);
+      throw err;
+    }
+  },
+
+  bulkDeleteMasterData: async (ids) => {
+    try {
+      const res = await fetch(apiUrl('/admin/master-data/bulk'), {
+        method: 'DELETE',
+        headers: {
+          ...getAdminHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ids })
+      });
+      if (res.ok) return await res.json();
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Failed to bulk delete master data records');
+    } catch (err) {
+      console.error('Error executing bulk delete:', err);
       throw err;
     }
   },
@@ -616,8 +657,8 @@ export const adminApi = {
       allowRegistrations: true,
       currentFestYear: 2026,
       collegeName: 'Maharana Pratap Engineering College (MPEC)',
-      adminEmail: 'admin.sports@mpec.ac.in',
-      contactPhone: '+91 98765 00000',
+      adminEmail: '',
+      contactPhone: '',
       maxPdfSizeMB: 10
     };
   },

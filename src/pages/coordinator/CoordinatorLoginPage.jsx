@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Trophy, Lock, User, ShieldCheck, ArrowRight, Eye, EyeOff, Activity } from 'lucide-react';
 import { coordinatorApi, getSportRoute } from '../../services/coordinatorApi';
 import { useToast } from '../../context/ToastContext';
-import { ThemeToggle } from '../../components/common/ThemeToggle';
 
 
 export const CoordinatorLoginPage = () => {
@@ -39,17 +38,13 @@ export const CoordinatorLoginPage = () => {
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-200 relative overflow-hidden">
-      {/* Top right theme toggle */}
-      <div className="absolute top-4 right-4 z-20">
-        <ThemeToggle />
-      </div>
       {/* Ambient Background Glow */}
       <div className="absolute top-1/4 -left-20 w-80 h-80 bg-blue-500/10 dark:bg-blue-500/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-indigo-500/10 dark:bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
 
       {/* Main Layout Grid */}
       <div className="max-w-5xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
-        
+
         {/* Left Side: Branding & Information */}
         <div className="lg:col-span-6 space-y-6 text-left">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-black uppercase tracking-wider">
@@ -95,7 +90,7 @@ export const CoordinatorLoginPage = () => {
         {/* Right Side: Login Card */}
         <div className="lg:col-span-6">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 lg:p-10 shadow-soft dark:shadow-2xl space-y-6 relative overflow-hidden transition-all duration-200">
-            
+
             {/* Card Header */}
             <div className="flex items-center gap-3.5">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/25 shrink-0">
@@ -124,7 +119,7 @@ export const CoordinatorLoginPage = () => {
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="e.g. coord_cricket"
+                    placeholder="Enter your username"
                     className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500 transition"
                   />
                 </div>

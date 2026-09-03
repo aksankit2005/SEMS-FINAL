@@ -173,3 +173,18 @@
   background: #94a3b8;
 }
 
+/* Hide scrollbar but keep scroll functionality (used for filter chip rows) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Touch-friendly minimum tap target for small buttons on mobile */
+@media (max-width: 640px) {
+  button, a {
+    min-height: 36px;
+  }
+}
