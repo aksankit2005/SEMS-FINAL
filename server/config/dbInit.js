@@ -258,6 +258,7 @@ export const initDatabaseSchema = async () => {
     `);
 
     // Ensure columns exist on pre-existing live_matches table
+    await queryDb(`ALTER TABLE announcements ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT 'Schedule';`).catch(() => {});
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS stream_url TEXT;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS is_live_streaming BOOLEAN DEFAULT FALSE;`);

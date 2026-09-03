@@ -1651,6 +1651,7 @@ export const getAnnouncementsDB = async (req, res) => {
         id,
         title,
         description,
+        COALESCE(category, 'Schedule') AS category,
         audience,
         "sportSlug" AS "sportSlug",
         TO_CHAR("publishDate", 'YYYY-MM-DD') AS "publishDate",
@@ -1688,7 +1689,7 @@ export const getAnnouncementsDB = async (req, res) => {
 };
 
 export const saveAnnouncementDB = async (req, res) => {
-  const { id, title, description, audience, publishDate, expiryDate, isPublished, attachments } = req.body;
+  const { id, title, description, category, audience, publishDate, expiryDate, isPublished, attachments } = req.body;
 
   if (!title || !description) {
     return res.status(400).json({ message: 'Title and description are required.' });
@@ -1699,20 +1700,21 @@ export const saveAnnouncementDB = async (req, res) => {
     const published = isPublished ?? true;
     const pDate = publishDate ? new Date(publishDate) : new Date();
     const eDate = expiryDate ? new Date(expiryDate) : null;
+    const selectedCategory = category || 'Schedule';
 
     if (annId) {
       await queryDb(
         `UPDATE announcements 
-         SET title = $1, description = $2, audience = $3, "publishDate" = $4, "expiryDate" = $5, "isPublished" = $6, "updatedAt" = CURRENT_TIMESTAMP 
-         WHERE id::text = $7`,
-        [title, description, audience || 'PUBLIC', pDate, eDate, published, String(annId)]
+         SET title = $1, description = $2, category = $3, audience = $4, "publishDate" = $5, "expiryDate" = $6, "isPublished" = $7, "updatedAt" = CURRENT_TIMESTAMP 
+         WHERE id::text = $8`,
+        [title, description, selectedCategory, audience || 'PUBLIC', pDate, eDate, published, String(annId)]
       );
     } else {
       const newAnn = await queryDb(
-        `INSERT INTO announcements (id, title, description, audience, "publishDate", "expiryDate", "isPublished", "createdAt", "updatedAt")
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        `INSERT INTO announcements (id, title, description, category, audience, "publishDate", "expiryDate", "isPublished", "createdAt", "updatedAt")
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
          RETURNING id`,
-        [title, description, audience || 'PUBLIC', pDate, eDate, published]
+        [title, description, selectedCategory, audience || 'PUBLIC', pDate, eDate, published]
       );
       if (newAnn && newAnn.rows && newAnn.rows.length > 0) {
         annId = newAnn.rows[0].id;

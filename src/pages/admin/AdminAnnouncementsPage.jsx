@@ -15,13 +15,55 @@ import {
   XCircle,
   Loader2,
   Calendar,
-  FileText
+  FileText,
+  BookOpen,
+  AlertTriangle,
+  Sparkles,
+  Filter
 } from 'lucide-react';
+
+const getCategoryStyle = (category) => {
+  switch (category) {
+    case 'Schedule':
+      return {
+        label: 'Schedule',
+        icon: Calendar,
+        badgeClass: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+      };
+    case 'Rules & Guidelines':
+      return {
+        label: 'Rules & Guidelines',
+        icon: BookOpen,
+        badgeClass: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+      };
+    case 'Emergency & Safety':
+      return {
+        label: 'Emergency & Safety',
+        icon: AlertTriangle,
+        badgeClass: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+      };
+    case 'Event Highlight':
+      return {
+        label: 'Event Highlight',
+        icon: Sparkles,
+        badgeClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+      };
+    default:
+      return {
+        label: category || 'Schedule',
+        icon: Calendar,
+        badgeClass: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+      };
+  }
+};
 
 export const AdminAnnouncementsPage = () => {
   const { addToast } = useToast();
   const [announcements, setAnnouncements] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [loading, setLoading] = useState(true);
+
+  const categories = ['All', 'Schedule', 'Rules & Guidelines', 'Emergency & Safety', 'Event Highlight'];
 
   // Modals State
   const [selectedAnn, setSelectedAnn] = useState(null);
@@ -107,43 +149,88 @@ export const AdminAnnouncementsPage = () => {
         </button>
       </div>
 
+      {/* Category Filter Bar */}
+      <div className="flex flex-wrap items-center gap-2 p-3 bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 px-2 flex items-center gap-1.5">
+          <Filter className="w-3.5 h-3.5 text-blue-500" /> Filter Section:
+        </span>
+        {categories.map((cat) => {
+          const count = cat === 'All'
+            ? announcements.length
+            : announcements.filter(a => (a.category || 'Schedule') === cat).length;
+          const isSelected = selectedCategory === cat;
+          return (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                isSelected
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                  : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              <span>{cat}</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+              }`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Announcement Cards List */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-16 space-y-3">
           <Loader2 className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" />
           <p className="text-xs text-slate-500 dark:text-slate-400">Loading announcements...</p>
         </div>
-      ) : announcements.length === 0 ? (
+      ) : filteredAnnouncements.length === 0 ? (
         <div className="p-12 text-center bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2 shadow-sm">
-          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No Announcements Created Yet.</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Click "Create Announcement" to publish schedules & PDF guidelines.</p>
+          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+            {selectedCategory === 'All' ? 'No Announcements Created Yet.' : `No ${selectedCategory} Announcements.`}
+          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Click "Create Announcement" to publish {selectedCategory === 'All' ? 'notices' : selectedCategory} with PDF guidelines.
+          </p>
         </div>
       ) : (
         <div className="space-y-4">
-          {announcements.map((ann) => (
-            <div
-              key={ann.id}
-              className="p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all space-y-4 shadow-sm hover:shadow-md"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={`px-2.5 py-0.5 text-[10px] font-extrabold tracking-wider uppercase rounded ${
-                        ann.isPublished
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
-                      }`}
-                    >
-                      {ann.isPublished ? 'PUBLISHED' : 'DRAFT'}
-                    </span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>{ann.publishDate || ann.date}</span>
-                    </span>
+          {filteredAnnouncements.map((ann) => {
+            const catConfig = getCategoryStyle(ann.category || 'Schedule');
+            const CatIcon = catConfig.icon;
+            return (
+              <div
+                key={ann.id}
+                className="p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all space-y-4 shadow-sm hover:shadow-md"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`px-2.5 py-0.5 text-[10px] font-extrabold tracking-wider uppercase rounded ${
+                          ann.isPublished
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                        }`}
+                      >
+                        {ann.isPublished ? 'PUBLISHED' : 'DRAFT'}
+                      </span>
+
+                      {/* Category Badge */}
+                      <span className={`px-2.5 py-0.5 text-[10px] font-extrabold tracking-wider uppercase rounded-md border flex items-center gap-1 ${catConfig.badgeClass}`}>
+                        <CatIcon className="w-3 h-3" />
+                        <span>{catConfig.label}</span>
+                      </span>
+
+                      <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>{ann.publishDate || ann.date}</span>
+                      </span>
+                    </div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">{ann.title}</h3>
                   </div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">{ann.title}</h3>
-                </div>
 
                 {/* Quick Action Buttons */}
                 <div className="flex items-center gap-2 shrink-0">
@@ -227,7 +314,8 @@ export const AdminAnnouncementsPage = () => {
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

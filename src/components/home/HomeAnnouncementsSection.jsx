@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Bell, ArrowRight, FileText, Calendar, Paperclip } from 'lucide-react';
 import { useSportsData } from '../../context/SportsDataContext';
+import { getCategoryMeta } from '../../pages/AnnouncementsPage';
 
 export const HomeAnnouncementsSection = () => {
   const { announcements } = useSportsData();
@@ -48,23 +49,27 @@ export const HomeAnnouncementsSection = () => {
               <p className="text-xs text-[#686370] dark:text-[#AAA4B8] mt-1">Directives and circulars will appear here once released</p>
             </div>
           ) : (
-            displayAnnouncements.map((item) => (
-              <Link
-                key={item.id || item.title}
-                to="/announcements"
-                className="bg-[#FFFFFF] dark:bg-[#0D101A] rounded-lg p-5 border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] hover:border-[#7156A5]/40 dark:hover:border-[#8B5CF6]/40 transition-all flex flex-col justify-between group shadow-2xs"
-              >
-                <div>
-                  {/* Category & Date */}
-                  <div className="flex items-center justify-between mb-3 text-xs">
-                    <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-[#FAF9F6] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
-                      {item.category || 'Notice'}
-                    </span>
-                    <span className="text-[#686370] dark:text-[#AAA4B8] text-[11px] flex items-center gap-1 font-medium">
-                      <Calendar className="w-3 h-3 text-[#686370] dark:text-[#AAA4B8]" />
-                      {item.date || item.createdAt || 'Aug 2026'}
-                    </span>
-                  </div>
+            displayAnnouncements.map((item) => {
+              const meta = getCategoryMeta(item.category);
+              const Icon = meta.icon;
+              return (
+                <Link
+                  key={item.id || item.title}
+                  to="/announcements"
+                  className="bg-[#FFFFFF] dark:bg-[#0D101A] rounded-lg p-5 border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] hover:border-[#7156A5]/40 dark:hover:border-[#8B5CF6]/40 transition-all flex flex-col justify-between group shadow-2xs"
+                >
+                  <div>
+                    {/* Category & Date */}
+                    <div className="flex items-center justify-between mb-3 text-xs">
+                      <span className={`px-2.5 py-0.5 rounded-lg font-semibold border text-[11px] flex items-center gap-1.5 ${meta.badgeClass}`}>
+                        <Icon className="w-3 h-3" />
+                        <span>{meta.label}</span>
+                      </span>
+                      <span className="text-[#686370] dark:text-[#AAA4B8] text-[11px] flex items-center gap-1 font-medium">
+                        <Calendar className="w-3 h-3 text-[#686370] dark:text-[#AAA4B8]" />
+                        {item.date || item.createdAt || 'Aug 2026'}
+                      </span>
+                    </div>
 
                   {/* Title */}
                   <h3 className="text-sm sm:text-base font-bold text-[#211D2B] dark:text-[#F5F2FA] group-hover:text-[#7156A5] dark:group-hover:text-[#B8A5E5] transition-colors line-clamp-2 leading-snug mb-2 font-spatial-display">
@@ -93,8 +98,9 @@ export const HomeAnnouncementsSection = () => {
                   </span>
                 </div>
               </Link>
-            ))
-          )}
+            );
+          })
+        )}
         </div>
 
       </div>
