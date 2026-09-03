@@ -382,20 +382,22 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
           <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Active (Published)</span>
           <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
-            {events.filter((e) => e.status === 'Published').length}
+            {events.filter((e) => e.status === 'Published' || e.status === 'Active').length}
           </p>
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Total Athletes</span>
-          <p className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight">
-            {events.reduce((acc, curr) => acc + (curr.registeredCount || 0), 0)}
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Upcoming Events</span>
+          <p className="text-2xl font-black text-amber-500 dark:text-amber-400 tracking-tight">
+            {events.filter((e) => e.status === 'Upcoming').length}
           </p>
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Sport Category</span>
-          <p className="text-sm font-black text-slate-900 dark:text-white truncate">Track & Field Athletics</p>
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Closed Events</span>
+          <p className="text-2xl font-black text-rose-500 dark:text-rose-400 tracking-tight">
+            {events.filter((e) => e.status === 'Closed' || e.status === 'Completed' || e.registrationOpen === false).length}
+          </p>
         </div>
       </div>
 
@@ -438,12 +440,6 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
             Click the "Create Athletics Event" button above to publish your first Track & Field Championship event.
           </p>
-          <button
-            onClick={handleOpenCreate}
-            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
-          >
-            + Create First Athletics Event
-          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

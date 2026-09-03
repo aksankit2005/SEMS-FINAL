@@ -41,6 +41,16 @@ export const ProfileTab = ({ user, matches = [], registrations = [], onLogout })
             </div>
           </div>
 
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="px-4 py-2.5 rounded-2xl bg-rose-500/10 hover:bg-rose-500 text-rose-600 hover:text-white border border-rose-500/20 text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer self-start sm:self-center"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout Session</span>
+            </button>
+          )}
+
         </div>
 
         {/* Profile Detail Fields Grid */}
@@ -70,12 +80,12 @@ export const ProfileTab = ({ user, matches = [], registrations = [], onLogout })
       <div className="grid grid-cols-1 gap-6">
         
         {/* Account Details Box */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-xl space-y-4 max-w-2xl">
+        <div className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-xl space-y-4 w-full">
           <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-indigo-400" /> Coordinator Credentials
           </h3>
 
-          <div className="space-y-3 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
             <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-slate-800">
               <span className="font-bold text-slate-500 dark:text-slate-400">Coordinator Name</span>
               <span className="font-black text-slate-900 dark:text-white">{coordName}</span>
