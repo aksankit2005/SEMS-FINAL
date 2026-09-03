@@ -12,18 +12,10 @@ export const PlayerDetailsForm = ({
   errors,
   setErrors
 }) => {
-  const isTugOfWar = resolveSportKey(sport) === 'tug-of-war';
-
-  const colleges = isTugOfWar
-    ? [
-        { value: '', label: 'Select College / University' },
-        { value: 'MPEC', label: 'MPEC' },
-        { value: 'MIPS', label: 'MIPS' }
-      ]
-    : [
-        { value: '', label: 'Select College / University' },
-        ...Object.keys(collegeCourses).map((c) => ({ value: c, label: c }))
-      ];
+  const colleges = [
+    { value: '', label: 'Select College / University' },
+    ...Object.keys(collegeCourses).map((c) => ({ value: c, label: c }))
+  ];
 
   const selectedEvent = (formData.selectedEvents && formData.selectedEvents[0]) || '';
   const isRelay = selectedEvent === '4*100m relay Race';
@@ -272,7 +264,6 @@ export const PlayerDetailsForm = ({
             isFirstPlayer={idx === 0}
             sameAsCaptain={false}
             onToggleSameAsCaptain={null}
-            isTugOfWar={isTugOfWar}
           />
         ))}
       </div>
