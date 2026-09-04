@@ -238,15 +238,7 @@ export const renderRegistrationEmailHtml = ({
               <!-- Optional Roster Table -->
               ${rosterHtml}
 
-              <!-- Direct Pass Download CTA Button -->
-              <div style="margin-top:32px;margin-bottom:28px;text-align:center;">
-                <a href="${passDownloadUrl}" target="_blank" style="display:inline-block;background:linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);color:#ffffff;text-decoration:none;font-size:15px;font-weight:800;padding:14px 32px;border-radius:10px;box-shadow:0 4px 14px rgba(37,99,235,0.35);letter-spacing:0.3px;">
-                  Download Registration Pass (PDF) →
-                </a>
-                <div style="font-size:11px;color:#64748b;margin-top:8px;">
-                  Click above to directly open and download your official entry pass with verified QR & details.
-                </div>
-              </div>
+
 
               <!-- Important Guidelines Notice -->
               <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 18px;">
@@ -271,7 +263,7 @@ export const renderRegistrationEmailHtml = ({
               </div>
               <div style="font-size:11px;color:#64748b;line-height:1.5;">
                 Official Sports Portal: <a href="https://mpgisports.in" style="color:#2563eb;text-decoration:none;">mpgisports.in</a><br>
-                For queries or assistance, contact: <a href="mailto:support@mpgisports.in" style="color:#2563eb;text-decoration:none;">support@mpgisports.in</a>
+                For queries or assistance, contact: <a href="mailto:sports@mpgi.edu.in" style="color:#2563eb;text-decoration:none;">sports@mpgi.edu.in</a>
               </div>
               <div style="font-size:10px;color:#94a3b8;margin-top:10px;">
                 This is an automated transactional confirmation from MPGI Sports. Please do not reply directly to this email.
