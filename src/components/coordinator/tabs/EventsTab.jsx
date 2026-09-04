@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Calendar, Layers, CheckCircle2, Clock, XCircle, Edit, Trash2, Eye, 
   Upload, Crop, Image as ImageIcon, Users, DollarSign, ShieldAlert, Download, 
-  Search, Filter, ToggleLeft, ToggleRight, X, AlertCircle, Sparkles, FileText, Phone, Mail
+  Search, Filter, ToggleLeft, ToggleRight, X, AlertCircle, Sparkles, FileText, Phone, Mail, Lock
 } from 'lucide-react';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { ImageCropperModal } from '../../common/ImageCropperModal';
@@ -343,10 +343,75 @@ export const EventsTab = ({ user }) => {
     setParticipants(eventRegs.length > 0 ? eventRegs : allRegs);
   };
 
+  const [allRegistrations, setAllRegistrations] = useState([]);
+
+  useEffect(() => {
+    const loadRegs = async () => {
+      try {
+        const list = await coordinatorApi.getRegistrations();
+        setAllRegistrations(list || []);
+      } catch (e) {}
+    };
+    loadRegs();
+  }, [events]);
+
+  const handleToggleCloseEvent = async (eventObj) => {
+    const regStatus = computeEffectiveRegistrationStatus(eventObj);
+    const isCurrentlyClosed = eventObj.status === 'Closed' || eventObj.registrationOpen === false || regStatus.isDeadlinePassed;
+    
+    const targetStatus = isCurrentlyClosed ? 'Published' : 'Closed';
+    const targetRegOpen = isCurrentlyClosed;
+    let newRegEndDate = eventObj.regEndDate;
+
+    if (isCurrentlyClosed && regStatus.isDeadlinePassed) {
+      const future = new Date();
+      future.setDate(future.getDate() + 7);
+      newRegEndDate = future.toISOString().split('T')[0];
+    }
+
+    try {
+      const payload = {
+        status: targetStatus,
+        registrationOpen: targetRegOpen,
+        ...(newRegEndDate !== eventObj.regEndDate ? { regEndDate: newRegEndDate } : {})
+      };
+
+      const updated = await coordinatorApi.updateEvent(eventObj.id, payload);
+      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, ...payload } : item)));
+      
+      if (!targetRegOpen) {
+        addToast(`🔒 Event "${eventObj.title}" is now Closed.`, 'info');
+      } else {
+        addToast(`🔓 Event "${eventObj.title}" is now Active & Open for registrations!`, 'success');
+      }
+      fetchEvents();
+      window.dispatchEvent(new Event('sems_events_updated'));
+    } catch (err) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to update event status';
+      addToast(errMsg, 'error');
+    }
+  };
+
   // Dashboard Stats calculation
   const totalEvents = events.length;
-  const activeEvents = events.filter((e) => e.status === 'Published').length;
-  const closedEvents = events.filter((e) => e.status === 'Closed').length;
+  const activeEvents = events.filter((e) => {
+    const s = (e.status || '').toLowerCase();
+    const regStatus = computeEffectiveRegistrationStatus(e);
+    return (s === 'published' || s === 'active') && e.status !== 'Closed' && !regStatus.isDeadlinePassed && e.registrationOpen !== false;
+  }).length;
+
+  const upcomingEvents = events.filter((e) => {
+    const s = (e.status || '').toLowerCase();
+    const regStatus = computeEffectiveRegistrationStatus(e);
+    return s === 'upcoming' || s === 'draft' || regStatus.code === 'UPCOMING' || regStatus.code === 'NOT_STARTED';
+  }).length;
+
+  const closedEvents = events.filter((e) => {
+    const s = (e.status || '').toLowerCase();
+    const regStatus = computeEffectiveRegistrationStatus(e);
+    return s === 'closed' || s === 'inactive' || s === 'completed' || regStatus.isDeadlinePassed || regStatus.code.startsWith('CLOSED') || e.registrationOpen === false;
+  }).length;
+
   const totalRegCount = events.reduce((acc, curr) => acc + (curr.registeredCount || 0), 0);
   const totalRevenue = events.reduce((acc, curr) => acc + ((curr.registeredCount || 0) * (curr.entryFee || 0)), 0);
   const totalAvailableSlots = events.reduce((acc, curr) => acc + Math.max(0, (curr.maxRegistrations || 64) - (curr.registeredCount || 0)), 0);
@@ -362,18 +427,18 @@ export const EventsTab = ({ user }) => {
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Active (Published)</span>
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Active Events</span>
           <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">{activeEvents}</p>
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Registration Closed</span>
-          <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight">{closedEvents}</p>
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Upcoming Events</span>
+          <p className="text-2xl font-black text-amber-500 dark:text-amber-400 tracking-tight">{upcomingEvents}</p>
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Assigned Sport</span>
-          <p className="text-sm font-black text-slate-900 dark:text-white truncate">{user?.sportName || 'Badminton'}</p>
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Closed Events</span>
+          <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">{closedEvents}</p>
         </div>
       </div>
 
@@ -427,10 +492,14 @@ export const EventsTab = ({ user }) => {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {events.map((event) => {
-              const registered = event.registeredCount || 0;
+              const eventRegsCount = allRegistrations.filter(
+                (r) => r.eventId === event.id || r.sportId === event.sportId || r.sport === event.sportName
+              ).length;
+              const registered = Math.max(event.registeredCount || 0, eventRegsCount);
               const limit = event.maxRegistrations || 64;
               const percent = Math.min(100, Math.round((registered / limit) * 100));
-              const isRegOpen = event.registrationOpen !== false && event.status !== 'Closed';
+              const regStatus = computeEffectiveRegistrationStatus(event);
+              const isClosed = event.status === 'Closed' || event.registrationOpen === false || regStatus.isDeadlinePassed;
 
               return (
                 <div
@@ -502,40 +571,61 @@ export const EventsTab = ({ user }) => {
 
                     {/* Actions Bar */}
                     <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <EventStatusActionButton 
-                          event={event} 
-                          onToggleStatus={handleToggleEventStatus} 
-                        />
-                        <RegistrationActionButton 
-                          event={event} 
-                          onToggle={handleToggleRegistrationOpen} 
-                          onOpenEdit={handleOpenEdit} 
-                        />
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Dynamic Closed / Close Button */}
+                        {isClosed ? (
+                          <button
+                            type="button"
+                            onClick={() => handleToggleCloseEvent(event)}
+                            className="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/20 dark:hover:bg-rose-500/30 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-500/40 font-bold text-[11px] transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                            title="Event is currently Closed. Click to Reopen"
+                          >
+                            <span className="w-2 h-2 rounded-full bg-rose-500" />
+                            <span>Closed</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleToggleCloseEvent(event)}
+                            className="px-3.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/20 dark:hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 font-bold text-[11px] transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                            title="Click to Close this event"
+                          >
+                            <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                            <span>Close Event</span>
+                          </button>
+                        )}
+
+                        {/* Roster Button */}
                         <button
+                          type="button"
                           onClick={() => handleViewParticipants(event)}
-                          className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 text-blue-600 dark:text-indigo-400 border border-blue-200 dark:border-indigo-500/30 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
+                          className="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 text-blue-600 dark:text-indigo-400 border border-blue-200 dark:border-indigo-500/30 font-bold text-[11px] transition flex items-center gap-1.5 cursor-pointer shadow-xs"
                         >
                           <Users className="w-3.5 h-3.5" />
                           <span>Roster ({registered})</span>
                         </button>
                       </div>
 
+                      {/* Edit & Delete Action Buttons */}
                       <div className="flex items-center gap-1.5">
                         <button
+                          type="button"
                           onClick={() => handleOpenEdit(event)}
-                          className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer"
+                          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer flex items-center gap-1.5 text-xs font-semibold shadow-xs"
                           title="Edit Event"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-3.5 h-3.5" />
+                          <span>Edit</span>
                         </button>
 
                         <button
+                          type="button"
                           onClick={() => handleDeleteEvent(event.id, event.title)}
-                          className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/20 dark:hover:bg-rose-500/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 transition cursor-pointer"
+                          className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/20 dark:hover:bg-rose-500/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 transition cursor-pointer flex items-center gap-1.5 text-xs font-semibold shadow-xs"
                           title="Delete Event"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete</span>
                         </button>
                       </div>
                     </div>
