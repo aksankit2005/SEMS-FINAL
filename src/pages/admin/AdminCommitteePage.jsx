@@ -432,6 +432,9 @@ export const AdminCommitteePage = () => {
                     <div className="p-3 flex items-center justify-between gap-2 flex-1">
                       <div className="min-w-0 flex-1">
                         <h4 className="text-xs font-extrabold text-slate-900 dark:text-white line-clamp-1" title={member.name}>{member.name}</h4>
+                        {member.designation && (
+                          <p className="text-[10px] text-indigo-500 font-semibold line-clamp-1">{member.designation}</p>
+                        )}
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">Pos #{index + 1}</span>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
@@ -495,6 +498,7 @@ export const AdminCommitteePage = () => {
       <CommitteeMemberModal
         isOpen={isMemberModalOpen}
         member={selectedMember}
+        memberType={memberType}
         defaultOrder={selectedMember ? (selectedMember.sortOrder || 1) : ((selectedSession?.[memberType] || []).length + 1)}
         onSave={handleSaveMember}
         onClose={() => { setIsMemberModalOpen(false); setSelectedMember(null); }}

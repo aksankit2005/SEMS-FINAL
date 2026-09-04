@@ -462,6 +462,8 @@ export const initDatabaseSchema = async () => {
       );
     `);
     await queryDb(`ALTER TABLE committee_members ADD COLUMN IF NOT EXISTS public_id VARCHAR(255);`);
+    await queryDb(`ALTER TABLE committee_members ADD COLUMN IF NOT EXISTS description TEXT;`);
+    await queryDb(`ALTER TABLE committee_members ADD COLUMN IF NOT EXISTS designation VARCHAR(255);`);
 
     // 6. Ensure system_settings table exists for hero slides and configuration
     await queryDb(`

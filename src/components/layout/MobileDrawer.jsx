@@ -3,7 +3,7 @@ import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   X, Trophy, Calendar, Award, Newspaper, Image, Info, 
   UserCheck, Flame, Radio, BarChart3, LayoutDashboard, Camera,
-  Building2, Shield, LogOut, Crown
+  Building2, Shield, LogOut, Crown, Compass
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { galleryApi } from '../../services/galleryApi';
@@ -133,6 +133,7 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
     { name: 'Results', path: '/results', icon: BarChart3 },
     { name: 'Leaderboard', path: '/leaderboard', icon: Award },
     { name: 'Gallery', path: '/gallery', icon: Image },
+    { name: 'Journey Timeline', path: '/journey', icon: Compass, badge: 'TIMELINE', isPurple: true },
     { name: 'About Us', path: '/about', icon: Info },
   ];
 
@@ -222,7 +223,11 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
                   <span>{item.name}</span>
                 </div>
                 {item.badge && (
-                  <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-rose-500 text-white animate-pulse">
+                  <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black ${
+                    item.isPurple
+                      ? 'bg-purple-600 text-white shadow-[0_0_8px_#9333ea]'
+                      : 'bg-rose-500 text-white animate-pulse'
+                  }`}>
                     {item.badge}
                   </span>
                 )}

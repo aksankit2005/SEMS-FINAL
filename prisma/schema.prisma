@@ -661,6 +661,8 @@ model CommitteeMember {
   type      CommitteeMemberType
   name      String
   role      String
+  designation String?
+  description String?
   photoUrl  String?             @map("photo_url")
   publicId  String?             @map("public_id")
   email     String?

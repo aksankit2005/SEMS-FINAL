@@ -4,12 +4,14 @@ import { uploadFileToCloudinary } from '../../services/cloudinaryService';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=200&q=80';
 
-export const CommitteeMemberModal = ({ isOpen, member = null, defaultOrder = 1, onSave, onClose }) => {
-  const [formData, setFormData] = useState({ name: '', role: '', image: '', publicId: '', sortOrder: 1 });
+export const CommitteeMemberModal = ({ isOpen, member = null, memberType = 'executiveCommittee', defaultOrder = 1, onSave, onClose }) => {
+  const [formData, setFormData] = useState({ name: '', role: '', designation: '', description: '', image: '', publicId: '', sortOrder: 1 });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState('');
+
+  const isAdvisor = memberType === 'advisors' || member?.type === 'ADVISOR' || member?.type === 'advisors';
 
   useEffect(() => {
     if (member) {
@@ -17,12 +19,14 @@ export const CommitteeMemberModal = ({ isOpen, member = null, defaultOrder = 1, 
         id: member.id,
         name: member.name || '',
         role: member.role || '',
+        designation: member.designation || '',
+        description: member.description || '',
         image: member.image || '',
         publicId: member.publicId || '',
         sortOrder: member.sortOrder !== undefined ? member.sortOrder : defaultOrder
       });
     } else {
-      setFormData({ name: '', role: '', image: '', publicId: '', sortOrder: defaultOrder });
+      setFormData({ name: '', role: '', designation: '', description: '', image: '', publicId: '', sortOrder: defaultOrder });
     }
     setError('');
     setIsUploading(false);
@@ -197,6 +201,41 @@ export const CommitteeMemberModal = ({ isOpen, member = null, defaultOrder = 1, 
               />
             </div>
           </div>
+
+          {/* Designation (Faculty Advisors only) */}
+          {isAdvisor && (
+            <div>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                Designation
+              </label>
+              <input
+                type="text"
+                value={formData.designation}
+                onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                placeholder="e.g. Associate Professor / Head of Department"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+          )}
+
+          {/* About & Responsibilities (Faculty Advisors only) */}
+          {isAdvisor && (
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  About &amp; Responsibilities
+                </label>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500">Dynamic Bio for Modal</span>
+              </div>
+              <textarea
+                rows={4}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Enter advisor bio, responsibilities, tournament guidance role..."
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none custom-scrollbar"
+              />
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">

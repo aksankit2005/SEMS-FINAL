@@ -21,6 +21,7 @@ import { CoordinatorsPage } from './pages/CoordinatorsPage';
 import { AnnouncementsPage } from './pages/AnnouncementsPage';
 import { GalleryPage } from './pages/GalleryPage';
 import { AboutPage } from './pages/AboutPage';
+import { JourneyPage } from './components/journey/JourneyPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { FAQPage } from './pages/FAQPage';
 import { TermsPage } from './pages/TermsPage';
@@ -145,6 +146,10 @@ function App() {
                 <Route path="/super-coordinator-login" element={<SuperCoordinatorLoginPage />} />
                 <Route path="/super-coordinator/dashboard" element={<SuperCoordinatorProtectedRoute><SuperCoordinatorDashboardPage /></SuperCoordinatorProtectedRoute>} />
                 <Route path="/super-coordinator" element={<SuperCoordinatorProtectedRoute><SuperCoordinatorDashboardPage /></SuperCoordinatorProtectedRoute>} />
+
+                {/* Standalone Full-Screen APEX Legacy & Journey Timeline */}
+                <Route path="/journey" element={<JourneyPage />} />
+                <Route path="/legacy" element={<JourneyPage />} />
 
                 <Route element={<DashboardLayout />}>
                   <Route path="/" element={<HomePage />} />

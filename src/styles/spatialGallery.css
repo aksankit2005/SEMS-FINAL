@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
 /* ============================================================
    MIDNIGHT SPATIAL DESIGN SYSTEM (Dark & Light Mode Supported)
@@ -170,4 +170,70 @@
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(226, 232, 240, 1);
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+}
+
+/* ============================================================
+   APEX LEGACY & JOURNEY TIMELINE TOKENS
+   ============================================================ */
+
+.font-serif-luxury {
+  font-family: 'Cinzel', Georgia, serif;
+}
+
+.font-sans-clean {
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+}
+
+/* Responsive Light and Dark Nebula Container */
+.spatial-nebula-responsive {
+  background: 
+    radial-gradient(ellipse 75% 55% at 50% 20%, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.05) 40%, transparent 70%),
+    radial-gradient(ellipse 65% 35% at 50% 85%, rgba(245, 158, 11, 0.04) 0%, transparent 60%),
+    #f8fafc;
+  color: #0f172a;
+}
+
+.dark .spatial-nebula-responsive {
+  background: 
+    radial-gradient(ellipse 75% 55% at 50% 25%, rgba(99, 102, 241, 0.18) 0%, rgba(139, 92, 246, 0.12) 35%, rgba(59, 130, 246, 0.06) 60%, transparent 80%),
+    radial-gradient(ellipse 65% 35% at 50% 85%, rgba(245, 158, 11, 0.06) 0%, transparent 60%),
+    #08090e;
+  color: #ffffff;
+}
+
+/* Point-to-Point Neon Connecting Spine */
+.timeline-laser-spine {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(147, 51, 234, 0.3) 5%,
+    rgba(124, 58, 237, 0.7) 25%,
+    rgba(147, 51, 234, 0.9) 50%,
+    rgba(124, 58, 237, 0.7) 75%,
+    rgba(217, 119, 6, 0.6) 95%,
+    transparent 100%
+  );
+  box-shadow: 0 0 12px rgba(147, 51, 234, 0.35);
+}
+
+.dark .timeline-laser-spine {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(168, 85, 247, 0.4) 5%,
+    rgba(139, 92, 246, 0.9) 25%,
+    rgba(192, 132, 252, 1) 50%,
+    rgba(139, 92, 246, 0.9) 75%,
+    rgba(251, 191, 36, 0.8) 95%,
+    transparent 100%
+  );
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.5), 0 0 32px rgba(139, 92, 246, 0.25);
+}
+
+.timeline-node-active {
+  box-shadow: 0 0 16px rgba(147, 51, 234, 0.6), 0 0 24px rgba(147, 51, 234, 0.3);
+}
+
+.dark .timeline-node-active {
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.85), 0 0 40px rgba(168, 85, 247, 0.4);
 }

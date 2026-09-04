@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, Trophy, User, ShieldCheck, Sparkles, LayoutDashboard, LogOut, ChevronDown, Building2, Shield, Camera } from 'lucide-react';
+import { Menu, Trophy, User, ShieldCheck, Sparkles, LayoutDashboard, LogOut, ChevronDown, Building2, Shield, Camera, Compass } from 'lucide-react';
 import { ThemeToggle } from '../common/ThemeToggle';
 import { MobileDrawer } from './MobileDrawer';
 import { useAuth } from '../../context/AuthContext';
@@ -184,6 +184,19 @@ export const Navbar = () => {
                   )}
                 </NavLink>
               ))}
+
+              {/* APEX Journey Timeline Link with Glowing Purple Badge */}
+              <Link
+                to="/journey"
+                className="px-2.5 py-1.5 rounded-xl text-xs font-black tracking-wide text-purple-500 dark:text-purple-400 bg-purple-500/10 border border-purple-500/30 hover:border-purple-400 hover:bg-purple-500/20 flex items-center gap-1.5 transition-all ml-1"
+                title="APEX Legacy & Journey Timeline"
+              >
+                <Compass className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
+                <span>JOURNEY</span>
+                <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-black uppercase bg-purple-600 text-white shadow-[0_0_8px_#9333ea]">
+                  TIMELINE
+                </span>
+              </Link>
             </nav>
 
             {/* Actions: Theme Toggle, Auth / Dashboard */}

@@ -1979,6 +1979,8 @@ export const getCommitteeDB = async (req, res) => {
         id: m.id,
         name: m.name,
         role: m.role,
+        designation: m.designation || '',
+        description: m.description || '',
         image: m.photoUrl,
         publicId: m.publicId,
         email: m.email,
@@ -1989,6 +1991,8 @@ export const getCommitteeDB = async (req, res) => {
         id: m.id,
         name: m.name,
         role: m.role,
+        designation: m.designation || '',
+        description: m.description || '',
         image: m.photoUrl,
         publicId: m.publicId,
         email: m.email,
@@ -2047,7 +2051,7 @@ export const deleteSessionDB = async (req, res) => {
 };
 
 export const saveCommitteeMemberDB = async (req, res) => {
-  const { id, sessionId, type, name, role, photoUrl, image, publicId, email, phone, sortOrder } = req.body;
+  const { id, sessionId, type, name, role, designation, description, photoUrl, image, publicId, email, phone, sortOrder } = req.body;
   try {
     const finalPhoto = photoUrl || image || null;
     const normalizedType = (type === 'advisors' || type === 'ADVISOR') ? 'ADVISOR' : 'EXECUTIVE';
@@ -2096,6 +2100,8 @@ export const saveCommitteeMemberDB = async (req, res) => {
           data: {
             name,
             role,
+            designation: designation !== undefined ? designation : existing.designation,
+            description: description !== undefined ? description : existing.description,
             type: normalizedType,
             photoUrl: finalPhoto,
             publicId: publicId || existing.publicId || null,
@@ -2114,6 +2120,8 @@ export const saveCommitteeMemberDB = async (req, res) => {
         type: normalizedType,
         name,
         role,
+        designation: designation || null,
+        description: description || null,
         photoUrl: finalPhoto,
         publicId: publicId || null,
         email: email || '',

@@ -126,6 +126,8 @@ export const committeeApi = {
         type,
         name: memberData.name,
         role: memberData.role,
+        designation: memberData.designation || '',
+        description: memberData.description || '',
         image: memberData.image,
         publicId: memberData.publicId,
         email: memberData.email || '',
