@@ -5,12 +5,12 @@ import {
   FolderOpen, Folder, ArrowLeft, Camera, Film, X, Maximize2, Key, EyeOff, User, Lock, Building2, Crown, Upload
 } from 'lucide-react';
 
-import { superCoordinatorApi, ALL_12_SPORTS, ALL_COLLEGES } from '../../services/superCoordinatorApi';
+import { superCoordinatorApi, ALL_12_SPORTS, ALL_COLLEGES, matchesCollegeFilter } from '../../services/superCoordinatorApi';
 import { SuperCoordinatorNavbar } from '../../components/superCoordinator/SuperCoordinatorNavbar';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { exportToCSV, exportToPDF } from '../../utils/pdfExporter';
-import { getParticipationType } from '../../utils/rosterHelper';
+import { getParticipationType, matchesParticipationTypeFilter } from '../../utils/rosterHelper';
 import { exportResultsToExcel } from '../../utils/excelExporter';
 import { GoogleDriveImage } from '../../components/common/GoogleDriveImage';
 import { getHeroSlides, saveHeroSlides, DEFAULT_HERO_SLIDES } from '../../data/heroSlidesData';
@@ -115,6 +115,7 @@ export const SuperCoordinatorDashboardPage = () => {
   const [selectedEvent, setSelectedEvent] = useState('ALL');
   const [selectedGender, setSelectedGender] = useState('ALL');
   const [selectedCollege, setSelectedCollege] = useState('ALL');
+  const [selectedType, setSelectedType] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Active Tab View: 'leaderboard' | 'coordinator_creations' | 'participants' | 'pr_gallery' | 'profile'
@@ -401,11 +402,8 @@ export const SuperCoordinatorDashboardPage = () => {
       (sGender === 'male' ? isMale :
        sGender === 'female' ? isFemale :
        pGender.includes(sGender));
-    const pCollege = (p.college || '').toLowerCase();
-    const matchesCollege = selectedCollege === 'ALL' || 
-      pCollege.includes(selectedCollege.toLowerCase()) ||
-      selectedCollege.toLowerCase().includes(pCollege) ||
-      (selectedCollege === 'EXTERNAL' && !['mpec', 'mips', 'mpcps', 'mpcp', 'mpdc', 'mpcn', 'mpamc', 'mpcams'].some(c => pCollege.includes(c)));
+    const matchesCollege = matchesCollegeFilter(p.college, selectedCollege);
+    const matchesType = matchesParticipationTypeFilter(p, selectedType);
     
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch = !q || 
@@ -415,7 +413,7 @@ export const SuperCoordinatorDashboardPage = () => {
       (p.email || '').toLowerCase().includes(q) ||
       (p.college || '').toLowerCase().includes(q);
 
-    return matchesSport && matchesEvent && matchesGender && matchesCollege && matchesSearch;
+    return matchesSport && matchesEvent && matchesGender && matchesCollege && matchesType && matchesSearch;
   });
 
   // Handle Export Filtered Excel (CSV) Report
@@ -1554,7 +1552,7 @@ export const SuperCoordinatorDashboardPage = () => {
 
             {/* Filter Control Bar */}
             <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md dark:shadow-xl space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 
                 {/* 1. Sport / Game Filter */}
                 <div className="space-y-1.5">
@@ -1629,7 +1627,24 @@ export const SuperCoordinatorDashboardPage = () => {
                   </select>
                 </div>
 
-                {/* 4. Live Search Input */}
+                {/* 5. Format Filter (Single / Double) */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
+                    🎽 Filter by Format
+                  </label>
+                  <select
+                    value={selectedType}
+                    onChange={(e) => setSelectedType(e.target.value)}
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
+                  >
+                    <option value="ALL">All Formats</option>
+                    <option value="INDIVIDUAL">Single (1 Player)</option>
+                    <option value="DUO">Double (2 Players)</option>
+                    <option value="TEAM">Team Event</option>
+                  </select>
+                </div>
+
+                {/* 6. Live Search Input */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
                     🔍 Search Participant
@@ -1653,13 +1668,14 @@ export const SuperCoordinatorDashboardPage = () => {
                 <span className="font-mono text-slate-600 dark:text-slate-400">
                   Showing <strong className="text-blue-600 dark:text-blue-400 font-bold">{filteredParticipants.length}</strong> of {masterParticipants.length} Participants
                 </span>
-                {(selectedSport !== 'ALL' || selectedEvent !== 'ALL' || selectedGender !== 'ALL' || selectedCollege !== 'ALL' || searchQuery) && (
+                {(selectedSport !== 'ALL' || selectedEvent !== 'ALL' || selectedGender !== 'ALL' || selectedCollege !== 'ALL' || selectedType !== 'ALL' || searchQuery) && (
                   <button
                     onClick={() => {
                       setSelectedSport('ALL');
                       setSelectedEvent('ALL');
                       setSelectedGender('ALL');
                       setSelectedCollege('ALL');
+                      setSelectedType('ALL');
                       setSearchQuery('');
                     }}
                     className="text-xs sm:text-sm font-bold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"

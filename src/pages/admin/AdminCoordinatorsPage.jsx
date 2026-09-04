@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminApi } from '../../services/adminApi';
 import { useToast } from '../../context/ToastContext';
-import { ALL_12_SPORTS, ALL_COLLEGES } from '../../services/superCoordinatorApi';
+import { ALL_12_SPORTS, ALL_COLLEGES, matchesCollegeFilter } from '../../services/superCoordinatorApi';
 import { CoordinatorFormModal } from '../../components/admin/CoordinatorFormModal';
 import { ResetPasswordModal } from '../../components/admin/ResetPasswordModal';
 import { ConfirmationModal } from '../../components/admin/ConfirmationModal';
@@ -131,7 +131,7 @@ export const AdminCoordinatorsPage = () => {
   const filteredCoordinators = coordinators.filter((c) => {
     if (filterRole !== 'ALL' && (c.role || '').toLowerCase() !== filterRole.toLowerCase()) return false;
     if (filterStatus !== 'ALL' && (c.status || '').toLowerCase() !== filterStatus.toLowerCase()) return false;
-    if (filterCollege !== 'ALL' && (c.college || '').toLowerCase() !== filterCollege.toLowerCase()) return false;
+    if (filterCollege !== 'ALL' && !matchesCollegeFilter(c.college, filterCollege)) return false;
     if (filterSport !== 'ALL' && (c.assignedSport || c.sportName || '').toLowerCase() !== filterSport.toLowerCase()) return false;
 
     if (searchQuery.trim()) {

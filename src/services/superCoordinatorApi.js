@@ -30,6 +30,8 @@ export const ALL_COLLEGES = [
   { id: 'EXTERNAL', name: 'EXTERNAL' }
 ];
 
+export { matchesCollegeFilter } from '../utils/collegeHelper';
+
 const getAuthHeaders = () => {
   const token = localStorage.getItem('sems_super_coord_token') || localStorage.getItem('sems_admin_token');
   const headers = { 'Content-Type': 'application/json' };

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { adminApi } from '../../services/adminApi';
-import { superCoordinatorApi, ALL_12_SPORTS, ALL_COLLEGES } from '../../services/superCoordinatorApi';
+import { superCoordinatorApi, ALL_12_SPORTS, ALL_COLLEGES, matchesCollegeFilter } from '../../services/superCoordinatorApi';
 import { SPORTS_DATA } from '../../data/sportsData';
 import { useToast } from '../../context/ToastContext';
 import { exportToCSV, exportToPDF } from '../../utils/pdfExporter';
-import { getParticipationType } from '../../utils/rosterHelper';
+import { getParticipationType, matchesParticipationTypeFilter } from '../../utils/rosterHelper';
 import { RegistrationDetailsModal } from '../../components/admin/RegistrationDetailsModal';
 import {
   Database,
@@ -38,6 +38,7 @@ export const AdminMasterDataPage = () => {
   const [selectedEvent, setSelectedEvent] = useState('ALL');
   const [selectedGender, setSelectedGender] = useState('ALL');
   const [selectedCollege, setSelectedCollege] = useState('ALL');
+  const [selectedType, setSelectedType] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Pagination & Inspection Modal
@@ -192,11 +193,8 @@ export const AdminMasterDataPage = () => {
        sGender === 'female' ? isFemale :
        pGender.includes(sGender));
 
-    const pCollege = (p.college || '').toLowerCase();
-    const matchesCollege = selectedCollege === 'ALL' ||
-      pCollege.includes(selectedCollege.toLowerCase()) ||
-      selectedCollege.toLowerCase().includes(pCollege) ||
-      (selectedCollege === 'EXTERNAL' && !['mpec', 'mips', 'mpcps', 'mpcp', 'mpdc', 'mpcn', 'mpamc', 'mpcams'].some(c => pCollege.includes(c)));
+    const matchesCollege = matchesCollegeFilter(p.college, selectedCollege);
+    const matchesType = matchesParticipationTypeFilter(p, selectedType);
 
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch = !q ||
@@ -211,7 +209,7 @@ export const AdminMasterDataPage = () => {
       (p.id || '').toLowerCase().includes(q) ||
       (p.rollNo || '').toLowerCase().includes(q);
 
-    return matchesSport && matchesEvent && matchesGender && matchesCollege && matchesSearch;
+    return matchesSport && matchesEvent && matchesGender && matchesCollege && matchesType && matchesSearch;
   });
 
   // Fee per participant derived from sport entry fee (or stored feePaid when present)
@@ -346,13 +344,14 @@ export const AdminMasterDataPage = () => {
             <span>Master Data Filters</span>
           </div>
 
-          {(selectedSport !== 'ALL' || selectedEvent !== 'ALL' || selectedGender !== 'ALL' || selectedCollege !== 'ALL' || searchQuery) && (
+          {(selectedSport !== 'ALL' || selectedEvent !== 'ALL' || selectedGender !== 'ALL' || selectedCollege !== 'ALL' || selectedType !== 'ALL' || searchQuery) && (
             <button
               onClick={() => {
                 setSelectedSport('ALL');
                 setSelectedEvent('ALL');
                 setSelectedGender('ALL');
                 setSelectedCollege('ALL');
+                setSelectedType('ALL');
                 setSearchQuery('');
                 setCurrentPage(1);
               }}
@@ -363,7 +362,7 @@ export const AdminMasterDataPage = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
           {/* 1. 🎯 Filter by Game */}
           <div>
             <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
@@ -437,7 +436,24 @@ export const AdminMasterDataPage = () => {
             </select>
           </div>
 
-          {/* 5. 🔍 Search Participant */}
+          {/* 5. 🎽 Filter by Format (Single / Double) */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+              🎽 Filter by Format
+            </label>
+            <select
+              value={selectedType}
+              onChange={(e) => { setSelectedType(e.target.value); setCurrentPage(1); }}
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
+            >
+              <option value="ALL" className="bg-white dark:bg-slate-900">All Formats</option>
+              <option value="INDIVIDUAL" className="bg-white dark:bg-slate-900">Single (1 Player)</option>
+              <option value="DUO" className="bg-white dark:bg-slate-900">Double (2 Players)</option>
+              <option value="TEAM" className="bg-white dark:bg-slate-900">Team Event</option>
+            </select>
+          </div>
+
+          {/* 6. 🔍 Search Participant */}
           <div>
             <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
               🔍 Search Participant

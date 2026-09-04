@@ -121,6 +121,23 @@ export const getParticipationType = (record, explicitSportId = null) => {
   return normalizeParticipationType(record, explicitSportId);
 };
 
+export const matchesParticipationTypeFilter = (record, selectedFilter) => {
+  if (!selectedFilter || selectedFilter === 'ALL') return true;
+  const pType = getParticipationType(record);
+  const sel = String(selectedFilter).trim().toUpperCase();
+
+  if (sel === 'INDIVIDUAL' || sel === 'SINGLE' || sel === 'SINGLES') {
+    return pType === 'INDIVIDUAL';
+  }
+  if (sel === 'DUO' || sel === 'DOUBLE' || sel === 'DOUBLES') {
+    return pType === 'DUO';
+  }
+  if (sel === 'TEAM') {
+    return pType === 'TEAM';
+  }
+  return true;
+};
+
 /**
  * Standardizes and flattens registration records into individual athlete rows.
  * - Individual sports (e.g. Chess, Athletics 100m, Table Tennis singles, Badminton singles) -> 1 row per participant.
