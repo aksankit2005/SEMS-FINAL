@@ -638,7 +638,7 @@ export const getSportResultDisplay = (r) => {
   const winner = str(r.winner || r.winnerName || details.winner, '');
   const format = str(r.format || details.format, '');
   const category = str(r.category || r.gender || details.category, 'Open');
-  const date = formatDate(r.completedAt || r.date || r.updatedAt || details.completedAt);
+  const date = formatDate(r.date || details.date || r.completedAt || r.updatedAt || details.completedAt);
   const mvp = str(details.mvp || details.playerOfMatch || details.playerOfTheMatch || r.mvpPlayer, '');
 
   // 1. CRICKET / GULLY CRICKET
@@ -885,30 +885,69 @@ export const getSportResultDisplay = (r) => {
 
   // 8. TUG OF WAR
   if (sportId.includes('tug')) {
+    // 1. Resolve Team 1 and Team 2 (direct fields or from eventTitle e.g. "Team A vs Team B")
+    let resolvedTeam1 = r.team1 || details.team1 || (team1 !== 'Team 1' ? team1 : '');
+    let resolvedTeam2 = r.team2 || details.team2 || (team2 !== 'Team 2' ? team2 : '');
+    if ((!resolvedTeam1 || !resolvedTeam2) && eventTitle && eventTitle.includes(' vs ')) {
+      const parts = eventTitle.split(' vs ');
+      if (parts.length === 2) {
+        resolvedTeam1 = resolvedTeam1 || parts[0].trim();
+        resolvedTeam2 = resolvedTeam2 || parts[1].trim();
+      }
+    }
+    resolvedTeam1 = resolvedTeam1 || (winner ? winner : 'Team 1');
+    resolvedTeam2 = resolvedTeam2 || (winner && resolvedTeam1 === winner ? 'Opponent Team' : 'Team 2');
+
     const rw1 = Number(r.roundsWon1 ?? details.roundsWon1 ?? (r.score1 || 0));
     const rw2 = Number(r.roundsWon2 ?? details.roundsWon2 ?? (r.score2 || 0));
-    const rounds = (Array.isArray(r.roundsHistory) ? r.roundsHistory : details.roundsHistory) || [];
-    const roundsBreakdown = rounds.map((rd, i) => `Round ${i + 1}: ${rd.winner || 'Completed'}`);
+    const finalWinner = r.winner || details.winner || winner || (rw1 >= rw2 ? resolvedTeam1 : resolvedTeam2);
+
+    const rawRounds = (Array.isArray(r.roundsHistory) ? r.roundsHistory : details.roundsHistory) || [];
+    let validRounds = rawRounds.filter(
+      (rd) => rd && rd.winner && rd.winner.toLowerCase() !== 'completed' && rd.winner.toLowerCase() !== 'pending' && rd.winner.trim() !== ''
+    );
+
+    // Fallback for legacy records that didn't have roundsHistory array
+    if (validRounds.length === 0 && (rw1 > 0 || rw2 > 0 || finalWinner)) {
+      const w1Count = rw1 || (finalWinner === resolvedTeam1 ? 2 : 0);
+      const w2Count = rw2 || (finalWinner === resolvedTeam2 ? 2 : 0);
+      let rIndex = 1;
+      for (let i = 0; i < w1Count; i++) {
+        validRounds.push({ round: rIndex++, winner: resolvedTeam1 });
+      }
+      for (let i = 0; i < w2Count; i++) {
+        validRounds.push({ round: rIndex++, winner: resolvedTeam2 });
+      }
+    }
+
+    const roundsBreakdown = validRounds.map((rd, i) => ({
+      round: rd.round || (i + 1),
+      winner: rd.winner,
+      label: `Round ${rd.round || (i + 1)} won by: ${rd.winner}`
+    }));
 
     return {
       sportId: 'tug-of-war',
       sportName: 'Tug of War',
       sportType: 'tug',
-      team1,
-      team2,
+      team1: resolvedTeam1,
+      team2: resolvedTeam2,
       eventTitle,
       format: format || 'Team Match (8v8 Best of 3 Pulls)',
       category,
       date,
-      winner: winner || (rw1 >= rw2 ? team1 : team2),
-      mvp: mvp && mvp !== winner ? mvp : null,
+      winner: finalWinner,
+      mvp: mvp && mvp !== finalWinner ? mvp : null,
       tug: {
+        team1: resolvedTeam1,
+        team2: resolvedTeam2,
         roundsWon1: rw1,
         roundsWon2: rw2,
-        pullsScoreText: `${rw1} - ${rw2} Pulls Won`,
+        scoreText: `${resolvedTeam1} (${rw1}) — (${rw2}) ${resolvedTeam2}`,
+        pullsScoreText: `${rw1} - ${rw2} Sets Won`,
         roundsBreakdown
       },
-      summaryText: `${team1} vs ${team2}: ${rw1} - ${rw2} Pulls Won`
+      summaryText: `${resolvedTeam1} vs ${resolvedTeam2} • Winner: ${finalWinner} (${rw1} - ${rw2} Sets)`
     };
   }
 

@@ -27,12 +27,11 @@ export function parseRegistrationDeadline(dateStr) {
   const str = String(dateStr).trim();
   if (!str) return null;
 
-  // Date-only YYYY-MM-DD
+  // Date-only YYYY-MM-DD - Registration permitted until 23:59:59.999 Asia/Kolkata on the end date
   const dateOnlyMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (dateOnlyMatch) {
     const [_, y, m, d] = dateOnlyMatch;
-    // 00:00:00 in Asia/Kolkata (+05:30)
-    const isoString = `${y}-${m}-${d}T00:00:00+05:30`;
+    const isoString = `${y}-${m}-${d}T23:59:59.999+05:30`;
     const parsed = Date.parse(isoString);
     return isNaN(parsed) ? null : parsed;
   }

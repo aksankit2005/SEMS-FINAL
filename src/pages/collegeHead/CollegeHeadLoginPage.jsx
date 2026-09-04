@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, Lock, User, Building2, AlertCircle, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { collegeHeadApi } from '../../services/collegeHeadApi';
 import { useToast } from '../../context/ToastContext';
-import { ThemeToggle } from '../../components/common/ThemeToggle';
 
 export const CollegeHeadLoginPage = () => {
   const navigate = useNavigate();
@@ -40,21 +39,17 @@ export const CollegeHeadLoginPage = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col justify-center py-12 sm:px-6 lg:px-8 transition-colors relative">
-      {/* Top right theme toggle */}
-      <div className="absolute top-4 right-4 z-20">
-        <ThemeToggle />
-      </div>
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         {/* APEX Brand Logos */}
         <div className="flex justify-center mb-4">
-          <img 
-            src="/logo-dark.png" 
-            alt="APEX Logo" 
+          <img
+            src="/logo-dark.png"
+            alt="APEX Logo"
             className="hidden dark:block h-16 w-auto object-contain"
           />
-          <img 
-            src="/logo-light.png" 
-            alt="APEX Logo" 
+          <img
+            src="/logo-light.png"
+            alt="APEX Logo"
             className="block dark:hidden h-16 w-auto object-contain"
           />
         </div>
@@ -73,7 +68,7 @@ export const CollegeHeadLoginPage = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-lg">
         <div className="bg-white dark:bg-slate-900 py-8 px-6 sm:px-10 shadow-2xl rounded-3xl border border-slate-200 dark:border-slate-800 space-y-6">
-          
+
           {errorMessage && (
             <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center gap-2.5">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -94,7 +89,7 @@ export const CollegeHeadLoginPage = () => {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="e.g. head_mpec"
+                  placeholder="Enter your username"
                   className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
                 />
               </div>

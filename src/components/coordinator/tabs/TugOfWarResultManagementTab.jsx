@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Trash2, Download, Filter, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { Trophy, Trash2, Download, Filter, RefreshCw, FileSpreadsheet, Edit, X, CheckCircle2, Calendar } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { useConfirm } from '../../../context/ConfirmContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
@@ -10,17 +10,35 @@ export const TugOfWarResultManagementTab = ({ user }) => {
   const { addToast } = useToast();
   const { confirmDelete } = useConfirm();
   const [resultsList, setResultsList] = useState([]);
-  
+
   // Filter States
   const [selectedEvent, setSelectedEvent] = useState('ALL');
   const [selectedGender, setSelectedGender] = useState('ALL');
   const [availableEvents, setAvailableEvents] = useState([]);
 
+  // Edit Result Modal State
+  const [editingResult, setEditingResult] = useState(null);
+  const [editForm, setEditForm] = useState({
+    team1: '',
+    team2: '',
+    eventTitle: '',
+    category: 'Open',
+    venue: 'Tug of War Ground 1',
+    date: '',
+    time: '04:00 PM',
+    roundsWon1: 0,
+    roundsWon2: 0,
+    winner: '',
+    round1Winner: '',
+    round2Winner: '',
+    round3Winner: '',
+  });
+
   const sportId = 'tug-of-war';
   const sportName = 'Tug of War';
   const resultsKey = `sems_completed_results_${sportId}`;
 
-  // Load results & events on mount
+  // Load results & events on mount + from DB
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -38,32 +56,237 @@ export const TugOfWarResultManagementTab = ({ user }) => {
       const mockNames = [
         '1', '2', 'a', 'b', 'player 1', 'player 2', 'player 3', 'player 4', 'team 1', 'team 2', 'team a', 'team b', 'albert', 'romi'
       ];
+
+      // 0. Deleted result IDs to filter out permanently
+      let deletedIds = new Set();
+      try {
+        const deletedStr = localStorage.getItem('sems_deleted_result_ids');
+        if (deletedStr) {
+          const parsed = JSON.parse(deletedStr);
+          if (Array.isArray(parsed)) {
+            deletedIds = new Set(parsed);
+          }
+        }
+      } catch (e) {}
+
+      // 1. Gather local storage edited results
+      const localResultsMap = {};
       const saved = localStorage.getItem(resultsKey);
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          const cleaned = Array.isArray(parsed)
-            ? parsed.filter((r) => {
-                if (!r) return false;
-                if (mockIds.includes(r.id)) return false;
-                const t1 = (r.team1 || '').trim().toLowerCase();
-                const t2 = (r.team2 || '').trim().toLowerCase();
-                const w = (r.winner || '').trim().toLowerCase();
-                return !mockNames.includes(t1) && !mockNames.includes(t2) && !mockNames.includes(w);
-              })
-            : [];
-          setResultsList(cleaned);
-          localStorage.setItem(resultsKey, JSON.stringify(cleaned));
-        } catch (e) {
-          setResultsList([]);
-        }
-      } else {
-        setResultsList([]);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((r) => {
+              if (r && r.id && !deletedIds.has(r.id)) {
+                localResultsMap[r.id] = r;
+              }
+            });
+          }
+        } catch (e) {}
       }
+
+      const mergedMap = { ...localResultsMap };
+
+      // 2. Fetch real completed results from Supabase PostgreSQL database
+      try {
+        const dbResults = await coordinatorApi.getPublicResults();
+        if (dbResults && Array.isArray(dbResults)) {
+          dbResults.forEach((m) => {
+            if (!m || !m.id || deletedIds.has(m.id)) return;
+            const rawSport = (m.sportId || m.sport || m.sportName || '').toLowerCase().replace(/_/g, '-');
+            if (rawSport.includes('tug') || rawSport.includes('tow')) {
+              let detailsObj = {};
+              if (m.details) {
+                try {
+                  detailsObj = typeof m.details === 'object' ? m.details : JSON.parse(m.details);
+                } catch (e) {}
+              }
+
+              const t1 = m.team1 || detailsObj.team1 || detailsObj.team1Name || 'Team 1';
+              const t2 = m.team2 || detailsObj.team2 || detailsObj.team2Name || 'Team 2';
+              const rw1 = m.roundsWon1 !== undefined && m.roundsWon1 !== null 
+                ? Number(m.roundsWon1) 
+                : (detailsObj.roundsWon1 !== undefined ? Number(detailsObj.roundsWon1) : Number(m.score1 || 0));
+              const rw2 = m.roundsWon2 !== undefined && m.roundsWon2 !== null 
+                ? Number(m.roundsWon2) 
+                : (detailsObj.roundsWon2 !== undefined ? Number(detailsObj.roundsWon2) : Number(m.score2 || 0));
+
+              const itemNormalized = {
+                id: m.id,
+                team1: t1,
+                team2: t2,
+                team1Name: t1,
+                team2Name: t2,
+                eventTitle: m.eventTitle || m.event || m.matchTitle || detailsObj.eventTitle || 'Tug of War Championship',
+                category: m.category || m.gender || detailsObj.category || 'Open',
+                gender: m.category || m.gender || detailsObj.category || 'Open',
+                venue: m.tableNumber || m.venue || detailsObj.venue || 'Tug of War Ground 1',
+                tableNumber: m.tableNumber || m.venue || detailsObj.venue || 'Tug of War Ground 1',
+                date: m.date || (m.completedAt ? m.completedAt.split('T')[0] : (m.updatedAt ? m.updatedAt.split('T')[0] : new Date().toISOString().split('T')[0])),
+                time: m.time || detailsObj.time || 'Completed',
+                roundsWon1: rw1,
+                roundsWon2: rw2,
+                score1: rw1,
+                score2: rw2,
+                winner: m.winner || detailsObj.winner || (rw1 >= rw2 ? t1 : t2),
+                roundsHistory: Array.isArray(m.roundsHistory) ? m.roundsHistory : (Array.isArray(detailsObj.roundsHistory) ? detailsObj.roundsHistory : []),
+                format: m.format || detailsObj.format || 'TEAM MATCH (8v8)',
+                status: 'COMPLETED',
+                completedAt: m.completedAt || m.updatedAt || new Date().toISOString(),
+                details: detailsObj,
+                rawMatch: m,
+              };
+
+              // If coordinator edited locally, keep local version, else use DB version
+              if (!mergedMap[m.id]) {
+                mergedMap[m.id] = itemNormalized;
+              } else {
+                mergedMap[m.id] = { ...itemNormalized, ...mergedMap[m.id] };
+              }
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Could not fetch DB results for Tug of War:', e);
+      }
+
+      // 3. Clean and set list
+      const finalList = Object.values(mergedMap).filter((r) => {
+        if (!r || !r.id || deletedIds.has(r.id)) return false;
+        if (mockIds.includes(r.id)) return false;
+        const t1 = (r.team1 || '').trim().toLowerCase();
+        const t2 = (r.team2 || '').trim().toLowerCase();
+        const w = (r.winner || '').trim().toLowerCase();
+        return !mockNames.includes(t1) && !mockNames.includes(t2) && !mockNames.includes(w);
+      });
+
+      setResultsList(finalList);
+      localStorage.setItem(resultsKey, JSON.stringify(finalList));
     };
 
     loadData();
+    window.addEventListener('sems_results_updated', loadData);
+    window.addEventListener('focus', loadData);
+    return () => {
+      window.removeEventListener('sems_results_updated', loadData);
+      window.removeEventListener('focus', loadData);
+    };
   }, [resultsKey]);
+
+  const handleOpenEdit = (res) => {
+    setEditingResult(res);
+
+    const rHistory = Array.isArray(res.roundsHistory) ? res.roundsHistory : [];
+    const r1 = rHistory.find((r) => r.round === 1)?.winner || '';
+    const r2 = rHistory.find((r) => r.round === 2)?.winner || '';
+    const r3 = rHistory.find((r) => r.round === 3)?.winner || '';
+
+    const t1 = res.team1 || res.team1Name || 'Team 1';
+    const t2 = res.team2 || res.team2Name || 'Team 2';
+    const rw1 = Number(res.roundsWon1 ?? 0);
+    const rw2 = Number(res.roundsWon2 ?? 0);
+
+    setEditForm({
+      team1: t1,
+      team2: t2,
+      eventTitle: res.eventTitle || res.title || 'TUG OF WAR 2026',
+      category: res.category || res.gender || 'Open',
+      venue: res.tableNumber || res.venue || 'Tug of War Ground 1',
+      date: res.date || (res.completedAt ? res.completedAt.split('T')[0] : new Date().toISOString().split('T')[0]),
+      time: res.time || '04:00 PM',
+      roundsWon1: rw1,
+      roundsWon2: rw2,
+      winner: res.winner || (rw1 >= rw2 ? t1 : t2),
+      round1Winner: r1 || (rw1 > 0 ? t1 : ''),
+      round2Winner: r2 || (rw2 > 0 ? t2 : (rw1 > 1 ? t1 : '')),
+      round3Winner: r3,
+    });
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editingResult) return;
+
+    if (!editForm.team1.trim() || !editForm.team2.trim()) {
+      addToast('Both Team 1 and Team 2 names are required', 'error');
+      return;
+    }
+
+    const constructedRoundsHistory = [
+      { round: 1, winner: editForm.round1Winner || null, isLocked: Boolean(editForm.round1Winner) },
+      { round: 2, winner: editForm.round2Winner || null, isLocked: Boolean(editForm.round2Winner) },
+      { round: 3, winner: editForm.round3Winner || null, isLocked: Boolean(editForm.round3Winner) },
+    ];
+
+    const updatedObj = {
+      ...editingResult,
+      team1: editForm.team1.trim(),
+      team2: editForm.team2.trim(),
+      team1Name: editForm.team1.trim(),
+      team2Name: editForm.team2.trim(),
+      eventTitle: editForm.eventTitle.trim(),
+      category: editForm.category,
+      gender: editForm.category,
+      venue: editForm.venue,
+      tableNumber: editForm.venue,
+      date: editForm.date,
+      time: editForm.time,
+      roundsWon1: Number(editForm.roundsWon1),
+      roundsWon2: Number(editForm.roundsWon2),
+      score1: Number(editForm.roundsWon1),
+      score2: Number(editForm.roundsWon2),
+      winner: editForm.winner.trim() || editForm.team1.trim(),
+      winnerName: editForm.winner.trim() || editForm.team1.trim(),
+      roundsHistory: constructedRoundsHistory,
+      details: {
+        ...(editingResult.details || {}),
+        team1: editForm.team1.trim(),
+        team2: editForm.team2.trim(),
+        team1Name: editForm.team1.trim(),
+        team2Name: editForm.team2.trim(),
+        roundsWon1: Number(editForm.roundsWon1),
+        roundsWon2: Number(editForm.roundsWon2),
+        score1: Number(editForm.roundsWon1),
+        score2: Number(editForm.roundsWon2),
+        winner: editForm.winner.trim() || editForm.team1.trim(),
+        roundsHistory: constructedRoundsHistory,
+        category: editForm.category,
+        venue: editForm.venue,
+        date: editForm.date,
+        time: editForm.time,
+      },
+      status: 'COMPLETED',
+      completedAt: editingResult.completedAt || new Date().toISOString(),
+    };
+
+    const updatedList = resultsList.map((r) => (r.id === editingResult.id ? updatedObj : r));
+    setResultsList(updatedList);
+    localStorage.setItem(resultsKey, JSON.stringify(updatedList));
+
+    // Remove from deleted IDs set if it was there
+    try {
+      const deletedStr = localStorage.getItem('sems_deleted_result_ids');
+      if (deletedStr) {
+        const deletedArr = JSON.parse(deletedStr);
+        if (Array.isArray(deletedArr)) {
+          const filteredDeleted = deletedArr.filter((did) => did !== editingResult.id);
+          localStorage.setItem('sems_deleted_result_ids', JSON.stringify(filteredDeleted));
+        }
+      }
+    } catch (e) {}
+
+    try {
+      await coordinatorApi.completeMatch(editingResult.id, updatedObj);
+    } catch (err) {
+      console.warn('API sync completed with local save:', err);
+    }
+
+    window.dispatchEvent(new Event('sems_results_updated'));
+    window.dispatchEvent(new Event('storage'));
+
+    addToast(`Match result updated! Declared Winner: ${updatedObj.winner}`, 'success');
+    setEditingResult(null);
+  };
 
   const handleSetWinner = async (id, winnerName) => {
     try {
@@ -80,13 +303,36 @@ export const TugOfWarResultManagementTab = ({ user }) => {
   const handleDeleteResult = async (id) => {
     const isConfirmed = await confirmDelete({
       title: 'Delete Result Entry',
-      message: 'Are you sure you want to delete this Tug of War match result entry?'
+      message: 'Are you sure you want to delete this Tug of War match result entry? It will be removed from database and public portal.'
     });
     if (!isConfirmed) return;
     const updated = resultsList.filter((r) => r.id !== id);
     setResultsList(updated);
     localStorage.setItem(resultsKey, JSON.stringify(updated));
-    addToast('Result entry deleted', 'info');
+
+    // Add to deleted IDs set so it never reappears on public pages
+    try {
+      const deletedStr = localStorage.getItem('sems_deleted_result_ids');
+      let deletedArr = [];
+      if (deletedStr) {
+        try { deletedArr = JSON.parse(deletedStr); } catch (e) {}
+      }
+      if (!Array.isArray(deletedArr)) deletedArr = [];
+      if (!deletedArr.includes(id)) {
+        deletedArr.push(id);
+        localStorage.setItem('sems_deleted_result_ids', JSON.stringify(deletedArr));
+      }
+    } catch (e) {}
+
+    try {
+      await coordinatorApi.deleteMatch(id);
+    } catch (e) {
+      console.warn('Delete match API error:', e);
+    }
+
+    window.dispatchEvent(new Event('sems_results_updated'));
+    window.dispatchEvent(new Event('storage'));
+    addToast('Result entry deleted successfully from database and public view', 'info');
   };
 
   const handleClearResults = async () => {
@@ -116,14 +362,13 @@ export const TugOfWarResultManagementTab = ({ user }) => {
     }
 
     if (selectedGender !== 'ALL') {
-      const cat = (r.category || r.gender || 'Open').toLowerCase();
-      const filterG = selectedGender.toLowerCase();
+      const cat = (r.category || r.gender || 'Open').toLowerCase().trim();
+      const filterG = selectedGender.toLowerCase().trim();
+      const isFemale = cat.includes('female') || cat.includes('girl') || cat.includes('women') || cat.includes('woman') || cat === 'f';
+      const isMale = !isFemale && (cat.includes('male') || cat.includes('boy') || cat.includes('men') || cat.includes('man') || cat === 'm');
 
-      if (filterG === 'male') {
-        if (!cat.includes('male') && !cat.includes('boy') && !cat.includes('men')) return false;
-      } else if (filterG === 'female') {
-        if (!cat.includes('female') && !cat.includes('girl') && !cat.includes('women')) return false;
-      }
+      if (filterG === 'male' && !isMale) return false;
+      if (filterG === 'female' && !isFemale) return false;
     }
 
     return true;
@@ -162,9 +407,9 @@ export const TugOfWarResultManagementTab = ({ user }) => {
 
   return (
     <div className="space-y-6 text-slate-900 dark:text-slate-200 animate-fade-in font-sans">
-      
+
       <div className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-2xl space-y-5">
-        
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
           <div>
             <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
@@ -267,7 +512,7 @@ export const TugOfWarResultManagementTab = ({ user }) => {
               ) : (
                 filteredResults.map((r) => (
                   <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                    
+
                     <td className="p-4 space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">#{r.id}</span>
@@ -328,10 +573,18 @@ export const TugOfWarResultManagementTab = ({ user }) => {
                           <span>PDF</span>
                         </button>
                         <button
-                          onClick={() => handleSetWinner(r.id, r.winner || r.team1)}
-                          className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
+                          onClick={() => handleOpenEdit(r)}
+                          className="px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
                         >
-                          Set Winner
+                          <Edit className="w-3.5 h-3.5" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteResult(r.id)}
+                          className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/20 dark:hover:bg-rose-500/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 transition cursor-pointer"
+                          title="Delete Result"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -343,6 +596,256 @@ export const TugOfWarResultManagementTab = ({ user }) => {
         </div>
 
       </div>
+
+      {/* Edit Result Modal */}
+      {editingResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs font-sans animate-fade-in overflow-y-auto">
+          <div className="w-full max-w-2xl bg-white dark:bg-[#111827] text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5 my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div>
+                <span className="text-[10px] font-mono uppercase font-bold text-orange-600 dark:text-orange-400">
+                  EDIT TUG OF WAR MATCH RESULT
+                </span>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                  Match #{editingResult.id}
+                </h3>
+              </div>
+              <button
+                onClick={() => setEditingResult(null)}
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4 text-xs">
+              
+              {/* Contestant Teams */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-orange-500/5 border border-orange-500/20">
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase text-orange-600 dark:text-orange-400 mb-1">
+                    Team 1 Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editForm.team1}
+                    onChange={(e) => setEditForm({ ...editForm, team1: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase text-blue-600 dark:text-blue-400 mb-1">
+                    Team 2 Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editForm.team2}
+                    onChange={(e) => setEditForm({ ...editForm, team2: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Event Title & Category */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase text-slate-500 mb-1">
+                    Event Title
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.eventTitle}
+                    onChange={(e) => setEditForm({ ...editForm, eventTitle: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase text-slate-500 mb-1">
+                    Category / Gender
+                  </label>
+                  <select
+                    value={editForm.category}
+                    onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-orange-500"
+                  >
+                    <option value="Open">Open</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Venue, Date & Time */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase text-slate-500 mb-1">
+                    Venue / Ground
+                  </label>
+                  <select
+                    value={editForm.venue}
+                    onChange={(e) => setEditForm({ ...editForm, venue: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-orange-500"
+                  >
+                    <option value="Tug of War Ground 1">Tug of War Ground 1</option>
+                    <option value="Tug of War Ground 2">Tug of War Ground 2</option>
+                    <option value="Tug of War Ground 3">Tug of War Ground 3</option>
+                    <option value="Tug of War Ground 4">Tug of War Ground 4</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase text-slate-500 mb-1">
+                    Match Date
+                  </label>
+                  <input
+                    type="date"
+                    value={editForm.date}
+                    onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase text-slate-500 mb-1">
+                    Match Time
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.time}
+                    onChange={(e) => setEditForm({ ...editForm, time: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+              </div>
+
+              {/* Sets Won & Winner */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-slate-800">
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase text-orange-600 dark:text-orange-400 mb-1">
+                    {editForm.team1 || 'Team 1'} Sets Won
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="5"
+                    value={editForm.roundsWon1}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setEditForm((prev) => ({
+                        ...prev,
+                        roundsWon1: val,
+                        winner: val > prev.roundsWon2 ? prev.team1 : (prev.roundsWon2 > val ? prev.team2 : prev.winner)
+                      }));
+                    }}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase text-blue-600 dark:text-blue-400 mb-1">
+                    {editForm.team2 || 'Team 2'} Sets Won
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="5"
+                    value={editForm.roundsWon2}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setEditForm((prev) => ({
+                        ...prev,
+                        roundsWon2: val,
+                        winner: prev.roundsWon1 > val ? prev.team1 : (val > prev.roundsWon1 ? prev.team2 : prev.winner)
+                      }));
+                    }}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono font-bold uppercase text-emerald-600 dark:text-emerald-400 mb-1">
+                    Declared Winner *
+                  </label>
+                  <select
+                    value={editForm.winner}
+                    onChange={(e) => setEditForm({ ...editForm, winner: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#111827] border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value={editForm.team1}>{editForm.team1 || 'Team 1'}</option>
+                    <option value={editForm.team2}>{editForm.team2 || 'Team 2'}</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Round-by-Round Winners */}
+              <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] font-mono uppercase font-bold text-slate-500 block">
+                  Round-by-Round Winner Selection
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1">Round 1</label>
+                    <select
+                      value={editForm.round1Winner}
+                      onChange={(e) => setEditForm({ ...editForm, round1Winner: e.target.value })}
+                      className="w-full px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold"
+                    >
+                      <option value="">None / Pending</option>
+                      <option value={editForm.team1}>{editForm.team1}</option>
+                      <option value={editForm.team2}>{editForm.team2}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1">Round 2</label>
+                    <select
+                      value={editForm.round2Winner}
+                      onChange={(e) => setEditForm({ ...editForm, round2Winner: e.target.value })}
+                      className="w-full px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold"
+                    >
+                      <option value="">None / Pending</option>
+                      <option value={editForm.team1}>{editForm.team1}</option>
+                      <option value={editForm.team2}>{editForm.team2}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1">Round 3</label>
+                    <select
+                      value={editForm.round3Winner}
+                      onChange={(e) => setEditForm({ ...editForm, round3Winner: e.target.value })}
+                      className="w-full px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold"
+                    >
+                      <option value="">None / Pending</option>
+                      <option value={editForm.team1}>{editForm.team1}</option>
+                      <option value={editForm.team2}>{editForm.team2}</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Form Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setEditingResult(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Save & Update Result</span>
+                </button>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 };

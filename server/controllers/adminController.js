@@ -1890,7 +1890,12 @@ export const getSettingsDB = async (req, res) => {
   try {
     const setting = await prisma.systemSetting.findUnique({ where: { key: 'admin_portal_settings' } });
     if (setting && setting.value) {
-      return res.json(setting.value);
+      const val = setting.value;
+      return res.json({
+        ...val,
+        adminEmail: val.adminEmail && val.adminEmail !== 'admin.sports@mpec.ac.in' && val.adminEmail !== 'SS@email.com' ? val.adminEmail : '',
+        contactPhone: val.contactPhone && val.contactPhone !== '+91 98765 00000' && val.contactPhone !== '+91 98765 43210' ? val.contactPhone : ''
+      });
     }
   } catch (err) {
     console.error('Error fetching system settings from DB:', err.message);
@@ -1900,8 +1905,8 @@ export const getSettingsDB = async (req, res) => {
     allowRegistrations: true,
     currentFestYear: 2026,
     collegeName: 'Maharana Pratap Engineering College (MPEC)',
-    adminEmail: 'admin.sports@mpec.ac.in',
-    contactPhone: '+91 98765 00000',
+    adminEmail: '',
+    contactPhone: '',
     maxPdfSizeMB: 10
   });
 };

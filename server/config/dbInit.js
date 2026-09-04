@@ -98,6 +98,7 @@ export const seedInitialAccountHashes = async () => {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sport_id VARCHAR(50);`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS event_id TEXT;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS event_title TEXT;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS team1_id TEXT;`);
@@ -109,6 +110,29 @@ export const seedInitialAccountHashes = async () => {
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won2 INT DEFAULT 0;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS current_quarter TEXT DEFAULT 'Quarter 1';`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;`);
+
+    // Ensure matches table exists with all required columns
+    await queryDb(`
+      CREATE TABLE IF NOT EXISTS matches (
+        id TEXT PRIMARY KEY,
+        sport_id VARCHAR(50),
+        format VARCHAR(50),
+        status VARCHAR(50),
+        team1 TEXT,
+        team2 TEXT,
+        match_title TEXT,
+        table_number VARCHAR(100),
+        time VARCHAR(50),
+        score1 INT DEFAULT 0,
+        score2 INT DEFAULT 0,
+        winner TEXT,
+        details JSONB,
+        event_id TEXT,
+        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await queryDb(`ALTER TABLE matches ADD COLUMN IF NOT EXISTS sport_id VARCHAR(50);`);
 
     // 5. Seed Initial Sport Coordinators if not present
     const defaultSports = [
@@ -281,6 +305,8 @@ export const initDatabaseSchema = async () => {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    await queryDb(`ALTER TABLE coordinator_event_items ADD COLUMN IF NOT EXISTS sport_id VARCHAR(50);`);
+    await queryDb(`ALTER TABLE coordinator_event_items ADD COLUMN IF NOT EXISTS sport_name VARCHAR(100);`);
     await queryDb(`ALTER TABLE coordinator_event_items ADD COLUMN IF NOT EXISTS registration_open BOOLEAN DEFAULT TRUE;`);
 
     // Backfill details JSONB for pre-existing rows where details IS NULL
@@ -349,6 +375,7 @@ export const initDatabaseSchema = async () => {
     `);
     await queryDb(`ALTER TABLE events ADD COLUMN IF NOT EXISTS public_id VARCHAR(255);`);
     await queryDb(`ALTER TABLE events ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;`);
+    await queryDb(`ALTER TABLE events ADD COLUMN IF NOT EXISTS category VARCHAR(100);`).catch(() => {});
     await queryDb(`ALTER TABLE events ALTER COLUMN updated_at SET DEFAULT CURRENT_TIMESTAMP;`);
     await queryDb(`ALTER TABLE events ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP;`);
 

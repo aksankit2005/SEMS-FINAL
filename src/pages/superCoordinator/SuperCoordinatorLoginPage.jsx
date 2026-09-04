@@ -92,7 +92,7 @@ export const SuperCoordinatorLoginPage = () => {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="e.g. super_coordinator"
+                  placeholder="Enter your username"
                   className="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                 />
               </div>
@@ -129,7 +129,7 @@ export const SuperCoordinatorLoginPage = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 hover:from-blue-500 hover:to-orange-400 text-white font-black text-sm shadow-xl shadow-blue-600/25 transition flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-sm shadow-xl shadow-blue-600/25 transition flex items-center justify-center gap-2 cursor-pointer"
           >
             {loading ? (
               <span className="flex items-center gap-2">
@@ -145,6 +145,15 @@ export const SuperCoordinatorLoginPage = () => {
           </button>
         </form>
 
+        <div className="text-center pt-2 relative z-10">
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 transition-colors cursor-pointer"
+          >
+            ← Back to Home Page
+          </button>
+        </div>
       </div>
     </div>
   );

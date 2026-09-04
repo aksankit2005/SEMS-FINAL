@@ -41,24 +41,26 @@ export const ProfileTab = ({ user, matches = [], registrations = [], onLogout })
             </div>
           </div>
 
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="px-4 py-2.5 rounded-2xl bg-rose-500/10 hover:bg-rose-500 text-rose-600 hover:text-white border border-rose-500/20 text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer self-start sm:self-center"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout Session</span>
+            </button>
+          )}
+
         </div>
 
         {/* Profile Detail Fields Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 space-y-1">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Assigned Sport</span>
             <div className="flex items-center gap-2">
               <Trophy className="w-4 h-4 text-amber-500" />
               <span className="font-extrabold text-sm text-slate-900 dark:text-white">{sportName}</span>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Assigned Venue</span>
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-blue-500" />
-              <span className="font-bold text-xs text-slate-900 dark:text-white truncate">{venue}</span>
             </div>
           </div>
 
@@ -78,28 +80,28 @@ export const ProfileTab = ({ user, matches = [], registrations = [], onLogout })
       <div className="grid grid-cols-1 gap-6">
         
         {/* Account Details Box */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-xl space-y-4 max-w-2xl">
+        <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-xl space-y-5 max-w-2xl w-full">
           <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-indigo-400" /> Coordinator Credentials
+            <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" /> COORDINATOR CREDENTIALS
           </h3>
 
-          <div className="space-y-3 text-xs">
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-slate-800">
+          <div className="space-y-3 text-xs sm:text-sm">
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-slate-800">
               <span className="font-bold text-slate-500 dark:text-slate-400">Coordinator Name</span>
               <span className="font-black text-slate-900 dark:text-white">{coordName}</span>
             </div>
 
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-slate-800">
               <span className="font-bold text-slate-500 dark:text-slate-400">System Username</span>
-              <span className="font-mono font-bold text-blue-600 dark:text-indigo-400">@{username}</span>
+              <span className="font-mono font-bold text-blue-600 dark:text-blue-400">@{username}</span>
             </div>
 
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-slate-800">
               <span className="font-bold text-slate-500 dark:text-slate-400">Access Level</span>
               <span className="font-extrabold text-emerald-600 dark:text-emerald-400">Head Sport Coordinator</span>
             </div>
 
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-slate-800">
               <span className="font-bold text-slate-500 dark:text-slate-400">Assigned Domain</span>
               <span className="font-bold text-slate-900 dark:text-white">{sportName} Championship 2026</span>
             </div>

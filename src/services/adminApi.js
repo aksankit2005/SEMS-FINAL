@@ -26,7 +26,7 @@ const DEFAULT_ADMIN_USER = {
   id: 'ADM-1001',
   name: 'System Administrator',
   username: 'admin',
-  email: 'admin.sports@mpec.ac.in',
+  email: 'sports@mpgi.edu.in',
   role: 'ADMIN',
   status: 'ACTIVE'
 };
@@ -657,8 +657,8 @@ export const adminApi = {
       allowRegistrations: true,
       currentFestYear: 2026,
       collegeName: 'Maharana Pratap Engineering College (MPEC)',
-      adminEmail: 'admin.sports@mpec.ac.in',
-      contactPhone: '+91 98765 00000',
+      adminEmail: '',
+      contactPhone: '',
       maxPdfSizeMB: 10
     };
   },

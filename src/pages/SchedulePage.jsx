@@ -12,6 +12,15 @@ export const SchedulePage = () => {
   const [dynamicSchedules, setDynamicSchedules] = useState([]);
 
   useEffect(() => {
+    if (!activeVenueModal) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setActiveVenueModal(null);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeVenueModal]);
+
+  useEffect(() => {
     const fetchSchedules = async () => {
       const allSchedules = [];
       const completedMatchIds = new Set();
@@ -165,15 +174,15 @@ export const SchedulePage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white py-10 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white py-8 sm:py-10 transition-colors">
+      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8">
         
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-10">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wider mb-3 border border-blue-500/20 shadow-xs">
             <CalendarIcon className="w-4 h-4 text-blue-500" /> Tournament Schedule & Venues
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
             Championship <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">Fixtures</span>
           </h1>
           <p className="mt-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium">
@@ -210,7 +219,7 @@ export const SchedulePage = () => {
           </div>
 
           {/* 12 Games Horizontal Filter Chips */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-2 no-scrollbar scroll-smooth -mx-1 px-1">
             {sportsList.map((s) => {
               const cfg = s === 'All' ? null : resolveSportConfig(s);
               const icon = s === 'All' ? '⚡' : cfg?.icon || '🏆';
@@ -257,7 +266,7 @@ export const SchedulePage = () => {
           </div>
         ) : viewMode === 'grid' ? (
           /* Grid View: Box with Sport Icon, Sport Name, Date, Time, Venue */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 sm:gap-6">
             {filteredFixtures.map((fix) => {
               const sportCfg = resolveSportConfig(fix.sport || fix);
               const sportIcon = sportCfg.icon || '🏆';
@@ -389,22 +398,30 @@ export const SchedulePage = () => {
 
       {/* Venue Modal */}
       {activeVenueModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md text-slate-900 dark:text-white">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl">
-            <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm text-slate-900 dark:text-white animate-fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setActiveVenueModal(null);
+          }}
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-emerald-500" />
-                <h3 className="font-black text-lg">Venue Access Directions</h3>
+                <h3 className="font-extrabold text-lg">Venue Access Directions</h3>
               </div>
-              <button onClick={() => setActiveVenueModal(null)} className="p-1 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl">
+              <button 
+                onClick={() => setActiveVenueModal(null)} 
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Assigned Court / Venue</span>
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-1">
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Assigned Court / Venue</span>
               <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">{activeVenueModal.venue}</p>
             </div>
-            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-700 dark:text-emerald-400 space-y-1">
+            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-700 dark:text-emerald-400 space-y-1">
               <p className="font-bold">📍 Access Gate & Facilities:</p>
               <p>Main Sports Complex Entrance 2. Shuttle available from Campus Gate A. First Aid & Refreshment Tent adjacent to Court Entry.</p>
             </div>

@@ -222,7 +222,7 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
                   <span>{item.name}</span>
                 </div>
                 {item.badge && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-rose-500 text-white animate-pulse">
+                  <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-rose-500 text-white animate-pulse">
                     {item.badge}
                   </span>
                 )}

@@ -145,7 +145,7 @@ export const Navbar = () => {
   return (
     <>
       <header className="sticky top-0 z-40 w-full bg-white/60 dark:bg-slate-950/60 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-800/80 transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
 
             {/* Logo */}
@@ -153,12 +153,12 @@ export const Navbar = () => {
               <img
                 src="/logo-dark.png"
                 alt="APEX Logo"
-                className="hidden dark:block h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
+                className="hidden dark:block h-9 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
               />
               <img
                 src="/logo-light.png"
                 alt="APEX Logo"
-                className="block dark:hidden h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
+                className="block dark:hidden h-9 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
               />
             </Link>
 
@@ -187,25 +187,25 @@ export const Navbar = () => {
             </nav>
 
             {/* Actions: Theme Toggle, Auth / Dashboard */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5 sm:gap-2.5">
               <ThemeToggle />
 
               {/* User Profile / Log Out OR Login Button */}
               {activeSession ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <Link
                     to={activeSession.dashboardPath}
-                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-blue-600/20 transition-all"
+                    className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-blue-600/20 transition-all"
                   >
-                    <LayoutDashboard className="w-4 h-4 text-amber-300" />
-                    <span className="max-w-[110px] truncate">{activeSession.name}</span>
+                    <LayoutDashboard className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-300" />
+                    <span className="max-w-[80px] sm:max-w-[110px] truncate">{activeSession.name}</span>
                     <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-white/20 text-white">
                       {activeSession.roleLabel}
                     </span>
                   </Link>
                   <button
                     onClick={activeSession.logoutHandler}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-500/30 font-bold text-xs transition cursor-pointer"
+                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-500/30 font-bold text-xs transition cursor-pointer"
                     title="Log Out"
                   >
                     <LogOut className="w-3.5 h-3.5" />
@@ -213,18 +213,22 @@ export const Navbar = () => {
                   </button>
                 </div>
               ) : (
-                <div className="relative group">
-                  <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-blue-600/20 transition-all cursor-pointer">
+                <div className="relative group" ref={signInRef}>
+                  <button 
+                    onClick={() => setIsSignInOpen(!isSignInOpen)}
+                    className="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-blue-600/20 transition-all cursor-pointer"
+                  >
                     <User className="w-3.5 h-3.5" />
-                    <span>Portal Sign In</span>
+                    <span className="hidden xs:inline">Portal Sign In</span>
+                    <span className="inline xs:hidden">Login</span>
                     <ChevronDown className="w-3.5 h-3.5 text-blue-200 group-hover:rotate-180 transition-transform duration-200" />
                   </button>
-                  <div className={`absolute right-0 mt-2 w-60 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl transition-all duration-200 z-50 flex flex-col overflow-hidden p-1.5 space-y-1 ${
+                  <div className={`absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-60 max-w-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl transition-all duration-200 z-50 flex flex-col overflow-hidden p-1.5 space-y-1 ${
                     isSignInOpen
                       ? 'opacity-100 visible'
                       : 'opacity-0 invisible group-hover:opacity-100 group-hover:visible'
                   }`}>
-                    <div className="px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    <div className="px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
                       Official Access Portals
                     </div>
                     <Link
@@ -236,7 +240,7 @@ export const Navbar = () => {
                       </span>
                       <div>
                         <p className="font-extrabold text-slate-900 dark:text-white">College Head Login</p>
-                        <p className="text-[10px] text-slate-400 font-medium">Faculty college stats & medals</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Faculty college stats & medals</p>
                       </div>
                     </Link>
                     <Link
@@ -249,7 +253,7 @@ export const Navbar = () => {
                       </span>
                       <div>
                         <p className="font-extrabold text-slate-900 dark:text-white">Coordinator Login</p>
-                        <p className="text-[10px] text-slate-400 font-medium">Sport matches & control panel</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Sport matches & control panel</p>
                       </div>
                     </Link>
                     <Link
@@ -262,7 +266,7 @@ export const Navbar = () => {
                       </span>
                       <div>
                         <p className="font-extrabold text-slate-900 dark:text-white">PR Portal Login</p>
-                        <p className="text-[10px] text-slate-400 font-medium">Media, gallery & album coverage</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Media, gallery & album coverage</p>
                       </div>
                     </Link>
                   </div>
