@@ -144,59 +144,66 @@ export const AboutPage = () => {
       role: member.role,
       designation: member.designation || '',
       image: member.image,
-      badgeColorClass: member.badgeColor || member.badgeColorClass || fallbackBadge || 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-400/40',
+      badgeColorClass: member.badgeColor || member.badgeColorClass || fallbackBadge || 'bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)]',
       linkedin: member.linkedin,
       description: member.description || member.bio || details.description || 'Distinguished leader and mentor dedicated to upholding sports excellence and collegiate competition across APEX championships.',
       department: hideMeta ? null : (member.department || details.department || 'APEX Tournament Council'),
-      tags: hideMeta ? [] : (member.tags || details.tags || ['Sports Excellence', 'Collegiate Athletic Team'])
+      tags: member.tags || details.tags || ['Tournament Governance', 'Athletic Council', 'Collegiate Sports']
     });
   };
 
   const scrollToMilestone = (id) => {
     setActiveMilestoneId(id);
-    const element = document.getElementById(`milestone-${id}`);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    lastActiveRef.current = id;
+    const el = document.getElementById(`milestone-${id}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
 
+  // Scroll observer to update active milestone
   useEffect(() => {
     if (activeTab !== 'journey') return;
 
+    let timeoutId = null;
     const handleScroll = () => {
-      const milestoneElements = JOURNEY_MILESTONES.map((m) =>
-        document.getElementById(`milestone-${m.id}`)
-      );
+      if (timeoutId) return;
+      timeoutId = setTimeout(() => {
+        timeoutId = null;
+        const viewportCenter = window.innerHeight / 2;
+        let closestId = lastActiveRef.current;
+        let minDistance = Infinity;
 
-      const viewportCenter = window.innerHeight / 2;
-      let closestId = 1;
-      let closestDistance = Infinity;
+        JOURNEY_MILESTONES.forEach((m) => {
+          const el = document.getElementById(`milestone-${m.id}`);
+          if (el) {
+            const rect = el.getBoundingClientRect();
+            const elementCenter = rect.top + rect.height / 2;
+            const distance = Math.abs(viewportCenter - elementCenter);
+            if (distance < minDistance) {
+              minDistance = distance;
+              closestId = m.id;
+            }
+          }
+        });
 
-      milestoneElements.forEach((el, idx) => {
-        if (!el) return;
-        const rect = el.getBoundingClientRect();
-        const elementCenter = rect.top + rect.height / 2;
-        const distance = Math.abs(elementCenter - viewportCenter);
-
-        if (distance < closestDistance) {
-          closestDistance = distance;
-          closestId = JOURNEY_MILESTONES[idx].id;
+        if (closestId !== lastActiveRef.current) {
+          lastActiveRef.current = closestId;
+          setActiveMilestoneId(closestId);
         }
-      });
-
-      if (closestId !== lastActiveRef.current) {
-        lastActiveRef.current = closestId;
-        setActiveMilestoneId(closestId);
-      }
+      }, 100);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [activeTab]);
 
   useEffect(() => {
     const load = () => {
-      committeeApi.getCommitteeData().then((data) => {
+      committeeApi.fetchSessions().then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           setSessions(data);
         }
@@ -216,35 +223,35 @@ export const AboutPage = () => {
       name: 'Praveen Rai',
       role: 'Team Lead',
       image: '/team/praveen.jpg',
-      badgeColor: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30',
+      badgeColor: 'bg-[#F4F2F7] dark:bg-[#121625] text-[#596B98] dark:text-[#818CF8] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)]',
       linkedin: 'https://linkedin.com/in/praveen-rai-409400280'
     },
     {
       name: 'Ankit Kumar Singh',
       role: 'Frontend Developer',
       image: '/team/ankit.jpg',
-      badgeColor: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30',
+      badgeColor: 'bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)]',
       linkedin: 'https://linkedin.com/in/ankit-kumar-singh-a7433b328'
     },
     {
       name: 'Divya Singh',
       role: 'Frontend Developer',
       image: '/team/divya.jpg',
-      badgeColor: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/30',
+      badgeColor: 'bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)]',
       linkedin: 'https://www.linkedin.com/in/divya-singh0210'
     },
     {
       name: 'Ritik Kumar Singh',
       role: 'Backend Developer',
       image: '/team/ritik.jpg',
-      badgeColor: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30',
+      badgeColor: 'bg-[#F4F2F7] dark:bg-[#121625] text-[#596B98] dark:text-[#818CF8] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)]',
       linkedin: 'https://linkedin.com/in/ritik-kumar-singh-1784a328a'
     },
     {
       name: 'Harshit Singh',
       role: 'Database Engineer',
       image: '/team/harshit.jpg',
-      badgeColor: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+      badgeColor: 'bg-[#F4F2F7] dark:bg-[#121625] text-[#596B98] dark:text-[#818CF8] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)]',
       linkedin: 'https://linkedin.com/in/harshit-singh-21jan2004'
     }
   ];
@@ -285,7 +292,7 @@ export const AboutPage = () => {
     return 0;
   }).map((m) => ({
     ...m,
-    badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30'
+    badgeColor: 'bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)]'
   }));
 
   const isUpcoming = !(currentTeam && currentTeam.length > 0);
@@ -305,7 +312,7 @@ export const AboutPage = () => {
   }
 
   return (
-    <div className="relative min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors">
+    <div className="relative min-h-screen bg-[#FAF9F6] dark:bg-[#070A13] text-[#211D2B] dark:text-[#F5F2FA] transition-colors duration-200 font-spatial-sans">
       
       {/* ── Top Toggle Buttons (Symbols only on mobile, Symbol + text on desktop) ── */}
       <div className="absolute top-2 right-2 sm:right-4 lg:right-6 z-30 flex items-center gap-1 sm:gap-1.5">
@@ -316,13 +323,13 @@ export const AboutPage = () => {
           }}
           aria-label="APEX Journey"
           title="APEX Journey"
-          className={`flex items-center justify-center gap-1 p-1.5 sm:px-3 sm:py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+          className={`flex items-center justify-center gap-1 p-1.5 sm:px-3.5 sm:py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer min-h-[36px] ${
             activeTab === 'journey'
-              ? 'bg-purple-600 text-white shadow-sm shadow-purple-600/40 font-black scale-[1.02]'
-              : 'bg-slate-200/60 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200/60 dark:border-white/10'
+              ? 'bg-[#7156A5] text-white shadow-2xs font-bold'
+              : 'bg-[#FAF9F6] dark:bg-[#121625] text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-white border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)]'
           }`}
         >
-          <Sparkles className="w-3 h-3 text-amber-300 shrink-0" />
+          <Sparkles className="w-3.5 h-3.5 text-[#A98B57] dark:text-[#D2AB45] shrink-0" />
           <span className="hidden sm:inline">APEX Journey</span>
         </button>
 
@@ -333,13 +340,13 @@ export const AboutPage = () => {
           }}
           aria-label="Team Members"
           title="Team Members"
-          className={`flex items-center justify-center gap-1 p-1.5 sm:px-3 sm:py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+          className={`flex items-center justify-center gap-1 p-1.5 sm:px-3.5 sm:py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer min-h-[36px] ${
             activeTab === 'team'
-              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/40 font-black scale-[1.02]'
-              : 'bg-slate-200/60 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200/60 dark:border-white/10'
+              ? 'bg-[#7156A5] text-white shadow-2xs font-bold'
+              : 'bg-[#FAF9F6] dark:bg-[#121625] text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-white border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)]'
           }`}
         >
-          <Users className="w-3 h-3 text-indigo-200 shrink-0" />
+          <Users className="w-3.5 h-3.5 text-[#7156A5] dark:text-[#B8A5E5] shrink-0" />
           <span className="hidden sm:inline">Team Members</span>
         </button>
       </div>
@@ -383,18 +390,15 @@ export const AboutPage = () => {
             {/* ─── FACULTY ADVISORS ──────────────────────────────────── */}
             <section>
               {/* Glass Section Header */}
-              <div className="mb-8 p-5 sm:p-7 rounded-2xl backdrop-blur-md
-                bg-white/70 dark:bg-white/5
-                border border-slate-200 dark:border-white/10
-                shadow-lg dark:shadow-[0_8px_40px_rgba(99,102,241,0.12)]">
-                <div className="flex items-center gap-2 text-[11px] font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-1.5">
+              <div className="mb-8 p-5 sm:p-7 rounded-xl bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] shadow-2xs">
+                <div className="flex items-center gap-2 text-[11px] font-mono font-bold text-[#596B98] dark:text-[#818CF8] uppercase tracking-widest mb-1.5">
                   <GraduationCap className="w-4 h-4" />
                   Academic Mentors
                 </div>
-                <h2 className="font-serif-luxury text-2xl sm:text-3xl font-black tracking-wide uppercase text-slate-900 dark:text-white">
+                <h2 className="font-spatial-display text-2xl sm:text-3xl font-bold tracking-tight uppercase text-[#211D2B] dark:text-[#F5F2FA]">
                   Faculty Advisors
                 </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 font-sans-clean">
+                <p className="text-xs text-[#686370] dark:text-[#AAA4B8] mt-1.5">
                   Distinguished faculty members guiding APEX sports tournament operations and leadership.
                 </p>
               </div>
@@ -407,9 +411,9 @@ export const AboutPage = () => {
                     role={advisor.role}
                     designation={advisor.designation}
                     image={advisor.image}
-                    badgeColorClass="bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-400/40"
-                    hoverGlowClass="hover:border-indigo-400/60 dark:hover:border-indigo-500/50 hover:shadow-indigo-200 dark:hover:shadow-indigo-950/40"
-                    onClick={() => handleMemberClick(advisor, "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-400/40", { hideMeta: true })}
+                    badgeColorClass="bg-[#F4F2F7] dark:bg-[#121625] text-[#596B98] dark:text-[#818CF8] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)]"
+                    hoverGlowClass="hover:border-[#596B98]/60"
+                    onClick={() => handleMemberClick(advisor, "bg-[#F4F2F7] dark:bg-[#121625] text-[#596B98] dark:text-[#818CF8] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)]", { hideMeta: true })}
                   />
                 ))}
               </div>
@@ -417,18 +421,15 @@ export const AboutPage = () => {
 
             {/* ─── DEVELOPERS ────────────────────────────────────────── */}
             <section>
-              <div className="mb-8 p-5 sm:p-7 rounded-2xl backdrop-blur-md
-                bg-white/70 dark:bg-white/5
-                border border-slate-200 dark:border-white/10
-                shadow-lg dark:shadow-[0_8px_40px_rgba(6,182,212,0.10)]">
-                <div className="flex items-center gap-2 text-[11px] font-mono font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-widest mb-1.5">
+              <div className="mb-8 p-5 sm:p-7 rounded-xl bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] shadow-2xs">
+                <div className="flex items-center gap-2 text-[11px] font-mono font-bold text-[#7156A5] dark:text-[#B8A5E5] uppercase tracking-widest mb-1.5">
                   <Code className="w-4 h-4" />
                   Platform Engineers
                 </div>
-                <h2 className="font-serif-luxury text-2xl sm:text-3xl font-black tracking-wide uppercase text-slate-900 dark:text-white">
+                <h2 className="font-spatial-display text-2xl sm:text-3xl font-bold tracking-tight uppercase text-[#211D2B] dark:text-[#F5F2FA]">
                   Developers
                 </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 font-sans-clean">
+                <p className="text-xs text-[#686370] dark:text-[#AAA4B8] mt-1.5">
                   The technical team behind building and designing the APEX Sports Management System.
                 </p>
               </div>
@@ -441,7 +442,7 @@ export const AboutPage = () => {
                     role={dev.role}
                     image={dev.image}
                     badgeColorClass={dev.badgeColor}
-                    hoverGlowClass="hover:border-cyan-400/60 dark:hover:border-cyan-500/50 hover:shadow-cyan-200 dark:hover:shadow-cyan-950/40"
+                    hoverGlowClass="hover:border-[#7156A5]/50"
                     linkedin={dev.linkedin}
                     onClick={() => handleMemberClick(dev, dev.badgeColor)}
                   />
@@ -451,34 +452,31 @@ export const AboutPage = () => {
 
             {/* ─── EXECUTIVE COMMITTEE ───────────────────────────────── */}
             <section>
-              <div className="mb-8 p-5 sm:p-7 rounded-2xl backdrop-blur-md
-                bg-white/70 dark:bg-white/5
-                border border-slate-200 dark:border-white/10
-                shadow-lg dark:shadow-[0_8px_40px_rgba(16,185,129,0.08)]">
+              <div className="mb-8 p-5 sm:p-7 rounded-xl bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] shadow-2xs">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
-                    <div className="flex items-center gap-2 text-[11px] font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1.5">
+                    <div className="flex items-center gap-2 text-[11px] font-mono font-bold text-[#596B98] dark:text-[#818CF8] uppercase tracking-widest mb-1.5">
                       <ShieldCheck className="w-4 h-4" />
                       Leadership &amp; Governance
                     </div>
-                    <h2 className="font-serif-luxury text-2xl sm:text-3xl font-black tracking-wide uppercase text-slate-900 dark:text-white">
+                    <h2 className="font-spatial-display text-2xl sm:text-3xl font-bold tracking-tight uppercase text-[#211D2B] dark:text-[#F5F2FA]">
                       {isUpcoming ? `Executive Committee (${upcomingLabel})` : `Executive Committee ${upcomingLabel}`}
                     </h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 font-sans-clean">
+                    <p className="text-xs text-[#686370] dark:text-[#AAA4B8] mt-1.5">
                       Select a tournament year to view the office bearers and core coordinators.
                     </p>
                   </div>
 
                   {/* Year Selector */}
-                  <div className="flex items-center gap-3 bg-slate-100/80 dark:bg-white/5 p-1.5 sm:p-2 rounded-2xl border border-slate-200 dark:border-white/10 shrink-0 self-start md:self-auto backdrop-blur-sm">
-                    <label className="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 pl-2">
+                  <div className="flex items-center gap-3 bg-[#FAF9F6] dark:bg-[#121625] p-1.5 sm:p-2 rounded-lg border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] shrink-0 self-start md:self-auto">
+                    <label className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#686370] dark:text-[#AAA4B8] pl-2">
                       Year:
                     </label>
                     <div className="relative">
                       <select
                         value={selectedYear}
                         onChange={(e) => setSelectedYear(e.target.value)}
-                        className="appearance-none bg-purple-600 hover:bg-purple-500 text-white font-black text-xs sm:text-sm px-3 sm:px-4 py-2 sm:py-2.5 pr-8 sm:pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-md cursor-pointer transition-all"
+                        className="appearance-none bg-[#7156A5] hover:bg-[#5E458B] text-white font-semibold text-xs sm:text-sm px-3 sm:px-4 py-2 pr-8 sm:pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7156A5]/50 shadow-2xs cursor-pointer transition-all"
                       >
                         {yearOptions.map((opt) => (
                           <option key={opt.value} value={opt.value} className="bg-slate-900 text-white">
@@ -486,27 +484,24 @@ export const AboutPage = () => {
                           </option>
                         ))}
                       </select>
-                      <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white absolute right-2.5 sm:right-3 top-3 sm:top-3.5 pointer-events-none" />
+                      <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white absolute right-2.5 sm:right-3 top-3 pointer-events-none" />
                     </div>
                   </div>
                 </div>
               </div>
 
               {isUpcoming ? (
-                <div className="py-12 sm:py-16 px-4 sm:px-6 text-center rounded-3xl border border-dashed
-                  border-purple-400/40 dark:border-purple-500/30
-                  bg-white/60 dark:bg-purple-950/10
-                  backdrop-blur-sm space-y-4">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-2xl bg-purple-500/10 text-purple-500 dark:text-purple-400 flex items-center justify-center">
-                    <Sparkles className="w-7 h-7 sm:w-8 sm:h-8 animate-pulse" />
+                <div className="py-12 sm:py-16 px-4 sm:px-6 text-center rounded-xl border border-dashed border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] bg-white dark:bg-[#0D101A] space-y-4">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-xl bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] flex items-center justify-center border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)]">
+                    <Sparkles className="w-7 h-7 sm:w-8 sm:h-8 animate-pulse text-[#A98B57] dark:text-[#D2AB45]" />
                   </div>
-                  <span className="inline-block px-3 py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                    🚀 Upcoming Edition
+                  <span className="inline-block px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold uppercase tracking-wider bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)]">
+                    Upcoming Edition
                   </span>
-                  <h3 className="font-serif-luxury text-xl sm:text-2xl font-black uppercase text-slate-900 dark:text-white">
+                  <h3 className="font-spatial-display text-xl sm:text-2xl font-bold uppercase text-[#211D2B] dark:text-[#F5F2FA]">
                     APEX {upcomingLabel} Executive Committee
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+                  <p className="text-xs text-[#686370] dark:text-[#AAA4B8] max-w-md mx-auto leading-relaxed">
                     Official committee appointments and office bearer announcements for the {upcomingLabel} edition will be revealed closer to the tournament opening ceremony.
                   </p>
                 </div>
@@ -528,38 +523,32 @@ export const AboutPage = () => {
             </section>
 
             {/* ─── LUXURY SPORTS PHILOSOPHY STATEMENT ────────────────────────────────────────── */}
-            <div className="relative mt-12 sm:mt-16 py-12 px-6 sm:px-12 text-center rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-[#080c1b]/70 backdrop-blur-xl shadow-xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] overflow-hidden">
-              {/* Subtle ambient background glow */}
-              <div 
-                aria-hidden="true" 
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-purple-500/10 dark:bg-purple-600/15 blur-3xl pointer-events-none"
-              />
-
+            <div className="relative mt-12 sm:mt-16 py-12 px-6 sm:px-12 text-center rounded-xl border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] bg-white dark:bg-[#0D101A] shadow-2xs overflow-hidden">
               <div className="relative z-10 max-w-2xl mx-auto space-y-4">
                 {/* Accent Badge */}
-                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-mono font-bold tracking-widest uppercase bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-300/60 dark:border-purple-500/30 shadow-sm">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded text-xs font-mono font-semibold tracking-wider uppercase bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)] shadow-2xs">
+                  <Sparkles className="w-3.5 h-3.5 text-[#A98B57] dark:text-[#D2AB45]" />
                   <span>The APEX Spirit</span>
                 </div>
 
                 {/* Luxury Heading */}
-                <h3 className="font-serif-luxury text-2xl sm:text-4xl font-black tracking-wide text-slate-900 dark:text-white uppercase leading-tight">
+                <h3 className="font-spatial-display text-2xl sm:text-4xl font-normal tracking-tight text-[#211D2B] dark:text-[#F5F2FA] uppercase leading-tight">
                   We Are Here To Make Sports Legendary
                 </h3>
 
                 {/* Expressive Editorial Description */}
-                <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300/90 font-sans-clean leading-relaxed italic">
+                <p className="text-sm sm:text-base text-[#211D2B] dark:text-[#F5F2FA] leading-relaxed italic">
                   &ldquo;We are here to ignite athletic passion, foster unyielding sportsmanship, and build an enduring sporting sanctuary across our campuses. Through every hard-fought match, every united cheer, and every champion crowned, APEX is dedicated to celebrating the authentic soul of collegiate sports.&rdquo;
                 </p>
 
                 {/* Values Pillar Row */}
-                <div className="pt-3 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-mono tracking-wider text-amber-600 dark:text-amber-400 uppercase font-semibold">
+                <div className="pt-3 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-mono tracking-wider text-[#A98B57] dark:text-[#D2AB45] uppercase font-semibold">
                   <span>Passion</span>
-                  <span className="text-purple-400">•</span>
+                  <span className="text-[#686370] dark:text-[#AAA4B8]">•</span>
                   <span>Integrity</span>
-                  <span className="text-purple-400">•</span>
+                  <span className="text-[#686370] dark:text-[#AAA4B8]">•</span>
                   <span>Resilience</span>
-                  <span className="text-purple-400">•</span>
+                  <span className="text-[#686370] dark:text-[#AAA4B8]">•</span>
                   <span>Collegiate Excellence</span>
                 </div>
               </div>
@@ -581,21 +570,20 @@ export const AboutPage = () => {
 
 /**
  * Journey-style Team Member Card — Light & Dark Mode
- * Polaroid photo frame, glowing role badge, name plate, click to open profile modal.
  */
 const TeamCard = ({ name, role, designation, image, badgeColorClass = '', hoverGlowClass = '', linkedin, onClick, disableClick = false }) => {
   return (
     <div
       onClick={disableClick ? undefined : onClick}
-      className={`group relative rounded-xl sm:rounded-2xl border transition-all duration-300 overflow-hidden shadow-lg
-        bg-white/80 dark:bg-gradient-to-b dark:from-[#090e1c] dark:to-[#040712]
-        border-slate-200 dark:border-white/10
-        ${disableClick ? '' : `cursor-pointer hover:scale-[1.03] hover:shadow-2xl ${hoverGlowClass}`}`}
+      className={`group relative rounded-xl border transition-all duration-300 overflow-hidden shadow-2xs
+        bg-white dark:bg-[#0D101A]
+        border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)]
+        ${disableClick ? '' : `cursor-pointer hover:border-[#7156A5]/40 dark:hover:border-[#8B5CF6]/40 ${hoverGlowClass}`}`}
       title={disableClick ? name : `Click to view profile of ${name}`}
     >
-      {/* Photo Frame (Polaroid Style) */}
-      <div className="p-1 sm:p-2 bg-white m-1.5 sm:m-3 rounded-lg sm:rounded-xl shadow-md overflow-hidden relative">
-        <div className="relative aspect-[3/3.5] overflow-hidden rounded-md sm:rounded-lg bg-slate-200 dark:bg-slate-800">
+      {/* Photo Frame */}
+      <div className="p-1 sm:p-2 bg-white m-1.5 sm:m-3 rounded-lg shadow-2xs overflow-hidden relative border border-[#E5E1E8] dark:border-white/10">
+        <div className="relative aspect-[3/3.5] overflow-hidden rounded bg-slate-200 dark:bg-slate-800">
           <img
             src={image}
             alt={name}
@@ -605,7 +593,7 @@ const TeamCard = ({ name, role, designation, image, badgeColorClass = '', hoverG
           {/* Hover Eye — only when clickable */}
           {!disableClick && (
             <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <span className="p-1 sm:p-2 rounded-full bg-white/90 dark:bg-slate-900/90 text-purple-600 dark:text-purple-300 shadow-lg scale-90 group-hover:scale-100 transition-transform">
+              <span className="p-1 sm:p-2 rounded-full bg-white/90 dark:bg-slate-900/90 text-[#7156A5] dark:text-[#B8A5E5] shadow-lg scale-90 group-hover:scale-100 transition-transform">
                 <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
               </span>
             </div>
@@ -615,14 +603,14 @@ const TeamCard = ({ name, role, designation, image, badgeColorClass = '', hoverG
 
       {/* Name Plate */}
       <div className="px-1 xs:px-1.5 sm:px-3 pb-2 sm:pb-4 text-center flex flex-col items-center gap-0.5 sm:gap-1.5">
-        <span className={`px-1.5 sm:px-2.5 py-0.5 rounded-full text-[7.5px] xs:text-[8px] sm:text-[10px] font-black uppercase tracking-tight sm:tracking-wider border leading-tight line-clamp-1 max-w-full truncate ${badgeColorClass}`}>
+        <span className={`px-1.5 sm:px-2.5 py-0.5 rounded text-[7.5px] xs:text-[8px] sm:text-[10px] font-semibold uppercase tracking-tight sm:tracking-wider border leading-tight line-clamp-1 max-w-full truncate ${badgeColorClass}`}>
           {role}
         </span>
-        <h3 className={`text-[10px] xs:text-[11px] sm:text-sm font-extrabold text-slate-900 dark:text-white leading-tight sm:leading-snug line-clamp-2 text-center transition-colors ${disableClick ? '' : 'group-hover:text-purple-600 dark:group-hover:text-purple-400'}`}>
+        <h3 className={`text-[10px] xs:text-[11px] sm:text-sm font-bold text-[#211D2B] dark:text-[#F5F2FA] leading-tight sm:leading-snug line-clamp-2 text-center transition-colors ${disableClick ? '' : 'group-hover:text-[#7156A5] dark:group-hover:text-[#B8A5E5]'}`}>
           {name}
         </h3>
         {designation && (
-          <p className="text-[8px] xs:text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 font-medium line-clamp-1 px-0.5">
+          <p className="text-[8px] xs:text-[9px] sm:text-[10px] text-[#686370] dark:text-[#AAA4B8] font-medium line-clamp-1 px-0.5">
             {designation}
           </p>
         )}
@@ -632,7 +620,7 @@ const TeamCard = ({ name, role, designation, image, badgeColorClass = '', hoverG
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-0.5 sm:gap-1 text-[8px] xs:text-[9px] sm:text-[10px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition"
+            className="inline-flex items-center gap-0.5 sm:gap-1 text-[8px] xs:text-[9px] sm:text-[10px] font-semibold text-[#7156A5] dark:text-[#B8A5E5] hover:underline transition"
           >
             <LinkedinIcon className="w-2 h-2 sm:w-2.5 sm:h-2.5 shrink-0" />
             LinkedIn
@@ -645,7 +633,6 @@ const TeamCard = ({ name, role, designation, image, badgeColorClass = '', hoverG
 
 /**
  * Interactive Member Profile Modal — Light & Dark Mode
- * Shows high-res photo, full name, role badge, department, description, focus tags, and LinkedIn.
  */
 const MemberDetailModal = ({ member, onClose }) => {
   if (!member) return null;
@@ -656,36 +643,25 @@ const MemberDetailModal = ({ member, onClose }) => {
       onClick={onClose}
     >
       <div 
-        className="relative w-full max-w-lg rounded-3xl border border-slate-200 dark:border-white/10 bg-white/95 dark:bg-[#0c1022]/95 backdrop-blur-2xl shadow-2xl dark:shadow-[0_25px_70px_rgba(0,0,0,0.85)] overflow-hidden transition-all transform scale-100"
+        className="relative w-full max-w-lg rounded-xl border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] bg-[#FFFFFF] dark:bg-[#0D101A] shadow-2xl overflow-hidden transition-all transform scale-100"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Ambient background glows */}
-        <div 
-          aria-hidden="true" 
-          className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-purple-500/15 dark:bg-purple-600/20 blur-3xl pointer-events-none"
-        />
-        <div 
-          aria-hidden="true" 
-          className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-indigo-500/15 dark:bg-indigo-600/20 blur-3xl pointer-events-none"
-        />
-
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-lg bg-[#FAF9F6] dark:bg-white/10 hover:bg-[#F4F2F7] dark:hover:bg-white/20 text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-white flex items-center justify-center transition-all cursor-pointer border border-[#E5E1E8] dark:border-white/10"
           aria-label="Close"
         >
           <X className="w-4 h-4" />
         </button>
 
         {/* Content */}
-        <div className="p-6 sm:p-8 space-y-5 relative z-10">
+        <div className="p-6 sm:p-8 space-y-5 relative z-10 font-spatial-sans">
           
           {/* Header Section with Photo */}
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 text-center sm:text-left">
-            {/* White Polaroid Photo Frame */}
-            <div className="p-2 bg-white rounded-2xl shadow-xl shrink-0">
-              <div className="w-28 h-32 sm:w-32 sm:h-36 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800">
+            <div className="p-1.5 bg-white rounded-xl shadow-xs shrink-0 border border-[#E5E1E8]">
+              <div className="w-28 h-32 sm:w-32 sm:h-36 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">
                 <img
                   src={member.image}
                   alt={member.name}
@@ -696,22 +672,22 @@ const MemberDetailModal = ({ member, onClose }) => {
 
             {/* Metadata */}
             <div className="flex-1 space-y-2 min-w-0">
-              <span className={`inline-block px-3 py-0.5 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider border leading-tight ${member.badgeColorClass || 'bg-purple-500/10 text-purple-600 border-purple-500/30'}`}>
+              <span className={`inline-block px-2.5 py-0.5 rounded text-[10px] sm:text-xs font-semibold uppercase tracking-wider border leading-tight ${member.badgeColorClass || 'bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]'}`}>
                 {member.role}
               </span>
               
-              <h2 className="font-serif-luxury text-xl sm:text-2xl font-black text-slate-900 dark:text-white uppercase leading-snug">
+              <h2 className="font-spatial-display text-xl sm:text-2xl font-bold text-[#211D2B] dark:text-[#F5F2FA] uppercase leading-snug">
                 {member.name}
               </h2>
 
               {member.designation && (
-                <p className="text-xs sm:text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+                <p className="text-xs sm:text-sm font-semibold text-[#596B98] dark:text-[#818CF8]">
                   {member.designation}
                 </p>
               )}
 
               {member.department && (
-                <p className="text-xs font-mono font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide">
+                <p className="text-xs font-mono font-semibold text-[#7156A5] dark:text-[#B8A5E5] uppercase tracking-wide">
                   {member.department}
                 </p>
               )}
@@ -722,7 +698,7 @@ const MemberDetailModal = ({ member, onClose }) => {
                     href={member.linkedin.startsWith('http') ? member.linkedin : `https://${member.linkedin}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-xs font-semibold border border-blue-200 dark:border-blue-900/40 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#FAF9F6] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] hover:underline text-xs font-semibold border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)] transition-colors"
                   >
                     <LinkedinIcon className="w-3.5 h-3.5" />
                     <span>LinkedIn Profile</span>
@@ -734,10 +710,10 @@ const MemberDetailModal = ({ member, onClose }) => {
 
           {/* Description / Bio */}
           <div className="space-y-1.5">
-            <h4 className="text-[10px] sm:text-[11px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 font-bold">
+            <h4 className="text-[10px] sm:text-[11px] font-mono uppercase tracking-widest text-[#686370] dark:text-[#AAA4B8] font-semibold">
               About &amp; Responsibilities
             </h4>
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200/70 dark:border-white/5 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed italic font-sans-clean">
+            <div className="p-4 rounded-lg bg-[#FAF9F6] dark:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] text-xs sm:text-sm text-[#211D2B] dark:text-[#F5F2FA] leading-relaxed italic">
               &ldquo;{member.description}&rdquo;
             </div>
           </div>
@@ -745,14 +721,14 @@ const MemberDetailModal = ({ member, onClose }) => {
           {/* Focus Tags */}
           {member.tags && member.tags.length > 0 && (
             <div className="space-y-1.5">
-              <h4 className="text-[10px] sm:text-[11px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 font-bold">
+              <h4 className="text-[10px] sm:text-[11px] font-mono uppercase tracking-widest text-[#686370] dark:text-[#AAA4B8] font-semibold">
                 Focus Areas &amp; Contributions
               </h4>
               <div className="flex flex-wrap gap-1.5">
                 {member.tags.map((tag, i) => (
                   <span
                     key={i}
-                    className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-500/20 text-purple-700 dark:text-purple-300"
+                    className="px-2.5 py-0.5 rounded text-[10px] font-mono font-medium bg-[#F4F2F7] dark:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)] text-[#7156A5] dark:text-[#B8A5E5]"
                   >
                     {tag}
                   </span>
@@ -765,7 +741,7 @@ const MemberDetailModal = ({ member, onClose }) => {
           <div className="pt-2 flex justify-end">
             <button
               onClick={onClose}
-              className="px-5 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-all cursor-pointer shadow-md active:scale-95"
+              className="px-5 py-2 rounded-lg bg-[#7156A5] hover:bg-[#5E458B] dark:bg-[#8B5CF6] text-white font-semibold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-2xs active:scale-95"
             >
               Close
             </button>
