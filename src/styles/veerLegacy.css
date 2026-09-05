@@ -1,0 +1,176 @@
+/* ============================================================
+   VEER LEGACY — QUIET STRENGTH DESIGN SYSTEM TOKENS
+   Maharana Pratap Engineering College (APEX 2026)
+   ============================================================ */
+
+:root {
+  /* Veer Legacy — Light Mode Palette */
+  --vl-canvas: #FAF9F6;
+  --vl-paper: #FFFFFF;
+  --vl-mist: #F4F2F7;
+  --vl-ink: #211D2B;
+  --vl-muted: #686370;
+  --vl-violet: #7156A5;
+  --vl-violet-hover: #5E458B;
+  --vl-indigo: #596B98;
+  --vl-gold: #A98B57;
+  --vl-winner-bg: #EDF7F0;
+  --vl-winner-text: #1B5E20;
+  --vl-winner-border: #C8E6C9;
+  --vl-live-bg: #FBEDEF;
+  --vl-live-text: #B71C1C;
+  --vl-live-border: #FFCDD2;
+  --vl-hairline: #E5E1E8;
+  --vl-hairline-subtle: #ECE8F0;
+  --vl-shadow-subtle: 0 4px 16px -2px rgba(33, 29, 43, 0.05);
+  --vl-radius: 8px;
+}
+
+.dark {
+  /* Veer Legacy — Dark Mode Palette (Atmospheric Obsidian & Violet) */
+  --vl-canvas: #070A13;
+  --vl-paper: #0D101A;
+  --vl-mist: #121625;
+  --vl-ink: #F5F2FA;
+  --vl-muted: #AAA4B8;
+  --vl-violet: #8B5CF6;
+  --vl-violet-hover: #A78BFA;
+  --vl-indigo: #818CF8;
+  --vl-gold: #D2AB45;
+  --vl-winner-bg: rgba(210, 171, 69, 0.12);
+  --vl-winner-text: #F3D78A;
+  --vl-winner-border: rgba(210, 171, 69, 0.28);
+  --vl-live-bg: rgba(225, 29, 72, 0.14);
+  --vl-live-text: #FDA4AF;
+  --vl-live-border: rgba(225, 29, 72, 0.32);
+  --vl-hairline: rgba(184, 165, 229, 0.16);
+  --vl-hairline-subtle: rgba(184, 165, 229, 0.08);
+  --vl-shadow-subtle: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+  --vl-radius: 8px;
+}
+
+/* Base Surfaces */
+.vl-bg-canvas {
+  background-color: var(--vl-canvas);
+}
+
+.vl-bg-paper {
+  background-color: var(--vl-paper);
+}
+
+.vl-bg-mist {
+  background-color: var(--vl-mist);
+}
+
+.vl-text-ink {
+  color: var(--vl-ink);
+}
+
+.vl-text-muted {
+  color: var(--vl-muted);
+}
+
+.vl-border-hairline {
+  border-color: var(--vl-hairline);
+}
+
+.vl-border-hairline-subtle {
+  border-color: var(--vl-hairline-subtle);
+}
+
+/* Editorial Serif & Sans Type Classes */
+.vl-serif {
+  font-family: 'Cinzel', Georgia, serif;
+}
+
+.vl-sans {
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+}
+
+/* Primary Action Buttons */
+.vl-btn-primary {
+  background-color: #7156A5;
+  color: #FFFFFF;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+}
+.vl-btn-primary:hover {
+  background-color: #5E458B;
+}
+.vl-btn-primary:active {
+  transform: scale(0.98);
+}
+
+.dark .vl-btn-primary {
+  background-color: #8B5CF6;
+  color: #FFFFFF;
+}
+.dark .vl-btn-primary:hover {
+  background-color: #7C3AED;
+}
+
+/* Secondary Action Buttons */
+.vl-btn-secondary {
+  background-color: transparent;
+  color: #211D2B;
+  border: 1px solid #E5E1E8;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.vl-btn-secondary:hover {
+  background-color: #F4F2F7;
+  border-color: #D1CCD6;
+}
+
+.dark .vl-btn-secondary {
+  color: #F5F2FA;
+  border-color: rgba(184, 165, 229, 0.2);
+}
+.dark .vl-btn-secondary:hover {
+  background-color: rgba(184, 165, 229, 0.08);
+  border-color: rgba(184, 165, 229, 0.35);
+}
+
+/* Status Chips */
+.vl-chip-winner {
+  background-color: var(--vl-winner-bg);
+  color: var(--vl-winner-text);
+  border: 1px solid var(--vl-winner-border);
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.vl-chip-live {
+  background-color: var(--vl-live-bg);
+  color: var(--vl-live-text);
+  border: 1px solid var(--vl-live-border);
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.vl-chip-neutral {
+  background-color: var(--vl-mist);
+  color: var(--vl-muted);
+  border: 1px solid var(--vl-hairline);
+  border-radius: 6px;
+}
+
+/* Subtle ledger row hover */
+.vl-ledger-row {
+  transition: background-color 0.15s ease;
+}
+.vl-ledger-row:hover {
+  background-color: var(--vl-mist);
+}
+
+/* Respect Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

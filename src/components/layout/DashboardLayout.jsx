@@ -56,7 +56,7 @@ export const DashboardLayout = () => {
   }
 
   return (
-    <div className={`min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors ${isLayoutHidden ? 'h-screen overflow-hidden' : ''}`}>
+    <div className={`min-h-screen flex flex-col bg-[#FAF9F6] dark:bg-[#070A13] text-[#211D2B] dark:text-[#F5F2FA] font-spatial-sans transition-colors ${isLayoutHidden ? 'h-screen overflow-hidden' : ''}`}>
       {/* Sticky Top Navbar */}
       {!isLayoutHidden && (
         <HeaderNavbar onOpenMobileDrawer={() => setIsMobileDrawerOpen(true)} />
