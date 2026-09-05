@@ -130,8 +130,8 @@ export const LeaderboardPage = () => {
   const hasData = standings.length > 0;
 
   return (
-    <div className={`relative min-h-screen font-spatial-sans selection:bg-purple-500/30 selection:text-white overflow-x-hidden transition-colors duration-500 ${
-      isDark ? 'text-slate-100' : 'text-slate-900'
+    <div className={`relative min-h-screen font-spatial-sans selection:bg-[#7156A5]/20 selection:text-[#211D2B] dark:selection:text-white overflow-x-hidden transition-colors duration-200 ${
+      isDark ? 'bg-[#070A13] text-[#F5F2FA]' : 'bg-[#FAF9F6] text-[#211D2B]'
     }`}>
       {/* ─── ATMOSPHERIC NEBULA BACKDROP (Dark vs Light) ─── */}
       <div className={`fixed inset-0 pointer-events-none z-0 transition-all duration-700 ${
@@ -139,48 +139,40 @@ export const LeaderboardPage = () => {
       }`} />
 
       {/* ─── TACTILE FILM GRAIN OVERLAY ─── */}
-      <div className="fixed inset-0 spatial-grain-overlay z-[1] pointer-events-none opacity-25" />
+      <div className="fixed inset-0 spatial-grain-overlay z-[1] pointer-events-none opacity-20" />
 
       {/* ─── MAIN CONTENT CONTAINER ─── */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 pb-12 sm:pb-16 space-y-6 sm:space-y-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-12 sm:pb-16 space-y-6 sm:space-y-8">
 
         {/* ─── LUXURY HERO BANNER (Gallery Style) ─── */}
         <div className="text-center max-w-3xl mx-auto space-y-2 pt-1">
-          <h1 className={`text-4xl sm:text-6xl md:text-7xl font-normal tracking-[0.08em] font-spatial-display uppercase ${
-            isDark ? 'text-white' : 'text-slate-900'
-          }`}>
-            Overall{' '}
-            <span className={`bg-gradient-to-r bg-clip-text text-transparent font-semibold ${
-              isDark 
-                ? 'from-purple-400 via-indigo-300 to-amber-300' 
-                : 'from-purple-700 via-indigo-700 to-amber-600'
-            }`}>
-              Leaderboard
-            </span>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)] mb-1">
+            <Trophy className="w-3.5 h-3.5 text-[#A98B57] dark:text-[#D2AB45]" />
+            <span>Inter-College Standings</span>
+          </div>
+
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-normal tracking-tight font-spatial-display uppercase text-[#211D2B] dark:text-[#F5F2FA]">
+            Overall <span className="text-[#7156A5] dark:text-[#B8A5E5] font-semibold">Leaderboard</span>
           </h1>
 
-          <p className={`text-xs sm:text-sm max-w-xl mx-auto italic font-spatial-sans font-light leading-relaxed ${
-            isDark ? 'text-slate-300/85' : 'text-slate-600'
-          }`}>
+          <p className="text-xs sm:text-sm max-w-xl mx-auto font-spatial-sans leading-relaxed text-[#686370] dark:text-[#AAA4B8]">
             Live medal tallies and cumulative points across all sports events. 🥇 Winner = 5 pts • 🥈 Runner-Up = 3 pts
           </p>
         </div>
 
         {/* ─── TOP 3 PODIUM OR EMPTY STATE ─── */}
         {!hasData ? (
-          <div className={`text-center py-16 rounded-3xl border p-8 max-w-lg mx-auto transition-all ${
-            isDark ? 'spatial-glass-card-dark border-white/10' : 'spatial-glass-card-light border-slate-200 shadow-md'
-          }`}>
-            <Trophy className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-            <h3 className={`text-lg font-bold font-spatial-display uppercase tracking-wide ${isDark ? 'text-white' : 'text-slate-900'}`}>
+          <div className="text-center py-16 rounded-2xl border p-8 max-w-lg mx-auto transition-all bg-[#FFFFFF] dark:bg-[#0D101A] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] shadow-2xs">
+            <Trophy className="w-12 h-12 text-[#686370] dark:text-[#AAA4B8] mx-auto mb-3 opacity-60" />
+            <h3 className="text-base font-bold font-spatial-display uppercase tracking-wide text-[#211D2B] dark:text-[#F5F2FA]">
               No Leaderboard Standings Yet
             </h3>
-            <p className={`text-xs font-mono mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+            <p className="text-xs font-mono mt-1 text-[#686370] dark:text-[#AAA4B8]">
               Inter-college standings will appear here as the Super Coordinator awards match points.
             </p>
           </div>
         ) : (
-          <div className={`grid gap-1.5 xs:gap-2.5 sm:gap-4 md:gap-6 items-end pt-2 pb-2 ${
+          <div className={`grid gap-2 xs:gap-3 sm:gap-4 md:gap-6 items-end pt-2 pb-2 ${
             top3.length === 1 
               ? 'grid-cols-1 max-w-md mx-auto' 
               : top3.length === 2 
@@ -190,59 +182,39 @@ export const LeaderboardPage = () => {
 
             {/* Silver – Rank 2 Card (Left on all screens, Column 1) */}
             {top3[1] && (
-              <div className={`rounded-2xl sm:rounded-3xl p-2 xs:p-3 sm:p-7 text-center flex flex-col items-center relative overflow-hidden transition-all duration-300 order-1 ${
-                isDark 
-                  ? 'spatial-glass-card-dark border-slate-700/60 shadow-xl' 
-                  : 'spatial-glass-card-light border-slate-200/90 shadow-lg'
-              }`}>
-                <span className={`px-1.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[8px] xs:text-[9px] sm:text-xs font-mono font-bold tracking-wider uppercase mb-1 sm:mb-3 border ${
-                  isDark 
-                    ? 'bg-slate-800/80 border-slate-700 text-slate-200' 
-                    : 'bg-slate-100 border-slate-300 text-slate-700'
-                }`}>
+              <div className="rounded-2xl p-3 sm:p-7 text-center flex flex-col items-center relative overflow-hidden transition-all duration-300 order-1 bg-[#FFFFFF] dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] shadow-2xs">
+                <span className="px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[8px] xs:text-[9px] sm:text-xs font-mono font-bold tracking-wider uppercase mb-1 sm:mb-3 border bg-[#F4F2F7] dark:bg-[#121625] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] text-[#686370] dark:text-[#AAA4B8]">
                   <span className="hidden sm:inline">🥈 RANK 2 — SILVER</span>
                   <span className="inline sm:hidden">🥈 #2 SILVER</span>
                 </span>
 
                 <div className="text-2xl xs:text-3xl sm:text-5xl mb-1 sm:mb-3 filter drop-shadow">🏛️</div>
 
-                <h3 className={`font-spatial-display font-semibold text-xs xs:text-sm sm:text-2xl tracking-wide max-w-sm truncate w-full ${
-                  isDark ? 'text-slate-100' : 'text-slate-900'
-                }`}>
+                <h3 className="font-spatial-display font-semibold text-xs xs:text-sm sm:text-xl tracking-wide max-w-sm truncate w-full text-[#211D2B] dark:text-[#F5F2FA]">
                   {top3[1].college}
                 </h3>
 
-                <p className={`text-[9px] xs:text-[10px] sm:text-xs font-mono tracking-wider mt-0.5 mb-1 sm:mb-4 ${
-                  isDark ? 'text-slate-400' : 'text-slate-500'
-                }`}>
+                <p className="text-[9px] xs:text-[10px] sm:text-xs font-mono tracking-wider mt-0.5 mb-1 sm:mb-4 text-[#686370] dark:text-[#AAA4B8]">
                   {top3[1].code}
                 </p>
 
                 {/* Gold / Silver Medals Count */}
-                <div className={`w-full max-w-xs p-1 sm:p-3 rounded-xl sm:rounded-2xl border flex items-center justify-around text-[9px] xs:text-[10px] sm:text-xs font-mono font-bold transition-all ${
-                  isDark 
-                    ? 'bg-white/5 border-white/10 text-slate-200' 
-                    : 'bg-slate-50 border-slate-200 text-slate-800'
-                }`}>
+                <div className="w-full max-w-xs p-1.5 sm:p-3 rounded-lg border flex items-center justify-around text-[9px] xs:text-[10px] sm:text-xs font-mono font-bold transition-all bg-[#FAF9F6] dark:bg-[#121625] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)] text-[#211D2B] dark:text-[#F5F2FA]">
                   <span className="flex items-center gap-0.5 sm:gap-1.5">
-                    <span className="text-amber-400">🥇</span> {top3[1].gold}<span className="hidden sm:inline"> Gold</span>
+                    <span className="text-[#A98B57] dark:text-[#D2AB45]">🥇</span> {top3[1].gold}<span className="hidden sm:inline"> Gold</span>
                   </span>
-                  <span className="text-slate-400">•</span>
+                  <span className="text-[#686370] dark:text-[#AAA4B8]">•</span>
                   <span className="flex items-center gap-0.5 sm:gap-1.5">
-                    <span className="text-slate-400">🥈</span> {top3[1].silver}<span className="hidden sm:inline"> Silver</span>
+                    <span className="text-[#686370] dark:text-[#AAA4B8]">🥈</span> {top3[1].silver}<span className="hidden sm:inline"> Silver</span>
                   </span>
                 </div>
 
                 {/* Total Points */}
                 <div className="mt-2 sm:mt-4 flex flex-col items-center">
-                  <span className={`text-xl xs:text-2xl sm:text-4xl font-black font-mono tracking-tight ${
-                    isDark ? 'text-slate-100' : 'text-slate-800'
-                  }`}>
+                  <span className="text-xl xs:text-2xl sm:text-4xl font-black font-mono tracking-tight text-[#211D2B] dark:text-[#F5F2FA]">
                     {top3[1].totalPoints}
                   </span>
-                  <span className={`text-[8px] xs:text-[9px] sm:text-[11px] font-mono uppercase tracking-widest font-bold mt-0.5 ${
-                    isDark ? 'text-slate-400' : 'text-slate-500'
-                  }`}>
+                  <span className="text-[8px] xs:text-[9px] sm:text-[11px] font-mono uppercase tracking-widest font-semibold mt-0.5 text-[#686370] dark:text-[#AAA4B8]">
                     <span className="hidden sm:inline">Championship Points</span>
                     <span className="inline sm:hidden">PTS</span>
                   </span>
@@ -252,70 +224,48 @@ export const LeaderboardPage = () => {
 
             {/* Gold – Rank 1 Champion Card (CENTER on all screens, Column 2, Highlighted & Elevated) */}
             {top3[0] && (
-              <div className={`rounded-2xl sm:rounded-3xl p-2.5 xs:p-3.5 sm:p-9 text-center flex flex-col items-center relative overflow-hidden transition-all duration-300 order-2 -translate-y-2 sm:-translate-y-4 scale-[1.02] sm:scale-105 z-20 ${
-                isDark 
-                  ? 'spatial-glass-card-dark border-2 border-amber-400 shadow-[0_0_50px_rgba(245,158,11,0.3)] ring-2 ring-amber-400/50 bg-gradient-to-b from-amber-500/20 via-[#131522] to-[#0c0e18]' 
-                  : 'spatial-glass-card-light border-2 border-amber-500 shadow-[0_16px_50px_rgba(245,158,11,0.28)] ring-2 ring-amber-400/60 bg-gradient-to-b from-amber-100/95 via-white to-amber-50/60'
-              }`}>
+              <div className="rounded-2xl p-3.5 sm:p-8 text-center flex flex-col items-center relative overflow-hidden transition-all duration-300 order-2 -translate-y-2 sm:-translate-y-3 scale-[1.02] sm:scale-105 z-20 bg-[#FFFFFF] dark:bg-[#0D101A] border-2 border-[#A98B57]/60 dark:border-[#D2AB45]/60 shadow-md">
                 {/* Champion Tag */}
-                <div className="absolute top-1.5 right-1.5 sm:top-3.5 sm:right-3.5 text-[8px] xs:text-[9px] sm:text-xs px-1.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 font-black tracking-wider uppercase shadow-lg flex items-center gap-1">
+                <div className="absolute top-1.5 right-1.5 sm:top-3 sm:right-3 text-[8px] xs:text-[9px] sm:text-xs px-2 py-0.5 sm:px-3 sm:py-1 rounded-full bg-[#A98B57] dark:bg-[#D2AB45] text-white dark:text-[#070A13] font-bold tracking-wider uppercase shadow-xs flex items-center gap-1">
                   <Sparkles className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5" />
                   <span className="hidden sm:inline">CHAMPION</span>
                   <span className="inline sm:hidden">#1</span>
                 </div>
 
                 <div className="relative mb-1 sm:mb-2">
-                  <Crown className="w-7 h-7 xs:w-8 xs:h-8 sm:w-14 sm:h-14 text-amber-400 drop-shadow-[0_0_16px_rgba(245,158,11,0.8)] animate-bounce" />
+                  <Crown className="w-7 h-7 xs:w-8 xs:h-8 sm:w-12 sm:h-12 text-[#A98B57] dark:text-[#D2AB45] drop-shadow-xs" />
                 </div>
 
-                <span className={`px-2 py-0.5 sm:px-3.5 sm:py-1 rounded-full text-[9px] xs:text-[10px] sm:text-xs font-mono font-black tracking-wider uppercase mb-1 sm:mb-3 border-2 shadow-sm ${
-                  isDark 
-                    ? 'bg-amber-500/20 border-amber-400/60 text-amber-300' 
-                    : 'bg-amber-100 border-amber-400 text-amber-950'
-                }`}>
+                <span className="px-2 py-0.5 sm:px-3.5 sm:py-1 rounded-full text-[9px] xs:text-[10px] sm:text-xs font-mono font-bold tracking-wider uppercase mb-1 sm:mb-3 border bg-[#A98B57]/15 dark:bg-[#D2AB45]/20 border-[#A98B57]/40 dark:border-[#D2AB45]/40 text-[#A98B57] dark:text-[#F3D78A]">
                   <span className="hidden sm:inline">🥇 RANK 1 — GOLD</span>
                   <span className="inline sm:hidden">🥇 #1 GOLD</span>
                 </span>
 
-                <h3 className={`font-spatial-display font-extrabold text-sm xs:text-base sm:text-3xl md:text-4xl tracking-wide max-w-sm truncate w-full ${
-                  isDark ? 'text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-500' : 'text-amber-800'
-                }`}>
+                <h3 className="font-spatial-display font-bold text-sm xs:text-base sm:text-2xl md:text-3xl tracking-wide max-w-sm truncate w-full text-[#211D2B] dark:text-[#F5F2FA]">
                   {top3[0].college}
                 </h3>
 
-                <p className={`text-[10px] xs:text-[11px] sm:text-sm font-mono tracking-widest uppercase mt-0.5 mb-1 sm:mb-4 font-bold ${
-                  isDark ? 'text-amber-300/80' : 'text-amber-900/70'
-                }`}>
+                <p className="text-[10px] xs:text-[11px] sm:text-sm font-mono tracking-widest uppercase mt-0.5 mb-1 sm:mb-4 font-semibold text-[#A98B57] dark:text-[#F3D78A]">
                   {top3[0].code}
                 </p>
 
                 {/* Gold / Silver Medals Count */}
-                <div className={`w-full max-w-xs p-1 sm:p-3.5 rounded-xl sm:rounded-2xl border-2 flex items-center justify-around text-[9px] xs:text-[10px] sm:text-sm font-mono font-bold transition-all shadow-inner ${
-                  isDark 
-                    ? 'bg-amber-500/10 border-amber-400/40 text-amber-200' 
-                    : 'bg-amber-100/90 border-amber-300 text-amber-950'
-                }`}>
+                <div className="w-full max-w-xs p-1.5 sm:p-3 rounded-lg border flex items-center justify-around text-[9px] xs:text-[10px] sm:text-sm font-mono font-bold transition-all bg-[#FAF9F6] dark:bg-[#121625] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)] text-[#211D2B] dark:text-[#F5F2FA]">
                   <span className="flex items-center gap-0.5 sm:gap-1.5">
-                    <span className="text-amber-400">🥇</span> {top3[0].gold}<span className="hidden sm:inline"> Gold</span>
+                    <span className="text-[#A98B57] dark:text-[#D2AB45]">🥇</span> {top3[0].gold}<span className="hidden sm:inline"> Gold</span>
                   </span>
-                  <span className="text-slate-400">•</span>
+                  <span className="text-[#686370] dark:text-[#AAA4B8]">•</span>
                   <span className="flex items-center gap-0.5 sm:gap-1.5">
-                    <span className="text-slate-400">🥈</span> {top3[0].silver}<span className="hidden sm:inline"> Silver</span>
+                    <span className="text-[#686370] dark:text-[#AAA4B8]">🥈</span> {top3[0].silver}<span className="hidden sm:inline"> Silver</span>
                   </span>
                 </div>
 
                 {/* Total Points */}
                 <div className="mt-2 sm:mt-4 flex flex-col items-center">
-                  <span className={`text-2xl xs:text-3xl sm:text-6xl font-black font-mono tracking-tight ${
-                    isDark 
-                      ? 'bg-gradient-to-r from-amber-300 via-amber-400 to-yellow-300 bg-clip-text text-transparent drop-shadow-[0_2px_12px_rgba(245,158,11,0.5)]' 
-                      : 'text-amber-600 drop-shadow-sm'
-                  }`}>
+                  <span className="text-2xl xs:text-3xl sm:text-5xl font-black font-mono tracking-tight text-[#A98B57] dark:text-[#D2AB45]">
                     {top3[0].totalPoints}
                   </span>
-                  <span className={`text-[8px] xs:text-[9px] sm:text-xs font-mono uppercase tracking-widest font-black mt-0.5 sm:mt-1 ${
-                    isDark ? 'text-amber-300' : 'text-amber-900'
-                  }`}>
+                  <span className="text-[8px] xs:text-[9px] sm:text-xs font-mono uppercase tracking-widest font-bold mt-0.5 sm:mt-1 text-[#A98B57] dark:text-[#F3D78A]">
                     <span className="hidden sm:inline">Championship Points</span>
                     <span className="inline sm:hidden">PTS</span>
                   </span>
@@ -325,59 +275,39 @@ export const LeaderboardPage = () => {
 
             {/* Bronze – Rank 3 Card (Right on all screens, Column 3) */}
             {top3[2] && (
-              <div className={`rounded-2xl sm:rounded-3xl p-2 xs:p-3 sm:p-7 text-center flex flex-col items-center relative overflow-hidden transition-all duration-300 order-3 ${
-                isDark 
-                  ? 'spatial-glass-card-dark border-amber-900/40 shadow-xl' 
-                  : 'spatial-glass-card-light border-amber-200/70 shadow-lg'
-              }`}>
-                <span className={`px-1.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[8px] xs:text-[9px] sm:text-xs font-mono font-bold tracking-wider uppercase mb-1 sm:mb-3 border ${
-                  isDark 
-                    ? 'bg-amber-950/40 border-amber-800/40 text-amber-300' 
-                    : 'bg-amber-50 border-amber-300 text-amber-900'
-                }`}>
+              <div className="rounded-2xl p-3 sm:p-7 text-center flex flex-col items-center relative overflow-hidden transition-all duration-300 order-3 bg-[#FFFFFF] dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] shadow-2xs">
+                <span className="px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[8px] xs:text-[9px] sm:text-xs font-mono font-bold tracking-wider uppercase mb-1 sm:mb-3 border bg-[#FAF9F6] dark:bg-[#121625] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] text-amber-800 dark:text-amber-300">
                   <span className="hidden sm:inline">🥉 RANK 3 — BRONZE</span>
                   <span className="inline sm:hidden">🥉 #3 BRONZE</span>
                 </span>
 
                 <div className="text-2xl xs:text-3xl sm:text-5xl mb-1 sm:mb-3 filter drop-shadow">🏛️</div>
 
-                <h3 className={`font-spatial-display font-semibold text-xs xs:text-sm sm:text-2xl tracking-wide max-w-sm truncate w-full ${
-                  isDark ? 'text-slate-100' : 'text-slate-900'
-                }`}>
+                <h3 className="font-spatial-display font-semibold text-xs xs:text-sm sm:text-xl tracking-wide max-w-sm truncate w-full text-[#211D2B] dark:text-[#F5F2FA]">
                   {top3[2].college}
                 </h3>
 
-                <p className={`text-[9px] xs:text-[10px] sm:text-xs font-mono tracking-wider mt-0.5 mb-1 sm:mb-4 ${
-                  isDark ? 'text-slate-400' : 'text-slate-500'
-                }`}>
+                <p className="text-[9px] xs:text-[10px] sm:text-xs font-mono tracking-wider mt-0.5 mb-1 sm:mb-4 text-[#686370] dark:text-[#AAA4B8]">
                   {top3[2].code}
                 </p>
 
                 {/* Gold / Silver Medals Count */}
-                <div className={`w-full max-w-xs p-1 sm:p-3 rounded-xl sm:rounded-2xl border flex items-center justify-around text-[9px] xs:text-[10px] sm:text-xs font-mono font-bold transition-all ${
-                  isDark 
-                    ? 'bg-white/5 border-white/10 text-slate-200' 
-                    : 'bg-slate-50 border-slate-200 text-slate-800'
-                }`}>
+                <div className="w-full max-w-xs p-1.5 sm:p-3 rounded-lg border flex items-center justify-around text-[9px] xs:text-[10px] sm:text-xs font-mono font-bold transition-all bg-[#FAF9F6] dark:bg-[#121625] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)] text-[#211D2B] dark:text-[#F5F2FA]">
                   <span className="flex items-center gap-0.5 sm:gap-1.5">
-                    <span className="text-amber-400">🥇</span> {top3[2].gold}<span className="hidden sm:inline"> Gold</span>
+                    <span className="text-[#A98B57] dark:text-[#D2AB45]">🥇</span> {top3[2].gold}<span className="hidden sm:inline"> Gold</span>
                   </span>
-                  <span className="text-slate-400">•</span>
+                  <span className="text-[#686370] dark:text-[#AAA4B8]">•</span>
                   <span className="flex items-center gap-0.5 sm:gap-1.5">
-                    <span className="text-slate-400">🥈</span> {top3[2].silver}<span className="hidden sm:inline"> Silver</span>
+                    <span className="text-[#686370] dark:text-[#AAA4B8]">🥈</span> {top3[2].silver}<span className="hidden sm:inline"> Silver</span>
                   </span>
                 </div>
 
                 {/* Total Points */}
                 <div className="mt-2 sm:mt-4 flex flex-col items-center">
-                  <span className={`text-xl xs:text-2xl sm:text-4xl font-black font-mono tracking-tight ${
-                    isDark ? 'text-amber-400/90' : 'text-amber-800'
-                  }`}>
+                  <span className="text-xl xs:text-2xl sm:text-4xl font-black font-mono tracking-tight text-[#211D2B] dark:text-[#F5F2FA]">
                     {top3[2].totalPoints}
                   </span>
-                  <span className={`text-[8px] xs:text-[9px] sm:text-[11px] font-mono uppercase tracking-widest font-bold mt-0.5 ${
-                    isDark ? 'text-slate-400' : 'text-slate-500'
-                  }`}>
+                  <span className="text-[8px] xs:text-[9px] sm:text-[11px] font-mono uppercase tracking-widest font-semibold mt-0.5 text-[#686370] dark:text-[#AAA4B8]">
                     <span className="hidden sm:inline">Championship Points</span>
                     <span className="inline sm:hidden">PTS</span>
                   </span>
@@ -390,49 +320,33 @@ export const LeaderboardPage = () => {
         {/* ─── TABLE HEADER & SEARCH BAR ─── */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 pb-1">
           <div className="flex items-center gap-2">
-            <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
-            <h2 className={`text-base sm:text-lg font-spatial-display uppercase tracking-wider font-semibold ${
-              isDark ? 'text-white' : 'text-slate-900'
-            }`}>
+            <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-[#A98B57] dark:text-[#D2AB45]" />
+            <h2 className="text-base sm:text-lg font-spatial-display uppercase tracking-wider font-semibold text-[#211D2B] dark:text-[#F5F2FA]">
               Complete Standings
             </h2>
-            <span className={`text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-              isDark ? 'bg-white/5 border-white/10 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'
-            }`}>
+            <span className="text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
               {filtered.length} {filtered.length === 1 ? 'College' : 'Colleges'}
             </span>
           </div>
 
           {/* Luxury Gallery-Style Search Input */}
           <div className="relative w-full sm:w-72">
-            <Search className="w-3.5 h-3.5 absolute left-3.5 top-3 text-slate-400 pointer-events-none" />
+            <Search className="w-3.5 h-3.5 absolute left-3.5 top-3 text-[#686370] dark:text-[#AAA4B8] pointer-events-none" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search college name or code..."
-              className={`w-full pl-9 pr-4 py-2 rounded-full text-xs font-mono transition-all border outline-none ${
-                isDark
-                  ? 'bg-[#10121a]/90 border-white/10 text-slate-200 placeholder-slate-500 focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20'
-                  : 'bg-white border-slate-300 text-slate-800 placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-xs'
-              }`}
+              className="w-full pl-9 pr-4 py-2 rounded-lg text-xs font-mono transition-all border outline-none bg-[#FFFFFF] dark:bg-[#121625] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] text-[#211D2B] dark:text-[#F5F2FA] placeholder-[#686370] dark:placeholder-[#AAA4B8] focus:border-[#7156A5] dark:focus:border-[#8B5CF6] shadow-2xs"
             />
           </div>
         </div>
 
         {/* ─── STANDINGS TABLE ─── */}
-        <div className={`rounded-3xl border overflow-hidden transition-all ${
-          isDark
-            ? 'spatial-glass-card-dark border-white/10 shadow-2xl'
-            : 'spatial-glass-card-light border-slate-200 shadow-xl'
-        }`}>
+        <div className="rounded-xl border overflow-hidden transition-all bg-[#FFFFFF] dark:bg-[#0D101A] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] shadow-2xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs sm:text-sm">
-              <thead className={`uppercase text-[10px] sm:text-[11px] font-mono font-bold tracking-wider border-b ${
-                isDark
-                  ? 'bg-white/[0.04] text-slate-400 border-white/10'
-                  : 'bg-slate-100/90 text-slate-600 border-slate-200'
-              }`}>
+              <thead className="uppercase text-[10px] sm:text-[11px] font-mono font-bold tracking-wider border-b bg-[#FAF9F6] dark:bg-[#121625] text-[#686370] dark:text-[#AAA4B8] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)]">
                 <tr>
                   <th className="p-3.5 sm:p-4 text-center w-16">Rank</th>
                   <th className="p-3.5 sm:p-4">Institute</th>
@@ -441,12 +355,10 @@ export const LeaderboardPage = () => {
                   <th className="p-3.5 sm:p-4 text-center font-bold">Total Points</th>
                 </tr>
               </thead>
-              <tbody className={`divide-y ${isDark ? 'divide-white/[0.06]' : 'divide-slate-100'}`}>
+              <tbody className="divide-y divide-[#E5E1E8] dark:divide-[rgba(184,165,229,0.12)]">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className={`p-8 text-center text-xs font-mono ${
-                      isDark ? 'text-slate-400' : 'text-slate-500'
-                    }`}>
+                    <td colSpan={5} className="p-8 text-center text-xs font-mono text-[#686370] dark:text-[#AAA4B8]">
                       {hasData ? 'No college matches your search.' : 'No rankings yet — points will be awarded as matches complete.'}
                     </td>
                   </tr>
@@ -454,50 +366,40 @@ export const LeaderboardPage = () => {
                   filtered.map((item, index) => (
                     <tr 
                       key={item.id || item.code || index} 
-                      className={`transition-colors duration-150 ${
-                        isDark 
-                          ? 'hover:bg-white/[0.04]' 
-                          : 'hover:bg-slate-50/80'
-                      }`}
+                      className="transition-colors duration-150 hover:bg-[#F4F2F7] dark:hover:bg-white/[0.04]"
                     >
                       <td className="p-3.5 sm:p-4 text-center font-mono font-bold">
-                        <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-mono font-bold ${
+                        <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-mono font-bold ${
                           index === 0
-                            ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 shadow-xs'
+                            ? 'bg-[#A98B57] text-white dark:bg-[#D2AB45] dark:text-[#070A13]'
                             : index === 1
-                              ? isDark ? 'bg-slate-700 text-slate-100' : 'bg-slate-200 text-slate-800'
+                              ? 'bg-slate-200 text-[#211D2B] dark:bg-slate-700 dark:text-slate-100'
                               : index === 2
-                                ? isDark ? 'bg-amber-900/40 text-amber-300 border border-amber-700/40' : 'bg-amber-100 text-amber-800'
-                                : isDark ? 'bg-white/5 text-slate-400' : 'bg-slate-100 text-slate-600'
+                                ? 'bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-300/40'
+                                : 'bg-[#FAF9F6] text-[#686370] dark:bg-white/5 dark:text-[#AAA4B8] border border-[#E5E1E8] dark:border-white/10'
                         }`}>
                           {index + 1}
                         </span>
                       </td>
                       <td className="p-3.5 sm:p-4 font-medium">
-                        <div className={`font-semibold text-xs sm:text-sm ${
-                          isDark ? 'text-slate-100' : 'text-slate-900'
-                        }`}>
+                        <div className="font-semibold text-xs sm:text-sm text-[#211D2B] dark:text-[#F5F2FA]">
                           {item.college}
                         </div>
-                        <div className={`text-[10px] sm:text-[11px] font-mono uppercase tracking-wider ${
-                          isDark ? 'text-slate-400' : 'text-slate-500'
-                        }`}>
+                        <div className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-[#686370] dark:text-[#AAA4B8]">
                           {item.code}
                         </div>
                       </td>
-                      <td className="p-3.5 sm:p-4 text-center font-mono font-bold text-amber-500">
+                      <td className="p-3.5 sm:p-4 text-center font-mono font-bold text-[#A98B57] dark:text-[#D2AB45]">
                         {item.gold}
                       </td>
-                      <td className={`p-3.5 sm:p-4 text-center font-mono font-medium ${
-                        isDark ? 'text-slate-300' : 'text-slate-600'
-                      }`}>
+                      <td className="p-3.5 sm:p-4 text-center font-mono font-medium text-[#686370] dark:text-[#AAA4B8]">
                         {item.silver}
                       </td>
                       <td className="p-3.5 sm:p-4 text-center font-mono font-black text-sm sm:text-base">
                         <span className={
                           index === 0
-                            ? isDark ? 'text-amber-400' : 'text-amber-600'
-                            : isDark ? 'text-purple-300' : 'text-purple-700'
+                            ? 'text-[#A98B57] dark:text-[#D2AB45]'
+                            : 'text-[#7156A5] dark:text-[#B8A5E5]'
                         }>
                           {item.totalPoints}
                         </span>
@@ -511,35 +413,19 @@ export const LeaderboardPage = () => {
         </div>
 
         {/* ─── DEDICATION QUOTE (The Climb Footer) ─── */}
-        <div className="pt-14 sm:pt-20 pb-8 text-center space-y-3">
+        <div className="pt-12 sm:pt-16 pb-8 text-center space-y-2">
           <div className="flex items-center justify-center gap-3 opacity-60">
-            <div className={`h-[1px] w-12 sm:w-24 bg-gradient-to-r from-transparent ${
-              isDark ? 'to-amber-400' : 'to-amber-600'
-            }`} />
-            <Trophy className={`w-3.5 h-3.5 ${isDark ? 'text-amber-400' : 'text-amber-600'} animate-pulse`} />
-            <div className={`h-[1px] w-12 sm:w-24 bg-gradient-to-l from-transparent ${
-              isDark ? 'to-amber-400' : 'to-amber-600'
-            }`} />
+            <div className="h-[1px] w-12 sm:w-24 bg-[#E5E1E8] dark:bg-[rgba(184,165,229,0.2)]" />
+            <Trophy className="w-3.5 h-3.5 text-[#A98B57] dark:text-[#D2AB45]" />
+            <div className="h-[1px] w-12 sm:w-24 bg-[#E5E1E8] dark:bg-[rgba(184,165,229,0.2)]" />
           </div>
 
-          <p className={`font-spatial-display text-sm sm:text-base md:text-lg tracking-[0.14em] uppercase font-medium select-none ${
-            isDark ? 'text-slate-300' : 'text-slate-700'
-          }`}>
-            &ldquo;It’s a slow climb to the{' '}
-            <span className={`bg-gradient-to-r bg-clip-text text-transparent font-bold ${
-              isDark
-                ? 'from-purple-400 via-amber-300 to-orange-400'
-                : 'from-purple-700 via-amber-600 to-orange-600'
-            }`}>
-              top
-            </span>
-            , but the view is worth it.&rdquo;
+          <p className="font-spatial-display text-xs sm:text-sm md:text-base tracking-[0.1em] uppercase font-semibold text-[#211D2B] dark:text-[#F5F2FA] select-none">
+            &ldquo;It’s a slow climb to the <span className="text-[#7156A5] dark:text-[#B8A5E5]">top</span>, but the view is worth it.&rdquo;
           </p>
 
-          <p className={`text-[11px] sm:text-xs font-spatial-sans tracking-widest uppercase italic font-medium ${
-            isDark ? 'text-amber-400/80' : 'text-amber-700'
-          }`}>
-            The Climb
+          <p className="text-[11px] font-spatial-sans tracking-wider uppercase font-semibold text-[#686370] dark:text-[#AAA4B8]">
+            The Climb • APEX Sports Championship
           </p>
         </div>
 

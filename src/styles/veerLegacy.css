@@ -24,6 +24,18 @@
   --vl-hairline-subtle: #ECE8F0;
   --vl-shadow-subtle: 0 4px 16px -2px rgba(33, 29, 43, 0.05);
   --vl-radius: 8px;
+
+  /* Scoped Public Text Tokens */
+  --public-text-primary: #211D2B;
+  --public-text-secondary: #686370;
+  --public-text-muted: #8B8599;
+  --public-text-accent: #7156A5;
+  --public-text-link: #7156A5;
+  --public-text-info: #596B98;
+  --public-text-gold: #A98B57;
+  --public-text-winner: #1B5E20;
+  --public-text-error: #B71C1C;
+  --public-text-success: #1B5E20;
 }
 
 .dark {
@@ -47,6 +59,18 @@
   --vl-hairline-subtle: rgba(184, 165, 229, 0.08);
   --vl-shadow-subtle: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
   --vl-radius: 8px;
+
+  /* Scoped Public Text Tokens */
+  --public-text-primary: #F5F2FA;
+  --public-text-secondary: #AAA4B8;
+  --public-text-muted: #8B8599;
+  --public-text-accent: #B8A5E5;
+  --public-text-link: #B8A5E5;
+  --public-text-info: #818CF8;
+  --public-text-gold: #D2AB45;
+  --public-text-winner: #F3D78A;
+  --public-text-error: #FDA4AF;
+  --public-text-success: #81C784;
 }
 
 /* Base Surfaces */
