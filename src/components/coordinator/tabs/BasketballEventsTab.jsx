@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Calendar, Layers, CheckCircle2, Clock, XCircle, Edit, Trash2, Eye, 
   Upload, Crop, Image as ImageIcon, Users, DollarSign, ShieldAlert, Download, 
-  Search, Filter, ToggleLeft, ToggleRight, X, AlertCircle, Sparkles, FileText, Phone, Mail, UserCheck
+  Search, Filter, ToggleLeft, ToggleRight, X, AlertCircle, Sparkles, FileText, Phone, Mail, UserCheck,
+  ChevronDown, ArrowUpRight
 } from 'lucide-react';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { ImageCropperModal } from '../../common/ImageCropperModal';
 import { useToast } from '../../../context/ToastContext';
 import { exportToCSV } from '../../../utils/pdfExporter';
+import { resolveSportKey } from '../../../data/sportsConfig';
+import { EventStatusBadge, RegistrationStatusBadge } from '../events/RegistrationStatusControl';
+import { computeEffectiveRegistrationStatus } from '../../../utils/registrationLifecycle';
 
 export const BasketballEventsTab = ({ user }) => {
   const { addToast } = useToast();
@@ -16,6 +20,7 @@ export const BasketballEventsTab = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
+  const [activeDropdownEventId, setActiveDropdownEventId] = useState(null);
   
   // Participant Roster Drawer/Modal state
   const [selectedEventForParticipants, setSelectedEventForParticipants] = useState(null);
@@ -34,30 +39,27 @@ export const BasketballEventsTab = ({ user }) => {
     description: '',
     regStartDate: new Date().toISOString().split('T')[0],
     regEndDate: '2026-09-15',
-    tournStartDate: '2026-09-01',
-    tournEndDate: '2026-09-03',
-    teamFee: 1500, // Team registration fee ONLY
-    minPlayers: 5,  // Min players per squad
-    maxPlayers: 10, // Max players per squad
+    tournStartDate: '2026-09-16',
+    tournEndDate: '2026-09-18',
+    teamFee: 1500,
+    minPlayers: 5,
+    maxPlayers: 10,
     teamSize: '5 - 10 Players',
     registeredCount: 0,
     venue: 'Basketball Indoor Court 1',
-    category: 'Open', // Boys, Girls, Open (Mixed removed)
-    status: 'Published', // Draft, Upcoming, Published, Closed
+    category: 'Open',
+    status: 'Published',
     rules: [
-      '1. Team Composition: Each team consists of 5 players on the court (Squad size 5-10 players). Substitutions allowed per rules.',
-      '2. Match Duration: 4 quarters of 10 minutes each with a 2-min break after 1st & 3rd quarters and a 10-min halftime after 2nd quarter.',
-      '3. Scoring: Free Throw = 1 Point | Field Goal = 2 Points | 3-Point Shot = 3 Points.',
-      '4. Game Start: Jump ball at the center circle.',
-      '5. Shot Clock: 24 seconds to attempt a shot upon gaining possession.',
-      '6. Player Fouls: 5 personal fouls results in player disqualification.',
-      '7. Team Fouls: Reaching quarter foul limit awards free throws to opponent.',
-      '8. Overtime: Tied games play 5-minute overtime periods until winner decided.',
-      '9. Uniforms & Conduct: Matching jerseys with visible numbers and basketball shoes mandatory. Technical fouls for misconduct.',
-      '10. Guidelines: Report 15 mins early. Valid College ID mandatory. Late arrival may cause walkover.'
+      '1. Team Composition: 5 players on court per team (Registered squad: 5 to 10 players).',
+      '2. Match Duration: 4 quarters of 10 minutes each (2-min quarter breaks, 10-min halftime).',
+      '3. Scoring: Free Throw = 1 Pt | Field Goal = 2 Pts | 3-Point Shot = 3 Pts.',
+      '4. Shot Clock: 24-second shot clock per offensive possession.',
+      '5. Fouls: 5 personal fouls results in player disqualification.',
+      '6. Uniforms & Footwear: Matching numbered jerseys and non-marking indoor basketball shoes mandatory.',
+      '7. College Student ID & APEX Pass mandatory for all participating squad members.'
     ],
     requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'Team Roster Approval Form'],
-    contactName: user?.coordinatorName || 'Michael Jordan Singh',
+    contactName: user?.coordinatorName || 'Basketball Coordinator',
     contactEmail: user?.email || 'basketball.coord@apex.edu',
     contactPhone: '+91 98765 43210'
   });
@@ -69,18 +71,30 @@ export const BasketballEventsTab = ({ user }) => {
     fetchEvents();
   }, [user]);
 
-  useEffect(() => {
-    window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: showCreateModal } }));
-    return () => {
-      window.dispatchEvent(new CustomEvent('sems_layout_toggle', { detail: { hide: false } }));
-    };
-  }, [showCreateModal]);
-
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const list = await coordinatorApi.getEvents();
-      setEvents(list);
+      const [list, allRegs] = await Promise.all([
+        coordinatorApi.getEvents(),
+        coordinatorApi.getRegistrations().catch(() => [])
+      ]);
+      const bballRegs = (allRegs || []).filter((d) => 
+        (d.sportId === 'basketball') || 
+        resolveSportKey(d) === 'basketball' ||
+        (!d.sport || d.sport.toLowerCase().includes('basket') || d.eventTitle?.toLowerCase().includes('basket'))
+      );
+      const mapped = (list || []).map((ev) => {
+        const matching = bballRegs.filter((r) => 
+          r.eventId === ev.id || 
+          r.eventTitle === ev.title || 
+          (list.length === 1 && bballRegs.length > 0)
+        );
+        return {
+          ...ev,
+          registeredCount: matching.length
+        };
+      });
+      setEvents(mapped);
     } catch (err) {
       addToast('Error loading basketball events console', 'error');
     } finally {
@@ -91,8 +105,8 @@ export const BasketballEventsTab = ({ user }) => {
   // Preset form on Edit event
   const handleOpenEdit = (eventObj) => {
     setEditingEvent(eventObj);
-    const minP = eventObj.minPlayers !== undefined ? eventObj.minPlayers : 5;
-    const maxP = eventObj.maxPlayers !== undefined ? eventObj.maxPlayers : 10;
+    const minP = eventObj.minPlayers !== undefined ? eventObj.minPlayers : (eventObj.minMembers !== undefined ? eventObj.minMembers : 5);
+    const maxP = eventObj.maxPlayers !== undefined ? eventObj.maxPlayers : (eventObj.maxMembers !== undefined ? eventObj.maxMembers : 10);
     
     setFormData({
       title: eventObj.title || '',
@@ -101,8 +115,8 @@ export const BasketballEventsTab = ({ user }) => {
       description: eventObj.description || '',
       regStartDate: eventObj.regStartDate || new Date().toISOString().split('T')[0],
       regEndDate: eventObj.regEndDate || '2026-09-15',
-      tournStartDate: eventObj.tournStartDate || '2026-09-01',
-      tournEndDate: eventObj.tournEndDate || '2026-09-03',
+      tournStartDate: eventObj.tournStartDate || '2026-09-16',
+      tournEndDate: eventObj.tournEndDate || '2026-09-18',
       teamFee: typeof eventObj.teamFee === 'number' ? eventObj.teamFee : (typeof eventObj.entryFee === 'number' ? eventObj.entryFee : (eventObj.teamFee ?? eventObj.entryFee ?? 1500)),
       minPlayers: minP,
       maxPlayers: maxP,
@@ -111,11 +125,18 @@ export const BasketballEventsTab = ({ user }) => {
       venue: eventObj.venue || 'Basketball Indoor Court 1',
       category: eventObj.category === 'Mixed' ? 'Open' : (eventObj.category || 'Open'),
       status: eventObj.status || 'Published',
-      rules: eventObj.rules || [],
-      requiredDocuments: eventObj.requiredDocuments || ['College Student ID Card'],
-      contactName: eventObj.contactInfo?.name || user?.coordinatorName || 'Basketball Coordinator',
-      contactEmail: eventObj.contactInfo?.email || user?.email || 'basketball.coord@apex.edu',
-      contactPhone: eventObj.contactInfo?.phone || '+91 98765 43210'
+      rules: eventObj.rules || [
+        '1. Team Composition: 5 players on court per team (Squad: 5 to 10 players).',
+        '2. Match Duration: 4 quarters of 10 minutes each.',
+        '3. Scoring: Free Throw = 1 Pt | Field Goal = 2 Pts | 3-Point Shot = 3 Pts.',
+        '4. Shot Clock: 24-second shot clock per offensive possession.',
+        '5. Fouls: 5 personal fouls results in player disqualification.',
+        '6. Uniforms: Matching numbered jerseys and basketball shoes required.'
+      ],
+      requiredDocuments: eventObj.requiredDocuments || ['College Student ID Card', 'Aadhaar Card / Govt ID'],
+      contactName: eventObj.contactInfo?.name || eventObj.contactName || user?.coordinatorName || 'Basketball Coordinator',
+      contactEmail: eventObj.contactInfo?.email || eventObj.contactEmail || user?.email || 'basketball.coord@apex.edu',
+      contactPhone: eventObj.contactInfo?.phone || eventObj.contactPhone || '+91 98765 43210'
     });
     setRulesInput(Array.isArray(eventObj.rules) ? eventObj.rules.join('\n') : '');
     setDocInput(Array.isArray(eventObj.requiredDocuments) ? eventObj.requiredDocuments.join('\n') : '');
@@ -132,8 +153,8 @@ export const BasketballEventsTab = ({ user }) => {
       description: 'Official inter-college Basketball tournament. Register team entries (5 - 10 players) today!',
       regStartDate: new Date().toISOString().split('T')[0],
       regEndDate: '2026-09-15',
-      tournStartDate: '2026-09-01',
-      tournEndDate: '2026-09-03',
+      tournStartDate: '2026-09-16',
+      tournEndDate: '2026-09-18',
       teamFee: 1500,
       minPlayers: 5,
       maxPlayers: 10,
@@ -143,46 +164,33 @@ export const BasketballEventsTab = ({ user }) => {
       category: 'Open',
       status: 'Published',
       rules: [
-        '1. Team Composition: Each team consists of 5 players on the court (Squad size 5-10 players). Substitutions allowed per rules.',
-        '2. Match Duration: 4 quarters of 10 minutes each with a 2-min break after 1st & 3rd quarters and a 10-min halftime after 2nd quarter.',
-        '3. Scoring: Free Throw = 1 Point | Field Goal = 2 Points | 3-Point Shot = 3 Points.',
-        '4. Game Start: Jump ball at the center circle.',
-        '5. Shot Clock: 24 seconds to attempt a shot upon gaining possession.',
-        '6. Player Fouls: 5 personal fouls results in player disqualification.',
-        '7. Team Fouls: Reaching quarter foul limit awards free throws to opponent.',
-        '8. Overtime: Tied games play 5-minute overtime periods until winner decided.',
-        '9. Uniforms & Conduct: Matching jerseys with visible numbers and basketball shoes mandatory. Technical fouls for misconduct.',
-        '10. Guidelines: Report 15 mins early. Valid College ID mandatory. Late arrival may cause walkover.'
+        '1. Team Composition: 5 players on court per team (Registered squad: 5 to 10 players).',
+        '2. Match Duration: 4 quarters of 10 minutes each (2-min quarter breaks, 10-min halftime).',
+        '3. Scoring: Free Throw = 1 Pt | Field Goal = 2 Pts | 3-Point Shot = 3 Pts.',
+        '4. Shot Clock: 24-second shot clock per offensive possession.',
+        '5. Fouls: 5 personal fouls results in player disqualification.',
+        '6. Uniforms & Footwear: Matching numbered jerseys and non-marking indoor basketball shoes mandatory.',
+        '7. College Student ID & APEX Pass mandatory for all participating squad members.'
       ],
-      requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID'],
+      requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'Team Roster Approval Form'],
       contactName: user?.coordinatorName || 'Basketball Coordinator',
       contactEmail: user?.email || 'basketball.coord@apex.edu',
       contactPhone: '+91 98765 43210'
     });
-    setRulesInput(`Basketball Tournament Rules
-
-Team Composition: Each team consists of 5 players on the court. Substitutions are allowed as per tournament rules.
-Match Duration: 4 quarters of 10 minutes each with 2-min break after 1st & 3rd quarters and 10-min halftime after 2nd quarter.
-Scoring: Free Throw = 1 Point | Field Goal (inside 3-pt line) = 2 Points | Beyond 3-pt line = 3 Points
-Game Start: Jump ball at the center circle.
-Shot Clock: 24 seconds to attempt a shot upon gaining possession.
-Player Fouls: 5 personal fouls results in player disqualification.
-Team Fouls: Reaching quarter foul limit awards free throws to opponent.
-Timeouts & Overtime: Permitted timeouts allowed. Tied regulation games play 5-minute overtime periods.
-Sportsmanship & Uniforms: Matching jerseys with visible numbers and basketball shoes mandatory. Misconduct leads to technical fouls.
-Organizer's Decision: Referee and organizer decisions are final and binding.
-
-📌 Additional Guidelines:
-- Teams should report 15 minutes before scheduled match.
-- Carry a valid college ID card.
-- Late arrival may result in a walkover.
-- Only registered players allowed to participate.`);
-    setDocInput('College Student ID Card\nAadhaar Card / Govt ID');
+    setRulesInput(
+      '1. Team Composition: 5 players on court per team (Registered squad: 5 to 10 players).\n' +
+      '2. Match Duration: 4 quarters of 10 minutes each (2-min quarter breaks, 10-min halftime).\n' +
+      '3. Scoring: Free Throw = 1 Pt | Field Goal = 2 Pts | 3-Point Shot = 3 Pts.\n' +
+      '4. Shot Clock: 24-second shot clock per possession.\n' +
+      '5. Fouls: 5 personal fouls results in player disqualification.\n' +
+      '6. College Student ID Card mandatory.'
+    );
+    setDocInput('College Student ID Card\nAadhaar Card / Govt ID\nTeam Roster Approval Form');
     setShowCreateModal(true);
   };
 
   const handleCoverUpload = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files && e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
@@ -227,10 +235,17 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
     const docsArr = docInput.split('\n').map((d) => d.trim()).filter(Boolean);
 
     const calculatedTeamSize = `${formData.minPlayers} - ${formData.maxPlayers} Players`;
+    const targetStatus = formData.status || 'Published';
 
     const eventPayload = {
       ...formData,
-      entryFee: formData.teamFee, // Standardize entryFee for common API compatibility
+      sportId: 'basketball',
+      sportName: 'Basketball',
+      status: targetStatus,
+      registrationOpen: targetStatus !== 'Closed' && targetStatus !== 'Draft' && targetStatus !== 'Completed',
+      entryFee: formData.teamFee,
+      minMembers: formData.minPlayers,
+      maxMembers: formData.maxPlayers,
       teamSize: calculatedTeamSize,
       rules: rulesArr,
       requiredDocuments: docsArr,
@@ -244,18 +259,19 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
     try {
       if (editingEvent) {
         const updated = await coordinatorApi.updateEvent(editingEvent.id, eventPayload);
-        setEvents((prev) => prev.map((item) => (item.id === editingEvent.id ? updated : item)));
-        addToast(`Basketball registration event "${updated.title}" updated!`, 'success');
+        setEvents((prev) => prev.map((item) => (item.id === editingEvent.id ? { ...item, ...updated } : item)));
+        addToast(`Basketball event "${updated.title || formData.title}" updated!`, 'success');
       } else {
         const created = await coordinatorApi.createEvent(eventPayload);
         setEvents((prev) => [created, ...prev]);
-        addToast(`New basketball registration event "${created.title}" published!`, 'success');
+        addToast(`New basketball event "${created.title || formData.title}" published!`, 'success');
       }
 
       setShowCreateModal(false);
       fetchEvents();
+      window.dispatchEvent(new Event('sems_events_updated'));
     } catch (err) {
-      addToast('Failed to save basketball registration event', 'error');
+      addToast('Failed to save basketball event', 'error');
     }
   };
 
@@ -265,47 +281,91 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
         await coordinatorApi.deleteEvent(id);
         setEvents((prev) => prev.filter((item) => item.id !== id));
         addToast('Basketball event deleted successfully', 'info');
+        window.dispatchEvent(new Event('sems_events_updated'));
       } catch (err) {
         addToast('Failed to delete event', 'error');
       }
     }
   };
 
-  // Toggle status across: Draft -> Upcoming -> Published -> Closed -> Draft
-  const handleToggleStatus = async (eventObj) => {
-    const statusCycle = {
-      'Draft': 'Upcoming',
-      'Upcoming': 'Published',
-      'Published': 'Closed',
-      'Closed': 'Draft'
-    };
-    const nextStatus = statusCycle[eventObj.status] || 'Published';
-
+  const handleSetEventStatus = async (eventObj, actionKey) => {
+    setActiveDropdownEventId(null);
     try {
-      const updated = await coordinatorApi.updateEvent(eventObj.id, { status: nextStatus });
-      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? updated : item)));
-      addToast(`Event status changed to ${nextStatus}`, 'info');
+      if (actionKey === 'OPEN') {
+        const nowStr = new Date().toISOString().split('T')[0];
+        let newEndDate = eventObj.regEndDate;
+        // If deadline passed or empty, auto extend by 7 days so registration is actively accepted
+        if (!eventObj.regEndDate || eventObj.regEndDate < nowStr) {
+          const futureDate = new Date();
+          futureDate.setDate(futureDate.getDate() + 7);
+          newEndDate = futureDate.toISOString().split('T')[0];
+        }
+        const updated = await coordinatorApi.updateEvent(eventObj.id, {
+          status: 'Published',
+          registrationOpen: true,
+          regEndDate: newEndDate
+        });
+        setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, status: 'Published', registrationOpen: true, regEndDate: newEndDate } : item)));
+        addToast(`🔓 Registration is now OPEN for "${eventObj.title}"! (Deadline: ${newEndDate})`, 'success');
+      } else if (actionKey === 'CLOSE') {
+        const updated = await coordinatorApi.updateEvent(eventObj.id, {
+          status: 'Closed',
+          registrationOpen: false
+        });
+        setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, status: 'Closed', registrationOpen: false } : item)));
+        addToast(`🔒 Registration CLOSED for "${eventObj.title}". Fixtures can now be scheduled!`, 'info');
+      } else if (actionKey === 'UPCOMING') {
+        const updated = await coordinatorApi.updateEvent(eventObj.id, {
+          status: 'Upcoming',
+          registrationOpen: false
+        });
+        setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, status: 'Upcoming', registrationOpen: false } : item)));
+        addToast(`⏳ Event marked as UPCOMING for "${eventObj.title}".`, 'info');
+      } else if (actionKey === 'EXTEND') {
+        handleOpenEdit(eventObj);
+        return;
+      }
+      fetchEvents();
+      window.dispatchEvent(new Event('sems_events_updated'));
     } catch (err) {
-      addToast('Status toggle failed', 'error');
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to update event status';
+      addToast(errMsg, 'error');
     }
   };
 
   const handleViewParticipants = async (eventObj) => {
     setSelectedEventForParticipants(eventObj);
-    const allRegs = await coordinatorApi.getRegistrations();
-    setParticipants(allRegs);
+    try {
+      const allRegs = await coordinatorApi.getRegistrations();
+      const bballRegs = (allRegs || []).filter((d) => 
+        (d.sportId === 'basketball') || 
+        resolveSportKey(d) === 'basketball' ||
+        (!d.sport || d.sport.toLowerCase().includes('basket') || d.eventTitle?.toLowerCase().includes('basket'))
+      );
+      const matching = bballRegs.filter((r) => 
+        r.eventId === eventObj.id || 
+        r.eventTitle === eventObj.title || 
+        (events.length === 1 && bballRegs.length > 0)
+      );
+      setParticipants(matching.length > 0 ? matching : bballRegs);
+    } catch (e) {
+      console.error('Error fetching registrations for roster:', e);
+    }
   };
 
-  // Dashboard Stats calculation
   const totalEvents = events.length;
-  const activeEvents = events.filter((e) => e.status === 'Published').length;
-  const upcomingEvents = events.filter((e) => e.status === 'Upcoming').length;
-  const closedEvents = events.filter((e) => e.status === 'Closed').length;
-  const totalRegCount = events.reduce((acc, curr) => acc + (curr.registeredCount || 0), 0);
-  const totalRevenue = events.reduce((acc, curr) => {
-    const fee = typeof curr.teamFee === 'number' ? curr.teamFee : (typeof curr.entryFee === 'number' ? curr.entryFee : (curr.teamFee ?? curr.entryFee ?? 1500));
-    return acc + ((curr.registeredCount || 0) * fee);
-  }, 0);
+  const activeEvents = events.filter((e) => {
+    const s = computeEffectiveRegistrationStatus(e);
+    return s.effectiveRegistrationOpen;
+  }).length;
+  const upcomingEvents = events.filter((e) => {
+    const s = computeEffectiveRegistrationStatus(e);
+    return s.code === 'UPCOMING' || s.code === 'NOT_STARTED' || (e.status || '').toLowerCase() === 'upcoming';
+  }).length;
+  const closedEvents = events.filter((e) => {
+    const s = computeEffectiveRegistrationStatus(e);
+    return s.effectiveRegistrationClosed || (e.status || '').toLowerCase() === 'closed';
+  }).length;
 
   const filteredParticipants = participants.filter((p) => {
     if (!participantSearch.trim()) return true;
@@ -348,7 +408,7 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="px-2.5 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 text-[10px] font-mono font-bold uppercase">
-              BASKETBALL COORDINATOR PORTAL
+              🏀 BASKETBALL COORDINATOR PORTAL
             </span>
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400 font-mono">• Team Events Configurator</span>
           </div>
@@ -395,9 +455,10 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
             {events.map((event) => {
               const registered = event.registeredCount || 0;
               const fee = typeof event.teamFee === 'number' ? event.teamFee : (typeof event.entryFee === 'number' ? event.entryFee : (event.teamFee ?? event.entryFee ?? 1500));
-              const minP = event.minPlayers !== undefined ? event.minPlayers : 5;
-              const maxP = event.maxPlayers !== undefined ? event.maxPlayers : 10;
+              const minP = event.minPlayers !== undefined ? event.minPlayers : (event.minMembers !== undefined ? event.minMembers : 5);
+              const maxP = event.maxPlayers !== undefined ? event.maxPlayers : (event.maxMembers !== undefined ? event.maxMembers : 10);
               const teamSizeStr = event.teamSize || `${minP} - ${maxP} Players`;
+              const statusInfo = computeEffectiveRegistrationStatus(event);
 
               return (
                 <div
@@ -413,19 +474,10 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/30 to-transparent" />
 
-                    {/* Status Badge including Upcoming */}
-                    <div className="absolute top-3 left-3 flex items-center gap-2">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase border shadow-md ${
-                        event.status === 'Published'
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                          : event.status === 'Upcoming'
-                          ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
-                          : event.status === 'Closed'
-                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                          : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                      }`}>
-                        ● {event.status}
-                      </span>
+                    {/* Status Badges */}
+                    <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5">
+                      <EventStatusBadge event={event} />
+                      <RegistrationStatusBadge event={event} />
                       <span className="px-2.5 py-1 rounded-full bg-slate-950/70 backdrop-blur-xs text-white text-[10px] font-bold border border-slate-800">
                         {event.category || 'Open'}
                       </span>
@@ -438,7 +490,7 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
 
                     <div className="absolute bottom-3 left-4 right-4">
                       <span className="text-[10px] font-mono font-bold text-orange-400 uppercase tracking-wider">
-                        BASKETBALL TOURNAMENT
+                        🏀 BASKETBALL TOURNAMENT
                       </span>
                       <h3 className="text-lg font-black text-white leading-tight truncate">
                         {event.title}
@@ -462,8 +514,8 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
                         <span className="font-bold text-slate-900 dark:text-white text-[11px]">{event.tournStartDate} to {event.tournEndDate}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono">Venue / Location</span>
-                        <span className="font-bold text-orange-600 dark:text-orange-400 text-[11px] truncate block">{event.venue}</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono">Court / Venue</span>
+                        <span className="font-bold text-orange-600 dark:text-orange-400 text-[11px] truncate block">{event.venue || 'Basketball Indoor Court 1'}</span>
                       </div>
                       <div>
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono">Squad Limits</span>
@@ -474,29 +526,77 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
                       </div>
                     </div>
 
-                    {/* Total Registrations Display (Max Team Limit removed) */}
-                    <div className="flex items-center justify-between text-xs pt-1">
-                      <span className="font-bold text-slate-500 dark:text-slate-400 font-mono text-[11px]">Registered Squads</span>
-                      <span className="font-mono font-black text-orange-600 dark:text-orange-400">{registered} Teams Registered</span>
-                    </div>
+                    {/* Actions Bar - Clean and Unified */}
+                    <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {/* Unified Status Roll-Down Menu */}
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setActiveDropdownEventId(activeDropdownEventId === event.id ? null : event.id)}
+                            className={`px-3 py-1.5 rounded-xl border text-[11px] font-black transition flex items-center gap-1.5 cursor-pointer ${
+                              statusInfo.effectiveRegistrationOpen
+                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                                : statusInfo.code === 'UPCOMING' || statusInfo.code === 'NOT_STARTED' || (event.status || '').toLowerCase() === 'upcoming'
+                                ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 hover:bg-blue-500/20'
+                                : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30 hover:bg-rose-500/20'
+                            }`}
+                          >
+                            <span className={`w-2 h-2 rounded-full ${
+                              statusInfo.effectiveRegistrationOpen ? 'bg-emerald-500 animate-pulse' : statusInfo.code === 'UPCOMING' || (event.status || '').toLowerCase() === 'upcoming' ? 'bg-blue-500' : 'bg-rose-500'
+                            }`} />
+                            <span>
+                              {statusInfo.effectiveRegistrationOpen
+                                ? 'Registration Open'
+                                : statusInfo.code === 'UPCOMING' || (event.status || '').toLowerCase() === 'upcoming'
+                                ? 'Upcoming'
+                                : 'Closed'}
+                            </span>
+                            <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+                          </button>
 
-                    {/* Actions Bar */}
-                    <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => handleToggleStatus(event)}
-                          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
-                          title="Toggle Status (Draft -> Upcoming -> Published -> Closed)"
-                        >
-                          {event.status === 'Published' ? (
-                            <ToggleRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                          ) : event.status === 'Upcoming' ? (
-                            <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                          ) : (
-                            <ToggleLeft className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                          {activeDropdownEventId === event.id && (
+                            <div className="absolute left-0 bottom-full mb-2 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 z-40 animate-fade-in text-xs space-y-1">
+                              <button
+                                type="button"
+                                onClick={() => handleSetEventStatus(event, 'OPEN')}
+                                className="w-full px-3 py-2 rounded-xl text-left font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 flex items-center gap-2 cursor-pointer"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Open / Activate Registration</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleSetEventStatus(event, 'CLOSE')}
+                                className="w-full px-3 py-2 rounded-xl text-left font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 cursor-pointer"
+                              >
+                                <XCircle className="w-3.5 h-3.5" />
+                                <span>Close Registration</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleSetEventStatus(event, 'UPCOMING')}
+                                className="w-full px-3 py-2 rounded-xl text-left font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 flex items-center gap-2 cursor-pointer"
+                              >
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>Mark as Upcoming</span>
+                              </button>
+
+                              <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
+
+                              <button
+                                type="button"
+                                onClick={() => handleSetEventStatus(event, 'EXTEND')}
+                                className="w-full px-3 py-2 rounded-xl text-left font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 cursor-pointer"
+                              >
+                                <Calendar className="w-3.5 h-3.5 text-orange-500" />
+                                <span>Extend End Date (Edit)</span>
+                              </button>
+                            </div>
                           )}
-                          <span>Toggle Status</span>
-                        </button>
+                        </div>
 
                         <button
                           onClick={() => handleViewParticipants(event)}
@@ -538,11 +638,10 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto font-sans">
           <div className="w-full max-w-3xl bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-2xl space-y-6 my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
             
-            {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
               <div>
                 <span className="text-[10px] font-mono font-bold uppercase text-orange-600 dark:text-orange-400">
-                  Basketball Event Configurator
+                  🏀 Basketball Event Configurator
                 </span>
                 <h3 className="text-xl font-black text-slate-900 dark:text-white">
                   {editingEvent ? 'Edit Basketball Event' : 'Create New Basketball Event'}
@@ -558,7 +657,6 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
 
             <form onSubmit={handleSaveEvent} className="space-y-5">
               
-              {/* Event Title & Sport Name */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="sm:col-span-2 space-y-1.5">
                   <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
@@ -587,7 +685,6 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
                 </div>
               </div>
 
-              {/* Cover Banner Upload & Cropper */}
               <div className="space-y-2 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
                 <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
                   Cover Banner Image Upload & Cropper
@@ -644,7 +741,6 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
                 </div>
               </div>
 
-              {/* Event Description */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
                   Event Description
@@ -658,7 +754,6 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
                 />
               </div>
 
-              {/* Date Ranges */}
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div className="space-y-1">
                   <label className="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">Reg Start Date</label>
@@ -698,7 +793,7 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
                 </div>
               </div>
 
-              {/* TEAM FEE ONLY (No Singles/Doubles Fee), MIN 5 & MAX 10 PLAYERS */}
+              {/* TEAM FEE ONLY, MIN 5 & MAX 10 PLAYERS */}
               <div className="p-4 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-4">
                 <div className="flex items-center gap-2 border-b border-orange-500/20 pb-2">
                   <DollarSign className="w-4 h-4 text-orange-600 dark:text-orange-400" />
@@ -708,7 +803,6 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                  {/* Team Fee Field */}
                   <div className="space-y-1 sm:col-span-2">
                     <label className="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300">
                       Team Entry Fee (₹) <span className="text-rose-500">*</span>
@@ -728,7 +822,6 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
                     <p className="text-[10px] text-slate-500 dark:text-slate-400">Flat registration fee collected per participating basketball team.</p>
                   </div>
 
-                  {/* Min Players (Min 5) */}
                   <div className="space-y-1">
                     <label className="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300">
                       Min Players <span className="text-rose-500">*</span>
@@ -748,7 +841,6 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
                     <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Default: 5</p>
                   </div>
 
-                  {/* Max Players (Max 10) */}
                   <div className="space-y-1">
                     <label className="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300">
                       Max Players <span className="text-rose-500">*</span>
@@ -770,7 +862,6 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
                 </div>
               </div>
 
-              {/* Category (Mixed removed) & Status (Upcoming added) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Category</label>
@@ -794,39 +885,37 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
                   >
                     <option value="Draft">Draft (Hidden)</option>
                     <option value="Upcoming">Upcoming (Coming Soon)</option>
-                    <option value="Published">Published (Open)</option>
-                    <option value="Closed">Closed</option>
+                    <option value="Published">Published (Open / Active)</option>
+                    <option value="Closed">Closed (Registration Closed)</option>
+                    <option value="Completed">Completed (Event Finished)</option>
                   </select>
                 </div>
               </div>
 
-              {/* Venue */}
               <div className="space-y-1">
-                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Venue / Location</label>
+                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Court / Venue Location</label>
                 <input
                   type="text"
                   value={formData.venue}
                   onChange={(e) => setFormData((prev) => ({ ...prev, venue: e.target.value }))}
-                  placeholder="e.g. Basketball Indoor Arena Court 1"
+                  placeholder="e.g. Basketball Indoor Court 1"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold"
                 />
               </div>
 
-              {/* Rules & Regulations multiline */}
               <div className="space-y-1">
                 <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
                   Rules & Regulations (One per line)
                 </label>
                 <textarea
-                  rows={3}
+                  rows={4}
                   value={rulesInput}
                   onChange={(e) => setRulesInput(e.target.value)}
-                  placeholder="Official FIBA rules apply&#10;Min 5 and Max 10 players required per squad&#10;Non-marking shoes mandatory"
+                  placeholder="1. 5 players on court per team (Squad: 5 to 10 players).&#10;2. Match duration: 4 quarters of 10 minutes each.&#10;3. Free Throw = 1 Pt | Field Goal = 2 Pts | 3-Pt = 3 Pts."
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-mono"
                 />
               </div>
 
-              {/* Required Documents multiline */}
               <div className="space-y-1">
                 <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
                   Required Documents (One per line)
@@ -840,7 +929,6 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
                 />
               </div>
 
-              {/* Modal Action Buttons */}
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
@@ -870,7 +958,7 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
               <div>
                 <span className="text-[10px] font-mono text-orange-600 dark:text-orange-400 font-bold uppercase">
-                  Basketball Registered Squads
+                  🏀 Basketball Registered Squads
                 </span>
                 <h3 className="text-lg font-black text-slate-900 dark:text-white">{selectedEventForParticipants.title}</h3>
               </div>
@@ -884,7 +972,7 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
                       Captain: p.studentName,
                       College: p.college,
                       Department: p.department || 'N/A',
-                      SquadCount: p.squadCount || '5-10',
+                      SquadCount: p.squadCount || '5-10 Players',
                       Phone: p.contactPhone || p.phone,
                       Status: p.status,
                       RegisteredDate: p.registeredDate
@@ -906,7 +994,6 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
               </div>
             </div>
 
-            {/* Search Bar */}
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400 dark:text-slate-500" />
               <input
@@ -918,13 +1005,12 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
               />
             </div>
 
-            {/* Participants Table */}
             <div className="flex-1 overflow-y-auto custom-scrollbar border border-slate-200 dark:border-slate-800 rounded-2xl">
               <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
                 <thead className="bg-slate-100 dark:bg-slate-900 text-[10px] font-mono uppercase text-slate-500 dark:text-slate-400 sticky top-0">
                   <tr>
                     <th className="p-3">Registration ID</th>
-                    <th className="p-3">Team / Student Name</th>
+                    <th className="p-3">Team / Captain Name</th>
                     <th className="p-3">College</th>
                     <th className="p-3">Category</th>
                     <th className="p-3">Squad Size</th>
@@ -962,7 +1048,6 @@ Organizer's Decision: Referee and organizer decisions are final and binding.
         </div>
       )}
 
-      {/* IMAGE CROPPER MODAL */}
       {showCropper && cropperRawSrc && (
         <ImageCropperModal
           imageSrc={cropperRawSrc}
