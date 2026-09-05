@@ -56,6 +56,9 @@ export const Footer = () => {
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-md">
               The premier inter-college Sports Event Management System, uniting registrations, tournament fixtures, live scoring, and championship leaderboards.
             </p>
+            <p className="text-xs font-medium text-blue-600 dark:text-blue-400 italic pt-0.5">
+              &ldquo;Your journey starts here. Prove what you can do.&rdquo;
+            </p>
           </div>
 
           {/* Quick Navigation (Col 4) */}
@@ -159,10 +162,10 @@ export const Footer = () => {
         {/* Bottom Copyright & Legal Links Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400 text-center sm:text-left">
           
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap justify-center sm:justify-start">
             <span className="font-semibold text-slate-700 dark:text-slate-300">© 2026 APEX</span>
             <span>•</span>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400">Spirit of Sporting Excellence</span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">Your journey starts here. Prove what you can do.</span>
           </div>
 
           {/* Legal Links */}
