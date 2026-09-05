@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Trophy, Star, Search, Calendar, CheckCircle2, Award } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Trophy, Star, Search, Calendar, CheckCircle2, Award, Sparkles, Filter, ChevronDown, Check } from 'lucide-react';
 import { coordinatorApi } from '../services/coordinatorApi';
 import { resolveSportConfig } from '../data/sportsConfig';
 import { getSportResultDisplay } from '../utils/sportResultFormatters';
+import { useTheme } from '../context/ThemeContext';
+import '../styles/spatialGallery.css';
 
 const SportResultSummary = ({ resultData }) => {
   const display = getSportResultDisplay(resultData.rawMatch || resultData);
@@ -12,16 +14,16 @@ const SportResultSummary = ({ resultData }) => {
       return (
         <div className="space-y-2.5">
           <div className="flex items-center justify-between text-[11px] font-mono font-bold text-slate-400">
-            <span>FORMAT: <strong className="text-orange-500">{display.format}</strong></span>
+            <span>FORMAT: <strong className="text-purple-500 dark:text-purple-300">{display.format}</strong></span>
             {display.cricket.targetRuns && (
-              <span className="bg-orange-500/10 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full border border-orange-500/20">
+              <span className="bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/20 text-[10px] font-mono">
                 Target: {display.cricket.targetRuns}
               </span>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-2 bg-slate-100 dark:bg-slate-800/60 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+          <div className="grid grid-cols-2 gap-2 bg-slate-100/80 dark:bg-white/[0.04] p-2.5 rounded-xl border border-slate-200/80 dark:border-white/10">
             <div className="space-y-0.5">
-              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase truncate block">
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase truncate block font-spatial-sans">
                 {display.team1}
               </span>
               <p className="text-sm font-black font-mono text-slate-900 dark:text-white">
@@ -30,7 +32,7 @@ const SportResultSummary = ({ resultData }) => {
               <span className="text-[10px] font-mono text-slate-400">({display.cricket.overs1} ov)</span>
             </div>
             <div className="space-y-0.5 text-right">
-              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase truncate block">
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase truncate block font-spatial-sans">
                 {display.team2}
               </span>
               <p className="text-sm font-black font-mono text-slate-900 dark:text-white">
@@ -40,7 +42,7 @@ const SportResultSummary = ({ resultData }) => {
             </div>
           </div>
           {display.resultString && (
-            <p className="text-xs font-black text-amber-600 dark:text-amber-400 pt-0.5 flex items-center gap-1.5">
+            <p className="text-xs font-black text-amber-600 dark:text-amber-400 pt-0.5 flex items-center gap-1.5 font-spatial-sans">
               <span>⚡</span> {display.resultString}
             </p>
           )}
@@ -54,7 +56,7 @@ const SportResultSummary = ({ resultData }) => {
             <span className="text-xs font-mono font-black text-slate-900 dark:text-white">
               {display.racket.setsScoreText}
             </span>
-            <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">
+            <span className="text-[10px] font-mono font-bold text-purple-600 dark:text-purple-400 uppercase">
               {display.format}
             </span>
           </div>
@@ -63,7 +65,7 @@ const SportResultSummary = ({ resultData }) => {
               {display.racket.setsBreakdown.map((s, idx) => (
                 <span
                   key={idx}
-                  className="px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-mono font-bold border border-indigo-500/20"
+                  className="px-2.5 py-1 rounded-lg bg-purple-500/10 text-purple-700 dark:text-purple-300 text-xs font-mono font-bold border border-purple-500/20"
                 >
                   {s.label}
                 </span>
@@ -89,7 +91,7 @@ const SportResultSummary = ({ resultData }) => {
               {display.volleyball.setsBreakdown.map((s, idx) => (
                 <span
                   key={idx}
-                  className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-mono font-bold border border-emerald-500/20"
+                  className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-xs font-mono font-bold border border-emerald-500/20"
                 >
                   {s.label}
                 </span>
@@ -103,10 +105,10 @@ const SportResultSummary = ({ resultData }) => {
       return (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-base font-mono font-black text-orange-600 dark:text-orange-400">
+            <span className="text-base font-mono font-black text-purple-600 dark:text-purple-400">
               {display.team1} {display.basketball.score1} — {display.basketball.score2} {display.team2}
             </span>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300">
               {display.basketball.quarter}
             </span>
           </div>
@@ -123,7 +125,7 @@ const SportResultSummary = ({ resultData }) => {
             <span className="text-base font-mono font-black text-slate-900 dark:text-white">
               {display.team1} {display.football.score1} — {display.football.score2} {display.team2}
             </span>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300">
               {display.football.halfInfo}
             </span>
           </div>
@@ -172,33 +174,33 @@ const SportResultSummary = ({ resultData }) => {
       return (
         <div className="space-y-3">
           {/* Match Contestants */}
-          <div className="p-3 rounded-2xl bg-orange-500/10 dark:bg-orange-500/15 border border-orange-500/20">
-            <span className="text-[9px] font-mono uppercase font-black tracking-wider text-orange-600 dark:text-orange-400 block mb-1">
+          <div className="p-3 rounded-2xl bg-purple-500/10 dark:bg-purple-500/15 border border-purple-500/20">
+            <span className="text-[9px] font-mono uppercase font-black tracking-wider text-purple-600 dark:text-purple-400 block mb-1">
               MATCH CONTESTANTS
             </span>
             <div className="flex items-center justify-between text-xs sm:text-sm font-black text-slate-900 dark:text-white">
-              <span className="text-orange-600 dark:text-orange-400 truncate max-w-[45%]">
+              <span className="text-amber-600 dark:text-amber-400 truncate max-w-[45%]">
                 {display.team1}
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-500 font-bold shrink-0">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300 font-bold shrink-0">
                 VS
               </span>
-              <span className="text-blue-600 dark:text-blue-400 truncate max-w-[45%] text-right">
+              <span className="text-purple-600 dark:text-purple-400 truncate max-w-[45%] text-right">
                 {display.team2}
               </span>
             </div>
           </div>
 
           {/* Sets Won Summary */}
-          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-100/80 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/10">
             <div className="space-y-0.5">
               <span className="text-[10px] font-mono uppercase text-slate-500 font-bold block">
                 Sets Won
               </span>
               <div className="text-xs sm:text-sm font-mono font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <span>{display.team1}: <strong className="text-orange-600 dark:text-orange-400">{display.tug?.roundsWon1 ?? 0}</strong></span>
+                <span>{display.team1}: <strong className="text-amber-600 dark:text-amber-400">{display.tug?.roundsWon1 ?? 0}</strong></span>
                 <span className="text-slate-400">—</span>
-                <span>{display.team2}: <strong className="text-blue-600 dark:text-blue-400">{display.tug?.roundsWon2 ?? 0}</strong></span>
+                <span>{display.team2}: <strong className="text-purple-600 dark:text-purple-400">{display.tug?.roundsWon2 ?? 0}</strong></span>
               </div>
             </div>
             <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-extrabold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shrink-0">
@@ -216,7 +218,7 @@ const SportResultSummary = ({ resultData }) => {
                 {display.tug.roundsBreakdown.map((rObj, idx) => (
                   <span
                     key={idx}
-                    className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800/90 text-[11px] font-mono font-bold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 shadow-xs"
+                    className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-white/[0.04] text-[11px] font-mono font-bold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 flex items-center gap-1.5 shadow-xs"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     <span>{typeof rObj === 'string' ? rObj : rObj.label}</span>
@@ -265,7 +267,7 @@ const SportResultSummary = ({ resultData }) => {
 
     default:
       return (
-        <p className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-slate-200 leading-relaxed">
+        <p className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-slate-200 leading-relaxed font-spatial-sans">
           {display.summaryText}
         </p>
       );
@@ -273,9 +275,25 @@ const SportResultSummary = ({ resultData }) => {
 };
 
 export const ResultsPage = () => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const [query, setQuery] = useState('');
   const [selectedSport, setSelectedSport] = useState('All');
   const [dynamicResults, setDynamicResults] = useState([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Click outside to close sport dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -406,77 +424,143 @@ export const ResultsPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white py-8 sm:py-10 transition-colors">
-      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8">
+    <div className={`relative min-h-screen font-spatial-sans selection:bg-purple-500/30 selection:text-white overflow-x-hidden transition-colors duration-500 ${
+      isDark ? 'text-slate-100' : 'text-slate-900'
+    }`}>
+      
+      {/* ─── ATMOSPHERIC NEBULA BACKDROP (Dark vs Light - Gallery & Journey Cosmic Purple Theme) ─── */}
+      <div className={`fixed inset-0 pointer-events-none z-0 transition-all duration-700 ${
+        isDark ? 'spatial-nebula-dark' : 'spatial-nebula-light'
+      }`} />
+
+      {/* ─── TACTILE FILM GRAIN OVERLAY ─── */}
+      <div className="fixed inset-0 spatial-grain-overlay z-[1] pointer-events-none opacity-25" />
+
+      <div className="relative z-10 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 pb-8 sm:pb-12 space-y-4 sm:space-y-5">
         
-        {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-10">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wider mb-3 border border-blue-500/20 shadow-xs">
-            <Trophy className="w-4 h-4 text-orange-500" /> Tournament Match Results
-          </div>
-          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
-            Official <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">Match Results</span>
+        {/* ─── CENTERED LUXURY HERO BANNER (Matches Gallery / Journey Aesthetic) ─── */}
+        <div className="text-center max-w-3xl mx-auto space-y-2">
+          {/* Luxury Title: MATCH RESULTS */}
+          <h1 className={`text-3xl sm:text-5xl md:text-6xl font-normal tracking-[0.06em] font-spatial-display uppercase ${
+            isDark ? 'text-white' : 'text-slate-900'
+          }`}>
+            MATCH{' '}
+            <span className={`bg-gradient-to-r bg-clip-text text-transparent font-semibold ${
+              isDark 
+                ? 'from-purple-400 via-indigo-300 to-amber-300' 
+                : 'from-purple-700 via-indigo-700 to-amber-600'
+            }`}>
+              RESULTS
+            </span>
           </h1>
-          <p className="mt-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium">
+
+          {/* Centered Italic Subtitle */}
+          <p className={`text-xs sm:text-sm max-w-xl mx-auto italic font-spatial-sans font-light leading-relaxed ${
+            isDark ? 'text-slate-300/85' : 'text-slate-600'
+          }`}>
             Explore finalized match results, winner declarations, and score points across all 12 tournament sports.
           </p>
         </div>
 
-        {/* Filter Bar & Search */}
-        <div className="space-y-4 mb-8 bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          
-          <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/80 pb-3">
-            <span className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
-              <Award className="w-4 h-4 text-blue-500" /> Filter By Sport ({sportsList.length - 1} Disciplines)
+        {/* ─── SPORTS FILTER SECTION (Side Roll-Down Dropdown Only) ─── */}
+        <div className="flex items-center justify-between gap-2.5 pt-1 pb-1">
+          <div className="flex items-center gap-2">
+            <span className={`text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider ${
+              isDark ? 'text-purple-300/80' : 'text-purple-700'
+            }`}>
+              {selectedSport === 'All' ? 'All Disciplines' : selectedSport}
             </span>
-            <span className="text-xs font-bold text-slate-500 font-mono">
+            <span className={`text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+              isDark ? 'bg-white/5 border-white/10 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'
+            }`}>
               {filteredResults.length} {filteredResults.length === 1 ? 'Result' : 'Results'}
             </span>
           </div>
 
-          {/* 12 Games Horizontal Filter Chips */}
-          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-2 no-scrollbar scroll-smooth -mx-1 px-1">
-            {sportsList.map((s) => {
-              const cfg = s === 'All' ? null : resolveSportConfig(s);
-              const icon = s === 'All' ? '⚡' : cfg?.icon || '🏆';
-              const isSelected = selectedSport === s;
+          {/* Right Side: Small Luxury "Roll-Down" Dropdown */}
+          <div className="relative shrink-0" ref={dropdownRef}>
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 border cursor-pointer ${
+                isDark
+                  ? 'bg-[#10121a]/90 hover:bg-[#181a24] text-purple-200 border-purple-500/30 shadow-xs hover:border-purple-400/50'
+                  : 'bg-white hover:bg-slate-50 text-purple-900 border-slate-300 shadow-xs'
+              }`}
+              title="Filter by Sport"
+              aria-label="Filter games roll-down dropdown"
+            >
+              <Filter className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+              <span className="truncate max-w-[100px] sm:max-w-[140px]">
+                {selectedSport === 'All' ? 'Filter Sport' : selectedSport}
+              </span>
+              <ChevronDown className={`w-3.5 h-3.5 text-purple-400 shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
 
-              return (
-                <button
-                  key={s}
-                  onClick={() => setSelectedSport(s)}
-                  className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 border cursor-pointer ${
-                    isSelected
-                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-500 shadow-md shadow-blue-500/20 font-black scale-105'
-                      : 'bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <span>{icon}</span>
-                  <span>{s}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Search Box */}
-          <div className="relative w-full pt-1">
-            <Search className="w-4 h-4 absolute left-3.5 top-4 text-slate-400" />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search winner team, player name, or match title..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
+            {/* Roll-Down Menu Popover */}
+            {isDropdownOpen && (
+              <div className={`absolute right-0 mt-2 w-52 sm:w-60 rounded-2xl p-1.5 z-50 shadow-2xl border backdrop-blur-2xl max-h-80 overflow-y-auto no-scrollbar transition-all ${
+                isDark
+                  ? 'bg-[#0d0f18]/95 border-purple-500/30 text-slate-200 shadow-[0_12px_35px_rgba(0,0,0,0.85)]'
+                  : 'bg-white/95 border-slate-200 text-slate-800 shadow-xl'
+              }`}>
+                <div className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider font-bold text-purple-400 border-b border-purple-500/10 mb-1 flex items-center justify-between">
+                  <span>Select Discipline</span>
+                  <span className="text-slate-400 text-[9px]">{sportsList.length} Options</span>
+                </div>
+                {sportsList.map((s) => {
+                  const cfg = s === 'All' ? null : resolveSportConfig(s);
+                  const icon = s === 'All' ? '⚡' : cfg?.icon || '🏆';
+                  const isSelected = selectedSport === s;
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => {
+                        setSelectedSport(s);
+                        setIsDropdownOpen(false);
+                      }}
+                      className={`w-full px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between gap-2 transition-all cursor-pointer ${
+                        isSelected
+                          ? isDark
+                            ? 'bg-purple-500/20 text-purple-200 font-bold border border-purple-500/30'
+                            : 'bg-purple-50 text-purple-900 font-bold border border-purple-200'
+                          : isDark
+                            ? 'hover:bg-white/5 text-slate-300'
+                            : 'hover:bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 truncate">
+                        <span className="text-sm">{icon}</span>
+                        <span className="truncate">{s}</span>
+                      </div>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-purple-400 shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Results Card Grid Layout */}
+        {/* ─── RESULTS CARD GRID LAYOUT ─── */}
         {filteredResults.length === 0 ? (
-          <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-soft p-8 space-y-3">
-            <Trophy className="w-12 h-12 text-slate-400 mx-auto" />
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">No Match Results Found</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+          <div className={`text-center py-16 rounded-3xl border-0 p-8 space-y-3 backdrop-blur-md ${
+            isDark
+              ? 'bg-white/[0.02] text-slate-300'
+              : 'bg-black/[0.02] text-slate-700'
+          }`}>
+            <div className={`w-14 h-14 rounded-2xl mx-auto flex items-center justify-center ${
+              isDark ? 'bg-purple-500/10 text-purple-400' : 'bg-purple-100/70 text-purple-700'
+            }`}>
+              <Trophy className="w-7 h-7 text-amber-500" />
+            </div>
+            <h3 className={`text-lg font-bold font-spatial-display uppercase tracking-wider ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}>
+              No Match Results Found
+            </h3>
+            <p className={`text-xs max-w-md mx-auto font-spatial-sans ${
+              isDark ? 'text-slate-400' : 'text-slate-500'
+            }`}>
               There are no completed match results matching "{selectedSport}" discipline or query.
             </p>
           </div>
@@ -489,57 +573,87 @@ export const ResultsPage = () => {
               return (
                 <div
                   key={res.id}
-                  className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-orange-500/50 transition-all duration-300 flex flex-col justify-between space-y-5 group"
+                  className={`rounded-3xl p-6 border transition-all duration-300 flex flex-col justify-between space-y-5 group relative overflow-hidden backdrop-blur-xl ${
+                    isDark
+                      ? 'spatial-glass-card-dark border-purple-500/20 hover:border-purple-400/50 hover:shadow-[0_20px_45px_rgba(0,0,0,0.8),0_0_25px_rgba(168,85,247,0.18)]'
+                      : 'spatial-glass-card-light border-slate-200 hover:border-purple-300 hover:shadow-xl'
+                  }`}
                 >
                   {/* Card Top: Sport Icon, Sport Name, Date Badge */}
-                  <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800/80">
+                  <div className={`flex items-center justify-between gap-3 pb-3 border-b ${
+                    isDark ? 'border-white/10' : 'border-slate-100'
+                  }`}>
                     <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-500/10 to-amber-500/20 dark:from-orange-600/30 dark:to-amber-600/20 text-orange-600 dark:text-orange-400 flex items-center justify-center text-2xl font-black shadow-xs shrink-0">
+                      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-2xl font-black shadow-xs shrink-0 border transition-transform group-hover:scale-105 ${
+                        isDark
+                          ? 'bg-purple-500/10 text-purple-300 border-purple-500/20'
+                          : 'bg-purple-50 text-purple-700 border-purple-200'
+                      }`}>
                         {sportIcon}
                       </div>
                       <div className="min-w-0">
-                        <h4 className="text-sm font-black uppercase tracking-wide text-orange-600 dark:text-orange-400 truncate">
+                        <h4 className={`text-xs font-black uppercase tracking-wider truncate font-spatial-display ${
+                          isDark ? 'text-purple-300' : 'text-purple-700'
+                        }`}>
                           {res.sport}
                         </h4>
-                        <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 block">#{res.id}</span>
+                        <span className="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500 block">#{res.id}</span>
                       </div>
                     </div>
 
-                    <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-extrabold text-[10px] border border-slate-200 dark:border-slate-700/60 uppercase flex items-center gap-1 shrink-0">
-                      <Calendar className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                    <span className={`px-3 py-1 rounded-full font-extrabold text-[10px] border uppercase flex items-center gap-1.5 shrink-0 font-mono ${
+                      isDark 
+                        ? 'bg-white/5 border-white/10 text-slate-300' 
+                        : 'bg-slate-100 border-slate-200 text-slate-700'
+                    }`}>
+                      <Calendar className="w-3 h-3 text-purple-400" />
                       <span>{res.date}</span>
                     </span>
                   </div>
 
                   {/* Match Details: Event Title */}
-                  <div className="space-y-3 flex-1">
-                    <h3 className="font-extrabold text-base text-slate-900 dark:text-white leading-snug">
+                  <div className="space-y-3.5 flex-1">
+                    <h3 className={`font-bold text-base leading-snug font-spatial-display tracking-wide uppercase ${
+                      isDark ? 'text-white' : 'text-slate-900'
+                    }`}>
                       {res.event}
                     </h3>
 
                     {/* Player / Team Winner Box */}
-                    <div className="p-4 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/30 space-y-1">
-                      <span className="text-[10px] font-mono uppercase font-black tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                    <div className={`p-4 rounded-2xl border space-y-1 transition-all ${
+                      isDark
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.06)]'
+                        : 'bg-emerald-50/80 border-emerald-200 text-emerald-900'
+                    }`}>
+                      <span className="text-[10px] font-mono uppercase font-black tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Declared Winner / Champion
                       </span>
-                      <p className="text-base font-black text-slate-900 dark:text-white leading-tight">
+                      <p className={`text-base font-black leading-tight font-spatial-sans ${
+                        isDark ? 'text-white' : 'text-slate-900'
+                      }`}>
                         {res.winner}
                       </p>
                     </div>
 
                     {/* Sport-Specific Score Summary Box */}
-                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800 space-y-2">
-                      <span className="text-[10px] font-mono uppercase font-black tracking-wider text-slate-500 dark:text-slate-400 block">
+                    <div className={`p-4 rounded-2xl border space-y-2 ${
+                      isDark
+                        ? 'bg-[#090b12]/80 border-white/10'
+                        : 'bg-slate-50 border-slate-200/80'
+                    }`}>
+                      <span className="text-[10px] font-mono uppercase font-black tracking-wider text-purple-400/80 dark:text-purple-300/70 block">
                         Official Score & Match Summary
                       </span>
                       <SportResultSummary resultData={res} />
                     </div>
 
-                    {/* Optional MVP Detail (Only when separately recorded as distinct player award) */}
+                    {/* Optional MVP Detail */}
                     {res.mvp && res.mvp !== res.winner && (
-                      <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-400 pt-1">
-                        <Star className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                        <span className="truncate">Player of the Match / MVP: <strong className="text-slate-900 dark:text-white">{res.mvp}</strong></span>
+                      <div className={`flex items-center gap-2 text-xs font-bold pt-1 ${
+                        isDark ? 'text-amber-300/90' : 'text-amber-800'
+                      }`}>
+                        <Star className="w-3.5 h-3.5 text-amber-400 shrink-0 fill-amber-400" />
+                        <span className="truncate">Player of the Match / MVP: <strong className={isDark ? 'text-white' : 'text-slate-900'}>{res.mvp}</strong></span>
                       </div>
                     )}
                   </div>
@@ -548,6 +662,35 @@ export const ResultsPage = () => {
             })}
           </div>
         )}
+
+        {/* ─── CLASSIC INSPIRATIONAL SIGNATURE (Replacing standard footer) ─── */}
+        <div className="pt-14 sm:pt-20 pb-10 text-center space-y-3">
+          <div className="flex items-center justify-center gap-3 opacity-60">
+            <div className="h-[1px] w-12 sm:w-24 bg-gradient-to-r from-transparent to-purple-400" />
+            <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+            <div className="h-[1px] w-12 sm:w-24 bg-gradient-to-l from-transparent to-purple-400" />
+          </div>
+
+          <p className={`font-spatial-display text-sm sm:text-base md:text-lg tracking-[0.14em] uppercase font-medium select-none ${
+            isDark ? 'text-slate-300' : 'text-slate-700'
+          }`}>
+            &ldquo;Your team plays hard to{' '}
+            <span className={`bg-gradient-to-r bg-clip-text text-transparent font-bold ${
+              isDark 
+                ? 'from-purple-400 via-indigo-300 to-amber-300' 
+                : 'from-purple-700 via-indigo-700 to-amber-600'
+            }`}>
+              win
+            </span>
+            &rdquo;
+          </p>
+
+          <p className={`text-[11px] sm:text-xs font-spatial-sans tracking-widest uppercase italic ${
+            isDark ? 'text-slate-500' : 'text-slate-400'
+          }`}>
+            Champions are forged through grit, teamwork & relentless spirit
+          </p>
+        </div>
 
       </div>
     </div>

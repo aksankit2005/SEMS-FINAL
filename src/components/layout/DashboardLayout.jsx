@@ -10,6 +10,7 @@ export const DashboardLayout = () => {
   const location = useLocation();
   const isGalleryPage = location.pathname.startsWith('/gallery');
   const isAboutOrJourneyPage = location.pathname.startsWith('/about') || location.pathname.startsWith('/journey') || location.pathname.startsWith('/contact') || location.pathname.startsWith('/legacy');
+  const isResultsPage = location.pathname.startsWith('/results');
 
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [settings, setSettings] = useState({ maintenanceMode: false });
@@ -62,8 +63,8 @@ export const DashboardLayout = () => {
           <Outlet />
         </main>
 
-        {/* Footer at bottom (hidden on Gallery, About, and Journey Pages) */}
-        {!isLayoutHidden && !isGalleryPage && !isAboutOrJourneyPage && <Footer />}
+        {/* Footer at bottom (hidden on Gallery, About, Journey, and Results Pages) */}
+        {!isLayoutHidden && !isGalleryPage && !isAboutOrJourneyPage && !isResultsPage && <Footer />}
       </div>
 
       {/* Mobile Navigation Drawer */}

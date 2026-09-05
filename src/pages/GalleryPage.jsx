@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, 
   Image as ImageIcon, 
@@ -12,7 +12,10 @@ import {
   Layers, 
   FolderOpen, 
   Sparkles,
-  Plus
+  Plus,
+  Filter,
+  ChevronDown,
+  Check
 } from 'lucide-react';
 import { galleryApi } from '../services/galleryApi';
 import { getVideoThumbnailUrl, triggerMediaDownload } from '../utils/googleDriveHelper';
@@ -48,6 +51,20 @@ export const GalleryPage = () => {
   // Lightbox State
   const [activeLightboxIndex, setActiveLightboxIndex] = useState(null);
   const [lightboxItems, setLightboxItems] = useState([]);
+
+  // Category Roll-Down Dropdown State
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const categoryDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target)) {
+        setIsCategoryDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const { showToast } = useToast();
 
@@ -127,7 +144,7 @@ export const GalleryPage = () => {
     return matchesSearch && matchesCategory && matchesType;
   });
 
-  const categories = ['All', 'Football', 'Cricket', 'Basketball', 'Athletics', 'Badminton', 'Volleyball', 'Kabaddi', 'Chess'];
+  const categories = ['All', 'Football', 'Cricket', 'Basketball', 'Athletics', 'Badminton', 'Volleyball', 'Kabaddi', 'Chess', 'Table Tennis', 'Kho-Kho', 'Tug of War', 'Gully Cricket'];
 
   const openLightbox = (items, index) => {
     setLightboxItems(items);
@@ -387,58 +404,106 @@ export const GalleryPage = () => {
         </div>
       ) : (
         /* =========================================================================
-            VIEW 1: FOLDER / ALBUMS SHOWCASE (Matches Reference Screenshot 2 Exactly)
+            VIEW 1: FOLDER / ALBUMS SHOWCASE (Hall of Fame)
             ========================================================================= */
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 pb-8 sm:pb-12 space-y-4 sm:space-y-6">
 
-          {/* ─── CENTERED LUXURY HERO BANNER (Matches Screenshot 2 Exactly) ─── */}
-          <div className="text-center max-w-3xl mx-auto space-y-3.5 pt-4">
-            {/* Top Ambient Pill Badge */}
-            <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase border ${
-              isDark 
-                ? 'bg-[#151722] border-white/10 text-slate-300' 
-                : 'bg-slate-100 border-slate-200 text-slate-700'
-            }`}>
-              <span>✦ SPATIAL VISUAL SANCTUARY • 2026 COLLECTION</span>
-            </div>
-
-            {/* Luxury Title: VISUAL ARCHIVES */}
+          {/* ─── CENTERED LUXURY HERO BANNER (Hall of Fame) ─── */}
+          <div className="text-center max-w-3xl mx-auto space-y-2 pt-1">
+            {/* Luxury Title: HALL OF FAME */}
             <h1 className={`text-4xl sm:text-6xl md:text-7xl font-normal tracking-[0.08em] font-spatial-display uppercase ${
               isDark ? 'text-white' : 'text-slate-900'
             }`}>
-              VISUAL ARCHIVES
+              HALL OF{' '}
+              <span className={`bg-gradient-to-r bg-clip-text text-transparent font-semibold ${
+                isDark 
+                  ? 'from-purple-400 via-indigo-300 to-amber-300' 
+                  : 'from-purple-700 via-indigo-700 to-amber-600'
+              }`}>
+                FAME
+              </span>
             </h1>
 
-            {/* Centered Italic Subtitle */}
+            {/* Centered Italic Description */}
             <p className={`text-xs sm:text-sm max-w-xl mx-auto italic font-spatial-sans font-light leading-relaxed ${
               isDark ? 'text-slate-300/85' : 'text-slate-600'
             }`}>
-              Curated aesthetic portfolios spanning classical Mediterranean epochs, alpine horizons, and luminous nightscapes.
+              Capturing the raw emotion, historic triumphs, and unyielding spirit of those who dare to play.
             </p>
           </div>
 
-          {/* ─── CATEGORY FILTER PILLS (With Warm Amber Glowing Ring on Active - Screenshot 2) ─── */}
-          <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
-            {categories.map((cat) => {
-              const isActive = activeCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                    isActive
-                      ? isDark
-                        ? 'border border-amber-500/80 bg-amber-500/15 text-amber-200 shadow-[0_0_18px_rgba(245,158,11,0.35)] scale-105'
-                        : 'bg-slate-900 text-white shadow-md scale-105'
-                      : isDark
-                        ? 'bg-[#10121a] hover:bg-[#181a24] text-slate-300 border border-white/10 hover:border-white/20'
-                        : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
-                  }`}
-                >
-                  {cat}
-                </button>
-              );
-            })}
+          {/* ─── SPORTS FILTER (Side Roll-Down Dropdown) ─── */}
+          <div className="flex items-center justify-between gap-2.5 pt-1 pb-1">
+            <div className="flex items-center gap-2">
+              <span className={`text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider ${
+                isDark ? 'text-purple-300/80' : 'text-purple-700'
+              }`}>
+                {activeCategory === 'All' ? 'All Collections' : activeCategory}
+              </span>
+              <span className={`text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                isDark ? 'bg-white/5 border-white/10 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'
+              }`}>
+                {filteredEvents.length} {filteredEvents.length === 1 ? 'Album' : 'Albums'}
+              </span>
+            </div>
+
+            {/* Right Side: Small Luxury Roll-Down Dropdown */}
+            <div className="relative shrink-0" ref={categoryDropdownRef}>
+              <button
+                onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 border cursor-pointer ${
+                  isDark
+                    ? 'bg-[#10121a]/90 hover:bg-[#181a24] text-purple-200 border-purple-500/30 shadow-xs hover:border-purple-400/50'
+                    : 'bg-white hover:bg-slate-50 text-purple-900 border-slate-300 shadow-xs'
+                }`}
+                title="Filter by Sport"
+                aria-label="Filter games roll-down dropdown"
+              >
+                <Filter className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                <span className="truncate max-w-[100px] sm:max-w-[140px]">
+                  {activeCategory === 'All' ? 'Filter Sport' : activeCategory}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 text-purple-400 shrink-0 transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Roll-Down Menu Popover */}
+              {isCategoryDropdownOpen && (
+                <div className={`absolute right-0 mt-2 w-52 sm:w-60 rounded-2xl p-1.5 z-50 shadow-2xl border backdrop-blur-2xl max-h-80 overflow-y-auto no-scrollbar transition-all ${
+                  isDark
+                    ? 'bg-[#0d0f18]/95 border-purple-500/30 text-slate-200 shadow-[0_12px_35px_rgba(0,0,0,0.85)]'
+                    : 'bg-white/95 border-slate-200 text-slate-800 shadow-xl'
+                }`}>
+                  <div className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider font-bold text-purple-400 border-b border-purple-500/10 mb-1 flex items-center justify-between">
+                    <span>Select Sport</span>
+                    <span className="text-slate-400 text-[9px]">{categories.length} Options</span>
+                  </div>
+                  {categories.map((cat) => {
+                    const isSelected = activeCategory === cat;
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => {
+                          setActiveCategory(cat);
+                          setIsCategoryDropdownOpen(false);
+                        }}
+                        className={`w-full px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between gap-2 transition-all cursor-pointer ${
+                          isSelected
+                            ? isDark
+                              ? 'bg-purple-500/20 text-purple-200 font-bold border border-purple-500/30'
+                              : 'bg-purple-50 text-purple-900 font-bold border border-purple-200'
+                            : isDark
+                              ? 'hover:bg-white/5 text-slate-300'
+                              : 'hover:bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        <span className="truncate">{cat}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-purple-400 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* ─── VIEW 1: TACTILE PHYSICAL 3D FOLDER CARDS WITH WIDE LANDSCAPE PRINTS ─── */}
@@ -596,6 +661,35 @@ export const GalleryPage = () => {
               )}
             </section>
           )}
+
+          {/* ─── CLASSIC INSPIRATIONAL SIGNATURE (At bottom of Gallery) ─── */}
+          <div className="pt-14 sm:pt-20 pb-10 text-center space-y-3">
+            <div className="flex items-center justify-center gap-3 opacity-60">
+              <div className="h-[1px] w-12 sm:w-24 bg-gradient-to-r from-transparent to-purple-400" />
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+              <div className="h-[1px] w-12 sm:w-24 bg-gradient-to-l from-transparent to-purple-400" />
+            </div>
+
+            <p className={`font-spatial-display text-sm sm:text-base md:text-lg tracking-[0.14em] uppercase font-medium select-none ${
+              isDark ? 'text-slate-300' : 'text-slate-700'
+            }`}>
+              &ldquo;Every frame honors those who dare to{' '}
+              <span className={`bg-gradient-to-r bg-clip-text text-transparent font-bold ${
+                isDark 
+                  ? 'from-purple-400 via-indigo-300 to-amber-300' 
+                  : 'from-purple-700 via-indigo-700 to-amber-600'
+              }`}>
+                play
+              </span>
+              &rdquo;
+            </p>
+
+            <p className={`text-[11px] sm:text-xs font-spatial-sans tracking-widest uppercase italic ${
+              isDark ? 'text-slate-500' : 'text-slate-400'
+            }`}>
+              Preserving the raw emotion, rivalries & unyielding spirit of sports
+            </p>
+          </div>
 
         </div>
       )}
