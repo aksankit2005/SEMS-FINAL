@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Clock, MapPin, ChevronRight, Trophy, Sparkles, ArrowRight } from 'lucide-react';
-import { SCHEDULE_DATA } from '../../data/scheduleData';
 import { coordinatorApi } from '../../services/coordinatorApi';
 
 export const HomeScheduleSection = () => {
@@ -9,6 +8,8 @@ export const HomeScheduleSection = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     const loadSchedule = async () => {
       try {
         const publicMatches = await coordinatorApi.getPublicMatches().catch(() => []);
@@ -43,25 +44,13 @@ export const HomeScheduleSection = () => {
             });
         }
 
-        // Fallback to SCHEDULE_DATA only if no real scheduled matches exist
-        if (combined.length === 0) {
-          combined = (SCHEDULE_DATA || []).slice(0, 4).map((s) => ({
-            id: s.id || Math.random().toString(),
-            sportName: s.sport || s.sportName || 'Championship',
-            eventTitle: `${s.team1 || 'College Team A'} vs ${s.team2 || 'College Team B'}`,
-            team1: s.team1 || 'College Team A',
-            team2: s.team2 || 'College Team B',
-            time: s.time || '10:00 AM',
-            venue: s.venue || 'Indoor Sports Complex',
-            status: 'SCHEDULED'
-          }));
+        if (isMounted) {
+          setSchedules(combined.slice(0, 8));
         }
-
-        setSchedules(combined.slice(0, 8));
       } catch (e) {
-        setSchedules([]);
+        if (isMounted) setSchedules([]);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 

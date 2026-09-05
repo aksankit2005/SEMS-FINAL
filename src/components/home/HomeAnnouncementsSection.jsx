@@ -2,15 +2,14 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Bell, ArrowRight, FileText, Calendar, Paperclip } from 'lucide-react';
 import { useSportsData } from '../../context/SportsDataContext';
-import { ANNOUNCEMENTS_DATA } from '../../data/announcementsData';
 
 export const HomeAnnouncementsSection = () => {
   const { announcements } = useSportsData();
 
-  // Combine real context announcements with fallback mock data
-  const displayAnnouncements = (announcements && announcements.length > 0)
+  // Only display authoritative announcements from context/backend
+  const displayAnnouncements = Array.isArray(announcements) && announcements.length > 0
     ? announcements.slice(0, 3)
-    : (ANNOUNCEMENTS_DATA || []).slice(0, 3);
+    : [];
 
   return (
     <section className="py-12 sm:py-14 bg-[#F4F2F7] dark:bg-[#08090E] border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] transition-colors duration-200 font-spatial-sans">

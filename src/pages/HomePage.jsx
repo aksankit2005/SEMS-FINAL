@@ -3,7 +3,7 @@ import { HeroSection } from '../components/home/HeroSection';
 import { LiveTicker } from '../components/home/LiveTicker';
 import { HomeScheduleSection } from '../components/home/HomeScheduleSection';
 import { HomeAnnouncementsSection } from '../components/home/HomeAnnouncementsSection';
-import { CTASection } from '../components/home/CTASection';
+import { SportsProgrammeSection } from '../components/home/SportsProgrammeSection';
 
 export const HomePage = () => {
   return (
@@ -12,7 +12,7 @@ export const HomePage = () => {
       <LiveTicker />
       <HomeScheduleSection />
       <HomeAnnouncementsSection />
-      <CTASection />
+      <SportsProgrammeSection />
     </div>
   );
 };
