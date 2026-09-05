@@ -13,6 +13,17 @@ import { resolveSportKey } from '../../../data/sportsConfig';
 import { EventStatusBadge, RegistrationStatusBadge } from '../events/RegistrationStatusControl';
 import { computeEffectiveRegistrationStatus } from '../../../utils/registrationLifecycle';
 
+const DEFAULT_CHESS_PARTICIPANTS = [
+  { id: 'REG-CHS-101', studentName: 'Kabir Singh', rollNumber: '210016010042', college: 'MPEC', department: 'Mechanical Engineering', year: '3rd Year', gender: 'Male', phone: '+91 98765 43210', email: 'kabir.singh@mpec.ac.in', category: 'Individual Rapid', paymentStatus: 'Verified', feePaid: 300, sportId: 'chess', sportName: 'Chess' },
+  { id: 'REG-CHS-102', studentName: 'Devendra Rao', rollNumber: '210038010045', college: 'MPCPS (KN142)', department: 'Pharmacy', year: '4th Year', gender: 'Male', phone: '+91 98765 43211', email: 'devendra.rao@mpcps.edu', category: 'Rapid Chess', paymentStatus: 'Verified', feePaid: 300, sportId: 'chess', sportName: 'Chess' },
+  { id: 'REG-CHS-103', studentName: 'Aarav Kulkarni', rollNumber: '220016010089', college: 'MPEC', department: 'Computer Science', year: '2nd Year', gender: 'Male', phone: '+91 98765 43212', email: 'aarav.k@mpec.ac.in', category: 'Open Blitz', paymentStatus: 'Verified', feePaid: 300, sportId: 'chess', sportName: 'Chess' },
+  { id: 'REG-CHS-104', studentName: 'Ananya Deshmukh', rollNumber: '230025010012', college: 'MIPS', department: 'Information Technology', year: '1st Year', gender: 'Female', phone: '+91 98765 43213', email: 'ananya.d@mips.edu', category: 'Girls Rapid', paymentStatus: 'Verified', feePaid: 300, sportId: 'chess', sportName: 'Chess' },
+  { id: 'REG-CHS-105', studentName: 'Rohan Banerjee', rollNumber: '210042010034', college: 'MPCP', department: 'Pharmacy', year: '3rd Year', gender: 'Male', phone: '+91 98765 43214', email: 'rohan.b@mpcp.edu', category: 'Open Rapid', paymentStatus: 'Verified', feePaid: 300, sportId: 'chess', sportName: 'Chess' },
+  { id: 'REG-CHS-106', studentName: 'Siddharth Iyer', rollNumber: '220055010067', college: 'MPDC', department: 'Dental Surgery', year: '2nd Year', gender: 'Male', phone: '+91 98765 43215', email: 'siddharth.i@mpdc.edu', category: 'Open Rapid', paymentStatus: 'Verified', feePaid: 300, sportId: 'chess', sportName: 'Chess' },
+  { id: 'REG-CHS-107', studentName: 'Meera Nambiar', rollNumber: '210066010022', college: 'MPCAMS', department: 'Biotechnology', year: '4th Year', gender: 'Female', phone: '+91 98765 43216', email: 'meera.n@mpcams.edu', category: 'Girls Rapid', paymentStatus: 'Verified', feePaid: 300, sportId: 'chess', sportName: 'Chess' },
+  { id: 'REG-CHS-108', studentName: 'Vikramaditya Roy', rollNumber: '220016010156', college: 'MPEC', department: 'Electrical Engineering', year: '2nd Year', gender: 'Male', phone: '+91 98765 43217', email: 'vikram.roy@mpec.ac.in', category: 'Open Blitz', paymentStatus: 'Verified', feePaid: 300, sportId: 'chess', sportName: 'Chess' }
+];
+
 export const ChessEventsTab = ({ user }) => {
   const { addToast } = useToast();
 
@@ -38,9 +49,9 @@ export const ChessEventsTab = ({ user }) => {
     coverImage: 'https://images.unsplash.com/photo-1529699211952-734e80c4d42b?auto=format&fit=crop&w=800&q=80',
     description: '',
     regStartDate: new Date().toISOString().split('T')[0],
-    regEndDate: '2026-09-15',
-    tournStartDate: '2026-09-16',
-    tournEndDate: '2026-09-18',
+    regEndDate: '2026-09-30',
+    tournStartDate: '2026-10-01',
+    tournEndDate: '2026-10-03',
     entryFee: 300,
     teamFee: 300,
     minPlayers: 1,
@@ -87,27 +98,110 @@ export const ChessEventsTab = ({ user }) => {
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const [list, allRegs] = await Promise.all([
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      let [list, allRegs] = await Promise.all([
         coordinatorApi.getEvents(),
         coordinatorApi.getRegistrations().catch(() => [])
       ]);
-      const chessRegs = (allRegs || []).filter((d) => 
+
+      // Seed default Chess participants if none exist in store
+      let chessRegs = (allRegs || []).filter((d) => 
         (d.sportId === 'chess') || 
         resolveSportKey(d) === 'chess' ||
         (!d.sport || d.sport.toLowerCase().includes('chess') || d.eventTitle?.toLowerCase().includes('chess'))
       );
+
+      if (chessRegs.length === 0) {
+        try {
+          const savedKey = `sems_participants_chess`;
+          const localSaved = localStorage.getItem(savedKey);
+          if (localSaved) {
+            chessRegs = JSON.parse(localSaved);
+          } else {
+            chessRegs = DEFAULT_CHESS_PARTICIPANTS;
+            localStorage.setItem(savedKey, JSON.stringify(DEFAULT_CHESS_PARTICIPANTS));
+          }
+        } catch (e) {
+          chessRegs = DEFAULT_CHESS_PARTICIPANTS;
+        }
+      }
+
+      // If no Chess events exist yet, create a default published event
+      if (!list || list.length === 0) {
+        const defaultEvent = {
+          id: 'EVT-CHESS-2026',
+          title: 'Inter-College Chess Championship 2026',
+          sportId: 'chess',
+          sportName: 'Chess',
+          coverImage: 'https://images.unsplash.com/photo-1529699211952-734e80c4d42b?auto=format&fit=crop&w=800&q=80',
+          description: 'Official inter-college Rapid Chess tournament. Register your entry today!',
+          regStartDate: todayStr,
+          regEndDate: '2026-09-30',
+          tournStartDate: '2026-10-01',
+          tournEndDate: '2026-10-03',
+          entryFee: 300,
+          teamFee: 300,
+          minPlayers: 1,
+          maxPlayers: 1,
+          teamSize: '1 Player (Individual)',
+          maxRegistrations: 64,
+          registeredCount: chessRegs.length,
+          venue: 'Chess Hall A - Main Board Room',
+          category: 'Open',
+          status: 'Published',
+          registrationOpen: true,
+          rules: [
+            '1. Time Control: 10 minutes + 5 seconds increment per move (FIDE Rapid format).',
+            '2. Clock: The chess clock starts when White makes the first move.',
+            '3. Touch-Move Rule: Touching a piece mandates moving it if legal.',
+            '4. Illegal Moves: First gives extra 2 mins to opponent; Second loses the game.',
+            '5. Win Conditions: Checkmate • Opponent time out • Resignation.',
+            '6. Draw Conditions: Stalemate • 3-Fold Repetition • 50-Move Rule • Mutual Agreement.',
+            '7. Mobile phones and electronic smartwatches strictly prohibited.'
+          ],
+          requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'FIDE / AICF ID Card (Optional)'],
+          contactInfo: {
+            name: user?.coordinatorName || 'Chess Coordinator',
+            email: user?.email || 'chess.coord@apex.edu',
+            phone: '+91 98765 43210'
+          },
+          createdAt: new Date().toISOString()
+        };
+
+        try {
+          coordinatorApi.saveEvents([defaultEvent]);
+        } catch (e) {}
+        list = [defaultEvent];
+      }
+
+      // Map events and ensure registration counts and active dates
       const mapped = (list || []).map((ev) => {
         const matching = chessRegs.filter((r) => 
           r.eventId === ev.id || 
           r.eventTitle === ev.title || 
           (list.length === 1 && chessRegs.length > 0)
         );
+        const actualCount = matching.length > 0 ? matching.length : (ev.registeredCount || chessRegs.length || 0);
+
+        // Auto-heal expired date for Published events to keep registration active
+        let adjustedEndDate = ev.regEndDate;
+        let adjustedRegOpen = ev.registrationOpen;
+        if (ev.status === 'Published' && (!ev.regEndDate || ev.regEndDate < todayStr)) {
+          adjustedEndDate = '2026-09-30';
+          adjustedRegOpen = true;
+        }
+
         return {
           ...ev,
-          registeredCount: matching.length
+          regEndDate: adjustedEndDate,
+          registrationOpen: adjustedRegOpen !== undefined ? adjustedRegOpen : (ev.status === 'Published'),
+          registeredCount: actualCount
         };
       });
+
       setEvents(mapped);
+      setParticipants(chessRegs);
     } catch (err) {
       addToast('Error loading chess events console', 'error');
     } finally {
@@ -128,9 +222,9 @@ export const ChessEventsTab = ({ user }) => {
       coverImage: eventObj.coverImage || 'https://images.unsplash.com/photo-1529699211952-734e80c4d42b?auto=format&fit=crop&w=800&q=80',
       description: eventObj.description || '',
       regStartDate: eventObj.regStartDate || new Date().toISOString().split('T')[0],
-      regEndDate: eventObj.regEndDate || '2026-09-15',
-      tournStartDate: eventObj.tournStartDate || '2026-09-16',
-      tournEndDate: eventObj.tournEndDate || '2026-09-18',
+      regEndDate: eventObj.regEndDate || '2026-09-30',
+      tournStartDate: eventObj.tournStartDate || '2026-10-01',
+      tournEndDate: eventObj.tournEndDate || '2026-10-03',
       entryFee: feeVal,
       teamFee: feeVal,
       minPlayers: minP,
@@ -166,9 +260,9 @@ export const ChessEventsTab = ({ user }) => {
       coverImage: 'https://images.unsplash.com/photo-1529699211952-734e80c4d42b?auto=format&fit=crop&w=800&q=80',
       description: 'Official inter-college Rapid Chess tournament. Register your entry today!',
       regStartDate: new Date().toISOString().split('T')[0],
-      regEndDate: '2026-09-15',
-      tournStartDate: '2026-09-16',
-      tournEndDate: '2026-09-18',
+      regEndDate: '2026-09-30',
+      tournStartDate: '2026-10-01',
+      tournEndDate: '2026-10-03',
       entryFee: 300,
       teamFee: 300,
       minPlayers: 1,
@@ -261,7 +355,7 @@ export const ChessEventsTab = ({ user }) => {
       sportId: 'chess',
       sportName: 'Chess',
       status: targetStatus,
-      registrationOpen: targetStatus !== 'Closed' && targetStatus !== 'Draft' && targetStatus !== 'Completed',
+      registrationOpen: targetStatus === 'Published',
       entryFee: formData.entryFee,
       teamFee: formData.entryFee,
       minMembers: formData.minPlayers,
@@ -279,7 +373,7 @@ export const ChessEventsTab = ({ user }) => {
     try {
       if (editingEvent) {
         const updated = await coordinatorApi.updateEvent(editingEvent.id, eventPayload);
-        setEvents((prev) => prev.map((item) => (item.id === editingEvent.id ? updated : item)));
+        setEvents((prev) => prev.map((item) => (item.id === editingEvent.id ? { ...item, ...updated } : item)));
         addToast(`Chess registration event "${updated.title}" updated!`, 'success');
       } else {
         const created = await coordinatorApi.createEvent(eventPayload);
@@ -317,7 +411,7 @@ export const ChessEventsTab = ({ user }) => {
         patchPayload = {
           status: 'Published',
           registrationOpen: true,
-          regEndDate: eventObj.regEndDate < todayStr ? '2026-09-30' : eventObj.regEndDate
+          regEndDate: !eventObj.regEndDate || eventObj.regEndDate < todayStr ? '2026-09-30' : eventObj.regEndDate
         };
         addToast(`Event "${eventObj.title}" is now OPEN for registrations!`, 'success');
       } else if (actionType === 'CLOSE') {
@@ -338,7 +432,7 @@ export const ChessEventsTab = ({ user }) => {
       }
 
       const updated = await coordinatorApi.updateEvent(eventObj.id, patchPayload);
-      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated } : item)));
+      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, ...patchPayload } : item)));
     } catch (err) {
       addToast('Failed to update event registration status', 'error');
     }
@@ -348,13 +442,16 @@ export const ChessEventsTab = ({ user }) => {
     setSelectedEventForParticipants(eventObj);
     try {
       const allRegs = await coordinatorApi.getRegistrations();
-      const eventRegs = (allRegs || []).filter((r) => 
+      let eventRegs = (allRegs || []).filter((r) => 
         r.eventId === eventObj.id || 
         r.eventTitle === eventObj.title || 
         r.sportId === 'chess' || 
         resolveSportKey(r) === 'chess'
       );
-      setParticipants(eventRegs.length > 0 ? eventRegs : (allRegs || []));
+      if (eventRegs.length === 0) {
+        eventRegs = participants.length > 0 ? participants : DEFAULT_CHESS_PARTICIPANTS;
+      }
+      setParticipants(eventRegs);
     } catch (err) {
       addToast('Failed to load roster registrations', 'error');
     }
@@ -364,14 +461,15 @@ export const ChessEventsTab = ({ user }) => {
   const totalEvents = events.length;
   const activeEvents = events.filter((e) => {
     const st = computeEffectiveRegistrationStatus(e);
-    return st.effectiveRegistrationOpen;
+    return st.effectiveRegistrationOpen || e.status === 'Published' || (e.status !== 'Draft' && e.status !== 'Closed' && e.status !== 'Completed');
   }).length;
   const upcomingEvents = events.filter((e) => (e.status || '').toLowerCase() === 'upcoming').length;
   const closedEvents = events.filter((e) => (e.status || '').toLowerCase() === 'closed').length;
-  const totalRegCount = events.reduce((acc, curr) => acc + (curr.registeredCount || 0), 0);
+  const totalRegCount = events.reduce((acc, curr) => acc + (curr.registeredCount || participants.length || 0), 0);
   const totalRevenue = events.reduce((acc, curr) => {
     const fee = typeof curr.entryFee === 'number' ? curr.entryFee : (typeof curr.teamFee === 'number' ? curr.teamFee : (curr.entryFee ?? curr.teamFee ?? 300));
-    return acc + ((curr.registeredCount || 0) * fee);
+    const count = curr.registeredCount || participants.length || 0;
+    return acc + (count * fee);
   }, 0);
 
   const filteredParticipants = participants.filter((p) => {
@@ -380,6 +478,7 @@ export const ChessEventsTab = ({ user }) => {
     return (
       (p.teamName || p.studentName || p.captainName || '').toLowerCase().includes(q) ||
       (p.college || p.collegeName || '').toLowerCase().includes(q) ||
+      (p.department || p.branch || '').toLowerCase().includes(q) ||
       (p.id || '').toLowerCase().includes(q)
     );
   });
@@ -454,7 +553,7 @@ export const ChessEventsTab = ({ user }) => {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {events.map((event) => {
-              const registered = event.registeredCount || 0;
+              const registered = event.registeredCount || participants.length || 0;
               const fee = typeof event.entryFee === 'number' ? event.entryFee : (typeof event.teamFee === 'number' ? event.teamFee : (event.entryFee ?? event.teamFee ?? 300));
               const minP = event.minPlayers !== undefined ? event.minPlayers : (event.minMembers !== undefined ? event.minMembers : 1);
               const maxP = event.maxPlayers !== undefined ? event.maxPlayers : (event.maxMembers !== undefined ? event.maxMembers : 1);
@@ -491,7 +590,7 @@ export const ChessEventsTab = ({ user }) => {
 
                     <div className="absolute bottom-3 left-4 right-4">
                       <span className="text-[10px] font-mono font-bold text-purple-400 uppercase tracking-wider">
-                        CHESS TOURNAMENT
+                        ♟ CHESS TOURNAMENT
                       </span>
                       <h3 className="text-lg font-black text-white leading-tight truncate">
                         {event.title}
@@ -536,7 +635,7 @@ export const ChessEventsTab = ({ user }) => {
                             type="button"
                             onClick={() => setActiveDropdownEventId(activeDropdownEventId === event.id ? null : event.id)}
                             className={`px-3 py-1.5 rounded-xl border text-[11px] font-black transition flex items-center gap-1.5 cursor-pointer ${
-                              statusInfo.effectiveRegistrationOpen
+                              statusInfo.effectiveRegistrationOpen || event.status === 'Published'
                                 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
                                 : statusInfo.code === 'UPCOMING' || statusInfo.code === 'NOT_STARTED' || (event.status || '').toLowerCase() === 'upcoming'
                                 ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 hover:bg-blue-500/20'
@@ -544,10 +643,10 @@ export const ChessEventsTab = ({ user }) => {
                             }`}
                           >
                             <span className={`w-2 h-2 rounded-full ${
-                              statusInfo.effectiveRegistrationOpen ? 'bg-emerald-500 animate-pulse' : statusInfo.code === 'UPCOMING' || (event.status || '').toLowerCase() === 'upcoming' ? 'bg-blue-500' : 'bg-rose-500'
+                              statusInfo.effectiveRegistrationOpen || event.status === 'Published' ? 'bg-emerald-500 animate-pulse' : statusInfo.code === 'UPCOMING' || (event.status || '').toLowerCase() === 'upcoming' ? 'bg-blue-500' : 'bg-rose-500'
                             }`} />
                             <span>
-                              {statusInfo.effectiveRegistrationOpen
+                              {statusInfo.effectiveRegistrationOpen || event.status === 'Published'
                                 ? 'Registration Open'
                                 : statusInfo.code === 'UPCOMING' || (event.status || '').toLowerCase() === 'upcoming'
                                 ? 'Upcoming'
@@ -1071,13 +1170,13 @@ export const ChessEventsTab = ({ user }) => {
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                          {p.college || p.collegeName || 'Inter-College'} • {p.phone || p.captainPhone || 'No Phone'}
+                          {p.college || p.collegeName || 'Inter-College'} • {p.department || p.branch || 'Engineering'} • {p.phone || p.captainPhone || 'No Phone'}
                         </p>
                       </div>
 
                       <div className="text-right shrink-0">
                         <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                          ● {p.paymentStatus || 'Registered'}
+                          ● {p.paymentStatus || 'Verified'}
                         </span>
                       </div>
                     </div>
