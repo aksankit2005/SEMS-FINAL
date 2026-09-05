@@ -378,7 +378,7 @@ export const AboutPage = () => {
           {/* Grain texture overlay */}
           <div aria-hidden="true" className="fixed inset-0 spatial-grain-overlay z-0 pointer-events-none opacity-10 dark:opacity-20" />
 
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16">
+          <div className="relative z-10 max-w-7xl mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12 sm:space-y-16">
 
             {/* ─── FACULTY ADVISORS ──────────────────────────────────── */}
             <section>
@@ -399,7 +399,7 @@ export const AboutPage = () => {
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 xs:gap-3 sm:gap-6">
                 {advisors.map((advisor, index) => (
                   <TeamCard
                     key={advisor.id || index}
@@ -433,7 +433,7 @@ export const AboutPage = () => {
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 xs:gap-3 sm:gap-6">
                 {developersData.map((dev, index) => (
                   <TeamCard
                     key={index}
@@ -511,7 +511,7 @@ export const AboutPage = () => {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+                <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 xs:gap-3 sm:gap-6">
                   {currentTeam.map((member, index) => (
                     <TeamCard
                       key={index}
@@ -587,15 +587,15 @@ const TeamCard = ({ name, role, designation, image, badgeColorClass = '', hoverG
   return (
     <div
       onClick={disableClick ? undefined : onClick}
-      className={`group relative rounded-2xl border transition-all duration-300 overflow-hidden shadow-lg
+      className={`group relative rounded-xl sm:rounded-2xl border transition-all duration-300 overflow-hidden shadow-lg
         bg-white/80 dark:bg-gradient-to-b dark:from-[#090e1c] dark:to-[#040712]
         border-slate-200 dark:border-white/10
         ${disableClick ? '' : `cursor-pointer hover:scale-[1.03] hover:shadow-2xl ${hoverGlowClass}`}`}
       title={disableClick ? name : `Click to view profile of ${name}`}
     >
       {/* Photo Frame (Polaroid Style) */}
-      <div className="p-2 bg-white m-3 rounded-xl shadow-md overflow-hidden relative">
-        <div className="relative aspect-[3/3.5] overflow-hidden rounded-lg bg-slate-200 dark:bg-slate-800">
+      <div className="p-1 sm:p-2 bg-white m-1.5 sm:m-3 rounded-lg sm:rounded-xl shadow-md overflow-hidden relative">
+        <div className="relative aspect-[3/3.5] overflow-hidden rounded-md sm:rounded-lg bg-slate-200 dark:bg-slate-800">
           <img
             src={image}
             alt={name}
@@ -605,8 +605,8 @@ const TeamCard = ({ name, role, designation, image, badgeColorClass = '', hoverG
           {/* Hover Eye — only when clickable */}
           {!disableClick && (
             <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <span className="p-2 rounded-full bg-white/90 dark:bg-slate-900/90 text-purple-600 dark:text-purple-300 shadow-lg scale-90 group-hover:scale-100 transition-transform">
-                <Eye className="w-4 h-4" />
+              <span className="p-1 sm:p-2 rounded-full bg-white/90 dark:bg-slate-900/90 text-purple-600 dark:text-purple-300 shadow-lg scale-90 group-hover:scale-100 transition-transform">
+                <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
               </span>
             </div>
           )}
@@ -614,15 +614,15 @@ const TeamCard = ({ name, role, designation, image, badgeColorClass = '', hoverG
       </div>
 
       {/* Name Plate */}
-      <div className="px-3 pb-4 text-center flex flex-col items-center gap-1.5">
-        <span className={`px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider border leading-tight ${badgeColorClass}`}>
+      <div className="px-1 xs:px-1.5 sm:px-3 pb-2 sm:pb-4 text-center flex flex-col items-center gap-0.5 sm:gap-1.5">
+        <span className={`px-1.5 sm:px-2.5 py-0.5 rounded-full text-[7.5px] xs:text-[8px] sm:text-[10px] font-black uppercase tracking-tight sm:tracking-wider border leading-tight line-clamp-1 max-w-full truncate ${badgeColorClass}`}>
           {role}
         </span>
-        <h3 className={`text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white leading-snug line-clamp-2 text-center transition-colors ${disableClick ? '' : 'group-hover:text-purple-600 dark:group-hover:text-purple-400'}`}>
+        <h3 className={`text-[10px] xs:text-[11px] sm:text-sm font-extrabold text-slate-900 dark:text-white leading-tight sm:leading-snug line-clamp-2 text-center transition-colors ${disableClick ? '' : 'group-hover:text-purple-600 dark:group-hover:text-purple-400'}`}>
           {name}
         </h3>
         {designation && (
-          <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium line-clamp-1 px-1">
+          <p className="text-[8px] xs:text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 font-medium line-clamp-1 px-0.5">
             {designation}
           </p>
         )}
@@ -632,9 +632,9 @@ const TeamCard = ({ name, role, designation, image, badgeColorClass = '', hoverG
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition"
+            className="inline-flex items-center gap-0.5 sm:gap-1 text-[8px] xs:text-[9px] sm:text-[10px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition"
           >
-            <LinkedinIcon className="w-2.5 h-2.5 shrink-0" />
+            <LinkedinIcon className="w-2 h-2 sm:w-2.5 sm:h-2.5 shrink-0" />
             LinkedIn
           </a>
         )}

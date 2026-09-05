@@ -465,7 +465,7 @@ export const ResultsPage = () => {
         {/* ─── SPORTS FILTER SECTION (Side Roll-Down Dropdown Only) ─── */}
         <div className="flex items-center justify-between gap-2.5 pt-1 pb-1">
           <div className="flex items-center gap-2">
-            <span className={`text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider ${
+            <span className={`hidden sm:inline-block text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider ${
               isDark ? 'text-purple-300/80' : 'text-purple-700'
             }`}>
               {selectedSport === 'All' ? 'All Disciplines' : selectedSport}

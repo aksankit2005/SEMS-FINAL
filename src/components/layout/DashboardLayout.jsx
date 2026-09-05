@@ -11,6 +11,10 @@ export const DashboardLayout = () => {
   const isGalleryPage = location.pathname.startsWith('/gallery');
   const isAboutOrJourneyPage = location.pathname.startsWith('/about') || location.pathname.startsWith('/journey') || location.pathname.startsWith('/contact') || location.pathname.startsWith('/legacy');
   const isResultsPage = location.pathname.startsWith('/results');
+  const isSchedulePage = location.pathname.startsWith('/schedule');
+  const isLeaderboardPage = location.pathname.startsWith('/leaderboard');
+  const isLivePage = location.pathname.startsWith('/live');
+  const isRegistrationPage = location.pathname.startsWith('/registration');
 
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [settings, setSettings] = useState({ maintenanceMode: false });
@@ -63,8 +67,8 @@ export const DashboardLayout = () => {
           <Outlet />
         </main>
 
-        {/* Footer at bottom (hidden on Gallery, About, Journey, and Results Pages) */}
-        {!isLayoutHidden && !isGalleryPage && !isAboutOrJourneyPage && !isResultsPage && <Footer />}
+        {/* Footer at bottom (hidden on Gallery, About, Journey, Results, Schedule, Leaderboard, Live, and Registration Pages) */}
+        {!isLayoutHidden && !isGalleryPage && !isAboutOrJourneyPage && !isResultsPage && !isSchedulePage && !isLeaderboardPage && !isLivePage && !isRegistrationPage && <Footer />}
       </div>
 
       {/* Mobile Navigation Drawer */}

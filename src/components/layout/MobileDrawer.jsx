@@ -3,7 +3,7 @@ import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   X, Trophy, Calendar, Award, Newspaper, Image, Info, 
   UserCheck, Flame, Radio, BarChart3, LayoutDashboard, Camera,
-  Building2, Shield, LogOut, Crown, Compass
+  Building2, Shield, LogOut, Crown
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { galleryApi } from '../../services/galleryApi';
@@ -133,7 +133,6 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
     { name: 'Results', path: '/results', icon: BarChart3 },
     { name: 'Leaderboard', path: '/leaderboard', icon: Award },
     { name: 'Gallery', path: '/gallery', icon: Image },
-    { name: 'Journey Timeline', path: '/journey', icon: Compass, badge: 'TIMELINE', isPurple: true },
     { name: 'About Us', path: '/about', icon: Info },
   ];
 

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
-import { Trophy, ArrowLeft, User, Users, Info, ShieldCheck, Sparkles, Calendar, MapPin, Clock, Loader2, Lock } from 'lucide-react';
+import { Trophy, ArrowLeft, User, Users, Info, ShieldCheck, Sparkles, Calendar, MapPin, Clock, Loader2, Lock, Filter, ChevronDown, Check } from 'lucide-react';
 import { SPORTS_DATA } from '../data/sportsData';
 import { SPORTS_CONFIG, SPORT_PLAYER_BOUNDS, resolveSportKey } from '../data/sportsConfig';
 import { useAuth } from '../context/AuthContext';
@@ -18,6 +18,8 @@ import { RegistrationReceipt } from '../components/registration/RegistrationRece
 import { generateCollegePassCode } from '../utils/pdfExporter';
 import { BadmintonRulesDisplay, BadmintonRulesModal } from '../components/registration/BadmintonRulesDisplay';
 import { computeEffectiveRegistrationStatus, parseRegistrationDeadline } from '../utils/registrationLifecycle';
+import { useTheme } from '../context/ThemeContext';
+import '../styles/spatialGallery.css';
 
 
 const MOCK_RECEIPT_IMAGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'><rect width='100%25' height='100%25' fill='%230f172a'/><text x='50%25' y='35%25' fill='%2310b981' font-family='sans-serif' font-size='22' font-weight='black' text-anchor='middle'>APEX 2026</text><text x='50%25' y='50%25' fill='%23ffffff' font-family='sans-serif' font-size='14' font-weight='bold' text-anchor='middle'>MOCK PAYMENT SUCCESSFUL</text><text x='50%25' y='65%25' fill='%2364748b' font-family='sans-serif' font-size='10' font-weight='medium' text-anchor='middle'>UTR: TXN-APEX-MOCK-998</text><rect x='20' y='220' width='260' height='50' fill='%231e293b' rx='10'/><text x='50%25' y='250%25' fill='%2338bdf8' font-family='sans-serif' font-size='12' font-weight='bold' text-anchor='middle'>VERIFIED DEMO RECEIPT</text></svg>";
@@ -113,6 +115,9 @@ const RegistrationCountdownTimer = ({ endDateStr }) => {
 };
 
 export const RegistrationPage = () => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { addRegistration } = useAuth();
@@ -257,6 +262,38 @@ export const RegistrationPage = () => {
       return (a.title || '').localeCompare(b.title || '');
     });
   }, [coordinatorEvents]);
+
+  // Roll-down sport filter state
+  const [selectedSportFilter, setSelectedSportFilter] = useState('All');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const availableSports = useMemo(() => {
+    const fromConfig = Object.values(SPORTS_CONFIG).map((c) => c.name);
+    const fromData = SPORTS_DATA.map((s) => s.name);
+    const fromEvents = (coordinatorEvents || []).map((e) => e.sportName || e.title).filter(Boolean);
+    return ['All', ...Array.from(new Set([...fromConfig, ...fromData, ...fromEvents]))];
+  }, [coordinatorEvents]);
+
+  const filteredCoordinatorEvents = useMemo(() => {
+    if (!sortedCoordinatorEvents) return [];
+    if (selectedSportFilter === 'All') return sortedCoordinatorEvents;
+    const filterClean = selectedSportFilter.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return sortedCoordinatorEvents.filter((evt) => {
+      const sportClean = (evt.sportName || evt.title || evt.sportId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      return sportClean.includes(filterClean) || filterClean.includes(sportClean);
+    });
+  }, [sortedCoordinatorEvents, selectedSportFilter]);
 
   useEffect(() => {
     if (!coordinatorEvents || coordinatorEvents.length === 0) return;
@@ -887,38 +924,137 @@ export const RegistrationPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white py-4 sm:py-6 transition-colors">
-      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+    <div className={`relative min-h-screen font-spatial-sans selection:bg-amber-500/30 selection:text-white overflow-x-hidden transition-colors duration-500 ${
+      isDark ? 'text-slate-100' : 'text-slate-900'
+    }`}>
+      {/* ─── ATMOSPHERIC NEBULA BACKDROP (Dark vs Light) ─── */}
+      <div className={`fixed inset-0 pointer-events-none z-0 transition-all duration-700 ${
+        isDark ? 'spatial-nebula-dark' : 'spatial-nebula-light'
+      }`} />
 
-        {/* Header */}
-        <div className="text-center mb-4 sm:mb-6">
-          <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wider mb-1.5">
-            <Trophy className="w-3.5 h-3.5 text-orange-500" /> Multi-Step Sports Registration
-          </div>
-          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight">
-            Athlete & Team <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">Registration</span>
+      {/* ─── TACTILE FILM GRAIN OVERLAY ─── */}
+      <div className="fixed inset-0 spatial-grain-overlay z-[1] pointer-events-none opacity-25" />
+
+      {/* ─── MAIN CONTENT CONTAINER ─── */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 pb-12 sm:pb-16 space-y-6 sm:space-y-8">
+
+        {/* ─── CENTERED LUXURY HERO BANNER (Gallery Style) ─── */}
+        <div className="text-center max-w-3xl mx-auto space-y-2 pt-1">
+          <h1 className={`text-4xl sm:text-6xl md:text-7xl font-normal tracking-[0.08em] font-spatial-display uppercase ${
+            isDark ? 'text-white' : 'text-slate-900'
+          }`}>
+            <span className={`bg-gradient-to-r bg-clip-text text-transparent font-semibold ${
+              isDark 
+                ? 'from-purple-400 via-indigo-300 to-amber-300' 
+                : 'from-purple-700 via-indigo-700 to-amber-600'
+            }`}>
+              Registration
+            </span>
           </h1>
+
+          <p className={`text-xs sm:text-sm max-w-xl mx-auto italic font-spatial-sans font-light leading-relaxed ${
+            isDark ? 'text-slate-300/85' : 'text-slate-600'
+          }`}>
+            Official multi-step sports event registration, team enrollment, and slot allocation across all disciplines.
+          </p>
         </div>
+
+        {/* ─── SPORTS FILTER BAR (Roll-Down Dropdown) ─── */}
+        {!activeSport && (
+          <div className="flex items-center justify-between gap-2.5 pt-1 pb-1">
+            {/* Left: Discipline label + count */}
+            <div className="flex items-center gap-2">
+              <span className={`text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider ${
+                isDark ? 'text-indigo-300/80' : 'text-indigo-700'
+              }`}>
+                {selectedSportFilter === 'All' ? 'All Disciplines' : selectedSportFilter}
+              </span>
+              <span className={`text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                isDark ? 'bg-white/5 border-white/10 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'
+              }`}>
+                {filteredCoordinatorEvents.length} {filteredCoordinatorEvents.length === 1 ? 'Event' : 'Events'}
+              </span>
+            </div>
+
+            {/* Right: Roll-Down Sport Filter Dropdown */}
+            <div className="relative shrink-0" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 border cursor-pointer ${
+                  isDark
+                    ? 'bg-[#10121a]/90 hover:bg-[#181a24] text-indigo-200 border-indigo-500/30 shadow-xs hover:border-indigo-400/50'
+                    : 'bg-white hover:bg-slate-50 text-indigo-900 border-slate-300 shadow-xs'
+                }`}
+                title="Filter by Sport"
+                aria-label="Filter sport roll-down dropdown"
+              >
+                <Filter className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <span className="truncate max-w-[100px] sm:max-w-[140px]">
+                  {selectedSportFilter === 'All' ? 'Filter Sport' : selectedSportFilter}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 text-indigo-400 shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Roll-Down Menu Popover */}
+              {isDropdownOpen && (
+                <div className={`absolute right-0 mt-2 w-52 sm:w-60 rounded-2xl p-1.5 z-50 shadow-2xl border backdrop-blur-2xl max-h-80 overflow-y-auto no-scrollbar transition-all ${
+                  isDark
+                    ? 'bg-[#0d0f18]/95 border-indigo-500/30 text-slate-200 shadow-[0_12px_35px_rgba(0,0,0,0.85)]'
+                    : 'bg-white/95 border-slate-200 text-slate-800 shadow-xl'
+                }`}>
+                  <div className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider font-bold text-indigo-400 border-b border-indigo-500/10 mb-1 flex items-center justify-between">
+                    <span>Select Sport</span>
+                    <span className="text-slate-400 text-[9px]">{availableSports.length} Options</span>
+                  </div>
+                  {availableSports.map((sport) => {
+                    const isSelected = selectedSportFilter === sport;
+                    return (
+                      <button
+                        key={sport}
+                        onClick={() => {
+                          setSelectedSportFilter(sport);
+                          setIsDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer ${
+                          isSelected
+                            ? isDark ? 'bg-indigo-500/20 text-indigo-300 font-bold' : 'bg-indigo-50 text-indigo-700 font-bold'
+                            : isDark ? 'text-slate-300 hover:bg-white/5 hover:text-white' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                        }`}
+                      >
+                        <span className="truncate">{sport}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* SPORTS LIST & COORDINATOR EVENTS STATE */}
         {!activeSport ? (
           <div className="space-y-6">
             
             {/* DYNAMIC OFFICIAL COORDINATOR PUBLISHED EVENTS SECTION */}
-            {sortedCoordinatorEvents && sortedCoordinatorEvents.length > 0 && (
+            {filteredCoordinatorEvents && filteredCoordinatorEvents.length > 0 && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-indigo-500 animate-pulse" />
+                  <h2 className={`text-lg sm:text-xl font-bold font-spatial-display uppercase tracking-wider flex items-center gap-2 ${
+                    isDark ? 'text-white' : 'text-slate-900'
+                  }`}>
+                    <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
                     APEX SPORTS EVENTS
                   </h2>
-                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-mono text-xs font-bold border border-indigo-500/20">
-                    Live Published Events ({sortedCoordinatorEvents.length})
+                  <span className={`px-2.5 py-0.5 rounded-full font-mono text-xs font-bold border ${
+                    isDark ? 'bg-white/5 border-white/10 text-indigo-300' : 'bg-slate-100 border-slate-200 text-indigo-700'
+                  }`}>
+                    Live Published Events ({filteredCoordinatorEvents.length})
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 w-full">
-                  {sortedCoordinatorEvents.map((evt) => {
+                  {filteredCoordinatorEvents.map((evt) => {
                     const registered = evt.registeredCount || 0;
                     const limit = evt.maxRegistrations || 64;
                     const slotsLeft = Math.max(0, limit - registered);
@@ -938,7 +1074,11 @@ export const RegistrationPage = () => {
                     return (
                       <div
                         key={evt.id}
-                        className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-md hover:shadow-xl transition duration-300 flex flex-col justify-between group"
+                        className={`w-full rounded-3xl border overflow-hidden shadow-xl transition-all duration-300 flex flex-col justify-between group ${
+                          isDark
+                            ? 'spatial-glass-card-dark border-white/10 hover:border-indigo-400/40'
+                            : 'spatial-glass-card-light border-slate-200/90 hover:border-indigo-400/50'
+                        }`}
                       >
                         <div className="relative h-44 w-full overflow-hidden bg-slate-950">
                           <img
@@ -960,7 +1100,7 @@ export const RegistrationPage = () => {
                             </span>
                           </div>
 
-                          <div className="absolute top-3 right-3 bg-slate-950/85 backdrop-blur-xs px-3 py-1 rounded-full text-[11px] font-black text-amber-400 border border-slate-700 shadow-md">
+                          <div className="absolute top-3 right-3 bg-slate-950/85 backdrop-blur-xs px-3 py-1 rounded-full text-[11px] font-black text-amber-400 border border-slate-700 shadow-md font-mono">
                             {isRacket ? `Singles: ₹${sFee} | Doubles: ₹${dFee}` : (currentFee > 0 ? `Fee: ₹${currentFee}` : 'FREE (₹0)')}
                           </div>
 
@@ -968,29 +1108,31 @@ export const RegistrationPage = () => {
                             <span className="text-[10px] font-mono font-bold text-indigo-400 uppercase tracking-wider block">
                               {evt.sportName} Event
                             </span>
-                            <h3 className="text-lg sm:text-xl font-black text-white leading-tight drop-shadow-md">
+                            <h3 className="text-lg sm:text-xl font-bold font-spatial-display text-white leading-tight drop-shadow-md uppercase">
                               {evt.title}
                             </h3>
                           </div>
                         </div>
 
                         <div className="p-5 space-y-3.5 flex-1 flex flex-col justify-between">
-                          <div className="grid grid-cols-2 gap-2.5 text-xs bg-slate-50 dark:bg-slate-950 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800">
+                          <div className={`grid grid-cols-2 gap-2.5 text-xs p-3 rounded-2xl border ${
+                            isDark ? 'bg-white/[0.03] border-white/10' : 'bg-slate-50 border-slate-200'
+                          }`}>
                             <div>
                               <span className="text-[9px] text-slate-400 uppercase font-mono block">Reg Deadline</span>
-                              <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px]">{evt.regEndDate}</span>
+                              <span className={`font-bold font-mono text-[10px] ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{evt.regEndDate}</span>
                             </div>
                             <div>
                               <span className="text-[9px] text-slate-400 uppercase font-mono block">Tournament Start</span>
-                              <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px]">{evt.tournStartDate}</span>
+                              <span className={`font-bold font-mono text-[10px] ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{evt.tournStartDate}</span>
                             </div>
                             <div>
                               <span className="text-[9px] text-slate-400 uppercase font-mono block">Venue</span>
-                              <span className="font-bold text-blue-600 dark:text-blue-400 text-[10px] truncate block">{evt.venue}</span>
+                              <span className="font-bold text-indigo-500 text-[10px] truncate block font-mono">{evt.venue}</span>
                             </div>
                             <div>
                               <span className="text-[9px] text-slate-400 uppercase font-mono block">Team Size</span>
-                              <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px]">{evt.teamSize || `${minP} - ${maxP} Players`}</span>
+                              <span className={`font-bold font-mono text-[10px] ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{evt.teamSize || `${minP} - ${maxP} Players`}</span>
                             </div>
                           </div>
 
@@ -998,10 +1140,14 @@ export const RegistrationPage = () => {
                             <button
                               type="button"
                               onClick={() => setRulesModalSport({ sportName: evt.sportName || evt.title, rules: evt.rules })}
-                              className="flex-1 py-2.5 rounded-2xl font-bold text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-xs"
+                              className={`flex-1 py-2.5 rounded-2xl font-bold text-xs border transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-xs ${
+                                isDark
+                                  ? 'bg-white/5 hover:bg-white/10 text-slate-200 border-white/10'
+                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200'
+                              }`}
                               title="View Official Tournament Rules for this event"
                             >
-                              <Info className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                              <Info className="w-3.5 h-3.5 text-indigo-400" />
                               <span>View Rules</span>
                             </button>
 
@@ -1035,12 +1181,12 @@ export const RegistrationPage = () => {
                                 };
                                 handleSportSelect(adaptedSport);
                               }}
-                              className={`flex-1 py-2.5 rounded-2xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 ${
+                              className={`flex-1 py-2.5 rounded-2xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 font-mono uppercase tracking-wider ${
                                 isUpcoming
-                                  ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 cursor-not-allowed font-extrabold'
+                                  ? 'bg-amber-500/20 text-amber-500 border border-amber-500/40 cursor-not-allowed font-extrabold'
                                   : isClosed
-                                  ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-300 dark:border-slate-700'
-                                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white shadow-blue-500/20 active:scale-[0.98]'
+                                  ? isDark ? 'bg-white/5 text-slate-500 cursor-not-allowed border border-white/10' : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+                                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-500/20 active:scale-[0.98] cursor-pointer'
                               }`}
                             >
                               <span>
@@ -1064,14 +1210,24 @@ export const RegistrationPage = () => {
             )}
 
             {/* EMPTY STATE WHEN NO COORDINATOR EVENTS PUBLISHED YET */}
-            {(!sortedCoordinatorEvents || sortedCoordinatorEvents.length === 0) && (
-              <div className="text-center py-12 px-6 sm:px-10 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md space-y-3 w-full">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
-                  <Trophy className="w-6 h-6" />
+            {(!filteredCoordinatorEvents || filteredCoordinatorEvents.length === 0) && (
+              <div className="text-center py-16 px-6 sm:px-10 space-y-3 w-full bg-transparent border-0 shadow-none">
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto text-2xl border ${
+                  isDark ? 'bg-white/5 border-white/10 text-amber-400' : 'bg-slate-100 border-slate-200 text-amber-600'
+                }`}>
+                  <Trophy className="w-8 h-8" />
                 </div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white">No Coordinator Events Published Yet</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-                  Registration for events opens as soon as the respective sports coordinator publishes an active event. Please check back shortly!
+                <h3 className={`text-lg sm:text-xl font-bold font-spatial-display uppercase tracking-wide ${
+                  isDark ? 'text-white' : 'text-slate-900'
+                }`}>
+                  No Coordinator Events Published Yet
+                </h3>
+                <p className={`text-xs max-w-md mx-auto font-spatial-sans ${
+                  isDark ? 'text-slate-400' : 'text-slate-600'
+                }`}>
+                  {selectedSportFilter === 'All'
+                    ? 'Registration for events opens as soon as the respective sports coordinator publishes an active event. Please check back shortly!'
+                    : `No active events currently published for ${selectedSportFilter}. Please check back shortly or select another sport.`}
                 </p>
               </div>
             )}
@@ -1086,9 +1242,11 @@ export const RegistrationPage = () => {
             {step < 3 && (
               <button
                 onClick={handleBackToSports}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-blue-500 dark:text-slate-400 transition"
+                className={`inline-flex items-center gap-1.5 text-xs font-mono font-bold transition ${
+                  isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                }`}
               >
-                <ArrowLeft className="w-3.5 h-3.5" /> Back to Dashboard
+                <ArrowLeft className="w-3.5 h-3.5" /> Back to Events
               </button>
             )}
 
@@ -1096,7 +1254,11 @@ export const RegistrationPage = () => {
             <RegistrationStepper currentStep={step} />
 
             {/* Wizard Body Card */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-10 border border-slate-200 dark:border-slate-800 shadow-xl">
+            <div className={`rounded-3xl p-6 sm:p-10 border shadow-2xl transition-all ${
+              isDark
+                ? 'spatial-glass-card-dark border-white/10'
+                : 'spatial-glass-card-light border-slate-200/90'
+            }`}>
 
               {/* STEP 1: DETAILS */}
               {step === 1 && (
@@ -1316,6 +1478,35 @@ export const RegistrationPage = () => {
             </div>
           </div>
         )}
+
+        {/* ─── DEDICATION QUOTE FOOTER ─── */}
+        <div className="pt-14 sm:pt-20 pb-10 text-center space-y-3">
+          <div className="flex items-center justify-center gap-3 opacity-60">
+            <div className={`h-[1px] w-12 sm:w-24 bg-gradient-to-r from-transparent ${isDark ? 'to-indigo-400' : 'to-indigo-600'}`} />
+            <Trophy className={`w-3.5 h-3.5 ${isDark ? 'text-amber-400' : 'text-amber-500'} animate-pulse`} />
+            <div className={`h-[1px] w-12 sm:w-24 bg-gradient-to-l from-transparent ${isDark ? 'to-indigo-400' : 'to-indigo-600'}`} />
+          </div>
+
+          <p className={`font-spatial-display text-sm sm:text-base md:text-lg tracking-[0.14em] uppercase font-medium select-none ${
+            isDark ? 'text-slate-300' : 'text-slate-700'
+          }`}>
+            &ldquo;The field is waiting.{' '}
+            <span className={`bg-gradient-to-r bg-clip-text text-transparent font-bold ${
+              isDark
+                ? 'from-purple-400 via-indigo-300 to-amber-300'
+                : 'from-purple-700 via-indigo-700 to-amber-600'
+            }`}>
+              Are you ready?
+            </span>
+            &rdquo;
+          </p>
+
+          <p className={`text-[11px] sm:text-xs font-spatial-sans tracking-widest uppercase italic font-medium ${
+            isDark ? 'text-indigo-400/80' : 'text-indigo-700'
+          }`}>
+            APEX 2026 Registration Arena
+          </p>
+        </div>
 
       </div>
     </div>

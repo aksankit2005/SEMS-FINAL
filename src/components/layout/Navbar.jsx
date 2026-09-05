@@ -14,7 +14,9 @@ export const Navbar = () => {
   const location = useLocation();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isSignInOpen, setIsSignInOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const signInRef = useRef(null);
+  const profileRef = useRef(null);
   const { user, logout } = useAuth();
   const [, setAuthTick] = useState(0);
 
@@ -22,6 +24,7 @@ export const Navbar = () => {
   useEffect(() => {
     setIsSignInOpen(false);
     setIsMobileOpen(false);
+    setIsProfileOpen(false);
   }, [location.pathname]);
 
   // Click / Touch outside handler
@@ -29,6 +32,9 @@ export const Navbar = () => {
     const handleClickOutside = (e) => {
       if (signInRef.current && !signInRef.current.contains(e.target)) {
         setIsSignInOpen(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setIsProfileOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -144,7 +150,7 @@ export const Navbar = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full bg-white/60 dark:bg-slate-950/60 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-800/80 transition-all duration-300">
+      <header className="sticky top-0 z-40 w-full bg-transparent backdrop-blur-md border-b border-transparent transition-all duration-300">
         <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
 
@@ -205,25 +211,84 @@ export const Navbar = () => {
 
               {/* User Profile / Log Out OR Login Button */}
               {activeSession ? (
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <Link
-                    to={activeSession.dashboardPath}
-                    className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-blue-600/20 transition-all"
-                  >
-                    <LayoutDashboard className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-300" />
-                    <span className="max-w-[80px] sm:max-w-[110px] truncate">{activeSession.name}</span>
-                    <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-white/20 text-white">
-                      {activeSession.roleLabel}
-                    </span>
-                  </Link>
+                <div className="relative" ref={profileRef}>
                   <button
-                    onClick={activeSession.logoutHandler}
-                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-500/30 font-bold text-xs transition cursor-pointer"
-                    title="Log Out"
+                    onClick={() => {
+                      setIsProfileOpen(!isProfileOpen);
+                      setIsSignInOpen(false);
+                    }}
+                    className="flex items-center gap-2 p-1 sm:px-2.5 sm:py-1.5 rounded-full sm:rounded-xl bg-gradient-to-r from-blue-600/10 via-indigo-600/10 to-violet-600/10 dark:from-blue-500/15 dark:via-indigo-500/15 dark:to-purple-500/15 hover:from-blue-600/20 hover:to-indigo-600/20 border border-blue-500/30 hover:border-blue-500/60 transition cursor-pointer active:scale-95"
+                    aria-label="User Profile Menu"
+                    title={activeSession.name}
                   >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Log Out</span>
+                    <div className="relative flex items-center justify-center w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-xs shadow-sm ring-2 ring-blue-500/20">
+                      <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+                      <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900 shadow-xs" />
+                    </div>
+
+                    <div className="hidden sm:flex flex-col text-left max-w-[90px] md:max-w-[120px]">
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate leading-tight">
+                        {activeSession.name}
+                      </span>
+                      <span className="text-[9px] font-black uppercase text-blue-600 dark:text-blue-400 tracking-wider">
+                        {activeSession.roleLabel}
+                      </span>
+                    </div>
+
+                    <ChevronDown className={`hidden sm:block w-3 h-3 text-slate-400 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
                   </button>
+
+                  {isProfileOpen && (
+                    <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden p-2 space-y-1 animate-fade-in">
+                      <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold shrink-0 shadow-sm">
+                          <User className="w-4.5 h-4.5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                            {activeSession.name}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                              {activeSession.roleLabel}
+                            </span>
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Active
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Link
+                        to={activeSession.dashboardPath}
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400 transition group cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className="p-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition">
+                            <LayoutDashboard className="w-3.5 h-3.5" />
+                          </span>
+                          <span>Dashboard Portal</span>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                      </Link>
+
+                      <div className="my-1 border-t border-slate-100 dark:border-slate-800/80" />
+
+                      <button
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          activeSession.logoutHandler();
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 hover:text-rose-700 dark:hover:text-rose-300 transition cursor-pointer"
+                      >
+                        <span className="p-1.5 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                          <LogOut className="w-3.5 h-3.5" />
+                        </span>
+                        <span>Log Out</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="relative group" ref={signInRef}>
