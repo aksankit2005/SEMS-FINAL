@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Calendar, Layers, CheckCircle2, Clock, XCircle, Edit, Trash2, Eye, 
   Upload, Crop, Image as ImageIcon, Users, DollarSign, ShieldAlert, Download, 
-  Search, Filter, ToggleLeft, ToggleRight, X, AlertCircle, Sparkles, FileText, Phone, Mail, UserCheck
+  Search, Filter, ToggleLeft, ToggleRight, X, AlertCircle, Sparkles, FileText, Phone, Mail, UserCheck,
+  ChevronDown, ArrowUpRight
 } from 'lucide-react';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { ImageCropperModal } from '../../common/ImageCropperModal';
 import { useToast } from '../../../context/ToastContext';
 import { exportToCSV } from '../../../utils/pdfExporter';
+import { resolveSportKey } from '../../../data/sportsConfig';
+import { EventStatusBadge, RegistrationStatusBadge } from '../events/RegistrationStatusControl';
+import { computeEffectiveRegistrationStatus } from '../../../utils/registrationLifecycle';
 
 export const VolleyballEventsTab = ({ user }) => {
   const { addToast } = useToast();
@@ -16,6 +20,7 @@ export const VolleyballEventsTab = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
+  const [activeDropdownEventId, setActiveDropdownEventId] = useState(null);
   
   // Participant Roster Drawer/Modal state
   const [selectedEventForParticipants, setSelectedEventForParticipants] = useState(null);
@@ -34,21 +39,24 @@ export const VolleyballEventsTab = ({ user }) => {
     description: '',
     regStartDate: new Date().toISOString().split('T')[0],
     regEndDate: '2026-09-15',
-    tournStartDate: '2026-09-01',
-    tournEndDate: '2026-09-03',
-    teamFee: 1500, // Team registration fee ONLY
-    minPlayers: 6,  // Min players per squad
-    maxPlayers: 12, // Max players per squad
+    tournStartDate: '2026-09-16',
+    tournEndDate: '2026-09-18',
+    teamFee: 1500,
+    minPlayers: 6,
+    maxPlayers: 12,
     teamSize: '6 - 12 Players',
     registeredCount: 0,
     venue: 'Volleyball Arena Court 1',
     category: 'Open',
     status: 'Published',
     rules: [
-      'Official FIVB tournament rules apply.',
-      'Team squad must consist of minimum 6 and maximum 12 players.',
-      'College Student ID & Pass mandatory for all players.',
-      'Standard indoor volleyball court attire and kneepads strictly required.'
+      '1. Squad Composition: Minimum 6 and Maximum 12 players per squad (6 players on court).',
+      '2. Match Format: Best of 3 sets (25 points per set, deciding 3rd set of 15 points).',
+      '3. Service & Rotation: Clockwise player rotation upon winning service back.',
+      '4. Net & Line Faults: Crossing centerline or contacting net during play is a fault.',
+      '5. Ball Touches: Maximum 3 touches per side before returning over net (block not counted).',
+      '6. Official Gear: Standard indoor volleyball footwear and matching team uniforms required.',
+      '7. College Student ID & APEX Pass mandatory for all participating squad members.'
     ],
     requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'Team Roster Approval Form'],
     contactName: user?.coordinatorName || 'Siddharth Rao',
@@ -66,8 +74,27 @@ export const VolleyballEventsTab = ({ user }) => {
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const list = await coordinatorApi.getEvents();
-      setEvents(list);
+      const [list, allRegs] = await Promise.all([
+        coordinatorApi.getEvents(),
+        coordinatorApi.getRegistrations().catch(() => [])
+      ]);
+      const volleyRegs = (allRegs || []).filter((d) => 
+        (d.sportId === 'volleyball') || 
+        resolveSportKey(d) === 'volleyball' ||
+        (!d.sport || d.sport.toLowerCase().includes('volley') || d.eventTitle?.toLowerCase().includes('volley'))
+      );
+      const mapped = (list || []).map((ev) => {
+        const matching = volleyRegs.filter((r) => 
+          r.eventId === ev.id || 
+          r.eventTitle === ev.title || 
+          (list.length === 1 && volleyRegs.length > 0)
+        );
+        return {
+          ...ev,
+          registeredCount: matching.length
+        };
+      });
+      setEvents(mapped);
     } catch (err) {
       addToast('Error loading volleyball events console', 'error');
     } finally {
@@ -78,8 +105,8 @@ export const VolleyballEventsTab = ({ user }) => {
   // Preset form on Edit event
   const handleOpenEdit = (eventObj) => {
     setEditingEvent(eventObj);
-    const minP = eventObj.minPlayers !== undefined ? eventObj.minPlayers : 6;
-    const maxP = eventObj.maxPlayers !== undefined ? eventObj.maxPlayers : 12;
+    const minP = eventObj.minPlayers !== undefined ? eventObj.minPlayers : (eventObj.minMembers !== undefined ? eventObj.minMembers : 6);
+    const maxP = eventObj.maxPlayers !== undefined ? eventObj.maxPlayers : (eventObj.maxMembers !== undefined ? eventObj.maxMembers : 12);
     
     setFormData({
       title: eventObj.title || '',
@@ -88,8 +115,8 @@ export const VolleyballEventsTab = ({ user }) => {
       description: eventObj.description || '',
       regStartDate: eventObj.regStartDate || new Date().toISOString().split('T')[0],
       regEndDate: eventObj.regEndDate || '2026-09-15',
-      tournStartDate: eventObj.tournStartDate || '2026-09-01',
-      tournEndDate: eventObj.tournEndDate || '2026-09-03',
+      tournStartDate: eventObj.tournStartDate || '2026-09-16',
+      tournEndDate: eventObj.tournEndDate || '2026-09-18',
       teamFee: typeof eventObj.teamFee === 'number' ? eventObj.teamFee : (typeof eventObj.entryFee === 'number' ? eventObj.entryFee : (eventObj.teamFee ?? eventObj.entryFee ?? 1500)),
       minPlayers: minP,
       maxPlayers: maxP,
@@ -98,11 +125,17 @@ export const VolleyballEventsTab = ({ user }) => {
       venue: eventObj.venue || 'Volleyball Arena Court 1',
       category: eventObj.category === 'Mixed' ? 'Open' : (eventObj.category || 'Open'),
       status: eventObj.status || 'Published',
-      rules: eventObj.rules || [],
-      requiredDocuments: eventObj.requiredDocuments || ['College Student ID Card'],
-      contactName: eventObj.contactInfo?.name || user?.coordinatorName || 'Siddharth Rao',
-      contactEmail: eventObj.contactInfo?.email || user?.email || 'volleyball.coord@apex.edu',
-      contactPhone: eventObj.contactInfo?.phone || '+91 98765 43210'
+      rules: eventObj.rules || [
+        '1. Squad Composition: Minimum 6 and Maximum 12 players per squad (6 players on court).',
+        '2. Match Format: Best of 3 sets (25 points per set, deciding 3rd set of 15 points).',
+        '3. Service & Rotation: Clockwise player rotation upon winning service back.',
+        '4. Net & Line Faults: Crossing centerline or contacting net during play is a fault.',
+        '5. Official Gear: Standard indoor volleyball footwear and uniforms required.'
+      ],
+      requiredDocuments: eventObj.requiredDocuments || ['College Student ID Card', 'Aadhaar Card / Govt ID'],
+      contactName: eventObj.contactInfo?.name || eventObj.contactName || user?.coordinatorName || 'Siddharth Rao',
+      contactEmail: eventObj.contactInfo?.email || eventObj.contactEmail || user?.email || 'volleyball.coord@apex.edu',
+      contactPhone: eventObj.contactInfo?.phone || eventObj.contactPhone || '+91 98765 43210'
     });
     setRulesInput(Array.isArray(eventObj.rules) ? eventObj.rules.join('\n') : '');
     setDocInput(Array.isArray(eventObj.requiredDocuments) ? eventObj.requiredDocuments.join('\n') : '');
@@ -119,8 +152,8 @@ export const VolleyballEventsTab = ({ user }) => {
       description: 'Official inter-college Volleyball tournament. Register team entries (6 - 12 players) today!',
       regStartDate: new Date().toISOString().split('T')[0],
       regEndDate: '2026-09-15',
-      tournStartDate: '2026-09-01',
-      tournEndDate: '2026-09-03',
+      tournStartDate: '2026-09-16',
+      tournEndDate: '2026-09-18',
       teamFee: 1500,
       minPlayers: 6,
       maxPlayers: 12,
@@ -130,22 +163,33 @@ export const VolleyballEventsTab = ({ user }) => {
       category: 'Open',
       status: 'Published',
       rules: [
-        'Official FIVB tournament rules apply.',
-        'Team squad must consist of min 6 and max 12 players.',
-        'College ID mandatory for all squad members.'
+        '1. Squad Composition: Minimum 6 and Maximum 12 players per squad (6 players on court).',
+        '2. Match Format: Best of 3 sets (25 points per set, deciding 3rd set of 15 points).',
+        '3. Service & Rotation: Clockwise player rotation upon winning service back.',
+        '4. Net & Line Faults: Crossing centerline or contacting net during play is a fault.',
+        '5. Ball Touches: Maximum 3 touches per side before returning over net (block not counted).',
+        '6. Official Gear: Standard indoor volleyball footwear and uniforms required.',
+        '7. College Student ID & APEX Pass mandatory for all participating squad members.'
       ],
-      requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID'],
+      requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'Team Roster Approval Form'],
       contactName: user?.coordinatorName || 'Siddharth Rao',
       contactEmail: user?.email || 'volleyball.coord@apex.edu',
       contactPhone: '+91 98765 43210'
     });
-    setRulesInput('Official FIVB tournament rules apply.\nTeam squad must consist of min 6 and max 12 players.\nCollege Student ID Card mandatory.');
-    setDocInput('College Student ID Card\nAadhaar Card / Govt ID');
+    setRulesInput(
+      '1. Squad Composition: Minimum 6 and Maximum 12 players per squad (6 players on court).\n' +
+      '2. Match Format: Best of 3 sets (25 points per set, deciding 3rd set of 15 points).\n' +
+      '3. Service & Rotation: Clockwise player rotation upon winning service back.\n' +
+      '4. Net & Line Faults: Crossing centerline or contacting net during play is a fault.\n' +
+      '5. Ball Touches: Maximum 3 touches per side before returning over net.\n' +
+      '6. College Student ID Card mandatory.'
+    );
+    setDocInput('College Student ID Card\nAadhaar Card / Govt ID\nTeam Roster Approval Form');
     setShowCreateModal(true);
   };
 
   const handleCoverUpload = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files && e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
@@ -190,10 +234,17 @@ export const VolleyballEventsTab = ({ user }) => {
     const docsArr = docInput.split('\n').map((d) => d.trim()).filter(Boolean);
 
     const calculatedTeamSize = `${formData.minPlayers} - ${formData.maxPlayers} Players`;
+    const targetStatus = formData.status || 'Published';
 
     const eventPayload = {
       ...formData,
+      sportId: 'volleyball',
+      sportName: 'Volleyball',
+      status: targetStatus,
+      registrationOpen: targetStatus !== 'Closed' && targetStatus !== 'Draft' && targetStatus !== 'Completed',
       entryFee: formData.teamFee,
+      minMembers: formData.minPlayers,
+      maxMembers: formData.maxPlayers,
       teamSize: calculatedTeamSize,
       rules: rulesArr,
       requiredDocuments: docsArr,
@@ -207,18 +258,19 @@ export const VolleyballEventsTab = ({ user }) => {
     try {
       if (editingEvent) {
         const updated = await coordinatorApi.updateEvent(editingEvent.id, eventPayload);
-        setEvents((prev) => prev.map((item) => (item.id === editingEvent.id ? updated : item)));
-        addToast(`Volleyball registration event "${updated.title}" updated!`, 'success');
+        setEvents((prev) => prev.map((item) => (item.id === editingEvent.id ? { ...item, ...updated } : item)));
+        addToast(`Volleyball event "${updated.title || formData.title}" updated!`, 'success');
       } else {
         const created = await coordinatorApi.createEvent(eventPayload);
         setEvents((prev) => [created, ...prev]);
-        addToast(`New volleyball registration event "${created.title}" published!`, 'success');
+        addToast(`New volleyball event "${created.title || formData.title}" published!`, 'success');
       }
 
       setShowCreateModal(false);
       fetchEvents();
+      window.dispatchEvent(new Event('sems_events_updated'));
     } catch (err) {
-      addToast('Failed to save volleyball registration event', 'error');
+      addToast('Failed to save volleyball event', 'error');
     }
   };
 
@@ -228,45 +280,91 @@ export const VolleyballEventsTab = ({ user }) => {
         await coordinatorApi.deleteEvent(id);
         setEvents((prev) => prev.filter((item) => item.id !== id));
         addToast('Volleyball event deleted successfully', 'info');
+        window.dispatchEvent(new Event('sems_events_updated'));
       } catch (err) {
         addToast('Failed to delete event', 'error');
       }
     }
   };
 
-  const handleToggleStatus = async (eventObj) => {
-    const statusCycle = {
-      'Draft': 'Upcoming',
-      'Upcoming': 'Published',
-      'Published': 'Closed',
-      'Closed': 'Draft'
-    };
-    const nextStatus = statusCycle[eventObj.status] || 'Published';
-
+  const handleSetEventStatus = async (eventObj, actionKey) => {
+    setActiveDropdownEventId(null);
     try {
-      const updated = await coordinatorApi.updateEvent(eventObj.id, { status: nextStatus });
-      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? updated : item)));
-      addToast(`Event status changed to ${nextStatus}`, 'info');
+      if (actionKey === 'OPEN') {
+        const nowStr = new Date().toISOString().split('T')[0];
+        let newEndDate = eventObj.regEndDate;
+        // If deadline passed or empty, auto extend by 7 days so registration is actively accepted
+        if (!eventObj.regEndDate || eventObj.regEndDate < nowStr) {
+          const futureDate = new Date();
+          futureDate.setDate(futureDate.getDate() + 7);
+          newEndDate = futureDate.toISOString().split('T')[0];
+        }
+        const updated = await coordinatorApi.updateEvent(eventObj.id, {
+          status: 'Published',
+          registrationOpen: true,
+          regEndDate: newEndDate
+        });
+        setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, status: 'Published', registrationOpen: true, regEndDate: newEndDate } : item)));
+        addToast(`🔓 Registration is now OPEN for "${eventObj.title}"! (Deadline: ${newEndDate})`, 'success');
+      } else if (actionKey === 'CLOSE') {
+        const updated = await coordinatorApi.updateEvent(eventObj.id, {
+          status: 'Closed',
+          registrationOpen: false
+        });
+        setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, status: 'Closed', registrationOpen: false } : item)));
+        addToast(`🔒 Registration CLOSED for "${eventObj.title}". Fixtures can now be scheduled!`, 'info');
+      } else if (actionKey === 'UPCOMING') {
+        const updated = await coordinatorApi.updateEvent(eventObj.id, {
+          status: 'Upcoming',
+          registrationOpen: false
+        });
+        setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, status: 'Upcoming', registrationOpen: false } : item)));
+        addToast(`⏳ Event marked as UPCOMING for "${eventObj.title}".`, 'info');
+      } else if (actionKey === 'EXTEND') {
+        handleOpenEdit(eventObj);
+        return;
+      }
+      fetchEvents();
+      window.dispatchEvent(new Event('sems_events_updated'));
     } catch (err) {
-      addToast('Status toggle failed', 'error');
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to update event status';
+      addToast(errMsg, 'error');
     }
   };
 
   const handleViewParticipants = async (eventObj) => {
     setSelectedEventForParticipants(eventObj);
-    const allRegs = await coordinatorApi.getRegistrations();
-    setParticipants(allRegs);
+    try {
+      const allRegs = await coordinatorApi.getRegistrations();
+      const volleyRegs = (allRegs || []).filter((d) => 
+        (d.sportId === 'volleyball') || 
+        resolveSportKey(d) === 'volleyball' ||
+        (!d.sport || d.sport.toLowerCase().includes('volley') || d.eventTitle?.toLowerCase().includes('volley'))
+      );
+      const matching = volleyRegs.filter((r) => 
+        r.eventId === eventObj.id || 
+        r.eventTitle === eventObj.title || 
+        (events.length === 1 && volleyRegs.length > 0)
+      );
+      setParticipants(matching.length > 0 ? matching : volleyRegs);
+    } catch (e) {
+      console.error('Error fetching registrations for roster:', e);
+    }
   };
 
   const totalEvents = events.length;
-  const activeEvents = events.filter((e) => e.status === 'Published').length;
-  const upcomingEvents = events.filter((e) => e.status === 'Upcoming').length;
-  const closedEvents = events.filter((e) => e.status === 'Closed').length;
-  const totalRegCount = events.reduce((acc, curr) => acc + (curr.registeredCount || 0), 0);
-  const totalRevenue = events.reduce((acc, curr) => {
-    const fee = typeof curr.teamFee === 'number' ? curr.teamFee : (typeof curr.entryFee === 'number' ? curr.entryFee : (curr.teamFee ?? curr.entryFee ?? 1500));
-    return acc + ((curr.registeredCount || 0) * fee);
-  }, 0);
+  const activeEvents = events.filter((e) => {
+    const s = computeEffectiveRegistrationStatus(e);
+    return s.effectiveRegistrationOpen;
+  }).length;
+  const upcomingEvents = events.filter((e) => {
+    const s = computeEffectiveRegistrationStatus(e);
+    return s.code === 'UPCOMING' || s.code === 'NOT_STARTED' || (e.status || '').toLowerCase() === 'upcoming';
+  }).length;
+  const closedEvents = events.filter((e) => {
+    const s = computeEffectiveRegistrationStatus(e);
+    return s.effectiveRegistrationClosed || (e.status || '').toLowerCase() === 'closed';
+  }).length;
 
   const filteredParticipants = participants.filter((p) => {
     if (!participantSearch.trim()) return true;
@@ -308,22 +406,22 @@ export const VolleyballEventsTab = ({ user }) => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#0B1120] p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-md">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 text-[10px] font-mono font-bold uppercase">
-              VOLLEYBALL COORDINATOR PORTAL
+            <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[10px] font-mono font-bold uppercase">
+              🏐 VOLLEYBALL COORDINATOR PORTAL
             </span>
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 font-mono">• Team Events Configurator</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 font-mono">• Squad & Court Configurator</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
             Volleyball Tournament Event Management
           </h2>
           <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-            Configure Volleyball team events with flat team entry fees and squad size controls (6 to 12 players).
+            Configure official Volleyball team events with flat registration fees and squad controls (6 to 12 players, 6 on court).
           </p>
         </div>
 
         <button
           onClick={handleOpenCreate}
-          className="px-5 py-3 rounded-2xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs shadow-lg shadow-orange-500/20 transition flex items-center gap-2 shrink-0 self-start sm:self-auto cursor-pointer"
+          className="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-500/20 transition flex items-center gap-2 shrink-0 self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Create Volleyball Event</span>
@@ -334,7 +432,7 @@ export const VolleyballEventsTab = ({ user }) => {
       <div className="space-y-4">
         {loading ? (
           <div className="py-16 text-center space-y-2 bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800">
-            <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" />
+            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
             <p className="text-xs text-slate-500 dark:text-slate-400">Loading Volleyball registration events...</p>
           </div>
         ) : events.length === 0 ? (
@@ -346,7 +444,7 @@ export const VolleyballEventsTab = ({ user }) => {
             </p>
             <button
               onClick={handleOpenCreate}
-              className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
             >
               + Create First Volleyball Event
             </button>
@@ -356,14 +454,15 @@ export const VolleyballEventsTab = ({ user }) => {
             {events.map((event) => {
               const registered = event.registeredCount || 0;
               const fee = typeof event.teamFee === 'number' ? event.teamFee : (typeof event.entryFee === 'number' ? event.entryFee : (event.teamFee ?? event.entryFee ?? 1500));
-              const minP = event.minPlayers !== undefined ? event.minPlayers : 6;
-              const maxP = event.maxPlayers !== undefined ? event.maxPlayers : 12;
+              const minP = event.minPlayers !== undefined ? event.minPlayers : (event.minMembers !== undefined ? event.minMembers : 6);
+              const maxP = event.maxPlayers !== undefined ? event.maxPlayers : (event.maxMembers !== undefined ? event.maxMembers : 12);
               const teamSizeStr = event.teamSize || `${minP} - ${maxP} Players`;
+              const statusInfo = computeEffectiveRegistrationStatus(event);
 
               return (
                 <div
                   key={event.id}
-                  className="bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-soft dark:shadow-lg hover:border-orange-500/50 dark:hover:border-slate-700 transition flex flex-col justify-between"
+                  className="bg-white dark:bg-[#0B1120] rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-soft dark:shadow-lg hover:border-blue-500/50 dark:hover:border-slate-700 transition flex flex-col justify-between"
                 >
                   {/* Cover Banner */}
                   <div className="relative h-44 w-full bg-slate-900 overflow-hidden">
@@ -374,19 +473,10 @@ export const VolleyballEventsTab = ({ user }) => {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/30 to-transparent" />
 
-                    {/* Status Badge */}
-                    <div className="absolute top-3 left-3 flex items-center gap-2">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase border shadow-md ${
-                        event.status === 'Published'
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                          : event.status === 'Upcoming'
-                          ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
-                          : event.status === 'Closed'
-                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                          : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                      }`}>
-                        ● {event.status}
-                      </span>
+                    {/* Status Badges */}
+                    <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5">
+                      <EventStatusBadge event={event} />
+                      <RegistrationStatusBadge event={event} />
                       <span className="px-2.5 py-1 rounded-full bg-slate-950/70 backdrop-blur-xs text-white text-[10px] font-bold border border-slate-800">
                         {event.category || 'Open'}
                       </span>
@@ -398,8 +488,8 @@ export const VolleyballEventsTab = ({ user }) => {
                     </div>
 
                     <div className="absolute bottom-3 left-4 right-4">
-                      <span className="text-[10px] font-mono font-bold text-orange-400 uppercase tracking-wider">
-                        VOLLEYBALL TOURNAMENT
+                      <span className="text-[10px] font-mono font-bold text-blue-400 uppercase tracking-wider">
+                        🏐 VOLLEYBALL TOURNAMENT
                       </span>
                       <h3 className="text-lg font-black text-white leading-tight truncate">
                         {event.title}
@@ -423,44 +513,93 @@ export const VolleyballEventsTab = ({ user }) => {
                         <span className="font-bold text-slate-900 dark:text-white text-[11px]">{event.tournStartDate} to {event.tournEndDate}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono">Venue / Location</span>
-                        <span className="font-bold text-orange-600 dark:text-orange-400 text-[11px] truncate block">{event.venue}</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono">Court / Venue</span>
+                        <span className="font-bold text-blue-600 dark:text-blue-400 text-[11px] truncate block">{event.venue || 'Volleyball Arena Court 1'}</span>
                       </div>
                       <div>
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono">Squad Limits</span>
                         <span className="font-bold text-slate-900 dark:text-white text-[11px] flex items-center gap-1">
-                          <UserCheck className="w-3 h-3 text-orange-500" />
+                          <UserCheck className="w-3 h-3 text-blue-500" />
                           {teamSizeStr} (Min {minP}, Max {maxP})
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs pt-1">
-                      <span className="font-bold text-slate-500 dark:text-slate-400 font-mono text-[11px]">Registered Squads</span>
-                      <span className="font-mono font-black text-orange-600 dark:text-orange-400">{registered} Teams Registered</span>
-                    </div>
-
                     {/* Actions Bar */}
-                    <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => handleToggleStatus(event)}
-                          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
-                          title="Toggle Status (Draft -> Upcoming -> Published -> Closed)"
-                        >
-                          {event.status === 'Published' ? (
-                            <ToggleRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                          ) : event.status === 'Upcoming' ? (
-                            <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                          ) : (
-                            <ToggleLeft className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {/* Unified Status Roll-Down Menu */}
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setActiveDropdownEventId(activeDropdownEventId === event.id ? null : event.id)}
+                            className={`px-3 py-1.5 rounded-xl border text-[11px] font-black transition flex items-center gap-1.5 cursor-pointer ${
+                              statusInfo.effectiveRegistrationOpen
+                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                                : statusInfo.code === 'UPCOMING' || statusInfo.code === 'NOT_STARTED' || (event.status || '').toLowerCase() === 'upcoming'
+                                ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 hover:bg-blue-500/20'
+                                : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30 hover:bg-rose-500/20'
+                            }`}
+                          >
+                            <span className={`w-2 h-2 rounded-full ${
+                              statusInfo.effectiveRegistrationOpen ? 'bg-emerald-500 animate-pulse' : statusInfo.code === 'UPCOMING' || (event.status || '').toLowerCase() === 'upcoming' ? 'bg-blue-500' : 'bg-rose-500'
+                            }`} />
+                            <span>
+                              {statusInfo.effectiveRegistrationOpen
+                                ? 'Registration Open'
+                                : statusInfo.code === 'UPCOMING' || (event.status || '').toLowerCase() === 'upcoming'
+                                ? 'Upcoming'
+                                : 'Closed'}
+                            </span>
+                            <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+                          </button>
+
+                          {activeDropdownEventId === event.id && (
+                            <div className="absolute left-0 bottom-full mb-2 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 z-40 animate-fade-in text-xs space-y-1">
+                              <button
+                                type="button"
+                                onClick={() => handleSetEventStatus(event, 'OPEN')}
+                                className="w-full px-3 py-2 rounded-xl text-left font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 flex items-center gap-2 cursor-pointer"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Open / Activate Registration</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleSetEventStatus(event, 'CLOSE')}
+                                className="w-full px-3 py-2 rounded-xl text-left font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 cursor-pointer"
+                              >
+                                <XCircle className="w-3.5 h-3.5" />
+                                <span>Close Registration</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleSetEventStatus(event, 'UPCOMING')}
+                                className="w-full px-3 py-2 rounded-xl text-left font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 flex items-center gap-2 cursor-pointer"
+                              >
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>Mark as Upcoming</span>
+                              </button>
+
+                              <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
+
+                              <button
+                                type="button"
+                                onClick={() => handleSetEventStatus(event, 'EXTEND')}
+                                className="w-full px-3 py-2 rounded-xl text-left font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 cursor-pointer"
+                              >
+                                <Calendar className="w-3.5 h-3.5 text-blue-500" />
+                                <span>Extend End Date (Edit)</span>
+                              </button>
+                            </div>
                           )}
-                          <span>Toggle Status</span>
-                        </button>
+                        </div>
 
                         <button
                           onClick={() => handleViewParticipants(event)}
-                          className="px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 dark:bg-orange-500/20 dark:hover:bg-orange-500/30 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-500/30 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
+                          className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-500/20 dark:hover:bg-blue-500/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
                         >
                           <Users className="w-3.5 h-3.5" />
                           <span>Roster ({registered})</span>
@@ -500,8 +639,8 @@ export const VolleyballEventsTab = ({ user }) => {
             
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
               <div>
-                <span className="text-[10px] font-mono font-bold uppercase text-orange-600 dark:text-orange-400">
-                  Volleyball Event Configurator
+                <span className="text-[10px] font-mono font-bold uppercase text-blue-600 dark:text-blue-400">
+                  🏐 Volleyball Event Configurator
                 </span>
                 <h3 className="text-xl font-black text-slate-900 dark:text-white">
                   {editingEvent ? 'Edit Volleyball Event' : 'Create New Volleyball Event'}
@@ -528,7 +667,7 @@ export const VolleyballEventsTab = ({ user }) => {
                     value={formData.title}
                     onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
                     placeholder="e.g. Inter-College Volleyball Championship 2026"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -540,7 +679,7 @@ export const VolleyballEventsTab = ({ user }) => {
                     type="text"
                     readOnly
                     value="Volleyball"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 text-orange-600 dark:text-orange-400 text-xs font-mono font-bold cursor-not-allowed"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 text-blue-600 dark:text-blue-400 text-xs font-mono font-bold cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -561,11 +700,11 @@ export const VolleyballEventsTab = ({ user }) => {
 
                   <div className="flex-1 space-y-2 w-full">
                     <p className="text-[11px] text-slate-600 dark:text-slate-400">
-                      Upload a high-resolution Volleyball cover image. Click "Crop & Resize" to trim to standard 16:9 banner format before publishing.
+                      Upload a high-resolution Volleyball cover banner. Click "Crop & Resize" to trim to standard 16:9 banner format before publishing.
                     </p>
                     <div className="flex flex-wrap items-center gap-2">
                       <label className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white text-xs font-bold cursor-pointer transition flex items-center gap-1.5">
-                        <Upload className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
+                        <Upload className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                         <span>Upload Image</span>
                         <input
                           type="file"
@@ -581,7 +720,7 @@ export const VolleyballEventsTab = ({ user }) => {
                           setCropperRawSrc(formData.coverImage);
                           setShowCropper(true);
                         }}
-                        className="px-4 py-2 rounded-xl bg-orange-50 hover:bg-orange-100 dark:bg-orange-500/20 dark:hover:bg-orange-500/30 text-orange-600 dark:text-orange-300 border border-orange-200 dark:border-orange-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                        className="px-4 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-500/20 dark:hover:bg-blue-500/30 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                       >
                         <Crop className="w-3.5 h-3.5" />
                         <span>Crop & Resize</span>
@@ -609,8 +748,8 @@ export const VolleyballEventsTab = ({ user }) => {
                   rows={3}
                   value={formData.description}
                   onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                  placeholder="Enter detailed description of Volleyball tournament rules, set format, eligibility..."
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder="Enter detailed description of Volleyball tournament rules, sets format, rotation, eligibility..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -654,11 +793,11 @@ export const VolleyballEventsTab = ({ user }) => {
               </div>
 
               {/* TEAM FEE ONLY, MIN 6 & MAX 12 PLAYERS */}
-              <div className="p-4 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-4">
-                <div className="flex items-center gap-2 border-b border-orange-500/20 pb-2">
-                  <DollarSign className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                  <h4 className="text-xs font-black uppercase text-orange-700 dark:text-orange-400 tracking-wider">
-                    Volleyball Team Pricing & Squad Limits
+              <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20 space-y-4">
+                <div className="flex items-center gap-2 border-b border-blue-500/20 pb-2">
+                  <DollarSign className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <h4 className="text-xs font-black uppercase text-blue-700 dark:text-blue-400 tracking-wider">
+                    Volleyball Team Pricing & Squad Limits (6-12 Players, 6 On Court)
                   </h4>
                 </div>
 
@@ -677,9 +816,9 @@ export const VolleyballEventsTab = ({ user }) => {
                         setFormData((prev) => ({ ...prev, teamFee: val }));
                       }}
                       placeholder="e.g. 1500"
-                      className="w-full px-4 py-2.5 rounded-xl border border-orange-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-black text-amber-600 dark:text-amber-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full px-4 py-2.5 rounded-xl border border-blue-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-black text-amber-600 dark:text-amber-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">Flat registration fee collected per participating volleyball team.</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">Flat registration fee collected per participating volleyball team squad.</p>
                   </div>
 
                   <div className="space-y-1">
@@ -745,14 +884,15 @@ export const VolleyballEventsTab = ({ user }) => {
                   >
                     <option value="Draft">Draft (Hidden)</option>
                     <option value="Upcoming">Upcoming (Coming Soon)</option>
-                    <option value="Published">Published (Open)</option>
-                    <option value="Closed">Closed</option>
+                    <option value="Published">Published (Open / Active)</option>
+                    <option value="Closed">Closed (Registration Closed)</option>
+                    <option value="Completed">Completed (Event Finished)</option>
                   </select>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Venue / Location</label>
+                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Court / Venue Location</label>
                 <input
                   type="text"
                   value={formData.venue}
@@ -767,10 +907,10 @@ export const VolleyballEventsTab = ({ user }) => {
                   Rules & Regulations (One per line)
                 </label>
                 <textarea
-                  rows={3}
+                  rows={4}
                   value={rulesInput}
                   onChange={(e) => setRulesInput(e.target.value)}
-                  placeholder="Official FIVB rules apply&#10;Min 6 and Max 12 players required per squad&#10;Kneepads mandatory"
+                  placeholder="1. Minimum 6 and Maximum 12 players per squad (6 players on court).&#10;2. Match format: Best of 3 sets (25 points each, 3rd set 15 points).&#10;3. Standard volleyball shoes and team uniforms mandatory."
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-mono"
                 />
               </div>
@@ -798,7 +938,7 @@ export const VolleyballEventsTab = ({ user }) => {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
                 >
                   {editingEvent ? 'Save Volleyball Event' : 'Publish Volleyball Event'}
                 </button>
@@ -816,8 +956,8 @@ export const VolleyballEventsTab = ({ user }) => {
             
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
               <div>
-                <span className="text-[10px] font-mono text-orange-600 dark:text-orange-400 font-bold uppercase">
-                  Volleyball Registered Squads
+                <span className="text-[10px] font-mono text-blue-600 dark:text-blue-400 font-bold uppercase">
+                  🏐 Volleyball Registered Squads
                 </span>
                 <h3 className="text-lg font-black text-slate-900 dark:text-white">{selectedEventForParticipants.title}</h3>
               </div>
@@ -831,7 +971,7 @@ export const VolleyballEventsTab = ({ user }) => {
                       Captain: p.studentName,
                       College: p.college,
                       Department: p.department || 'N/A',
-                      SquadCount: p.squadCount || '6-12',
+                      SquadCount: p.squadCount || '6-12 Players',
                       Phone: p.contactPhone || p.phone,
                       Status: p.status,
                       RegisteredDate: p.registeredDate
@@ -860,7 +1000,7 @@ export const VolleyballEventsTab = ({ user }) => {
                 value={participantSearch}
                 onChange={(e) => setParticipantSearch(e.target.value)}
                 placeholder="Search registered team, captain name, college..."
-                className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -869,7 +1009,7 @@ export const VolleyballEventsTab = ({ user }) => {
                 <thead className="bg-slate-100 dark:bg-slate-900 text-[10px] font-mono uppercase text-slate-500 dark:text-slate-400 sticky top-0">
                   <tr>
                     <th className="p-3">Registration ID</th>
-                    <th className="p-3">Team / Student Name</th>
+                    <th className="p-3">Team / Captain Name</th>
                     <th className="p-3">College</th>
                     <th className="p-3">Category</th>
                     <th className="p-3">Squad Size</th>
@@ -886,7 +1026,7 @@ export const VolleyballEventsTab = ({ user }) => {
                   ) : (
                     filteredParticipants.map((p) => (
                       <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition">
-                        <td className="p-3 font-mono font-bold text-orange-600 dark:text-orange-400">{p.id}</td>
+                        <td className="p-3 font-mono font-bold text-blue-600 dark:text-blue-400">{p.id}</td>
                         <td className="p-3 font-bold text-slate-900 dark:text-white">{p.teamName || p.studentName}</td>
                         <td className="p-3">{p.college}</td>
                         <td className="p-3">{p.category || 'Open'}</td>
