@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Calendar, Layers, CheckCircle2, Clock, XCircle, Edit, Trash2, Eye, 
   Upload, Crop, Image as ImageIcon, Users, DollarSign, ShieldAlert, Download, 
-  Search, Filter, ToggleLeft, ToggleRight, X, AlertCircle, Sparkles, FileText, Phone, Mail, UserCheck
+  Search, Filter, ToggleLeft, ToggleRight, X, AlertCircle, Sparkles, FileText, Phone, Mail, UserCheck,
+  ChevronDown, ArrowUpRight
 } from 'lucide-react';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { ImageCropperModal } from '../../common/ImageCropperModal';
 import { useToast } from '../../../context/ToastContext';
 import { exportToCSV } from '../../../utils/pdfExporter';
+import { resolveSportKey } from '../../../data/sportsConfig';
+import { EventStatusBadge, RegistrationStatusBadge } from '../events/RegistrationStatusControl';
+import { computeEffectiveRegistrationStatus } from '../../../utils/registrationLifecycle';
 
 export const ChessEventsTab = ({ user }) => {
   const { addToast } = useToast();
@@ -16,6 +20,7 @@ export const ChessEventsTab = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
+  const [activeDropdownEventId, setActiveDropdownEventId] = useState(null);
   
   // Participant Roster Drawer/Modal state
   const [selectedEventForParticipants, setSelectedEventForParticipants] = useState(null);
@@ -26,7 +31,7 @@ export const ChessEventsTab = ({ user }) => {
   const [showCropper, setShowCropper] = useState(false);
   const [cropperRawSrc, setCropperRawSrc] = useState(null);
 
-  // Form State specifically for Chess (Registration Fee, Min 1 & Max 1 Player / Individual format)
+  // Form State specifically for Chess (Registration Entry Fee, Individual / Board format)
   const [formData, setFormData] = useState({
     title: '',
     sportName: 'Chess',
@@ -34,31 +39,29 @@ export const ChessEventsTab = ({ user }) => {
     description: '',
     regStartDate: new Date().toISOString().split('T')[0],
     regEndDate: '2026-09-15',
-    tournStartDate: '2026-09-01',
-    tournEndDate: '2026-09-03',
-    entryFee: 300, // Individual registration fee
-    teamFee: 300,  // Flat entry fee compatibility
-    minPlayers: 1,  // Individual / board player
-    maxPlayers: 1, 
+    tournStartDate: '2026-09-16',
+    tournEndDate: '2026-09-18',
+    entryFee: 300,
+    teamFee: 300,
+    minPlayers: 1,
+    maxPlayers: 1,
     teamSize: '1 Player (Individual)',
     registeredCount: 0,
     venue: 'Chess Hall A - Main Board Room',
-    category: 'Open', // Boys, Girls, Open, Rapid, Blitz
-    status: 'Published', // Draft, Upcoming, Published, Closed
+    category: 'Open',
+    status: 'Published',
     rules: [
-      '1. Time Control: Each player gets 10 minutes for the entire game (10+0 unless increment is specified).',
-      '2. Clock: The chess clock starts when White makes the first move. Press the clock after every move.',
-      '3. Touch-Move Rule: If you touch one of your own pieces, you must move it if a legal move exists.',
-      '4. Illegal Moves: An illegal move must be corrected. If a player makes two illegal moves, they lose the game (common rapid rule).',
+      '1. Time Control: Each player gets 10 minutes + 5 seconds increment per move (FIDE Rapid format).',
+      '2. Clock: The chess clock starts when White makes the first move. Players must press the clock with the same hand used to move.',
+      '3. Touch-Move Rule: If a player touches their own piece, they must move it if a legal move exists. Touching an opponent\'s piece means it must be captured if legal.',
+      '4. Illegal Moves: First illegal move gives opponent extra 2 minutes. Second illegal move results in immediate game loss.',
       '5. Win Conditions: Checkmate • Opponent\'s time runs out • Opponent resigns.',
-      '6. Draw Conditions: Stalemate • Threefold repetition (if claimed) • 50-move rule (if claimed) • Insufficient mating material • Mutual agreement.',
-      '7. Spectators: No talking or giving advice during the game.',
-      '8. Electronic Devices: Mobile phones and other electronic devices must remain silent and unused.',
-      '9. Result Reporting: Both players must report the result to the organizer immediately after the game.',
-      '10. Organizer\'s Decision: The tournament arbiter/organizer\'s decision is final in case of disputes.'
+      '6. Draw Conditions: Stalemate • 3-Fold Repetition • 50-Move Rule • Insufficient Mating Material • Mutual Agreement.',
+      '7. Electronic Devices: Mobile phones and smartwatches must remain completely switched off in the playing hall.',
+      '8. Arbiter Decision: The Chief Arbiter\'s ruling on all board disputes and claims is final and binding.'
     ],
-    requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'FIDE / State Chess ID (If applicable)'],
-    contactName: user?.coordinatorName || 'Grandmaster Anand Verma',
+    requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'FIDE / AICF ID Card (Optional)'],
+    contactName: user?.coordinatorName || 'Chess Coordinator',
     contactEmail: user?.email || 'chess.coord@apex.edu',
     contactPhone: '+91 98765 43210'
   });
@@ -70,11 +73,41 @@ export const ChessEventsTab = ({ user }) => {
     fetchEvents();
   }, [user]);
 
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest('.status-dropdown-container')) {
+        setActiveDropdownEventId(null);
+      }
+    };
+    document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
+  }, []);
+
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const list = await coordinatorApi.getEvents();
-      setEvents(list);
+      const [list, allRegs] = await Promise.all([
+        coordinatorApi.getEvents(),
+        coordinatorApi.getRegistrations().catch(() => [])
+      ]);
+      const chessRegs = (allRegs || []).filter((d) => 
+        (d.sportId === 'chess') || 
+        resolveSportKey(d) === 'chess' ||
+        (!d.sport || d.sport.toLowerCase().includes('chess') || d.eventTitle?.toLowerCase().includes('chess'))
+      );
+      const mapped = (list || []).map((ev) => {
+        const matching = chessRegs.filter((r) => 
+          r.eventId === ev.id || 
+          r.eventTitle === ev.title || 
+          (list.length === 1 && chessRegs.length > 0)
+        );
+        return {
+          ...ev,
+          registeredCount: matching.length
+        };
+      });
+      setEvents(mapped);
     } catch (err) {
       addToast('Error loading chess events console', 'error');
     } finally {
@@ -85,10 +118,10 @@ export const ChessEventsTab = ({ user }) => {
   // Preset form on Edit event
   const handleOpenEdit = (eventObj) => {
     setEditingEvent(eventObj);
-    const minP = eventObj.minPlayers !== undefined ? eventObj.minPlayers : 1;
-    const maxP = eventObj.maxPlayers !== undefined ? eventObj.maxPlayers : 1;
+    const minP = eventObj.minPlayers !== undefined ? eventObj.minPlayers : (eventObj.minMembers !== undefined ? eventObj.minMembers : 1);
+    const maxP = eventObj.maxPlayers !== undefined ? eventObj.maxPlayers : (eventObj.maxMembers !== undefined ? eventObj.maxMembers : 1);
     const feeVal = typeof eventObj.entryFee === 'number' ? eventObj.entryFee : (typeof eventObj.teamFee === 'number' ? eventObj.teamFee : (eventObj.entryFee ?? eventObj.teamFee ?? 300));
-
+    
     setFormData({
       title: eventObj.title || '',
       sportName: 'Chess',
@@ -96,22 +129,28 @@ export const ChessEventsTab = ({ user }) => {
       description: eventObj.description || '',
       regStartDate: eventObj.regStartDate || new Date().toISOString().split('T')[0],
       regEndDate: eventObj.regEndDate || '2026-09-15',
-      tournStartDate: eventObj.tournStartDate || '2026-09-01',
-      tournEndDate: eventObj.tournEndDate || '2026-09-03',
+      tournStartDate: eventObj.tournStartDate || '2026-09-16',
+      tournEndDate: eventObj.tournEndDate || '2026-09-18',
       entryFee: feeVal,
       teamFee: feeVal,
       minPlayers: minP,
       maxPlayers: maxP,
-      teamSize: minP === maxP ? `${minP} Player` : `${minP} - ${maxP} Players`,
+      teamSize: minP === maxP ? `${minP} Player (Individual)` : `${minP} - ${maxP} Players`,
       registeredCount: eventObj.registeredCount || 0,
       venue: eventObj.venue || 'Chess Hall A - Main Board Room',
       category: eventObj.category || 'Open',
       status: eventObj.status || 'Published',
-      rules: eventObj.rules || [],
-      requiredDocuments: eventObj.requiredDocuments || ['College Student ID Card'],
-      contactName: eventObj.contactInfo?.name || user?.coordinatorName || 'Chess Coordinator',
-      contactEmail: eventObj.contactInfo?.email || user?.email || 'chess.coord@apex.edu',
-      contactPhone: eventObj.contactInfo?.phone || '+91 98765 43210'
+      rules: eventObj.rules || [
+        '1. Time Control: 10 minutes + 5 seconds increment per move (FIDE Rapid format).',
+        '2. Clock: Starts when White makes the first move.',
+        '3. Touch-Move Rule: Touching a piece mandates moving or capturing it if legal.',
+        '4. Illegal Moves: First gives extra 2 mins to opponent; Second loses the game.',
+        '5. Win / Draw conditions as per standard FIDE Swiss Rapid rules.'
+      ],
+      requiredDocuments: eventObj.requiredDocuments || ['College Student ID Card', 'Aadhaar Card / Govt ID'],
+      contactName: eventObj.contactInfo?.name || eventObj.contactName || user?.coordinatorName || 'Chess Coordinator',
+      contactEmail: eventObj.contactInfo?.email || eventObj.contactEmail || user?.email || 'chess.coord@apex.edu',
+      contactPhone: eventObj.contactInfo?.phone || eventObj.contactPhone || '+91 98765 43210'
     });
     setRulesInput(Array.isArray(eventObj.rules) ? eventObj.rules.join('\n') : '');
     setDocInput(Array.isArray(eventObj.requiredDocuments) ? eventObj.requiredDocuments.join('\n') : '');
@@ -125,11 +164,11 @@ export const ChessEventsTab = ({ user }) => {
       title: 'Inter-College Chess Championship 2026',
       sportName: 'Chess',
       coverImage: 'https://images.unsplash.com/photo-1529699211952-734e80c4d42b?auto=format&fit=crop&w=800&q=80',
-      description: 'Official inter-college FIDE Rapid Chess tournament. Register your entry today!',
+      description: 'Official inter-college Rapid Chess tournament. Register your entry today!',
       regStartDate: new Date().toISOString().split('T')[0],
       regEndDate: '2026-09-15',
-      tournStartDate: '2026-09-01',
-      tournEndDate: '2026-09-03',
+      tournStartDate: '2026-09-16',
+      tournEndDate: '2026-09-18',
       entryFee: 300,
       teamFee: 300,
       minPlayers: 1,
@@ -140,38 +179,34 @@ export const ChessEventsTab = ({ user }) => {
       category: 'Open',
       status: 'Published',
       rules: [
-        '1. Time Control: Each player gets 10 minutes for the entire game (10+0 unless increment is specified).',
-        '2. Clock: The chess clock starts when White makes the first move. Press the clock after every move.',
-        '3. Touch-Move Rule: If you touch one of your own pieces, you must move it if a legal move exists.',
-        '4. Illegal Moves: An illegal move must be corrected. If a player makes two illegal moves, they lose the game (common rapid rule).',
-        '5. Win Conditions: Checkmate • Opponent\'s time runs out • Opponent resigns.',
-        '6. Draw Conditions: Stalemate • Threefold repetition (if claimed) • 50-move rule (if claimed) • Insufficient mating material • Mutual agreement.',
-        '7. Spectators: No talking or giving advice during the game.',
-        '8. Electronic Devices: Mobile phones and other electronic devices must remain silent and unused.',
-        '9. Result Reporting: Both players must report the result to the organizer immediately after the game.',
-        '10. Organizer\'s Decision: The tournament arbiter/organizer\'s decision is final in case of disputes.'
+        '1. Time Control: Each player gets 10 minutes + 5 seconds increment per move (FIDE Rapid format).',
+        '2. Clock: The chess clock starts when White makes the first move. Press clock after move.',
+        '3. Touch-Move Rule: Touching an own piece mandates moving it if legal.',
+        '4. Illegal Moves: First adds 2 mins to opponent; Second results in immediate game loss.',
+        '5. Win Conditions: Checkmate • Opponent time out • Opponent resigns.',
+        '6. Draw Conditions: Stalemate • 3-Fold Repetition • 50-Move Rule • Mutual Agreement.',
+        '7. Mobile phones and electronic gadgets strictly prohibited in the playing hall.'
       ],
-      requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID'],
-      contactName: user?.coordinatorName || 'Grandmaster Anand Verma',
+      requiredDocuments: ['College Student ID Card', 'Aadhaar Card / Govt ID', 'FIDE / AICF ID Card (Optional)'],
+      contactName: user?.coordinatorName || 'Chess Coordinator',
       contactEmail: user?.email || 'chess.coord@apex.edu',
       contactPhone: '+91 98765 43210'
     });
-    setRulesInput(`1. Time Control: Each player gets 10 minutes for the entire game (10+0 unless increment is specified).
-2. Clock: The chess clock starts when White makes the first move. Press the clock after every move.
-3. Touch-Move Rule: If you touch one of your own pieces, you must move it if a legal move exists.
-4. Illegal Moves: An illegal move must be corrected. If a player makes two illegal moves, they lose the game (common rapid rule).
-5. Win Conditions: Checkmate, Opponent's time runs out, Opponent resigns.
-6. Draw Conditions: Stalemate, Threefold repetition (if claimed), 50-move rule (if claimed), Insufficient mating material, Mutual agreement.
-7. Spectators: No talking or giving advice during the game.
-8. Electronic Devices: Mobile phones and other electronic devices must remain silent and unused.
-9. Result Reporting: Both players must report the result to the organizer immediately after the game.
-10. Organizer's Decision: The tournament arbiter/organizer's decision is final in case of disputes.`);
-    setDocInput('College Student ID Card\nAadhaar Card / Govt ID');
+    setRulesInput(
+      '1. Time Control: 10 minutes + 5 seconds increment per move (FIDE Rapid format).\n' +
+      '2. Clock: The chess clock starts when White makes the first move.\n' +
+      '3. Touch-Move Rule: Touching an own piece mandates moving it if legal.\n' +
+      '4. Illegal Moves: First gives extra 2 mins to opponent; Second loses the game.\n' +
+      '5. Win Conditions: Checkmate • Opponent time out • Resignation.\n' +
+      '6. Draw Conditions: Stalemate • 3-Fold Repetition • 50-Move Rule • Mutual Agreement.\n' +
+      '7. College Student ID Card mandatory.'
+    );
+    setDocInput('College Student ID Card\nAadhaar Card / Govt ID\nFIDE / AICF ID Card (Optional)');
     setShowCreateModal(true);
   };
 
   const handleCoverUpload = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files && e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
@@ -216,13 +251,21 @@ export const ChessEventsTab = ({ user }) => {
     const docsArr = docInput.split('\n').map((d) => d.trim()).filter(Boolean);
 
     const calculatedTeamSize = formData.minPlayers === formData.maxPlayers 
-      ? `${formData.minPlayers} Player` 
+      ? `${formData.minPlayers} Player (Individual)` 
       : `${formData.minPlayers} - ${formData.maxPlayers} Players`;
+
+    const targetStatus = formData.status || 'Published';
 
     const eventPayload = {
       ...formData,
+      sportId: 'chess',
+      sportName: 'Chess',
+      status: targetStatus,
+      registrationOpen: targetStatus !== 'Closed' && targetStatus !== 'Draft' && targetStatus !== 'Completed',
       entryFee: formData.entryFee,
       teamFee: formData.entryFee,
+      minMembers: formData.minPlayers,
+      maxMembers: formData.maxPlayers,
       teamSize: calculatedTeamSize,
       rules: rulesArr,
       requiredDocuments: docsArr,
@@ -263,36 +306,68 @@ export const ChessEventsTab = ({ user }) => {
     }
   };
 
-  // Toggle status across: Draft -> Upcoming -> Published -> Closed -> Draft
-  const handleToggleStatus = async (eventObj) => {
-    const statusCycle = {
-      'Draft': 'Upcoming',
-      'Upcoming': 'Published',
-      'Published': 'Closed',
-      'Closed': 'Draft'
-    };
-    const nextStatus = statusCycle[eventObj.status] || 'Published';
-
+  // Quick Action Handler from Roll-Down Dropdown Menu
+  const handleSetEventStatus = async (eventObj, actionType) => {
+    setActiveDropdownEventId(null);
     try {
-      const updated = await coordinatorApi.updateEvent(eventObj.id, { status: nextStatus });
-      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? updated : item)));
-      addToast(`Event status changed to ${nextStatus}`, 'info');
+      let patchPayload = {};
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      if (actionType === 'OPEN') {
+        patchPayload = {
+          status: 'Published',
+          registrationOpen: true,
+          regEndDate: eventObj.regEndDate < todayStr ? '2026-09-30' : eventObj.regEndDate
+        };
+        addToast(`Event "${eventObj.title}" is now OPEN for registrations!`, 'success');
+      } else if (actionType === 'CLOSE') {
+        patchPayload = {
+          status: 'Closed',
+          registrationOpen: false
+        };
+        addToast(`Registration for "${eventObj.title}" is now CLOSED`, 'info');
+      } else if (actionType === 'UPCOMING') {
+        patchPayload = {
+          status: 'Upcoming',
+          registrationOpen: false
+        };
+        addToast(`Event "${eventObj.title}" marked as UPCOMING (Coming Soon)`, 'info');
+      } else if (actionType === 'EXTEND') {
+        handleOpenEdit(eventObj);
+        return;
+      }
+
+      const updated = await coordinatorApi.updateEvent(eventObj.id, patchPayload);
+      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated } : item)));
     } catch (err) {
-      addToast('Status toggle failed', 'error');
+      addToast('Failed to update event registration status', 'error');
     }
   };
 
   const handleViewParticipants = async (eventObj) => {
     setSelectedEventForParticipants(eventObj);
-    const allRegs = await coordinatorApi.getRegistrations();
-    setParticipants(allRegs);
+    try {
+      const allRegs = await coordinatorApi.getRegistrations();
+      const eventRegs = (allRegs || []).filter((r) => 
+        r.eventId === eventObj.id || 
+        r.eventTitle === eventObj.title || 
+        r.sportId === 'chess' || 
+        resolveSportKey(r) === 'chess'
+      );
+      setParticipants(eventRegs.length > 0 ? eventRegs : (allRegs || []));
+    } catch (err) {
+      addToast('Failed to load roster registrations', 'error');
+    }
   };
 
   // Dashboard Stats calculation
   const totalEvents = events.length;
-  const activeEvents = events.filter((e) => e.status === 'Published').length;
-  const upcomingEvents = events.filter((e) => e.status === 'Upcoming').length;
-  const closedEvents = events.filter((e) => e.status === 'Closed').length;
+  const activeEvents = events.filter((e) => {
+    const st = computeEffectiveRegistrationStatus(e);
+    return st.effectiveRegistrationOpen;
+  }).length;
+  const upcomingEvents = events.filter((e) => (e.status || '').toLowerCase() === 'upcoming').length;
+  const closedEvents = events.filter((e) => (e.status || '').toLowerCase() === 'closed').length;
   const totalRegCount = events.reduce((acc, curr) => acc + (curr.registeredCount || 0), 0);
   const totalRevenue = events.reduce((acc, curr) => {
     const fee = typeof curr.entryFee === 'number' ? curr.entryFee : (typeof curr.teamFee === 'number' ? curr.teamFee : (curr.entryFee ?? curr.teamFee ?? 300));
@@ -315,7 +390,7 @@ export const ChessEventsTab = ({ user }) => {
       {/* TOP DASHBOARD STATS BAR */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Total Events</span>
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Total Chess Events</span>
           <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{totalEvents}</p>
         </div>
 
@@ -325,13 +400,13 @@ export const ChessEventsTab = ({ user }) => {
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-blue-600 dark:text-blue-400">Upcoming Events</span>
-          <p className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight">{upcomingEvents}</p>
+          <span className="text-[10px] font-mono font-bold uppercase text-blue-600 dark:text-blue-400">Total Registrations</span>
+          <p className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight">{totalRegCount}</p>
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-rose-600 dark:text-rose-400">Closed Events</span>
-          <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">{closedEvents}</p>
+          <span className="text-[10px] font-mono font-bold uppercase text-purple-600 dark:text-purple-400">Estimated Revenue</span>
+          <p className="text-2xl font-black text-purple-600 dark:text-purple-400 tracking-tight">₹{totalRevenue.toLocaleString('en-IN')}</p>
         </div>
       </div>
 
@@ -381,9 +456,10 @@ export const ChessEventsTab = ({ user }) => {
             {events.map((event) => {
               const registered = event.registeredCount || 0;
               const fee = typeof event.entryFee === 'number' ? event.entryFee : (typeof event.teamFee === 'number' ? event.teamFee : (event.entryFee ?? event.teamFee ?? 300));
-              const minP = event.minPlayers !== undefined ? event.minPlayers : 1;
-              const maxP = event.maxPlayers !== undefined ? event.maxPlayers : 1;
+              const minP = event.minPlayers !== undefined ? event.minPlayers : (event.minMembers !== undefined ? event.minMembers : 1);
+              const maxP = event.maxPlayers !== undefined ? event.maxPlayers : (event.maxMembers !== undefined ? event.maxMembers : 1);
               const teamSizeStr = event.teamSize || (minP === maxP ? `${minP} Player` : `${minP} - ${maxP} Players`);
+              const statusInfo = computeEffectiveRegistrationStatus(event);
 
               return (
                 <div
@@ -399,25 +475,16 @@ export const ChessEventsTab = ({ user }) => {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/30 to-transparent" />
 
-                    {/* Status Badge including Upcoming */}
-                    <div className="absolute top-3 left-3 flex items-center gap-2">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase border shadow-md ${
-                        event.status === 'Published'
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                          : event.status === 'Upcoming'
-                          ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
-                          : event.status === 'Closed'
-                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                          : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                      }`}>
-                        ● {event.status}
-                      </span>
+                    {/* Status Badges */}
+                    <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5">
+                      <EventStatusBadge event={event} />
+                      <RegistrationStatusBadge event={event} />
                       <span className="px-2.5 py-1 rounded-full bg-slate-950/70 backdrop-blur-xs text-white text-[10px] font-bold border border-slate-800">
                         {event.category || 'Open'}
                       </span>
                     </div>
 
-                    {/* Registration Fee Display Badge */}
+                    {/* Entry Fee Display Badge */}
                     <div className="absolute top-3 right-3 bg-slate-950/85 backdrop-blur-xs px-3.5 py-1 rounded-full text-xs font-black text-amber-400 border border-amber-500/30 shadow-md">
                       Entry Fee: ₹{fee}
                     </div>
@@ -448,11 +515,11 @@ export const ChessEventsTab = ({ user }) => {
                         <span className="font-bold text-slate-900 dark:text-white text-[11px]">{event.tournStartDate} to {event.tournEndDate}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono">Venue / Location</span>
-                        <span className="font-bold text-purple-600 dark:text-purple-400 text-[11px] truncate block">{event.venue}</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono">Hall / Venue</span>
+                        <span className="font-bold text-purple-600 dark:text-purple-400 text-[11px] truncate block">{event.venue || 'Chess Hall A - Main Board Room'}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono">Format / Limits</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono">Board Limits</span>
                         <span className="font-bold text-slate-900 dark:text-white text-[11px] flex items-center gap-1">
                           <UserCheck className="w-3 h-3 text-purple-500" />
                           {teamSizeStr}
@@ -460,29 +527,77 @@ export const ChessEventsTab = ({ user }) => {
                       </div>
                     </div>
 
-                    {/* Total Registrations Display */}
-                    <div className="flex items-center justify-between text-xs pt-1">
-                      <span className="font-bold text-slate-500 dark:text-slate-400 font-mono text-[11px]">Registered Players</span>
-                      <span className="font-mono font-black text-purple-600 dark:text-purple-400">{registered} Players Registered</span>
-                    </div>
+                    {/* Actions Bar - Clean and Unified */}
+                    <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {/* Unified Status Roll-Down Menu */}
+                        <div className="relative status-dropdown-container">
+                          <button
+                            type="button"
+                            onClick={() => setActiveDropdownEventId(activeDropdownEventId === event.id ? null : event.id)}
+                            className={`px-3 py-1.5 rounded-xl border text-[11px] font-black transition flex items-center gap-1.5 cursor-pointer ${
+                              statusInfo.effectiveRegistrationOpen
+                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                                : statusInfo.code === 'UPCOMING' || statusInfo.code === 'NOT_STARTED' || (event.status || '').toLowerCase() === 'upcoming'
+                                ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 hover:bg-blue-500/20'
+                                : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30 hover:bg-rose-500/20'
+                            }`}
+                          >
+                            <span className={`w-2 h-2 rounded-full ${
+                              statusInfo.effectiveRegistrationOpen ? 'bg-emerald-500 animate-pulse' : statusInfo.code === 'UPCOMING' || (event.status || '').toLowerCase() === 'upcoming' ? 'bg-blue-500' : 'bg-rose-500'
+                            }`} />
+                            <span>
+                              {statusInfo.effectiveRegistrationOpen
+                                ? 'Registration Open'
+                                : statusInfo.code === 'UPCOMING' || (event.status || '').toLowerCase() === 'upcoming'
+                                ? 'Upcoming'
+                                : 'Closed'}
+                            </span>
+                            <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+                          </button>
 
-                    {/* Actions Bar */}
-                    <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => handleToggleStatus(event)}
-                          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
-                          title="Toggle Status (Draft -> Upcoming -> Published -> Closed)"
-                        >
-                          {event.status === 'Published' ? (
-                            <ToggleRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                          ) : event.status === 'Upcoming' ? (
-                            <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                          ) : (
-                            <ToggleLeft className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                          {activeDropdownEventId === event.id && (
+                            <div className="absolute left-0 bottom-full mb-2 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 z-40 animate-fade-in text-xs space-y-1">
+                              <button
+                                type="button"
+                                onClick={() => handleSetEventStatus(event, 'OPEN')}
+                                className="w-full px-3 py-2 rounded-xl text-left font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 flex items-center gap-2 cursor-pointer"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Open / Activate Registration</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleSetEventStatus(event, 'CLOSE')}
+                                className="w-full px-3 py-2 rounded-xl text-left font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 cursor-pointer"
+                              >
+                                <XCircle className="w-3.5 h-3.5" />
+                                <span>Close Registration</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleSetEventStatus(event, 'UPCOMING')}
+                                className="w-full px-3 py-2 rounded-xl text-left font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 flex items-center gap-2 cursor-pointer"
+                              >
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>Mark as Upcoming</span>
+                              </button>
+
+                              <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
+
+                              <button
+                                type="button"
+                                onClick={() => handleSetEventStatus(event, 'EXTEND')}
+                                className="w-full px-3 py-2 rounded-xl text-left font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 cursor-pointer"
+                              >
+                                <Calendar className="w-3.5 h-3.5 text-purple-500" />
+                                <span>Extend End Date (Edit)</span>
+                              </button>
+                            </div>
                           )}
-                          <span>Toggle Status</span>
-                        </button>
+                        </div>
 
                         <button
                           onClick={() => handleViewParticipants(event)}
@@ -528,7 +643,7 @@ export const ChessEventsTab = ({ user }) => {
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
               <div>
                 <span className="text-[10px] font-mono font-bold uppercase text-purple-600 dark:text-purple-400">
-                  Chess Event Configurator
+                  ♟ Chess Event Configurator
                 </span>
                 <h3 className="text-xl font-black text-slate-900 dark:text-white">
                   {editingEvent ? 'Edit Chess Event' : 'Create New Chess Event'}
@@ -684,7 +799,7 @@ export const ChessEventsTab = ({ user }) => {
                 </div>
               </div>
 
-              {/* PRICING & PLAYER LIMITS */}
+              {/* PRICING & BOARD LIMITS */}
               <div className="p-4 rounded-2xl bg-purple-500/5 border border-purple-500/20 space-y-4">
                 <div className="flex items-center gap-2 border-b border-purple-500/20 pb-2">
                   <DollarSign className="w-4 h-4 text-purple-600 dark:text-purple-400" />
@@ -731,7 +846,7 @@ export const ChessEventsTab = ({ user }) => {
                       }}
                       className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-900 dark:text-white"
                     />
-                    <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Default: 1</p>
+                    <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Default: 1 (Individual)</p>
                   </div>
 
                   {/* Max Players */}
@@ -751,7 +866,7 @@ export const ChessEventsTab = ({ user }) => {
                       }}
                       className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-900 dark:text-white"
                     />
-                    <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Default: 1</p>
+                    <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Default: 1 (Individual)</p>
                   </div>
                 </div>
               </div>
@@ -780,9 +895,9 @@ export const ChessEventsTab = ({ user }) => {
                     onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value }))}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-emerald-600 dark:text-emerald-400"
                   >
-                    <option value="Draft">Draft (Hidden)</option>
-                    <option value="Upcoming">Upcoming (Coming Soon)</option>
                     <option value="Published">Published (Open)</option>
+                    <option value="Upcoming">Upcoming (Coming Soon)</option>
+                    <option value="Draft">Draft (Hidden)</option>
                     <option value="Closed">Closed</option>
                   </select>
                 </div>
@@ -800,6 +915,37 @@ export const ChessEventsTab = ({ user }) => {
                 />
               </div>
 
+              {/* Coordinator Contact Information */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">Coordinator Name</label>
+                  <input
+                    type="text"
+                    value={formData.contactName}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, contactName: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">Contact Email</label>
+                  <input
+                    type="email"
+                    value={formData.contactEmail}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, contactEmail: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">Contact Phone</label>
+                  <input
+                    type="text"
+                    value={formData.contactPhone}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, contactPhone: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
               {/* Rules & Regulations multiline */}
               <div className="space-y-1">
                 <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
@@ -809,7 +955,7 @@ export const ChessEventsTab = ({ user }) => {
                   rows={3}
                   value={rulesInput}
                   onChange={(e) => setRulesInput(e.target.value)}
-                  placeholder="Official FIDE Rapid / Blitz rules apply&#10;Time control: 15min + 10s increment&#10;Touch-move rule strictly enforced"
+                  placeholder="Official FIDE Rapid / Blitz rules apply&#10;Time control: 10min + 5s increment&#10;Touch-move rule strictly enforced"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-mono"
                 />
               </div>
@@ -866,7 +1012,7 @@ export const ChessEventsTab = ({ user }) => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
-                    const csvData = participants.map((p) => ({
+                    const csvData = filteredParticipants.map((p) => ({
                       RegID: p.id,
                       ParticipantName: p.studentName || p.captainName || p.teamName,
                       College: p.college || p.collegeName,
