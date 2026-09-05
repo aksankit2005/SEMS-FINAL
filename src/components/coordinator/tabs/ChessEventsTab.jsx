@@ -457,14 +457,20 @@ export const ChessEventsTab = ({ user }) => {
     }
   };
 
-  // Dashboard Stats calculation
+  // Dashboard Stats calculation (exactly like Tug of War)
   const totalEvents = events.length;
   const activeEvents = events.filter((e) => {
-    const st = computeEffectiveRegistrationStatus(e);
-    return st.effectiveRegistrationOpen || e.status === 'Published' || (e.status !== 'Draft' && e.status !== 'Closed' && e.status !== 'Completed');
+    const s = computeEffectiveRegistrationStatus(e);
+    return s.effectiveRegistrationOpen || (e.status || '').toLowerCase() === 'published' || (e.status || '').toLowerCase() === 'open';
   }).length;
-  const upcomingEvents = events.filter((e) => (e.status || '').toLowerCase() === 'upcoming').length;
-  const closedEvents = events.filter((e) => (e.status || '').toLowerCase() === 'closed').length;
+  const upcomingEvents = events.filter((e) => {
+    const s = computeEffectiveRegistrationStatus(e);
+    return s.code === 'UPCOMING' || s.code === 'NOT_STARTED' || (e.status || '').toLowerCase() === 'upcoming';
+  }).length;
+  const closedEvents = events.filter((e) => {
+    const s = computeEffectiveRegistrationStatus(e);
+    return s.effectiveRegistrationClosed || (e.status || '').toLowerCase() === 'closed';
+  }).length;
   const totalRegCount = events.reduce((acc, curr) => acc + (curr.registeredCount || participants.length || 0), 0);
   const totalRevenue = events.reduce((acc, curr) => {
     const fee = typeof curr.entryFee === 'number' ? curr.entryFee : (typeof curr.teamFee === 'number' ? curr.teamFee : (curr.entryFee ?? curr.teamFee ?? 300));
@@ -486,10 +492,10 @@ export const ChessEventsTab = ({ user }) => {
   return (
     <div className="space-y-6 animate-fade-in font-sans">
 
-      {/* TOP DASHBOARD STATS BAR */}
+      {/* TOP DASHBOARD STATS BAR (Total, Active, Upcoming, Closed) */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Total Chess Events</span>
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Total Events</span>
           <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{totalEvents}</p>
         </div>
 
@@ -499,13 +505,13 @@ export const ChessEventsTab = ({ user }) => {
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-blue-600 dark:text-blue-400">Total Registrations</span>
-          <p className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight">{totalRegCount}</p>
+          <span className="text-[10px] font-mono font-bold uppercase text-blue-600 dark:text-blue-400">Upcoming Events</span>
+          <p className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight">{upcomingEvents}</p>
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-purple-600 dark:text-purple-400">Estimated Revenue</span>
-          <p className="text-2xl font-black text-purple-600 dark:text-purple-400 tracking-tight">₹{totalRevenue.toLocaleString('en-IN')}</p>
+          <span className="text-[10px] font-mono font-bold uppercase text-rose-600 dark:text-rose-400">Closed Events</span>
+          <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">{closedEvents}</p>
         </div>
       </div>
 
