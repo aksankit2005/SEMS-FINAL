@@ -93,6 +93,11 @@ export const committeeApi = {
     }
   },
 
+  // Resilient alias matching alternate naming conventions
+  fetchSessions: async () => {
+    return await committeeApi.getCommitteeData();
+  },
+
   // Save/Create/Update Session
   saveSession: async (sessionData) => {
     try {

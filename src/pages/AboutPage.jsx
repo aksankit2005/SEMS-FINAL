@@ -203,10 +203,12 @@ export const AboutPage = () => {
 
   useEffect(() => {
     const load = () => {
-      committeeApi.fetchSessions().then((data) => {
+      committeeApi.getCommitteeData().then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           setSessions(data);
         }
+      }).catch((err) => {
+        console.warn('Could not fetch committee data in AboutPage:', err?.message || err);
       });
     };
     load();
