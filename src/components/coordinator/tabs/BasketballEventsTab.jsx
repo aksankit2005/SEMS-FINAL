@@ -443,12 +443,6 @@ export const BasketballEventsTab = ({ user }) => {
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
               Click the "Create Basketball Event" button above to publish your first team registration event for Basketball.
             </p>
-            <button
-              onClick={handleOpenCreate}
-              className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
-            >
-              + Create First Basketball Event
-            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

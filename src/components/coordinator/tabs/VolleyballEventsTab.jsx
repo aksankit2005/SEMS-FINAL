@@ -442,12 +442,6 @@ export const VolleyballEventsTab = ({ user }) => {
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
               Click the "Create Volleyball Event" button above to publish your first team registration event for Volleyball.
             </p>
-            <button
-              onClick={handleOpenCreate}
-              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
-            >
-              + Create First Volleyball Event
-            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
