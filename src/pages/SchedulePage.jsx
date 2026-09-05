@@ -10,7 +10,7 @@ export const SchedulePage = () => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [selectedSport, setSelectedSport] = useState('All');
-  const [viewMode, setViewMode] = useState('grid');
+  const [viewMode, setViewMode] = useState('list');
   const [activeVenueModal, setActiveVenueModal] = useState(null);
   const [dynamicSchedules, setDynamicSchedules] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -42,7 +42,6 @@ export const SchedulePage = () => {
       const completedMatchIds = new Set();
       const completedMatchTitles = new Set();
 
-      // Scan localStorage for any completed match IDs and titles
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && (key.startsWith('sems_completed_results_') || key.startsWith('sems_coord_matches_'))) {
@@ -170,7 +169,6 @@ export const SchedulePage = () => {
 
   const combinedList = dynamicSchedules;
 
-  // Filter logic (no search bar, only sport filter)
   const filteredFixtures = combinedList.filter((item) => {
     const sportKey = (item.sport || item.sportId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     const selectedKey = selectedSport.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -181,73 +179,73 @@ export const SchedulePage = () => {
   });
 
   return (
-    <div className={`relative min-h-screen font-spatial-sans selection:bg-blue-500/30 selection:text-white overflow-x-hidden transition-colors duration-500 ${isDark ? 'text-slate-100' : 'text-slate-900'
-      }`}>
+    <div className={`relative min-h-screen font-spatial-sans selection:bg-[#7156A5]/20 selection:text-[#211D2B] dark:selection:text-white overflow-x-hidden transition-colors duration-200 ${
+      isDark ? 'bg-[#070A13] text-[#F5F2FA]' : 'bg-[#FAF9F6] text-[#211D2B]'
+    }`}>
 
-      {/* ─── ATMOSPHERIC NEBULA BACKDROP ─── */}
-      <div className={`fixed inset-0 pointer-events-none z-0 transition-all duration-700 ${isDark ? 'spatial-nebula-dark' : 'spatial-nebula-light'
-        }`} />
+      {/* Atmospheric overlays preserved for dark mode */}
+      {isDark && (
+        <>
+          <div className="fixed inset-0 pointer-events-none z-0 spatial-nebula-dark opacity-60" />
+          <div className="fixed inset-0 spatial-grain-overlay z-[1] pointer-events-none opacity-20" />
+        </>
+      )}
 
-      {/* ─── TACTILE FILM GRAIN OVERLAY ─── */}
-      <div className="fixed inset-0 spatial-grain-overlay z-[1] pointer-events-none opacity-25" />
-      <div className="relative z-10 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 pb-8 sm:pb-12 space-y-4 sm:space-y-5">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16 space-y-6">
 
-        {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-6">
-          <h1 className={`text-3xl sm:text-5xl md:text-6xl font-normal tracking-[0.06em] font-spatial-display uppercase ${isDark ? 'text-white' : 'text-slate-900'
-            }`}>
-            Championship{' '}
-            <span className={`bg-gradient-to-r bg-clip-text text-transparent font-semibold ${isDark
-                ? 'from-blue-400 via-indigo-300 to-orange-300'
-                : 'from-blue-700 via-indigo-700 to-orange-600'
-              }`}>
-              Fixtures
-            </span>
+        {/* Editorial Header */}
+        <div className="text-center max-w-2xl mx-auto space-y-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
+            <CalendarIcon className="w-3.5 h-3.5 text-[#7156A5] dark:text-[#B8A5E5]" />
+            <span>Tournament Schedule</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight font-spatial-display text-[#211D2B] dark:text-[#F5F2FA]">
+            Championship <span className="text-[#7156A5] dark:text-[#B8A5E5]">Fixtures</span>
           </h1>
-          <p className={`text-xs sm:text-sm max-w-xl mx-auto italic font-spatial-sans font-light leading-relaxed mt-2 ${isDark ? 'text-slate-300/85' : 'text-slate-600'
-            }`}>
-            Never miss a match. Filter by any of the 12 sports disciplines, dates, or match venues.
+          <p className="text-xs sm:text-sm text-[#686370] dark:text-[#AAA4B8] leading-relaxed">
+            Official timetable, court assignments, and tournament fixtures across all championship disciplines.
           </p>
         </div>
 
-        {/* ─── SPORTS FILTER SECTION (ResultsPage style roll-down) ─── */}
-        <div className="flex items-center justify-between gap-2.5 pt-1 pb-1 mb-6">
-          {/* Left: Discipline label + count */}
+        {/* Controls & Filter Bar */}
+        <div className="bg-[#FFFFFF] dark:bg-[#0D101A] p-3 rounded-lg border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
+          {/* Left: Discipline & Count */}
           <div className="flex items-center gap-2">
-            <span className={`hidden sm:inline-block text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider ${isDark ? 'text-blue-300/80' : 'text-blue-700'
-              }`}>
+            <span className="text-xs font-semibold text-[#211D2B] dark:text-[#F5F2FA]">
               {selectedSport === 'All' ? 'All Disciplines' : selectedSport}
             </span>
-            <span className={`text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-full border ${isDark ? 'bg-white/5 border-white/10 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'
-              }`}>
+            <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
               {filteredFixtures.length} {filteredFixtures.length === 1 ? 'Fixture' : 'Fixtures'}
             </span>
           </div>
 
           {/* Right: View Toggle + Roll-Down Filter Dropdown */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
             {/* View Mode Toggle */}
-            <div className={`flex items-center p-1 rounded-2xl border ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'
-              }`}>
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-xl text-xs font-bold transition ${viewMode === 'grid'
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
-                  }`}
-                title="Grid View"
-              >
-                <Grid className="w-4 h-4" />
-              </button>
+            <div className="flex items-center p-0.5 rounded-lg border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] bg-[#FAF9F6] dark:bg-[#121625]">
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded-xl text-xs font-bold transition ${viewMode === 'list'
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
-                  }`}
+                className={`p-1.5 rounded text-xs font-semibold transition-all ${
+                  viewMode === 'list'
+                    ? 'bg-[#7156A5] text-white shadow-2xs'
+                    : 'text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-white'
+                }`}
                 title="List View"
+                aria-label="List View"
               >
-                <List className="w-4 h-4" />
+                <List className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded text-xs font-semibold transition-all ${
+                  viewMode === 'grid'
+                    ? 'bg-[#7156A5] text-white shadow-2xs'
+                    : 'text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-white'
+                }`}
+                title="Grid View"
+                aria-label="Grid View"
+              >
+                <Grid className="w-3.5 h-3.5" />
               </button>
             </div>
 
@@ -255,29 +253,23 @@ export const SchedulePage = () => {
             <div className="relative shrink-0" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 border cursor-pointer ${isDark
-                    ? 'bg-[#10121a]/90 hover:bg-[#181a24] text-blue-200 border-blue-500/30 shadow-xs hover:border-blue-400/50'
-                    : 'bg-white hover:bg-slate-50 text-blue-900 border-slate-300 shadow-xs'
-                  }`}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 border cursor-pointer bg-[#FAF9F6] dark:bg-[#121625] text-[#211D2B] dark:text-[#F5F2FA] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] hover:border-[#7156A5] dark:hover:border-[#B8A5E5]"
                 title="Filter by Sport"
                 aria-label="Filter discipline roll-down dropdown"
               >
-                <Filter className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                <span className="truncate max-w-[100px] sm:max-w-[140px]">
+                <Filter className="w-3.5 h-3.5 text-[#7156A5] dark:text-[#B8A5E5] shrink-0" />
+                <span className="truncate max-w-[120px]">
                   {selectedSport === 'All' ? 'Filter Sport' : selectedSport}
                 </span>
-                <ChevronDown className={`w-3.5 h-3.5 text-blue-400 shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-3.5 h-3.5 text-[#686370] dark:text-[#AAA4B8] shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {/* Roll-Down Menu Popover */}
               {isDropdownOpen && (
-                <div className={`absolute right-0 mt-2 w-52 sm:w-60 rounded-2xl p-1.5 z-50 shadow-2xl border backdrop-blur-2xl max-h-80 overflow-y-auto no-scrollbar transition-all ${isDark
-                    ? 'bg-[#0d0f18]/95 border-blue-500/30 text-slate-200 shadow-[0_12px_35px_rgba(0,0,0,0.85)]'
-                    : 'bg-white/95 border-slate-200 text-slate-800 shadow-xl'
-                  }`}>
-                  <div className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider font-bold text-blue-400 border-b border-blue-500/10 mb-1 flex items-center justify-between">
+                <div className="absolute right-0 mt-1.5 w-56 rounded-lg p-1.5 z-50 shadow-md border bg-[#FFFFFF] dark:bg-[#0D101A] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] max-h-80 overflow-y-auto font-spatial-sans">
+                  <div className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#686370] dark:text-[#AAA4B8] border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.1)] mb-1 flex items-center justify-between">
                     <span>Select Discipline</span>
-                    <span className="text-slate-400 text-[9px]">{sportsList.length} Options</span>
+                    <span className="text-[9px]">{sportsList.length} Options</span>
                   </div>
                   {sportsList.map((s) => {
                     const cfg = s === 'All' ? null : resolveSportConfig(s);
@@ -290,20 +282,17 @@ export const SchedulePage = () => {
                           setSelectedSport(s);
                           setIsDropdownOpen(false);
                         }}
-                        className={`w-full px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between gap-2 transition-all cursor-pointer ${isSelected
-                            ? isDark
-                              ? 'bg-blue-500/20 text-blue-200 font-bold border border-blue-500/30'
-                              : 'bg-blue-50 text-blue-900 font-bold border border-blue-200'
-                            : isDark
-                              ? 'hover:bg-white/5 text-slate-300'
-                              : 'hover:bg-slate-100 text-slate-700'
-                          }`}
+                        className={`w-full px-2.5 py-1.5 rounded text-xs font-medium flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] font-semibold'
+                            : 'hover:bg-[#FAF9F6] dark:hover:bg-[#161B2E] text-[#211D2B] dark:text-[#F5F2FA]'
+                        }`}
                       >
-                        <div className="flex items-center gap-2.5 truncate">
-                          <span className="text-sm">{icon}</span>
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="text-xs">{icon}</span>
                           <span className="truncate">{s}</span>
                         </div>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
+                        {isSelected && <Check className="w-3.5 h-3.5 text-[#7156A5] dark:text-[#B8A5E5] shrink-0" />}
                       </button>
                     );
                   })}
@@ -315,19 +304,16 @@ export const SchedulePage = () => {
 
         {/* Fixtures View / Empty State */}
         {filteredFixtures.length === 0 ? (
-          <div className={`py-16 text-center bg-transparent border-0 shadow-none ${isDark
-              ? 'text-slate-300'
-              : 'text-slate-700'
-            }`}>
-            <CalendarIcon className="w-12 h-12 text-slate-400 mx-auto mb-3 opacity-60" />
-            <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>No Match Fixtures Found</h3>
-            <p className={`text-xs mt-1 max-w-sm mx-auto ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Try adjusting your discipline filter or clearing your search keywords.
+          <div className="py-16 text-center bg-[#FFFFFF] dark:bg-[#0D101A] rounded-lg border border-dashed border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] p-8 space-y-2">
+            <CalendarIcon className="w-10 h-10 text-[#686370] dark:text-[#AAA4B8] mx-auto mb-2 opacity-60" />
+            <h3 className="text-base font-bold text-[#211D2B] dark:text-[#F5F2FA]">No Match Fixtures Found</h3>
+            <p className="text-xs text-[#686370] dark:text-[#AAA4B8] max-w-sm mx-auto">
+              There are no fixtures currently scheduled for {selectedSport === 'All' ? 'any discipline' : selectedSport}.
             </p>
           </div>
         ) : viewMode === 'grid' ? (
-          /* Grid View: Box with Sport Icon, Sport Name, Date, Time, Venue */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 sm:gap-6">
+          /* Grid View */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredFixtures.map((fix) => {
               const sportCfg = resolveSportConfig(fix.sport || fix);
               const sportIcon = sportCfg.icon || '🏆';
@@ -336,79 +322,58 @@ export const SchedulePage = () => {
               return (
                 <div
                   key={fix.id}
-                  className={`rounded-3xl p-5 sm:p-6 border transition-all duration-300 flex flex-col justify-between space-y-4 group backdrop-blur-xl ${isDark
-                      ? 'spatial-glass-card-dark border-blue-500/20 hover:border-blue-400/50 hover:shadow-[0_20px_45px_rgba(0,0,0,0.8),0_0_25px_rgba(59,130,246,0.18)]'
-                      : 'spatial-glass-card-light border-slate-200 hover:border-blue-300 hover:shadow-xl'
-                    }`}
+                  className="bg-[#FFFFFF] dark:bg-[#0D101A] rounded-lg p-5 border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] hover:border-[#7156A5]/40 dark:hover:border-[#8B5CF6]/40 transition-all flex flex-col justify-between space-y-4 group shadow-2xs"
                 >
                   {/* Card Top: Sport Icon, Sport Name & Gender Badge */}
-                  <div className={`flex items-center justify-between gap-3 pb-3 border-b ${isDark ? 'border-white/10' : 'border-slate-100'
-                    }`}>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-2xl font-black shadow-xs shrink-0 border transition-transform group-hover:scale-105 ${isDark
-                          ? 'bg-blue-500/10 text-blue-300 border-blue-500/20'
-                          : 'bg-blue-50 text-blue-600 border-blue-200'
-                        }`}>
+                  <div className="flex items-center justify-between gap-3 pb-3 border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base font-bold shrink-0 bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
                         {sportIcon}
                       </div>
                       <div>
-                        <h4 className={`text-sm font-black uppercase tracking-wide ${isDark ? 'text-blue-300' : 'text-blue-700'
-                          }`}>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-[#7156A5] dark:text-[#B8A5E5]">
                           {fix.sport}
                         </h4>
-                        <span className="text-[10px] font-mono font-bold text-slate-400 block">#{fix.id}</span>
+                        <span className="text-[10px] font-mono text-[#686370] dark:text-[#AAA4B8] block">#{fix.id}</span>
                       </div>
                     </div>
-                    <span className={`px-3 py-1 rounded-full font-extrabold text-[10px] border uppercase ${isDark
-                        ? 'bg-white/5 border-white/10 text-slate-300'
-                        : 'bg-slate-100 border-slate-200 text-slate-700'
-                      }`}>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold uppercase bg-[#FAF9F6] dark:bg-[#121625] text-[#686370] dark:text-[#AAA4B8] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]">
                       {fix.gender || 'Open'}
                     </span>
                   </div>
 
-                  {/* Event Title & Team Matchup Box (Hide team vs team for Athletics) */}
+                  {/* Event Title & Team Matchup */}
                   <div className="space-y-2 flex-1">
-                    <h3 className={`font-extrabold text-sm sm:text-base leading-snug ${isDark ? 'text-white' : 'text-slate-900'
-                      }`}>
+                    <h3 className="font-bold text-sm leading-snug text-[#211D2B] dark:text-[#F5F2FA]">
                       {fix.event}
                     </h3>
                     {!isAthletics && (
-                      <div className={`p-3.5 rounded-2xl border text-center shadow-xs ${isDark
-                          ? 'bg-white/[0.04] border-white/10'
-                          : 'bg-slate-50 border-slate-200/80'
-                        }`}>
-                        <p className={`text-xs sm:text-sm font-black truncate ${isDark ? 'text-blue-400' : 'text-blue-600'
-                          }`}>
-                          {fix.team1} <span className="text-slate-400 font-normal">vs</span> {fix.team2}
+                      <div className="p-2.5 rounded-lg bg-[#FAF9F6] dark:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] text-center">
+                        <p className="text-xs font-bold truncate text-[#211D2B] dark:text-[#F5F2FA]">
+                          {fix.team1} <span className="text-[#686370] dark:text-[#AAA4B8] font-normal">vs</span> {fix.team2}
                         </p>
                       </div>
                     )}
                   </div>
 
-                  {/* Card Box Bottom Metadata: Date, Time & Venue */}
-                  <div className={`pt-3 border-t space-y-2.5 text-xs ${isDark ? 'border-white/10' : 'border-slate-100'
-                    }`}>
-                    <div className={`flex items-center justify-between font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'
-                      }`}>
-                      <div className="flex items-center gap-1.5">
-                        <CalendarIcon className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                        <span className="font-bold text-xs">{fix.date}</span>
+                  {/* Card Bottom: Date, Time & Venue */}
+                  <div className="pt-3 border-t border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] space-y-2 text-xs">
+                    <div className="flex items-center justify-between font-medium text-[#686370] dark:text-[#AAA4B8]">
+                      <div className="flex items-center gap-1">
+                        <CalendarIcon className="w-3.5 h-3.5 text-[#596B98] dark:text-[#B8A5E5] shrink-0" />
+                        <span className="text-[11px] font-semibold">{fix.date}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-700 border border-amber-500/20">
-                        <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                        <span className="font-bold font-mono text-xs">{fix.time}</span>
+                      <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#FAF9F6] dark:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)] text-[#211D2B] dark:text-[#F5F2FA]">
+                        <Clock className="w-3 h-3 text-[#596B98] dark:text-[#B8A5E5] shrink-0" />
+                        <span className="font-mono text-[11px] font-semibold">{fix.time}</span>
                       </div>
                     </div>
 
                     <button
                       onClick={() => setActiveVenueModal(fix)}
-                      className={`w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl text-xs font-bold transition-all cursor-pointer border active:scale-98 ${isDark
-                          ? 'bg-white/5 hover:bg-blue-500/10 text-slate-200 hover:text-blue-400 border-white/10'
-                          : 'bg-slate-100 hover:bg-blue-500/10 text-slate-700 hover:text-blue-600 border-slate-200/80'
-                        }`}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border bg-[#FAF9F6] dark:bg-[#121625] hover:bg-[#F4F2F7] dark:hover:bg-[#161B2E] text-[#211D2B] dark:text-[#F5F2FA] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] shadow-2xs"
                     >
-                      <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                      <MapPin className="w-3.5 h-3.5 text-[#A98B57] dark:text-[#D2AB45] shrink-0" />
                       <span className="truncate">{fix.venue}</span>
                     </button>
                   </div>
@@ -417,8 +382,8 @@ export const SchedulePage = () => {
             })}
           </div>
         ) : (
-          /* List View: Row Box with Sport Icon, Sport Name, Date, Time, Venue */
-          <div className="space-y-4">
+          /* List View (Editorial Row Programme) */
+          <div className="space-y-3">
             {filteredFixtures.map((fix) => {
               const sportCfg = resolveSportConfig(fix.sport || fix);
               const sportIcon = sportCfg.icon || '🏆';
@@ -427,60 +392,46 @@ export const SchedulePage = () => {
               return (
                 <div
                   key={fix.id}
-                  className={`rounded-3xl p-5 border transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-4 backdrop-blur-xl ${isDark
-                      ? 'spatial-glass-card-dark border-blue-500/20 hover:border-blue-400/50 hover:shadow-[0_12px_30px_rgba(0,0,0,0.7)]'
-                      : 'spatial-glass-card-light border-slate-200 hover:border-blue-300 hover:shadow-md'
-                    }`}
+                  className="bg-[#FFFFFF] dark:bg-[#0D101A] rounded-lg p-4 border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] hover:border-[#7156A5]/40 dark:hover:border-[#8B5CF6]/40 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs"
                 >
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl font-black shrink-0 border ${isDark
-                        ? 'bg-blue-500/10 text-blue-300 border-blue-500/20'
-                        : 'bg-blue-50 text-blue-600 border-blue-200'
-                      }`}>
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold shrink-0 bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
                       {sportIcon}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`text-xs font-black uppercase tracking-wide ${isDark ? 'text-blue-400' : 'text-blue-600'
-                          }`}>
+                        <span className="text-xs font-bold uppercase tracking-wider text-[#7156A5] dark:text-[#B8A5E5]">
                           {fix.sport}
                         </span>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isDark ? 'bg-white/5 text-slate-300' : 'bg-slate-100 text-slate-600'
-                          }`}>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-[#FAF9F6] dark:bg-[#121625] text-[#686370] dark:text-[#AAA4B8] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]">
                           {fix.gender || 'Open'}
                         </span>
                       </div>
-                      <h3 className={`font-extrabold text-sm sm:text-base truncate mt-0.5 ${isDark ? 'text-white' : 'text-slate-900'
-                        }`}>
+                      <h3 className="font-bold text-sm truncate mt-0.5 text-[#211D2B] dark:text-[#F5F2FA]">
                         {fix.event}
                       </h3>
                       {!isAthletics && (
-                        <p className={`text-xs font-bold truncate mt-0.5 ${isDark ? 'text-blue-400' : 'text-blue-600'
-                          }`}>
-                          {fix.team1} <span className="text-slate-400 font-normal">vs</span> {fix.team2}
+                        <p className="text-xs font-medium truncate mt-0.5 text-[#686370] dark:text-[#AAA4B8]">
+                          <strong className="text-[#211D2B] dark:text-[#F5F2FA]">{fix.team1}</strong> vs <strong className="text-[#211D2B] dark:text-[#F5F2FA]">{fix.team2}</strong>
                         </p>
                       )}
                     </div>
                   </div>
 
-                  <div className={`flex flex-wrap items-center gap-3 sm:gap-4 text-xs border-t md:border-t-0 pt-3 md:pt-0 shrink-0 ${isDark ? 'border-white/10' : 'border-slate-100'
-                    }`}>
-                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border ${isDark
-                        ? 'bg-white/[0.04] border-white/10 text-slate-200'
-                        : 'bg-slate-50 border-slate-200/60 text-slate-800'
-                      }`}>
-                      <CalendarIcon className="w-3.5 h-3.5 text-emerald-500" />
-                      <span className="font-bold">{fix.date}</span>
+                  <div className="flex flex-wrap items-center gap-2.5 text-xs border-t md:border-t-0 pt-2.5 md:pt-0 shrink-0 border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]">
+                    <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)] bg-[#FAF9F6] dark:bg-[#121625] text-[#211D2B] dark:text-[#F5F2FA]">
+                      <CalendarIcon className="w-3.5 h-3.5 text-[#596B98] dark:text-[#B8A5E5]" />
+                      <span className="font-semibold text-xs">{fix.date}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700">
-                      <Clock className="w-3.5 h-3.5 text-amber-500" />
-                      <span className="font-mono font-bold">{fix.time}</span>
+                    <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)] bg-[#FAF9F6] dark:bg-[#121625] text-[#211D2B] dark:text-[#F5F2FA]">
+                      <Clock className="w-3.5 h-3.5 text-[#A98B57] dark:text-[#D2AB45]" />
+                      <span className="font-mono font-semibold text-xs">{fix.time}</span>
                     </div>
                     <button
                       onClick={() => setActiveVenueModal(fix)}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition shadow-xs cursor-pointer active:scale-95"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FAF9F6] dark:bg-[#121625] hover:bg-[#F4F2F7] dark:hover:bg-[#161B2E] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] text-[#211D2B] dark:text-[#F5F2FA] font-semibold transition-all shadow-2xs cursor-pointer"
                     >
-                      <MapPin className="w-3.5 h-3.5" />
+                      <MapPin className="w-3.5 h-3.5 text-[#A98B57] dark:text-[#D2AB45]" />
                       <span className="max-w-[140px] truncate">{fix.venue}</span>
                     </button>
                   </div>
@@ -490,29 +441,20 @@ export const SchedulePage = () => {
           </div>
         )}
 
-        {/* ─── DEDICATION QUOTE (Replacing Standard Footer) ─── */}
-        <div className="pt-14 sm:pt-20 pb-10 text-center space-y-3">
-          <div className="flex items-center justify-center gap-3 opacity-60">
-            <div className="h-[1px] w-12 sm:w-24 bg-gradient-to-r from-transparent to-blue-400" />
-            <CalendarIcon className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
-            <div className="h-[1px] w-12 sm:w-24 bg-gradient-to-l from-transparent to-blue-400" />
+        {/* Dedication Footer */}
+        <div className="pt-12 pb-6 text-center space-y-2">
+          <div className="flex items-center justify-center gap-3 opacity-40">
+            <div className="h-[1px] w-16 bg-[#E5E1E8] dark:bg-[rgba(184,165,229,0.2)]" />
+            <CalendarIcon className="w-3 h-3 text-[#7156A5] dark:text-[#B8A5E5]" />
+            <div className="h-[1px] w-16 bg-[#E5E1E8] dark:bg-[rgba(184,165,229,0.2)]" />
           </div>
 
-          <p className={`font-spatial-display text-sm sm:text-base md:text-lg tracking-[0.14em] uppercase font-medium select-none ${isDark ? 'text-slate-300' : 'text-slate-700'
-            }`}>
-            &ldquo;I am constantly looking for ways to{' '}
-            <span className={`bg-gradient-to-r bg-clip-text text-transparent font-bold ${isDark
-                ? 'from-blue-400 via-indigo-300 to-orange-300'
-                : 'from-blue-700 via-indigo-700 to-orange-600'
-              }`}>
-              improve
-            </span>
-            , to be better.&rdquo;
+          <p className="font-spatial-display text-xs sm:text-sm tracking-wider uppercase font-semibold text-[#686370] dark:text-[#AAA4B8] select-none">
+            &ldquo;Discipline in Schedule, Excellence in Performance.&rdquo;
           </p>
 
-          <p className={`text-[11px] sm:text-xs font-spatial-sans tracking-widest uppercase italic ${isDark ? 'text-slate-500' : 'text-slate-400'
-            }`}>
-            That&rsquo;s the mindset you need.
+          <p className="text-[11px] font-spatial-sans text-[#686370] dark:text-[#AAA4B8]">
+            Official Directorate of Physical Education & Sports • MPGI Kanpur
           </p>
         </div>
 
@@ -521,44 +463,31 @@ export const SchedulePage = () => {
       {/* Venue Modal */}
       {activeVenueModal && (
         <div
-          className={`fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in ${isDark ? 'bg-slate-950/70 text-white' : 'bg-slate-900/40 text-slate-900'
-            }`}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs font-spatial-sans"
           onClick={(e) => {
             if (e.target === e.currentTarget) setActiveVenueModal(null);
           }}
         >
-          <div className={`border rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl ${isDark
-              ? 'bg-[#0d0f18]/98 border-white/10 text-white'
-              : 'bg-white border-slate-200 text-slate-900'
-            }`}>
-            <div className={`flex justify-between items-center pb-3 border-b ${isDark ? 'border-white/10' : 'border-slate-200'
-              }`}>
+          <div className="border rounded-lg max-w-md w-full p-5 space-y-4 shadow-xl bg-[#FFFFFF] dark:bg-[#0D101A] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] text-[#211D2B] dark:text-[#F5F2FA]">
+            <div className="flex justify-between items-center pb-3 border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]">
               <div className="flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-emerald-500" />
-                <h3 className="font-extrabold text-lg">Venue Access Directions</h3>
+                <MapPin className="w-4 h-4 text-[#A98B57] dark:text-[#D2AB45]" />
+                <h3 className="font-bold text-base font-spatial-display">Venue Access & Directions</h3>
               </div>
               <button
                 onClick={() => setActiveVenueModal(null)}
-                className={`p-1.5 rounded-full transition-colors cursor-pointer ${isDark
-                    ? 'text-slate-400 hover:text-white hover:bg-white/10'
-                    : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
-                  }`}
+                className="p-1 rounded text-[#686370] hover:text-[#211D2B] dark:text-[#AAA4B8] dark:hover:text-white transition-colors cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
-            <div className={`p-4 rounded-xl border space-y-1 ${isDark
-                ? 'bg-white/[0.04] border-white/10'
-                : 'bg-slate-50 border-slate-200'
-              }`}>
-              <span className={`text-[10px] font-bold uppercase tracking-wider block ${isDark ? 'text-slate-400' : 'text-slate-500'
-                }`}>Assigned Court / Venue</span>
-              <p className={`text-sm font-black ${isDark ? 'text-emerald-400' : 'text-emerald-600'
-                }`}>{activeVenueModal.venue}</p>
+            <div className="p-3 rounded-lg border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] bg-[#FAF9F6] dark:bg-[#121625] space-y-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-[#686370] dark:text-[#AAA4B8] block">Assigned Court / Venue</span>
+              <p className="text-sm font-bold text-[#7156A5] dark:text-[#B8A5E5]">{activeVenueModal.venue}</p>
             </div>
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-700 space-y-1">
-              <p className="font-bold">📍 Access Gate & Facilities:</p>
-              <p>Main Sports Complex Entrance 2. Shuttle available from Campus Gate A. First Aid & Refreshment Tent adjacent to Court Entry.</p>
+            <div className="p-3 rounded-lg bg-[#EDF7F0] dark:bg-[#1B5E20]/20 border border-[#C8E6C9] dark:border-[#1B5E20]/30 text-xs text-[#1B5E20] dark:text-[#81C784] space-y-1">
+              <p className="font-bold">📍 Campus Gate & Arena Access:</p>
+              <p>Main Sports Arena Gate 2. Athletes and squad managers should report 20 minutes prior to scheduled match time for biometric verification.</p>
             </div>
           </div>
         </div>

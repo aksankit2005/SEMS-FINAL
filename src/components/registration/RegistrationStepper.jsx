@@ -13,12 +13,12 @@ export const RegistrationStepper = ({ currentStep }) => {
   ];
 
   return (
-    <div className={`mb-10 p-4 sm:p-6 rounded-3xl border transition-all ${
+    <div className={`mb-8 p-3 sm:p-4 rounded-lg border transition-all ${
       isDark
-        ? 'spatial-glass-card-dark border-white/10 shadow-lg'
-        : 'spatial-glass-card-light border-slate-200/90 shadow-md'
+        ? 'bg-[#0D101A] border-[rgba(184,165,229,0.16)] shadow-xs'
+        : 'bg-[#FFFFFF] border-[#E5E1E8] shadow-2xs'
     }`}>
-      <div className="grid grid-cols-3 gap-2 text-center text-[10px] sm:text-xs font-bold font-mono uppercase tracking-wider">
+      <div className="grid grid-cols-3 gap-2 text-center text-[10px] sm:text-xs font-semibold font-mono uppercase tracking-wider">
         {steps.map((s) => {
           const Icon = s.icon;
           const isActive = currentStep === s.num;
@@ -27,24 +27,24 @@ export const RegistrationStepper = ({ currentStep }) => {
           return (
             <div
               key={s.num}
-              className={`flex flex-col items-center gap-1.5 p-2 rounded-2xl transition ${
+              className={`flex flex-col items-center gap-1.5 p-2 rounded-lg transition-all ${
                 isActive
-                  ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
+                  ? 'bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] font-bold'
                   : isCompleted
-                  ? 'text-emerald-400'
-                  : 'text-slate-400'
+                  ? 'text-[#1B5E20] dark:text-[#81C784]'
+                  : 'text-[#686370] dark:text-[#AAA4B8]'
               }`}
             >
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs transition ${
+                className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-all ${
                   isActive
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
+                    ? 'bg-[#7156A5] dark:bg-[#8B5CF6] text-white shadow-2xs'
                     : isCompleted
-                    ? 'bg-emerald-500 text-white'
-                    : isDark ? 'bg-white/5 text-slate-500' : 'bg-slate-200 text-slate-500'
+                    ? 'bg-[#1B5E20] dark:bg-[#81C784] text-white'
+                    : isDark ? 'bg-[#121625] text-[#AAA4B8] border border-[rgba(184,165,229,0.12)]' : 'bg-[#FAF9F6] text-[#686370] border border-[#E5E1E8]'
                 }`}
               >
-                {isCompleted ? '✓' : <Icon className="w-4 h-4" />}
+                {isCompleted ? '✓' : <Icon className="w-3.5 h-3.5" />}
               </div>
               <span className="hidden sm:inline">{s.label}</span>
             </div>

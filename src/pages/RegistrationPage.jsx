@@ -833,38 +833,38 @@ export const RegistrationPage = () => {
       <div className="space-y-6">
         {/* Racket Sport Event Type Toggle */}
         {isRacketSport && (
-          <div className="p-4 rounded-2xl bg-blue-50/60 dark:bg-slate-900 border border-blue-100 dark:border-slate-800 space-y-3">
-            <label className="block text-xs font-bold uppercase tracking-wider text-blue-900 dark:text-blue-300">
-              Select Event Mode & Fee <span className="text-rose-500">*</span>
+          <div className="p-4 rounded-lg bg-[#FAF9F6] dark:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] space-y-3">
+            <label className="block text-xs font-bold uppercase tracking-wider text-[#211D2B] dark:text-[#F5F2FA]">
+              Select Event Mode & Fee <span className="text-[#C62828] dark:text-[#FDA4AF]">*</span>
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => handleEventTypeToggle('Singles')}
-                className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-1 font-bold text-xs transition ${formData.eventType === 'Singles'
-                    ? 'border-blue-600 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-extrabold shadow-sm'
-                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                className={`p-3.5 rounded-lg border-2 flex flex-col items-center justify-center gap-1 font-semibold text-xs transition-all ${formData.eventType === 'Singles'
+                    ? 'border-[#7156A5] bg-[#7156A5]/10 text-[#7156A5] dark:text-[#B8A5E5] font-bold shadow-2xs'
+                    : 'border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] bg-[#FFFFFF] dark:bg-[#0D101A] text-[#686370] dark:text-[#AAA4B8] hover:border-[#7156A5]/40'
                   }`}
               >
                 <div className="flex items-center gap-1.5">
                   <User className="w-4 h-4" /> Singles (1 Player)
                 </div>
-                <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400">
+                <span className="text-[11px] font-bold text-[#1B5E20] dark:text-[#81C784]">
                   Singles Fee: {activeSport.singlesFee === 0 ? 'FREE (₹0)' : `₹${activeSport.singlesFee ?? 0}`}
                 </span>
               </button>
               <button
                 type="button"
                 onClick={() => handleEventTypeToggle('Doubles')}
-                className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-1 font-bold text-xs transition ${formData.eventType === 'Doubles'
-                    ? 'border-blue-600 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-extrabold shadow-sm'
-                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                className={`p-3.5 rounded-lg border-2 flex flex-col items-center justify-center gap-1 font-semibold text-xs transition-all ${formData.eventType === 'Doubles'
+                    ? 'border-[#7156A5] bg-[#7156A5]/10 text-[#7156A5] dark:text-[#B8A5E5] font-bold shadow-2xs'
+                    : 'border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] bg-[#FFFFFF] dark:bg-[#0D101A] text-[#686370] dark:text-[#AAA4B8] hover:border-[#7156A5]/40'
                   }`}
               >
                 <div className="flex items-center gap-1.5">
                   <Users className="w-4 h-4" /> Doubles (2 Players)
                 </div>
-                <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400">
+                <span className="text-[11px] font-bold text-[#7156A5] dark:text-[#B8A5E5]">
                   Doubles Fee: {activeSport.doublesFee === 0 ? 'FREE (₹0)' : `₹${activeSport.doublesFee ?? 0}`}
                 </span>
               </button>
@@ -924,54 +924,44 @@ export const RegistrationPage = () => {
   };
 
   return (
-    <div className={`relative min-h-screen font-spatial-sans selection:bg-amber-500/30 selection:text-white overflow-x-hidden transition-colors duration-500 ${
-      isDark ? 'text-slate-100' : 'text-slate-900'
+    <div className={`relative min-h-screen font-spatial-sans selection:bg-[#7156A5]/20 selection:text-[#211D2B] dark:selection:text-white overflow-x-hidden transition-colors duration-200 ${
+      isDark ? 'bg-[#070A13] text-[#F5F2FA]' : 'bg-[#FAF9F6] text-[#211D2B]'
     }`}>
-      {/* ─── ATMOSPHERIC NEBULA BACKDROP (Dark vs Light) ─── */}
-      <div className={`fixed inset-0 pointer-events-none z-0 transition-all duration-700 ${
-        isDark ? 'spatial-nebula-dark' : 'spatial-nebula-light'
-      }`} />
+      {/* Dark mode atmospheric overlays */}
+      {isDark && (
+        <>
+          <div className="fixed inset-0 pointer-events-none z-0 spatial-nebula-dark opacity-60" />
+          <div className="fixed inset-0 spatial-grain-overlay z-[1] pointer-events-none opacity-20" />
+        </>
+      )}
 
-      {/* ─── TACTILE FILM GRAIN OVERLAY ─── */}
-      <div className="fixed inset-0 spatial-grain-overlay z-[1] pointer-events-none opacity-25" />
+      {/* Main Content Container */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16 space-y-6">
 
-      {/* ─── MAIN CONTENT CONTAINER ─── */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 pb-12 sm:pb-16 space-y-6 sm:space-y-8">
-
-        {/* ─── CENTERED LUXURY HERO BANNER (Gallery Style) ─── */}
-        <div className="text-center max-w-3xl mx-auto space-y-2 pt-1">
-          <h1 className={`text-4xl sm:text-6xl md:text-7xl font-normal tracking-[0.08em] font-spatial-display uppercase ${
-            isDark ? 'text-white' : 'text-slate-900'
-          }`}>
-            <span className={`bg-gradient-to-r bg-clip-text text-transparent font-semibold ${
-              isDark 
-                ? 'from-purple-400 via-indigo-300 to-amber-300' 
-                : 'from-purple-700 via-indigo-700 to-amber-600'
-            }`}>
-              Registration
-            </span>
+        {/* Editorial Hero Banner */}
+        <div className="text-center max-w-2xl mx-auto space-y-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
+            <Trophy className="w-3.5 h-3.5 text-[#A98B57] dark:text-[#D2AB45]" />
+            <span>Championship Registration Dossier</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight font-spatial-display text-[#211D2B] dark:text-[#F5F2FA]">
+            Event <span className="text-[#7156A5] dark:text-[#B8A5E5]">Registration</span>
           </h1>
 
-          <p className={`text-xs sm:text-sm max-w-xl mx-auto italic font-spatial-sans font-light leading-relaxed ${
-            isDark ? 'text-slate-300/85' : 'text-slate-600'
-          }`}>
-            Official multi-step sports event registration, team enrollment, and slot allocation across all disciplines.
+          <p className="text-xs sm:text-sm max-w-xl mx-auto text-[#686370] dark:text-[#AAA4B8] leading-relaxed">
+            Official multi-step team enrollment, participant dossiers, and slot verification across all championship events.
           </p>
         </div>
 
-        {/* ─── SPORTS FILTER BAR (Roll-Down Dropdown) ─── */}
+        {/* Sports Filter Bar */}
         {!activeSport && (
-          <div className="flex items-center justify-between gap-2.5 pt-1 pb-1">
-            {/* Left: Discipline label + count */}
+          <div className="bg-[#FFFFFF] dark:bg-[#0D101A] p-3 rounded-lg border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
+            {/* Left: Discipline & Count */}
             <div className="flex items-center gap-2">
-              <span className={`text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider ${
-                isDark ? 'text-indigo-300/80' : 'text-indigo-700'
-              }`}>
+              <span className="text-xs font-semibold text-[#211D2B] dark:text-[#F5F2FA]">
                 {selectedSportFilter === 'All' ? 'All Disciplines' : selectedSportFilter}
               </span>
-              <span className={`text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                isDark ? 'bg-white/5 border-white/10 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'
-              }`}>
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
                 {filteredCoordinatorEvents.length} {filteredCoordinatorEvents.length === 1 ? 'Event' : 'Events'}
               </span>
             </div>
@@ -980,31 +970,23 @@ export const RegistrationPage = () => {
             <div className="relative shrink-0" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 border cursor-pointer ${
-                  isDark
-                    ? 'bg-[#10121a]/90 hover:bg-[#181a24] text-indigo-200 border-indigo-500/30 shadow-xs hover:border-indigo-400/50'
-                    : 'bg-white hover:bg-slate-50 text-indigo-900 border-slate-300 shadow-xs'
-                }`}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 border cursor-pointer bg-[#FAF9F6] dark:bg-[#121625] text-[#211D2B] dark:text-[#F5F2FA] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] hover:border-[#7156A5] dark:hover:border-[#B8A5E5]"
                 title="Filter by Sport"
                 aria-label="Filter sport roll-down dropdown"
               >
-                <Filter className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                <span className="truncate max-w-[100px] sm:max-w-[140px]">
+                <Filter className="w-3.5 h-3.5 text-[#7156A5] dark:text-[#B8A5E5] shrink-0" />
+                <span className="truncate max-w-[120px]">
                   {selectedSportFilter === 'All' ? 'Filter Sport' : selectedSportFilter}
                 </span>
-                <ChevronDown className={`w-3.5 h-3.5 text-indigo-400 shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-3.5 h-3.5 text-[#686370] dark:text-[#AAA4B8] shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {/* Roll-Down Menu Popover */}
               {isDropdownOpen && (
-                <div className={`absolute right-0 mt-2 w-52 sm:w-60 rounded-2xl p-1.5 z-50 shadow-2xl border backdrop-blur-2xl max-h-80 overflow-y-auto no-scrollbar transition-all ${
-                  isDark
-                    ? 'bg-[#0d0f18]/95 border-indigo-500/30 text-slate-200 shadow-[0_12px_35px_rgba(0,0,0,0.85)]'
-                    : 'bg-white/95 border-slate-200 text-slate-800 shadow-xl'
-                }`}>
-                  <div className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider font-bold text-indigo-400 border-b border-indigo-500/10 mb-1 flex items-center justify-between">
+                <div className="absolute right-0 mt-1.5 w-56 rounded-lg p-1.5 z-50 shadow-md border bg-[#FFFFFF] dark:bg-[#0D101A] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] max-h-80 overflow-y-auto font-spatial-sans">
+                  <div className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#686370] dark:text-[#AAA4B8] border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.1)] mb-1 flex items-center justify-between">
                     <span>Select Sport</span>
-                    <span className="text-slate-400 text-[9px]">{availableSports.length} Options</span>
+                    <span className="text-[9px]">{availableSports.length} Options</span>
                   </div>
                   {availableSports.map((sport) => {
                     const isSelected = selectedSportFilter === sport;
@@ -1015,14 +997,14 @@ export const RegistrationPage = () => {
                           setSelectedSportFilter(sport);
                           setIsDropdownOpen(false);
                         }}
-                        className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer ${
+                        className={`w-full text-left px-2.5 py-1.5 rounded text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
                           isSelected
-                            ? isDark ? 'bg-indigo-500/20 text-indigo-300 font-bold' : 'bg-indigo-50 text-indigo-700 font-bold'
-                            : isDark ? 'text-slate-300 hover:bg-white/5 hover:text-white' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                            ? 'bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] font-semibold'
+                            : 'hover:bg-[#FAF9F6] dark:hover:bg-[#161B2E] text-[#211D2B] dark:text-[#F5F2FA]'
                         }`}
                       >
                         <span className="truncate">{sport}</span>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
+                        {isSelected && <Check className="w-3.5 h-3.5 text-[#7156A5] dark:text-[#B8A5E5] shrink-0" />}
                       </button>
                     );
                   })}
@@ -1039,17 +1021,13 @@ export const RegistrationPage = () => {
             {/* DYNAMIC OFFICIAL COORDINATOR PUBLISHED EVENTS SECTION */}
             {filteredCoordinatorEvents && filteredCoordinatorEvents.length > 0 && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className={`text-lg sm:text-xl font-bold font-spatial-display uppercase tracking-wider flex items-center gap-2 ${
-                    isDark ? 'text-white' : 'text-slate-900'
-                  }`}>
-                    <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
-                    APEX SPORTS EVENTS
+                <div className="flex items-center justify-between pb-2 border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)]">
+                  <h2 className="text-lg font-bold font-spatial-display text-[#211D2B] dark:text-[#F5F2FA] flex items-center gap-2">
+                    <Trophy className="w-4 h-4 text-[#A98B57] dark:text-[#D2AB45]" />
+                    Official Championship Events
                   </h2>
-                  <span className={`px-2.5 py-0.5 rounded-full font-mono text-xs font-bold border ${
-                    isDark ? 'bg-white/5 border-white/10 text-indigo-300' : 'bg-slate-100 border-slate-200 text-indigo-700'
-                  }`}>
-                    Live Published Events ({filteredCoordinatorEvents.length})
+                  <span className="px-2 py-0.5 rounded text-xs font-semibold bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
+                    Published Events ({filteredCoordinatorEvents.length})
                   </span>
                 </div>
 
@@ -1074,65 +1052,59 @@ export const RegistrationPage = () => {
                     return (
                       <div
                         key={evt.id}
-                        className={`w-full rounded-3xl border overflow-hidden shadow-xl transition-all duration-300 flex flex-col justify-between group ${
-                          isDark
-                            ? 'spatial-glass-card-dark border-white/10 hover:border-indigo-400/40'
-                            : 'spatial-glass-card-light border-slate-200/90 hover:border-indigo-400/50'
-                        }`}
+                        className="w-full rounded-lg border overflow-hidden shadow-2xs transition-all duration-200 flex flex-col justify-between group bg-[#FFFFFF] dark:bg-[#0D101A] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] hover:border-[#7156A5]/40 dark:hover:border-[#8B5CF6]/40"
                       >
-                        <div className="relative h-44 w-full overflow-hidden bg-slate-950">
+                        <div className="relative h-40 w-full overflow-hidden bg-slate-950">
                           <img
                             src={evt.coverImage || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80'}
                             alt={evt.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-500 brightness-90"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#070A13] via-[#070A13]/40 to-transparent" />
 
-                          <div className="absolute top-3 left-3 flex items-center gap-2">
-                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase shadow-md ${
+                          <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
                               isUpcoming
-                                ? 'bg-amber-500 text-slate-950 font-black'
+                                ? 'bg-[#FFF8E1] text-[#A98B57] border border-[#FFE082]'
                                 : isClosed
-                                ? 'bg-rose-500 text-white'
-                                : 'bg-emerald-500 text-white'
+                                ? 'bg-[#FBEDEF] text-[#C62828] border border-[#FFCDD2]'
+                                : 'bg-[#EDF7F0] text-[#1B5E20] border border-[#C8E6C9]'
                             }`}>
                               {isUpcoming ? '🟡 Upcoming' : isClosed ? '● Closed' : '● Open'}
                             </span>
                           </div>
 
-                          <div className="absolute top-3 right-3 bg-slate-950/85 backdrop-blur-xs px-3 py-1 rounded-full text-[11px] font-black text-amber-400 border border-slate-700 shadow-md font-mono">
+                          <div className="absolute top-2.5 right-2.5 bg-[#FAF9F6]/95 dark:bg-[#0D101A]/95 backdrop-blur-xs px-2.5 py-0.5 rounded text-[11px] font-semibold text-[#211D2B] dark:text-[#F5F2FA] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] font-mono">
                             {isRacket ? `Singles: ₹${sFee} | Doubles: ₹${dFee}` : (currentFee > 0 ? `Fee: ₹${currentFee}` : 'FREE (₹0)')}
                           </div>
 
-                          <div className="absolute bottom-3 left-4 right-4">
-                            <span className="text-[10px] font-mono font-bold text-indigo-400 uppercase tracking-wider block">
-                              {evt.sportName} Event
+                          <div className="absolute bottom-2.5 left-3.5 right-3.5">
+                            <span className="text-[10px] font-mono font-semibold text-[#B8A5E5] uppercase tracking-wider block">
+                              {evt.sportName}
                             </span>
-                            <h3 className="text-lg sm:text-xl font-bold font-spatial-display text-white leading-tight drop-shadow-md uppercase">
+                            <h3 className="text-base sm:text-lg font-bold font-spatial-display text-white leading-tight drop-shadow-xs uppercase">
                               {evt.title}
                             </h3>
                           </div>
                         </div>
 
-                        <div className="p-5 space-y-3.5 flex-1 flex flex-col justify-between">
-                          <div className={`grid grid-cols-2 gap-2.5 text-xs p-3 rounded-2xl border ${
-                            isDark ? 'bg-white/[0.03] border-white/10' : 'bg-slate-50 border-slate-200'
-                          }`}>
+                        <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                          <div className="grid grid-cols-2 gap-2 text-xs p-2.5 rounded-lg border bg-[#FAF9F6] dark:bg-[#121625] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]">
                             <div>
-                              <span className="text-[9px] text-slate-400 uppercase font-mono block">Reg Deadline</span>
-                              <span className={`font-bold font-mono text-[10px] ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{evt.regEndDate}</span>
+                              <span className="text-[9px] text-[#686370] dark:text-[#AAA4B8] uppercase font-mono block">Reg Deadline</span>
+                              <span className="font-semibold font-mono text-[10px] text-[#211D2B] dark:text-[#F5F2FA]">{evt.regEndDate}</span>
                             </div>
                             <div>
-                              <span className="text-[9px] text-slate-400 uppercase font-mono block">Tournament Start</span>
-                              <span className={`font-bold font-mono text-[10px] ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{evt.tournStartDate}</span>
+                              <span className="text-[9px] text-[#686370] dark:text-[#AAA4B8] uppercase font-mono block">Tournament Start</span>
+                              <span className="font-semibold font-mono text-[10px] text-[#211D2B] dark:text-[#F5F2FA]">{evt.tournStartDate}</span>
                             </div>
                             <div>
-                              <span className="text-[9px] text-slate-400 uppercase font-mono block">Venue</span>
-                              <span className="font-bold text-indigo-500 text-[10px] truncate block font-mono">{evt.venue}</span>
+                              <span className="text-[9px] text-[#686370] dark:text-[#AAA4B8] uppercase font-mono block">Venue</span>
+                              <span className="font-semibold text-[#7156A5] dark:text-[#B8A5E5] text-[10px] truncate block font-mono">{evt.venue}</span>
                             </div>
                             <div>
-                              <span className="text-[9px] text-slate-400 uppercase font-mono block">Team Size</span>
-                              <span className={`font-bold font-mono text-[10px] ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{evt.teamSize || `${minP} - ${maxP} Players`}</span>
+                              <span className="text-[9px] text-[#686370] dark:text-[#AAA4B8] uppercase font-mono block">Team Size</span>
+                              <span className="font-semibold font-mono text-[10px] text-[#211D2B] dark:text-[#F5F2FA]">{evt.teamSize || `${minP} - ${maxP} Players`}</span>
                             </div>
                           </div>
 
@@ -1140,14 +1112,10 @@ export const RegistrationPage = () => {
                             <button
                               type="button"
                               onClick={() => setRulesModalSport({ sportName: evt.sportName || evt.title, rules: evt.rules })}
-                              className={`flex-1 py-2.5 rounded-2xl font-bold text-xs border transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-xs ${
-                                isDark
-                                  ? 'bg-white/5 hover:bg-white/10 text-slate-200 border-white/10'
-                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200'
-                              }`}
+                              className="flex-1 py-2 rounded-lg font-semibold text-xs border transition-all flex items-center justify-center gap-1.5 cursor-pointer bg-[#FAF9F6] dark:bg-[#121625] hover:bg-[#F4F2F7] dark:hover:bg-[#161B2E] text-[#211D2B] dark:text-[#F5F2FA] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] shadow-2xs"
                               title="View Official Tournament Rules for this event"
                             >
-                              <Info className="w-3.5 h-3.5 text-indigo-400" />
+                              <Info className="w-3.5 h-3.5 text-[#7156A5] dark:text-[#B8A5E5]" />
                               <span>View Rules</span>
                             </button>
 
@@ -1181,23 +1149,23 @@ export const RegistrationPage = () => {
                                 };
                                 handleSportSelect(adaptedSport);
                               }}
-                              className={`flex-1 py-2.5 rounded-2xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 font-mono uppercase tracking-wider ${
+                              className={`flex-1 py-2 rounded-lg font-semibold text-xs transition-all flex items-center justify-center gap-1.5 font-mono uppercase tracking-wider shadow-2xs ${
                                 isUpcoming
-                                  ? 'bg-amber-500/20 text-amber-500 border border-amber-500/40 cursor-not-allowed font-extrabold'
+                                  ? 'bg-[#FFF8E1] dark:bg-[#A98B57]/20 text-[#A98B57] border border-[#FFE082] dark:border-[#A98B57]/30 cursor-not-allowed'
                                   : isClosed
-                                  ? isDark ? 'bg-white/5 text-slate-500 cursor-not-allowed border border-white/10' : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
-                                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-500/20 active:scale-[0.98] cursor-pointer'
+                                  ? 'bg-[#F4F2F7] dark:bg-[#121625] text-[#686370] dark:text-[#AAA4B8] cursor-not-allowed border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]'
+                                  : 'bg-[#7156A5] hover:bg-[#5E4491] dark:bg-[#8B5CF6] dark:hover:bg-[#7C3AED] text-white cursor-pointer'
                               }`}
                             >
                               <span>
                                 {isUpcoming
-                                  ? '⏳ Coming Soon'
+                                  ? '⏳ Soon'
                                   : isClosed
-                                  ? (slotsLeft === 0 ? 'Event Full' : 'Registration Closed')
-                                  : 'Register Now'
+                                  ? (slotsLeft === 0 ? 'Event Full' : 'Closed')
+                                  : 'Register'
                                 }
                               </span>
-                              {!isUpcoming && !isClosed && <Trophy className="w-4 h-4" />}
+                              {!isUpcoming && !isClosed && <Trophy className="w-3.5 h-3.5" />}
                             </button>
                           </div>
 
@@ -1211,23 +1179,17 @@ export const RegistrationPage = () => {
 
             {/* EMPTY STATE WHEN NO COORDINATOR EVENTS PUBLISHED YET */}
             {(!filteredCoordinatorEvents || filteredCoordinatorEvents.length === 0) && (
-              <div className="text-center py-16 px-6 sm:px-10 space-y-3 w-full bg-transparent border-0 shadow-none">
-                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto text-2xl border ${
-                  isDark ? 'bg-white/5 border-white/10 text-amber-400' : 'bg-slate-100 border-slate-200 text-amber-600'
-                }`}>
-                  <Trophy className="w-8 h-8" />
+              <div className="text-center py-16 px-6 sm:px-10 space-y-2 w-full bg-[#FFFFFF] dark:bg-[#0D101A] rounded-lg border border-dashed border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)]">
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center mx-auto text-xl bg-[#F4F2F7] dark:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)] text-[#A98B57] dark:text-[#D2AB45]">
+                  <Trophy className="w-6 h-6" />
                 </div>
-                <h3 className={`text-lg sm:text-xl font-bold font-spatial-display uppercase tracking-wide ${
-                  isDark ? 'text-white' : 'text-slate-900'
-                }`}>
-                  No Coordinator Events Published Yet
+                <h3 className="text-base font-bold font-spatial-display text-[#211D2B] dark:text-[#F5F2FA]">
+                  No Events Published Yet
                 </h3>
-                <p className={`text-xs max-w-md mx-auto font-spatial-sans ${
-                  isDark ? 'text-slate-400' : 'text-slate-600'
-                }`}>
+                <p className="text-xs max-w-md mx-auto text-[#686370] dark:text-[#AAA4B8]">
                   {selectedSportFilter === 'All'
-                    ? 'Registration for events opens as soon as the respective sports coordinator publishes an active event. Please check back shortly!'
-                    : `No active events currently published for ${selectedSportFilter}. Please check back shortly or select another sport.`}
+                    ? 'Registration will open once coordinators publish the official schedule. Please check back shortly.'
+                    : `No events currently published for ${selectedSportFilter}. Select another discipline or check back soon.`}
                 </p>
               </div>
             )}
@@ -1254,34 +1216,30 @@ export const RegistrationPage = () => {
             <RegistrationStepper currentStep={step} />
 
             {/* Wizard Body Card */}
-            <div className={`rounded-3xl p-6 sm:p-10 border shadow-2xl transition-all ${
-              isDark
-                ? 'spatial-glass-card-dark border-white/10'
-                : 'spatial-glass-card-light border-slate-200/90'
-            }`}>
+            <div className="rounded-lg p-5 sm:p-8 border shadow-xs transition-all bg-[#FFFFFF] dark:bg-[#0D101A] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)]">
 
               {/* STEP 1: DETAILS */}
               {step === 1 && (
                 <div className="space-y-6">
                   {activeSport?.status === 'Upcoming' && (
-                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs font-bold flex items-center gap-2.5">
+                    <div className="p-3.5 rounded-lg bg-[#FFF8E1] dark:bg-[#A98B57]/15 border border-[#FFE082] dark:border-[#A98B57]/30 text-[#A98B57] dark:text-[#D2AB45] text-xs font-semibold flex items-center gap-2">
                       <span className="text-base">⏳</span>
-                      <span>This event is currently <strong>Upcoming (Coming Soon)</strong>. Registration will open on {activeSport.regStartDate || 'the scheduled opening date'}.</span>
+                      <span>This event is currently <strong>Upcoming</strong>. Registration opens on {activeSport.regStartDate || 'the scheduled date'}.</span>
                     </div>
                   )}
                   {renderDetailsStep()}
-                  <div className="flex justify-end pt-6 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex justify-end pt-5 border-t border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]">
                     {activeSport?.status === 'Upcoming' ? (
                       <button
                         disabled
-                        className="px-8 py-3 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-sm border border-amber-500/40 cursor-not-allowed flex items-center gap-2"
+                        className="px-6 py-2.5 rounded-lg bg-[#FFF8E1] dark:bg-[#A98B57]/20 text-[#A98B57] font-semibold text-sm border border-[#FFE082] dark:border-[#A98B57]/30 cursor-not-allowed flex items-center gap-2"
                       >
                         <span>⏳ Registration Opening Soon</span>
                       </button>
                     ) : (
                       <button
                         onClick={handleDetailsSubmit}
-                        className="px-8 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-sm shadow-md shadow-blue-500/20 flex items-center gap-2 transition active:scale-[0.98]"
+                        className="px-6 py-2.5 rounded-lg bg-[#7156A5] hover:bg-[#5E4491] dark:bg-[#8B5CF6] dark:hover:bg-[#7C3AED] text-white font-semibold text-sm shadow-2xs flex items-center gap-2 transition-all cursor-pointer"
                       >
                         <span>Proceed to Payment</span>
                         <Trophy className="w-4 h-4" />
@@ -1295,36 +1253,36 @@ export const RegistrationPage = () => {
               {step === 2 && (
                 <form onSubmit={handlePaymentSubmit} className="space-y-6">
                   
-                  {/* Card 1: MANDATORY DECLARATION CARD (FIRST THING USER SEES) */}
-                  <div className="p-6 rounded-3xl border-2 border-amber-500/40 bg-amber-500/5 dark:bg-amber-500/10 space-y-4 shadow-lg transition duration-300">
-                    <div className="flex items-center justify-between border-b border-amber-500/20 pb-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400">
-                          <ShieldCheck className="w-5 h-5" />
+                  {/* Card 1: MANDATORY DECLARATION CARD */}
+                  <div className="p-5 rounded-lg border bg-[#FAF9F6] dark:bg-[#121625] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] space-y-3.5 shadow-2xs">
+                    <div className="flex items-center justify-between border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] pb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-[#F4F2F7] dark:bg-[#0D101A] text-[#A98B57] dark:text-[#D2AB45] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
+                          <ShieldCheck className="w-4 h-4" />
                         </div>
                         <div>
-                          <h4 className="font-black uppercase tracking-wider text-slate-900 dark:text-white text-sm">
+                          <h4 className="font-bold uppercase tracking-wider text-[#211D2B] dark:text-[#F5F2FA] text-xs sm:text-sm">
                             1. Mandatory Athlete Declaration & Rules Agreement
                           </h4>
-                          <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase">
-                            Must be read & accepted prior to payment checkout
+                          <p className="text-[10px] text-[#A98B57] dark:text-[#D2AB45] font-semibold uppercase">
+                            Required prior to payment checkout
                           </p>
                         </div>
                       </div>
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-amber-500 text-slate-950">
-                        Step 2 First Action
+                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold uppercase bg-[#F4F2F7] dark:bg-[#0D101A] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
+                        Declaration
                       </span>
                     </div>
 
-                    <div className="p-4 rounded-2xl bg-white/60 dark:bg-slate-900/80 border border-amber-500/20">
-                      <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic">
+                    <div className="p-3.5 rounded-lg bg-[#FFFFFF] dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]">
+                      <p className="text-xs text-[#686370] dark:text-[#AAA4B8] leading-relaxed italic">
                         "I hereby declare that the information provided by me in this registration form is true and correct to the best of my knowledge. I agree to abide by all the rules and regulations of the sports event. If I am found guilty of providing false information or engaging in any act of indiscipline or misconduct, I understand that I may be disqualified, and I agree to accept the decision of the Organizing Committee as final."
                       </p>
                     </div>
 
                     {/* Mandatory Checkbox & Read Rulebook Button */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-amber-500 transition">
-                      <label className="flex items-start gap-3 cursor-pointer select-none">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg bg-[#FFFFFF] dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
+                      <label className="flex items-start gap-2.5 cursor-pointer select-none">
                         <input
                           type="checkbox"
                           checked={formData.declarationAccepted || false}
@@ -1339,35 +1297,35 @@ export const RegistrationPage = () => {
                               setErrors((prev) => ({ ...prev, declarationAccepted: null }));
                             }
                           }}
-                          className="w-5 h-5 mt-0.5 rounded border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-blue-600 focus:ring-blue-500 shrink-0"
+                          className="w-4 h-4 mt-0.5 rounded border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] text-[#7156A5] focus:ring-[#7156A5] shrink-0"
                         />
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-snug">
-                          I have read, understood, and agree to the above mandatory declaration, discipline rules, and university verification policy.
+                        <span className="text-xs font-medium text-[#211D2B] dark:text-[#F5F2FA] leading-snug">
+                          I have read, understood, and agree to the mandatory declaration, discipline rules, and university verification policy.
                         </span>
                       </label>
 
                       <button
                         type="button"
                         onClick={() => setRulesModalSport(activeSport?.name || 'Badminton')}
-                        className="px-3.5 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold shrink-0 flex items-center gap-1.5 transition active:scale-95"
+                        className="px-3 py-1.5 rounded-lg bg-[#EDF7F0] dark:bg-[#1B5E20]/20 hover:bg-[#C8E6C9]/40 text-[#1B5E20] dark:text-[#81C784] border border-[#C8E6C9] dark:border-[#1B5E20]/30 text-xs font-semibold shrink-0 flex items-center gap-1.5 transition-all cursor-pointer"
                       >
-                        <span>📖 Read Official Rulebook</span>
+                        <span>📖 Read Rulebook</span>
                       </button>
                     </div>
                     {errors.declarationAccepted && (
-                      <p className="text-xs text-rose-500 font-black flex items-center gap-1">
+                      <p className="text-xs text-[#C62828] dark:text-[#FDA4AF] font-semibold flex items-center gap-1">
                         ⚠️ {errors.declarationAccepted}
                       </p>
                     )}
                   </div>
 
-                  {/* Card 2: Verification & Approval Information */}
-                  <div className="p-5 rounded-2xl border border-blue-500/30 bg-blue-500/5 dark:bg-blue-500/10 text-slate-800 dark:text-blue-100 flex items-start gap-3">
-                    <Info className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                    <div className="text-xs space-y-1.5">
-                      <h4 className="font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">2. College Verification Policy</h4>
-                      <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                        Upon successful submission and payment, your registration will be reviewed and verified by your respective <strong>College Head</strong>. Ensure all student details are valid to prevent rejection during gate pass generation.
+                  {/* Card 2: Verification Policy */}
+                  <div className="p-4 rounded-lg border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)] bg-[#FAF9F6] dark:bg-[#121625] text-[#211D2B] dark:text-[#F5F2FA] flex items-start gap-2.5">
+                    <Info className="w-4 h-4 text-[#7156A5] dark:text-[#B8A5E5] mt-0.5 shrink-0" />
+                    <div className="text-xs space-y-1">
+                      <h4 className="font-bold uppercase tracking-wider text-[#7156A5] dark:text-[#B8A5E5]">2. College Verification Policy</h4>
+                      <p className="text-[#686370] dark:text-[#AAA4B8] leading-relaxed">
+                        Upon submission and payment, registration will be reviewed and verified by your respective <strong>College Head</strong>. Ensure student details are accurate to avoid rejection during biometric gate pass generation.
                       </p>
                     </div>
                   </div>
@@ -1382,12 +1340,12 @@ export const RegistrationPage = () => {
                   />
 
                   {/* Action Buttons */}
-                  <div className="flex justify-between pt-6 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex justify-between pt-5 border-t border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]">
                     <button
                       type="button"
                       disabled={isProcessingPayment}
                       onClick={handlePrevStep}
-                      className="px-6 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm flex items-center gap-2 transition hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50"
+                      className="px-5 py-2.5 rounded-lg bg-[#FAF9F6] dark:bg-[#121625] text-[#211D2B] dark:text-[#F5F2FA] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] font-semibold text-sm flex items-center gap-1.5 hover:bg-[#F4F2F7] dark:hover:bg-[#161B2E] transition-all shadow-2xs cursor-pointer disabled:opacity-50"
                     >
                       <ArrowLeft className="w-4 h-4" /> Back
                     </button>
@@ -1395,10 +1353,11 @@ export const RegistrationPage = () => {
                     <button
                       type="submit"
                       disabled={isProcessingPayment || !formData.declarationAccepted}
-                      className={`px-8 py-3 rounded-2xl font-bold text-sm shadow-md flex items-center gap-2 transition ${formData.declarationAccepted && !isProcessingPayment
-                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white shadow-blue-500/20 active:scale-[0.98]'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-200/40 dark:border-slate-700/40'
-                        }`}
+                      className={`px-6 py-2.5 rounded-lg font-semibold text-sm shadow-2xs flex items-center gap-2 transition-all ${
+                        formData.declarationAccepted && !isProcessingPayment
+                          ? 'bg-[#7156A5] hover:bg-[#5E4491] dark:bg-[#8B5CF6] dark:hover:bg-[#7C3AED] text-white cursor-pointer'
+                          : 'bg-[#F4F2F7] dark:bg-[#121625] text-[#686370] dark:text-[#AAA4B8] cursor-not-allowed border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]'
+                      }`}
                     >
                       {isProcessingPayment ? (
                         <>
