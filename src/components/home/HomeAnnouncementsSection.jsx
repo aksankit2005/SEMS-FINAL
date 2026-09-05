@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, ChevronRight, FileText, Calendar, Paperclip, Sparkles } from 'lucide-react';
+import { Bell, ArrowRight, FileText, Calendar, Paperclip } from 'lucide-react';
 import { useSportsData } from '../../context/SportsDataContext';
 import { ANNOUNCEMENTS_DATA } from '../../data/announcementsData';
 
@@ -13,82 +13,84 @@ export const HomeAnnouncementsSection = () => {
     : (ANNOUNCEMENTS_DATA || []).slice(0, 3);
 
   return (
-    <section className="py-10 sm:py-12 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 transition-colors">
-      <div className="w-full max-w-[1440px] px-3 sm:px-5 lg:px-6 xl:px-8 mx-auto">
+    <section className="py-12 sm:py-14 bg-[#F4F2F7] dark:bg-[#08090E] border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] transition-colors duration-200 font-spatial-sans">
+      <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto">
         
-        {/* Section Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-8 pb-4 border-b border-slate-200 dark:border-slate-800 gap-4">
+        {/* Editorial Section Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-8 pb-4 border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wider mb-2">
-              <Bell className="w-3.5 h-3.5 text-blue-500 animate-bounce" /> Official Directorate Alerts
+            <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#A98B57] dark:text-[#D2AB45] mb-1.5">
+              <Bell className="w-3.5 h-3.5 text-[#A98B57] dark:text-[#D2AB45]" />
+              <span>Official Directorate Circulars</span>
             </div>
-            <h2 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-              Latest <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 bg-clip-text text-transparent">Announcements</span>
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#211D2B] dark:text-[#F5F2FA] tracking-tight font-spatial-display">
+              Latest <span className="text-[#7156A5] dark:text-[#B8A5E5]">Announcements</span>
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Important circulars, rule guidelines, and official tournament notices
+            <p className="text-xs sm:text-sm text-[#686370] dark:text-[#AAA4B8] mt-1">
+              Official circulars, regulatory guidelines, and championship notices
             </p>
           </div>
 
           <Link
             to="/announcements"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#FAF9F6] dark:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] text-xs sm:text-sm font-semibold text-[#211D2B] dark:text-[#F5F2FA] hover:border-[#7156A5] dark:hover:border-[#B8A5E5] hover:text-[#7156A5] dark:hover:text-[#B8A5E5] transition-all shadow-2xs"
           >
             <span>All Circulars</span>
-            <ChevronRight className="w-4 h-4" />
+            <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
-        {/* Announcements Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+        {/* Announcements Journal Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {displayAnnouncements.length === 0 ? (
-            <div className="col-span-full py-10 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800">
-              <Bell className="w-10 h-10 text-slate-400 mx-auto mb-2 opacity-60" />
-              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No Announcements Published Yet</p>
+            <div className="col-span-full py-12 text-center bg-[#FFFFFF] dark:bg-[#0D101A] rounded-lg border border-dashed border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)]">
+              <Bell className="w-8 h-8 text-[#686370] dark:text-[#AAA4B8] mx-auto mb-2 opacity-60" />
+              <p className="text-sm font-semibold text-[#211D2B] dark:text-[#F5F2FA]">No Announcements Published</p>
+              <p className="text-xs text-[#686370] dark:text-[#AAA4B8] mt-1">Directives and circulars will appear here once released</p>
             </div>
           ) : (
             displayAnnouncements.map((item) => (
               <Link
                 key={item.id || item.title}
                 to="/announcements"
-                className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-blue-500/40 transition duration-300 flex flex-col justify-between group"
+                className="bg-[#FFFFFF] dark:bg-[#0D101A] rounded-lg p-5 border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] hover:border-[#7156A5]/40 dark:hover:border-[#8B5CF6]/40 transition-all flex flex-col justify-between group shadow-2xs"
               >
                 <div>
                   {/* Category & Date */}
                   <div className="flex items-center justify-between mb-3 text-xs">
-                    <span className="px-3 py-1 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold">
-                      {item.category || 'Official Notice'}
+                    <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-[#FAF9F6] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
+                      {item.category || 'Notice'}
                     </span>
-                    <span className="text-slate-400 text-[11px] flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-slate-400" />
+                    <span className="text-[#686370] dark:text-[#AAA4B8] text-[11px] flex items-center gap-1 font-medium">
+                      <Calendar className="w-3 h-3 text-[#686370] dark:text-[#AAA4B8]" />
                       {item.date || item.createdAt || 'Aug 2026'}
                     </span>
                   </div>
 
                   {/* Title */}
-                  <h3 className="text-base font-black text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition line-clamp-2 leading-snug mb-2">
+                  <h3 className="text-sm sm:text-base font-bold text-[#211D2B] dark:text-[#F5F2FA] group-hover:text-[#7156A5] dark:group-hover:text-[#B8A5E5] transition-colors line-clamp-2 leading-snug mb-2 font-spatial-display">
                     {item.title}
                   </h3>
 
                   {/* Excerpt Summary */}
-                  <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-3 leading-relaxed">
+                  <p className="text-xs text-[#686370] dark:text-[#AAA4B8] line-clamp-3 leading-relaxed">
                     {item.summary || item.content || 'Click to view full announcement details and downloadable circular attachments.'}
                   </p>
                 </div>
 
-                {/* Footer action badge */}
-                <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-300">
+                {/* Footer action */}
+                <div className="mt-5 pt-3 border-t border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] flex items-center justify-between text-xs font-semibold text-[#686370] dark:text-[#AAA4B8]">
                   {item.attachment ? (
-                    <span className="flex items-center gap-1.5 text-blue-500 font-semibold text-[11px]">
-                      <Paperclip className="w-3.5 h-3.5" /> PDF Attached
+                    <span className="flex items-center gap-1 text-[#7156A5] dark:text-[#B8A5E5] text-[11px]">
+                      <Paperclip className="w-3.5 h-3.5" /> PDF Document
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 text-[11px] text-slate-400">
-                      <FileText className="w-3.5 h-3.5" /> APEX Sports Dept
+                    <span className="flex items-center gap-1 text-[11px] text-[#686370] dark:text-[#AAA4B8]">
+                      <FileText className="w-3.5 h-3.5" /> APEX Sports Directorate
                     </span>
                   )}
-                  <span className="text-blue-600 dark:text-blue-400 group-hover:translate-x-1 transition duration-200 flex items-center gap-0.5">
-                    Read Notice <ChevronRight className="w-3.5 h-3.5" />
+                  <span className="text-[#7156A5] dark:text-[#B8A5E5] group-hover:translate-x-0.5 transition-transform duration-150 flex items-center gap-0.5">
+                    Read <ArrowRight className="w-3 h-3" />
                   </span>
                 </div>
               </Link>

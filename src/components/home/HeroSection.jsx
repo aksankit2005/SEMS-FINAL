@@ -114,11 +114,11 @@ export const HeroSection = () => {
   };
 
   return (
-    <section className="relative w-full overflow-hidden bg-slate-950 text-white min-h-0 select-none">
+    <section className="relative w-full overflow-hidden bg-[#070A13] text-white min-h-0 select-none font-spatial-sans border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)]">
 
       {/* Main Full-Width Hero Slider Container */}
       <div
-        className="w-full h-[360px] xs:h-[400px] sm:h-[480px] md:h-[540px] lg:h-[580px] xl:h-[620px] 2xl:h-[680px] relative overflow-hidden group cursor-grab active:cursor-grabbing"
+        className="w-full h-[380px] xs:h-[420px] sm:h-[480px] md:h-[540px] lg:h-[580px] xl:h-[620px] relative overflow-hidden group cursor-grab active:cursor-grabbing"
         onMouseLeave={() => {
           isDragging.current = false;
         }}
@@ -129,62 +129,67 @@ export const HeroSection = () => {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
       >
-        {/* Background Image inside card - Full Bleed Edge to Edge */}
+        {/* Background Authentic Sport Image - Edge to Edge with Fine Atmosphere */}
         <img
           key={currentSlide.id || currentSlide.image || activeIndex}
           src={currentSlide.image}
-          alt={currentSlide.title || 'APEX Sports Tournament'}
-          className="w-full h-full object-cover object-center brightness-[1.05] contrast-[1.06] saturate-[1.08] group-hover:scale-105 transition-all duration-700 select-none pointer-events-none"
+          alt={currentSlide.title || 'APEX Sports Championship'}
+          className="w-full h-full object-cover object-center brightness-[0.82] contrast-[1.08] saturate-[1.05] transition-all duration-700 select-none pointer-events-none"
           draggable="false"
         />
 
-        {/* Gradient Overlays for Readability and Depth */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/50 to-transparent pointer-events-none z-10" />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/70 via-slate-950/20 to-transparent pointer-events-none z-10" />
+        {/* Dignified Editorial Shadow/Depth Gradient Overlays */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#070A13] via-[#070A13]/60 to-transparent pointer-events-none z-10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#070A13]/90 via-[#070A13]/40 to-transparent pointer-events-none z-10" />
 
-        {/* Main Slide Content Area */}
-        <div className="absolute bottom-14 xs:bottom-16 sm:bottom-20 md:bottom-22 left-0 right-0 z-20 pointer-events-none">
-          <div className="w-full max-w-[1600px] mx-auto px-4 xs:px-6 sm:px-10 lg:px-12 xl:px-16 space-y-1.5 xs:space-y-2 sm:space-y-4 text-left">
-            <h1 className="text-xl xs:text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white uppercase tracking-tight leading-tight max-w-4xl drop-shadow-2xl pointer-events-auto">
+        {/* Split Editorial Content Area */}
+        <div className="absolute bottom-12 xs:bottom-14 sm:bottom-18 md:bottom-20 left-0 right-0 z-20 pointer-events-none">
+          <div className="w-full max-w-[1600px] mx-auto px-4 xs:px-6 sm:px-10 lg:px-12 xl:px-16 space-y-2 sm:space-y-3 text-left">
+            
+            {/* Useful Sport / Event Badge Label */}
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-white/10 backdrop-blur-xs border border-white/15 text-xs font-mono font-medium tracking-wider text-[#F3D78A] pointer-events-auto">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#A98B57]" />
+              <span className="uppercase">{currentSlide.sport || 'APEX Inter-College Championship 2026'}</span>
+            </div>
+
+            {/* Large Dignified Serif Sport Title */}
+            <h1 className="text-2xl xs:text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-normal font-spatial-display text-white uppercase tracking-tight leading-tight max-w-4xl drop-shadow-md pointer-events-auto">
               {currentSlide.title}
             </h1>
 
-            <p className="text-xs xs:text-sm sm:text-base lg:text-lg text-slate-100 font-normal leading-relaxed max-w-3xl line-clamp-2 drop-shadow-md pointer-events-auto">
-              {currentSlide.description}
-            </p>
-
-            {/* Action Buttons */}
-            <div className="pt-1.5 sm:pt-3 flex flex-wrap items-center gap-2 sm:gap-4 pointer-events-auto">
+            {/* Action Buttons (Solid, Non-Gradient, Restrained 8px Radius) */}
+            <div className="pt-2 sm:pt-4 flex flex-wrap items-center gap-2.5 sm:gap-4 pointer-events-auto">
               <Link
                 to={currentSlide.primaryBtnLink || '/registration'}
-                className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs xs:text-sm sm:text-base shadow-xl shadow-blue-600/30 transition flex items-center gap-1.5 sm:gap-2 transform hover:-translate-y-0.5 active:scale-95 shrink-0"
+                className="px-5 sm:px-7 py-2.5 sm:py-3.5 rounded-lg bg-[#7156A5] hover:bg-[#5E458B] dark:bg-[#8B5CF6] dark:hover:bg-[#7C3AED] text-white font-semibold text-xs sm:text-sm tracking-wide transition-all shadow-xs flex items-center gap-2 active:scale-98 shrink-0 min-h-[44px]"
               >
-                <Trophy className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-white" />
-                <span>{currentSlide.primaryBtnText || 'REGISTER NOW'}</span>
-                <ChevronRight className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                <Trophy className="w-4 h-4 text-white" />
+                <span>Register Your Team</span>
+                <ChevronRight className="w-4 h-4 text-white/80" />
               </Link>
 
               <Link
                 to={currentSlide.secondaryBtnLink || '/live'}
-                className="px-4 xs:px-5 sm:px-8 py-2 xs:py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-transparent hover:bg-white/10 text-white font-bold text-xs xs:text-sm sm:text-base border border-white/40 hover:border-white/80 backdrop-blur-xs transition flex items-center gap-1.5 sm:gap-2 active:scale-95 shrink-0"
+                className="px-5 sm:px-7 py-2.5 sm:py-3.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm border border-white/25 hover:border-white/50 backdrop-blur-xs transition-all flex items-center gap-2 active:scale-98 shrink-0 min-h-[44px]"
               >
-                <PlayCircle className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-rose-500 animate-pulse" />
-                <span>{currentSlide.secondaryBtnText || 'Watch Live'}</span>
+                <PlayCircle className="w-4 h-4 text-[#FDA4AF]" />
+                <span>Watch Live Scoreboard</span>
               </Link>
             </div>
           </div>
         </div>
 
-        {/* Bottom-Right Slide Indicators / Dots - Clean without background box or border */}
-        <div className="absolute bottom-3.5 right-4 sm:bottom-6 sm:right-8 lg:right-12 z-30 flex items-center gap-1.5 sm:gap-2 pointer-events-auto">
+        {/* Bottom-Right Slide Indicators - Clean & Restrained */}
+        <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-8 lg:right-12 z-30 flex items-center gap-2 pointer-events-auto">
           {slides.map((_, idx) => (
             <button
               key={idx}
               onClick={() => setActiveIndex(idx)}
-              className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 cursor-pointer ${idx === activeIndex
-                ? 'w-6 sm:w-8 bg-gradient-to-r from-blue-500 to-indigo-500 shadow-md'
-                : 'w-2 sm:w-2.5 bg-white/40 hover:bg-white/70'
-                }`}
+              className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                idx === activeIndex
+                  ? 'w-7 bg-[#8B5CF6] dark:bg-[#B8A5E5]'
+                  : 'w-2 bg-white/30 hover:bg-white/60'
+              }`}
               title={`Go to slide ${idx + 1}`}
               aria-label={`Slide ${idx + 1}`}
             />

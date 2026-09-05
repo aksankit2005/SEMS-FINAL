@@ -26,15 +26,11 @@ export const Footer = () => {
   };
 
   return (
-    <footer className="relative bg-slate-50/90 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-t border-slate-200/80 dark:border-slate-800/80 pt-6 sm:pt-8 pb-5 sm:pb-6 transition-colors duration-200 overflow-hidden font-sans">
-      {/* Subtle Glow Overlays */}
-      <div className="absolute top-0 left-1/4 w-64 h-64 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-orange-500/5 dark:bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
-
+    <footer className="relative bg-[#FAF9F6] dark:bg-[#070A13] text-[#686370] dark:text-[#AAA4B8] border-t border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] pt-8 pb-6 transition-colors duration-200 overflow-hidden font-spatial-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-6">
         
         {/* Main Footer Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 pb-6 border-b border-slate-200/80 dark:border-slate-800/70 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 pb-6 border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] items-start">
           
           {/* Brand & Mission (Col 5) */}
           <div className="md:col-span-5 space-y-2.5">
@@ -49,43 +45,46 @@ export const Footer = () => {
                 alt="APEX Logo"
                 className="block dark:hidden h-7 sm:h-8 w-auto object-contain transition-transform group-hover:scale-105"
               />
-              <span className="text-lg sm:text-xl font-black tracking-tight text-slate-900 dark:text-white">
-                APEX <span className="text-blue-600 dark:text-blue-400">2026</span>
+              <span className="text-lg sm:text-xl font-bold tracking-tight text-[#211D2B] dark:text-[#F5F2FA] font-spatial-display">
+                APEX <span className="text-[#7156A5] dark:text-[#B8A5E5]">2026</span>
               </span>
             </Link>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-md">
-              The premier inter-college Sports Event Management System, uniting registrations, tournament fixtures, live scoring, and championship leaderboards.
+            <p className="text-xs text-[#686370] dark:text-[#AAA4B8] leading-relaxed max-w-md">
+              The premier inter-college Sports Event Management System of Maharana Pratap Engineering College, uniting registrations, tournament fixtures, live scoring, and championship leaderboards.
             </p>
-            <p className="text-xs font-medium text-blue-600 dark:text-blue-400 italic pt-0.5">
-              &ldquo;Your journey starts here. Prove what you can do.&rdquo;
+            <p className="text-xs font-semibold text-[#A98B57] dark:text-[#D2AB45] tracking-wide pt-0.5">
+              &ldquo;Courage, Dignity, and Unyielding Legacy.&rdquo;
             </p>
           </div>
 
           {/* Quick Navigation (Col 4) */}
           <div className="md:col-span-4 space-y-2">
-            <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-slate-200">
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#211D2B] dark:text-[#F5F2FA]">
               Quick Links
             </h4>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-600 dark:text-slate-400">
-              <Link to="/live" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-0.5 flex items-center gap-1.5">
-                Live Scores <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-[#686370] dark:text-[#AAA4B8]">
+              <Link to="/live" className="hover:text-[#7156A5] dark:hover:text-[#B8A5E5] transition-colors py-0.5 flex items-center gap-1.5">
+                Live Scores <span className="w-1.5 h-1.5 rounded-full bg-[#B71C1C] dark:bg-[#FDA4AF]" />
               </Link>
-              <Link to="/registration" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-0.5">
+              <Link to="/registration" className="hover:text-[#7156A5] dark:hover:text-[#B8A5E5] transition-colors py-0.5">
                 Registration
               </Link>
-              <Link to="/schedule" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-0.5">
+              <Link to="/schedule" className="hover:text-[#7156A5] dark:hover:text-[#B8A5E5] transition-colors py-0.5">
                 Fixtures
               </Link>
-              <Link to="/results" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-0.5">
+              <Link to="/results" className="hover:text-[#7156A5] dark:hover:text-[#B8A5E5] transition-colors py-0.5">
                 Match Results
               </Link>
-              <Link to="/gallery" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-0.5">
+              <Link to="/leaderboard" className="hover:text-[#7156A5] dark:hover:text-[#B8A5E5] transition-colors py-0.5">
+                Leaderboard
+              </Link>
+              <Link to="/gallery" className="hover:text-[#7156A5] dark:hover:text-[#B8A5E5] transition-colors py-0.5">
                 Gallery
               </Link>
-              <Link to="/announcements" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-0.5">
+              <Link to="/announcements" className="hover:text-[#7156A5] dark:hover:text-[#B8A5E5] transition-colors py-0.5">
                 Announcements
               </Link>
-              <Link to="/about" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-0.5">
+              <Link to="/about" className="hover:text-[#7156A5] dark:hover:text-[#B8A5E5] transition-colors py-0.5">
                 About APEX
               </Link>
             </div>
@@ -93,7 +92,7 @@ export const Footer = () => {
 
           {/* Connect & Support (Col 3) */}
           <div className="md:col-span-3 space-y-2.5">
-            <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-slate-200">
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#211D2B] dark:text-[#F5F2FA]">
               Connect & Support
             </h4>
             
@@ -106,7 +105,7 @@ export const Footer = () => {
                 rel="noopener noreferrer"
                 aria-label="APEX Instagram Profile"
                 title="Follow APEX on Instagram (@apex_mpgi)"
-                className="w-9 h-9 sm:w-8 sm:h-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-pink-600 dark:hover:text-pink-400 hover:border-pink-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-xs"
+                className="w-8 h-8 rounded-lg bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] hover:text-[#7156A5] dark:hover:text-[#B8A5E5] hover:border-[#7156A5]/40 transition-all flex items-center justify-center shadow-2xs min-h-[36px] min-w-[36px]"
               >
                 <InstagramIcon className="w-4 h-4" />
               </a>
@@ -118,7 +117,7 @@ export const Footer = () => {
                 rel="noopener noreferrer"
                 aria-label="APEX Official YouTube Channel"
                 title="Watch APEX Matches on YouTube"
-                className="w-9 h-9 sm:w-8 sm:h-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:border-red-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-xs"
+                className="w-8 h-8 rounded-lg bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] hover:text-[#B71C1C] dark:hover:text-[#FDA4AF] hover:border-[#B71C1C]/40 transition-all flex items-center justify-center shadow-2xs min-h-[36px] min-w-[36px]"
               >
                 <YoutubeIcon className="w-4 h-4" />
               </a>
@@ -130,7 +129,7 @@ export const Footer = () => {
                 rel="noopener noreferrer"
                 aria-label="APEX Feedback Form"
                 title="Submit Feedback / Suggestions"
-                className="w-9 h-9 sm:w-8 sm:h-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400 hover:border-purple-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-xs"
+                className="w-8 h-8 rounded-lg bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] hover:text-[#7156A5] dark:hover:text-[#B8A5E5] hover:border-[#7156A5]/40 transition-all flex items-center justify-center shadow-2xs min-h-[36px] min-w-[36px]"
               >
                 <MessageSquareText className="w-4 h-4" />
               </a>
@@ -140,7 +139,7 @@ export const Footer = () => {
                 href="mailto:sports@mpgi.edu.in"
                 aria-label="Email APEX Support Desk"
                 title="Email: sports@mpgi.edu.in"
-                className="w-9 h-9 sm:w-8 sm:h-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-xs"
+                className="w-8 h-8 rounded-lg bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] hover:text-[#7156A5] dark:hover:text-[#B8A5E5] hover:border-[#7156A5]/40 transition-all flex items-center justify-center shadow-2xs min-h-[36px] min-w-[36px]"
               >
                 <Mail className="w-4 h-4" />
               </a>
@@ -150,7 +149,7 @@ export const Footer = () => {
                 href="tel:+919119705860"
                 aria-label="Call APEX Support Desk"
                 title="Call Support: +91 91197 05860"
-                className="w-9 h-9 sm:w-8 sm:h-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-xs"
+                className="w-8 h-8 rounded-lg bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] hover:text-[#1B5E20] dark:hover:text-[#81C784] hover:border-[#1B5E20]/40 transition-all flex items-center justify-center shadow-2xs min-h-[36px] min-w-[36px]"
               >
                 <Phone className="w-4 h-4" />
               </a>
@@ -160,37 +159,37 @@ export const Footer = () => {
         </div>
 
         {/* Bottom Copyright & Legal Links Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400 text-center sm:text-left">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#686370] dark:text-[#AAA4B8] text-center sm:text-left">
           
           <div className="flex items-center gap-1.5 flex-wrap justify-center sm:justify-start">
-            <span className="font-semibold text-slate-700 dark:text-slate-300">© 2026 APEX</span>
+            <span className="font-semibold text-[#211D2B] dark:text-[#F5F2FA]">© 2026 APEX</span>
             <span>•</span>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400">Your journey starts here. Prove what you can do.</span>
+            <span className="text-[11px]">Maharana Pratap Engineering College, MPGI Kanpur</span>
           </div>
 
           {/* Legal Links */}
           <div className="flex flex-wrap items-center justify-center gap-3 font-medium text-[11px] sm:text-xs">
-            <Link to="/faq" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+            <Link to="/faq" className="hover:text-[#7156A5] dark:hover:text-[#B8A5E5] transition-colors">
               FAQ
             </Link>
             <span>•</span>
-            <Link to="/terms" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+            <Link to="/terms" className="hover:text-[#7156A5] dark:hover:text-[#B8A5E5] transition-colors">
               Terms & Conditions
             </Link>
             <span>•</span>
             <Link
               to="/privacy"
               onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' })}
-              className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              className="hover:text-[#7156A5] dark:hover:text-[#B8A5E5] transition-colors"
             >
               Privacy Policy
             </Link>
           </div>
 
           {/* Platform Tagline */}
-          <div className="hidden lg:flex items-center gap-1 text-[11px] text-slate-400 dark:text-slate-500">
-            <span>Engineered for Sports Management</span>
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500/80 shrink-0" />
+          <div className="hidden lg:flex items-center gap-1 text-[11px] text-[#686370] dark:text-[#AAA4B8]">
+            <span>Engineered with Dignity & Precision</span>
+            <ShieldCheck className="w-3.5 h-3.5 text-[#1B5E20] dark:text-[#81C784] shrink-0" />
           </div>
 
         </div>

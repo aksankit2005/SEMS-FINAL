@@ -137,19 +137,19 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 xl:hidden flex font-sans">
+    <div className="fixed inset-0 z-50 xl:hidden flex font-spatial-sans">
       {/* Backdrop Overlay */}
       <div 
         onClick={onClose} 
-        className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity duration-200" 
+        className="fixed inset-0 bg-[#070A13]/70 backdrop-blur-xs transition-opacity duration-200" 
         aria-hidden="true"
       />
 
       {/* Drawer Container Panel */}
-      <div className="relative w-[280px] max-w-[85vw] bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white h-full flex flex-col z-10 shadow-2xl p-4 overflow-y-auto custom-scrollbar transition-transform duration-200">
+      <div className="relative w-[280px] max-w-[85vw] bg-[#FAF9F6] dark:bg-[#070A13] border-r border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] h-full flex flex-col z-10 shadow-2xl p-4 overflow-y-auto custom-scrollbar transition-transform duration-200">
         
         {/* Drawer Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-200/80 dark:border-slate-800/80">
+        <div className="flex items-center justify-between pb-4 border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)]">
           <Link to="/" onClick={onClose} className="flex items-center">
             <img 
               src="/apex-nav-logo-dark.png" 
@@ -165,7 +165,7 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
 
           <button 
             onClick={onClose} 
-            className="p-1.5 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition cursor-pointer"
+            className="p-2 text-[#686370] hover:text-[#211D2B] dark:text-[#AAA4B8] dark:hover:text-white rounded-lg bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] transition cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label="Close mobile navigation menu"
           >
             <X className="w-5 h-5" />
@@ -174,24 +174,24 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
 
         {/* User Session Banner */}
         {activeSession ? (
-          <div className="my-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
-            <div className="text-[10px] font-black uppercase text-slate-400">Logged in as</div>
-            <div className="font-bold text-blue-600 dark:text-blue-400 text-xs mt-0.5 truncate">
-              {activeSession.name} <span className="text-[10px] text-slate-500 font-normal">({activeSession.roleLabel})</span>
+          <div className="my-4 p-3 rounded-lg bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)]">
+            <div className="text-[10px] font-black uppercase text-[#686370] dark:text-[#AAA4B8]">Logged in as</div>
+            <div className="font-bold text-[#7156A5] dark:text-[#B8A5E5] text-xs mt-0.5 truncate">
+              {activeSession.name} <span className="text-[10px] text-[#686370] dark:text-[#AAA4B8] font-normal">({activeSession.roleLabel})</span>
             </div>
             
-            <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-slate-200 dark:border-slate-800">
+            <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]">
               <Link
                 to={activeSession.dashboardPath}
                 onClick={onClose}
-                className="flex-1 py-1.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold text-center flex items-center justify-center gap-1.5"
+                className="flex-1 min-h-[40px] px-3 rounded-lg bg-[#7156A5] hover:bg-[#5E458B] dark:bg-[#8B5CF6] dark:hover:bg-[#7C3AED] text-white text-xs font-semibold text-center flex items-center justify-center gap-1.5 transition"
               >
                 <LayoutDashboard className="w-3.5 h-3.5" />
                 <span>Dashboard</span>
               </Link>
               <button
                 onClick={activeSession.logoutHandler}
-                className="py-1.5 px-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-500/20 text-xs font-bold transition cursor-pointer"
+                className="min-h-[40px] px-2.5 rounded-lg bg-[#FBEDEF] hover:bg-[#B71C1C] dark:bg-[rgba(225,29,72,0.15)] text-[#B71C1C] dark:text-[#FDA4AF] hover:text-white border border-[#FFCDD2] dark:border-[rgba(225,29,72,0.3)] text-xs font-bold transition cursor-pointer flex items-center justify-center"
                 title="Sign Out"
               >
                 <LogOut className="w-3.5 h-3.5" />
@@ -210,23 +210,19 @@ export const MobileDrawer = ({ isOpen, onClose }) => {
                 to={item.path}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition ${
+                  `flex items-center justify-between px-3.5 py-3 min-h-[44px] rounded-lg text-xs font-semibold transition ${
                     isActive
-                      ? 'bg-blue-500/10 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 border-l-4 border-blue-600 dark:border-blue-400 font-black shadow-xs'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'
+                      ? 'bg-[#F4F2F7] dark:bg-[rgba(184,165,229,0.1)] text-[#7156A5] dark:text-[#B8A5E5] border-l-3 border-[#7156A5] dark:border-[#8B5CF6] font-bold'
+                      : 'text-[#211D2B] dark:text-[#F5F2FA] hover:bg-[#F4F2F7] dark:hover:bg-[#121625]'
                   }`
                 }
               >
                 <div className="flex items-center gap-3">
-                  <Icon className="w-4 h-4 shrink-0 text-slate-500 dark:text-slate-400" />
+                  <Icon className="w-4 h-4 shrink-0 text-[#686370] dark:text-[#AAA4B8]" />
                   <span>{item.name}</span>
                 </div>
                 {item.badge && (
-                  <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black ${
-                    item.isPurple
-                      ? 'bg-purple-600 text-white shadow-[0_0_8px_#9333ea]'
-                      : 'bg-rose-500 text-white animate-pulse'
-                  }`}>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#FBEDEF] text-[#B71C1C] dark:bg-[rgba(225,29,72,0.18)] dark:text-[#FDA4AF] border border-[#FFCDD2] dark:border-[rgba(225,29,72,0.3)]">
                     {item.badge}
                   </span>
                 )}
