@@ -71,7 +71,7 @@ export const AdminDashboardPage = () => {
   return (
     <div className="space-y-8 animate-fade-in text-[#211D2B] dark:text-[#F5F2FA]">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-[#FFFFFF] dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 rounded-2xl bg-[#FFFFFF] dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] shadow-2xs">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)] font-mono">
@@ -122,7 +122,7 @@ export const AdminDashboardPage = () => {
       </div>
 
       {/* Recent Activity Timeline Log */}
-      <div className="p-6 rounded-2xl bg-[#FFFFFF] dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] space-y-6 shadow-2xs">
+      <div className="p-4 sm:p-6 rounded-2xl bg-[#FFFFFF] dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] space-y-6 shadow-2xs">
         <div className="flex items-center justify-between border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] pb-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-[#7156A5]/10 dark:bg-[rgba(184,165,229,0.12)] text-[#7156A5] dark:text-[#B8A5E5] flex items-center justify-center">
