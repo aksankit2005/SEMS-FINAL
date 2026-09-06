@@ -5,17 +5,9 @@
    Font: Cinzel for Display/Titles, Outfit for UI/Body Copy, JetBrains Mono for Code/Tags
    ============================================================ */
 
-/* ── 1. Global Portal Root Typography & Surfaces ──────────── */
+/* ── 1. Global Portal Root Typography ───────────────────────── */
 :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) {
   font-family: 'Outfit', system-ui, -apple-system, sans-serif !important;
-  background-color: #FAF9F6;
-  color: #211D2B;
-}
-
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root),
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root):where(.dark, .dark *) {
-  background-color: #070A13 !important;
-  color: #F5F2FA !important;
 }
 
 /* Institutional Headings - Cinzel Serif Display */
@@ -34,211 +26,221 @@
   font-family: 'JetBrains Mono', ui-monospace, monospace !important;
 }
 
-/* ── 2. Card Surfaces & Panels ───────────────────────────── */
-/* Light Mode */
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-white {
+
+/* ============================================================
+   2. STRICT LIGHT MODE RULES (ONLY active when NOT in dark mode)
+   ============================================================ */
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) {
+  background-color: #FAF9F6;
+  color: #211D2B;
+}
+
+/* Light Card Surfaces */
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-white {
   background-color: #FFFFFF !important;
 }
 
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-slate-50,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-slate-100 {
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.bg-slate-50, .bg-slate-100, .bg-gray-50, .bg-gray-100) {
   background-color: #F4F2F7 !important;
 }
 
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .border-slate-200,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .border-slate-100,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .border-slate-300 {
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.border-slate-200, .border-slate-100, .border-slate-300, .border-gray-200) {
   border-color: #E5E1E8 !important;
 }
 
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.divide-slate-200, .divide-slate-100, .divide-gray-200) > :not([hidden]) ~ :not([hidden]) {
   border-color: #E5E1E8 !important;
 }
 
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .text-slate-900,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .text-slate-800,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .text-slate-700 {
+/* Light Text Rules */
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.text-slate-900, .text-slate-800, .text-slate-700, .text-gray-900, .text-gray-800, .text-gray-700) {
   color: #211D2B !important;
 }
 
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .text-slate-600,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .text-slate-500,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .text-slate-400 {
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.text-slate-600, .text-slate-500, .text-slate-400, .text-gray-600, .text-gray-500, .text-gray-400) {
   color: #686370 !important;
 }
 
-/* Dark Mode Panels */
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-white,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:bg-slate-900"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:bg-slate-950"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:bg-[#0B1120]"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:bg-[#090D16]"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .dark\:bg-slate-900,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .dark\:bg-slate-950,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .dark\:bg-\[\#0B1120\],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .dark\:bg-\[\#090D16\] {
-  background-color: #0D101A !important;
-}
-
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:bg-slate-800"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .dark\:bg-slate-800 {
-  background-color: #121625 !important;
-}
-
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:border-slate-800"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:border-slate-700"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .dark\:border-slate-800,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .dark\:border-slate-700 {
-  border-color: rgba(184, 165, 229, 0.16) !important;
-}
-
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:divide-slate-800"] > :not([hidden]) ~ :not([hidden]),
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .dark\:divide-slate-800 > :not([hidden]) ~ :not([hidden]) {
-  border-color: rgba(184, 165, 229, 0.12) !important;
-}
-
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:text-white"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:text-slate-100"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:text-slate-200"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .dark\:text-white,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .dark\:text-slate-100,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .dark\:text-slate-200 {
-  color: #F5F2FA !important;
-}
-
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:text-slate-400"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:text-slate-500"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:text-slate-600"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .dark\:text-slate-400,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .dark\:text-slate-500,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .dark\:text-slate-600 {
-  color: #AAA4B8 !important;
-}
-
-/* ── 3. Action Buttons & Violet Accents ──────────────────── */
-/* Replaces standard blue/indigo buttons with Veer Legacy Violet */
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="from-blue-600"],
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .from-blue-600,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-blue-600,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-indigo-600 {
+/* Light Action Buttons */
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is([class*="from-blue-600"], .from-blue-600, .bg-blue-600, .bg-indigo-600) {
   background-image: none !important;
   background-color: #7156A5 !important;
   color: #FFFFFF !important;
 }
 
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="from-blue-600"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .from-blue-600,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-blue-600,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-indigo-600 {
-  background-image: none !important;
-  background-color: #8B5CF6 !important;
-  color: #FFFFFF !important;
-}
-
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="hover:from-blue-500"]:hover,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="hover:to-indigo-500"]:hover,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .hover\:from-blue-700:hover,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .hover\:to-indigo-700:hover,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .hover\:bg-blue-700:hover,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .hover\:bg-indigo-700:hover {
-  background-image: none !important;
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.hover\:bg-blue-700:hover, .hover\:bg-indigo-700:hover) {
   background-color: #5E458B !important;
 }
 
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="hover:from-blue-500"]:hover,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="hover:to-indigo-500"]:hover,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .hover\:from-blue-700:hover,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .hover\:to-indigo-700:hover,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .hover\:bg-blue-700:hover,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .hover\:bg-indigo-700:hover {
-  background-image: none !important;
-  background-color: #7C3AED !important;
-}
-
-/* Active tabs & selections */
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .text-blue-600,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .text-indigo-600 {
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.text-blue-600, .text-indigo-600) {
   color: #7156A5 !important;
 }
 
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:text-blue-400"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:text-indigo-400"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .dark\:text-blue-400,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .dark\:text-indigo-400 {
-  color: #B8A5E5 !important;
-}
-
-/* Badges & Chip backgrounds */
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-blue-500\/10,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-blue-500\/15,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-blue-500\/20,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-indigo-500\/10,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-indigo-500\/15,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-indigo-500\/20 {
+/* Light Badges */
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.bg-blue-500\/10, .bg-blue-500\/15, .bg-indigo-500\/10) {
   background-color: #F4F2F7 !important;
   color: #7156A5 !important;
   border-color: #E5E1E8 !important;
 }
 
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:bg-blue-500"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:bg-indigo-500"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .dark\:bg-blue-500\/10,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .dark\:bg-blue-500\/15,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .dark\:bg-blue-500\/20 {
-  background-color: rgba(184, 165, 229, 0.12) !important;
-  color: #B8A5E5 !important;
-  border-color: rgba(184, 165, 229, 0.24) !important;
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.bg-emerald-500\/10, .bg-green-500\/10) {
+  background-color: #EDF7F0 !important;
+  color: #1B5E20 !important;
+  border-color: #C8E6C9 !important;
 }
 
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .border-blue-500\/20,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .border-blue-500\/30,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .border-indigo-500\/20 {
-  border-color: rgba(113, 86, 165, 0.25) !important;
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.bg-rose-500\/10, .bg-red-500\/10) {
+  background-color: #FBEDEF !important;
+  color: #B71C1C !important;
+  border-color: #FFCDD2 !important;
 }
 
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:border-blue-500"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:border-indigo-500"] {
-  border-color: rgba(184, 165, 229, 0.25) !important;
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.bg-amber-500\/10, .bg-yellow-500\/10) {
+  background-color: #FFF8E1 !important;
+  color: #A98B57 !important;
+  border-color: #FFE082 !important;
 }
 
-/* ── 4. Form Controls & Inputs ───────────────────────────── */
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) select,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) textarea {
+/* Light Form Inputs */
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) select,
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) textarea {
   background-color: #FFFFFF !important;
   color: #211D2B !important;
   border-color: #E5E1E8 !important;
-  border-radius: 8px !important;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) select:focus,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) textarea:focus {
-  border-color: #7156A5 !important;
-  box-shadow: 0 0 0 2px rgba(113, 86, 165, 0.15) !important;
-  outline: none !important;
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) select option {
+  background-color: #FFFFFF !important;
+  color: #211D2B !important;
 }
 
+/* Light Tables */
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) table thead tr,
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) table thead th {
+  background-color: #F4F2F7 !important;
+  color: #686370 !important;
+}
+
+html:not(.dark) :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) table tbody tr:hover {
+  background-color: #FAF9F6 !important;
+}
+
+
+/* ============================================================
+   3. HIGH-CONTRAST DARK MODE (Every word and detail clearly visible!)
+   ============================================================ */
+
+/* Dark Mode Portal Root */
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root),
+:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root):where(.dark, .dark *) {
+  background-color: #070A13 !important;
+  color: #F5F2FA !important;
+}
+
+/* Dark Mode Card Surfaces */
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.bg-white, [class*="dark:bg-slate-900"], [class*="dark:bg-slate-950"], [class*="dark:bg-[#0B1120]"], [class*="dark:bg-[#090D16]"], [class*="dark:bg-[#070A13]"]) {
+  background-color: #0D101A !important;
+}
+
+/* Dark Mode Elevated / Sub-card Surfaces */
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.bg-slate-50, .bg-slate-100, [class*="dark:bg-slate-800"], [class*="dark:bg-[#121625]"], [class*="dark:bg-[#111827]"]) {
+  background-color: #121625 !important;
+}
+
+/* Dark Mode Borders & Dividers */
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.border-slate-200, .border-slate-300, .border-slate-700, .border-slate-800, [class*="dark:border-slate-800"], [class*="dark:border-slate-700"]) {
+  border-color: rgba(184, 165, 229, 0.16) !important;
+}
+
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.divide-slate-200, .divide-slate-100, .divide-slate-800, [class*="dark:divide-slate-800"]) > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(184, 165, 229, 0.12) !important;
+}
+
+/* ── Headings & Titles in Dark Mode (Pure Crisp Luminous White) ── */
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(h1, h2, h3, h4, h5, h6, strong, b, .font-black, .font-extrabold) {
+  color: #F5F2FA !important;
+}
+
+/* ── Primary Heavy Text (Names, Counts, Headers, Game Titles) ── */
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.text-slate-900, .text-slate-800, .text-gray-900, .text-gray-800, .text-zinc-900, .text-black, [class*="dark:text-white"], [class*="dark:text-slate-100"], [class*="dark:text-slate-200"]) {
+  color: #F5F2FA !important;
+}
+
+/* ── Secondary Content Text (Table Cells, Descriptions, Items) ── */
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.text-slate-700, .text-slate-600, .text-gray-700, .text-gray-600, .text-zinc-700, .text-zinc-600, [class*="dark:text-slate-300"], [class*="dark:text-gray-300"]) {
+  color: #E5E0F0 !important;
+}
+
+/* ── Muted Details, Small Words, Subtitles, Timestamps, Table Headers, Filter Labels ── */
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.text-slate-500, .text-slate-400, .text-gray-500, .text-gray-400, .text-zinc-500, .text-zinc-400, [class*="dark:text-slate-400"], [class*="dark:text-slate-500"], [class*="dark:text-gray-400"], [class*="dark:text-gray-500"]) {
+  color: #B8AECF !important;
+}
+
+/* ── Micro Text: 9px, 10px, 11px, 12px, font-mono captions (e.g. Roll numbers, IDs, Reg times) ── */
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.text-\[9px\], .text-\[10px\], .text-\[11px\], label:not([class*="text-purple"]):not([class*="text-blue"]):not([class*="text-emerald"]):not([class*="text-rose"]):not([class*="text-amber"])) {
+  color: #B8AECF !important;
+}
+
+/* ── Sticky Table Headers & Sticky Columns (e.g. Reg Time Column) ── */
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .sticky {
+  background-color: #0E121F !important;
+  color: #E5E0F0 !important;
+}
+
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) table thead .sticky {
+  background-color: #121625 !important;
+  color: #F5F2FA !important;
+}
+
+/* ── Tables & Ledger Rows in Dark Mode ── */
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) table thead tr,
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) table thead th {
+  background-color: #121625 !important;
+  color: #D8D1E8 !important;
+  border-color: rgba(184, 165, 229, 0.16) !important;
+}
+
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) table tbody tr {
+  border-color: rgba(184, 165, 229, 0.12) !important;
+}
+
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) table tbody td {
+  color: #E5E0F0 !important;
+}
+
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) table tbody td strong,
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) table tbody td .font-bold,
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) table tbody td .font-black,
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) table tbody td .font-semibold {
+  color: #F5F2FA !important;
+}
+
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) table tbody tr:hover {
+  background-color: rgba(184, 165, 229, 0.08) !important;
+}
+
+/* ── Form Controls, Selects, and Inputs in Dark Mode ── */
 .dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 .dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) select,
 .dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) textarea {
   background-color: #121625 !important;
   color: #F5F2FA !important;
-  border-color: rgba(184, 165, 229, 0.18) !important;
+  border-color: rgba(184, 165, 229, 0.22) !important;
 }
 
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) input:focus,
 .dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) select:focus,
 .dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) textarea:focus {
   border-color: #8B5CF6 !important;
   box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.25) !important;
+  outline: none !important;
 }
 
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) select option {
-  background-color: #FFFFFF !important;
-  color: #211D2B !important;
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) input::placeholder,
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) textarea::placeholder {
+  color: #8B829E !important;
+  opacity: 1 !important;
 }
 
 .dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) select option {
@@ -246,80 +248,88 @@
   color: #F5F2FA !important;
 }
 
-/* ── 5. Tables & Ledger Rows ─────────────────────────────── */
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) table thead tr,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) table thead th {
-  background-color: #F4F2F7 !important;
-  color: #686370 !important;
+/* ── Lucide / SVG Icons in Dark Mode ── */
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) svg.text-slate-400,
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) svg.text-slate-500,
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) svg.text-gray-400,
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) svg.text-gray-500 {
+  color: #B8AECF !important;
 }
 
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) table thead tr,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) table thead th {
-  background-color: #121625 !important;
-  color: #AAA4B8 !important;
+/* ── Buttons in Dark Mode ── */
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is([class*="from-blue-600"], .from-blue-600, .bg-blue-600, .bg-indigo-600) {
+  background-image: none !important;
+  background-color: #8B5CF6 !important;
+  color: #FFFFFF !important;
 }
 
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) table tbody tr:hover {
-  background-color: #FAF9F6 !important;
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is([class*="hover:from-blue-500"]:hover, .hover\:bg-blue-700:hover, .hover\:bg-indigo-700:hover) {
+  background-color: #7C3AED !important;
 }
 
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) table tbody tr:hover {
-  background-color: rgba(184, 165, 229, 0.05) !important;
+/* ── Modals & Dialog Overlays (Inspection Cards, Confirmations) ── */
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.bg-slate-950\/60, .bg-slate-950\/80, .bg-black\/60, .bg-slate-900\/70) {
+  background-color: rgba(7, 10, 19, 0.8) !important;
 }
 
-/* ── 6. Modals & Dialog Overlays ─────────────────────────── */
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-slate-950\/60,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-slate-950\/80,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-black\/60 {
-  background-color: rgba(7, 10, 19, 0.75) !important;
+.dark .fixed :is(.bg-white, [class*="dark:bg-slate-900"]) {
+  background-color: #0E1220 !important;
+  border-color: rgba(184, 165, 229, 0.2) !important;
+  color: #F5F2FA !important;
 }
 
-/* Status chips matching Veer Legacy */
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-emerald-500\/10,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-green-500\/10 {
-  background-color: #EDF7F0 !important;
-  color: #1B5E20 !important;
-  border-color: #C8E6C9 !important;
+.dark .fixed :is(.bg-slate-50, .bg-slate-100, [class*="dark:bg-slate-800"], [class*="dark:bg-slate-950"]) {
+  background-color: #13182B !important;
+  border-color: rgba(184, 165, 229, 0.16) !important;
 }
 
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-emerald-500\/10,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-green-500\/10,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:bg-emerald-500"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:bg-green-500"] {
-  background-color: rgba(27, 94, 32, 0.2) !important;
-  color: #81C784 !important;
-  border-color: rgba(129, 199, 132, 0.3) !important;
+/* ── Luminous Status Badges & Chips in Dark Mode ── */
+/* Purple / Violet (Master Data, Super Coordinator) */
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.text-purple-600, .text-purple-500, [class*="dark:text-purple-400"], [class*="dark:text-purple-300"]) {
+  color: #C4B5FD !important;
+}
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.bg-purple-500\/10, .bg-purple-500\/20, [class*="dark:bg-purple-500"]) {
+  background-color: rgba(139, 92, 246, 0.18) !important;
+  color: #C4B5FD !important;
+  border-color: rgba(167, 139, 250, 0.35) !important;
 }
 
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-rose-500\/10,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-red-500\/10 {
-  background-color: #FBEDEF !important;
-  color: #B71C1C !important;
-  border-color: #FFCDD2 !important;
+/* Blue / Cyan (Colleges, Links, Subheaders) */
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.text-blue-600, .text-blue-500, .text-cyan-600, [class*="dark:text-blue-400"], [class*="dark:text-cyan-400"]) {
+  color: #93C5FD !important;
+}
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.bg-blue-500\/10, .bg-blue-500\/15, .bg-blue-500\/20, [class*="dark:bg-blue-500"]) {
+  background-color: rgba(59, 130, 246, 0.18) !important;
+  color: #93C5FD !important;
+  border-color: rgba(96, 165, 250, 0.35) !important;
 }
 
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-rose-500\/10,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-red-500\/10,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:bg-rose-500"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:bg-red-500"] {
-  background-color: rgba(225, 29, 72, 0.14) !important;
+/* Emerald / Green (Status: VERIFIED / Active) */
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.text-emerald-600, .text-green-600, [class*="dark:text-emerald-400"], [class*="dark:text-green-400"]) {
+  color: #86EFAC !important;
+}
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.bg-emerald-500\/10, .bg-green-500\/10, [class*="dark:bg-emerald-500"], [class*="dark:bg-green-500"]) {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+  color: #86EFAC !important;
+  border-color: rgba(52, 211, 153, 0.35) !important;
+}
+
+/* Rose / Red (Delete, Warnings, Errors) */
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.text-rose-600, .text-red-600, [class*="dark:text-rose-400"], [class*="dark:text-red-400"]) {
   color: #FDA4AF !important;
-  border-color: rgba(225, 29, 72, 0.32) !important;
+}
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.bg-rose-500\/10, .bg-red-500\/10, [class*="dark:bg-rose-500"], [class*="dark:bg-red-500"]) {
+  background-color: rgba(244, 63, 94, 0.18) !important;
+  color: #FDA4AF !important;
+  border-color: rgba(251, 113, 133, 0.35) !important;
 }
 
-/* Amber / Gold Status */
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-amber-500\/10,
-:is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-yellow-500\/10 {
-  background-color: #FFF8E1 !important;
-  color: #A98B57 !important;
-  border-color: #FFE082 !important;
+/* Amber / Gold / Orange (Warnings / Gold Medals / Pending) */
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.text-amber-600, .text-amber-500, .text-orange-500, [class*="dark:text-amber-400"], [class*="dark:text-yellow-400"]) {
+  color: #FCD34D !important;
 }
-
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-amber-500\/10,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) .bg-yellow-500\/10,
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:bg-amber-500"],
-.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) [class*="dark:bg-yellow-500"] {
-  background-color: rgba(210, 171, 69, 0.12) !important;
-  color: #F3D78A !important;
-  border-color: rgba(210, 171, 69, 0.28) !important;
+.dark :is(.admin-portal-root, .super-coordinator-portal-root, .coordinator-portal-root, .college-head-portal-root, .pr-portal-root, .portal-theme-root) :is(.bg-amber-500\/10, .bg-yellow-500\/10, [class*="dark:bg-amber-500"], [class*="dark:bg-yellow-500"]) {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+  color: #FCD34D !important;
+  border-color: rgba(251, 191, 36, 0.35) !important;
 }

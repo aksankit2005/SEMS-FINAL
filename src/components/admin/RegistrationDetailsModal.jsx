@@ -112,21 +112,21 @@ export const RegistrationDetailsModal = ({ isOpen, registration, onClose }) => {
           <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Registration Metadata</h4>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
             <div>
-              <span className="text-slate-500 text-[10px] block">Reg. Date</span>
+              <span className="text-slate-500 dark:text-slate-400 text-[10px] block">Reg. Date</span>
               <span className="font-semibold text-slate-800 dark:text-slate-200">{registration.registrationDate}</span>
             </div>
             <div>
-              <span className="text-slate-500 text-[10px] block">Reg. Time</span>
+              <span className="text-slate-500 dark:text-slate-400 text-[10px] block">Reg. Time</span>
               <span className="font-semibold text-slate-800 dark:text-slate-200">{registration.registrationTime || '10:00 AM'}</span>
             </div>
             <div>
-              <span className="text-slate-500 text-[10px] block">Payment Status</span>
+              <span className="text-slate-500 dark:text-slate-400 text-[10px] block">Payment Status</span>
               <span className="inline-block px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 mt-0.5">
                 {registration.paymentStatus || 'PAID'}
               </span>
             </div>
             <div>
-              <span className="text-slate-500 text-[10px] block">Registered By</span>
+              <span className="text-slate-500 dark:text-slate-400 text-[10px] block">Registered By</span>
               <span className="font-semibold text-slate-800 dark:text-slate-200 truncate block">{registration.registeredBy}</span>
             </div>
           </div>
