@@ -19,6 +19,7 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isSignInOpen, setIsSignInOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const [, setAuthTick] = useState(0);
 
   const notificationRef = useRef(null);
@@ -27,6 +28,25 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
 
   const { user, logout } = useAuth();
   const { announcements } = useSportsData();
+
+  const isHomePage = location.pathname === '/';
+
+  useEffect(() => {
+    if (!isHomePage) {
+      setIsScrolled(false);
+      return;
+    }
+
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 40);
+    };
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isHomePage]);
+
+  const isTransparentOverHero = isHomePage && !isScrolled;
 
   // Close dropdowns on route change
   useEffect(() => {
@@ -160,7 +180,15 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-transparent backdrop-blur-md border-b border-transparent transition-colors duration-200 font-spatial-sans">
+    <header
+      className={`${
+        isHomePage
+          ? isScrolled
+            ? 'fixed top-0 left-0 right-0 z-40 w-full bg-[#FAF9F6]/30 dark:bg-[#070A13]/30 backdrop-blur-md border-b border-[#E5E1E8]/40 dark:border-[rgba(184,165,229,0.12)] shadow-sm'
+            : 'fixed top-0 left-0 right-0 z-40 w-full bg-transparent border-b border-transparent backdrop-blur-none'
+          : 'sticky top-0 z-40 w-full bg-transparent backdrop-blur-md border-b border-transparent'
+      } transition-all duration-300 font-spatial-sans`}
+    >
       <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6">
         <div className="flex items-center justify-between h-14 sm:h-16 gap-2 lg:gap-4">
 
@@ -169,7 +197,11 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
             {/* Mobile / Tablet Drawer Trigger (Hidden on Desktop XL+) */}
             <button
               onClick={onOpenMobileDrawer}
-              className="xl:hidden p-2 rounded-lg bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] hover:text-[#7156A5] dark:hover:text-[#B8A5E5] transition cursor-pointer active:scale-95 min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className={`xl:hidden p-2 rounded-lg transition cursor-pointer active:scale-95 min-h-[44px] min-w-[44px] flex items-center justify-center ${
+                isTransparentOverHero
+                  ? 'bg-black/30 backdrop-blur-md border border-white/20 text-white hover:bg-black/50 hover:text-white'
+                  : 'bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] hover:text-[#7156A5] dark:hover:text-[#B8A5E5]'
+              }`}
               aria-label="Open mobile navigation menu"
               title="Open Navigation Menu"
             >
@@ -178,16 +210,26 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
 
             {/* APEX Logo */}
             <Link to="/" className="flex items-center group shrink-0 pr-1">
-              <img 
-                src="/apex-nav-logo-dark.png" 
-                alt="APEX Logo" 
-                className="hidden dark:block h-8 sm:h-9 lg:h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
-              />
-              <img 
-                src="/apex-nav-logo.png" 
-                alt="APEX Logo" 
-                className="block dark:hidden h-8 sm:h-9 lg:h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
-              />
+              {isTransparentOverHero ? (
+                <img 
+                  src="/apex-nav-logo-dark.png" 
+                  alt="APEX Logo" 
+                  className="h-8 sm:h-9 lg:h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+                />
+              ) : (
+                <>
+                  <img 
+                    src="/apex-nav-logo-dark.png" 
+                    alt="APEX Logo" 
+                    className="hidden dark:block h-8 sm:h-9 lg:h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+                  />
+                  <img 
+                    src="/apex-nav-logo.png" 
+                    alt="APEX Logo" 
+                    className="block dark:hidden h-8 sm:h-9 lg:h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+                  />
+                </>
+              )}
             </Link>
           </div>
 
@@ -199,18 +241,29 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
                 <NavLink
                   key={item.path}
                   to={item.path}
-                  className={({ isActive }) =>
-                    `relative px-2.5 2xl:px-3 py-1.5 text-xs 2xl:text-[13px] font-semibold tracking-tight transition-colors duration-150 flex items-center gap-1.5 shrink-0 rounded-md ${
+                  className={({ isActive }) => {
+                    if (isTransparentOverHero) {
+                      return `relative px-2.5 2xl:px-3 py-1.5 text-xs 2xl:text-[13px] font-semibold tracking-tight transition-all duration-150 flex items-center gap-1.5 shrink-0 rounded-md ${
+                        isActive
+                          ? 'text-white font-bold bg-white/20 backdrop-blur-md border border-white/30 shadow-xs'
+                          : 'text-white/85 hover:text-white hover:bg-white/10'
+                      }`;
+                    }
+                    return `relative px-2.5 2xl:px-3 py-1.5 text-xs 2xl:text-[13px] font-semibold tracking-tight transition-colors duration-150 flex items-center gap-1.5 shrink-0 rounded-md ${
                       isActive
                         ? 'text-[#7156A5] dark:text-[#B8A5E5] font-bold bg-[#F4F2F7] dark:bg-[rgba(184,165,229,0.08)]'
                         : 'text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-[#F5F2FA] hover:bg-[#F4F2F7]/60 dark:hover:bg-[rgba(184,165,229,0.04)]'
-                    }`
-                  }
+                    }`;
+                  }}
                 >
                   <Icon className="w-3.5 h-3.5 2xl:w-4 2xl:h-4 shrink-0 opacity-80 group-hover:opacity-100" />
                   <span>{item.name}</span>
                   {item.badge && (
-                    <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#FBEDEF] text-[#B71C1C] dark:bg-[rgba(225,29,72,0.18)] dark:text-[#FDA4AF] border border-[#FFCDD2] dark:border-[rgba(225,29,72,0.3)]">
+                    <span className={
+                      isTransparentOverHero
+                        ? 'px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-500/30 text-rose-200 border border-rose-400/40 backdrop-blur-sm'
+                        : 'px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#FBEDEF] text-[#B71C1C] dark:bg-[rgba(225,29,72,0.18)] dark:text-[#FDA4AF] border border-[#FFCDD2] dark:border-[rgba(225,29,72,0.3)]'
+                    }>
                       {item.badge}
                     </span>
                   )}
@@ -229,7 +282,11 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
                   setIsNotificationsOpen(!isNotificationsOpen);
                   setIsSignInOpen(false);
                 }}
-                className="relative p-2 rounded-lg bg-white dark:bg-[#0D101A] text-[#211D2B] dark:text-[#F5F2FA] hover:text-[#7156A5] dark:hover:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] transition cursor-pointer active:scale-95"
+                className={`relative p-2 rounded-lg transition cursor-pointer active:scale-95 ${
+                  isTransparentOverHero
+                    ? 'bg-black/30 backdrop-blur-md border border-white/20 text-white hover:bg-black/50 hover:text-white'
+                    : 'bg-white dark:bg-[#0D101A] text-[#211D2B] dark:text-[#F5F2FA] hover:text-[#7156A5] dark:hover:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)]'
+                }`}
                 title="Notifications"
                 aria-label="View Broadcast Announcements"
               >
@@ -289,7 +346,9 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
             </div>
 
             {/* Theme Mode Toggle Button */}
-            <ThemeToggle />
+            <ThemeToggle 
+              className={isTransparentOverHero ? "p-2.5 rounded-full bg-black/30 backdrop-blur-md border border-white/20 text-white hover:bg-black/50" : undefined}
+            />
 
             {/* User Session Profile Avatar Menu OR Portal Sign In */}
             {activeSession ? (
@@ -300,7 +359,11 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
                     setIsNotificationsOpen(false);
                     setIsSignInOpen(false);
                   }}
-                  className="flex items-center gap-2 p-1 sm:px-2.5 sm:py-1.5 rounded-lg bg-white dark:bg-[#0D101A] hover:bg-[#F4F2F7] dark:hover:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] transition cursor-pointer active:scale-95"
+                  className={`flex items-center gap-2 p-1 sm:px-2.5 sm:py-1.5 rounded-lg transition cursor-pointer active:scale-95 ${
+                    isTransparentOverHero
+                      ? 'bg-black/30 backdrop-blur-md border border-white/20 text-white hover:bg-black/50'
+                      : 'bg-white dark:bg-[#0D101A] hover:bg-[#F4F2F7] dark:hover:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA]'
+                  }`}
                   aria-label="User Profile Menu"
                   title={activeSession.name}
                 >
@@ -312,15 +375,17 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
 
                   {/* Name and role visible on sm+ screens */}
                   <div className="hidden sm:flex flex-col text-left max-w-[90px] md:max-w-[120px]">
-                    <span className="text-xs font-bold text-[#211D2B] dark:text-[#F5F2FA] truncate leading-tight">
+                    <span className={`text-xs font-bold truncate leading-tight ${isTransparentOverHero ? 'text-white' : 'text-[#211D2B] dark:text-[#F5F2FA]'}`}>
                       {activeSession.name}
                     </span>
-                    <span className="text-[9px] font-black uppercase text-[#7156A5] dark:text-[#B8A5E5] tracking-wider">
+                    <span className={`text-[9px] font-black uppercase tracking-wider ${isTransparentOverHero ? 'text-[#F3D78A]' : 'text-[#7156A5] dark:text-[#B8A5E5]'}`}>
                       {activeSession.roleLabel}
                     </span>
                   </div>
 
-                  <ChevronDown className={`hidden sm:block w-3 h-3 text-[#686370] dark:text-[#AAA4B8] transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`hidden sm:block w-3 h-3 transition-transform duration-200 ${
+                    isTransparentOverHero ? 'text-white/80' : 'text-[#686370] dark:text-[#AAA4B8]'
+                  } ${isProfileOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {/* Profile Dropdown Popover */}
@@ -386,7 +451,11 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
                     setIsSignInOpen(!isSignInOpen);
                     setIsNotificationsOpen(false);
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-[#7156A5] hover:bg-[#5E458B] dark:bg-[#8B5CF6] dark:hover:bg-[#7C3AED] text-white font-semibold text-xs transition cursor-pointer active:scale-95"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg font-semibold text-xs transition cursor-pointer active:scale-95 ${
+                    isTransparentOverHero
+                      ? 'bg-[#7156A5] hover:bg-[#5E458B] text-white shadow-md border border-white/20 backdrop-blur-md'
+                      : 'bg-[#7156A5] hover:bg-[#5E458B] dark:bg-[#8B5CF6] dark:hover:bg-[#7C3AED] text-white'
+                  }`}
                   aria-label="Toggle Portal Sign In Menu"
                 >
                   <User className="w-3.5 h-3.5 shrink-0" />

@@ -62,6 +62,7 @@ export const HomeScheduleSection = () => {
     window.addEventListener('sems_results_updated', handleUpdate);
 
     return () => {
+      isMounted = false;
       window.removeEventListener('storage', handleUpdate);
       window.removeEventListener('sems_matches_updated', handleUpdate);
       window.removeEventListener('sems_results_updated', handleUpdate);
@@ -69,27 +70,27 @@ export const HomeScheduleSection = () => {
   }, []);
 
   return (
-    <section className="py-12 sm:py-14 bg-[#FAF9F6] dark:bg-[#070A13] border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] transition-colors duration-200 font-spatial-sans">
-      <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto">
+    <section className="py-8 sm:py-14 bg-[#FAF9F6] dark:bg-[#070A13] border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] transition-colors duration-200 font-spatial-sans">
+      <div className="w-full max-w-[1600px] px-4 xs:px-6 sm:px-10 lg:px-12 xl:px-16 mx-auto">
         
         {/* Editorial Section Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-8 pb-4 border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-6 sm:mb-8 pb-4 border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] gap-3 sm:gap-4">
           <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#7156A5] dark:text-[#B8A5E5] mb-1.5">
+            <div className="inline-flex items-center gap-1.5 text-[11px] xs:text-xs font-semibold uppercase tracking-wider text-[#7156A5] dark:text-[#B8A5E5] mb-1">
               <Calendar className="w-3.5 h-3.5 text-[#7156A5] dark:text-[#B8A5E5]" />
               <span>Official Tournament Programme</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-[#211D2B] dark:text-[#F5F2FA] tracking-tight font-spatial-display">
+            <h2 className="text-xl sm:text-3xl font-bold text-[#211D2B] dark:text-[#F5F2FA] tracking-tight font-spatial-display uppercase">
               Upcoming <span className="text-[#7156A5] dark:text-[#B8A5E5]">Fixtures</span>
             </h2>
-            <p className="text-xs sm:text-sm text-[#686370] dark:text-[#AAA4B8] mt-1">
+            <p className="text-xs sm:text-sm text-[#686370] dark:text-[#AAA4B8] mt-0.5">
               Court allocations, match times, and official schedules
             </p>
           </div>
 
           <Link
             to="/schedule"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#FAF9F6] dark:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] text-xs sm:text-sm font-semibold text-[#211D2B] dark:text-[#F5F2FA] hover:border-[#7156A5] dark:hover:border-[#B8A5E5] hover:text-[#7156A5] dark:hover:text-[#B8A5E5] transition-all shadow-2xs"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-[#FAF9F6] dark:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] text-xs sm:text-sm font-semibold text-[#211D2B] dark:text-[#F5F2FA] hover:border-[#7156A5] dark:hover:border-[#B8A5E5] hover:text-[#7156A5] dark:hover:text-[#B8A5E5] transition-all shadow-2xs w-full sm:w-auto"
           >
             <span>Full Schedule</span>
             <ArrowRight className="w-3.5 h-3.5" />
