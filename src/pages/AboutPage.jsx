@@ -137,7 +137,7 @@ export const AboutPage = () => {
     };
   }, [selectedMember]);
 
-  const handleMemberClick = (member, fallbackBadge = '', { hideMeta = false } = {}) => {
+  const handleMemberClick = (member, fallbackBadge = '', { hideMeta = false, isAdvisor = false } = {}) => {
     const details = MEMBER_DESCRIPTIONS[member.name] || {};
     setSelectedMember({
       name: member.name,
@@ -147,8 +147,8 @@ export const AboutPage = () => {
       badgeColorClass: member.badgeColor || member.badgeColorClass || fallbackBadge || 'bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)]',
       linkedin: member.linkedin,
       description: member.description || member.bio || details.description || 'Distinguished leader and mentor dedicated to upholding sports excellence and collegiate competition across APEX championships.',
-      department: hideMeta ? null : (member.department || details.department || 'APEX Tournament Council'),
-      tags: member.tags || details.tags || ['Tournament Governance', 'Athletic Council', 'Collegiate Sports']
+      department: (hideMeta || isAdvisor) ? null : (member.department || details.department || 'APEX Tournament Council'),
+      tags: (hideMeta || isAdvisor) ? [] : (member.tags || details.tags || [])
     });
   };
 
@@ -442,7 +442,7 @@ export const AboutPage = () => {
                     image={advisor.image}
                     badgeColorClass="bg-[#F4F2F7] dark:bg-[#121625] text-[#596B98] dark:text-[#818CF8] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)]"
                     hoverGlowClass="hover:border-[#596B98]/60"
-                    onClick={() => handleMemberClick(advisor, "bg-[#F4F2F7] dark:bg-[#121625] text-[#596B98] dark:text-[#818CF8] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)]", { hideMeta: true })}
+                    onClick={() => handleMemberClick(advisor, "bg-[#F4F2F7] dark:bg-[#121625] text-[#596B98] dark:text-[#818CF8] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)]", { hideMeta: true, isAdvisor: true })}
                   />
                 ))}
               </div>

@@ -15,29 +15,22 @@ export const HomeRegistrationSection = () => {
       try {
         const publicEvents = await coordinatorApi.getPublicEvents().catch(() => []);
         if (isMounted) {
-          const active = (Array.isArray(publicEvents) ? publicEvents : []).filter(
-            (e) => e && e.status !== 'Draft' && e.status !== 'Cancelled'
-          );
+          // Only show events that are currently OPEN for registration
+          const openOnly = (Array.isArray(publicEvents) ? publicEvents : []).filter((e) => {
+            if (!e || e.status === 'Draft' || e.status === 'Cancelled') return false;
+            const s = (e.status || '').toLowerCase();
+            const isOpenStatus = s === 'published' || s === 'open' || s === 'ongoing';
+            const isRegOpen = e.registrationOpen !== false && e.registrationOpen !== 'false' && e.registrationOpen !== 0;
+            return isOpenStatus && isRegOpen;
+          });
 
-          // Priority ordering: Open/Published first -> Upcoming -> Closed
-          const getStatusPriority = (status) => {
-            const s = (status || '').toLowerCase();
-            if (s === 'open' || s === 'published' || s === 'ongoing') return 1;
-            if (s === 'upcoming' || s === 'scheduled') return 2;
-            if (s === 'closed' || s === 'completed') return 3;
-            return 4;
-          };
-
-          active.sort((a, b) => {
-            const pA = getStatusPriority(a.status);
-            const pB = getStatusPriority(b.status);
-            if (pA !== pB) return pA - pB;
+          openOnly.sort((a, b) => {
             const dA = a.tournStartDate ? new Date(a.tournStartDate).getTime() : 0;
             const dB = b.tournStartDate ? new Date(b.tournStartDate).getTime() : 0;
             return dA - dB;
           });
 
-          setEvents(active.slice(0, 6));
+          setEvents(openOnly.slice(0, 6));
         }
       } catch (e) {
         if (isMounted) setEvents([]);
@@ -59,12 +52,18 @@ export const HomeRegistrationSection = () => {
     };
   }, []);
 
-  const formatEventDate = (startDate, endDate) => {
-    if (!startDate) return 'Dates Announced Soon';
-    const s = new Date(startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-    if (!endDate || endDate === startDate) return s;
-    const e = new Date(endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-    return `${s} – ${e}`;
+  const formatLastDate = (dateVal) => {
+    if (!dateVal) return null;
+    const dateStr = String(dateVal).trim();
+    if (!dateStr) return null;
+    if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+      const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
+      const d = new Date(year, month - 1, day);
+      return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    }
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
   };
 
   return (
@@ -156,7 +155,13 @@ export const HomeRegistrationSection = () => {
                     <div className="space-y-1.5 text-xs text-[#686370] dark:text-[#AAA4B8]">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-3.5 h-3.5 text-[#A98B57]" />
-                        <span>{formatEventDate(ev.tournStartDate, ev.tournEndDate)}</span>
+                        <span>
+                          {(() => {
+                            const rawDate = ev.regEndDate || ev.tournEndDate || ev.tournStartDate;
+                            const formatted = formatLastDate(rawDate);
+                            return formatted ? `Last Date: ${formatted}` : 'Dates Announced Soon';
+                          })()}
+                        </span>
                       </div>
                       {ev.teamSize && (
                         <div className="flex items-center gap-2">
