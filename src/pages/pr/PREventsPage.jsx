@@ -208,7 +208,7 @@ export const PREventsPage = () => {
   };
 
   return (
-    <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-200">
+    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 bg-transparent text-[#211D2B] dark:text-[#F5F2FA] transition-colors duration-200 font-spatial-sans">
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header */}
@@ -216,25 +216,27 @@ export const PREventsPage = () => {
           <div className="space-y-1">
             <Link
               to="/pr/dashboard"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline mb-1"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#7156A5] dark:text-[#B8A5E5] hover:underline mb-1"
             >
               <ArrowLeft className="w-4 h-4" /> Back to PR Dashboard
             </Link>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
-              <Trophy className="w-8 h-8 text-orange-500" /> Event Albums Management
+            <h1 className="text-2xl sm:text-3xl font-bold font-spatial-display uppercase tracking-wide text-[#211D2B] dark:text-[#F5F2FA] flex items-center gap-3">
+              <Trophy className="w-7 h-7 text-[#7156A5] dark:text-[#B8A5E5]" /> Event Albums Management
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-[#686370] dark:text-[#AAA4B8]">
               Create, edit, upload cover photos, and manage photos/videos in tournament event albums.
             </p>
           </div>
 
-          <button
-            onClick={openCreateModal}
-            className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 hover:from-blue-500 hover:to-orange-400 text-white font-black text-xs shadow-xl shadow-blue-600/20 transition flex items-center justify-center gap-2"
-          >
-            <PlusCircle className="w-5 h-5" />
-            <span>Create New Event</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={openCreateModal}
+              className="px-5 py-2.5 rounded-xl bg-[#7156A5] hover:bg-[#5E458B] dark:bg-[#8B5CF6] dark:hover:bg-[#7C3AED] text-white font-bold text-xs shadow-lg shadow-purple-500/20 transition flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Create New Event</span>
+            </button>
+          </div>
         </div>
 
         {/* Event List / Grid */}

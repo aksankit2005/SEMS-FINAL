@@ -81,22 +81,22 @@ export const PRDashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-200">
+    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 bg-transparent text-[#211D2B] dark:text-[#F5F2FA] transition-colors duration-200 font-spatial-sans">
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header Banner */}
-        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="bg-[#FFFFFF] dark:bg-[#0D101A] rounded-3xl p-6 sm:p-8 border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6 backdrop-blur-xl">
           <div className="space-y-2 relative z-10">
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full text-xs font-black bg-white/20 backdrop-blur-md uppercase tracking-wider">
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#F4F2F7] dark:bg-[#201830] border border-[#E5DDF3] dark:border-[#382654] text-[#7156A5] dark:text-[#B8A5E5] uppercase tracking-wider font-mono">
                 PR Coordinator Portal
               </span>
-              <span className="text-xs text-white/80">• Live Dashboard</span>
+              <span className="text-xs font-mono text-[#8B8599]">• Live Dashboard</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight">
-              Media & Event Command Center
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-spatial-display uppercase tracking-wide text-[#211D2B] dark:text-[#F5F2FA]">
+              Media & Event <span className="text-[#7156A5] dark:text-[#B8A5E5]">Command Center</span>
             </h1>
-            <p className="text-xs sm:text-sm text-white/90 max-w-xl">
+            <p className="text-xs sm:text-sm text-[#686370] dark:text-[#AAA4B8] max-w-xl">
               Manage tournament gallery albums, upload Google Drive media, publish event photos & videos for public access.
             </p>
           </div>
@@ -104,22 +104,22 @@ export const PRDashboardPage = () => {
           <div className="flex flex-wrap items-center gap-3 relative z-10">
             <button
               onClick={fetchDashboardData}
-              className="p-3 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-md transition text-white"
+              className="p-2.5 rounded-xl bg-[#FAF9F6] dark:bg-[#121625] hover:bg-[#F4F2F7] dark:hover:bg-[#181D30] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] transition cursor-pointer shadow-2xs"
               title="Refresh Data"
             >
-              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 text-[#7156A5] dark:text-[#B8A5E5] ${loading ? 'animate-spin' : ''}`} />
             </button>
             <Link
               to="/gallery"
               target="_blank"
-              className="px-4 py-3 rounded-2xl bg-white/20 hover:bg-white/30 backdrop-blur-md text-xs font-bold transition flex items-center gap-2"
+              className="px-3.5 py-2.5 rounded-xl bg-[#FAF9F6] dark:bg-[#121625] hover:bg-[#F4F2F7] dark:hover:bg-[#181D30] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-xs font-bold text-[#211D2B] dark:text-[#F5F2FA] transition flex items-center gap-2 cursor-pointer shadow-2xs"
             >
               <span>Public Gallery</span>
-              <ExternalLink className="w-4 h-4" />
+              <ExternalLink className="w-3.5 h-3.5 text-[#7156A5] dark:text-[#B8A5E5]" />
             </Link>
             <button
               onClick={handleLogout}
-              className="px-4 py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 text-xs font-extrabold text-white shadow-md transition flex items-center gap-2"
+              className="px-3.5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white shadow-md transition flex items-center gap-2 cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
               <span>Log Out</span>

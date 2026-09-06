@@ -1,6 +1,7 @@
 import React from 'react';
 import { RefreshCw, LogOut, Calendar, Radio, Award, Users, Layers, User } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
+import { ThemeToggle } from '../common/ThemeToggle';
 
 export const OPERATIONAL_TABS = [
   { id: 'profile', label: 'My Profile', icon: User },
@@ -10,7 +11,6 @@ export const OPERATIONAL_TABS = [
   { id: 'results', label: 'Results Management', icon: Award },
   { id: 'participants', label: 'Participants List', icon: Users },
 ];
-
 
 export const CoordinatorHeader = ({ user, activeTab, setActiveTab, onLogout }) => {
   const { addToast } = useToast();
@@ -32,74 +32,39 @@ export const CoordinatorHeader = ({ user, activeTab, setActiveTab, onLogout }) =
     addToast('Coordinator tournament data synced with database!', 'success');
   };
 
-  const sportName = user?.sportName || 'Table Tennis';
-  const assigned = (user?.assignedSport || sportName || '').toLowerCase();
-
-  // Dynamic Theme Colors based on Sport
-  const isTT = assigned.includes('table-tennis') || assigned.includes('tabletennis') || assigned.includes('tt');
-  const isBasketball = assigned.includes('basketball');
-  const isChess = assigned.includes('chess');
-  const isCricket = assigned.includes('cricket');
-
-  const themeText = isTT
-    ? 'text-cyan-600 dark:text-cyan-400'
-    : isBasketball
-    ? 'text-orange-600 dark:text-orange-400'
-    : isChess
-    ? 'text-purple-600 dark:text-purple-400'
-    : isCricket
-    ? 'text-emerald-600 dark:text-emerald-400'
-    : 'text-indigo-600 dark:text-indigo-400';
-
-  const themeBadgeBg = isTT
-    ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-600 dark:text-cyan-400'
-    : isBasketball
-    ? 'bg-orange-500/10 border-orange-500/20 text-orange-600 dark:text-orange-400'
-    : isChess
-    ? 'bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-400'
-    : isCricket
-    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-    : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-600 dark:text-indigo-400';
-
-  const themeActiveTab = isTT
-    ? 'text-cyan-600 dark:text-cyan-400 border-b-2 border-cyan-600 dark:border-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 font-black'
-    : isBasketball
-    ? 'text-orange-600 dark:text-orange-400 border-b-2 border-orange-600 dark:border-orange-400 bg-orange-50 dark:bg-orange-950/40 font-black'
-    : isChess
-    ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-600 dark:border-purple-400 bg-purple-50 dark:bg-purple-950/40 font-black'
-    : isCricket
-    ? 'text-emerald-600 dark:text-emerald-400 border-b-2 border-emerald-600 dark:border-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 font-black'
-    : 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 font-black';
+  const sportName = user?.sportName || 'Sport';
 
   return (
-    <header className="w-full bg-white dark:bg-[#0B1120] text-slate-900 dark:text-slate-200 border-b border-slate-200 dark:border-slate-800/80 sticky top-0 z-30 shadow-sm dark:shadow-md transition-colors font-sans">
+    <header className="w-full bg-[#FFFFFF]/80 dark:bg-[#070A13]/80 backdrop-blur-md border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] sticky top-0 z-30 shadow-xs transition-colors font-spatial-sans">
       
       {/* Top Banner Header */}
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         
         {/* Left Title & Subtitle */}
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className={`px-2.5 py-0.5 rounded-full border text-[10px] font-mono font-bold uppercase tracking-wider ${themeBadgeBg}`}>
+            <span className="px-2.5 py-0.5 rounded-full border border-[#E5DDF3] dark:border-[#382654] bg-[#F4F2F7] dark:bg-[#201830] text-[#7156A5] dark:text-[#B8A5E5] text-[10px] font-mono font-bold uppercase tracking-wider">
               COORDINATOR PORTAL
             </span>
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 font-mono">• {sportName}</span>
+            <span className="text-xs font-bold text-[#686370] dark:text-[#AAA4B8] font-mono">• {sportName}</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-            {sportName} Management Console
+          <h1 className="text-2xl sm:text-3xl font-bold font-spatial-display uppercase tracking-wide text-[#211D2B] dark:text-[#F5F2FA]">
+            {sportName} <span className="text-[#7156A5] dark:text-[#B8A5E5]">Management Console</span>
           </h1>
-          <p className="text-xs text-slate-600 dark:text-slate-400">
+          <p className="text-xs text-[#686370] dark:text-[#AAA4B8]">
             Generate schedules, verify scores, and control live matches in real time
           </p>
         </div>
 
-        {/* Right Top Actions (Sync Data) */}
+        {/* Right Top Actions */}
         <div className="flex items-center gap-2.5">
+          <ThemeToggle />
+
           <button
             onClick={handleSyncData}
-            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-slate-700 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2 rounded-xl bg-[#FAF9F6] dark:bg-[#121625] hover:bg-[#F4F2F7] dark:hover:bg-[#181D30] text-[#211D2B] dark:text-[#F5F2FA] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-2xs"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${themeText}`} />
+            <RefreshCw className="w-3.5 h-3.5 text-[#7156A5] dark:text-[#B8A5E5]" />
             <span>Sync Data</span>
           </button>
         </div>
@@ -108,7 +73,7 @@ export const CoordinatorHeader = ({ user, activeTab, setActiveTab, onLogout }) =
 
       {/* Horizontal Tabs Bar */}
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
-        <nav className="flex space-x-2 overflow-x-auto py-2 custom-scrollbar border-b border-slate-200 dark:border-slate-800/80">
+        <nav className="flex space-x-2 overflow-x-auto py-2 custom-scrollbar border-t border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]">
           {OPERATIONAL_TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -119,12 +84,12 @@ export const CoordinatorHeader = ({ user, activeTab, setActiveTab, onLogout }) =
                 className={`
                   px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 relative cursor-pointer
                   ${isActive 
-                    ? themeActiveTab 
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                    ? 'bg-[#7156A5] dark:bg-[#8B5CF6] text-white shadow-md shadow-purple-500/20' 
+                    : 'text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-[#F5F2FA] hover:bg-[#F4F2F7] dark:hover:bg-[#121625]'
                   }
                 `}
               >
-                <Icon className={`w-4 h-4 ${isActive ? themeText : 'text-slate-400 dark:text-slate-500'}`} />
+                <Icon className="w-4 h-4" />
                 <span>{tab.label}</span>
               </button>
             );

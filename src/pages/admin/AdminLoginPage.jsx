@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { adminApi } from '../../services/adminApi';
 import { useToast } from '../../context/ToastContext';
-import { ThemeToggle } from '../../components/common/ThemeToggle';
 import { Shield, Lock, User, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
 
 export const AdminLoginPage = () => {
@@ -46,30 +45,28 @@ export const AdminLoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center p-4 sm:p-6 relative overflow-hidden font-sans text-slate-900 dark:text-slate-100 transition-colors">
-      {/* Top right theme toggle */}
-      <div className="absolute top-4 right-4 z-20">
-        <ThemeToggle />
-      </div>
+    <div className="admin-portal-root min-h-screen bg-[#FAF9F6] dark:bg-[#070A13] flex flex-col justify-center items-center p-4 sm:p-6 relative overflow-hidden font-spatial-sans text-[#211D2B] dark:text-[#F5F2FA] transition-colors">
+      {/* Dark mode atmospheric overlays */}
+      <div className="fixed inset-0 pointer-events-none z-0 spatial-nebula-dark opacity-60 dark:block hidden" />
+      <div className="fixed inset-0 spatial-grain-overlay z-0 pointer-events-none opacity-20 dark:block hidden" />
 
-      {/* Background Decorative Glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-tr from-blue-500/20 via-indigo-600/20 to-blue-600/20 blur-3xl rounded-full pointer-events-none" />
-
-      <div className="w-full max-w-md bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl relative z-10 space-y-6 transition-colors">
+      <div className="w-full max-w-md bg-[#FFFFFF] dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl relative z-10 space-y-6 transition-colors">
         {/* Header Branding */}
         <div className="text-center space-y-2">
-          <div className="inline-flex p-3 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/25 mb-2">
-            <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-xl flex items-center justify-center">
-              <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          <div className="inline-flex p-3 rounded-2xl bg-gradient-to-tr from-[#7156A5] to-[#8B5CF6] shadow-lg shadow-purple-500/20 mb-2">
+            <div className="w-12 h-12 bg-[#FFFFFF] dark:bg-[#070A13] rounded-xl flex items-center justify-center">
+              <Shield className="w-6 h-6 text-[#7156A5] dark:text-[#B8A5E5]" />
             </div>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">Admin Portal</h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Sports & Event Management Central System</p>
+          <h1 className="text-2xl sm:text-3xl font-bold font-spatial-display text-[#211D2B] dark:text-[#F5F2FA] tracking-wide uppercase">
+            Admin <span className="text-[#7156A5] dark:text-[#B8A5E5]">Portal</span>
+          </h1>
+          <p className="text-xs text-[#686370] dark:text-[#AAA4B8]">Sports & Event Management Central System</p>
         </div>
 
         {/* Error Alert */}
         {error && (
-          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400 text-center font-medium">
+          <div className="p-3.5 rounded-xl bg-[#FBEDEF] dark:bg-[rgba(225,29,72,0.14)] border border-[#FFCDD2] dark:border-[rgba(225,29,72,0.3)] text-xs text-[#B71C1C] dark:text-[#FDA4AF] text-center font-medium font-mono">
             {error}
           </div>
         )}
@@ -77,34 +74,34 @@ export const AdminLoginPage = () => {
         {/* Form */}
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">Username</label>
+            <label className="text-xs font-semibold text-[#211D2B] dark:text-[#F5F2FA] block mb-1.5">Username</label>
             <div className="relative">
-              <User className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-3.5" />
+              <User className="w-4 h-4 text-[#8B8599] absolute left-3.5 top-3.5" />
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter your username"
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-10 pr-4 py-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors"
+                className="w-full bg-[#FAF9F6] dark:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] rounded-xl pl-10 pr-4 py-3 text-xs text-[#211D2B] dark:text-[#F5F2FA] placeholder-[#8B8599] focus:outline-none focus:ring-2 focus:ring-[#7156A5] dark:focus:ring-[#8B5CF6] transition-colors"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">Password</label>
+            <label className="text-xs font-semibold text-[#211D2B] dark:text-[#F5F2FA] block mb-1.5">Password</label>
             <div className="relative">
-              <Lock className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-3.5" />
+              <Lock className="w-4 h-4 text-[#8B8599] absolute left-3.5 top-3.5" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-10 pr-10 py-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors"
+                className="w-full bg-[#FAF9F6] dark:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] rounded-xl pl-10 pr-10 py-3 text-xs text-[#211D2B] dark:text-[#F5F2FA] placeholder-[#8B8599] focus:outline-none focus:ring-2 focus:ring-[#7156A5] dark:focus:ring-[#8B5CF6] transition-colors"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer"
+                className="absolute right-3.5 top-3.5 text-[#8B8599] hover:text-[#211D2B] dark:hover:text-[#F5F2FA] cursor-pointer"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -112,14 +109,14 @@ export const AdminLoginPage = () => {
           </div>
 
           {/* Security Notice */}
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
-            <span>Security Notice: <strong className="text-blue-600 dark:text-blue-400">Authorized Admin Access Only</strong></span>
+          <div className="p-3 rounded-xl bg-[#FAF9F6] dark:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[11px] text-[#686370] dark:text-[#AAA4B8] flex items-center justify-between font-mono">
+            <span>Security Notice: <strong className="text-[#7156A5] dark:text-[#B8A5E5]">Authorized Admin Access Only</strong></span>
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 px-4 rounded-xl text-xs font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white shadow-xl shadow-blue-600/25 transition-all flex items-center justify-center gap-2 group cursor-pointer"
+            className="w-full py-3 px-4 rounded-xl text-xs font-bold bg-[#7156A5] hover:bg-[#5E458B] dark:bg-[#8B5CF6] dark:hover:bg-[#7C3AED] text-white shadow-lg shadow-purple-500/20 transition-all flex items-center justify-center gap-2 group cursor-pointer"
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -136,12 +133,19 @@ export const AdminLoginPage = () => {
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 transition-colors cursor-pointer"
+            className="text-xs text-[#686370] hover:text-[#211D2B] dark:text-[#AAA4B8] dark:hover:text-[#F5F2FA] transition-colors cursor-pointer"
           >
             ← Back to Public Sports Portal
           </button>
         </div>
       </div>
+
+      {/* Footer Quote */}
+      <footer className="mt-8 text-center relative z-10 max-w-lg px-4">
+        <p className="font-spatial-display italic text-xs sm:text-sm tracking-wide text-[#686370] dark:text-[#AAA4B8]">
+          “It’s what you learn after you think you know it all that really counts”
+        </p>
+      </footer>
     </div>
   );
 };

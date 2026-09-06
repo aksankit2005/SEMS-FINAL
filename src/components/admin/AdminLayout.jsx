@@ -52,7 +52,11 @@ export const AdminLayout = () => {
   ) || navItems[0];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex font-sans antialiased">
+    <div className="admin-portal-root min-h-screen bg-[#FAF9F6] dark:bg-[#070A13] text-[#211D2B] dark:text-[#F5F2FA] flex font-spatial-sans antialiased relative selection:bg-[#7156A5]/20 selection:text-[#211D2B] dark:selection:text-white transition-colors duration-200">
+      {/* Dark Mode Celestial Atmosphere */}
+      <div className="fixed inset-0 pointer-events-none z-0 spatial-nebula-dark opacity-50 dark:block hidden" />
+      <div className="fixed inset-0 spatial-grain-overlay z-0 pointer-events-none opacity-20 dark:block hidden" />
+
       {/* Mobile Drawer Backdrop */}
       {isSidebarOpen && (
         <div
@@ -63,27 +67,25 @@ export const AdminLayout = () => {
 
       {/* Sidebar Navigation */}
       <aside
-        className={`fixed lg:static top-0 bottom-0 left-0 z-40 w-64 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-r border-slate-200 dark:border-slate-800 flex flex-col transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-          }`}
+        className={`fixed lg:static top-0 bottom-0 left-0 z-40 w-64 bg-[#FFFFFF]/95 dark:bg-[#0D101A]/95 backdrop-blur-xl border-r border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] flex flex-col transition-transform duration-300 relative z-10 ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
       >
         {/* Brand Header */}
-        <div className="p-5 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between shrink-0">
+        <div className="p-5 border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            {/* <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 p-0.5 shadow-lg shadow-blue-500/20">
-                <div className="w-full h-full bg-white dark:bg-slate-900 rounded-[10px] flex items-center justify-center">
-                  <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                </div>
-              </div> */}
             <div>
-              <h1 className="font-extrabold text-base text-slate-900 dark:text-white leading-tight tracking-tight">APEX ADMIN</h1>
-              <span className="text-[10px] tracking-wider uppercase font-semibold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+              <h1 className="font-spatial-display font-bold text-base text-[#211D2B] dark:text-[#F5F2FA] leading-tight tracking-wider uppercase">
+                APEX <span className="text-[#7156A5] dark:text-[#B8A5E5]">ADMIN</span>
+              </h1>
+              <span className="text-[10px] tracking-wider uppercase font-semibold text-[#7156A5] dark:text-[#B8A5E5] bg-[#F4F2F7] dark:bg-[#121625] px-2 py-0.5 rounded border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)] inline-block mt-0.5 font-mono">
                 Central Admin Portal
               </span>
             </div>
           </div>
           <button
             onClick={() => setIsSidebarOpen(false)}
-            className="lg:hidden text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="lg:hidden text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-[#F5F2FA] p-1 rounded-lg hover:bg-[#F4F2F7] dark:hover:bg-[#121625]"
           >
             <X className="w-5 h-5" />
           </button>
@@ -91,7 +93,7 @@ export const AdminLayout = () => {
 
         {/* Nav Links List */}
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar">
-          <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+          <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[#8B8599] font-mono">
             Main Menu
           </div>
           {navItems.map((item) => {
@@ -104,59 +106,60 @@ export const AdminLayout = () => {
                 key={item.path}
                 to={item.path}
                 onClick={() => setIsSidebarOpen(false)}
-                className={`group flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${isActive
-                    ? 'bg-blue-500/15 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 border-l-4 border-blue-600 font-bold shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/70'
-                  }`}
+                className={`group flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all duration-150 ${
+                  isActive
+                    ? 'bg-[#7156A5]/10 dark:bg-[rgba(184,165,229,0.12)] text-[#7156A5] dark:text-[#B8A5E5] border-l-3 border-[#7156A5] dark:border-[#8B5CF6] font-bold shadow-2xs'
+                    : 'text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-[#F5F2FA] hover:bg-[#F4F2F7] dark:hover:bg-[#121625]'
+                }`}
               >
                 <div className="flex items-center gap-3">
-                  <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
+                  <Icon className={`w-4 h-4 transition-transform group-hover:scale-105 ${isActive ? 'text-[#7156A5] dark:text-[#B8A5E5]' : 'text-[#8B8599] group-hover:text-[#7156A5] dark:group-hover:text-[#B8A5E5]'}`} />
                   <span>{item.label}</span>
                 </div>
-                {isActive && <ChevronRight className="w-3 h-3 text-blue-600" />}
+                {isActive && <ChevronRight className="w-3.5 h-3.5 text-[#7156A5] dark:text-[#B8A5E5]" />}
               </Link>
             );
           })}
         </nav>
 
         {/* User Card & Logout Button */}
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-900/60 shrink-0">
-          <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 mb-3 shadow-xs">
-            <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 font-bold flex items-center justify-center shrink-0">
-              <Shield className="w-4 h-4 text-blue-600" />
+        <div className="p-4 border-t border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] bg-[#FAF9F6]/50 dark:bg-[#0D101A]/60 shrink-0">
+          <div className="flex items-center gap-2.5 p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] mb-3 shadow-2xs">
+            <div className="w-8 h-8 rounded-lg bg-[#7156A5]/10 dark:bg-[rgba(184,165,229,0.12)] border border-[#7156A5]/20 text-[#7156A5] dark:text-[#B8A5E5] font-bold flex items-center justify-center shrink-0">
+              <Shield className="w-4 h-4 text-[#7156A5] dark:text-[#B8A5E5]" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.name || 'System Administrator'}</p>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user?.email || 'sports@mpgi.edu.in'}</p>
+              <p className="text-xs font-bold text-[#211D2B] dark:text-[#F5F2FA] truncate">{user?.name || 'System Administrator'}</p>
+              <p className="text-[10px] text-[#686370] dark:text-[#AAA4B8] truncate font-mono">{user?.email || 'sports@mpgi.edu.in'}</p>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all duration-200 shadow-xs"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-[#B71C1C] dark:text-[#FDA4AF] hover:text-white dark:hover:text-white bg-[#FBEDEF] hover:bg-[#B71C1C] dark:bg-[rgba(225,29,72,0.14)] dark:hover:bg-[#B71C1C] border border-[#FFCDD2] dark:border-[rgba(225,29,72,0.3)] transition-all duration-200 cursor-pointer shadow-2xs"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-3.5 h-3.5" />
             <span>Logout</span>
           </button>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 relative z-10">
         {/* Header Bar */}
-        <header className="h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 lg:px-8 flex items-center justify-between sticky top-0 z-30">
+        <header className="h-16 bg-[#FFFFFF]/80 dark:bg-[#070A13]/80 backdrop-blur-md border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] px-4 sm:px-6 lg:px-8 flex items-center justify-between sticky top-0 z-30 font-spatial-sans">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="lg:hidden p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="lg:hidden p-2 text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-[#F5F2FA] rounded-lg hover:bg-[#F4F2F7] dark:hover:bg-[#121625] transition-colors cursor-pointer"
             >
-              <Menu className="w-6 h-6" />
+              <Menu className="w-5 h-5" />
             </button>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight">
+              <h2 className="text-base sm:text-lg font-bold font-spatial-display text-[#211D2B] dark:text-[#F5F2FA] leading-tight uppercase tracking-wide">
                 {currentNavItem.label}
               </h2>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">
-                Manage and monitor central sports fest operations
+              <p className="text-[11px] text-[#686370] dark:text-[#AAA4B8] hidden sm:block">
+                Central Championship Fest Operations & Intelligence Console
               </p>
             </div>
           </div>
@@ -165,11 +168,11 @@ export const AdminLayout = () => {
             {/* Go to Home Page Button */}
             <Link
               to="/"
-              className="p-2 sm:px-3 sm:py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-xs shrink-0"
+              className="p-2 sm:px-3 sm:py-1.5 rounded-lg bg-[#FAF9F6] dark:bg-[#121625] hover:bg-[#F4F2F7] dark:hover:bg-[#181D30] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-2xs shrink-0"
               title="Go to Home Page"
             >
-              <Home className="w-4 h-4 text-blue-600" />
-              <span className="hidden sm:inline">Go to Home</span>
+              <Home className="w-3.5 h-3.5 text-[#7156A5] dark:text-[#B8A5E5]" />
+              <span className="hidden sm:inline">Portal Home</span>
             </Link>
 
             {/* Theme Toggle Button */}
@@ -179,26 +182,39 @@ export const AdminLayout = () => {
             <Link
               to="/admin/activity"
               title="System Activity & Audit Logs"
-              className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-2 text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-[#F5F2FA] rounded-lg hover:bg-[#F4F2F7] dark:hover:bg-[#121625] transition-colors"
               aria-label="View Activity Logs"
             >
-              <Bell className="w-5 h-5" />
+              <Bell className="w-4 h-4 text-[#7156A5] dark:text-[#B8A5E5]" />
             </Link>
 
-            <div className="h-6 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
+            <div className="h-5 w-px bg-[#E5E1E8] dark:bg-[rgba(184,165,229,0.16)] hidden sm:block" />
 
             {/* User Badge */}
-            <div className="flex items-center gap-2 p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 text-xs text-slate-800 dark:text-slate-200 select-none">
-              <div className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold flex items-center justify-center text-[10px]">
+            <div className="flex items-center gap-2 p-1.5 sm:px-2.5 sm:py-1 rounded-lg bg-[#FAF9F6] dark:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-xs text-[#211D2B] dark:text-[#F5F2FA] select-none">
+              <div className="w-5 h-5 rounded-full bg-[#7156A5] dark:bg-[#8B5CF6] text-white font-bold flex items-center justify-center text-[9px]">
                 AD
               </div>
-              <span className="font-semibold hidden sm:inline">{user?.name?.split(' ')[0] || 'Admin'}</span>
+              <span className="font-semibold text-xs hidden sm:inline">{user?.name?.split(' ')[0] || 'Admin'}</span>
             </div>
           </div>
         </header>
         {/* Main Content Body */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-          <Outlet />
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto font-spatial-sans relative z-10 flex flex-col">
+          <div className="flex-1 w-full">
+            <Outlet />
+          </div>
+
+          {/* Admin Footer */}
+          <footer className="mt-12 pt-6 pb-2 border-t border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+            <p className="font-spatial-display italic text-xs sm:text-sm tracking-wide text-[#686370] dark:text-[#AAA4B8]">
+              “It’s what you learn after you think you know it all that really counts”
+            </p>
+            <div className="flex items-center gap-2 text-[11px] font-mono text-[#8B8599] shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#7156A5] dark:bg-[#8B5CF6]" />
+              <span>APEX 2026 Admin Console</span>
+            </div>
+          </footer>
         </main>
       </div>
     </div>

@@ -490,8 +490,12 @@ export const SuperCoordinatorDashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] text-slate-900 dark:text-slate-200 transition-colors font-sans pb-16 w-full overflow-x-hidden">
+    <div className="super-coordinator-portal-root min-h-screen bg-[#FAF9F6] dark:bg-[#070A13] text-[#211D2B] dark:text-[#F5F2FA] transition-colors font-spatial-sans pb-16 w-full overflow-x-hidden relative">
       
+      {/* Dark mode atmospheric overlays */}
+      <div className="fixed inset-0 pointer-events-none z-0 spatial-nebula-dark opacity-40 dark:block hidden" />
+      <div className="fixed inset-0 spatial-grain-overlay z-0 pointer-events-none opacity-20 dark:block hidden" />
+
       {/* HEADER NAVBAR */}
       <SuperCoordinatorNavbar
         onRefresh={fetchDashboardData}
@@ -500,16 +504,16 @@ export const SuperCoordinatorDashboardPage = () => {
         onOpenPasswordModal={() => setShowPasswordModal(true)}
       />
 
-      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 pt-4 sm:pt-6 space-y-4 sm:space-y-6">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 pt-4 sm:pt-6 space-y-4 sm:space-y-6 relative z-10 font-spatial-sans">
         
         {/* Navigation Tabs Bar */}
-        <div className="flex items-center gap-2 p-2 sm:p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm overflow-x-auto whitespace-nowrap scrollbar-none w-full max-w-full">
+        <div className="flex items-center gap-2 p-2 sm:p-2.5 rounded-2xl bg-[#FFFFFF] dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] shadow-xs overflow-x-auto whitespace-nowrap scrollbar-none w-full max-w-full">
           <button
             onClick={() => setActiveTab('leaderboard')}
-            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-extrabold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
+            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
               activeTab === 'leaderboard'
-                ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                ? 'bg-[#7156A5] dark:bg-[#8B5CF6] text-white shadow-md shadow-purple-500/20'
+                : 'text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-[#F5F2FA] hover:bg-[#F4F2F7] dark:hover:bg-[#121625]'
             }`}
           >
             <Trophy className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
@@ -518,10 +522,10 @@ export const SuperCoordinatorDashboardPage = () => {
 
           <button
             onClick={() => setActiveTab('hero_slider')}
-            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-extrabold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
+            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
               activeTab === 'hero_slider'
-                ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                ? 'bg-[#7156A5] dark:bg-[#8B5CF6] text-white shadow-md shadow-purple-500/20'
+                : 'text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-[#F5F2FA] hover:bg-[#F4F2F7] dark:hover:bg-[#121625]'
             }`}
           >
             <Sparkles className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
@@ -530,10 +534,10 @@ export const SuperCoordinatorDashboardPage = () => {
 
           <button
             onClick={() => setActiveTab('match_results')}
-            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-extrabold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
+            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
               activeTab === 'match_results'
-                ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                ? 'bg-[#7156A5] dark:bg-[#8B5CF6] text-white shadow-md shadow-purple-500/20'
+                : 'text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-[#F5F2FA] hover:bg-[#F4F2F7] dark:hover:bg-[#121625]'
             }`}
           >
             <Award className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
@@ -542,10 +546,10 @@ export const SuperCoordinatorDashboardPage = () => {
 
           <button
             onClick={() => setActiveTab('coordinator_creations')}
-            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-extrabold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
+            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
               activeTab === 'coordinator_creations'
-                ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                ? 'bg-[#7156A5] dark:bg-[#8B5CF6] text-white shadow-md shadow-purple-500/20'
+                : 'text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-[#F5F2FA] hover:bg-[#F4F2F7] dark:hover:bg-[#121625]'
             }`}
           >
             <BookOpen className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
@@ -554,10 +558,10 @@ export const SuperCoordinatorDashboardPage = () => {
 
           <button
             onClick={() => setActiveTab('participants')}
-            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-extrabold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
+            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
               activeTab === 'participants'
-                ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                ? 'bg-[#7156A5] dark:bg-[#8B5CF6] text-white shadow-md shadow-purple-500/20'
+                : 'text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-[#F5F2FA] hover:bg-[#F4F2F7] dark:hover:bg-[#121625]'
             }`}
           >
             <Users className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
@@ -566,10 +570,10 @@ export const SuperCoordinatorDashboardPage = () => {
 
           <button
             onClick={() => setActiveTab('pr_gallery')}
-            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-extrabold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
+            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
               activeTab === 'pr_gallery'
-                ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                ? 'bg-[#7156A5] dark:bg-[#8B5CF6] text-white shadow-md shadow-purple-500/20'
+                : 'text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-[#F5F2FA] hover:bg-[#F4F2F7] dark:hover:bg-[#121625]'
             }`}
           >
             <ImageIcon className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
@@ -578,14 +582,14 @@ export const SuperCoordinatorDashboardPage = () => {
 
           <button
             onClick={() => setActiveTab('profile')}
-            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-extrabold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
+            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
               activeTab === 'profile'
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                ? 'bg-[#7156A5] dark:bg-[#8B5CF6] text-white shadow-md shadow-purple-500/20'
+                : 'text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-[#F5F2FA] hover:bg-[#F4F2F7] dark:hover:bg-[#121625]'
             }`}
           >
             <User className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
-            <span>👤 Profile & Security</span>
+            <span>Profile & Credentials</span>
           </button>
         </div>
 
@@ -2091,6 +2095,17 @@ export const SuperCoordinatorDashboardPage = () => {
             </div>
           </div>
         )}
+
+        {/* Super Coordinator Console Footer */}
+        <footer className="mt-12 pt-6 pb-4 border-t border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left relative z-10">
+          <p className="font-spatial-display italic text-xs sm:text-sm tracking-wide text-[#686370] dark:text-[#AAA4B8]">
+            “It’s what you learn after you think you know it all that really counts”
+          </p>
+          <div className="flex items-center gap-2 text-[11px] font-mono text-[#8B8599] shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#7156A5] dark:bg-[#8B5CF6]" />
+            <span>APEX 2026 Super Coordinator Console</span>
+          </div>
+        </footer>
 
       </div>
 
