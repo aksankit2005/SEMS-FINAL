@@ -16,7 +16,6 @@ import { AthleticsResultManagementTab } from '../../../components/coordinator/ta
 import { AthleticsLiveMatchControlTab } from '../../../components/coordinator/tabs/AthleticsLiveMatchControlTab';
 import { AthleticsMatchScheduleTab } from '../../../components/coordinator/tabs/AthleticsMatchScheduleTab';
 import { useToast } from '../../../context/ToastContext';
-import { ThemeToggle } from '../../../components/common/ThemeToggle';
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 const TABS = [
@@ -80,7 +79,6 @@ const Header = ({ sportName, activeTab, setActiveTab }) => {
         </p>
       </div>
       <div className="flex items-center gap-2.5">
-        <ThemeToggle />
         <button
           onClick={() => {
             window.dispatchEvent(new Event('sems-coordinator-sync'));

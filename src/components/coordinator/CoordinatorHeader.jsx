@@ -1,7 +1,6 @@
 import React from 'react';
 import { RefreshCw, LogOut, Calendar, Radio, Award, Users, Layers, User } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
-import { ThemeToggle } from '../common/ThemeToggle';
 
 export const OPERATIONAL_TABS = [
   { id: 'profile', label: 'My Profile', icon: User },
@@ -58,8 +57,6 @@ export const CoordinatorHeader = ({ user, activeTab, setActiveTab, onLogout }) =
 
         {/* Right Top Actions */}
         <div className="flex items-center gap-2.5">
-          <ThemeToggle />
-
           <button
             onClick={handleSyncData}
             className="px-3.5 py-2 rounded-xl bg-[#FAF9F6] dark:bg-[#121625] hover:bg-[#F4F2F7] dark:hover:bg-[#181D30] text-[#211D2B] dark:text-[#F5F2FA] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-2xs"
