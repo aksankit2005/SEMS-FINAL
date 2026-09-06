@@ -170,27 +170,30 @@ export const GalleryPage = () => {
   };
 
   return (
-    <div className={`relative min-h-screen font-spatial-sans selection:bg-amber-500/30 selection:text-white overflow-x-hidden transition-colors duration-500 ${
-      isDark ? 'text-slate-100' : 'text-slate-900'
+    <div className={`relative min-h-screen font-spatial-sans selection:bg-[#7156A5]/20 selection:text-[#211D2B] dark:selection:text-white overflow-x-hidden transition-colors duration-200 ${
+      isDark ? 'bg-[#070A13] text-[#F5F2FA]' : 'bg-[#FAF9F6] text-[#211D2B]'
     }`}>
       
-      {/* ─── ATMOSPHERIC NEBULA BACKDROP (Dark vs Light) ─── */}
-      <div className={`fixed inset-0 pointer-events-none z-0 transition-all duration-700 ${
-        isDark ? 'spatial-nebula-dark' : 'spatial-nebula-light'
-      }`} />
-
-      {/* ─── TACTILE FILM GRAIN OVERLAY ─── */}
-      <div className="fixed inset-0 spatial-grain-overlay z-[1]" />
+      {/* Atmospheric overlays preserved for dark mode */}
+      {isDark && (
+        <>
+          <div className="fixed inset-0 pointer-events-none z-0 spatial-nebula-dark opacity-60" />
+          <div className="fixed inset-0 spatial-grain-overlay z-[1] pointer-events-none opacity-20" />
+        </>
+      )}
 
       {/* =========================================================================
           VIEW 2: FULLSCREEN IMMERSIVE ALBUM OPEN EXPERIENCE (Image 2)
           ========================================================================= */}
       {selectedEvent ? (
-        <div className={`fixed inset-0 z-50 flex flex-col justify-between p-3 sm:p-5 lg:p-6 select-none transition-colors ${
+        <div className={`fixed inset-0 z-50 flex flex-col justify-between p-3 sm:p-5 lg:p-6 select-none transition-colors duration-200 ${
           albumDisplayMode === 'grid' ? 'overflow-y-auto' : 'overflow-hidden'
         } ${
-          isDark ? 'spatial-nebula-dark text-slate-100' : 'spatial-nebula-light text-slate-900'
+          isDark ? 'bg-[#070A13] text-[#F5F2FA]' : 'bg-[#FAF9F6] text-[#211D2B]'
         }`}>
+          {isDark && (
+            <div className="fixed inset-0 pointer-events-none z-0 spatial-nebula-dark opacity-60" />
+          )}
           
           {/* Top Context Navbar Capsule */}
           <div className={`w-full max-w-7xl mx-auto rounded-full px-5 sm:px-7 py-3 sm:py-3.5 flex items-center justify-between gap-4 shadow-2xl sticky top-0 z-30 shrink-0 transition-all ${
@@ -406,28 +409,20 @@ export const GalleryPage = () => {
         /* =========================================================================
             VIEW 1: FOLDER / ALBUMS SHOWCASE (Hall of Fame)
             ========================================================================= */
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 pb-8 sm:pb-12 space-y-4 sm:space-y-6">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12 space-y-6">
 
-          {/* ─── CENTERED LUXURY HERO BANNER (Hall of Fame) ─── */}
-          <div className="text-center max-w-3xl mx-auto space-y-2 pt-1">
-            {/* Luxury Title: HALL OF FAME */}
-            <h1 className={`text-4xl sm:text-6xl md:text-7xl font-normal tracking-[0.08em] font-spatial-display uppercase ${
-              isDark ? 'text-white' : 'text-slate-900'
-            }`}>
-              HALL OF{' '}
-              <span className={`bg-gradient-to-r bg-clip-text text-transparent font-semibold ${
-                isDark 
-                  ? 'from-purple-400 via-indigo-300 to-amber-300' 
-                  : 'from-purple-700 via-indigo-700 to-amber-600'
-              }`}>
-                FAME
-              </span>
+          {/* Editorial Header Banner */}
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
+              <Camera className="w-3.5 h-3.5 text-[#A98B57] dark:text-[#D2AB45]" />
+              <span>Official Event Media</span>
+            </div>
+
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight font-spatial-display text-[#211D2B] dark:text-[#F5F2FA]">
+              Hall Of <span className="text-[#7156A5] dark:text-[#B8A5E5]">Fame</span>
             </h1>
 
-            {/* Centered Italic Description */}
-            <p className={`text-xs sm:text-sm max-w-xl mx-auto italic font-spatial-sans font-light leading-relaxed ${
-              isDark ? 'text-slate-300/85' : 'text-slate-600'
-            }`}>
+            <p className="text-xs sm:text-sm text-[#686370] dark:text-[#AAA4B8] leading-relaxed">
               Capturing the raw emotion, historic triumphs, and unyielding spirit of those who dare to play.
             </p>
           </div>

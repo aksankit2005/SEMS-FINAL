@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Crown, Search, Sparkles } from 'lucide-react';
+import { Trophy, Crown, Search, Sparkles, X } from 'lucide-react';
 import { ALL_COLLEGES } from '../services/superCoordinatorApi';
 import { apiUrl } from '../services/apiConfig';
 import { useSportsData } from '../context/SportsDataContext';
@@ -133,29 +133,29 @@ export const LeaderboardPage = () => {
     <div className={`relative min-h-screen font-spatial-sans selection:bg-[#7156A5]/20 selection:text-[#211D2B] dark:selection:text-white overflow-x-hidden transition-colors duration-200 ${
       isDark ? 'bg-[#070A13] text-[#F5F2FA]' : 'bg-[#FAF9F6] text-[#211D2B]'
     }`}>
-      {/* ─── ATMOSPHERIC NEBULA BACKDROP (Dark vs Light) ─── */}
-      <div className={`fixed inset-0 pointer-events-none z-0 transition-all duration-700 ${
-        isDark ? 'spatial-nebula-dark' : 'spatial-nebula-light'
-      }`} />
-
-      {/* ─── TACTILE FILM GRAIN OVERLAY ─── */}
-      <div className="fixed inset-0 spatial-grain-overlay z-[1] pointer-events-none opacity-20" />
+      {/* Atmospheric overlays preserved for dark mode */}
+      {isDark && (
+        <>
+          <div className="fixed inset-0 pointer-events-none z-0 spatial-nebula-dark opacity-60" />
+          <div className="fixed inset-0 spatial-grain-overlay z-[1] pointer-events-none opacity-20" />
+        </>
+      )}
 
       {/* ─── MAIN CONTENT CONTAINER ─── */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-12 sm:pb-16 space-y-6 sm:space-y-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12 space-y-6">
 
-        {/* ─── LUXURY HERO BANNER (Gallery Style) ─── */}
-        <div className="text-center max-w-3xl mx-auto space-y-2 pt-1">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)] mb-1">
+        {/* Editorial Header Banner */}
+        <div className="text-center max-w-2xl mx-auto space-y-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
             <Trophy className="w-3.5 h-3.5 text-[#A98B57] dark:text-[#D2AB45]" />
-            <span>Inter-College Standings</span>
+            <span>Official Tournament Standings</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-normal tracking-tight font-spatial-display uppercase text-[#211D2B] dark:text-[#F5F2FA]">
-            Overall <span className="text-[#7156A5] dark:text-[#B8A5E5] font-semibold">Leaderboard</span>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight font-spatial-display text-[#211D2B] dark:text-[#F5F2FA]">
+            Overall <span className="text-[#7156A5] dark:text-[#B8A5E5]">Leaderboard</span>
           </h1>
 
-          <p className="text-xs sm:text-sm max-w-xl mx-auto font-spatial-sans leading-relaxed text-[#686370] dark:text-[#AAA4B8]">
+          <p className="text-xs sm:text-sm text-[#686370] dark:text-[#AAA4B8] leading-relaxed">
             Live medal tallies and cumulative points across all sports events. 🥇 Winner = 5 pts • 🥈 Runner-Up = 3 pts
           </p>
         </div>
@@ -317,11 +317,11 @@ export const LeaderboardPage = () => {
           </div>
         )}
 
-        {/* ─── TABLE HEADER & SEARCH BAR ─── */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 pb-1">
+        {/* ─── TABLE CONTROLS & SEARCH BAR ─── */}
+        <div className="bg-[#FFFFFF] dark:bg-[#0D101A] p-3 rounded-lg border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-2">
             <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-[#A98B57] dark:text-[#D2AB45]" />
-            <h2 className="text-base sm:text-lg font-spatial-display uppercase tracking-wider font-semibold text-[#211D2B] dark:text-[#F5F2FA]">
+            <h2 className="text-sm sm:text-base font-spatial-display uppercase tracking-wider font-semibold text-[#211D2B] dark:text-[#F5F2FA]">
               Complete Standings
             </h2>
             <span className="text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
@@ -329,16 +329,23 @@ export const LeaderboardPage = () => {
             </span>
           </div>
 
-          {/* Luxury Gallery-Style Search Input */}
-          <div className="relative w-full sm:w-72">
-            <Search className="w-3.5 h-3.5 absolute left-3.5 top-3 text-[#686370] dark:text-[#AAA4B8] pointer-events-none" />
+          <div className="relative w-full sm:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#686370] dark:text-[#AAA4B8]" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search college name or code..."
-              className="w-full pl-9 pr-4 py-2 rounded-lg text-xs font-mono transition-all border outline-none bg-[#FFFFFF] dark:bg-[#121625] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] text-[#211D2B] dark:text-[#F5F2FA] placeholder-[#686370] dark:placeholder-[#AAA4B8] focus:border-[#7156A5] dark:focus:border-[#8B5CF6] shadow-2xs"
+              className="w-full pl-9 pr-8 py-1.5 text-xs rounded-lg bg-[#FAF9F6] dark:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] placeholder-[#686370] dark:placeholder-[#AAA4B8] focus:outline-none focus:border-[#7156A5] dark:focus:border-[#8B5CF6] transition-colors font-mono"
             />
+            {query && (
+              <button
+                onClick={() => setQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#686370] hover:text-[#211D2B] dark:text-[#AAA4B8] dark:hover:text-white"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
 

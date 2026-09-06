@@ -355,11 +355,15 @@ export const AboutPage = () => {
 
       {/* ── TAB 1: APEX JOURNEY TIMELINE (DEFAULT) ── */}
       {activeTab === 'journey' ? (
-        <div className="relative spatial-nebula-responsive min-h-[calc(100vh-80px)] overflow-x-hidden">
-          {/* Subtle Film Grain Noise Texture */}
+        <div className="relative min-h-[calc(100vh-80px)] overflow-x-hidden">
+          {/* Dark mode atmospheric overlays */}
           <div 
             aria-hidden="true" 
-            className="fixed inset-0 spatial-grain-overlay z-0 pointer-events-none opacity-20"
+            className="fixed inset-0 pointer-events-none z-0 spatial-nebula-dark opacity-60 hidden dark:block"
+          />
+          <div 
+            aria-hidden="true" 
+            className="fixed inset-0 spatial-grain-overlay z-0 pointer-events-none opacity-20 hidden dark:block"
           />
 
           <main className="relative z-10">
@@ -383,11 +387,34 @@ export const AboutPage = () => {
         </div>
       ) : (
         /* ── TAB 2: TEAM MEMBERS (FACULTY, DEVELOPERS, COMMITTEE) ── */
-        <div className="relative spatial-nebula-responsive min-h-[calc(100vh-80px)] overflow-x-hidden">
-          {/* Grain texture overlay */}
-          <div aria-hidden="true" className="fixed inset-0 spatial-grain-overlay z-0 pointer-events-none opacity-10 dark:opacity-20" />
+        <div className="relative min-h-[calc(100vh-80px)] overflow-x-hidden">
+          {/* Dark mode atmospheric overlays */}
+          <div 
+            aria-hidden="true" 
+            className="fixed inset-0 pointer-events-none z-0 spatial-nebula-dark opacity-60 hidden dark:block"
+          />
+          <div 
+            aria-hidden="true" 
+            className="fixed inset-0 spatial-grain-overlay z-0 pointer-events-none opacity-20 hidden dark:block" 
+          />
 
-          <div className="relative z-10 max-w-7xl mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12 sm:space-y-16">
+          <div className="relative z-10 max-w-7xl mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 pt-8 pb-12 space-y-8 sm:space-y-12">
+
+            {/* Editorial Header Banner */}
+            <div className="text-center max-w-2xl mx-auto space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
+                <Users className="w-3.5 h-3.5 text-[#A98B57] dark:text-[#D2AB45]" />
+                <span>Executive Committee & Mentors</span>
+              </div>
+
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight font-spatial-display text-[#211D2B] dark:text-[#F5F2FA]">
+                Meet The <span className="text-[#7156A5] dark:text-[#B8A5E5]">Team</span>
+              </h1>
+
+              <p className="text-xs sm:text-sm text-[#686370] dark:text-[#AAA4B8] leading-relaxed">
+                The visionary leadership, academic mentors, student council, and platform developers powering APEX.
+              </p>
+            </div>
 
             {/* ─── FACULTY ADVISORS ──────────────────────────────────── */}
             <section>

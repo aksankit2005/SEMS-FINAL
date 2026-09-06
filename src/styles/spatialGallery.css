@@ -27,9 +27,7 @@
 }
 
 .spatial-nebula-light {
-  background: 
-    radial-gradient(ellipse 75% 55% at 50% 20%, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.03) 40%, transparent 70%),
-    #f8fafc;
+  background: #FAF9F6;
 }
 
 /* Glassmorphic Panel (Dark Mode) */
@@ -186,11 +184,8 @@
 
 /* Responsive Light and Dark Nebula Container */
 .spatial-nebula-responsive {
-  background: 
-    radial-gradient(ellipse 75% 55% at 50% 20%, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.05) 40%, transparent 70%),
-    radial-gradient(ellipse 65% 35% at 50% 85%, rgba(245, 158, 11, 0.04) 0%, transparent 60%),
-    #f8fafc;
-  color: #0f172a;
+  background: #FAF9F6;
+  color: #211D2B;
 }
 
 .dark .spatial-nebula-responsive {

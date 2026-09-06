@@ -9,20 +9,23 @@ export const JourneyMilestonesOverlay = ({
   onSwitchToTeam
 }) => {
   return (
-    <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:pr-24 lg:pl-12 xl:px-12 pt-2 sm:pt-4 pb-28 sm:pb-32">
+    <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:pr-24 lg:pl-12 xl:px-12 pt-8 pb-28 sm:pb-32">
       
-      {/* ── Hero Header: Title & Description ── */}
-      <section className="text-center mb-8 sm:mb-12 lg:mb-16">
-        {/* Responsive Cinzel Title */}
-        <h1 className="font-serif-luxury text-3xl xs:text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-[#211D2B] dark:text-[#F5F2FA] tracking-wider uppercase drop-shadow-[0_10px_35px_rgba(0,0,0,0.15)] dark:drop-shadow-[0_10px_35px_rgba(0,0,0,0.8)]">
-          APEX LEGACY
+      {/* Editorial Header Banner */}
+      <div className="text-center max-w-2xl mx-auto space-y-2 mb-8 sm:mb-12 lg:mb-16">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
+          <Sparkles className="w-3.5 h-3.5 text-[#A98B57] dark:text-[#D2AB45]" />
+          <span>APEX Sports Chronicles</span>
+        </div>
+
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight font-spatial-display text-[#211D2B] dark:text-[#F5F2FA]">
+          Apex <span className="text-[#7156A5] dark:text-[#B8A5E5]">Legacy</span>
         </h1>
 
-        {/* Editorial Subtitle */}
-        <p className="text-xs sm:text-sm md:text-base text-[#686370] dark:text-[#AAA4B8] font-sans-clean max-w-2xl mx-auto italic mt-3 sm:mt-5 leading-relaxed px-4">
-          Curated aesthetic chronicles spanning classical MPGI sports epochs, championship horizons, and luminous tournament nightscapes.
+        <p className="text-xs sm:text-sm text-[#686370] dark:text-[#AAA4B8] leading-relaxed">
+          Curated aesthetic chronicles spanning classical MPGI sports epochs, championship horizons, and tournament memories.
         </p>
-      </section>
+      </div>
 
       {/* ── Alternating Milestones Timeline Section (Active on Mobile & Desktop) ── */}
       <div className="relative">
