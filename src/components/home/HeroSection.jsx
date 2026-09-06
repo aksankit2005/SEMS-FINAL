@@ -7,6 +7,7 @@ export const HeroSection = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedEventIndex, setSelectedEventIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -19,6 +20,27 @@ export const HeroSection = () => {
           const active = (Array.isArray(publicEvents) ? publicEvents : []).filter(
             (e) => e && e.status !== 'Draft' && e.status !== 'Cancelled'
           );
+
+          // Priority ordering: Open/Published first -> Upcoming -> Closed
+          const getStatusPriority = (status) => {
+            const s = (status || '').toLowerCase();
+            if (s === 'open' || s === 'published' || s === 'ongoing') return 1;
+            if (s === 'upcoming' || s === 'scheduled') return 2;
+            if (s === 'closed' || s === 'completed' || s === 'concluded') return 3;
+            return 4;
+          };
+
+          active.sort((a, b) => {
+            const priorityA = getStatusPriority(a.status);
+            const priorityB = getStatusPriority(b.status);
+            if (priorityA !== priorityB) {
+              return priorityA - priorityB;
+            }
+            const dateA = a.tournStartDate ? new Date(a.tournStartDate).getTime() : 0;
+            const dateB = b.tournStartDate ? new Date(b.tournStartDate).getTime() : 0;
+            return dateA - dateB;
+          });
+
           setEvents(active);
         }
       } catch (err) {
@@ -40,6 +62,17 @@ export const HeroSection = () => {
       window.removeEventListener('storage', handleUpdate);
     };
   }, []);
+
+  // Auto-slide to next event every 4 seconds
+  useEffect(() => {
+    if (events.length <= 1 || isPaused) return;
+
+    const timer = setInterval(() => {
+      setSelectedEventIndex((prev) => (prev + 1) % events.length);
+    }, 4000);
+
+    return () => clearInterval(timer);
+  }, [events.length, isPaused, selectedEventIndex]);
 
   const activeEvent = events.length > 0 ? events[selectedEventIndex] || events[0] : null;
 
@@ -67,7 +100,11 @@ export const HeroSection = () => {
   })();
 
   return (
-    <section className="relative w-full overflow-hidden bg-[#FAF9F6] dark:bg-[#070A13] text-[#211D2B] dark:text-[#F5F2FA] border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] transition-colors duration-200 font-spatial-sans">
+    <section
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      className="relative w-full overflow-hidden bg-[#FAF9F6] dark:bg-[#070A13] text-[#211D2B] dark:text-[#F5F2FA] border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] transition-colors duration-200 font-spatial-sans"
+    >
       {/* Dynamic Cover Image Backdrop with Theme-Separated Directional Scrim */}
       {hasGenuineBanner && (
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
@@ -75,22 +112,22 @@ export const HeroSection = () => {
             src={activeEvent.coverImage}
             alt={activeEvent.title}
             className="w-full h-full object-cover object-center transition-all duration-700
-              opacity-90 dark:opacity-75
-              brightness-[0.98] contrast-[1.02]
+              opacity-100 dark:opacity-80
+              brightness-[1] contrast-[1.02]
               dark:brightness-[0.80] dark:contrast-[1.05]"
           />
-          {/* Light-mode directional scrim: Soft ivory fade from left behind text, transparent on right over subject */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#FAF9F6] via-[#FAF9F6]/90 to-transparent sm:w-3/4 dark:hidden" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#FAF9F6]/95 via-transparent to-transparent sm:hidden dark:hidden" />
+          {/* Light-mode directional scrim: Soft compact ivory fade from left strictly behind text */}
+          <div className="absolute inset-y-0 left-0 w-full sm:w-3/5 lg:w-[45%] bg-gradient-to-r from-[#FAF9F6]/95 via-[#FAF9F6]/60 to-transparent dark:hidden" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#FAF9F6]/85 via-transparent to-transparent sm:hidden dark:hidden" />
 
-          {/* Dark-mode directional scrim: Obsidian fade from left behind text, transparent on right */}
-          <div className="hidden dark:block absolute inset-0 bg-gradient-to-r from-[#070A13]/95 via-[#070A13]/70 to-transparent sm:w-3/4" />
-          <div className="hidden dark:block absolute inset-0 bg-gradient-to-t from-[#070A13]/90 via-transparent to-transparent sm:hidden" />
+          {/* Dark-mode directional scrim: Obsidian fade from left strictly behind text */}
+          <div className="hidden dark:block absolute inset-y-0 left-0 w-full sm:w-3/5 lg:w-[45%] bg-gradient-to-r from-[#070A13]/95 via-[#070A13]/60 to-transparent" />
+          <div className="hidden dark:block absolute inset-0 bg-gradient-to-t from-[#070A13]/85 via-transparent to-transparent sm:hidden" />
         </div>
       )}
 
       {/* Editorial Content Container */}
-      <div className="relative z-10 w-full max-w-[1600px] mx-auto px-4 xs:px-6 sm:px-10 lg:px-12 xl:px-16 py-10 sm:py-16 md:py-20">
+      <div className="relative z-10 w-full max-w-[1600px] mx-auto px-4 xs:px-6 sm:px-10 lg:px-12 xl:px-16 py-6 sm:py-10 md:py-12">
         {loading ? (
           <div className="space-y-4 max-w-3xl animate-pulse">
             <div className="h-6 w-48 bg-slate-200 dark:bg-white/10 rounded" />
@@ -100,7 +137,7 @@ export const HeroSection = () => {
           </div>
         ) : activeEvent ? (
           /* Dynamic Active Championship Layout */
-          <div className="space-y-5 sm:space-y-7">
+          <div className="space-y-3.5 sm:space-y-4">
             {/* Top Institutional & Status Badges */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-[#F4F2F7] dark:bg-white/10 border border-[#E5E1E8] dark:border-white/15 text-[#7156A5] dark:text-[#F3D78A] font-mono uppercase tracking-wider font-semibold">
@@ -142,20 +179,20 @@ export const HeroSection = () => {
             </div>
 
             {/* Main Championship Headline */}
-            <div className="space-y-2.5 sm:space-y-3 max-w-4xl">
-              <h1 className="text-2xl xs:text-3xl sm:text-5xl md:text-6xl font-normal font-spatial-display tracking-tight text-[#211D2B] dark:text-white uppercase leading-[1.1]">
+            <div className="space-y-1.5 sm:space-y-2 max-w-2xl">
+              <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-[40px] font-bold font-spatial-display tracking-tight text-[#211D2B] dark:text-white uppercase leading-[1.15]">
                 {activeEvent.title}
               </h1>
 
               {activeEvent.description && (
-                <p className="text-xs sm:text-sm md:text-base text-[#686370] dark:text-[#AAA4B8] leading-relaxed max-w-2xl line-clamp-3">
+                <p className="text-xs sm:text-sm text-[#686370] dark:text-[#AAA4B8] leading-relaxed max-w-xl line-clamp-2 sm:line-clamp-3">
                   {activeEvent.description}
                 </p>
               )}
             </div>
 
             {/* Event Key Facts Bar */}
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2.5 pt-1 text-xs sm:text-sm text-[#686370] dark:text-[#AAA4B8] border-t border-[#E5E1E8] dark:border-white/10">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1 text-xs sm:text-sm text-[#686370] dark:text-[#AAA4B8] border-t border-[#E5E1E8] dark:border-white/10 max-w-2xl">
               {activeEvent.tournStartDate && (
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <Calendar className="w-4 h-4 text-[#A98B57]" />
@@ -187,11 +224,11 @@ export const HeroSection = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="pt-2 flex flex-wrap items-center gap-3">
+            <div className="pt-1 flex flex-wrap items-center gap-2.5 sm:gap-3">
               {activeEvent.status !== 'Closed' && (
                 <Link
                   to={`/registration${activeEvent.id ? `?eventId=${activeEvent.id}` : ''}`}
-                  className="px-6 py-3 rounded-lg bg-[#7156A5] hover:bg-[#5E458B] dark:bg-[#8B5CF6] dark:hover:bg-[#7C3AED] text-white font-semibold text-xs sm:text-sm tracking-wide transition-all shadow-xs flex items-center gap-2 active:scale-98 min-h-[44px]"
+                  className="px-5 py-2.5 rounded-lg bg-[#7156A5] hover:bg-[#5E458B] dark:bg-[#8B5CF6] dark:hover:bg-[#7C3AED] text-white font-semibold text-xs sm:text-sm tracking-wide transition-all shadow-xs flex items-center gap-2 active:scale-98 min-h-[38px]"
                 >
                   <Trophy className="w-4 h-4 text-white" />
                   <span>Register for Event</span>
@@ -201,7 +238,7 @@ export const HeroSection = () => {
 
               <Link
                 to="/schedule"
-                className="px-6 py-3 rounded-lg bg-[#FFFFFF] dark:bg-white/10 hover:bg-[#F4F2F7] dark:hover:bg-white/20 text-[#211D2B] dark:text-white font-semibold text-xs sm:text-sm border border-[#E5E1E8] dark:border-white/25 hover:border-[#7156A5] dark:hover:border-white/50 transition-all flex items-center gap-2 active:scale-98 min-h-[44px] shadow-2xs"
+                className="px-5 py-2.5 rounded-lg bg-[#FFFFFF] dark:bg-white/10 hover:bg-[#F4F2F7] dark:hover:bg-white/20 text-[#211D2B] dark:text-white font-semibold text-xs sm:text-sm border border-[#E5E1E8] dark:border-white/25 hover:border-[#7156A5] dark:hover:border-white/50 transition-all flex items-center gap-2 active:scale-98 min-h-[38px] shadow-2xs"
               >
                 <span>Tournament Timetable</span>
                 <ArrowRight className="w-4 h-4 text-[#7156A5] dark:text-white/80" />
@@ -209,7 +246,7 @@ export const HeroSection = () => {
 
               <Link
                 to="/results"
-                className="px-6 py-3 rounded-lg bg-transparent hover:bg-slate-200/50 dark:hover:bg-white/5 text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-white font-semibold text-xs sm:text-sm border border-[#E5E1E8] dark:border-white/10 transition-all flex items-center gap-2 min-h-[44px]"
+                className="px-5 py-2.5 rounded-lg bg-transparent hover:bg-slate-200/50 dark:hover:bg-white/5 text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-white font-semibold text-xs sm:text-sm border border-[#E5E1E8] dark:border-white/10 transition-all flex items-center gap-2 min-h-[38px]"
               >
                 <span>Match Ledger</span>
               </Link>
@@ -239,15 +276,15 @@ export const HeroSection = () => {
           </div>
         ) : (
           /* Dignified Institutional APEX Masthead (Truthful Zero-Active State) */
-          <div className="space-y-6 sm:space-y-8 max-w-4xl">
+          <div className="space-y-4 sm:space-y-5 max-w-3xl">
             {/* Institutional Hierarchy */}
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <div className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#A98B57] dark:text-[#F3D78A]">
                 <ShieldCheck className="w-4 h-4 text-[#A98B57]" />
                 <span>Directorate of Physical Education & Sports • MPGI Kanpur</span>
               </div>
 
-              <h1 className="text-2xl xs:text-3xl sm:text-5xl md:text-6xl font-normal font-spatial-display tracking-tight text-[#211D2B] dark:text-white uppercase leading-[1.1]">
+              <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-[40px] font-bold font-spatial-display tracking-tight text-[#211D2B] dark:text-white uppercase leading-[1.15]">
                 Maharana Pratap <br className="hidden sm:inline" />
                 Sports Championship
               </h1>
