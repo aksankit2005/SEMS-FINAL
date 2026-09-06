@@ -160,7 +160,7 @@ export const HeaderNavbar = ({ onOpenMobileDrawer }) => {
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-[#FAF9F6]/95 dark:bg-[#070A13]/95 backdrop-blur-md border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] transition-colors duration-200 font-spatial-sans">
+    <header className="sticky top-0 z-40 w-full bg-transparent backdrop-blur-md border-b border-transparent transition-colors duration-200 font-spatial-sans">
       <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6">
         <div className="flex items-center justify-between h-14 sm:h-16 gap-2 lg:gap-4">
 
