@@ -313,7 +313,13 @@ export const RegistrationPage = () => {
           const sFee = typeof matchingEvent.singlesFee === 'number' ? matchingEvent.singlesFee : resolvedFee;
           const dFee = typeof matchingEvent.doublesFee === 'number' ? matchingEvent.doublesFee : resolvedFee * 2;
 
-          if (sport.entryFee !== resolvedFee || sport.singlesFee !== sFee || sport.doublesFee !== dFee) {
+          if (
+            sport.entryFee !== resolvedFee ||
+            sport.singlesFee !== sFee ||
+            sport.doublesFee !== dFee ||
+            matchingEvent.subEventsConfig !== sport.subEventsConfig ||
+            matchingEvent.subEventFees !== sport.subEventFees
+          ) {
             hasChanges = true;
             return {
               ...sport,
@@ -321,6 +327,9 @@ export const RegistrationPage = () => {
               teamFee: resolvedFee,
               singlesFee: sFee,
               doublesFee: dFee,
+              subEvents: matchingEvent.subEvents || sport.subEvents,
+              subEventFees: matchingEvent.subEventFees || sport.subEventFees,
+              subEventsConfig: matchingEvent.subEventsConfig || sport.subEventsConfig,
               venue: matchingEvent.venue || sport.venue,
               rules: matchingEvent.rules || sport.rules
             };
@@ -341,21 +350,39 @@ export const RegistrationPage = () => {
           : (typeof matchingEvent.teamFee === 'number' ? matchingEvent.teamFee : (matchingEvent.entryFee ?? matchingEvent.teamFee ?? 0));
         
         const isRacket = isRacketSportCheck(prevActive);
+        const isAthletics = key === 'athletics' || (prevActive.id || '').toLowerCase().includes('athletics');
         const sFee = typeof matchingEvent.singlesFee === 'number' ? matchingEvent.singlesFee : resolvedFee;
         const dFee = typeof matchingEvent.doublesFee === 'number' ? matchingEvent.doublesFee : resolvedFee * 2;
-        const currentFee = isRacket ? (formData.eventType === 'Doubles' ? dFee : sFee) : resolvedFee;
+        
+        let currentFee = resolvedFee;
+        if (isRacket) {
+          currentFee = formData.eventType === 'Doubles' ? dFee : sFee;
+        } else if (isAthletics && (formData.selectedEvents?.[0] || formData.subEvent)) {
+          const selSub = formData.selectedEvents?.[0] || formData.subEvent;
+          if (matchingEvent.subEventFees?.[selSub] !== undefined) {
+            currentFee = Number(matchingEvent.subEventFees[selSub]);
+          } else if (Array.isArray(matchingEvent.subEventsConfig)) {
+            const foundSub = matchingEvent.subEventsConfig.find((c) => c.name === selSub);
+            if (foundSub?.entryFee !== undefined) currentFee = Number(foundSub.entryFee);
+          }
+        }
 
         if (
           prevActive.entryFee !== currentFee ||
           prevActive.singlesFee !== sFee ||
-          prevActive.doublesFee !== dFee
+          prevActive.doublesFee !== dFee ||
+          matchingEvent.subEventsConfig !== prevActive.subEventsConfig ||
+          matchingEvent.subEventFees !== prevActive.subEventFees
         ) {
           return {
             ...prevActive,
             entryFee: currentFee,
             teamFee: resolvedFee,
             singlesFee: sFee,
-            doublesFee: dFee
+            doublesFee: dFee,
+            subEvents: matchingEvent.subEvents || prevActive.subEvents,
+            subEventFees: matchingEvent.subEventFees || prevActive.subEventFees,
+            subEventsConfig: matchingEvent.subEventsConfig || prevActive.subEventsConfig
           };
         }
       }
@@ -432,7 +459,10 @@ export const RegistrationPage = () => {
             tournStartDate: foundEv.tournStartDate,
             tournEndDate: foundEv.tournEndDate,
             rules: foundEv.rules || ['Official tournament rules apply.'],
-            requiredDocuments: foundEv.requiredDocuments || ['College ID Card']
+            requiredDocuments: foundEv.requiredDocuments || ['College ID Card'],
+            subEvents: foundEv.subEvents,
+            subEventFees: foundEv.subEventFees,
+            subEventsConfig: foundEv.subEventsConfig
           });
           setStep(1);
           return;
@@ -513,10 +543,40 @@ export const RegistrationPage = () => {
       ...sport,
       entryFee: initialFee,
       singlesFee: sFee,
-      doublesFee: dFee
+      doublesFee: dFee,
+      subEvents: sport.subEvents,
+      subEventFees: sport.subEventFees,
+      subEventsConfig: sport.subEventsConfig
     });
     setStep(1);
   };
+
+  // Synchronize Athletics sub-event entry fee with activeSport.entryFee
+  useEffect(() => {
+    if (!activeSport) return;
+    const isAthletics = resolveSportKey(activeSport) === 'athletics' || (activeSport.id || '').toLowerCase().includes('athletics');
+    if (!isAthletics) return;
+
+    const selectedSub = formData.selectedEvents?.[0] || formData.subEvent;
+    if (selectedSub) {
+      let matchedFee = null;
+      if (activeSport.subEventFees && activeSport.subEventFees[selectedSub] !== undefined) {
+        matchedFee = Number(activeSport.subEventFees[selectedSub]);
+      } else if (Array.isArray(activeSport.subEventsConfig)) {
+        const foundSub = activeSport.subEventsConfig.find((c) => c.name === selectedSub);
+        if (foundSub?.entryFee !== undefined) matchedFee = Number(foundSub.entryFee);
+      }
+
+      if (matchedFee === null) {
+        const isRelay = selectedSub === '4*100m relay Race' || selectedSub.toLowerCase().includes('relay');
+        matchedFee = isRelay ? 400 : (activeSport.singlesFee || activeSport.entryFee || 150);
+      }
+
+      if (typeof matchedFee === 'number' && activeSport.entryFee !== matchedFee) {
+        setActiveSport((prev) => (prev ? { ...prev, entryFee: matchedFee } : prev));
+      }
+    }
+  }, [formData.selectedEvents, formData.subEvent, activeSport?.subEventFees, activeSport?.subEventsConfig]);
 
 
   const handleBackToSports = () => {
@@ -612,8 +672,9 @@ export const RegistrationPage = () => {
       let eventCategory = activeSport.category;
       if (isRacketSportCheck(activeSport)) {
         eventCategory = `${activeSport.category} (${formData.eventType})`;
-      } else if ((activeSport.id || '').toLowerCase() === 'athletics') {
-        eventCategory = `Athletics (${formData.selectedEvents.join(', ')})`;
+      } else if (resolveSportKey(activeSport) === 'athletics' || (activeSport.id || '').toLowerCase().includes('athletics')) {
+        const subName = (formData.selectedEvents || [formData.subEvent]).filter(Boolean).join(', ');
+        eventCategory = `Athletics (${subName || 'Track & Field'})`;
       }
 
       const receipt = {
@@ -696,7 +757,9 @@ export const RegistrationPage = () => {
               email: formData.captainEmail || (formData.roster[0] && formData.roster[0].email) || 'athlete@apex.edu',
               phone: formData.captainPhone || (formData.roster[0] && formData.roster[0].phone) || '+91 98765 43210',
               collegeName: formData.collegeName || 'MPEC',
-              teamName: formData.teamName
+              teamName: formData.teamName,
+              entryFee: activeSport.entryFee,
+              subEvent: formData.selectedEvents?.[0] || formData.subEvent || ''
             }
           );
         } catch (orderErr) {
@@ -1045,6 +1108,25 @@ export const RegistrationPage = () => {
                     const dFee = typeof evt.doublesFee === 'number' ? Number(evt.doublesFee) : currentFee * 2;
 
                     const key = resolveSportKey(evt);
+                    const isAthletics = key === 'athletics' || (evt.sportId || '').toLowerCase().includes('athletics') || (evt.title || '').toLowerCase().includes('athletics');
+
+                    let feeBadgeText = currentFee > 0 ? `Fee: ₹${currentFee}` : 'FREE (₹0)';
+                    if (isRacket) {
+                      feeBadgeText = `Singles: ₹${sFee} | Doubles: ₹${dFee}`;
+                    } else if (isAthletics) {
+                      let prices = [];
+                      if (evt.subEventFees && typeof evt.subEventFees === 'object') {
+                        prices = Object.values(evt.subEventFees).map(Number).filter((n) => !isNaN(n));
+                      } else if (Array.isArray(evt.subEventsConfig)) {
+                        prices = evt.subEventsConfig.filter((c) => c.enabled !== false).map((c) => Number(c.entryFee)).filter((n) => !isNaN(n));
+                      }
+                      if (prices.length > 0) {
+                        const minP = Math.min(...prices);
+                        const maxP = Math.max(...prices);
+                        feeBadgeText = minP === maxP ? (minP === 0 ? 'FREE (₹0)' : `Fee: ₹${minP}`) : `₹${minP} - ₹${maxP} / game`;
+                      }
+                    }
+
                     const bounds = SPORT_PLAYER_BOUNDS[key] || { min: 1, max: 10 };
                     const minP = evt.minPlayers !== undefined ? Number(evt.minPlayers) : bounds.min;
                     const maxP = evt.maxPlayers !== undefined ? Number(evt.maxPlayers) : bounds.max;
@@ -1075,7 +1157,7 @@ export const RegistrationPage = () => {
                           </div>
 
                           <div className="absolute top-2.5 right-2.5 bg-[#FAF9F6]/95 dark:bg-[#0D101A]/95 backdrop-blur-xs px-2.5 py-0.5 rounded text-[11px] font-semibold text-[#211D2B] dark:text-[#F5F2FA] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] font-mono">
-                            {isRacket ? `Singles: ₹${sFee} | Doubles: ₹${dFee}` : (currentFee > 0 ? `Fee: ₹${currentFee}` : 'FREE (₹0)')}
+                            {feeBadgeText}
                           </div>
 
                           <div className="absolute bottom-2.5 left-3.5 right-3.5">
@@ -1137,6 +1219,9 @@ export const RegistrationPage = () => {
                                   entryFee: sFee,
                                   singlesFee: sFee,
                                   doublesFee: dFee,
+                                  subEvents: evt.subEvents,
+                                  subEventFees: evt.subEventFees,
+                                  subEventsConfig: evt.subEventsConfig,
                                   minPlayers: minP,
                                   maxPlayers: maxP,
                                   teamSize: evt.teamSize || `${minP} - ${maxP} Players`,

@@ -31,7 +31,8 @@ export const createPublicRegistrationOrder = async (req, res) => {
       const dbEventRes = await queryDb(
         `SELECT id, sport_id AS "sportId", entry_fee AS "entryFee", title,
                 registered_count AS "registeredCount", max_registrations AS "maxRegistrations", 
-                status, registration_open AS "registrationOpen", reg_start_date AS "regStartDate", reg_end_date AS "regEndDate"
+                status, registration_open AS "registrationOpen", reg_start_date AS "regStartDate", reg_end_date AS "regEndDate",
+                sub_events AS "subEvents", sub_event_fees AS "subEventFees", sub_events_config AS "subEventsConfig"
          FROM coordinator_event_items WHERE id = $1`,
         [eventId]
       );
@@ -41,6 +42,26 @@ export const createPublicRegistrationOrder = async (req, res) => {
         targetSportId = (event.sportId || targetSportId).toLowerCase();
         authoritativeFee = Number(event.entryFee || 0);
         eventName = event.title || eventName;
+
+        if (targetSportId === 'athletics') {
+          const selSub = participantData?.subEvent;
+          let subFees = event.subEventFees;
+          if (typeof subFees === 'string') {
+            try { subFees = JSON.parse(subFees); } catch (e) {}
+          }
+          let subConfig = event.subEventsConfig;
+          if (typeof subConfig === 'string') {
+            try { subConfig = JSON.parse(subConfig); } catch (e) {}
+          }
+          if (selSub && subFees && subFees[selSub] !== undefined) {
+            authoritativeFee = Number(subFees[selSub]);
+          } else if (selSub && Array.isArray(subConfig)) {
+            const foundSub = subConfig.find((c) => c.name === selSub);
+            if (foundSub?.entryFee !== undefined) authoritativeFee = Number(foundSub.entryFee);
+          } else if (participantData?.entryFee != null && Number(participantData.entryFee) > 0) {
+            authoritativeFee = Number(participantData.entryFee);
+          }
+        }
 
         const regStatus = computeEffectiveRegistrationStatus(event);
         if (!regStatus.effectiveRegistrationOpen) {
@@ -136,7 +157,8 @@ export const registerPublicEvent = async (req, res) => {
     const dbEventRes = await queryDb(
       `SELECT id, sport_id AS "sportId", entry_fee AS "entryFee", 
               registered_count AS "registeredCount", max_registrations AS "maxRegistrations", 
-              status, registration_open AS "registrationOpen", reg_start_date AS "regStartDate", reg_end_date AS "regEndDate"
+              status, registration_open AS "registrationOpen", reg_start_date AS "regStartDate", reg_end_date AS "regEndDate",
+              sub_events AS "subEvents", sub_event_fees AS "subEventFees", sub_events_config AS "subEventsConfig"
        FROM coordinator_event_items WHERE id = $1`,
       [eventId]
     );
@@ -144,6 +166,26 @@ export const registerPublicEvent = async (req, res) => {
       event = dbEventRes.rows[0];
       targetSportId = (event.sportId || targetSportId).toLowerCase();
       authoritativeFee = Number(event.entryFee || 0);
+
+      if (targetSportId === 'athletics') {
+        const selSub = participantData?.subEvent;
+        let subFees = event.subEventFees;
+        if (typeof subFees === 'string') {
+          try { subFees = JSON.parse(subFees); } catch (e) {}
+        }
+        let subConfig = event.subEventsConfig;
+        if (typeof subConfig === 'string') {
+          try { subConfig = JSON.parse(subConfig); } catch (e) {}
+        }
+        if (selSub && subFees && subFees[selSub] !== undefined) {
+          authoritativeFee = Number(subFees[selSub]);
+        } else if (selSub && Array.isArray(subConfig)) {
+          const foundSub = subConfig.find((c) => c.name === selSub);
+          if (foundSub?.entryFee !== undefined) authoritativeFee = Number(foundSub.entryFee);
+        } else if (participantData?.entryFee != null && Number(participantData.entryFee) > 0) {
+          authoritativeFee = Number(participantData.entryFee);
+        }
+      }
 
       const regStatus = computeEffectiveRegistrationStatus(event);
       if (!regStatus.effectiveRegistrationOpen) {

@@ -461,6 +461,7 @@ export const createMatch = async (req, res) => {
     format: (req.body.format || 'SINGLES').toUpperCase(),
     eventId: eventId,
     eventTitle: newMatch.eventTitle,
+    subEvent: req.body.subEvent || null,
     team1Id: team1Id,
     team2Id: team2Id,
     setsHistory: defaultSetsHistory,
@@ -613,6 +614,7 @@ export const batchSaveMatches = async (req, res) => {
       format: formatVal,
       eventId: m.eventId || m.event_id || null,
       eventTitle: m.eventTitle || m.title || `${sportId.toUpperCase()} Match`,
+      subEvent: m.subEvent || null,
       team1Id: m.team1Id || m.team1_id || null,
       team2Id: m.team2Id || m.team2_id || null,
       setsHistory: m.setsHistory || null,
@@ -1860,6 +1862,7 @@ export const getEvents = async (req, res) => {
         registered_count AS "registeredCount", venue, category, status,
         registration_open AS "registrationOpen", rules, required_documents AS "requiredDocuments",
         contact_info AS "contactInfo", created_by AS "createdBy",
+        sub_events AS "subEvents", sub_event_fees AS "subEventFees", sub_events_config AS "subEventsConfig",
         created_at AS "createdAt", updated_at AS "updatedAt"
        FROM coordinator_event_items
        WHERE LOWER(sport_id) IN ($1, $2, $3)
@@ -1880,6 +1883,18 @@ export const getEvents = async (req, res) => {
         let reqDocs = row.requiredDocuments;
         if (typeof reqDocs === 'string') {
           try { reqDocs = JSON.parse(reqDocs); } catch (e) {}
+        }
+        let subEventsList = row.subEvents;
+        if (typeof subEventsList === 'string') {
+          try { subEventsList = JSON.parse(subEventsList); } catch (e) {}
+        }
+        let subEventFeesObj = row.subEventFees;
+        if (typeof subEventFeesObj === 'string') {
+          try { subEventFeesObj = JSON.parse(subEventFeesObj); } catch (e) {}
+        }
+        let subEventsConfigList = row.subEventsConfig;
+        if (typeof subEventsConfigList === 'string') {
+          try { subEventsConfigList = JSON.parse(subEventsConfigList); } catch (e) {}
         }
 
         const isRegOpen = row.registrationOpen !== false && row.registrationOpen !== 'false' && row.registrationOpen !== 0;
@@ -1928,6 +1943,9 @@ export const getEvents = async (req, res) => {
           closureReason: regStatus.reason,
           rules: rulesObj || [],
           requiredDocuments: reqDocs || [],
+          subEvents: subEventsList || [],
+          subEventFees: subEventFeesObj || {},
+          subEventsConfig: subEventsConfigList || [],
           contactInfo: contact,
           createdBy: row.createdBy
         };
@@ -2003,6 +2021,9 @@ export const createEvent = async (req, res) => {
     registrationOpen,
     rules,
     requiredDocuments,
+    subEvents: req.body.subEvents || [],
+    subEventFees: req.body.subEventFees || {},
+    subEventsConfig: req.body.subEventsConfig || [],
     contactInfo,
     createdBy: req.user.username || req.user.coordinatorName
   };
@@ -2019,8 +2040,8 @@ export const createEvent = async (req, res) => {
         reg_start_date, reg_end_date, tourn_start_date, tourn_end_date,
         entry_fee, singles_fee, doubles_fee, team_size, max_registrations,
         registered_count, venue, category, status, registration_open, rules, required_documents,
-        contact_info, created_by, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, CURRENT_TIMESTAMP)
+        contact_info, created_by, sub_events, sub_event_fees, sub_events_config, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, CURRENT_TIMESTAMP)
       ON CONFLICT (id) DO UPDATE SET
         sport_id = EXCLUDED.sport_id,
         sport_name = COALESCE(EXCLUDED.sport_name, coordinator_event_items.sport_name),
@@ -2044,13 +2065,17 @@ export const createEvent = async (req, res) => {
         rules = EXCLUDED.rules,
         required_documents = EXCLUDED.required_documents,
         contact_info = EXCLUDED.contact_info,
+        sub_events = EXCLUDED.sub_events,
+        sub_event_fees = EXCLUDED.sub_event_fees,
+        sub_events_config = EXCLUDED.sub_events_config,
         updated_at = CURRENT_TIMESTAMP`,
       [
         eventId, sportId, req.user.sportName, title, coverImage, description,
         regStartDate, regEndDate, tournStartDate, tournEndDate,
         entryFee, singlesFee, doublesFee, teamSize, maxRegistrations,
         registeredCount, venue, category, status, registrationOpen, JSON.stringify(rules), JSON.stringify(requiredDocuments),
-        JSON.stringify(contactInfo), req.user.username || req.user.coordinatorName
+        JSON.stringify(contactInfo), req.user.username || req.user.coordinatorName,
+        JSON.stringify(newEvent.subEvents || []), JSON.stringify(newEvent.subEventFees || {}), JSON.stringify(newEvent.subEventsConfig || [])
       ]
     );
   } catch (err) {
@@ -2201,6 +2226,9 @@ export const updateEvent = async (req, res) => {
     registrationOpen,
     rules,
     requiredDocuments,
+    subEvents: req.body.subEvents || existing.subEvents,
+    subEventFees: req.body.subEventFees || existing.subEventFees,
+    subEventsConfig: req.body.subEventsConfig || existing.subEventsConfig,
     contactInfo,
     createdBy: req.user.username || req.user.coordinatorName,
     updatedAt: new Date().toISOString()
@@ -2233,8 +2261,8 @@ export const updateEvent = async (req, res) => {
         reg_start_date, reg_end_date, tourn_start_date, tourn_end_date,
         entry_fee, singles_fee, doubles_fee, team_size, max_registrations,
         registered_count, venue, category, status, registration_open, rules, required_documents,
-        contact_info, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, CURRENT_TIMESTAMP)
+        contact_info, sub_events, sub_event_fees, sub_events_config, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, CURRENT_TIMESTAMP)
       ON CONFLICT (id) DO UPDATE SET
         title = EXCLUDED.title,
         cover_image = EXCLUDED.cover_image,
@@ -2256,6 +2284,9 @@ export const updateEvent = async (req, res) => {
         rules = EXCLUDED.rules,
         required_documents = EXCLUDED.required_documents,
         contact_info = EXCLUDED.contact_info,
+        sub_events = EXCLUDED.sub_events,
+        sub_event_fees = EXCLUDED.sub_event_fees,
+        sub_events_config = EXCLUDED.sub_events_config,
         updated_at = CURRENT_TIMESTAMP`,
       [
         id, sportId, req.user.sportName, title, coverImage, description,
@@ -2263,7 +2294,8 @@ export const updateEvent = async (req, res) => {
         entryFee, singlesFee, doublesFee, teamSize, maxRegistrations,
         registeredCount, venue, category, status, registrationOpen,
         JSON.stringify(rules), JSON.stringify(requiredDocuments),
-        JSON.stringify(contactInfo)
+        JSON.stringify(contactInfo),
+        JSON.stringify(cleanEvent.subEvents || []), JSON.stringify(cleanEvent.subEventFees || {}), JSON.stringify(cleanEvent.subEventsConfig || [])
       ]
     );
   } catch (err) {

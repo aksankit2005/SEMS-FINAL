@@ -247,6 +247,7 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
       sportName: 'Athletics',
       subEvents: activeSubEventsList.length > 0 ? activeSubEventsList : OFFICIAL_ATHLETICS_EVENTS,
       subEventFees,
+      subEventsConfig: formData.subEventsConfig,
       rules: rulesArr,
       requiredDocuments: docArr,
       contactInfo: {
@@ -503,9 +504,14 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {events.map((evt) => {
-            const subConfigList = evt.rules && Array.isArray(evt.rules) && evt.rules.length > 0 && typeof evt.rules[0] === 'object'
-              ? evt.rules
-              : DEFAULT_SUB_EVENTS_CONFIG;
+            const subConfigList = evt.subEventsConfig && Array.isArray(evt.subEventsConfig) && evt.subEventsConfig.length > 0
+              ? evt.subEventsConfig
+              : (evt.subEventFees && typeof evt.subEventFees === 'object'
+                  ? DEFAULT_SUB_EVENTS_CONFIG.map((se) => ({
+                      ...se,
+                      entryFee: evt.subEventFees[se.name] !== undefined ? evt.subEventFees[se.name] : se.entryFee
+                    }))
+                  : DEFAULT_SUB_EVENTS_CONFIG);
 
             return (
               <div

@@ -1,12 +1,20 @@
-import { Resend } from 'resend';
 import { envConfig } from '../config/env.js';
 import { queryDb } from '../config/db.js';
+
+// Safely load Resend to prevent fatal crash if package is not yet installed
+let Resend = null;
+try {
+  const resendPkg = await import('resend');
+  Resend = resendPkg.Resend;
+} catch (err) {
+  // Graceful fallback if resend is not installed
+}
 
 // Initialize single Resend client instance
 let resendClient = null;
 const getResendClient = () => {
   const apiKey = envConfig.resendApiKey || process.env.RESEND_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey || !Resend) return null;
   if (!resendClient) {
     resendClient = new Resend(apiKey);
   }

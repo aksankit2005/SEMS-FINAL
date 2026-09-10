@@ -1204,6 +1204,9 @@ async deleteMatch(id) {
       status: eventData.status || 'Published',
       rules: eventData.rules || [],
       requiredDocuments: eventData.requiredDocuments || ['College ID Card'],
+      subEvents: eventData.subEvents,
+      subEventFees: eventData.subEventFees,
+      subEventsConfig: eventData.subEventsConfig,
       contactInfo: eventData.contactInfo || {
         name: user.coordinatorName,
         email: user.email,
@@ -1353,7 +1356,7 @@ async deleteMatch(id) {
     }
   },
 
-  // Get all Published & Closed coordinator events across all sports from production database
+  // Get all Published & Closed coordinator events across all sports from production database or local cache
   async getPublicEvents() {
     let deletedSet = new Set();
     try {
@@ -1361,30 +1364,68 @@ async deleteMatch(id) {
       deletedSet = new Set(deletedArr);
     } catch (e) { }
 
+    let serverList = [];
     try {
       const res = await api.get('/public/events');
       if (res.data && Array.isArray(res.data)) {
-        const currentDate = new Date();
-        return res.data
-          .filter((e) => e && e.id && !deletedSet.has(e.id))
-          .map((e) => {
-            let status = e.status || 'Published';
-            const parsedEnd = e.regEndDate ? Date.parse(`${e.regEndDate}T23:59:59.999+05:30`) : null;
-            if (status !== 'Upcoming' && status !== 'Coming Soon' && parsedEnd && !isNaN(parsedEnd) && parsedEnd < currentDate.getTime()) {
-              status = 'Closed';
-            }
-            return {
-              ...e,
-              status,
-              availableSlots: Math.max(0, (e.maxRegistrations || 64) - (e.registeredCount || 0))
-            };
-          });
+        serverList = res.data;
       }
     } catch (e) {
-      console.warn('Error fetching public events from server:', e.message);
+      console.warn('Error fetching public events from server, using local events fallback:', e.message);
     }
 
-    return [];
+    // Merge with any published events saved across localStorage (sems_coord_events_*)
+    const localEvents = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('sems_coord_events_') || k.includes('coord_events'))) {
+          const raw = localStorage.getItem(k);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              localEvents.push(...parsed);
+            }
+          }
+        }
+      }
+    } catch (e) { }
+
+    const combinedMap = new Map();
+    // 1. Add local events first
+    localEvents.forEach((e) => {
+      if (e && e.id && !deletedSet.has(e.id)) {
+        const rawStatus = (e.status || 'Published').toLowerCase();
+        if (rawStatus !== 'draft') {
+          combinedMap.set(e.id, e);
+        }
+      }
+    });
+
+    // 2. Merge server events (authoritative)
+    serverList.forEach((e) => {
+      if (e && e.id && !deletedSet.has(e.id)) {
+        const rawStatus = (e.status || 'Published').toLowerCase();
+        if (rawStatus !== 'draft') {
+          const existing = combinedMap.get(e.id) || {};
+          combinedMap.set(e.id, { ...existing, ...e });
+        }
+      }
+    });
+
+    const currentDate = new Date();
+    return Array.from(combinedMap.values()).map((e) => {
+      let status = e.status || 'Published';
+      const parsedEnd = e.regEndDate ? Date.parse(`${e.regEndDate}T23:59:59.999+05:30`) : null;
+      if (status !== 'Upcoming' && status !== 'Coming Soon' && parsedEnd && !isNaN(parsedEnd) && parsedEnd < currentDate.getTime()) {
+        status = 'Closed';
+      }
+      return {
+        ...e,
+        status,
+        availableSlots: Math.max(0, (Number(e.maxRegistrations) || 64) - (Number(e.registeredCount) || 0))
+      };
+    });
   },
 
 

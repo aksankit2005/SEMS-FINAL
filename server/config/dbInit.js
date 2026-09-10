@@ -257,7 +257,21 @@ export const initDatabaseSchema = async () => {
       );
     `);
 
-    // Ensure columns exist on pre-existing live_matches table
+    // Ensure announcements table exists with category support
+    await queryDb(`
+      CREATE TABLE IF NOT EXISTS announcements (
+        id TEXT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        category VARCHAR(100) DEFAULT 'Schedule',
+        audience VARCHAR(50) DEFAULT 'All',
+        "publishDate" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "expiryDate" TIMESTAMP WITH TIME ZONE,
+        "isPublished" BOOLEAN DEFAULT TRUE,
+        "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
     await queryDb(`ALTER TABLE announcements ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT 'Schedule';`).catch(() => {});
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS stream_url TEXT;`);
@@ -309,6 +323,9 @@ export const initDatabaseSchema = async () => {
     await queryDb(`ALTER TABLE coordinator_event_items ADD COLUMN IF NOT EXISTS sport_id VARCHAR(50);`);
     await queryDb(`ALTER TABLE coordinator_event_items ADD COLUMN IF NOT EXISTS sport_name VARCHAR(100);`);
     await queryDb(`ALTER TABLE coordinator_event_items ADD COLUMN IF NOT EXISTS registration_open BOOLEAN DEFAULT TRUE;`);
+    await queryDb(`ALTER TABLE coordinator_event_items ADD COLUMN IF NOT EXISTS sub_events JSONB;`);
+    await queryDb(`ALTER TABLE coordinator_event_items ADD COLUMN IF NOT EXISTS sub_event_fees JSONB;`);
+    await queryDb(`ALTER TABLE coordinator_event_items ADD COLUMN IF NOT EXISTS sub_events_config JSONB;`);
 
     // Backfill details JSONB for pre-existing rows where details IS NULL
     await queryDb(`
