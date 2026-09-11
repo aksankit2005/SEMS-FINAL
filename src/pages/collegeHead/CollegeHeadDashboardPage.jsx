@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Building2, Users, Trophy, Award, Search, Filter, 
-  FileDown, LogOut, ShieldCheck, Eye, Activity, CheckCircle2, 
-  BarChart3, Layers, BookOpen, Lock, AlertTriangle, Key, X, EyeOff
+  FileDown, LogOut, ShieldCheck, Activity, CheckCircle2, 
+  BarChart3, Layers, BookOpen, X, Phone, Calendar, Clock
 } from 'lucide-react';
 import { collegeHeadApi } from '../../services/collegeHeadApi';
+import { ALL_12_SPORTS } from '../../services/superCoordinatorApi';
 import { useToast } from '../../context/ToastContext';
-import { SPORTS_DATA } from '../../data/sportsData';
 import { exportToCSV } from '../../utils/pdfExporter';
 import { getParticipationType } from '../../utils/rosterHelper';
 
@@ -22,21 +22,27 @@ export const CollegeHeadDashboardPage = () => {
   const [studentsData, setStudentsData] = useState({ count: 0, students: [] });
   const [sportsBreakdown, setSportsBreakdown] = useState([]);
   const [medalSummary, setMedalSummary] = useState(null);
+  const [availableEvents, setAvailableEvents] = useState([]);
 
   const [loading, setLoading] = useState(true);
 
   // Filters state for Students table
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedSportFilter, setSelectedSportFilter] = useState('all');
+  const [selectedEventTitleFilter, setSelectedEventTitleFilter] = useState('all');
+  const [selectedGenderFilter, setSelectedGenderFilter] = useState('all');
+  const [selectedFormatFilter, setSelectedFormatFilter] = useState('all');
 
-  // Change Password state
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({ current: '', newPass: '', confirm: '' });
-  const [showCurrentPass, setShowCurrentPass] = useState(false);
-  const [showNewPass, setShowNewPass] = useState(false);
-  const [showConfirmPass, setShowConfirmPass] = useState(false);
+  // Debounce search query to prevent excessive API requests
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
-  // Load user and data
+  // Load user and created events on mount
   useEffect(() => {
     const currentUser = collegeHeadApi.getUser();
     if (!currentUser || currentUser.role !== 'college_head') {
@@ -45,22 +51,30 @@ export const CollegeHeadDashboardPage = () => {
     }
     setUser(currentUser);
     loadAllData();
+    loadEvents();
   }, [navigate]);
+
+  const loadEvents = async () => {
+    try {
+      const events = await collegeHeadApi.getEvents();
+      if (Array.isArray(events) && events.length > 0) {
+        setAvailableEvents(events);
+      }
+    } catch (err) {
+      console.warn('Could not load events:', err);
+    }
+  };
 
   const loadAllData = async () => {
     setLoading(true);
-    setStudentsData({ count: 0, students: [] });
-    setSportsBreakdown([]);
     try {
-      const [statsData, studentsRes, sportsRes, medalRes] = await Promise.all([
+      const [statsData, sportsRes, medalRes] = await Promise.all([
         collegeHeadApi.getDashboardStats(),
-        collegeHeadApi.getStudents({ search: searchQuery, sport: selectedSportFilter }),
         collegeHeadApi.getSportsParticipation(),
         collegeHeadApi.getMedalSummary(),
       ]);
 
       setStats(statsData);
-      setStudentsData(studentsRes);
       setSportsBreakdown(sportsRes);
       setMedalSummary(medalRes);
     } catch (err) {
@@ -70,22 +84,28 @@ export const CollegeHeadDashboardPage = () => {
     }
   };
 
-  // Re-fetch students when search or filters change
+  // Live fetch students when search or filters change (debounced)
   useEffect(() => {
     if (!user) return;
     const fetchStudents = async () => {
       try {
         const res = await collegeHeadApi.getStudents({
-          search: searchQuery,
+          search: debouncedSearch,
           sport: selectedSportFilter,
+          eventTitle: selectedEventTitleFilter,
+          gender: selectedGenderFilter,
+          format: selectedFormatFilter,
         });
         setStudentsData(res);
+        if (Array.isArray(res.availableEvents) && res.availableEvents.length > 0) {
+          setAvailableEvents((prev) => Array.from(new Set([...prev, ...res.availableEvents])));
+        }
       } catch (err) {
         console.error(err);
       }
     };
     fetchStudents();
-  }, [searchQuery, selectedSportFilter, user]);
+  }, [debouncedSearch, selectedSportFilter, selectedEventTitleFilter, selectedGenderFilter, selectedFormatFilter, user]);
 
   const handleLogout = () => {
     setUser(null);
@@ -98,29 +118,83 @@ export const CollegeHeadDashboardPage = () => {
     navigate('/college-head/login');
   };
 
-  const handlePasswordChange = (e) => {
-    e.preventDefault();
-    if (!passwordForm.current) {
-      addToast('Please enter your current password', 'error');
-      return;
-    }
-    if (!passwordForm.newPass) {
-      addToast('Please enter a new password', 'error');
-      return;
-    }
-    if (passwordForm.newPass.length < 6) {
-      addToast('New password must be at least 6 characters long', 'error');
-      return;
-    }
-    if (passwordForm.newPass !== passwordForm.confirm) {
-      addToast('New password and confirmation do not match', 'error');
-      return;
+  // Memoized Client-side Filtering for Instant Response & Double-layered Isolation
+  const filteredStudents = useMemo(() => {
+    let list = studentsData.students || [];
+
+    // Filter by Game
+    if (selectedSportFilter && selectedSportFilter !== 'all') {
+      const sp = selectedSportFilter.toLowerCase().trim();
+      list = list.filter((s) =>
+        (s.sportId || '').toLowerCase() === sp ||
+        (s.sportId || '').toLowerCase().replace(/[^a-z0-9]/g, '') === sp.replace(/[^a-z0-9]/g, '') ||
+        (s.sportName || '').toLowerCase() === sp ||
+        (s.sportName || '').toLowerCase().includes(sp)
+      );
     }
 
-    addToast(`Password successfully updated for ${user?.faculty_name || 'Head Coordinator'}!`, 'success');
-    setShowPasswordModal(false);
-    setPasswordForm({ current: '', newPass: '', confirm: '' });
+    // Filter by Event Title
+    if (selectedEventTitleFilter && selectedEventTitleFilter !== 'all') {
+      const ev = selectedEventTitleFilter.toLowerCase().trim();
+      list = list.filter((s) =>
+        (s.eventTitle || '').toLowerCase().trim() === ev ||
+        (s.eventTitle || '').toLowerCase().includes(ev)
+      );
+    }
+
+    // Filter by Gender: STRICT EXACT EQUALITY (Prevents 'MALE' matching 'FEMALE')
+    if (selectedGenderFilter && selectedGenderFilter !== 'all') {
+      const g = selectedGenderFilter.toUpperCase().trim();
+      list = list.filter((s) => (s.gender || '').toUpperCase().trim() === g);
+    }
+
+    // Filter by Format
+    if (selectedFormatFilter && selectedFormatFilter !== 'all') {
+      const fmt = selectedFormatFilter.toUpperCase().trim();
+      list = list.filter((s) => {
+        const mf = (s.matchFormat || '').toUpperCase().trim();
+        if (fmt === 'SINGLE') return mf === 'SINGLE' || mf === 'INDIVIDUAL' || mf === 'SOLO';
+        if (fmt === 'INDIVIDUAL') return mf === 'INDIVIDUAL' || mf === 'SINGLE' || mf === 'SOLO';
+        if (fmt === 'DOUBLE' || fmt === 'DOUBLES') return mf === 'DOUBLE' || mf === 'DOUBLES';
+        if (fmt === 'TEAM') return mf === 'TEAM';
+        return mf === fmt;
+      });
+    }
+
+    // Search query (studentName, rollNumber, phone, email, course, sportName, eventTitle, teamName)
+    // NOTE: NEVER search gender here to avoid false substring matches!
+    if (debouncedSearch && debouncedSearch.trim()) {
+      const q = debouncedSearch.toLowerCase().trim();
+      list = list.filter((s) =>
+        (s.studentName && s.studentName.toLowerCase().includes(q)) ||
+        (s.rollNumber && s.rollNumber.toLowerCase().includes(q)) ||
+        (s.phone && s.phone.toLowerCase().includes(q)) ||
+        (s.email && s.email.toLowerCase().includes(q)) ||
+        (s.course && s.course.toLowerCase().includes(q)) ||
+        (s.sportName && s.sportName.toLowerCase().includes(q)) ||
+        (s.eventTitle && s.eventTitle.toLowerCase().includes(q)) ||
+        (s.teamName && s.teamName.toLowerCase().includes(q))
+      );
+    }
+
+    return list;
+  }, [studentsData.students, selectedSportFilter, selectedEventTitleFilter, selectedGenderFilter, selectedFormatFilter, debouncedSearch]);
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setDebouncedSearch('');
+    setSelectedSportFilter('all');
+    setSelectedEventTitleFilter('all');
+    setSelectedGenderFilter('all');
+    setSelectedFormatFilter('all');
   };
+
+  const hasActiveFilters =
+    searchQuery.trim() !== '' ||
+    selectedSportFilter !== 'all' ||
+    selectedEventTitleFilter !== 'all' ||
+    selectedGenderFilter !== 'all' ||
+    selectedFormatFilter !== 'all';
 
   // Download PDF Report helper
   const handleExportPDF = () => {
@@ -156,9 +230,9 @@ export const CollegeHeadDashboardPage = () => {
           .summary-box { text-align: center; }
           .summary-val { font-size: 20px; font-weight: bold; color: #2563eb; }
           .summary-lbl { font-size: 11px; color: #64748b; text-transform: uppercase; }
-          table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
-          th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
-          th { background: #f1f5f9; font-weight: bold; }
+          table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
+          th, td { border: 1px solid #cbd5e1; padding: 7px 9px; text-align: left; }
+          th { background: #f1f5f9; font-weight: bold; text-transform: uppercase; font-size: 10px; }
           tr:nth-child(even) { background: #f8fafc; }
           .footer { margin-top: 30px; font-size: 10px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 10px; }
         </style>
@@ -172,15 +246,15 @@ export const CollegeHeadDashboardPage = () => {
 
         <div class="summary-grid">
           <div class="summary-box">
-            <div class="summary-val">${stats?.totalStudents || 0}</div>
-            <div class="summary-lbl">Total Athletes</div>
+            <div class="summary-val">${filteredStudents.length}</div>
+            <div class="summary-lbl">Listed Athletes</div>
           </div>
           <div class="summary-box">
             <div class="summary-val">${stats?.sportsCount || 0}</div>
             <div class="summary-lbl">Sports Entered</div>
           </div>
           <div class="summary-box">
-            <div class="summary-val">${medalSummary?.gold || 0}🥇 ${medalSummary?.silver || 0}🥈 ${medalSummary?.bronze || 0}🥉</div>
+            <div class="summary-val">${medalSummary?.gold || 0}🥇 ${medalSummary?.silver || 0}🥈</div>
             <div class="summary-lbl">Medals Won</div>
           </div>
           <div class="summary-box">
@@ -189,35 +263,31 @@ export const CollegeHeadDashboardPage = () => {
           </div>
         </div>
 
-        <h3>Registered Student Athletes (${studentsData.students.length})</h3>
+        <h3>Registered Student Athletes (${filteredStudents.length})</h3>
         <table>
           <thead>
             <tr>
               <th>#</th>
-              <th>Student Name</th>
-              <th>Role</th>
-              <th>Roll Number</th>
-              <th>Course</th>
-              <th>Year / Semester</th>
-              <th>Sport</th>
+              <th>Reg Time</th>
+              <th>Game & Event Title</th>
               <th>Team Name</th>
-              <th>Status</th>
+              <th>Student Name</th>
+              <th>Mobile No</th>
+              <th>Gender</th>
             </tr>
           </thead>
           <tbody>
-            ${studentsData.students.map((s, idx) => {
+            ${filteredStudents.map((s, idx) => {
               const isCap = (s.isCaptain === true || s.isCaptain === 1 || s.isCaptain === 'true' || s.isCaptain === '1');
               return `
               <tr>
                 <td>${idx + 1}</td>
-                <td><strong>${escapeHtml(s.studentName || 'N/A')}</strong></td>
-                <td><span style="font-weight: bold; color: ${isCap ? '#2563eb' : '#64748b'};">${isCap ? 'Captain' : 'Player'}</span></td>
-                <td>${escapeHtml(s.rollNumber || 'N/A')}</td>
-                <td>${escapeHtml(s.course || 'N/A')}</td>
-                <td>${escapeHtml(s.yearSemester || s.year || 'N/A')}</td>
-                <td>${escapeHtml(s.sportName || 'N/A')}</td>
-                <td>${escapeHtml(s.teamName || 'Individual')}</td>
-                <td>${escapeHtml(s.status || 'VERIFIED')}</td>
+                <td><strong>${escapeHtml(s.regTime || '10:00 AM')}</strong><br><small style="color: #64748b;">${escapeHtml(s.regDate || '2026-08-10')}</small></td>
+                <td><strong>${escapeHtml(s.sportName || 'N/A')}</strong><br><small style="color: #4f46e5;">${escapeHtml(s.eventTitle || 'Tournament Event')}</small></td>
+                <td><strong>${escapeHtml(s.teamName || 'Individual')}</strong><br><small style="color: #6b21a8; font-weight: bold;">${escapeHtml(s.college || user?.college || 'MPEC')}</small></td>
+                <td><strong>${escapeHtml(s.studentName || 'N/A')}</strong> ${isCap ? '<span style="color: #2563eb; font-weight: bold;">[Captain]</span>' : ''}<br><small style="color: #64748b;">Roll: ${escapeHtml(s.rollNumber || 'N/A')} • ${escapeHtml(s.email || 'N/A')}</small></td>
+                <td>${escapeHtml(s.phone || 'N/A')}</td>
+                <td><strong style="color: ${s.gender === 'MALE' ? '#2563eb' : '#e11d48'};">${escapeHtml(s.gender || 'MALE')}</strong></td>
               </tr>
             `}).join('')}
           </tbody>
@@ -239,27 +309,29 @@ export const CollegeHeadDashboardPage = () => {
     addToast('PDF Report window opened ready for printing', 'success');
   };
 
-
   // Export CSV Report helper
   const handleExportCSV = () => {
-    if (!studentsData.students.length) {
+    if (!filteredStudents.length) {
       addToast('No student records to export', 'error');
       return;
     }
-    const exportData = studentsData.students.map((s, idx) => ({
+    const exportData = filteredStudents.map((s, idx) => ({
       'S.No.': idx + 1,
+      'Reg Time': s.regTime || '10:00 AM',
+      'Reg Date': s.regDate || '2026-08-10',
+      'Game': s.sportName || 'N/A',
+      'Event Title': s.eventTitle || `${s.sportName || 'Sport'} Championship`,
+      'Match Format': s.matchFormat || 'Team',
+      'Team Name': s.teamName || 'Individual',
+      'College': s.college || user?.college || 'MPEC',
       'Student Name': s.studentName || 'N/A',
-      'Participation Type': s.participationType || getParticipationType(s),
       'Role': (s.isCaptain === true || s.isCaptain === 1 || s.isCaptain === 'true' || s.isCaptain === '1') ? 'Captain' : 'Player',
       'Roll Number': s.rollNumber || 'N/A',
       'Course': s.course || 'N/A',
       'Year / Semester': s.yearSemester || s.year || 'N/A',
-      'Sport': s.sportName || 'N/A',
-      'Event': s.eventType || `${s.sportName || 'Sport'} Championship`,
-      'Team Name': s.teamName || 'Individual',
       'Mobile Number': s.phone || 'N/A',
       'Email Address': s.email || 'N/A',
-      'Gender': s.gender || 'N/A',
+      'Gender': s.gender || 'MALE',
       'Status': s.status || 'VERIFIED'
     }));
 
@@ -434,7 +506,7 @@ export const CollegeHeadDashboardPage = () => {
                   <Trophy className="w-5 h-5 text-indigo-500" />
                 </div>
                 <div className="text-3xl font-black text-slate-900 dark:text-white">{stats?.sportsCount || 0}</div>
-                <p className="text-[11px] text-slate-500">Out of 11 tournament events</p>
+                <p className="text-[11px] text-slate-500">Out of {ALL_12_SPORTS.length} tournament events</p>
               </div>
 
               <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-soft space-y-2">
@@ -442,10 +514,9 @@ export const CollegeHeadDashboardPage = () => {
                   <span className="text-xs font-bold uppercase tracking-wider">Medals Won</span>
                   <Award className="w-5 h-5 text-amber-500" />
                 </div>
-                <div className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <div className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
                   <span>🥇 {medalSummary?.gold || 0}</span>
                   <span>🥈 {medalSummary?.silver || 0}</span>
-                  <span>🥉 {medalSummary?.bronze || 0}</span>
                 </div>
                 <p className="text-[11px] text-slate-500">Championship Tally</p>
               </div>
@@ -506,108 +577,267 @@ export const CollegeHeadDashboardPage = () => {
         {activeTab === 'students' && (
           <div className="space-y-6">
             
-            {/* Search & Filter Header */}
-            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-soft flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* Search & Filter Controls */}
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-soft space-y-4">
               
-              {/* Search Bar */}
-              <div className="relative w-full md:w-80">
+              {/* Search Bar on Top */}
+              <div className="relative w-full">
                 <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={`Search ${user.college} students by name, roll, course...`}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  placeholder={`Search ${user.college} students by athlete name, roll number, mobile, email, team...`}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-600"
                 />
               </div>
 
-              {/* Filters */}
-              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                <div className="flex items-center gap-1 text-xs text-slate-400 font-bold">
-                  <Filter className="w-3.5 h-3.5" /> Filter:
-                </div>
+              {/* Responsive 4 Filters Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 
-                {/* Sport Filter */}
-                <select
-                  value={selectedSportFilter}
-                  onChange={(e) => setSelectedSportFilter(e.target.value)}
-                  className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
-                >
-                  <option value="all">All Sports (12 Games)</option>
-                  <option value="athletics">Athletics</option>
-                  <option value="badminton">Badminton</option>
-                  <option value="basketball">Basketball</option>
-                  <option value="chess">Chess</option>
-                  <option value="cricket">Cricket</option>
-                  <option value="football">Football</option>
-                  <option value="gully-cricket">Gully Cricket</option>
-                  <option value="kabaddi">Kabaddi</option>
-                  <option value="kho-kho">Kho-Kho</option>
-                  <option value="table-tennis">Table Tennis</option>
-                  <option value="tug-of-war">Tug of War</option>
-                  <option value="volleyball">Volleyball</option>
-                </select>
+                {/* 1. Filter by Game */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                    🎯 Filter by Game
+                  </label>
+                  <select
+                    value={selectedSportFilter}
+                    onChange={(e) => setSelectedSportFilter(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-600 cursor-pointer"
+                  >
+                    <option value="all">All 12 Sports</option>
+                    {ALL_12_SPORTS.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 2. Filter by Event Title */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                    📋 Filter by Event Title
+                  </label>
+                  <select
+                    value={selectedEventTitleFilter}
+                    onChange={(e) => setSelectedEventTitleFilter(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-600 cursor-pointer truncate"
+                  >
+                    <option value="all">
+                      All Created Events ({availableEvents.length > 0 ? availableEvents.length : 7})
+                    </option>
+                    {availableEvents.map((evTitle, idx) => (
+                      <option key={idx} value={evTitle}>{evTitle}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 3. Filter by Gender */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                    ⚧️ Filter by Gender
+                  </label>
+                  <select
+                    value={selectedGenderFilter}
+                    onChange={(e) => setSelectedGenderFilter(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-600 cursor-pointer"
+                  >
+                    <option value="all">All Genders</option>
+                    <option value="MALE">MALE</option>
+                    <option value="FEMALE">FEMALE</option>
+                  </select>
+                </div>
+
+                {/* 4. Filter by Format */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                    🎽 Filter by Format
+                  </label>
+                  <select
+                    value={selectedFormatFilter}
+                    onChange={(e) => setSelectedFormatFilter(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-600 cursor-pointer"
+                  >
+                    <option value="all">All Formats</option>
+                    <option value="Single">Single</option>
+                    <option value="Double">Double</option>
+                    <option value="Team">Team</option>
+                    <option value="Individual">Individual</option>
+                  </select>
+                </div>
+
               </div>
+
+              {/* Active Filter Badges & Reset Button */}
+              {hasActiveFilters && (
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <span className="text-slate-400 font-bold text-[11px]">Active Filters:</span>
+                    {selectedSportFilter !== 'all' && (
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                        Game: {ALL_12_SPORTS.find(s => s.id === selectedSportFilter)?.name || selectedSportFilter}
+                      </span>
+                    )}
+                    {selectedEventTitleFilter !== 'all' && (
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 truncate max-w-xs">
+                        Event: {selectedEventTitleFilter}
+                      </span>
+                    )}
+                    {selectedGenderFilter !== 'all' && (
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                        Gender: {selectedGenderFilter}
+                      </span>
+                    )}
+                    {selectedFormatFilter !== 'all' && (
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                        Format: {selectedFormatFilter}
+                      </span>
+                    )}
+                    {searchQuery.trim() !== '' && (
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                        Search: "{searchQuery}"
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={handleResetFilters}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 border border-rose-500/20 transition cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Reset All Filters</span>
+                  </button>
+                </div>
+              )}
 
             </div>
 
             {/* Read-Only Table */}
             <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-soft overflow-hidden">
-              <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
-                  Showing {studentsData.students.length} Student Athletes for {user.college}
-                </span>
-                <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full">
-                  READ ONLY
+              <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                    Showing {filteredStudents.length} of {studentsData.count} Student Athletes for {user.college}
+                  </span>
+                  {hasActiveFilters && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                      Filtered
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                  OFFICIAL ROSTER • READ ONLY
                 </span>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-100 dark:bg-slate-950 uppercase text-[10px] font-black text-slate-500 tracking-wider border-b border-slate-200 dark:border-slate-800">
+                  <thead className="bg-slate-100 dark:bg-slate-950 uppercase text-[10px] font-black text-slate-500 dark:text-slate-400 tracking-wider border-b border-slate-200 dark:border-slate-800">
                     <tr>
-                      <th className="p-4">Student Athlete</th>
-                      <th className="p-4">Roll Number</th>
-                      <th className="p-4">Course</th>
-                      <th className="p-4">Year / Semester</th>
-                      <th className="p-4">Sport Event</th>
+                      <th className="p-4">Reg Time</th>
+                      <th className="p-4">Game & Event Title</th>
+                      <th className="p-4">Team Name</th>
+                      <th className="p-4">Student Name</th>
+                      <th className="p-4">Mobile No</th>
+                      <th className="p-4">Gender</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {studentsData.students.length === 0 ? (
+                    {filteredStudents.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 font-bold">
-                          No registered students found for {user.college} matching the selected criteria.
+                        <td colSpan={6} className="p-12 text-center text-xs text-slate-500 dark:text-slate-400 font-bold">
+                          <div className="flex flex-col items-center justify-center gap-2 py-4">
+                            <Users className="w-8 h-8 text-slate-400 opacity-50" />
+                            <span>No registered students found for {user.college} matching the selected criteria.</span>
+                            {hasActiveFilters && (
+                              <button
+                                onClick={handleResetFilters}
+                                className="mt-2 px-3 py-1.5 rounded-xl bg-purple-600 text-white font-bold text-xs hover:bg-purple-500 transition cursor-pointer"
+                              >
+                                Clear All Filters
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ) : (
-                      studentsData.students.map((student) => (
-                        <tr key={student.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
-                          <td className="p-4 font-extrabold text-slate-900 dark:text-white">
-                            <div className="flex items-center gap-1.5">
-                              <span>{student.studentName}</span>
+                      filteredStudents.map((student, idx) => (
+                        <tr key={student.id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+                          {/* 1. Reg Time */}
+                          <td className="p-4 whitespace-nowrap">
+                            <div className="font-mono font-bold text-slate-800 dark:text-slate-200 text-xs flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5 text-slate-400" />
+                              <span>{student.regTime || '10:00 AM'}</span>
+                            </div>
+                            <div className="text-[11px] text-slate-400 font-mono mt-0.5 flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                              <span>{student.regDate || '2026-08-10'}</span>
+                            </div>
+                          </td>
+
+                          {/* 2. Game & Event Title */}
+                          <td className="p-4">
+                            <div className="font-black text-xs text-slate-900 dark:text-white uppercase tracking-wider">
+                              {student.sportName}
+                            </div>
+                            <div className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 mt-0.5">
+                              {student.eventTitle}
+                            </div>
+                            <div className="mt-1">
+                              <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                {student.matchFormat || 'Team'}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* 3. Team Name */}
+                          <td className="p-4">
+                            <div className="font-bold text-xs text-slate-900 dark:text-white">
+                              {student.teamName || 'Individual'}
+                            </div>
+                            <div className="mt-1">
+                              <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
+                                {student.college || user.college}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* 4. Student Name */}
+                          <td className="p-4">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-xs text-slate-900 dark:text-white">
+                                {student.studentName}
+                              </span>
                               {student.isCaptain && (
                                 <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                                   Captain
                                 </span>
                               )}
                             </div>
-                            {student.teamName && student.teamName !== 'Individual' && (
-                              <span className="text-[10px] text-slate-400 font-normal block">Team: {student.teamName}</span>
-                            )}
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-mono">
+                              Roll: {student.rollNumber || 'N/A'} • {student.email || 'N/A'}
+                            </div>
                           </td>
-                          <td className="p-4 font-mono font-bold text-slate-600 dark:text-slate-300">
-                            {student.rollNumber || 'N/A'}
+
+                          {/* 5. Mobile No */}
+                          <td className="p-4 whitespace-nowrap">
+                            <a
+                              href={student.phone && student.phone !== 'N/A' ? `tel:${student.phone}` : undefined}
+                              className="font-mono font-bold text-xs text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition inline-flex items-center gap-1.5"
+                            >
+                              <Phone className="w-3.5 h-3.5 text-slate-400" />
+                              <span>{student.phone || 'N/A'}</span>
+                            </a>
                           </td>
-                          <td className="p-4 font-bold text-slate-600 dark:text-slate-300">
-                            {student.course || 'N/A'}
-                          </td>
-                          <td className="p-4 text-slate-500 font-medium">
-                            {student.yearSemester || student.year || 'N/A'}
-                          </td>
-                          <td className="p-4">
-                            <span className="font-extrabold text-blue-600 dark:text-blue-400 block">{student.sportName}</span>
-                            <span className="text-[10px] text-slate-400">{student.eventType}</span>
+
+                          {/* 6. Gender */}
+                          <td className="p-4 whitespace-nowrap">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1 ${
+                              student.gender === 'MALE'
+                                ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
+                                : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                            }`}>
+                              {student.gender === 'MALE' ? '♂ MALE' : '♀ FEMALE'}
+                            </span>
                           </td>
                         </tr>
                       ))
@@ -672,10 +902,10 @@ export const CollegeHeadDashboardPage = () => {
               <Award className="w-16 h-16 text-amber-500 mx-auto animate-pulse" />
               <div>
                 <h3 className="text-2xl font-black text-slate-900 dark:text-white">{user.college} Championship Tally</h3>
-                <p className="text-xs text-slate-500 mt-1">Official medal standings across all 11 sports events</p>
+                <p className="text-xs text-slate-500 mt-1">Official medal standings across all {ALL_12_SPORTS.length} sports events</p>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400">
                   <div className="text-3xl font-black">🥇 {medalSummary?.gold || 0}</div>
                   <div className="text-[11px] font-bold uppercase mt-1">Gold Medals</div>
@@ -684,14 +914,9 @@ export const CollegeHeadDashboardPage = () => {
                   <div className="text-3xl font-black">🥈 {medalSummary?.silver || 0}</div>
                   <div className="text-[11px] font-bold uppercase mt-1">Silver Medals</div>
                 </div>
-                <div className="p-4 rounded-2xl bg-orange-700/10 border border-orange-700/20 text-orange-600 dark:text-orange-400">
-                  <div className="text-3xl font-black">🥉 {medalSummary?.bronze || 0}</div>
-                  <div className="text-[11px] font-bold uppercase mt-1">Bronze Medals</div>
-                </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex justify-around text-xs font-bold">
-                <div>Top Performing Sport: <span className="font-extrabold text-blue-600 dark:text-blue-400">{medalSummary?.topSport || 'N/A'}</span></div>
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex justify-center text-xs font-bold">
                 <div>Cumulative Points: <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{medalSummary?.totalPoints || 0} Pts</span></div>
               </div>
             </div>
@@ -729,120 +954,6 @@ export const CollegeHeadDashboardPage = () => {
                   <span>Export Athletes Roster (CSV)</span>
                 </button>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* ---------------------------------------------------- */}
-        {/* CHANGE PASSWORD MODAL */}
-        {/* ---------------------------------------------------- */}
-        {showPasswordModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs animate-fade-in">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-500">
-                    <Key className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-black text-slate-900 dark:text-white">Change Password</h3>
-                    <p className="text-xs text-slate-500">Head Coordinator Security Account Settings</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowPasswordModal(false)}
-                  className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <form onSubmit={handlePasswordChange} className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Current Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showCurrentPass ? 'text' : 'password'}
-                      required
-                      value={passwordForm.current}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
-                      placeholder="Enter current password"
-                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowCurrentPass(!showCurrentPass)}
-                      className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                    >
-                      {showCurrentPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    New Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showNewPass ? 'text' : 'password'}
-                      required
-                      value={passwordForm.newPass}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, newPass: e.target.value })}
-                      placeholder="Enter new password (min. 6 characters)"
-                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPass(!showNewPass)}
-                      className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                    >
-                      {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Confirm New Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showConfirmPass ? 'text' : 'password'}
-                      required
-                      value={passwordForm.confirm}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
-                      placeholder="Confirm new password"
-                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPass(!showConfirmPass)}
-                      className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                    >
-                      {showConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => setShowPasswordModal(false)}
-                    className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black shadow-md flex items-center gap-2 cursor-pointer"
-                  >
-                    <Key className="w-4 h-4" /> Update Password
-                  </button>
-                </div>
-              </form>
             </div>
           </div>
         )}

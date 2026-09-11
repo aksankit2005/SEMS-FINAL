@@ -116,17 +116,20 @@ export const getCollegeAuthScope = async (user) => {
     exactAliases.add('mips');
     exactAliases.add('maharana institute of professional studies');
     exactAliases.add('mips kanpur');
-  } else if (cleanCode === 'MPCPS (KN142)' || cleanCode === 'MPCPS' || cleanCode.includes('KN142')) {
-    exactAliases.add('mpcps (kn142)');
-    exactAliases.add('mpcps');
-    exactAliases.add('kn142');
-    exactAliases.add('maharana pratap college of pharmacy & science');
-    exactAliases.add('maharana pratap college of pharmacy and science');
-  } else if (cleanCode === 'MPCPS (BPHARMACY)' || cleanCode.includes('BPHARM')) {
+  } else if (cleanCode.includes('BPHARM') || cleanCode === 'MPCPS (BPHARMACY)') {
     exactAliases.add('mpcps (bpharmacy)');
     exactAliases.add('mpcps (bpharm)');
     exactAliases.add('mpcps bpharmacy');
     exactAliases.add('mpcps bpharm');
+    exactAliases.add('bpharmacy');
+    exactAliases.add('bpharm');
+  } else if (cleanCode.includes('KN142') || cleanCode === 'MPCPS (KN142)') {
+    exactAliases.add('mpcps (kn142)');
+    exactAliases.add('kn142');
+    exactAliases.add('kn 142');
+    exactAliases.add('mpcps kn142');
+    exactAliases.add('maharana pratap college of pharmacy & science');
+    exactAliases.add('maharana pratap college of pharmacy and science');
   } else if (cleanCode === 'MPCP') {
     exactAliases.add('mpcp');
     exactAliases.add('maharana pratap college of pharmacy');
@@ -320,6 +323,22 @@ export const getDashboardStats = async (req, res) => {
     // Medal Summary
     let medals = inMemoryCollegeMedals[collegeCode] || { gold: 0, silver: 0, bronze: 0, totalPoints: 0, topSport: 'N/A' };
     try {
+      let topSport = 'N/A';
+      try {
+        const topSportRes = await queryDb(
+          `SELECT sport_id, COUNT(*) AS wins 
+           FROM leaderboard_entries 
+           WHERE LOWER(TRIM(winner_college)) = ANY($1::text[])
+           GROUP BY sport_id 
+           ORDER BY wins DESC 
+           LIMIT 1`,
+          [exactAliases]
+        );
+        if (topSportRes && topSportRes.rows.length > 0) {
+          topSport = (topSportRes.rows[0].sport_id || 'Sport').replace(/-/g, ' ').toUpperCase();
+        }
+      } catch (e) {}
+
       const medalRes = await queryDb(
         `SELECT gold_count AS "gold", silver_count AS "silver", bronze_count AS "bronze", total_points AS "totalPoints" 
          FROM college_leaderboards 
@@ -335,7 +354,7 @@ export const getDashboardStats = async (req, res) => {
           silver: Number(medalRes.rows[0].silver || 0),
           bronze: Number(medalRes.rows[0].bronze || 0),
           totalPoints: Number(medalRes.rows[0].totalPoints || 0),
-          topSport: 'N/A'
+          topSport
         };
       }
     } catch (e) {}
@@ -358,7 +377,7 @@ export const getStudents = async (req, res) => {
   try {
     const scope = await getCollegeAuthScope(req.user);
     const { collegeId, collegeCode, exactAliases } = scope;
-    const { search, sport, status, page, limit } = req.query;
+    const { search, sport, status, gender, format, eventTitle, page, limit } = req.query;
 
     const dbRes = await queryDb(`
       SELECT 
@@ -372,15 +391,22 @@ export const getStudents = async (req, res) => {
         m.mobile AS phone,
         m.email,
         m."isCaptain",
+        COALESCE(cr.members_count, 1) AS "membersCount",
         COALESCE(cr.sport_id, r."sportId", s.slug, s.name, 'sport') AS "sportId",
         COALESCE(s.name, cr.sport_id, r."sportId", 'Sport') AS "sportName",
+        COALESCE(cei.title, cr.participant_data->>'eventTitle', cr.participant_data->>'eventName', cr.event_id, CONCAT(UPPER(COALESCE(s.name, cr.sport_id, r."sportId", 'SPORT')), ' Championship')) AS "eventTitle",
+        COALESCE(r."registrationType", cr.participant_data->>'matchFormat', (CASE WHEN COALESCE(cr.team_name, r."teamName", '') != '' AND COALESCE(cr.team_name, r."teamName") != 'Individual' THEN 'Team' ELSE 'Single' END)) AS "matchFormat",
         COALESCE(cr.team_name, r."teamName", 'Individual') AS "teamName",
+        COALESCE(cr.college, c.code, 'MPEC') AS college,
         COALESCE(cr.status, r.status::text, 'VERIFIED') AS status,
         COALESCE(cr.event_id, 'APEX-2026') AS "eventType",
+        TO_CHAR(COALESCE(cr.created_at, m."createdAt") AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM-DD') AS "regDate",
+        TO_CHAR(COALESCE(cr.created_at, m."createdAt") AT TIME ZONE 'Asia/Kolkata', 'HH12:MI AM') AS "regTime",
         m."createdAt" AS "createdAt"
       FROM registration_members m
       JOIN registrations r ON m."registrationId" = r.id
       LEFT JOIN college_registrations cr ON cr.registration_id = r.id
+      LEFT JOIN coordinator_event_items cei ON cei.id::text = cr.event_id::text
       LEFT JOIN sports s ON s.slug = r."sportId" OR s.slug = cr.sport_id OR s.name = r."sportId" OR s.id::text = r."sportId"::text
       LEFT JOIN colleges c ON c.id = r."collegeId"
       WHERE (
@@ -399,23 +425,34 @@ export const getStudents = async (req, res) => {
 
     let students = [];
     if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
-      students = dbRes.rows.map((s) => ({
-        id: s.id,
-        studentName: s.studentName,
-        rollNumber: s.rollNumber || 'N/A',
-        course: s.course || 'N/A',
-        yearSemester: s.yearSemester || 'N/A',
-        year: s.year || s.yearSemester || 'N/A',
-        gender: s.gender || 'Boys',
-        phone: s.phone || 'N/A',
-        email: s.email || 'N/A',
-        isCaptain: (s.isCaptain === true || s.isCaptain === 1 || s.isCaptain === 'true' || s.isCaptain === '1'),
-        sportId: (s.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
-        sportName: (s.sportName || 'Sport').replace(/-/g, ' ').toUpperCase(),
-        teamName: s.teamName || 'Individual',
-        status: s.status || 'VERIFIED',
-        eventType: s.eventType || 'APEX-2026'
-      }));
+      students = dbRes.rows.map((s) => {
+        const rawGen = (s.gender || '').toUpperCase().trim();
+        const normalizedGender = (rawGen.includes('FEM') || rawGen.includes('GIRL') || rawGen.includes('WOM')) ? 'FEMALE' : 'MALE';
+
+        return {
+          id: s.id,
+          studentName: s.studentName,
+          rollNumber: s.rollNumber || 'N/A',
+          course: s.course || 'N/A',
+          yearSemester: s.yearSemester || 'N/A',
+          year: s.year || s.yearSemester || 'N/A',
+          gender: normalizedGender,
+          phone: s.phone || 'N/A',
+          email: s.email || 'N/A',
+          isCaptain: (s.isCaptain === true || s.isCaptain === 1 || s.isCaptain === 'true' || s.isCaptain === '1'),
+          membersCount: Number(s.membersCount || 1),
+          sportId: (s.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
+          sportName: (s.sportName || 'Sport').replace(/-/g, ' ').toUpperCase(),
+          eventTitle: s.eventTitle || `${(s.sportName || 'Sport').replace(/-/g, ' ').toUpperCase()} Championship`,
+          matchFormat: s.matchFormat || 'Team',
+          teamName: s.teamName || 'Individual',
+          college: s.college || 'MPEC',
+          regDate: s.regDate || (s.createdAt ? new Date(s.createdAt).toLocaleDateString('en-CA') : '2026-08-10'),
+          regTime: s.regTime || (s.createdAt ? new Date(s.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) : '10:00 AM'),
+          status: s.status || 'VERIFIED',
+          eventType: s.eventType || 'APEX-2026'
+        };
+      });
     } else {
       // Fallback to prisma collegeRegistration if no members table entries
       const fallbackRegs = await prisma.collegeRegistration.findMany({
@@ -424,27 +461,64 @@ export const getStudents = async (req, res) => {
         },
         orderBy: { createdAt: 'desc' }
       });
-      students = fallbackRegs.map((r) => ({
-        id: r.id,
-        studentName: r.studentName,
-        rollNumber: r.enrollmentNo || 'N/A',
-        course: r.department || 'N/A',
-        yearSemester: 'N/A',
-        year: 'N/A',
-        gender: r.gender,
-        phone: r.phone || 'N/A',
-        email: r.email || 'N/A',
-        isCaptain: true,
-        sportId: (r.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
-        sportName: (r.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
-        teamName: r.teamName || 'Individual',
-        status: r.status || 'VERIFIED',
-        eventType: r.eventId || 'APEX-2026'
-      }));
+      students = fallbackRegs.map((r) => {
+        const rawGen = (r.gender || '').toUpperCase().trim();
+        const normalizedGender = (rawGen.includes('FEM') || rawGen.includes('GIRL') || rawGen.includes('WOM')) ? 'FEMALE' : 'MALE';
+
+        return {
+          id: r.id,
+          studentName: r.studentName,
+          rollNumber: r.enrollmentNo || 'N/A',
+          course: r.department || 'N/A',
+          yearSemester: 'N/A',
+          year: 'N/A',
+          gender: normalizedGender,
+          phone: r.phone || 'N/A',
+          email: r.email || 'N/A',
+          isCaptain: true,
+          membersCount: Number(r.membersCount || 1),
+          sportId: (r.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
+          sportName: (r.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
+          eventTitle: r.participantData?.eventTitle || r.participantData?.eventName || `${(r.sportId || 'Sport').replace(/-/g, ' ').toUpperCase()} Championship`,
+          matchFormat: r.participantData?.matchFormat || (r.teamName ? 'Team' : 'Single'),
+          teamName: r.teamName || 'Individual',
+          college: r.college || 'MPEC',
+          regDate: r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-CA') : '2026-08-10',
+          regTime: r.createdAt ? new Date(r.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) : '10:00 AM',
+          status: r.status || 'VERIFIED',
+          eventType: r.eventId || 'APEX-2026'
+        };
+      });
     }
 
-    if (sport && sport !== 'all') {
-      const sp = sport.toLowerCase().replace(/_/g, '-');
+    // Extract available events for filter options before query-level filters
+    const availableEventsSet = new Set();
+    students.forEach((s) => {
+      if (s.eventTitle && s.eventTitle.trim()) {
+        availableEventsSet.add(s.eventTitle.trim());
+      }
+    });
+
+    try {
+      const evDbRes = await queryDb(`
+        SELECT DISTINCT title AS "eventTitle"
+        FROM coordinator_event_items
+        WHERE title IS NOT NULL AND TRIM(title) != ''
+        ORDER BY "eventTitle" ASC
+      `);
+      if (evDbRes && evDbRes.rows) {
+        evDbRes.rows.forEach((r) => {
+          if (r.eventTitle && r.eventTitle.trim()) {
+            availableEventsSet.add(r.eventTitle.trim());
+          }
+        });
+      }
+    } catch (e) {}
+
+    const availableEvents = Array.from(availableEventsSet);
+
+    if (sport && sport !== 'all' && sport !== 'ALL') {
+      const sp = sport.toLowerCase().trim().replace(/_/g, '-');
       const isStdCricket = sp === 'cricket' || (sp.includes('cricket') && !sp.includes('gully'));
       const isGully = sp.includes('gully');
 
@@ -459,12 +533,43 @@ export const getStudents = async (req, res) => {
         if (isGully) {
           return sid.includes('gully') || sname.includes('gully');
         }
-        return sid.includes(sp) || sname.includes(sp);
+        return (
+          sid === sp ||
+          sid.replace(/[^a-z0-9]/g, '') === sp.replace(/[^a-z0-9]/g, '') ||
+          sname === sp ||
+          sname.includes(sp) ||
+          sid.includes(sp)
+        );
       });
     }
 
-    if (status && status !== 'all') {
-      students = students.filter((s) => (s.status || '').toLowerCase() === status.toLowerCase());
+    if (status && status !== 'all' && status !== 'ALL') {
+      students = students.filter((s) => (s.status || '').toLowerCase() === status.toLowerCase().trim());
+    }
+
+    if (gender && gender !== 'all' && gender !== 'ALL') {
+      const g = gender.toUpperCase().trim();
+      students = students.filter((s) => (s.gender || '').toUpperCase().trim() === g);
+    }
+
+    if (format && format !== 'all' && format !== 'ALL') {
+      const fmt = format.toUpperCase().trim();
+      students = students.filter((s) => {
+        const mf = (s.matchFormat || '').toUpperCase().trim();
+        if (fmt === 'SINGLE') return mf === 'SINGLE' || mf === 'INDIVIDUAL' || mf === 'SOLO';
+        if (fmt === 'INDIVIDUAL') return mf === 'INDIVIDUAL' || mf === 'SINGLE' || mf === 'SOLO';
+        if (fmt === 'DOUBLE' || fmt === 'DOUBLES') return mf === 'DOUBLE' || mf === 'DOUBLES';
+        if (fmt === 'TEAM') return mf === 'TEAM';
+        return mf === fmt;
+      });
+    }
+
+    if (eventTitle && eventTitle !== 'all' && eventTitle !== 'ALL') {
+      const ev = eventTitle.toLowerCase().trim();
+      students = students.filter((s) =>
+        (s.eventTitle || '').toLowerCase().trim() === ev ||
+        (s.eventTitle || '').toLowerCase().includes(ev)
+      );
     }
 
     if (search) {
@@ -472,8 +577,11 @@ export const getStudents = async (req, res) => {
       students = students.filter((s) =>
         (s.studentName && s.studentName.toLowerCase().includes(q)) ||
         (s.rollNumber && s.rollNumber.toLowerCase().includes(q)) ||
+        (s.phone && s.phone.toLowerCase().includes(q)) ||
+        (s.email && s.email.toLowerCase().includes(q)) ||
         (s.course && s.course.toLowerCase().includes(q)) ||
         (s.sportName && s.sportName.toLowerCase().includes(q)) ||
+        (s.eventTitle && s.eventTitle.toLowerCase().includes(q)) ||
         (s.teamName && s.teamName.toLowerCase().includes(q))
       );
     }
@@ -491,6 +599,7 @@ export const getStudents = async (req, res) => {
         college: collegeCode,
         count: sanitizedStudents.length,
         students: paginated,
+        availableEvents,
         pagination: {
           page: pageNum,
           limit: limitNum,
@@ -504,10 +613,54 @@ export const getStudents = async (req, res) => {
       college: collegeCode,
       count: sanitizedStudents.length,
       students: sanitizedStudents,
+      availableEvents
     });
   } catch (err) {
     console.error('Error fetching college head students:', err);
     return res.status(500).json({ message: 'Error loading student list' });
+  }
+};
+
+export const getCollegeHeadEvents = async (req, res) => {
+  try {
+    const eventsSet = new Set();
+    try {
+      const dbRes = await queryDb(`
+        SELECT DISTINCT title AS "eventTitle"
+        FROM coordinator_event_items
+        WHERE title IS NOT NULL AND TRIM(title) != ''
+        ORDER BY "eventTitle" ASC
+      `);
+      if (dbRes && dbRes.rows) {
+        dbRes.rows.forEach((r) => {
+          if (r.eventTitle && r.eventTitle.trim()) eventsSet.add(r.eventTitle.trim());
+        });
+      }
+    } catch (e) {}
+
+    try {
+      const regDbRes = await queryDb(`
+        SELECT DISTINCT COALESCE(participant_data->>'eventTitle', participant_data->>'eventName', event_id) AS "eventTitle"
+        FROM college_registrations
+        WHERE participant_data->>'eventTitle' IS NOT NULL 
+           OR participant_data->>'eventName' IS NOT NULL 
+           OR event_id IS NOT NULL
+      `);
+      if (regDbRes && regDbRes.rows) {
+        regDbRes.rows.forEach((r) => {
+          if (r.eventTitle && r.eventTitle.trim()) eventsSet.add(r.eventTitle.trim());
+        });
+      }
+    } catch (e) {}
+
+    const eventsList = Array.from(eventsSet);
+    return res.json({
+      success: true,
+      count: eventsList.length,
+      events: eventsList
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -631,6 +784,22 @@ export const getMedalSummary = async (req, res) => {
     const scope = await getCollegeAuthScope(req.user);
     const { collegeId, collegeCode, exactAliases } = scope;
 
+    let topSport = 'N/A';
+    try {
+      const topSportRes = await queryDb(
+        `SELECT sport_id, COUNT(*) AS wins 
+         FROM leaderboard_entries 
+         WHERE LOWER(TRIM(winner_college)) = ANY($1::text[])
+         GROUP BY sport_id 
+         ORDER BY wins DESC 
+         LIMIT 1`,
+        [exactAliases]
+      );
+      if (topSportRes && topSportRes.rows.length > 0) {
+        topSport = (topSportRes.rows[0].sport_id || 'Sport').replace(/-/g, ' ').toUpperCase();
+      }
+    } catch (e) {}
+
     const dbRes = await queryDb(
       `SELECT gold_count AS "gold", silver_count AS "silver", bronze_count AS "bronze", total_points AS "totalPoints" 
        FROM college_leaderboards 
@@ -649,17 +818,17 @@ export const getMedalSummary = async (req, res) => {
         silver: Number(row.silver || 0),
         bronze: Number(row.bronze || 0),
         totalPoints: Number(row.totalPoints || 0),
-        topSport: 'N/A'
+        topSport
       });
     }
 
     const medals = inMemoryCollegeMedals[collegeCode] || { gold: 0, silver: 0, bronze: 0, totalPoints: 0, topSport: 'N/A' };
-    return res.json({ college: collegeCode, ...medals });
+    return res.json({ college: collegeCode, ...medals, topSport });
   } catch (err) {
     console.warn('Error fetching college head medal summary from DB:', err.message);
     const scope = await getCollegeAuthScope(req.user).catch(() => ({ collegeCode: 'MPEC' }));
     const medals = inMemoryCollegeMedals[scope.collegeCode] || { gold: 0, silver: 0, bronze: 0, totalPoints: 0, topSport: 'N/A' };
-    return res.json({ college: scope.collegeCode, ...medals });
+    return res.json({ college: scope.collegeCode, ...medals, topSport: 'N/A' });
   }
 };
 
