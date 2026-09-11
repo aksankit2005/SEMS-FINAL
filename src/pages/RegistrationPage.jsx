@@ -640,6 +640,13 @@ export const RegistrationPage = () => {
     setIsProcessingPayment(true);
 
     try {
+      const isAthletics = resolveSportKey(activeSport) === 'athletics' || (activeSport.id || '').toLowerCase().includes('athletics') || (activeSport.name || '').toLowerCase().includes('athletics');
+      const selectedSubEvent = formData.subEvent || (formData.selectedEvents && formData.selectedEvents[0]) || (isAthletics ? '100m Race' : '');
+      const resolvedSportName = isAthletics && selectedSubEvent ? `Athletics (${selectedSubEvent})` : (activeSport.title || activeSport.name);
+      const resolvedEventTitle = isRacketSportCheck(activeSport) 
+        ? `${activeSport.name} (${formData.eventType})` 
+        : (isAthletics && selectedSubEvent ? `Athletics (${selectedSubEvent})` : (activeSport.title || activeSport.name));
+
       // Register event with coordinator backend API
       const result = await coordinatorApi.registerForEvent(
         activeSport.id,
@@ -657,13 +664,17 @@ export const RegistrationPage = () => {
           emergencyContact: formData.captainPhone || (formData.roster[0] && formData.roster[0].phone) || '+91 98765 43210',
           entryFee: activeSport.entryFee,
           roster: formData.roster || [],
-          eventTitle: isRacketSportCheck(activeSport) ? `${activeSport.name} (${formData.eventType})` : (activeSport.title || activeSport.name),
-          eventType: formData.eventType,
+          eventTitle: resolvedEventTitle,
+          eventType: isAthletics ? selectedSubEvent : formData.eventType,
           participationType: isRacketSportCheck(activeSport) 
             ? (formData.eventType === 'Doubles' ? 'DUO' : 'INDIVIDUAL')
             : (formData.roster?.length > 2 ? 'TEAM' : (formData.roster?.length === 2 ? 'DUO' : 'INDIVIDUAL')),
           category: activeSport.category,
-          subEvent: formData.selectedEvents?.join(', ') || formData.eventType || ''
+          subEvent: selectedSubEvent || formData.eventType || '',
+          athleticsEvent: isAthletics ? selectedSubEvent : '',
+          selectedEvents: isAthletics && selectedSubEvent ? [selectedSubEvent] : (formData.selectedEvents || []),
+          sportName: resolvedSportName,
+          gameName: isAthletics ? selectedSubEvent : (activeSport.name || activeSport.title)
         },
         paymentRes
       );
@@ -679,15 +690,16 @@ export const RegistrationPage = () => {
       let eventCategory = activeSport.category;
       if (isRacketSportCheck(activeSport)) {
         eventCategory = `${activeSport.category} (${formData.eventType})`;
-      } else if (resolveSportKey(activeSport) === 'athletics' || (activeSport.id || '').toLowerCase().includes('athletics')) {
-        const subName = (formData.selectedEvents || [formData.subEvent]).filter(Boolean).join(', ');
-        eventCategory = `Athletics (${subName || 'Track & Field'})`;
+      } else if (isAthletics && selectedSubEvent) {
+        eventCategory = `Athletics (${selectedSubEvent})`;
       }
 
       const receipt = {
         receiptId: result.receipt?.id || `REC-APEX-${Math.floor(10000 + Math.random() * 90000)}`,
-        sportName: activeSport.name,
+        sportName: resolvedSportName,
         category: eventCategory,
+        subEvent: isAthletics ? selectedSubEvent : null,
+        athleticsEvent: isAthletics ? selectedSubEvent : null,
         participantName: formData.captainName || (firstRosterPlayer && firstRosterPlayer.name) || 'Lead Athlete',
         fatherName: (firstRosterPlayer && firstRosterPlayer.fatherName) || formData.fatherName || 'N/A',
         gender: (firstRosterPlayer && firstRosterPlayer.gender) || formData.gender || 'Male',

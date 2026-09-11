@@ -420,6 +420,7 @@ export const getStudents = async (req, res) => {
         COALESCE(cr.college, c.code, c.name, 'MPEC') AS college,
         COALESCE(cr.status, r.status::text, 'VERIFIED') AS status,
         COALESCE(cr.event_id, r."eventId"::text, 'APEX-2026') AS "eventType",
+        COALESCE(cr.participant_data->>'subEvent', cr.participant_data->>'athleticsEvent', cr.participant_data->>'gameName', NULL) AS "subEvent",
         TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', COALESCE(cr.created_at, r."createdAt", m."createdAt"))), 'YYYY-MM-DD') AS "regDate",
         TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', COALESCE(cr.created_at, r."createdAt", m."createdAt"))), 'HH12:MI AM') AS "regTime",
         COALESCE(cr.created_at, r."createdAt", m."createdAt") AS "createdAt"
@@ -470,6 +471,7 @@ export const getStudents = async (req, res) => {
           COALESCE(cr.members_count, 1) AS "membersCount",
           COALESCE(cr.sport_id, 'sport') AS "sportId",
           COALESCE(cr.sport_id, 'Sport') AS "sportName",
+          COALESCE(cr.participant_data->>'subEvent', cr.participant_data->>'athleticsEvent', cr.participant_data->>'gameName', NULL) AS "subEvent",
           COALESCE(cei.title, cr.participant_data->>'eventTitle', cr.participant_data->>'selectedEvent', cr.participant_data->>'subEvent', cr.participant_data->>'category', cr.participant_data->>'eventType', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb",
           COALESCE(cr.participant_data->>'matchFormat', NULL) AS "rawFormat",
           COALESCE(cr.team_name, 'Individual') AS "teamName",
@@ -518,6 +520,7 @@ export const getStudents = async (req, res) => {
         membersCount: Number(r.membersCount || 1),
         sportId: r.sportId || 'sport',
         sportName: r.sportId || 'Sport',
+        subEvent: r.participantData?.subEvent || r.participantData?.athleticsEvent || null,
         eventTitleFromDb: r.participantData?.eventTitle || r.participantData?.eventName || null,
         rawFormat: r.participantData?.matchFormat || null,
         teamName: r.teamName || 'Individual',
@@ -536,12 +539,29 @@ export const getStudents = async (req, res) => {
       const normalizedGender = (rawGen.includes('FEM') || rawGen.includes('GIRL') || rawGen.includes('WOM')) ? 'FEMALE' : 'MALE';
 
       const sportKey = (s.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-');
-      const sportDisplayName = (s.sportName || 'Sport').replace(/-/g, ' ').toUpperCase();
+      let sportDisplayName = (s.sportName || 'Sport').replace(/-/g, ' ').toUpperCase();
 
-      // Priority for eventTitle: Exact coordinator created event title -> DB eventTitle -> APEX 2026 title
+      // Athletics subEvent handling
+      const isAthletics = sportKey.includes('athletics') || sportDisplayName.toLowerCase().includes('athletics');
+      let subEvent = s.subEvent || null;
+      if (isAthletics && !subEvent) {
+        const OFFICIAL = ['100m Race', '200m Race', '4*100m relay Race', 'Long Jump', 'Javelin Throw', 'Shot Put', 'Discus Throw'];
+        const searchStr = `${s.eventTitleFromDb || ''} ${s.teamName || ''}`;
+        const found = OFFICIAL.find((o) => searchStr.toLowerCase().includes(o.toLowerCase()));
+        if (found) subEvent = found;
+        if (!subEvent) subEvent = '100m Race';
+      }
+
+      if (isAthletics && subEvent) {
+        sportDisplayName = `ATHLETICS (${subEvent.toUpperCase()})`;
+      }
+
+      // Priority for eventTitle: Athletics subEvent -> Exact coordinator created event title -> DB eventTitle -> APEX 2026 title
       const matchedCoordTitle = coordEventMap.get(sportKey) || coordEventMap.get((s.sportId || '').toLowerCase()) || coordEventMap.get(s.eventType || '');
       let displayEventTitle = s.eventTitleFromDb;
-      if (!displayEventTitle || displayEventTitle.toLowerCase().endsWith('championship')) {
+      if (isAthletics && subEvent) {
+        displayEventTitle = `Athletics - ${subEvent}`;
+      } else if (!displayEventTitle || displayEventTitle.toLowerCase().endsWith('championship')) {
         displayEventTitle = matchedCoordTitle || `APEX ${sportDisplayName} 2026`;
       }
 
@@ -595,6 +615,7 @@ export const getStudents = async (req, res) => {
         membersCount: Number(s.membersCount || 1),
         sportId: sportKey,
         sportName: sportDisplayName,
+        subEvent: subEvent || 'N/A',
         eventTitle: displayEventTitle,
         matchFormat: resolvedFormat,
         teamName: isIndivName ? 'Individual' : (s.teamName || 'Individual'),

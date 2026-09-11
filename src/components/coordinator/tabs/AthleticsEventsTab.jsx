@@ -186,7 +186,7 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
   };
 
   const handleCoverUpload = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files && e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
@@ -195,11 +195,20 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
       };
       reader.readAsDataURL(file);
     }
+    if (e.target) e.target.value = '';
   };
 
   const handleCropComplete = (croppedDataUrl) => {
     setFormData((prev) => ({ ...prev, coverImage: croppedDataUrl }));
+    setShowCropper(false);
     addToast('Athletics cover banner cropped and attached successfully!', 'success');
+  };
+
+  const handleRemoveCover = () => {
+    setFormData((prev) => ({
+      ...prev,
+      coverImage: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80'
+    }));
   };
 
   const handleSubEventConfigChange = (index, field, val) => {
@@ -410,7 +419,7 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
       (p.name || p.captainName || '').toLowerCase().includes(q) ||
       (p.collegeName || '').toLowerCase().includes(q) ||
       (p.rollNo || '').toLowerCase().includes(q) ||
-      (p.selectedEvent || p.event || '').toLowerCase().includes(q)
+      (p.subEvent || p.selectedEvent || p.event || (p.selectedEvents && p.selectedEvents[0]) || '').toLowerCase().includes(q)
     );
   });
 
@@ -419,7 +428,7 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
     const exportData = filteredParticipants.map((p, idx) => ({
       'S.No': idx + 1,
       'Athlete Name': p.name || p.captainName || 'N/A',
-      'Sub-Event': p.selectedEvent || p.event || 'Athletics',
+      'Sub-Event': p.subEvent || p.selectedEvent || p.event || (p.selectedEvents && p.selectedEvents[0]) || '100m Race',
       'College Name': p.collegeName || 'N/A',
       'Roll No / Reg ID': p.rollNo || 'N/A',
       'Phone': p.phone || p.captainPhone || 'N/A',
@@ -737,27 +746,59 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                      Cover Banner Image
+                  <div className="space-y-2 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+                    <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
+                      Cover Banner Image Upload & Cropper
                     </label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleCoverUpload}
-                        className="hidden"
-                        id="athletics-cover-input"
-                      />
-                      <label
-                        htmlFor="athletics-cover-input"
-                        className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition flex items-center gap-2 cursor-pointer"
-                      >
-                        <Upload className="w-4 h-4" /> Upload & Crop Image
-                      </label>
-                      {formData.coverImage && (
-                        <span className="text-[11px] text-emerald-500 font-mono font-bold">✓ Banner Attached</span>
-                      )}
+
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                      <div className="relative w-full sm:w-48 h-28 rounded-xl bg-slate-200 dark:bg-slate-950 overflow-hidden border border-slate-300 dark:border-slate-800 shrink-0">
+                        <img
+                          src={formData.coverImage || 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80'}
+                          alt="Banner Preview"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+
+                      <div className="flex-1 space-y-2 w-full">
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                          Upload a high-resolution Athletics cover image. Click "Crop & Resize" to trim to standard 16:9 banner format before publishing.
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <label className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white text-xs font-bold cursor-pointer transition flex items-center gap-1.5">
+                            <Upload className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                            <span>Upload Image</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleCoverUpload}
+                              className="hidden"
+                            />
+                          </label>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCropperRawSrc(formData.coverImage);
+                              setShowCropper(true);
+                            }}
+                            className="px-4 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-500/20 dark:hover:bg-blue-500/30 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Crop className="w-3.5 h-3.5" />
+                            <span>Crop & Resize</span>
+                          </button>
+
+                          {formData.coverImage && (
+                            <button
+                              type="button"
+                              onClick={handleRemoveCover}
+                              className="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold transition cursor-pointer"
+                            >
+                              Reset
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -1051,7 +1092,7 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
                           <tr key={p.id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
                             <td className="p-3 font-mono font-bold text-slate-400">{idx + 1}</td>
                             <td className="p-3 font-bold text-slate-900 dark:text-white">{p.name || p.captainName || 'N/A'}</td>
-                            <td className="p-3 font-mono font-bold text-blue-600 dark:text-blue-400">{p.selectedEvent || p.event || (p.selectedEvents && p.selectedEvents[0]) || 'Athletics'}</td>
+                            <td className="p-3 font-mono font-bold text-blue-600 dark:text-blue-400">{p.subEvent || p.selectedEvent || p.event || (p.selectedEvents && p.selectedEvents[0]) || '100m Race'}</td>
                             <td className="p-3 font-semibold text-slate-700 dark:text-slate-300">{p.collegeName || p.college || 'N/A'}</td>
                             <td className="p-3 text-slate-500 font-medium text-xs">{relayText}</td>
                           </tr>

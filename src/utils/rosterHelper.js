@@ -178,8 +178,29 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
     if (!reg) return;
 
     const registrationId = reg.receiptId || reg.registrationId || reg.id || 'N/A';
-    const sportName = reg.sport || reg.sportName || defaultSport;
-    const eventName = reg.eventTitle || reg.eventType || `${sportName} Championship`;
+    const isAthletics = (reg.sport || reg.sportName || reg.sportId || defaultSport || '').toLowerCase().includes('athletics');
+
+    // Resolve athletics sub-event from all potential sources
+    let subEvent = reg.subEvent || reg.athleticsEvent || reg.participantData?.subEvent || reg.participantData?.athleticsEvent || (Array.isArray(reg.selectedEvents) ? reg.selectedEvents[0] : (typeof reg.selectedEvents === 'string' ? reg.selectedEvents : null)) || (Array.isArray(reg.participantData?.selectedEvents) ? reg.participantData.selectedEvents[0] : null);
+
+    const OFFICIAL = ['100m Race', '200m Race', '4*100m relay Race', 'Long Jump', 'Javelin Throw', 'Shot Put', 'Discus Throw'];
+    if (isAthletics && !subEvent) {
+      const searchStr = `${reg.eventTitle || ''} ${reg.eventType || ''} ${reg.sport || ''} ${reg.sportName || ''} ${reg.teamName || ''}`;
+      const found = OFFICIAL.find((o) => searchStr.toLowerCase().includes(o.toLowerCase()));
+      if (found) subEvent = found;
+    }
+    if (isAthletics && !subEvent) {
+      subEvent = '100m Race';
+    }
+
+    let sportName = reg.sport || reg.sportName || defaultSport;
+    if (isAthletics && subEvent && !sportName.includes('(')) {
+      sportName = `Athletics (${subEvent})`;
+    }
+
+    const eventName = isAthletics && subEvent 
+      ? `Athletics - ${subEvent}` 
+      : (reg.eventTitle || reg.eventType || `${sportName} Championship`);
     const collegeName = reg.collegeName || reg.college || reg.player1?.college || 'N/A';
     const timestamp = reg.timestamp || reg.registeredDate || (reg.createdAt ? new Date(reg.createdAt).toLocaleDateString() : 'N/A');
     const status = reg.status || 'VERIFIED';
@@ -200,6 +221,8 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
           timestamp,
           sport: sportName,
           event: eventName,
+          subEvent: subEvent || null,
+          athleticsEvent: subEvent || null,
           teamName: teamDisplayName,
           collegeName,
           participationType,
@@ -229,6 +252,8 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
           timestamp,
           sport: sportName,
           event: eventName,
+          subEvent: subEvent || null,
+          athleticsEvent: subEvent || null,
           teamName: teamDisplayName,
           collegeName,
           participationType,
@@ -259,6 +284,8 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
         timestamp,
         sport: sportName,
         event: eventName,
+        subEvent: subEvent || null,
+        athleticsEvent: subEvent || null,
         teamName: teamDisplayName,
         collegeName,
         participationType,
@@ -281,6 +308,8 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
         timestamp,
         sport: sportName,
         event: eventName,
+        subEvent: subEvent || null,
+        athleticsEvent: subEvent || null,
         teamName: teamDisplayName,
         collegeName,
         participationType,
@@ -307,6 +336,8 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
       timestamp,
       sport: sportName,
       event: eventName,
+      subEvent: subEvent || null,
+      athleticsEvent: subEvent || null,
       teamName: isIndividual ? 'Individual' : teamDisplayName,
       collegeName,
       participationType,

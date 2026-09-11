@@ -371,10 +371,15 @@ export const initDatabaseSchema = async () => {
       BEGIN 
         IF NOT EXISTS (
           SELECT 1 FROM pg_constraint WHERE conname = 'unique_match_team_jersey'
+        ) AND NOT EXISTS (
+          SELECT 1 FROM pg_class WHERE relname = 'unique_match_team_jersey'
         ) THEN 
           ALTER TABLE basketball_player_stats 
           ADD CONSTRAINT unique_match_team_jersey UNIQUE (match_id, team_name, jersey_no);
         END IF;
+      EXCEPTION 
+        WHEN duplicate_table OR duplicate_object OR others THEN 
+          NULL;
       END $$;
     `);
 
