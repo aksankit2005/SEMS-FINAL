@@ -444,8 +444,23 @@ export const getStudents = async (req, res) => {
     }
 
     if (sport && sport !== 'all') {
-      const sp = sport.toLowerCase();
-      students = students.filter((s) => (s.sportId || '').toLowerCase().includes(sp) || (s.sportName || '').toLowerCase().includes(sp));
+      const sp = sport.toLowerCase().replace(/_/g, '-');
+      const isStdCricket = sp === 'cricket' || (sp.includes('cricket') && !sp.includes('gully'));
+      const isGully = sp.includes('gully');
+
+      students = students.filter((s) => {
+        const sid = (s.sportId || '').toLowerCase().replace(/_/g, '-');
+        const sname = (s.sportName || '').toLowerCase().replace(/_/g, '-');
+
+        if (isStdCricket) {
+          if (sid.includes('gully') || sname.includes('gully')) return false;
+          return sid.includes('cricket') || sname.includes('cricket');
+        }
+        if (isGully) {
+          return sid.includes('gully') || sname.includes('gully');
+        }
+        return sid.includes(sp) || sname.includes(sp);
+      });
     }
 
     if (status && status !== 'all') {

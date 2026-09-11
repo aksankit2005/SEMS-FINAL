@@ -1455,22 +1455,43 @@ export const completeMatch = async (req, res) => {
 export const getDashboardStats = async (req, res) => {
   try {
     const sportId = (req.user.assignedSport || '').toLowerCase();
+    const cleanSportId = sportId.replace(/_/g, '-');
+    const isGully = cleanSportId.includes('gully');
+    const isStandardCricket = cleanSportId === 'cricket' || (cleanSportId.includes('cricket') && !isGully);
+
+    let sportFilter = { contains: sportId, mode: 'insensitive' };
+    if (isStandardCricket) {
+      sportFilter = {
+        equals: 'cricket',
+        mode: 'insensitive'
+      };
+    } else if (isGully) {
+      sportFilter = {
+        in: ['gully-cricket', 'gully_cricket', 'gully cricket'],
+        mode: 'insensitive'
+      };
+    }
 
     const registeredTeams = await prisma.collegeRegistration.count({
-      where: { sportId: { contains: sportId, mode: 'insensitive' } }
+      where: {
+        sportId: sportFilter,
+        ...(isStandardCricket ? { NOT: { sportId: { contains: 'gully', mode: 'insensitive' } } } : {})
+      }
     });
 
     const approvedTeams = await prisma.collegeRegistration.count({
       where: {
-        sportId: { contains: sportId, mode: 'insensitive' },
-        status: { in: ['Approved', 'Confirmed', 'VERIFIED'] }
+        sportId: sportFilter,
+        status: { in: ['Approved', 'Confirmed', 'VERIFIED'] },
+        ...(isStandardCricket ? { NOT: { sportId: { contains: 'gully', mode: 'insensitive' } } } : {})
       }
     });
 
     const pendingRegistrations = await prisma.collegeRegistration.count({
       where: {
-        sportId: { contains: sportId, mode: 'insensitive' },
-        status: 'Pending'
+        sportId: sportFilter,
+        status: 'Pending',
+        ...(isStandardCricket ? { NOT: { sportId: { contains: 'gully', mode: 'insensitive' } } } : {})
       }
     });
 
@@ -1480,10 +1501,17 @@ export const getDashboardStats = async (req, res) => {
     let totalMatches = 0;
 
     try {
-      const matchCountsRes = await queryDb(
-        `SELECT LOWER(status) as status, COUNT(*) as count FROM live_matches WHERE LOWER(sport_id) = $1 GROUP BY LOWER(status)`,
-        [sportId]
-      );
+      let matchCountSql = `SELECT LOWER(status) as status, COUNT(*) as count FROM live_matches WHERE LOWER(sport_id) = $1 GROUP BY LOWER(status)`;
+      let matchCountParams = [sportId];
+      if (isStandardCricket) {
+        matchCountSql = `SELECT LOWER(status) as status, COUNT(*) as count FROM live_matches WHERE LOWER(sport_id) = 'cricket' GROUP BY LOWER(status)`;
+        matchCountParams = [];
+      } else if (isGully) {
+        matchCountSql = `SELECT LOWER(status) as status, COUNT(*) as count FROM live_matches WHERE LOWER(sport_id) IN ('gully-cricket', 'gully_cricket', 'gully cricket') GROUP BY LOWER(status)`;
+        matchCountParams = [];
+      }
+
+      const matchCountsRes = await queryDb(matchCountSql, matchCountParams);
       if (matchCountsRes && matchCountsRes.rows) {
         matchCountsRes.rows.forEach(r => {
           const s = r.status;
@@ -1686,14 +1714,38 @@ export const getRegistrations = async (req, res) => {
     }
 
     // 2. Prisma fallback
-    const registrations = await prisma.collegeRegistration.findMany({
-      where: {
-        OR: [
-          { sportId: { contains: sportId, mode: 'insensitive' } },
-          { sportId: { contains: cleanSportId, mode: 'insensitive' } },
-          { sportId: { contains: baseSportId, mode: 'insensitive' } }
+    let prismaWhere = {
+      OR: [
+        { sportId: { contains: sportId, mode: 'insensitive' } },
+        { sportId: { contains: cleanSportId, mode: 'insensitive' } },
+        { sportId: { contains: baseSportId, mode: 'insensitive' } }
+      ]
+    };
+
+    if (isStandardCricket) {
+      prismaWhere = {
+        AND: [
+          {
+            OR: [
+              { sportId: { equals: 'cricket', mode: 'insensitive' } },
+              { sportId: { contains: 'cricket', mode: 'insensitive' } }
+            ]
+          },
+          {
+            NOT: {
+              sportId: { contains: 'gully', mode: 'insensitive' }
+            }
+          }
         ]
-      },
+      };
+    } else if (isGully) {
+      prismaWhere = {
+        sportId: { contains: 'gully', mode: 'insensitive' }
+      };
+    }
+
+    const registrations = await prisma.collegeRegistration.findMany({
+      where: prismaWhere,
       orderBy: { createdAt: 'desc' }
     });
 
@@ -1792,14 +1844,31 @@ export const deleteRegistration = async (req, res) => {
   const sportId = (req.user?.assignedSport || '').toLowerCase();
   const cleanSportId = sportId.replace(/_/g, '-');
   const baseSportId = cleanSportId.split('-')[0].split('_')[0];
+  const isGully = cleanSportId.includes('gully');
+  const isStandardCricket = cleanSportId === 'cricket' || (cleanSportId.includes('cricket') && !isGully);
   const { id } = req.params;
 
   try {
     // Verify that the registration actually belongs to this coordinator's assigned sport
-    const checkSql = `SELECT id, sport_id FROM college_registrations 
+    let checkSql = `SELECT id, sport_id FROM college_registrations 
       WHERE (id::text = $1 OR registration_id::text = $1)
         AND (LOWER(sport_id) LIKE $2 OR LOWER(sport_id) LIKE $3 OR LOWER(sport_id) LIKE $4)`;
-    const checkRes = await queryDb(checkSql, [String(id), `%${sportId}%`, `%${cleanSportId}%`, `%${baseSportId}%`]);
+    let checkParams = [String(id), `%${sportId}%`, `%${cleanSportId}%`, `%${baseSportId}%`];
+
+    if (isStandardCricket) {
+      checkSql = `SELECT id, sport_id FROM college_registrations 
+        WHERE (id::text = $1 OR registration_id::text = $1)
+          AND (LOWER(sport_id) = 'cricket' OR LOWER(sport_id) LIKE '%cricket%')
+          AND LOWER(sport_id) NOT LIKE '%gully%'`;
+      checkParams = [String(id)];
+    } else if (isGully) {
+      checkSql = `SELECT id, sport_id FROM college_registrations 
+        WHERE (id::text = $1 OR registration_id::text = $1)
+          AND (LOWER(sport_id) LIKE '%gully%' OR LOWER(sport_id) = 'gully-cricket' OR LOWER(sport_id) = 'gully_cricket')`;
+      checkParams = [String(id)];
+    }
+
+    const checkRes = await queryDb(checkSql, checkParams);
 
     if (!checkRes || checkRes.rows.length === 0) {
       return res.status(403).json({ message: 'Access denied. You cannot delete registrations for other sports.' });

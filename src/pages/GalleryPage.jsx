@@ -135,9 +135,26 @@ export const GalleryPage = () => {
     const eventMatch = (item.event_name || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSearch = titleMatch || eventMatch;
 
-    const matchesCategory = activeCategory === 'All' || 
-      (item.event_name || '').toLowerCase().includes(activeCategory.toLowerCase()) ||
-      (item.title || '').toLowerCase().includes(activeCategory.toLowerCase());
+    let matchesCategory = false;
+    if (activeCategory === 'All') {
+      matchesCategory = true;
+    } else {
+      const itemEvt = (item.event_name || '').toLowerCase();
+      const itemTitle = (item.title || '').toLowerCase();
+      const catLower = activeCategory.toLowerCase();
+      const isCatCricket = catLower === 'cricket' && !catLower.includes('gully');
+      const isCatGully = catLower.includes('gully');
+
+      if (isCatCricket) {
+        matchesCategory =
+          (itemEvt.includes('cricket') && !itemEvt.includes('gully')) ||
+          (itemTitle.includes('cricket') && !itemTitle.includes('gully'));
+      } else if (isCatGully) {
+        matchesCategory = itemEvt.includes('gully') || itemTitle.includes('gully');
+      } else {
+        matchesCategory = itemEvt.includes(catLower) || itemTitle.includes(catLower);
+      }
+    }
 
     const matchesType = mediaTab === 'all' || (item.media_type || '').toLowerCase() === mediaTab;
 

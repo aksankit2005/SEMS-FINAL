@@ -214,8 +214,20 @@ export const SuperCoordinatorDashboardPage = () => {
   // Dynamic available events list based on selected sport
   const availableEvents = coordinatorEvents.filter((evt) => {
     if (selectedSport === 'ALL') return true;
-    return (evt.sportId || '').toLowerCase() === selectedSport.toLowerCase() ||
-           (evt.sportName || '').toLowerCase().includes(selectedSport.toLowerCase());
+    const sId = (evt.sportId || '').toLowerCase().replace(/_/g, '-');
+    const sName = (evt.sportName || '').toLowerCase().replace(/_/g, '-');
+    const sel = selectedSport.toLowerCase().replace(/_/g, '-');
+    const isSelCricket = sel === 'cricket' || (sel.includes('cricket') && !sel.includes('gully'));
+    const isSelGully = sel.includes('gully');
+
+    if (isSelCricket) {
+      if (sId.includes('gully') || sName.includes('gully')) return false;
+      return sId.includes('cricket') || sName.includes('cricket');
+    }
+    if (isSelGully) {
+      return sId.includes('gully') || sName.includes('gully');
+    }
+    return sId === sel || sName.includes(sel);
   });
 
   // Calculate Inter-College Leaderboard Standings
@@ -389,7 +401,24 @@ export const SuperCoordinatorDashboardPage = () => {
 
   // Filtered Participants Logic
   const filteredParticipants = masterParticipants.filter((p) => {
-    const matchesSport = selectedSport === 'ALL' || (p.sportId || '').toLowerCase() === selectedSport.toLowerCase() || (p.sportName || '').toLowerCase().includes(selectedSport.toLowerCase());
+    let matchesSport = false;
+    if (selectedSport === 'ALL') {
+      matchesSport = true;
+    } else {
+      const sId = (p.sportId || '').toLowerCase().replace(/_/g, '-');
+      const sName = (p.sportName || '').toLowerCase().replace(/_/g, '-');
+      const sel = selectedSport.toLowerCase().replace(/_/g, '-');
+      const isSelCricket = sel === 'cricket' || (sel.includes('cricket') && !sel.includes('gully'));
+      const isSelGully = sel.includes('gully');
+
+      if (isSelCricket) {
+        matchesSport = (!sId.includes('gully') && !sName.includes('gully')) && (sId.includes('cricket') || sName.includes('cricket'));
+      } else if (isSelGully) {
+        matchesSport = sId.includes('gully') || sName.includes('gully');
+      } else {
+        matchesSport = sId === sel || sName.includes(sel);
+      }
+    }
     const matchesEvent = selectedEvent === 'ALL' ||
       (p.eventTitle || '').toLowerCase().trim() === selectedEvent.toLowerCase().trim() ||
       (p.eventTitle || '').toLowerCase().includes(selectedEvent.toLowerCase()) ||

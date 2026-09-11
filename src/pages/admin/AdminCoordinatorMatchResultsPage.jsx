@@ -60,17 +60,29 @@ function readAllCoordinatorMatches() {
           if (!m || !m.id || seenIds.has(m.id)) return;
           seenIds.add(m.id);
 
-          const title = m.eventTitle || m.matchTitle || m.title || `${sportName} Championship`;
+          const mSportStr = String(m.sportId || m.sport || m.sportName || '').toLowerCase();
+          let effectiveSportId = rawSportId;
+          if (mSportStr.includes('gully')) {
+            effectiveSportId = 'gully-cricket';
+          } else if (rawSportId === 'gully-cricket' || rawSportId === 'gully_cricket') {
+            effectiveSportId = 'gully-cricket';
+          }
+
+          const sport = ALL_12_SPORTS.find(s => s.id === effectiveSportId || s.id === effectiveSportId.replace('_', '-'));
+          const currentSportName = sport?.name || (effectiveSportId.charAt(0).toUpperCase() + effectiveSportId.slice(1).replace(/-/g, ' '));
+          const currentSportIcon = sport?.icon || '🏅';
+
+          const title = m.eventTitle || m.matchTitle || m.title || `${currentSportName} Championship`;
           const isGirls = title.toLowerCase().includes('girl') || title.toLowerCase().includes('women');
           const isMixed = title.toLowerCase().includes('mix');
           const gender = m.gender || m.category || (isGirls ? 'Girls' : isMixed ? 'Mixed' : 'Boys');
 
-          const isAth = rawSportId === 'athletics';
+          const isAth = effectiveSportId === 'athletics';
           results.push({
             id: m.id,
-            sportId: rawSportId,
-            sportName,
-            sportIcon,
+            sportId: effectiveSportId,
+            sportName: currentSportName,
+            sportIcon: currentSportIcon,
             eventTitle: title,
             format: m.format || m.matchFormat || 'Match',
             gender,
@@ -110,16 +122,28 @@ function readAllCoordinatorMatches() {
           if (!isDone) return;
           seenIds.add(m.id);
 
-          const title = m.matchTitle || m.title || `${sportName} Championship`;
+          const mSportStr = String(m.sportId || m.sport || m.sportName || '').toLowerCase();
+          let effectiveSportId = rawSportId;
+          if (mSportStr.includes('gully')) {
+            effectiveSportId = 'gully-cricket';
+          } else if (rawSportId === 'gully-cricket' || rawSportId === 'gully_cricket') {
+            effectiveSportId = 'gully-cricket';
+          }
+
+          const sport = ALL_12_SPORTS.find(s => s.id === effectiveSportId || s.id === effectiveSportId.replace('_', '-'));
+          const currentSportName = sport?.name || (effectiveSportId.charAt(0).toUpperCase() + effectiveSportId.slice(1).replace(/-/g, ' '));
+          const currentSportIcon = sport?.icon || '🏅';
+
+          const title = m.matchTitle || m.title || `${currentSportName} Championship`;
           const isGirls = title.toLowerCase().includes('girl') || title.toLowerCase().includes('women');
           const isMixed = title.toLowerCase().includes('mix');
           const gender = m.gender || m.category || (isGirls ? 'Girls' : isMixed ? 'Mixed' : 'Boys');
 
           results.push({
             id: m.id,
-            sportId: rawSportId,
-            sportName,
-            sportIcon,
+            sportId: effectiveSportId,
+            sportName: currentSportName,
+            sportIcon: currentSportIcon,
             eventTitle: title,
             format: m.format || 'Match',
             gender,

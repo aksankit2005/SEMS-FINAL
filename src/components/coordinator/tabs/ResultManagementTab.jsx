@@ -82,10 +82,20 @@ export const ResultManagementTab = ({ user }) => {
 
       try {
         const apiMatches = await coordinatorApi.getMatches();
-        const completedApiMatches = apiMatches.filter((m) =>
-          (m.status === 'COMPLETED' || m.status === 'FINISHED' || m.status === 'WALKOVER') &&
-          ((m.sport || m.sportId || '').toLowerCase().includes(assignedSport))
-        );
+        const isStdCricket = assignedSport === 'cricket' || (assignedSport.includes('cricket') && !assignedSport.includes('gully'));
+        const isGully = assignedSport.includes('gully');
+
+        const completedApiMatches = apiMatches.filter((m) => {
+          if (m.status !== 'COMPLETED' && m.status !== 'FINISHED' && m.status !== 'WALKOVER') return false;
+          const mSport = (m.sport || m.sportId || '').toLowerCase();
+          if (isStdCricket) {
+            return mSport.includes('cricket') && !mSport.includes('gully');
+          }
+          if (isGully) {
+            return mSport.includes('gully');
+          }
+          return mSport.includes(assignedSport);
+        });
 
         completedApiMatches.forEach((apiMatch) => {
           if (!list.some((existing) => existing.id === apiMatch.id)) {
@@ -101,6 +111,9 @@ export const ResultManagementTab = ({ user }) => {
         'aarav sharma (mpec)', 'rohan gupta (mips)', 'priya verma (psit)', 'sneha patel (hbti)'
       ];
 
+      const isStdCricket = assignedSport === 'cricket' || (assignedSport.includes('cricket') && !assignedSport.includes('gully'));
+      const isGully = assignedSport.includes('gully');
+
       let cleaned = Array.isArray(list)
         ? list.filter((r) => {
             if (!r) return false;
@@ -108,7 +121,19 @@ export const ResultManagementTab = ({ user }) => {
             const t1 = (r.team1 || '').trim().toLowerCase();
             const t2 = (r.team2 || '').trim().toLowerCase();
             const w = (r.winner || '').trim().toLowerCase();
-            return !mockNames.includes(t1) && !mockNames.includes(t2) && !mockNames.includes(w);
+            if (mockNames.includes(t1) || mockNames.includes(t2) || mockNames.includes(w)) return false;
+
+            if (isStdCricket) {
+              const rSport = (r.sport || r.sportId || '').toLowerCase();
+              const rTitle = (r.eventTitle || r.subEvent || '').toLowerCase();
+              if (rSport.includes('gully') || rTitle.includes('gully')) return false;
+            } else if (isGully) {
+              const rSport = (r.sport || r.sportId || '').toLowerCase();
+              const rTitle = (r.eventTitle || r.subEvent || '').toLowerCase();
+              if (!rSport.includes('gully') && !rTitle.includes('gully')) return false;
+            }
+
+            return true;
           })
         : [];
 

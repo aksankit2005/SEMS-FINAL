@@ -289,8 +289,15 @@ export const RegistrationPage = () => {
     if (!sortedCoordinatorEvents) return [];
     if (selectedSportFilter === 'All') return sortedCoordinatorEvents;
     const filterClean = selectedSportFilter.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const isFilterCricket = filterClean === 'cricket' && !filterClean.includes('gully');
+    const isFilterGully = filterClean.includes('gully');
+
     return sortedCoordinatorEvents.filter((evt) => {
       const sportClean = (evt.sportName || evt.title || evt.sportId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const isEvtGully = sportClean.includes('gully');
+      if (isFilterCricket && isEvtGully) return false;
+      if (isFilterGully && !isEvtGully) return false;
+
       return sportClean.includes(filterClean) || filterClean.includes(sportClean);
     });
   }, [sortedCoordinatorEvents, selectedSportFilter]);

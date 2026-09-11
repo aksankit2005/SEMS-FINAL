@@ -156,6 +156,12 @@ export const LiveMatchPortalPage = () => {
     if (filterValue === 'All') return true;
     const filterClean = filterValue.toLowerCase().replace(/[^a-z0-9]/g, '');
     const targetClean = (targetSportName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    const isFilterCricket = filterClean === 'cricket' && !filterClean.includes('gully');
+    const isTargetGully = targetClean.includes('gully');
+    if (isFilterCricket && isTargetGully) return false;
+    if (filterClean.includes('gully') && !isTargetGully) return false;
+
     return targetClean.includes(filterClean) || filterClean.includes(targetClean);
   };
 

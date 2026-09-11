@@ -20,10 +20,21 @@ export const TotalParticipationTab = ({ user, assignedSport, globalSearch = '' }
       const data = await coordinatorApi.getRegistrations();
       const cleanSportId = sportId.replace(/_/g, '-');
       const baseSportId = cleanSportId.split('-')[0];
+      const isStdCricket = cleanSportId === 'cricket' || (cleanSportId.includes('cricket') && !cleanSportId.includes('gully'));
+      const isGully = cleanSportId.includes('gully');
 
       const filteredBySport = (data || []).filter((d) => {
         const rSport = String(d.sport || d.sportId || d.sportName || '').toLowerCase().replace(/_/g, '-');
         const rEvent = String(d.eventTitle || d.eventType || '').toLowerCase().replace(/_/g, '-');
+
+        if (isStdCricket) {
+          if (rSport.includes('gully') || rEvent.includes('gully')) return false;
+          return rSport.includes('cricket') || rEvent.includes('cricket');
+        }
+        if (isGully) {
+          return rSport.includes('gully') || rEvent.includes('gully');
+        }
+
         return (
           rSport.includes(cleanSportId) ||
           rSport.includes(baseSportId) ||

@@ -170,12 +170,20 @@ export const SchedulePage = () => {
   const combinedList = dynamicSchedules;
 
   const filteredFixtures = combinedList.filter((item) => {
+    if (selectedSport === 'All') return true;
     const sportKey = (item.sport || item.sportId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     const selectedKey = selectedSport.toLowerCase().replace(/[^a-z0-9]/g, '');
-    return selectedSport === 'All' ||
+
+    const isSelectedCricket = selectedKey === 'cricket' && !selectedKey.includes('gully');
+    const isItemGully = sportKey.includes('gully');
+    if (isSelectedCricket && isItemGully) return false;
+    if (selectedKey.includes('gully') && !isItemGully) return false;
+
+    return (
       sportKey === selectedKey ||
       (sportKey.length > 2 && selectedKey.includes(sportKey)) ||
-      (selectedKey.length > 2 && sportKey.includes(selectedKey));
+      (selectedKey.length > 2 && sportKey.includes(selectedKey))
+    );
   });
 
   return (

@@ -18,12 +18,21 @@ export const CricketLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
   // Active live assignments cached in localstorage & synced to backend API
   const [liveAssignments, setLiveAssignments] = useState(() => {
     const cacheKey = `sems_active_live_matches_${assignedSport}`;
-    const saved = localStorage.getItem(cacheKey) || localStorage.getItem('sems_active_live_matches');
+    const saved = localStorage.getItem(cacheKey);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
-          return parsed;
+          const cricketOnly = {};
+          Object.keys(parsed).forEach((k) => {
+            const m = parsed[k];
+            const mSport = (m?.sport || m?.sportId || '').toLowerCase();
+            const mTitle = (m?.eventTitle || m?.title || '').toLowerCase();
+            if (!mSport.includes('gully') && !mTitle.includes('gully')) {
+              cricketOnly[k] = m;
+            }
+          });
+          return cricketOnly;
         }
       } catch (e) {}
     }
@@ -187,9 +196,13 @@ export const CricketLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
   };
 
   // Scheduled matches eligible for Go Live
-  const scheduledMatches = (matches || []).filter(
-    (m) => m && m.status !== 'COMPLETED' && m.status !== 'FINISHED'
-  );
+  const scheduledMatches = (matches || []).filter((m) => {
+    if (!m || m.status === 'COMPLETED' || m.status === 'FINISHED') return false;
+    const mSport = (m.sport || m.sportId || '').toLowerCase();
+    const mTitle = (m.eventTitle || m.title || '').toLowerCase();
+    if (mSport.includes('gully') || mTitle.includes('gully')) return false;
+    return true;
+  });
 
   return (
     <div className="space-y-6 animate-fade-in font-sans">

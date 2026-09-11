@@ -12,9 +12,13 @@ export const CricketMatchScheduleTab = ({ matches, user, onUpdateMatches, global
   const sportName = 'Cricket';
 
   // Active scheduled matches for Cricket
-  const scheduledMatches = (matches || []).filter(
-    (m) => m && m.status !== 'COMPLETED' && m.status !== 'FINISHED'
-  );
+  const scheduledMatches = (matches || []).filter((m) => {
+    if (!m || m.status === 'COMPLETED' || m.status === 'FINISHED') return false;
+    const mSport = (m.sport || m.sportId || '').toLowerCase();
+    const mTitle = (m.eventTitle || m.title || '').toLowerCase();
+    if (mSport.includes('gully') || mTitle.includes('gully')) return false;
+    return true;
+  });
 
   // Search filter
   const filteredMatches = scheduledMatches.filter((m) => {

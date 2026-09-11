@@ -46,8 +46,18 @@ export const GullyCricketCoordinatorPage = () => {
           coordinatorApi.getRegistrations(),
         ]);
         if (isMounted) {
-          setMatches(mList);
-          setRegistrations(rList);
+          const gullyMatches = (mList || []).filter((m) => {
+            const mSport = (m?.sport || m?.sportId || '').toLowerCase();
+            const mTitle = (m?.eventTitle || m?.title || '').toLowerCase();
+            return mSport.includes('gully') || mTitle.includes('gully');
+          });
+          const gullyRegs = (rList || []).filter((r) => {
+            const rSport = (r?.sport || r?.sportId || '').toLowerCase();
+            const rTitle = (r?.eventTitle || r?.eventName || '').toLowerCase();
+            return rSport.includes('gully') || rTitle.includes('gully');
+          });
+          setMatches(gullyMatches);
+          setRegistrations(gullyRegs);
         }
       } catch (err) {
         if (showLoading) addToast('Error loading Gully Cricket operations console', 'error');
