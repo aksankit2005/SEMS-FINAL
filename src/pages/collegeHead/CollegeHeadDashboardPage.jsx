@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Building2, Users, Trophy, Award, Search, Filter, 
-  FileDown, LogOut, ShieldCheck, Activity, CheckCircle2, 
+import {
+  Building2, Users, Trophy, Award, Search, Filter,
+  FileDown, LogOut, ShieldCheck, Activity, CheckCircle2,
   BarChart3, Layers, BookOpen, X, Phone, Calendar, Clock, KeyRound
 } from 'lucide-react';
 import { collegeHeadApi } from '../../services/collegeHeadApi';
@@ -73,8 +73,8 @@ export const CollegeHeadDashboardPage = () => {
       const rawList = Array.isArray(studentsRes?.students) ? studentsRes.students : [];
       setAllStudents(rawList);
 
-      const evList = Array.isArray(eventsRes) && eventsRes.length > 0 
-        ? eventsRes 
+      const evList = Array.isArray(eventsRes) && eventsRes.length > 0
+        ? eventsRes
         : (Array.isArray(studentsRes?.availableEvents) ? studentsRes.availableEvents : []);
       setBackendEvents(evList);
     } catch (err) {
@@ -99,7 +99,7 @@ export const CollegeHeadDashboardPage = () => {
   const availableEvents = useMemo(() => {
     if (!Array.isArray(backendEvents)) return [];
     const titlesSet = new Set();
-    
+
     backendEvents.forEach((ev) => {
       let t = '';
       let evSportId = '';
@@ -128,7 +128,7 @@ export const CollegeHeadDashboardPage = () => {
         } else if (isGully) {
           if (!tLower.includes('gully') && !evSportId.includes('gully') && !evSportName.includes('gully')) return;
         } else {
-          const matches = 
+          const matches =
             evSportId === sp ||
             evSportId.includes(sp) ||
             sp.includes(evSportId) ||
@@ -342,8 +342,8 @@ export const CollegeHeadDashboardPage = () => {
           </thead>
           <tbody>
             ${filteredStudents.map((s, idx) => {
-              const isCap = (s.isCaptain === true || s.isCaptain === 1 || s.isCaptain === 'true' || s.isCaptain === '1');
-              return `
+      const isCap = (s.isCaptain === true || s.isCaptain === 1 || s.isCaptain === 'true' || s.isCaptain === '1');
+      return `
               <tr>
                 <td>${idx + 1}</td>
                 <td><strong>${escapeHtml(s.regTime || '10:00 AM')}</strong><br><small style="color: #64748b;">${escapeHtml(s.regDate || '2026-08-10')}</small></td>
@@ -408,7 +408,7 @@ export const CollegeHeadDashboardPage = () => {
   return (
     <div className="min-h-screen bg-transparent text-[#211D2B] dark:text-[#F5F2FA] py-8 transition-colors font-spatial-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* COLLEGE HEAD WELCOME BANNER */}
         <div className="bg-[#FFFFFF] dark:bg-[#0D101A] rounded-3xl p-6 sm:p-8 mb-8 border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden backdrop-blur-xl">
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#7156A5]/5 dark:bg-[#8B5CF6]/5 rounded-full blur-3xl pointer-events-none"></div>
@@ -469,11 +469,10 @@ export const CollegeHeadDashboardPage = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                  isActive
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${isActive
                     ? 'bg-[#7156A5] dark:bg-[#8B5CF6] text-white shadow-md shadow-purple-500/20'
                     : 'text-[#686370] dark:text-[#AAA4B8] hover:bg-[#FAF9F6] dark:hover:bg-[#121625] hover:text-[#211D2B] dark:hover:text-[#F5F2FA]'
-                }`}
+                  }`}
               >
                 <Icon className="w-4 h-4" />
                 <span>{tab.label}</span>
@@ -559,7 +558,7 @@ export const CollegeHeadDashboardPage = () => {
         {/* ---------------------------------------------------- */}
         {activeTab === 'overview' && (
           <div className="space-y-8">
-            
+
             {/* Key Metrics Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-soft space-y-2">
@@ -649,10 +648,10 @@ export const CollegeHeadDashboardPage = () => {
         {/* ---------------------------------------------------- */}
         {activeTab === 'students' && (
           <div className="space-y-6">
-            
+
             {/* Search & Filter Controls */}
             <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-soft space-y-4">
-              
+
               {/* Search Bar on Top */}
               <div className="relative w-full">
                 <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
@@ -667,7 +666,7 @@ export const CollegeHeadDashboardPage = () => {
 
               {/* Responsive 4 Filters Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                
+
                 {/* 1. Filter by Game */}
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
@@ -855,13 +854,12 @@ export const CollegeHeadDashboardPage = () => {
                               {student.eventTitle || `${student.sportName} Championship`}
                             </div>
                             <div className="mt-1">
-                              <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border ${
-                                (student.matchFormat || '').toUpperCase() === 'TEAM'
+                              <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border ${(student.matchFormat || '').toUpperCase() === 'TEAM'
                                   ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
                                   : (student.matchFormat || '').toUpperCase() === 'DOUBLE'
-                                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                                  : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                              }`}>
+                                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                                    : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                                }`}>
                                 {student.matchFormat || 'Single'}
                               </span>
                             </div>
@@ -909,11 +907,10 @@ export const CollegeHeadDashboardPage = () => {
 
                           {/* 6. Gender */}
                           <td className="p-4 whitespace-nowrap">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1 ${
-                              student.gender === 'MALE'
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1 ${student.gender === 'MALE'
                                 ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
                                 : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                            }`}>
+                              }`}>
                               {student.gender === 'MALE' ? '♂ MALE' : '♀ FEMALE'}
                             </span>
                           </td>
@@ -955,12 +952,12 @@ export const CollegeHeadDashboardPage = () => {
 
                     {/* Simple ratio bar */}
                     <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden flex">
-                      <div 
-                        className="bg-blue-600 h-full" 
+                      <div
+                        className="bg-blue-600 h-full"
                         style={{ width: `${s.total > 0 ? (s.male / s.total) * 100 : 50}%` }}
                       ></div>
-                      <div 
-                        className="bg-indigo-400 h-full" 
+                      <div
+                        className="bg-indigo-400 h-full"
                         style={{ width: `${s.total > 0 ? (s.female / s.total) * 100 : 50}%` }}
                       ></div>
                     </div>

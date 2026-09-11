@@ -65,7 +65,7 @@ export const getCollegeAuthScope = async (user) => {
         collegeCode = colRes.rows[0].code;
         collegeName = colRes.rows[0].name;
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // 2. Lookup DB account by username if collegeId is not set
@@ -84,7 +84,7 @@ export const getCollegeAuthScope = async (user) => {
         collegeCode = row.code || row.college || collegeCode;
         collegeName = row.name || collegeName;
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // 3. Lookup college by code or name if collegeId still missing
@@ -99,7 +99,7 @@ export const getCollegeAuthScope = async (user) => {
         collegeCode = colRes.rows[0].code;
         collegeName = colRes.rows[0].name;
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // 4. Build exact canonical aliases for strict comparison (NO substring LIKE matches)
@@ -338,7 +338,7 @@ export const getDashboardStats = async (req, res) => {
         if (topSportRes && topSportRes.rows.length > 0) {
           topSport = (topSportRes.rows[0].sport_id || 'Sport').replace(/-/g, ' ').toUpperCase();
         }
-      } catch (e) {}
+      } catch (e) { }
 
       const medalRes = await queryDb(
         `SELECT gold_count AS "gold", silver_count AS "silver", bronze_count AS "bronze", total_points AS "totalPoints" 
@@ -358,7 +358,7 @@ export const getDashboardStats = async (req, res) => {
           topSport
         };
       }
-    } catch (e) {}
+    } catch (e) { }
 
     return res.json({
       college: collegeCode,
@@ -496,7 +496,7 @@ export const getStudents = async (req, res) => {
           }
         });
       }
-    } catch (crErr) {}
+    } catch (crErr) { }
 
     // Fallback to Prisma if database returned empty
     if (rawList.length === 0) {
@@ -790,7 +790,7 @@ export const getCollegeHeadEvents = async (req, res) => {
             }
           });
         }
-      } catch (pErr) {}
+      } catch (pErr) { }
     }
 
     return res.json({
@@ -937,7 +937,7 @@ export const getMedalSummary = async (req, res) => {
       if (topSportRes && topSportRes.rows.length > 0) {
         topSport = (topSportRes.rows[0].sport_id || 'Sport').replace(/-/g, ' ').toUpperCase();
       }
-    } catch (e) {}
+    } catch (e) { }
 
     const dbRes = await queryDb(
       `SELECT gold_count AS "gold", silver_count AS "silver", bronze_count AS "bronze", total_points AS "totalPoints" 
@@ -1031,7 +1031,7 @@ export const exportReport = async (req, res) => {
           totalPoints: Number(medalRes.rows[0].totalPoints || 0)
         };
       }
-    } catch (e) {}
+    } catch (e) { }
 
     return res.json({
       college: collegeCode,
@@ -1066,47 +1066,18 @@ export const changeCollegeHeadPassword = async (req, res) => {
   }
 
   try {
-    const userKey = (username || '').trim().toLowerCase();
-    
-    // Look up by username first (username is unique), fallback to ID safely
-    let user = null;
-    if (userKey) {
-      const dbResult = await queryDb(
-        'SELECT * FROM college_head_users WHERE LOWER(username) = $1',
-        [userKey]
-      );
-      if (dbResult && dbResult.rows.length > 0) {
-        user = dbResult.rows[0];
-      }
+    const userKey = (username || '').toLowerCase();
+    const dbResult = await queryDb(
+      'SELECT * FROM college_head_users WHERE LOWER(username) = $1 OR id = $2',
+      [userKey, userId || 0]
+    );
+
+    if (!dbResult || dbResult.rows.length === 0) {
+      return res.status(404).json({ message: 'College head account not found.' });
     }
 
-    if (!user && userId) {
-      const byIdResult = await queryDb(
-        'SELECT * FROM college_head_users WHERE CAST(id AS TEXT) = $1',
-        [String(userId)]
-      );
-      if (byIdResult && byIdResult.rows.length > 0) {
-        user = byIdResult.rows[0];
-      }
-    }
-
+    const user = dbResult.rows[0];
     const expectedPassword = headPasswords[userKey];
-
-    if (!user) {
-      // Check in-memory fallback
-      const memoryUser = inMemoryCollegeHeadUsers.find((u) => u.username.toLowerCase() === userKey);
-      if (!memoryUser) {
-        return res.status(404).json({ message: 'College head account not found.' });
-      }
-      
-      const isMemValid = expectedPassword && (currentPassword === expectedPassword);
-      if (!isMemValid) {
-        return res.status(400).json({ message: 'Current password is incorrect.' });
-      }
-
-      headPasswords[userKey] = trimmedNew;
-      return res.json({ success: true, message: 'Password updated successfully.' });
-    }
 
     let isValid = false;
     if (user.password_hash) {
@@ -1121,14 +1092,9 @@ export const changeCollegeHeadPassword = async (req, res) => {
 
     const hashed = await bcrypt.hash(trimmedNew, 10);
     await queryDb(
-      'UPDATE college_head_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [hashed, user.id]
+      'UPDATE college_head_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 OR LOWER(username) = $3',
+      [hashed, user.id, userKey]
     );
-
-    // Keep in-memory cache in sync as well
-    if (userKey && headPasswords[userKey]) {
-      headPasswords[userKey] = trimmedNew;
-    }
 
     logAuditEvent({
       userId: user.id,
