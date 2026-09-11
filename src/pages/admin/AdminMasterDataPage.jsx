@@ -167,17 +167,38 @@ export const AdminMasterDataPage = () => {
   // Available Coordinator Events matching selected sport
   const availableEvents = coordinatorEvents.filter((evt) => {
     if (selectedSport === 'ALL') return true;
-    return (evt.sportId || '').toLowerCase() === selectedSport.toLowerCase() ||
-           (evt.sportName || '').toLowerCase().includes(selectedSport.toLowerCase()) ||
-           selectedSport.toLowerCase().includes((evt.sportName || '').toLowerCase());
+    const eSportKey = (evt.sportId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const sSportKey = selectedSport.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const eSportName = (evt.sportName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return eSportKey === sSportKey || eSportName === sSportKey ||
+           eSportKey.includes(sSportKey) || sSportKey.includes(eSportKey) ||
+           (evt.sportName || '').toLowerCase().includes(selectedSport.toLowerCase());
   });
 
   // Filtered Master Participants - matching Super Coordinator view logic
   const filteredParticipants = participants.filter((p) => {
-    const matchesSport = selectedSport === 'ALL' ||
-      (p.sportId || '').toLowerCase() === selectedSport.toLowerCase() ||
-      (p.sportName || '').toLowerCase().includes(selectedSport.toLowerCase()) ||
-      selectedSport.toLowerCase().includes((p.sportName || '').toLowerCase());
+    const pSportKey = (p.sportId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const sSportKey = selectedSport.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const pSportName = (p.sportName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    const isStdCricket = sSportKey === 'cricket';
+    const isGully = sSportKey.includes('gully');
+
+    let matchesSport = selectedSport === 'ALL';
+    if (!matchesSport) {
+      if (isStdCricket) {
+        matchesSport = (pSportKey.includes('cricket') || pSportName.includes('cricket')) && !pSportKey.includes('gully') && !pSportName.includes('gully');
+      } else if (isGully) {
+        matchesSport = pSportKey.includes('gully') || pSportName.includes('gully');
+      } else {
+        matchesSport = pSportKey === sSportKey ||
+          pSportName === sSportKey ||
+          pSportKey.includes(sSportKey) ||
+          sSportKey.includes(pSportKey) ||
+          (p.sportName || '').toLowerCase().includes(selectedSport.toLowerCase()) ||
+          selectedSport.toLowerCase().includes((p.sportName || '').toLowerCase());
+      }
+    }
 
     const matchesEvent = selectedEvent === 'ALL' ||
       (p.eventTitle || '').toLowerCase().trim() === selectedEvent.toLowerCase().trim() ||

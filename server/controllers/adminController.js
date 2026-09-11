@@ -174,15 +174,16 @@ export const getMasterParticipants = async (req, res) => {
         m.id,
         m.id AS "memberId",
         r.id AS "registrationId",
-        cr.id AS "receiptId",
-        TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', m."createdAt")), 'HH12:MI AM') AS time,
-        TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', m."createdAt")), 'YYYY-MM-DD') AS date,
-        m."createdAt" AS "createdAt",
-        r."registrationType" AS "participationType",
-        COALESCE(cr.sport_id, r."sportId", s.slug, s.name, 'sport') AS "sportId",
-        COALESCE(s.name, cr.sport_id, r."sportId", 'Sport') AS "sportName",
+        COALESCE(cr.id, r.id::text) AS "receiptId",
+        TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', COALESCE(cr.created_at, r."createdAt", m."createdAt"))), 'HH12:MI AM') AS time,
+        TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', COALESCE(cr.created_at, r."createdAt", m."createdAt"))), 'YYYY-MM-DD') AS date,
+        COALESCE(cr.created_at, r."createdAt", m."createdAt") AS "createdAt",
+        COALESCE(r."registrationType", cr.participant_data->>'matchFormat', 'SINGLE') AS "participationType",
+        COALESCE(cr.sport_id, r."sportId"::text, s.slug, s.name, 'sport') AS "sportId",
+        COALESCE(s.name, cr.sport_id, r."sportId"::text, 'Sport') AS "sportName",
         COALESCE(cr.team_name, r."teamName", m."fullName") AS "teamName",
         COALESCE(cr.college, c.code, c.name, 'MPEC') AS college,
+        COALESCE(cr.participant_data->>'subEvent', cr.participant_data->>'athleticsEvent', cr.participant_data->>'gameName', NULL) AS "subEvent",
         COALESCE(cei.title, cr.participant_data->>'eventTitle', cr.participant_data->>'selectedEvent', cr.participant_data->>'subEvent', cr.participant_data->>'category', cr.participant_data->>'eventType', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb",
         cr.participant_data AS "participantData",
         m."fullName" AS name,
@@ -197,12 +198,11 @@ export const getMasterParticipants = async (req, res) => {
         COALESCE(cr.fee_paid, r.amount, 0) AS "feePaid"
       FROM registration_members m
       JOIN registrations r ON m."registrationId" = r.id
-      JOIN college_registrations cr ON (cr.registration_id = r.id OR cr.id::text = r.id::text OR cr.id::text = m."registrationId"::text)
+      LEFT JOIN college_registrations cr ON (cr.registration_id = r.id OR cr.id::text = r.id::text OR cr.id::text = m."registrationId"::text)
       LEFT JOIN coordinator_event_items cei ON (cei.id::text = cr.event_id::text OR cei.id::text = r."eventId"::text)
-      LEFT JOIN sports s ON s.slug = r."sportId" OR s.slug = cr.sport_id OR s.name = r."sportId"
-      LEFT JOIN colleges c ON c.id = r."collegeId"
-      WHERE cr.id IS NOT NULL
-      ORDER BY m."createdAt" DESC
+      LEFT JOIN sports s ON (s.slug = r."sportId"::text OR s.slug = cr.sport_id OR s.name = r."sportId"::text OR s.id::text = r."sportId"::text)
+      LEFT JOIN colleges c ON (c.id = r."collegeId" OR c.code = cr.college OR c.name = cr.college)
+      ORDER BY COALESCE(cr.created_at, m."createdAt") DESC
     `).catch((err) => {
       console.warn('Registration members join query error:', err.message);
       return null;
@@ -257,12 +257,29 @@ export const getMasterParticipants = async (req, res) => {
         }
 
         const sportKey = (row.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-');
-        const sportDisplayName = (row.sportName || 'Sport').replace(/-/g, ' ').toUpperCase();
+        let sportDisplayName = (row.sportName || 'Sport').replace(/-/g, ' ').toUpperCase();
         
-        // Priority for eventTitle: Exact coordinator created event title -> DB eventTitle -> APEX 2026 title
+        // Athletics subEvent handling
+        const isAthletics = sportKey.includes('athletics') || sportDisplayName.toLowerCase().includes('athletics');
+        let subEvent = row.subEvent || null;
+        if (isAthletics && !subEvent) {
+          const OFFICIAL = ['100m Race', '200m Race', '4*100m relay Race', 'Long Jump', 'Javelin Throw', 'Shot Put', 'Discus Throw'];
+          const searchStr = `${row.eventTitleFromDb || ''} ${row.teamName || ''}`;
+          const found = OFFICIAL.find((o) => searchStr.toLowerCase().includes(o.toLowerCase()));
+          if (found) subEvent = found;
+          if (!subEvent) subEvent = '100m Race';
+        }
+
+        if (isAthletics && subEvent) {
+          sportDisplayName = `ATHLETICS (${subEvent.toUpperCase()})`;
+        }
+
+        // Priority for eventTitle: Athletics subEvent -> Exact coordinator created event title -> DB eventTitle -> APEX 2026 title
         const matchedCoordTitle = coordEventMap.get(sportKey) || coordEventMap.get((row.sportId || '').toLowerCase());
         let displayEventTitle = row.eventTitleFromDb;
-        if (!displayEventTitle || displayEventTitle.toLowerCase().endsWith('championship')) {
+        if (isAthletics && subEvent) {
+          displayEventTitle = `Athletics - ${subEvent}`;
+        } else if (!displayEventTitle || displayEventTitle.toLowerCase().endsWith('championship')) {
           displayEventTitle = matchedCoordTitle || `APEX ${sportDisplayName} 2026`;
         }
 
@@ -276,6 +293,7 @@ export const getMasterParticipants = async (req, res) => {
           createdAt: row.createdAt,
           sportId: sportKey,
           sportName: sportDisplayName,
+          subEvent: subEvent || 'N/A',
           eventTitle: displayEventTitle,
           participationType: resolvedPartType,
           teamName: row.teamName || row.name || 'Participant',
@@ -302,11 +320,14 @@ export const getMasterParticipants = async (req, res) => {
         TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', cr.created_at)), 'HH12:MI AM') AS time,
         TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', cr.created_at)), 'YYYY-MM-DD') AS date,
         cr.created_at AS "createdAt",
-        cr.sport_id AS "sportId",
+        COALESCE(cr.sport_id, 'sport') AS "sportId",
+        COALESCE(s.name, cr.sport_id, 'Sport') AS "sportName",
         cr.student_name AS "name",
+        cr.enrollment_no AS "rollNo",
         cr.team_name AS "teamName",
-        cr.college,
-        cr.department,
+        COALESCE(cr.college, 'MPEC') AS college,
+        cr.department AS course,
+        'N/A' AS "yearSemester",
         cr.email,
         cr.phone AS mobile,
         cr.gender,
@@ -314,9 +335,11 @@ export const getMasterParticipants = async (req, res) => {
         cr.fee_paid AS "feePaid",
         cr.members_count AS "membersCount",
         cr.participant_data AS "participantData",
+        COALESCE(cr.participant_data->>'subEvent', cr.participant_data->>'athleticsEvent', cr.participant_data->>'gameName', NULL) AS "subEvent",
         COALESCE(cei.title, cr.participant_data->>'eventTitle', cr.participant_data->>'selectedEvent', cr.participant_data->>'subEvent', cr.participant_data->>'category', cr.participant_data->>'eventType', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb"
       FROM college_registrations cr
       LEFT JOIN coordinator_event_items cei ON cei.id::text = cr.event_id::text
+      LEFT JOIN sports s ON (s.slug = cr.sport_id OR s.name = cr.sport_id OR s.id::text = cr.sport_id)
       ORDER BY cr.created_at DESC
     `).catch(() => null);
 
@@ -341,11 +364,27 @@ export const getMasterParticipants = async (req, res) => {
           }
 
           const sportKey = (row.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-');
-          const sportDisplayName = (row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase();
+          let sportDisplayName = (row.sportName || row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase();
+
+          const isAthletics = sportKey.includes('athletics') || sportDisplayName.toLowerCase().includes('athletics');
+          let subEvent = row.subEvent || null;
+          if (isAthletics && !subEvent) {
+            const OFFICIAL = ['100m Race', '200m Race', '4*100m relay Race', 'Long Jump', 'Javelin Throw', 'Shot Put', 'Discus Throw'];
+            const searchStr = `${row.eventTitleFromDb || ''} ${row.teamName || ''}`;
+            const found = OFFICIAL.find((o) => searchStr.toLowerCase().includes(o.toLowerCase()));
+            if (found) subEvent = found;
+            if (!subEvent) subEvent = '100m Race';
+          }
+
+          if (isAthletics && subEvent) {
+            sportDisplayName = `ATHLETICS (${subEvent.toUpperCase()})`;
+          }
           
           const matchedCoordTitle = coordEventMap.get(sportKey) || coordEventMap.get((row.sportId || '').toLowerCase());
           let displayEventTitle = row.eventTitleFromDb;
-          if (!displayEventTitle || displayEventTitle.toLowerCase().endsWith('championship')) {
+          if (isAthletics && subEvent) {
+            displayEventTitle = `Athletics - ${subEvent}`;
+          } else if (!displayEventTitle || displayEventTitle.toLowerCase().endsWith('championship')) {
             displayEventTitle = matchedCoordTitle || `APEX ${sportDisplayName} 2026`;
           }
 
@@ -359,6 +398,7 @@ export const getMasterParticipants = async (req, res) => {
             createdAt: row.createdAt,
             sportId: sportKey,
             sportName: sportDisplayName,
+            subEvent: subEvent || 'N/A',
             eventTitle: displayEventTitle,
             participationType: resolvedPartType,
             teamName: row.teamName || row.name || 'Participant',
