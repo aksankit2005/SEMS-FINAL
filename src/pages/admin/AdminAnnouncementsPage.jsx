@@ -129,6 +129,37 @@ export const AdminAnnouncementsPage = () => {
     }
   };
 
+  const handleViewPdf = (pdf) => {
+    if (!pdf || !pdf.url || pdf.url === '#') return;
+    const url = pdf.url;
+    if (url.startsWith('data:application/pdf') || url.startsWith('data:')) {
+      try {
+        const parts = url.split(',');
+        const base64Str = parts[1] || parts[0];
+        const binaryStr = atob(base64Str);
+        const len = binaryStr.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'application/pdf' });
+        const blobUrl = URL.createObjectURL(blob);
+        const newWin = window.open(blobUrl, '_blank');
+        if (newWin) newWin.focus();
+      } catch (e) {
+        console.warn('Blob conversion error, falling back to direct window.open', e);
+        window.open(url, '_blank');
+      }
+    } else {
+      window.open(url, '_blank');
+    }
+  };
+
+  const filteredAnnouncements = (announcements || []).filter((a) => {
+    if (selectedCategory === 'All') return true;
+    return (a.category || 'Schedule') === selectedCategory;
+  });
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
