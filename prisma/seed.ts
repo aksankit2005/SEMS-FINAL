@@ -65,11 +65,29 @@ async function main() {
     create: { username: "pr_admin", passwordHash, role: "pr_coordinator", name: "PR Admin" },
   });
 
-  await prisma.collegeHeadAccount.upsert({
-    where: { username: "head_mpec" },
-    update: { passwordHash, college: "MPEC", facultyName: "Dr. Rajesh Sharma", collegeId: mpec.id },
-    create: { username: "head_mpec", passwordHash, college: "MPEC", facultyName: "Dr. Rajesh Sharma", collegeId: mpec.id },
-  });
+  const collegeRecords = await prisma.college.findMany();
+  const collegeMap = new Map(collegeRecords.map(c => [c.code, c.id]));
+
+  const collegeHeadAccounts = [
+    { username: "head_mpec", college: "MPEC", facultyName: "Mr. Kaushal Maurya", email: "head.mpec@mpgi.edu.in" },
+    { username: "head_mips", college: "MIPS", facultyName: "Mr. Sushil Kushwaha", email: "head.mips@mpgi.edu.in" },
+    { username: "head_mpcps", college: "MPCPS (KN142)", facultyName: "Rahul Kumar", email: "head.mpcps@mpgi.edu.in" },
+    { username: "head_mpcps_bpharm", college: "MPCPS (BPharmacy)", facultyName: "Vinay Tiwari", email: "head.mpcps.bpharm@mpgi.edu.in" },
+    { username: "head_mpcp", college: "MPCP", facultyName: "Anuj Kumar Sonker", email: "head.mpcp@mpgi.edu.in" },
+    { username: "head_mpdc", college: "MPDC", facultyName: "Dr. Himanshu Gupta", email: "head.mpdc@mpgi.edu.in" },
+    { username: "head_mpcnps", college: "MPCN&PS", facultyName: "Saurabh Pratap Singh", email: "head.mpcnps@mpgi.edu.in" },
+    { username: "head_mpamc", college: "MPAMC", facultyName: "Dr Rahul Sharma", email: "head.mpamc@mpgi.edu.in" },
+    { username: "head_mpcams", college: "MPCAMS", facultyName: "Prof. Sanjay Saxena", email: "head.mpcams@mpgi.edu.in" },
+  ];
+
+  for (const h of collegeHeadAccounts) {
+    const colId = collegeMap.get(h.college) || null;
+    await prisma.collegeHeadAccount.upsert({
+      where: { username: h.username },
+      update: { passwordHash, college: h.college, facultyName: h.facultyName, collegeId: colId, email: h.email, status: "active" },
+      create: { username: h.username, passwordHash, college: h.college, facultyName: h.facultyName, collegeId: colId, email: h.email, status: "active" },
+    });
+  }
 
   for (const account of [
     ["coord_cricket", "cricket", "Cricket", "Cricket Coordinator"],
