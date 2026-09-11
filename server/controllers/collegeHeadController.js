@@ -1046,3 +1046,103 @@ export const exportReport = async (req, res) => {
     return res.status(500).json({ message: 'Error exporting report' });
   }
 };
+
+export const changeCollegeHeadPassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const username = req.user?.username;
+  const userId = req.user?.id;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ message: 'Current password and new password are required.' });
+  }
+
+  const trimmedNew = newPassword.trim();
+  if (trimmedNew.length < 6) {
+    return res.status(400).json({ message: 'New password must be at least 6 characters long.' });
+  }
+
+  if (currentPassword === trimmedNew) {
+    return res.status(400).json({ message: 'New password must be different from current password.' });
+  }
+
+  try {
+    const userKey = (username || '').trim().toLowerCase();
+    
+    // Look up by username first (username is unique), fallback to ID safely
+    let user = null;
+    if (userKey) {
+      const dbResult = await queryDb(
+        'SELECT * FROM college_head_users WHERE LOWER(username) = $1',
+        [userKey]
+      );
+      if (dbResult && dbResult.rows.length > 0) {
+        user = dbResult.rows[0];
+      }
+    }
+
+    if (!user && userId) {
+      const byIdResult = await queryDb(
+        'SELECT * FROM college_head_users WHERE CAST(id AS TEXT) = $1',
+        [String(userId)]
+      );
+      if (byIdResult && byIdResult.rows.length > 0) {
+        user = byIdResult.rows[0];
+      }
+    }
+
+    const expectedPassword = headPasswords[userKey];
+
+    if (!user) {
+      // Check in-memory fallback
+      const memoryUser = inMemoryCollegeHeadUsers.find((u) => u.username.toLowerCase() === userKey);
+      if (!memoryUser) {
+        return res.status(404).json({ message: 'College head account not found.' });
+      }
+      
+      const isMemValid = expectedPassword && (currentPassword === expectedPassword);
+      if (!isMemValid) {
+        return res.status(400).json({ message: 'Current password is incorrect.' });
+      }
+
+      headPasswords[userKey] = trimmedNew;
+      return res.json({ success: true, message: 'Password updated successfully.' });
+    }
+
+    let isValid = false;
+    if (user.password_hash) {
+      isValid = await bcrypt.compare(currentPassword, user.password_hash);
+    } else if (expectedPassword) {
+      isValid = (currentPassword === expectedPassword);
+    }
+
+    if (!isValid) {
+      return res.status(400).json({ message: 'Current password is incorrect.' });
+    }
+
+    const hashed = await bcrypt.hash(trimmedNew, 10);
+    await queryDb(
+      'UPDATE college_head_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [hashed, user.id]
+    );
+
+    // Keep in-memory cache in sync as well
+    if (userKey && headPasswords[userKey]) {
+      headPasswords[userKey] = trimmedNew;
+    }
+
+    logAuditEvent({
+      userId: user.id,
+      actorName: user.username,
+      role: 'COLLEGE_HEAD',
+      action: 'Password Changed',
+      entity: `College Head: ${user.username} (${user.college})`,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    });
+
+    return res.json({ success: true, message: 'Password updated successfully.' });
+  } catch (err) {
+    console.error('Error changing college head password:', err.message);
+    return res.status(500).json({ message: 'Failed to update password in database.' });
+  }
+};
+

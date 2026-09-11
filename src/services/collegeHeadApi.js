@@ -138,5 +138,22 @@ export const collegeHeadApi = {
       console.warn('Live events fetch error:', err.message);
       return [];
     }
+  },
+
+  // Self-Service Change Password for authenticated College Head
+  async changePassword(currentPassword, newPassword) {
+    try {
+      const res = await api.post('/college-head/change-password', {
+        currentPassword,
+        newPassword
+      });
+      return res.data;
+    } catch (err) {
+      if (err.response) {
+        throw new Error(err.response.data?.message || 'Failed to update password.');
+      }
+      throw new Error(err.message || 'Network error while updating password.');
+    }
   }
 };
+

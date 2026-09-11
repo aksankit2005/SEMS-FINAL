@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Building2, Users, Trophy, Award, Search, Filter, 
   FileDown, LogOut, ShieldCheck, Activity, CheckCircle2, 
-  BarChart3, Layers, BookOpen, X, Phone, Calendar, Clock
+  BarChart3, Layers, BookOpen, X, Phone, Calendar, Clock, KeyRound
 } from 'lucide-react';
 import { collegeHeadApi } from '../../services/collegeHeadApi';
 import { ALL_12_SPORTS } from '../../services/superCoordinatorApi';
 import { useToast } from '../../context/ToastContext';
 import { exportToCSV } from '../../utils/pdfExporter';
 import { getParticipationType } from '../../utils/rosterHelper';
+import { CollegeHeadChangePasswordModal } from '../../components/collegeHead/CollegeHeadChangePasswordModal';
 
 export const CollegeHeadDashboardPage = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ export const CollegeHeadDashboardPage = () => {
 
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'students' | 'sports' | 'medals' | 'reports'
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   const [stats, setStats] = useState(null);
   const [allStudents, setAllStudents] = useState([]);
@@ -434,6 +436,13 @@ export const CollegeHeadDashboardPage = () => {
           </div>
 
           <div className="flex items-center gap-3 z-10">
+            <button
+              onClick={() => setIsPasswordModalOpen(true)}
+              className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-[#211D2B] dark:text-[#F5F2FA] font-bold text-xs flex items-center gap-2 shadow-xs transition-all border border-slate-200 dark:border-slate-700 cursor-pointer"
+            >
+              <KeyRound className="w-4 h-4 text-[#7156A5] dark:text-[#8B5CF6]" />
+              <span>Change Password</span>
+            </button>
             <button
               onClick={handleLogout}
               className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer"
@@ -1028,6 +1037,14 @@ export const CollegeHeadDashboardPage = () => {
         )}
 
       </div>
+
+      {/* CHANGE PASSWORD MODAL */}
+      <CollegeHeadChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+        username={user.username}
+        college={user.college}
+      />
     </div>
   );
 };
