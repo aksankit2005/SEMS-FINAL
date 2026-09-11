@@ -318,8 +318,8 @@ export const CollegeHeadDashboardPage = () => {
     const exportData = filteredStudents.map((s, idx) => ({
       'S.No.': idx + 1,
       'Reg Time': s.regTime || '10:00 AM',
-      'Reg Date': s.regDate || '2026-08-10',
-      'Game': s.sportName || 'N/A',
+      'Game': s.subEvent && s.subEvent !== 'N/A' ? `Athletics (${s.subEvent})` : (s.sportName || 'N/A'),
+      'Sub Event': s.subEvent && s.subEvent !== 'N/A' ? s.subEvent : 'N/A',
       'Event Title': s.eventTitle || `${s.sportName || 'Sport'} Championship`,
       'Match Format': s.matchFormat || 'Team',
       'Team Name': s.teamName || 'Individual',

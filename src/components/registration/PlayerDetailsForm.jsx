@@ -109,6 +109,7 @@ export const PlayerDetailsForm = ({
       ...prev,
       selectedEvents: [eventName],
       subEvent: eventName,
+      athleticsEvent: eventName,
       entryFee: fee !== undefined ? fee : prev.entryFee
     }));
 

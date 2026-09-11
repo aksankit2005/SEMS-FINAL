@@ -419,7 +419,7 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
       (p.name || p.captainName || '').toLowerCase().includes(q) ||
       (p.collegeName || '').toLowerCase().includes(q) ||
       (p.rollNo || '').toLowerCase().includes(q) ||
-      (p.selectedEvent || p.event || '').toLowerCase().includes(q)
+      (p.subEvent || p.selectedEvent || p.event || (p.selectedEvents && p.selectedEvents[0]) || '').toLowerCase().includes(q)
     );
   });
 
@@ -428,7 +428,7 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
     const exportData = filteredParticipants.map((p, idx) => ({
       'S.No': idx + 1,
       'Athlete Name': p.name || p.captainName || 'N/A',
-      'Sub-Event': p.selectedEvent || p.event || 'Athletics',
+      'Sub-Event': p.subEvent || p.selectedEvent || p.event || (p.selectedEvents && p.selectedEvents[0]) || '100m Race',
       'College Name': p.collegeName || 'N/A',
       'Roll No / Reg ID': p.rollNo || 'N/A',
       'Phone': p.phone || p.captainPhone || 'N/A',
@@ -1092,7 +1092,7 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
                           <tr key={p.id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
                             <td className="p-3 font-mono font-bold text-slate-400">{idx + 1}</td>
                             <td className="p-3 font-bold text-slate-900 dark:text-white">{p.name || p.captainName || 'N/A'}</td>
-                            <td className="p-3 font-mono font-bold text-blue-600 dark:text-blue-400">{p.selectedEvent || p.event || (p.selectedEvents && p.selectedEvents[0]) || 'Athletics'}</td>
+                            <td className="p-3 font-mono font-bold text-blue-600 dark:text-blue-400">{p.subEvent || p.selectedEvent || p.event || (p.selectedEvents && p.selectedEvents[0]) || '100m Race'}</td>
                             <td className="p-3 font-semibold text-slate-700 dark:text-slate-300">{p.collegeName || p.college || 'N/A'}</td>
                             <td className="p-3 text-slate-500 font-medium text-xs">{relayText}</td>
                           </tr>

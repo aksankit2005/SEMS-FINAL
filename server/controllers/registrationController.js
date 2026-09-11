@@ -459,6 +459,17 @@ export const registerPublicEvent = async (req, res) => {
           });
         }
 
+        const isAthletics = (newRegRecord.sportId || targetSportId || sportId || '').toLowerCase().includes('athletics');
+        const enrichedParticipantData = { ...(participantData || {}) };
+        if (isAthletics) {
+          const sub = enrichedParticipantData.subEvent || enrichedParticipantData.athleticsEvent || (Array.isArray(enrichedParticipantData.selectedEvents) ? enrichedParticipantData.selectedEvents[0] : null) || '100m Race';
+          enrichedParticipantData.subEvent = sub;
+          enrichedParticipantData.athleticsEvent = sub;
+          enrichedParticipantData.selectedEvents = [sub];
+          enrichedParticipantData.gameName = sub;
+          enrichedParticipantData.eventTitle = `Athletics (${sub})`;
+        }
+
         await tx.collegeRegistration.create({
           data: {
             id: receiptId,
@@ -478,7 +489,7 @@ export const registerPublicEvent = async (req, res) => {
             paymentId: newRegRecord.paymentId || paymentTxnId,
             paymentStatus: newRegRecord.paymentStatus || 'PAID',
             membersCount: rosterList.length || 1,
-            participantData: participantData || {},
+            participantData: enrichedParticipantData,
           },
         });
       },

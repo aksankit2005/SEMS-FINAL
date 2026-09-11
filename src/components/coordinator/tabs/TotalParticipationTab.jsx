@@ -99,24 +99,31 @@ export const TotalParticipationTab = ({ user, assignedSport, globalSearch = '' }
       return;
     }
 
-    const exportData = flattenedAthletes.map((p, idx) => ({
-      'S.No.': idx + 1,
-      'Registration ID': p.registrationId || 'N/A',
-      'Timestamp': p.timestamp || 'N/A',
-      'Participation Type': p.participationType || 'INDIVIDUAL',
-      'Game Name': p.sport || sportName,
-      'Team Name': p.teamName || 'Individual',
-      'College Name': p.collegeName || 'N/A',
-      'Player Name': p.name || 'N/A',
-      'Role': p.role || (p.isCaptain ? 'Captain' : 'Player'),
-      'Roll No': p.rollNo || 'N/A',
-      'Mobile No': p.phone || 'N/A',
-      'Email': p.email || 'N/A',
-      'Gender': p.gender || 'Male',
-      'Course': p.course || 'N/A',
-      'Year / Semester': p.yearSemester || 'N/A',
-      'Status': p.status || 'VERIFIED'
-    }));
+    const exportData = flattenedAthletes.map((p, idx) => {
+      const isAthletics = (p.sport || sportName || '').toLowerCase().includes('athletics');
+      const resolvedGame = p.subEvent || p.athleticsEvent;
+      const gameDisplayName = isAthletics && resolvedGame ? `Athletics (${resolvedGame})` : (p.sport || sportName);
+
+      return {
+        'S.No.': idx + 1,
+        'Registration ID': p.registrationId || 'N/A',
+        'Timestamp': p.timestamp || 'N/A',
+        'Participation Type': p.participationType || 'INDIVIDUAL',
+        'Game Name': gameDisplayName,
+        'Sub Event': resolvedGame || 'N/A',
+        'Team Name': p.teamName || 'Individual',
+        'College Name': p.collegeName || 'N/A',
+        'Player Name': p.name || 'N/A',
+        'Role': p.role || (p.isCaptain ? 'Captain' : 'Player'),
+        'Roll No': p.rollNo || 'N/A',
+        'Mobile No': p.phone || 'N/A',
+        'Email': p.email || 'N/A',
+        'Gender': p.gender || 'Male',
+        'Course': p.course || 'N/A',
+        'Year / Semester': p.yearSemester || 'N/A',
+        'Status': p.status || 'VERIFIED'
+      };
+    });
 
     exportToCSV(exportData, `${sportName.replace(/\s+/g, '_')}_Official_Roster_${new Date().toISOString().split('T')[0]}`);
     addToast(`${sportName} official roster exported to CSV successfully!`, 'success');
@@ -216,9 +223,16 @@ export const TotalParticipationTab = ({ user, assignedSport, globalSearch = '' }
                       {p.timestamp}
                     </td>
                     <td className="p-4 whitespace-nowrap">
-                      <span className="px-2.5 py-0.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold text-[11px]">
-                        {p.sport || sportName}
-                      </span>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="px-2.5 py-0.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold text-[11px] inline-block w-max">
+                          {p.subEvent ? `Athletics (${p.subEvent})` : (p.sport || sportName)}
+                        </span>
+                        {p.subEvent && (
+                          <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                            🎯 {p.subEvent}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="p-4 font-black text-slate-900 dark:text-white whitespace-nowrap">
                       {p.teamName || 'Individual'}

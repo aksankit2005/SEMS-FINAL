@@ -400,6 +400,7 @@ export const getStudents = async (req, res) => {
         COALESCE(cr.college, c.code, 'MPEC') AS college,
         COALESCE(cr.status, r.status::text, 'VERIFIED') AS status,
         COALESCE(cr.event_id, 'APEX-2026') AS "eventType",
+        COALESCE(cr.participant_data->>'subEvent', cr.participant_data->>'athleticsEvent', cr.participant_data->>'gameName', NULL) AS "subEvent",
         TO_CHAR(COALESCE(cr.created_at, m."createdAt") AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM-DD') AS "regDate",
         TO_CHAR(COALESCE(cr.created_at, m."createdAt") AT TIME ZONE 'Asia/Kolkata', 'HH12:MI AM') AS "regTime",
         m."createdAt" AS "createdAt"
@@ -429,6 +430,23 @@ export const getStudents = async (req, res) => {
         const rawGen = (s.gender || '').toUpperCase().trim();
         const normalizedGender = (rawGen.includes('FEM') || rawGen.includes('GIRL') || rawGen.includes('WOM')) ? 'FEMALE' : 'MALE';
 
+        const isAthletics = (s.sportId || '').toLowerCase().includes('athletics') || (s.sportName || '').toLowerCase().includes('athletics');
+        let subEvent = s.subEvent || null;
+        if (isAthletics && !subEvent) {
+          const OFFICIAL = ['100m Race', '200m Race', '4*100m relay Race', 'Long Jump', 'Javelin Throw', 'Shot Put', 'Discus Throw'];
+          const searchStr = `${s.eventTitle || ''} ${s.teamName || ''}`;
+          const found = OFFICIAL.find((o) => searchStr.toLowerCase().includes(o.toLowerCase()));
+          if (found) subEvent = found;
+          if (!subEvent) subEvent = '100m Race';
+        }
+
+        const displaySportName = isAthletics && subEvent 
+          ? `ATHLETICS (${subEvent.toUpperCase()})` 
+          : (s.sportName || 'Sport').replace(/-/g, ' ').toUpperCase();
+        const displayEventTitle = isAthletics && subEvent
+          ? `Athletics - ${subEvent}`
+          : (s.eventTitle || `${displaySportName} Championship`);
+
         return {
           id: s.id,
           studentName: s.studentName,
@@ -442,8 +460,9 @@ export const getStudents = async (req, res) => {
           isCaptain: (s.isCaptain === true || s.isCaptain === 1 || s.isCaptain === 'true' || s.isCaptain === '1'),
           membersCount: Number(s.membersCount || 1),
           sportId: (s.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
-          sportName: (s.sportName || 'Sport').replace(/-/g, ' ').toUpperCase(),
-          eventTitle: s.eventTitle || `${(s.sportName || 'Sport').replace(/-/g, ' ').toUpperCase()} Championship`,
+          sportName: displaySportName,
+          subEvent: subEvent || 'N/A',
+          eventTitle: displayEventTitle,
           matchFormat: s.matchFormat || 'Team',
           teamName: s.teamName || 'Individual',
           college: s.college || 'MPEC',
@@ -465,6 +484,11 @@ export const getStudents = async (req, res) => {
         const rawGen = (r.gender || '').toUpperCase().trim();
         const normalizedGender = (rawGen.includes('FEM') || rawGen.includes('GIRL') || rawGen.includes('WOM')) ? 'FEMALE' : 'MALE';
 
+        const isAthletics = (r.sportId || '').toLowerCase().includes('athletics');
+        const subEvent = r.participantData?.subEvent || r.participantData?.athleticsEvent || (isAthletics ? '100m Race' : null);
+        const displaySportName = isAthletics && subEvent ? `ATHLETICS (${subEvent.toUpperCase()})` : (r.sportId || 'Sport').replace(/-/g, ' ').toUpperCase();
+        const displayEventTitle = isAthletics && subEvent ? `Athletics - ${subEvent}` : (r.participantData?.eventTitle || r.participantData?.eventName || `${displaySportName} Championship`);
+
         return {
           id: r.id,
           studentName: r.studentName,
@@ -478,8 +502,9 @@ export const getStudents = async (req, res) => {
           isCaptain: true,
           membersCount: Number(r.membersCount || 1),
           sportId: (r.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
-          sportName: (r.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
-          eventTitle: r.participantData?.eventTitle || r.participantData?.eventName || `${(r.sportId || 'Sport').replace(/-/g, ' ').toUpperCase()} Championship`,
+          sportName: displaySportName,
+          subEvent: subEvent || 'N/A',
+          eventTitle: displayEventTitle,
           matchFormat: r.participantData?.matchFormat || (r.teamName ? 'Team' : 'Single'),
           teamName: r.teamName || 'Individual',
           college: r.college || 'MPEC',

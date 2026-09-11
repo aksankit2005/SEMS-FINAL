@@ -1672,12 +1672,54 @@ export const getRegistrations = async (req, res) => {
             const participationType = normalizeParticipationType(r, r.sportId || sportId);
             const isDoubles = participationType === 'DUO';
 
+            const pData = r.participantData || {};
+            const isAthletics = (r.sportId || '').toLowerCase().includes('athletics');
+            let athleticsSubEvent = null;
+            if (isAthletics) {
+              athleticsSubEvent = 
+                pData.subEvent || 
+                pData.athleticsEvent || 
+                (Array.isArray(pData.selectedEvents) ? pData.selectedEvents[0] : (typeof pData.selectedEvents === 'string' ? pData.selectedEvents : null)) ||
+                pData.gameName;
+
+              const OFFICIAL = ['100m Race', '200m Race', '4*100m relay Race', 'Long Jump', 'Javelin Throw', 'Shot Put', 'Discus Throw'];
+              if (!athleticsSubEvent && r.eventTitleFromDb) {
+                const found = OFFICIAL.find(o => r.eventTitleFromDb.toLowerCase().includes(o.toLowerCase()));
+                if (found) athleticsSubEvent = found;
+              }
+              if (!athleticsSubEvent && r.teamName) {
+                const found = OFFICIAL.find(o => r.teamName.toLowerCase().includes(o.toLowerCase()));
+                if (found) athleticsSubEvent = found;
+              }
+              if (!athleticsSubEvent) {
+                athleticsSubEvent = '100m Race';
+              }
+            }
+
+            const selectedEvents = athleticsSubEvent 
+              ? [athleticsSubEvent] 
+              : (Array.isArray(pData.selectedEvents) ? pData.selectedEvents : (pData.selectedEvents ? [pData.selectedEvents] : []));
+            const displaySport = isAthletics && athleticsSubEvent 
+              ? `Athletics (${athleticsSubEvent})` 
+              : (r.sportId ? (r.sportId.charAt(0).toUpperCase() + r.sportId.slice(1).replace(/-/g, ' ')) : 'Sport');
+            const displayEvent = isAthletics && athleticsSubEvent
+              ? `Athletics - ${athleticsSubEvent}`
+              : (r.eventTitleFromDb || `${(r.sportId || 'Sport').replace(/-/g, ' ').toUpperCase()} Championship`);
+
             return {
               id: r.id,
               receiptId: r.id,
               eventId: r.eventId,
               sportId: r.sportId,
-              eventTitle: r.eventTitleFromDb || `${(r.sportId || 'Sport').replace(/-/g, ' ').toUpperCase()} Championship`,
+              sport: displaySport,
+              sportName: displaySport,
+              gameName: athleticsSubEvent || r.sportId || 'Sport',
+              subEvent: athleticsSubEvent || '',
+              athleticsEvent: athleticsSubEvent || '',
+              selectedEvents,
+              event: displayEvent,
+              eventTitle: displayEvent,
+              participantData: pData,
               participationType,
               category: isDoubles ? 'DOUBLES' : (participationType === 'TEAM' ? 'TEAM' : 'SINGLES'),
               studentName: r.studentName,
@@ -1803,11 +1845,47 @@ export const getRegistrations = async (req, res) => {
 
         const isDoubles = !!player2 || (r.sportId && r.sportId.toLowerCase().includes('doubles')) || (r.teamName && r.teamName.trim().length > 0);
 
+        const pData = r.participantData || {};
+        const isAthletics = (r.sportId || '').toLowerCase().includes('athletics');
+        let athleticsSubEvent = null;
+        if (isAthletics) {
+          athleticsSubEvent = 
+            pData.subEvent || 
+            pData.athleticsEvent || 
+            (Array.isArray(pData.selectedEvents) ? pData.selectedEvents[0] : (typeof pData.selectedEvents === 'string' ? pData.selectedEvents : null)) ||
+            pData.gameName;
+
+          const OFFICIAL = ['100m Race', '200m Race', '4*100m relay Race', 'Long Jump', 'Javelin Throw', 'Shot Put', 'Discus Throw'];
+          if (!athleticsSubEvent && r.teamName) {
+            const found = OFFICIAL.find(o => r.teamName.toLowerCase().includes(o.toLowerCase()));
+            if (found) athleticsSubEvent = found;
+          }
+          if (!athleticsSubEvent) {
+            athleticsSubEvent = '100m Race';
+          }
+        }
+
+        const displaySport = isAthletics && athleticsSubEvent 
+          ? `Athletics (${athleticsSubEvent})` 
+          : (r.sportId ? (r.sportId.charAt(0).toUpperCase() + r.sportId.slice(1).replace(/-/g, ' ')) : 'Sport');
+        const displayEvent = isAthletics && athleticsSubEvent
+          ? `Athletics - ${athleticsSubEvent}`
+          : `${(r.sportId || 'Sport').replace(/-/g, ' ').toUpperCase()} Championship`;
+
         return {
           id: r.id,
           receiptId: r.id,
           eventId: r.eventId,
           sportId: r.sportId,
+          sport: displaySport,
+          sportName: displaySport,
+          gameName: athleticsSubEvent || r.sportId || 'Sport',
+          subEvent: athleticsSubEvent || '',
+          athleticsEvent: athleticsSubEvent || '',
+          selectedEvents: athleticsSubEvent ? [athleticsSubEvent] : [],
+          event: displayEvent,
+          eventTitle: displayEvent,
+          participantData: pData,
           category: isDoubles ? 'DOUBLES' : 'SINGLES',
           studentName: r.studentName,
           name: r.studentName,
