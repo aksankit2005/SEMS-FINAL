@@ -270,31 +270,31 @@ export const CollegeHeadDashboardPage = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white py-8 transition-colors">
+    <div className="min-h-screen bg-transparent text-[#211D2B] dark:text-[#F5F2FA] py-8 transition-colors font-spatial-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* COLLEGE HEAD WELCOME BANNER */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 mb-8 border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -z-0"></div>
+        <div className="bg-[#FFFFFF] dark:bg-[#0D101A] rounded-3xl p-6 sm:p-8 mb-8 border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden backdrop-blur-xl">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[#7156A5]/5 dark:bg-[#8B5CF6]/5 rounded-full blur-3xl pointer-events-none"></div>
 
           <div className="flex items-start sm:items-center gap-4 z-10">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-blue-700 text-white font-black text-2xl flex items-center justify-center shadow-lg shadow-blue-600/25 shrink-0">
+            <div className="w-16 h-16 rounded-2xl bg-[#7156A5] dark:bg-[#8B5CF6] text-white font-bold text-2xl flex items-center justify-center shadow-lg shadow-purple-500/25 shrink-0">
               <Building2 className="w-8 h-8" />
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <span className="px-3 py-1 rounded-full text-xs font-black bg-blue-600 text-white uppercase tracking-wider">
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#7156A5] dark:bg-[#8B5CF6] text-white uppercase tracking-wider font-mono">
                   {user.college}
                 </span>
-                <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1 font-mono">
                   <ShieldCheck className="w-3.5 h-3.5" /> Read-Only Access
                 </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+              <h1 className="text-2xl sm:text-3xl font-bold font-spatial-display uppercase tracking-wide text-[#211D2B] dark:text-[#F5F2FA]">
                 {user.faculty_name || 'Sports Faculty Head'}
               </h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Official College Sports Faculty Portal • Assigned Domain: <strong className="text-slate-900 dark:text-white">{user.college}</strong>
+              <p className="text-xs text-[#686370] dark:text-[#AAA4B8] mt-0.5">
+                Official College Sports Faculty Portal • Assigned Domain: <strong className="text-[#211D2B] dark:text-[#F5F2FA]">{user.college}</strong>
               </p>
             </div>
           </div>
@@ -302,7 +302,7 @@ export const CollegeHeadDashboardPage = () => {
           <div className="flex items-center gap-3 z-10">
             <button
               onClick={handleLogout}
-              className="px-5 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-2 shadow-md transition-all"
+              className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
               <span>Log Out</span>
@@ -311,7 +311,7 @@ export const CollegeHeadDashboardPage = () => {
         </div>
 
         {/* TAB NAVIGATION BAR */}
-        <div className="flex overflow-x-auto gap-2 p-1.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-soft mb-8 no-scrollbar">
+        <div className="flex overflow-x-auto gap-2 p-1.5 rounded-2xl bg-[#FFFFFF] dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] shadow-xs mb-8 no-scrollbar">
           {[
             { id: 'overview', label: 'Overview & Stats', icon: Activity },
             { id: 'profile', label: 'Faculty Head Profile', icon: ShieldCheck },
@@ -326,10 +326,10 @@ export const CollegeHeadDashboardPage = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all shrink-0 ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
                   isActive
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-[#7156A5] dark:bg-[#8B5CF6] text-white shadow-md shadow-purple-500/20'
+                    : 'text-[#686370] dark:text-[#AAA4B8] hover:bg-[#FAF9F6] dark:hover:bg-[#121625] hover:text-[#211D2B] dark:hover:text-[#F5F2FA]'
                 }`}
               >
                 <Icon className="w-4 h-4" />

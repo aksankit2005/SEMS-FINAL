@@ -447,12 +447,6 @@ export const GullyCricketEventsTab = ({ user }) => {
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
               Click the "Create Gully Cricket Event" button above to publish your first 6-Overs Fast Box registration event.
             </p>
-            <button
-              onClick={handleOpenCreate}
-              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
-            >
-              + Create First Gully Cricket Event
-            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

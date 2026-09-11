@@ -1,5 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
 @import "tailwindcss";
+@import "./styles/spatialGallery.css";
 @import "./styles/veerLegacy.css";
+@import "./styles/adminPortalTheme.css";
 
 @variant dark (&:where(.dark, .dark *));
 

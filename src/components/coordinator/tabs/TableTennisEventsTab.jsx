@@ -335,12 +335,6 @@ export const TableTennisEventsTab = ({ user }) => {
             <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto">
               Click the "Create Registration Event" button above to publish your first tournament registration event for Table Tennis.
             </p>
-            <button
-              onClick={handleOpenCreate}
-              className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
-            >
-              + Create First Event
-            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

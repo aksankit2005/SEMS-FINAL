@@ -26,43 +26,43 @@ export const Footer = () => {
   };
 
   return (
-    <footer className="relative bg-[#FAF9F6] dark:bg-[#070A13] text-[#686370] dark:text-[#AAA4B8] border-t border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] pt-8 pb-6 transition-colors duration-200 overflow-hidden font-spatial-sans">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-6">
+    <footer className="relative bg-[#FAF9F6] dark:bg-[#070A13] text-[#686370] dark:text-[#AAA4B8] border-t border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] pt-5 sm:pt-8 pb-4 sm:pb-6 transition-colors duration-200 overflow-hidden font-spatial-sans">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-4 sm:space-y-6">
         
         {/* Main Footer Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 pb-6 border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] items-start">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6 lg:gap-8 pb-4 sm:pb-6 border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] items-start">
           
           {/* Brand & Mission (Col 5) */}
-          <div className="md:col-span-5 space-y-2.5">
-            <Link to="/" className="inline-flex items-center gap-2.5 group">
+          <div className="md:col-span-5 space-y-1.5 sm:space-y-2.5">
+            <Link to="/" className="inline-flex items-center gap-2 sm:gap-2.5 group">
               <img
                 src="/logo-dark.png"
                 alt="APEX Logo"
-                className="hidden dark:block h-7 sm:h-8 w-auto object-contain transition-transform group-hover:scale-105"
+                className="hidden dark:block h-6 sm:h-8 w-auto object-contain transition-transform group-hover:scale-105"
               />
               <img
                 src="/logo-light.png"
                 alt="APEX Logo"
-                className="block dark:hidden h-7 sm:h-8 w-auto object-contain transition-transform group-hover:scale-105"
+                className="block dark:hidden h-6 sm:h-8 w-auto object-contain transition-transform group-hover:scale-105"
               />
-              <span className="text-lg sm:text-xl font-bold tracking-tight text-[#211D2B] dark:text-[#F5F2FA] font-spatial-display">
+              <span className="text-base sm:text-xl font-bold tracking-tight text-[#211D2B] dark:text-[#F5F2FA] font-spatial-display">
                 APEX <span className="text-[#7156A5] dark:text-[#B8A5E5]">2026</span>
               </span>
             </Link>
-            <p className="text-xs text-[#686370] dark:text-[#AAA4B8] leading-relaxed max-w-md">
+            <p className="text-[11px] sm:text-xs text-[#686370] dark:text-[#AAA4B8] leading-relaxed max-w-md line-clamp-2 sm:line-clamp-none">
               The premier inter-college Sports Event Management System of Maharana Pratap Engineering College, uniting registrations, tournament fixtures, live scoring, and championship leaderboards.
             </p>
-            <p className="text-xs font-semibold text-[#A98B57] dark:text-[#D2AB45] tracking-wide pt-0.5">
+            <p className="text-[10px] sm:text-xs font-semibold text-[#A98B57] dark:text-[#D2AB45] tracking-wide pt-0.5 italic">
               &ldquo;Courage, Dignity, and Unyielding Legacy.&rdquo;
             </p>
           </div>
 
           {/* Quick Navigation (Col 4) */}
-          <div className="md:col-span-4 space-y-2">
-            <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#211D2B] dark:text-[#F5F2FA]">
+          <div className="md:col-span-4 space-y-1.5 sm:space-y-2">
+            <h4 className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#211D2B] dark:text-[#F5F2FA]">
               Quick Links
             </h4>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-[#686370] dark:text-[#AAA4B8]">
+            <div className="grid grid-cols-2 gap-x-3 sm:gap-x-4 gap-y-1 sm:gap-y-1.5 text-[11px] sm:text-xs text-[#686370] dark:text-[#AAA4B8]">
               <Link to="/live" className="hover:text-[#7156A5] dark:hover:text-[#B8A5E5] transition-colors py-0.5 flex items-center gap-1.5">
                 Live Scores <span className="w-1.5 h-1.5 rounded-full bg-[#B71C1C] dark:bg-[#FDA4AF]" />
               </Link>
@@ -91,13 +91,13 @@ export const Footer = () => {
           </div>
 
           {/* Connect & Support (Col 3) */}
-          <div className="md:col-span-3 space-y-2.5">
-            <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#211D2B] dark:text-[#F5F2FA]">
+          <div className="md:col-span-3 space-y-1.5 sm:space-y-2.5">
+            <h4 className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#211D2B] dark:text-[#F5F2FA]">
               Connect & Support
             </h4>
             
             {/* Unified Social Icon Action Row */}
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
               {/* Instagram */}
               <a
                 href="https://www.instagram.com/apex_mpgi"
@@ -105,9 +105,9 @@ export const Footer = () => {
                 rel="noopener noreferrer"
                 aria-label="APEX Instagram Profile"
                 title="Follow APEX on Instagram (@apex_mpgi)"
-                className="w-8 h-8 rounded-lg bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] hover:text-[#7156A5] dark:hover:text-[#B8A5E5] hover:border-[#7156A5]/40 transition-all flex items-center justify-center shadow-2xs min-h-[36px] min-w-[36px]"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] hover:text-[#7156A5] dark:hover:text-[#B8A5E5] hover:border-[#7156A5]/40 transition-all flex items-center justify-center shadow-2xs min-h-[30px] min-w-[30px] sm:min-h-[36px] sm:min-w-[36px]"
               >
-                <InstagramIcon className="w-4 h-4" />
+                <InstagramIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </a>
 
               {/* YouTube */}
@@ -117,9 +117,9 @@ export const Footer = () => {
                 rel="noopener noreferrer"
                 aria-label="APEX Official YouTube Channel"
                 title="Watch APEX Matches on YouTube"
-                className="w-8 h-8 rounded-lg bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] hover:text-[#B71C1C] dark:hover:text-[#FDA4AF] hover:border-[#B71C1C]/40 transition-all flex items-center justify-center shadow-2xs min-h-[36px] min-w-[36px]"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] hover:text-[#B71C1C] dark:hover:text-[#FDA4AF] hover:border-[#B71C1C]/40 transition-all flex items-center justify-center shadow-2xs min-h-[30px] min-w-[30px] sm:min-h-[36px] sm:min-w-[36px]"
               >
-                <YoutubeIcon className="w-4 h-4" />
+                <YoutubeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </a>
 
               {/* Feedback Form */}
@@ -129,9 +129,9 @@ export const Footer = () => {
                 rel="noopener noreferrer"
                 aria-label="APEX Feedback Form"
                 title="Submit Feedback / Suggestions"
-                className="w-8 h-8 rounded-lg bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] hover:text-[#7156A5] dark:hover:text-[#B8A5E5] hover:border-[#7156A5]/40 transition-all flex items-center justify-center shadow-2xs min-h-[36px] min-w-[36px]"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] hover:text-[#7156A5] dark:hover:text-[#B8A5E5] hover:border-[#7156A5]/40 transition-all flex items-center justify-center shadow-2xs min-h-[30px] min-w-[30px] sm:min-h-[36px] sm:min-w-[36px]"
               >
-                <MessageSquareText className="w-4 h-4" />
+                <MessageSquareText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </a>
 
               {/* Email Icon Button */}
@@ -139,9 +139,9 @@ export const Footer = () => {
                 href="mailto:sports@mpgi.edu.in"
                 aria-label="Email APEX Support Desk"
                 title="Email: sports@mpgi.edu.in"
-                className="w-8 h-8 rounded-lg bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] hover:text-[#7156A5] dark:hover:text-[#B8A5E5] hover:border-[#7156A5]/40 transition-all flex items-center justify-center shadow-2xs min-h-[36px] min-w-[36px]"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] hover:text-[#7156A5] dark:hover:text-[#B8A5E5] hover:border-[#7156A5]/40 transition-all flex items-center justify-center shadow-2xs min-h-[30px] min-w-[30px] sm:min-h-[36px] sm:min-w-[36px]"
               >
-                <Mail className="w-4 h-4" />
+                <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </a>
 
               {/* Phone Icon Button */}
@@ -149,9 +149,9 @@ export const Footer = () => {
                 href="tel:+919119705860"
                 aria-label="Call APEX Support Desk"
                 title="Call Support: +91 91197 05860"
-                className="w-8 h-8 rounded-lg bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] hover:text-[#1B5E20] dark:hover:text-[#81C784] hover:border-[#1B5E20]/40 transition-all flex items-center justify-center shadow-2xs min-h-[36px] min-w-[36px]"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] text-[#211D2B] dark:text-[#F5F2FA] hover:text-[#1B5E20] dark:hover:text-[#81C784] hover:border-[#1B5E20]/40 transition-all flex items-center justify-center shadow-2xs min-h-[30px] min-w-[30px] sm:min-h-[36px] sm:min-w-[36px]"
               >
-                <Phone className="w-4 h-4" />
+                <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </a>
             </div>
           </div>
@@ -159,16 +159,16 @@ export const Footer = () => {
         </div>
 
         {/* Bottom Copyright & Legal Links Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#686370] dark:text-[#AAA4B8] text-center sm:text-left">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3 text-[10px] sm:text-xs text-[#686370] dark:text-[#AAA4B8] text-center sm:text-left">
           
           <div className="flex items-center gap-1.5 flex-wrap justify-center sm:justify-start">
             <span className="font-semibold text-[#211D2B] dark:text-[#F5F2FA]">© 2026 APEX</span>
             <span>•</span>
-            <span className="text-[11px]">Maharana Pratap Engineering College, MPGI Kanpur</span>
+            <span className="text-[10px] sm:text-[11px]">Maharana Pratap Engineering College, MPGI Kanpur</span>
           </div>
 
           {/* Legal Links */}
-          <div className="flex flex-wrap items-center justify-center gap-3 font-medium text-[11px] sm:text-xs">
+          <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 font-medium text-[10px] sm:text-xs">
             <Link to="/faq" className="hover:text-[#7156A5] dark:hover:text-[#B8A5E5] transition-colors">
               FAQ
             </Link>
