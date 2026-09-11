@@ -312,7 +312,7 @@ export const CollegeHeadDashboardPage = () => {
             <div class="summary-lbl">Listed Athletes</div>
           </div>
           <div class="summary-box">
-            <div class="summary-val">${stats?.sportsCount || 0}</div>
+            <div class="summary-val">${sportsBreakdown && sportsBreakdown.length > 0 ? sportsBreakdown.length : (stats?.sportsCount || 0)}</div>
             <div class="summary-lbl">Sports Entered</div>
           </div>
           <div class="summary-box">
@@ -567,7 +567,9 @@ export const CollegeHeadDashboardPage = () => {
                   <span className="text-xs font-bold uppercase tracking-wider">Sports Entered</span>
                   <Trophy className="w-5 h-5 text-indigo-500" />
                 </div>
-                <div className="text-3xl font-black text-slate-900 dark:text-white">{stats?.sportsCount || 0}</div>
+                <div className="text-3xl font-black text-slate-900 dark:text-white">
+                  {sportsBreakdown && sportsBreakdown.length > 0 ? sportsBreakdown.length : (stats?.sportsCount || 0)}
+                </div>
                 <p className="text-[11px] text-slate-500">Out of {ALL_12_SPORTS.length} tournament events</p>
               </div>
 

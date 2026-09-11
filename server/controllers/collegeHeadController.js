@@ -272,14 +272,14 @@ export const getDashboardStats = async (req, res) => {
         SELECT COUNT(DISTINCT r.id) AS count
         FROM registrations r
         LEFT JOIN colleges c ON r."collegeId" = c.id
-        LEFT JOIN college_registrations cr ON cr.registration_id = r.id OR cr.id::text = r.id::text
+        LEFT JOIN college_registrations cr ON (cr.registration_id = r.id OR cr.id::text = r.id::text)
         WHERE (
-          ($1::text IS NOT NULL AND r."collegeId"::text = $1)
-          OR (r."collegeId" IS NULL AND (
+          ($1::text IS NOT NULL AND (r."collegeId"::text = $1 OR c.id::text = $1))
+          OR (
             LOWER(TRIM(COALESCE(c.code, ''))) = ANY($2::text[])
             OR LOWER(TRIM(COALESCE(c.name, ''))) = ANY($2::text[])
             OR LOWER(TRIM(COALESCE(cr.college, ''))) = ANY($2::text[])
-          ))
+          )
         )
       `, [collegeId, exactAliases]).catch(() => null),
 
@@ -288,30 +288,31 @@ export const getDashboardStats = async (req, res) => {
         FROM registration_members m
         JOIN registrations r ON m."registrationId" = r.id
         LEFT JOIN colleges c ON r."collegeId" = c.id
-        LEFT JOIN college_registrations cr ON cr.registration_id = r.id OR cr.id::text = r.id::text
+        LEFT JOIN college_registrations cr ON (cr.registration_id = r.id OR cr.id::text = r.id::text OR cr.id::text = m."registrationId"::text)
         WHERE (
-          ($1::text IS NOT NULL AND r."collegeId"::text = $1)
-          OR (r."collegeId" IS NULL AND (
+          ($1::text IS NOT NULL AND (r."collegeId"::text = $1 OR c.id::text = $1))
+          OR (
             LOWER(TRIM(COALESCE(c.code, ''))) = ANY($2::text[])
             OR LOWER(TRIM(COALESCE(c.name, ''))) = ANY($2::text[])
             OR LOWER(TRIM(COALESCE(cr.college, ''))) = ANY($2::text[])
-          ))
+          )
         )
       `, [collegeId, exactAliases]).catch(() => null),
 
       queryDb(`
-        SELECT COUNT(DISTINCT COALESCE(cr.sport_id, r."sportId", s.slug, s.name)) AS count
-        FROM registrations r
+        SELECT COUNT(DISTINCT UPPER(REPLACE(COALESCE(s.name, cr.sport_id, r."sportId"::text, 'SPORT'), '-', ' '))) AS count
+        FROM registration_members m
+        JOIN registrations r ON m."registrationId" = r.id
         LEFT JOIN colleges c ON r."collegeId" = c.id
-        LEFT JOIN college_registrations cr ON cr.registration_id = r.id
-        LEFT JOIN sports s ON (s.id::text = r."sportId"::text OR s.slug = r."sportId")
+        LEFT JOIN college_registrations cr ON (cr.registration_id = r.id OR cr.id::text = r.id::text OR cr.id::text = m."registrationId"::text)
+        LEFT JOIN sports s ON (s.slug = r."sportId"::text OR s.slug = cr.sport_id OR s.name = r."sportId"::text OR s.id::text = r."sportId"::text)
         WHERE (
-          ($1::text IS NOT NULL AND r."collegeId"::text = $1)
-          OR (r."collegeId" IS NULL AND (
+          ($1::text IS NOT NULL AND (r."collegeId"::text = $1 OR c.id::text = $1))
+          OR (
             LOWER(TRIM(COALESCE(c.code, ''))) = ANY($2::text[])
             OR LOWER(TRIM(COALESCE(c.name, ''))) = ANY($2::text[])
             OR LOWER(TRIM(COALESCE(cr.college, ''))) = ANY($2::text[])
-          ))
+          )
         )
       `, [collegeId, exactAliases]).catch(() => null)
     ]);
