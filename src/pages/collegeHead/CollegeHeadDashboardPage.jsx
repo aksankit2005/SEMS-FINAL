@@ -19,10 +19,10 @@ export const CollegeHeadDashboardPage = () => {
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'students' | 'sports' | 'medals' | 'reports'
 
   const [stats, setStats] = useState(null);
-  const [studentsData, setStudentsData] = useState({ count: 0, students: [] });
+  const [allStudents, setAllStudents] = useState([]);
   const [sportsBreakdown, setSportsBreakdown] = useState([]);
   const [medalSummary, setMedalSummary] = useState(null);
-  const [availableEvents, setAvailableEvents] = useState([]);
+  const [backendEvents, setBackendEvents] = useState([]);
 
   const [loading, setLoading] = useState(true);
 
@@ -34,15 +34,15 @@ export const CollegeHeadDashboardPage = () => {
   const [selectedGenderFilter, setSelectedGenderFilter] = useState('all');
   const [selectedFormatFilter, setSelectedFormatFilter] = useState('all');
 
-  // Debounce search query to prevent excessive API requests
+  // Debounce search query to prevent excessive filtering
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(searchQuery);
-    }, 300);
+    }, 200);
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
-  // Load user and created events on mount
+  // Load user and college data on mount
   useEffect(() => {
     const currentUser = collegeHeadApi.getUser();
     if (!currentUser || currentUser.role !== 'college_head') {
@@ -51,32 +51,30 @@ export const CollegeHeadDashboardPage = () => {
     }
     setUser(currentUser);
     loadAllData();
-    loadEvents();
   }, [navigate]);
-
-  const loadEvents = async () => {
-    try {
-      const events = await collegeHeadApi.getEvents();
-      if (Array.isArray(events) && events.length > 0) {
-        setAvailableEvents(events);
-      }
-    } catch (err) {
-      console.warn('Could not load events:', err);
-    }
-  };
 
   const loadAllData = async () => {
     setLoading(true);
     try {
-      const [statsData, sportsRes, medalRes] = await Promise.all([
+      const [statsData, sportsRes, medalRes, studentsRes, eventsRes] = await Promise.all([
         collegeHeadApi.getDashboardStats(),
         collegeHeadApi.getSportsParticipation(),
         collegeHeadApi.getMedalSummary(),
+        collegeHeadApi.getStudents(),
+        collegeHeadApi.getEvents(),
       ]);
 
       setStats(statsData);
-      setSportsBreakdown(sportsRes);
+      setSportsBreakdown(sportsRes || []);
       setMedalSummary(medalRes);
+
+      const rawList = Array.isArray(studentsRes?.students) ? studentsRes.students : [];
+      setAllStudents(rawList);
+
+      const evList = Array.isArray(eventsRes) && eventsRes.length > 0 
+        ? eventsRes 
+        : (Array.isArray(studentsRes?.availableEvents) ? studentsRes.availableEvents : []);
+      setBackendEvents(evList);
     } catch (err) {
       addToast('Failed to load college data', 'error');
     } finally {
@@ -84,33 +82,10 @@ export const CollegeHeadDashboardPage = () => {
     }
   };
 
-  // Live fetch students when search or filters change (debounced)
-  useEffect(() => {
-    if (!user) return;
-    const fetchStudents = async () => {
-      try {
-        const res = await collegeHeadApi.getStudents({
-          search: debouncedSearch,
-          sport: selectedSportFilter,
-          eventTitle: selectedEventTitleFilter,
-          gender: selectedGenderFilter,
-          format: selectedFormatFilter,
-        });
-        setStudentsData(res);
-        if (Array.isArray(res.availableEvents) && res.availableEvents.length > 0) {
-          setAvailableEvents((prev) => Array.from(new Set([...prev, ...res.availableEvents])));
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchStudents();
-  }, [debouncedSearch, selectedSportFilter, selectedEventTitleFilter, selectedGenderFilter, selectedFormatFilter, user]);
-
   const handleLogout = () => {
     setUser(null);
     setStats(null);
-    setStudentsData({ count: 0, students: [] });
+    setAllStudents([]);
     setSportsBreakdown([]);
     setMedalSummary(null);
     collegeHeadApi.logout();
@@ -118,51 +93,111 @@ export const CollegeHeadDashboardPage = () => {
     navigate('/college-head/login');
   };
 
-  // Memoized Client-side Filtering for Instant Response & Double-layered Isolation
-  const filteredStudents = useMemo(() => {
-    let list = studentsData.students || [];
-
-    // Filter by Game
-    if (selectedSportFilter && selectedSportFilter !== 'all') {
-      const sp = selectedSportFilter.toLowerCase().trim();
-      list = list.filter((s) =>
-        (s.sportId || '').toLowerCase() === sp ||
-        (s.sportId || '').toLowerCase().replace(/[^a-z0-9]/g, '') === sp.replace(/[^a-z0-9]/g, '') ||
-        (s.sportName || '').toLowerCase() === sp ||
-        (s.sportName || '').toLowerCase().includes(sp)
-      );
+  // Dynamic Available Events (derived from Coordinator created events & student event titles)
+  const availableEvents = useMemo(() => {
+    const titlesSet = new Set();
+    
+    // 1. From backendEvents
+    if (Array.isArray(backendEvents)) {
+      backendEvents.forEach((ev) => {
+        if (typeof ev === 'string' && ev.trim()) {
+          titlesSet.add(ev.trim());
+        } else if (ev && typeof ev === 'object') {
+          const t = ev.title || ev.eventTitle || ev.name;
+          if (t && typeof t === 'string' && t.trim()) {
+            titlesSet.add(t.trim());
+          }
+        }
+      });
     }
 
-    // Filter by Event Title
+    // 2. From allStudents
+    if (Array.isArray(allStudents)) {
+      allStudents.forEach((s) => {
+        if (s.eventTitle && typeof s.eventTitle === 'string' && s.eventTitle.trim()) {
+          titlesSet.add(s.eventTitle.trim());
+        }
+      });
+    }
+
+    return Array.from(titlesSet).sort();
+  }, [backendEvents, allStudents]);
+
+  // Handle Game/Sport change with auto-adjustment
+  const handleSportChange = (newSport) => {
+    setSelectedSportFilter(newSport);
+    if (selectedEventTitleFilter !== 'all') {
+      setSelectedEventTitleFilter('all');
+    }
+  };
+
+  // Memoized Client-side Filtering for Instant 0ms Response & Double-layered Isolation
+  const filteredStudents = useMemo(() => {
+    let list = allStudents || [];
+
+    // 1. Filter by Game
+    if (selectedSportFilter && selectedSportFilter !== 'all') {
+      const sp = selectedSportFilter.toLowerCase().trim().replace(/_/g, '-');
+      const isStdCricket = sp === 'cricket' || (sp.includes('cricket') && !sp.includes('gully'));
+      const isGully = sp.includes('gully');
+
+      list = list.filter((s) => {
+        const sid = (s.sportId || '').toLowerCase().replace(/_/g, '-');
+        const sname = (s.sportName || '').toLowerCase().replace(/_/g, '-');
+
+        if (isStdCricket) {
+          if (sid.includes('gully') || sname.includes('gully')) return false;
+          return sid.includes('cricket') || sname.includes('cricket');
+        }
+        if (isGully) {
+          return sid.includes('gully') || sname.includes('gully');
+        }
+        return (
+          sid === sp ||
+          sid.replace(/[^a-z0-9]/g, '') === sp.replace(/[^a-z0-9]/g, '') ||
+          sname === sp ||
+          sname.replace(/[^a-z0-9]/g, '') === sp.replace(/[^a-z0-9]/g, '') ||
+          sname.includes(sp) ||
+          sid.includes(sp)
+        );
+      });
+    }
+
+    // 2. Filter by Event Title
     if (selectedEventTitleFilter && selectedEventTitleFilter !== 'all') {
       const ev = selectedEventTitleFilter.toLowerCase().trim();
-      list = list.filter((s) =>
-        (s.eventTitle || '').toLowerCase().trim() === ev ||
-        (s.eventTitle || '').toLowerCase().includes(ev)
-      );
+      list = list.filter((s) => {
+        const et = (s.eventTitle || '').toLowerCase().trim();
+        return et === ev || et.includes(ev) || ev.includes(et);
+      });
     }
 
-    // Filter by Gender: STRICT EXACT EQUALITY (Prevents 'MALE' matching 'FEMALE')
+    // 3. Filter by Gender: STRICT EXACT EQUALITY (Prevents 'MALE' matching 'FEMALE')
     if (selectedGenderFilter && selectedGenderFilter !== 'all') {
       const g = selectedGenderFilter.toUpperCase().trim();
       list = list.filter((s) => (s.gender || '').toUpperCase().trim() === g);
     }
 
-    // Filter by Format
+    // 4. Filter by Format
     if (selectedFormatFilter && selectedFormatFilter !== 'all') {
       const fmt = selectedFormatFilter.toUpperCase().trim();
       list = list.filter((s) => {
         const mf = (s.matchFormat || '').toUpperCase().trim();
-        if (fmt === 'SINGLE') return mf === 'SINGLE' || mf === 'INDIVIDUAL' || mf === 'SOLO';
-        if (fmt === 'INDIVIDUAL') return mf === 'INDIVIDUAL' || mf === 'SINGLE' || mf === 'SOLO';
-        if (fmt === 'DOUBLE' || fmt === 'DOUBLES') return mf === 'DOUBLE' || mf === 'DOUBLES';
-        if (fmt === 'TEAM') return mf === 'TEAM';
+        if (fmt === 'SINGLE' || fmt === 'INDIVIDUAL' || fmt === 'SOLO') {
+          return mf === 'SINGLE' || mf === 'INDIVIDUAL' || mf === 'SOLO';
+        }
+        if (fmt === 'DOUBLE' || fmt === 'DOUBLES' || fmt === 'DUO') {
+          return mf === 'DOUBLE' || mf === 'DOUBLES' || mf === 'DUO';
+        }
+        if (fmt === 'TEAM') {
+          return mf === 'TEAM';
+        }
         return mf === fmt;
       });
     }
 
-    // Search query (studentName, rollNumber, phone, email, course, sportName, eventTitle, teamName)
-    // NOTE: NEVER search gender here to avoid false substring matches!
+    // 5. Real-time Search query (athlete name, roll number, mobile, email, course, sport, event, team)
+    // NOTE: Strictly never search gender here to avoid false substring matches!
     if (debouncedSearch && debouncedSearch.trim()) {
       const q = debouncedSearch.toLowerCase().trim();
       list = list.filter((s) =>
@@ -178,7 +213,7 @@ export const CollegeHeadDashboardPage = () => {
     }
 
     return list;
-  }, [studentsData.students, selectedSportFilter, selectedEventTitleFilter, selectedGenderFilter, selectedFormatFilter, debouncedSearch]);
+  }, [allStudents, selectedSportFilter, selectedEventTitleFilter, selectedGenderFilter, selectedFormatFilter, debouncedSearch]);
 
   const handleResetFilters = () => {
     setSearchQuery('');
@@ -387,7 +422,7 @@ export const CollegeHeadDashboardPage = () => {
           {[
             { id: 'overview', label: 'Overview & Stats', icon: Activity },
             { id: 'profile', label: 'Faculty Head Profile', icon: ShieldCheck },
-            { id: 'students', label: `College Students (${studentsData.count})`, icon: Users },
+            { id: 'students', label: `College Students (${allStudents.length})`, icon: Users },
             { id: 'sports', label: 'Sports Participation', icon: Trophy },
             { id: 'medals', label: 'Medal Tally', icon: Award },
             { id: 'reports', label: 'Download Reports', icon: FileDown },
@@ -469,7 +504,7 @@ export const CollegeHeadDashboardPage = () => {
 
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Registered Athletes</span>
-                  <span className="font-extrabold text-sm text-slate-900 dark:text-white">{studentsData.count} Athletes</span>
+                  <span className="font-extrabold text-sm text-slate-900 dark:text-white">{allStudents.length} Athletes</span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
@@ -602,7 +637,7 @@ export const CollegeHeadDashboardPage = () => {
                   </label>
                   <select
                     value={selectedSportFilter}
-                    onChange={(e) => setSelectedSportFilter(e.target.value)}
+                    onChange={(e) => handleSportChange(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-600 cursor-pointer"
                   >
                     <option value="all">All 12 Sports</option>
@@ -661,7 +696,6 @@ export const CollegeHeadDashboardPage = () => {
                     <option value="Single">Single</option>
                     <option value="Double">Double</option>
                     <option value="Team">Team</option>
-                    <option value="Individual">Individual</option>
                   </select>
                 </div>
 
@@ -716,7 +750,7 @@ export const CollegeHeadDashboardPage = () => {
               <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                    Showing {filteredStudents.length} of {studentsData.count} Student Athletes for {user.college}
+                    Showing {filteredStudents.length} of {allStudents.length} Student Athletes for {user.college}
                   </span>
                   {hasActiveFilters && (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
@@ -779,12 +813,18 @@ export const CollegeHeadDashboardPage = () => {
                             <div className="font-black text-xs text-slate-900 dark:text-white uppercase tracking-wider">
                               {student.sportName}
                             </div>
-                            <div className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 mt-0.5">
-                              {student.eventTitle}
+                            <div className="text-[11px] font-bold text-purple-600 dark:text-purple-400 mt-0.5">
+                              {student.eventTitle || `${student.sportName} Championship`}
                             </div>
                             <div className="mt-1">
-                              <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                                {student.matchFormat || 'Team'}
+                              <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border ${
+                                (student.matchFormat || '').toUpperCase() === 'TEAM'
+                                  ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+                                  : (student.matchFormat || '').toUpperCase() === 'DOUBLE'
+                                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                                  : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                              }`}>
+                                {student.matchFormat || 'Single'}
                               </span>
                             </div>
                           </td>
