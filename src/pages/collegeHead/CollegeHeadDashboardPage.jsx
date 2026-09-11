@@ -93,35 +93,62 @@ export const CollegeHeadDashboardPage = () => {
     navigate('/college-head/login');
   };
 
-  // Dynamic Available Events (derived from Coordinator created events & student event titles)
+  // Dynamic Available Events (derived strictly from active Coordinator created events)
   const availableEvents = useMemo(() => {
+    if (!Array.isArray(backendEvents)) return [];
     const titlesSet = new Set();
     
-    // 1. From backendEvents
-    if (Array.isArray(backendEvents)) {
-      backendEvents.forEach((ev) => {
-        if (typeof ev === 'string' && ev.trim()) {
-          titlesSet.add(ev.trim());
-        } else if (ev && typeof ev === 'object') {
-          const t = ev.title || ev.eventTitle || ev.name;
-          if (t && typeof t === 'string' && t.trim()) {
-            titlesSet.add(t.trim());
-          }
-        }
-      });
-    }
+    backendEvents.forEach((ev) => {
+      let t = '';
+      let evSportId = '';
+      let evSportName = '';
 
-    // 2. From allStudents
-    if (Array.isArray(allStudents)) {
-      allStudents.forEach((s) => {
-        if (s.eventTitle && typeof s.eventTitle === 'string' && s.eventTitle.trim()) {
-          titlesSet.add(s.eventTitle.trim());
+      if (typeof ev === 'string' && ev.trim()) {
+        t = ev.trim();
+      } else if (ev && typeof ev === 'object') {
+        t = (ev.title || ev.eventTitle || ev.name || '').trim();
+        evSportId = (ev.sportId || '').toLowerCase().trim();
+        evSportName = (ev.sportName || '').toLowerCase().trim();
+      }
+
+      if (!t) return;
+
+      // If a game/sport is selected, filter events to that sport
+      if (selectedSportFilter && selectedSportFilter !== 'all' && selectedSportFilter !== 'ALL') {
+        const sp = selectedSportFilter.toLowerCase().trim().replace(/_/g, '-');
+        const tLower = t.toLowerCase().replace(/_/g, '-');
+        const isCricket = sp === 'cricket' || (sp.includes('cricket') && !sp.includes('gully'));
+        const isGully = sp.includes('gully');
+
+        if (isCricket) {
+          if (tLower.includes('gully') || evSportId.includes('gully') || evSportName.includes('gully')) return;
+          if (!tLower.includes('cricket') && !evSportId.includes('cricket') && !evSportName.includes('cricket')) return;
+        } else if (isGully) {
+          if (!tLower.includes('gully') && !evSportId.includes('gully') && !evSportName.includes('gully')) return;
+        } else {
+          const matches = 
+            evSportId === sp ||
+            evSportId.includes(sp) ||
+            sp.includes(evSportId) ||
+            evSportName.includes(sp) ||
+            tLower.includes(sp) ||
+            tLower.includes(sp.replace(/-/g, ' '));
+          if (!matches) return;
         }
-      });
-    }
+      }
+
+      titlesSet.add(t);
+    });
 
     return Array.from(titlesSet).sort();
-  }, [backendEvents, allStudents]);
+  }, [backendEvents, selectedSportFilter]);
+
+  // Auto-reset event title filter if selected event is no longer in available list
+  useEffect(() => {
+    if (selectedEventTitleFilter !== 'all' && availableEvents.length > 0 && !availableEvents.includes(selectedEventTitleFilter)) {
+      setSelectedEventTitleFilter('all');
+    }
+  }, [availableEvents, selectedEventTitleFilter]);
 
   // Handle Game/Sport change with auto-adjustment
   const handleSportChange = (newSport) => {
@@ -658,7 +685,7 @@ export const CollegeHeadDashboardPage = () => {
                     className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-600 cursor-pointer truncate"
                   >
                     <option value="all">
-                      All Created Events ({availableEvents.length > 0 ? availableEvents.length : 7})
+                      All Created Events ({availableEvents.length})
                     </option>
                     {availableEvents.map((evTitle, idx) => (
                       <option key={idx} value={evTitle}>{evTitle}</option>

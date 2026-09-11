@@ -564,11 +564,7 @@ export const getStudents = async (req, res) => {
       } else if (!displayEventTitle || displayEventTitle.toLowerCase().endsWith('championship')) {
         displayEventTitle = matchedCoordTitle || `APEX ${sportDisplayName} 2026`;
       }
-
-      // Add resolved title to available events set
-      if (displayEventTitle && displayEventTitle.trim()) {
-        availableEventsSet.add(displayEventTitle.trim());
-      }
+      // Available events set strictly retains only genuine active coordinator created events
 
       // Accurate Match Format Resolution
       const sKey = sportKey.toLowerCase();
@@ -745,37 +741,57 @@ export const getStudents = async (req, res) => {
 
 export const getCollegeHeadEvents = async (req, res) => {
   try {
-    const eventsSet = new Set();
+    const eventsList = [];
+    const seenTitles = new Set();
+
+    // Fetch ONLY active coordinator created events from coordinator_event_items
     try {
       const dbRes = await queryDb(`
-        SELECT DISTINCT title AS "eventTitle"
+        SELECT id, sport_id AS "sportId", title AS "eventTitle"
         FROM coordinator_event_items
         WHERE title IS NOT NULL AND TRIM(title) != ''
-        ORDER BY "eventTitle" ASC
+        ORDER BY title ASC
       `);
-      if (dbRes && dbRes.rows) {
+      if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
         dbRes.rows.forEach((r) => {
-          if (r.eventTitle && r.eventTitle.trim()) eventsSet.add(r.eventTitle.trim());
+          const t = (r.eventTitle || '').trim();
+          if (t && !seenTitles.has(t.toLowerCase())) {
+            seenTitles.add(t.toLowerCase());
+            eventsList.push({
+              id: r.id,
+              sportId: r.sportId || '',
+              title: t
+            });
+          }
         });
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Direct SQL fetch for coordinator_event_items failed, using Prisma fallback:', e.message);
+    }
 
-    try {
-      const regDbRes = await queryDb(`
-        SELECT DISTINCT COALESCE(participant_data->>'eventTitle', participant_data->>'eventName', event_id) AS "eventTitle"
-        FROM college_registrations
-        WHERE participant_data->>'eventTitle' IS NOT NULL 
-           OR participant_data->>'eventName' IS NOT NULL 
-           OR event_id IS NOT NULL
-      `);
-      if (regDbRes && regDbRes.rows) {
-        regDbRes.rows.forEach((r) => {
-          if (r.eventTitle && r.eventTitle.trim()) eventsSet.add(r.eventTitle.trim());
+    if (eventsList.length === 0) {
+      try {
+        const prismaEvents = await prisma.coordinatorEventItem.findMany({
+          where: { title: { not: '' } },
+          select: { id: true, sportId: true, title: true },
+          orderBy: { title: 'asc' }
         });
-      }
-    } catch (e) {}
+        if (prismaEvents) {
+          prismaEvents.forEach((r) => {
+            const t = (r.title || '').trim();
+            if (t && !seenTitles.has(t.toLowerCase())) {
+              seenTitles.add(t.toLowerCase());
+              eventsList.push({
+                id: r.id,
+                sportId: r.sportId || '',
+                title: t
+              });
+            }
+          });
+        }
+      } catch (pErr) {}
+    }
 
-    const eventsList = Array.from(eventsSet);
     return res.json({
       success: true,
       count: eventsList.length,
