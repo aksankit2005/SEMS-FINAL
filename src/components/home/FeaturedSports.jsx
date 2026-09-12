@@ -25,6 +25,12 @@ export const FeaturedSports = () => {
       }
     };
     loadEvents();
+    window.addEventListener('sems_events_updated', loadEvents);
+    window.addEventListener('storage', loadEvents);
+    return () => {
+      window.removeEventListener('sems_events_updated', loadEvents);
+      window.removeEventListener('storage', loadEvents);
+    };
   }, []);
 
   const formatDateToDDMMYYYY = (dateStr) => {

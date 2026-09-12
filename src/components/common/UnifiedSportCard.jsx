@@ -24,7 +24,7 @@ export const UnifiedSportCard = ({
       {/* Hero Image & Badges */}
       <div className="relative h-56 sm:h-60 overflow-hidden">
         <img
-          src={sport.image}
+          src={activeEvent?.raw?.coverImage || activeEvent?.raw?.cover_image || sport.image}
           alt={sport.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
@@ -64,6 +64,40 @@ export const UnifiedSportCard = ({
                   <span>💰</span> Fee
                 </span>
                 {(() => {
+                  const rawEv = activeEvent.raw || activeEvent;
+                  const key = (sport?.id || '').toLowerCase();
+                  const isRacket = key === 'badminton' || key === 'table-tennis';
+                  const isAthletics = key === 'athletics';
+
+                  if (isRacket) {
+                    const sFee = typeof rawEv.singlesFee === 'number' ? rawEv.singlesFee : (activeEvent.entryFee || 100);
+                    const dFee = typeof rawEv.doublesFee === 'number' ? rawEv.doublesFee : (sFee * 2 || 200);
+                    return (
+                      <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-xs leading-tight">
+                        S: ₹{sFee} | D: ₹{dFee}
+                      </span>
+                    );
+                  }
+
+                  if (isAthletics) {
+                    let prices = [];
+                    if (rawEv.subEventFees && typeof rawEv.subEventFees === 'object') {
+                      prices = Object.values(rawEv.subEventFees).map(Number).filter((n) => !isNaN(n) && n > 0);
+                    } else if (Array.isArray(rawEv.subEventsConfig)) {
+                      prices = rawEv.subEventsConfig.filter((c) => c.enabled !== false).map((c) => Number(c.entryFee)).filter((n) => !isNaN(n) && n > 0);
+                    }
+                    if (prices.length > 0) {
+                      const minP = Math.min(...prices);
+                      const maxP = Math.max(...prices);
+                      return (
+                        <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-xs">
+                          {minP === maxP ? `₹${minP}` : `₹${minP} - ₹${maxP}`}
+                        </span>
+                      );
+                    }
+                    return <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-xs">₹50 - ₹200</span>;
+                  }
+
                   const feeVal = typeof activeEvent.entryFee === 'number' ? activeEvent.entryFee : (typeof activeEvent.teamFee === 'number' ? activeEvent.teamFee : 0);
                   if (feeVal === 0) {
                     return <span className="font-black text-emerald-600 dark:text-emerald-400 text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30">FREE (₹0)</span>;

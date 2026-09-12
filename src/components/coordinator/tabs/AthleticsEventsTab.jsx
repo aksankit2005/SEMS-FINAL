@@ -190,6 +190,7 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
+        setFormData((prev) => ({ ...prev, coverImage: reader.result }));
         setCropperRawSrc(reader.result);
         setShowCropper(true);
       };

@@ -66,6 +66,39 @@ export const HomeRegistrationSection = () => {
     return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
   };
 
+  const getEventFeeDisplay = (ev) => {
+    const currentFee = typeof ev.entryFee === 'number' ? ev.entryFee : (typeof ev.teamFee === 'number' ? ev.teamFee : (ev.entryFee ?? ev.teamFee ?? 0));
+    const key = resolveSportKey(ev);
+    const sTitle = (ev.title || '').toLowerCase();
+    const sName = (ev.sportName || ev.sportId || '').toLowerCase();
+    
+    const isRacket = key === 'badminton' || key === 'table-tennis' || sName.includes('badminton') || sName.includes('table tennis') || sTitle.includes('badminton') || sTitle.includes('table tennis');
+    const isAthletics = key === 'athletics' || sName.includes('athletics') || sTitle.includes('athletics');
+
+    if (isRacket) {
+      const sFee = typeof ev.singlesFee === 'number' ? Number(ev.singlesFee) : (currentFee || 100);
+      const dFee = typeof ev.doublesFee === 'number' ? Number(ev.doublesFee) : (Number(ev.singlesFee) ? Number(ev.singlesFee) * 2 : 200);
+      return `Singles: ₹${sFee} | Doubles: ₹${dFee}`;
+    }
+
+    if (isAthletics) {
+      let prices = [];
+      if (ev.subEventFees && typeof ev.subEventFees === 'object') {
+        prices = Object.values(ev.subEventFees).map(Number).filter((n) => !isNaN(n) && n > 0);
+      } else if (Array.isArray(ev.subEventsConfig)) {
+        prices = ev.subEventsConfig.filter((c) => c.enabled !== false).map((c) => Number(c.entryFee)).filter((n) => !isNaN(n) && n > 0);
+      }
+      if (prices.length > 0) {
+        const minP = Math.min(...prices);
+        const maxP = Math.max(...prices);
+        return minP === maxP ? (minP === 0 ? 'Entry: Free' : `Fee: ₹${minP}`) : `Fee: ₹${minP} - ₹${maxP}`;
+      }
+      return currentFee > 0 && currentFee !== 150 ? `Fee: ₹${currentFee}` : 'Fee: ₹50 - ₹200';
+    }
+
+    return currentFee > 0 ? `Fee: ₹${currentFee}` : 'Entry: Free';
+  };
+
   return (
     <section id="home-registration-section" className="py-8 sm:py-14 bg-[#FFFFFF] dark:bg-[#0D101A] border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] transition-colors duration-200 font-spatial-sans">
       <div className="w-full max-w-[1600px] px-4 xs:px-6 sm:px-10 lg:px-12 xl:px-16 mx-auto space-y-5 sm:space-y-6">
@@ -175,7 +208,7 @@ export const HomeRegistrationSection = () => {
                   {/* Card Action Footer */}
                   <div className="mt-5 pt-3 border-t border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] flex items-center justify-between">
                     <span className="text-xs font-mono font-bold text-[#A98B57] dark:text-[#D2AB45]">
-                      {ev.entryFee ? `Fee: ₹${ev.entryFee}` : 'Entry: Free'}
+                      {getEventFeeDisplay(ev)}
                     </span>
 
                     {isOpen ? (
