@@ -224,14 +224,24 @@ export const TotalParticipationTab = ({ user, assignedSport, globalSearch = '' }
                     </td>
                     <td className="p-4 whitespace-nowrap">
                       <div className="flex flex-col gap-0.5">
-                        <span className="px-2.5 py-0.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold text-[11px] inline-block w-max">
-                          {p.subEvent ? `Athletics (${p.subEvent})` : (p.sport || sportName)}
-                        </span>
-                        {p.subEvent && (
-                          <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                            🎯 {p.subEvent}
-                          </span>
-                        )}
+                        {(() => {
+                          const isAthletics = (p.sport || sportName || '').toLowerCase().includes('athletics');
+                          const resolvedGame = p.subEvent || p.athleticsEvent;
+                          const gameTitle = isAthletics && resolvedGame ? `Athletics (${resolvedGame})` : (p.sport || sportName);
+
+                          return (
+                            <>
+                              <span className="px-2.5 py-0.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold text-[11px] inline-block w-max">
+                                {gameTitle}
+                              </span>
+                              {p.subEvent && (
+                                <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                  🎯 {p.subEvent}
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                     </td>
                     <td className="p-4 font-black text-slate-900 dark:text-white whitespace-nowrap">
