@@ -3,9 +3,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('sems_theme') || 'light';
-  });
+  // Always open in dark mode by default whenever anyone opens the website
+  const [theme, setTheme] = useState('dark');
 
   useEffect(() => {
     const root = document.documentElement;
@@ -14,7 +13,12 @@ export const ThemeProvider = ({ children }) => {
     } else {
       root.classList.remove('dark');
     }
-    localStorage.setItem('sems_theme', theme);
+    try {
+      localStorage.removeItem('sems_theme');
+      sessionStorage.removeItem('sems_theme_session');
+    } catch (e) {
+      // ignore
+    }
   }, [theme]);
 
   const toggleTheme = () => {

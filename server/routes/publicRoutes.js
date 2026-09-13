@@ -3,11 +3,12 @@ import {
   registerPublicEvent,
   createPublicRegistrationOrder,
   handleRazorpayWebhook,
+  getRegistrationPassPDF,
 } from '../controllers/registrationController.js';
 import { getHeroSlidesDB, getCommitteeDB } from '../controllers/adminController.js';
 import { getLeaderboardStandings } from '../services/leaderboardService.js';
-import { queryDb, prisma, pool } from '../config/db.js';
-import { extractYouTubeVideoIdBackend } from '../controllers/coordinatorController.js';
+import { queryDb, pool } from '../config/db.js';
+import { extractYouTubeVideoIdBackend, inMemoryCoordinatorEvents } from '../controllers/coordinatorController.js';
 import { publicReadLimiter, apiLimiter } from '../middleware/rateLimiters.js';
 import { computeEffectiveRegistrationStatus } from '../utils/registrationLifecycle.js';
 
@@ -334,7 +335,7 @@ router.get('/results', publicReadLimiter, async (req, res) => {
           winner: winnerStr,
           scoreSummary,
           setsDetail: formattedSetsStr,
-          date: m.updatedAt ? new Date(m.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          date: detailsObj.date || (m.updatedAt ? new Date(m.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
           completedAt: m.updatedAt,
           score1: m.score1,
           score2: m.score2,
@@ -428,7 +429,8 @@ router.get('/public/events', publicReadLimiter, async (req, res) => {
         team_size AS "teamSize", max_registrations AS "maxRegistrations", 
         registered_count AS "registeredCount", venue, category, status, 
         registration_open AS "registrationOpen",
-        rules, required_documents AS "requiredDocuments", contact_info AS "contactInfo"
+        rules, required_documents AS "requiredDocuments", contact_info AS "contactInfo",
+        sub_events AS "subEvents", sub_event_fees AS "subEventFees", sub_events_config AS "subEventsConfig"
        FROM coordinator_event_items
        ORDER BY created_at DESC`
     );
@@ -464,6 +466,18 @@ router.get('/public/events', publicReadLimiter, async (req, res) => {
         if (typeof rulesObj === 'string') {
           try { rulesObj = JSON.parse(rulesObj); } catch (err) {}
         }
+        let subEventsList = e.subEvents;
+        if (typeof subEventsList === 'string') {
+          try { subEventsList = JSON.parse(subEventsList); } catch (err) {}
+        }
+        let subEventFeesObj = e.subEventFees;
+        if (typeof subEventFeesObj === 'string') {
+          try { subEventFeesObj = JSON.parse(subEventFeesObj); } catch (err) {}
+        }
+        let subEventsConfigList = e.subEventsConfig;
+        if (typeof subEventsConfigList === 'string') {
+          try { subEventsConfigList = JSON.parse(subEventsConfigList); } catch (err) {}
+        }
 
         publishedEvents.push({
           ...e,
@@ -483,68 +497,74 @@ router.get('/public/events', publicReadLimiter, async (req, res) => {
           canReopen: regStatus.canReopen,
           closureReason: regStatus.reason,
           rules: rulesObj || [],
+          subEvents: subEventsList || [],
+          subEventFees: subEventFeesObj || {},
+          subEventsConfig: subEventsConfigList || [],
           contactInfo: contact,
           availableSlots: Math.max(0, (Number(e.maxRegistrations) || 64) - (Number(e.registeredCount) || 0))
         });
       });
-      return res.json(publishedEvents);
     }
   } catch (err) {
     console.error('Error fetching public events via queryDb:', err.message);
   }
 
-  // 2. Prisma fallback
-  try {
-    const dbEvents = await prisma.coordinatorEventItem.findMany({
-      where: {
-        NOT: { status: { equals: 'Draft', mode: 'insensitive' } }
-      },
-      orderBy: { createdAt: 'desc' }
+  // 2. Merge in-memory coordinator events
+  if (inMemoryCoordinatorEvents) {
+    const existingIds = new Set(publishedEvents.map((e) => e.id));
+    Object.values(inMemoryCoordinatorEvents).forEach((list) => {
+      if (Array.isArray(list)) {
+        list.forEach((e) => {
+          if (!e || !e.id || existingIds.has(e.id)) return;
+          const rawStatus = (e.status || 'Published').toLowerCase();
+          if (rawStatus === 'draft') return;
+
+          const isRegOpen = e.registrationOpen !== false && e.registrationOpen !== 'false' && e.registrationOpen !== 0;
+          const regStatus = computeEffectiveRegistrationStatus({
+            ...e,
+            registrationOpen: isRegOpen
+          });
+
+          let currentStatus = e.status || 'Published';
+          if (rawStatus === 'upcoming' || rawStatus === 'coming soon') {
+            currentStatus = 'Upcoming';
+          } else if (!regStatus.effectiveRegistrationOpen) {
+            currentStatus = 'Closed';
+          } else if (rawStatus === 'public' || rawStatus === 'published' || rawStatus === 'active') {
+            currentStatus = 'Published';
+          }
+
+          publishedEvents.push({
+            ...e,
+            entryFee: Number(e.entryFee || 0),
+            teamFee: Number(e.entryFee || 0),
+            singlesFee: Number(e.singlesFee || 0),
+            doublesFee: Number(e.doublesFee || 0),
+            maxRegistrations: Number(e.maxRegistrations || 64),
+            registeredCount: Number(e.registeredCount || 0),
+            status: currentStatus,
+            registrationOpen: isRegOpen,
+            effectiveStatus: regStatus.code,
+            effectiveStatusLabel: regStatus.label,
+            effectiveRegistrationOpen: regStatus.effectiveRegistrationOpen,
+            effectiveRegistrationClosed: regStatus.effectiveRegistrationClosed,
+            isDeadlinePassed: regStatus.isDeadlinePassed,
+            canReopen: regStatus.canReopen,
+            closureReason: regStatus.reason,
+            rules: e.rules || [],
+            subEvents: e.subEvents || [],
+            subEventFees: e.subEventFees || {},
+            subEventsConfig: e.subEventsConfig || [],
+            contactInfo: e.contactInfo || null,
+            availableSlots: Math.max(0, (Number(e.maxRegistrations) || 64) - (Number(e.registeredCount) || 0))
+          });
+          existingIds.add(e.id);
+        });
+      }
     });
-
-    if (dbEvents && dbEvents.length > 0) {
-      dbEvents.forEach((e) => {
-        const rawStatus = (e.status || 'Published').toLowerCase();
-        if (rawStatus === 'draft') return;
-
-        const isRegOpen = e.registrationOpen !== false;
-        const regStatus = computeEffectiveRegistrationStatus({
-          ...e,
-          registrationOpen: isRegOpen
-        });
-
-        let currentStatus = e.status || 'Published';
-        if (rawStatus === 'upcoming' || rawStatus === 'coming soon') {
-          currentStatus = 'Upcoming';
-        } else if (!regStatus.effectiveRegistrationOpen) {
-          currentStatus = 'Closed';
-        } else if (rawStatus === 'public' || rawStatus === 'published' || rawStatus === 'active') {
-          currentStatus = 'Published';
-        }
-
-        publishedEvents.push({
-          ...e,
-          entryFee: Number(e.entryFee || 0),
-          teamFee: Number(e.entryFee || 0),
-          status: currentStatus,
-          registrationOpen: isRegOpen,
-          effectiveStatus: regStatus.code,
-          effectiveStatusLabel: regStatus.label,
-          effectiveRegistrationOpen: regStatus.effectiveRegistrationOpen,
-          effectiveRegistrationClosed: regStatus.effectiveRegistrationClosed,
-          isDeadlinePassed: regStatus.isDeadlinePassed,
-          canReopen: regStatus.canReopen,
-          closureReason: regStatus.reason,
-          availableSlots: Math.max(0, (e.maxRegistrations || 64) - (e.registeredCount || 0))
-        });
-      });
-      return res.json(publishedEvents);
-    }
-  } catch (err) {
-    console.error('Error fetching public events from DB:', err.message);
   }
 
-  return res.json([]);
+  return res.json(publishedEvents);
 });
 
 // POST /api/public/create-order - Create authoritative Razorpay order with auto-capture
@@ -558,6 +578,12 @@ router.post('/public/register', apiLimiter, registerPublicEvent);
 // POST /api/public/razorpay-webhook - Razorpay lifecycle webhooks
 router.post('/public/razorpay-webhook', handleRazorpayWebhook);
 router.post('/razorpay/webhook', handleRazorpayWebhook);
+
+// GET /api/public/registration-pass/:id - Direct vector PDF pass stream / download
+router.get('/public/registration-pass/:id', publicReadLimiter, getRegistrationPassPDF);
+router.get('/public/pass/:id', publicReadLimiter, getRegistrationPassPDF);
+router.get('/pass/:id', publicReadLimiter, getRegistrationPassPDF);
+router.get('/registration-pass/:id', publicReadLimiter, getRegistrationPassPDF);
 
 // GET /api/leaderboard - Spectator college standings endpoint from Supabase college_leaderboards table
 router.get('/leaderboard', publicReadLimiter, async (req, res) => {
@@ -578,9 +604,34 @@ router.get('/announcements', publicReadLimiter, async (req, res) => {
       include: { attachments: true },
       orderBy: { createdAt: 'desc' }
     });
-    return res.json(list || []);
+    if (list && list.length > 0) {
+      return res.json(list.map(a => ({
+        ...a,
+        category: a.category || 'Schedule'
+      })));
+    }
   } catch (err) {
-    console.error('Error fetching public announcements from DB:', err);
+    console.warn('Prisma fetching announcements notice, trying pool query:', err.message);
+  }
+
+  try {
+    const rawRes = await pool.query(`
+      SELECT 
+        a.id, 
+        a.title, 
+        a.description, 
+        COALESCE(a.category, 'Schedule') AS category, 
+        a."publishDate", 
+        a."expiryDate", 
+        a."isPublished", 
+        a."createdAt"
+      FROM announcements a
+      WHERE a."isPublished" = true
+      ORDER BY a."createdAt" DESC
+    `);
+    return res.json((rawRes && rawRes.rows) || []);
+  } catch (err2) {
+    console.error('Error fetching public announcements from DB fallback:', err2.message);
     return res.json([]);
   }
 });

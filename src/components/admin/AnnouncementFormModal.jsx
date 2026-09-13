@@ -1,11 +1,50 @@
 import React, { useState, useEffect } from 'react';
-import { X, FileText, Upload, Trash2, Download, Eye, AlertCircle, CheckCircle2, Loader2, Paperclip } from 'lucide-react';
+import { 
+  X, FileText, Upload, Trash2, Download, Eye, AlertCircle, CheckCircle2, 
+  Loader2, Paperclip, Calendar, BookOpen, AlertTriangle, Sparkles 
+} from 'lucide-react';
 import { useConfirm } from '../../context/ConfirmContext';
+
+const CATEGORY_OPTIONS = [
+  {
+    id: 'Schedule',
+    label: 'Schedule',
+    desc: 'Match timings, fixtures & venue changes',
+    icon: Calendar,
+    color: 'text-blue-500',
+    borderActive: 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400 ring-1 ring-blue-500/30'
+  },
+  {
+    id: 'Rules & Guidelines',
+    label: 'Rules & Guidelines',
+    desc: 'Tournament rulebooks, eligibility & conduct',
+    icon: BookOpen,
+    color: 'text-purple-500',
+    borderActive: 'border-purple-500 bg-purple-500/10 text-purple-600 dark:text-purple-400 ring-1 ring-purple-500/30'
+  },
+  {
+    id: 'Emergency & Safety',
+    label: 'Emergency & Safety',
+    desc: 'Urgent alerts, weather & medical notices',
+    icon: AlertTriangle,
+    color: 'text-rose-500',
+    borderActive: 'border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400 ring-1 ring-rose-500/30'
+  },
+  {
+    id: 'Event Highlight',
+    label: 'Event Highlight',
+    desc: 'Ceremony alerts, star matches & results',
+    icon: Sparkles,
+    color: 'text-amber-500',
+    borderActive: 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/30'
+  }
+];
 
 export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onClose }) => {
   const { confirmDelete } = useConfirm();
   const [formData, setFormData] = useState({
     title: '',
+    category: 'Schedule',
     description: '',
     publishDate: new Date().toISOString().split('T')[0],
     expiryDate: '2026-08-20',
@@ -16,10 +55,20 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!isOpen || isSubmitting) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isSubmitting, onClose]);
+
+  useEffect(() => {
     if (announcement) {
       setFormData({
         id: announcement.id,
         title: announcement.title || '',
+        category: announcement.category || 'Schedule',
         description: announcement.description || '',
         publishDate: announcement.publishDate || new Date().toISOString().split('T')[0],
         expiryDate: announcement.expiryDate || '2026-08-20',
@@ -29,6 +78,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
     } else {
       setFormData({
         title: '',
+        category: 'Schedule',
         description: '',
         publishDate: new Date().toISOString().split('T')[0],
         expiryDate: '2026-08-20',
@@ -119,12 +169,17 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm animate-fade-in font-sans">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/60 backdrop-blur-sm animate-fade-in font-sans"
+      onClick={(e) => {
+        if (!isSubmitting && e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="w-full max-w-4xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col text-slate-900 dark:text-white">
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/90 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
               <FileText className="w-5 h-5" />
             </div>
             <div>
@@ -136,7 +191,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -157,9 +212,51 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="e.g. Basketball Tournament Schedule & Venue Update"
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
               />
               {errors.title && <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{errors.title}</p>}
+            </div>
+
+            {/* Target Category Selection */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Target Section / Category *
+                </label>
+                <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md">
+                  Active: {formData.category}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                {CATEGORY_OPTIONS.map((cat) => {
+                  const Icon = cat.icon;
+                  const isSelected = formData.category === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, category: cat.id })}
+                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        isSelected
+                          ? cat.borderActive
+                          : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="flex items-center gap-1.5 text-xs font-bold">
+                          <Icon className={`w-4 h-4 ${cat.color}`} />
+                          <span>{cat.label}</span>
+                        </span>
+                        {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />}
+                      </div>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                        {cat.desc}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div>
@@ -169,7 +266,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Enter full notice text, rules, timing details..."
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors resize-none"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors resize-none"
               />
               {errors.description && <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{errors.description}</p>}
             </div>
@@ -181,7 +278,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
                   type="date"
                   value={formData.publishDate}
                   onChange={(e) => setFormData({ ...formData, publishDate: e.target.value })}
-                  className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
 
@@ -191,7 +288,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
                   type="date"
                   value={formData.expiryDate}
                   onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
-                  className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
             </div>
@@ -200,7 +297,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
             <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                  <Paperclip className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                  <Paperclip className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   <span>PDF Document Attachments (Max 2 PDFs)</span>
                 </label>
                 <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
@@ -239,7 +336,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
                             href={att.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="p-1.5 text-slate-400 hover:text-amber-500 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                            className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                             title="Preview PDF"
                           >
                             <Eye className="w-4 h-4" />
@@ -261,8 +358,8 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
 
               {/* Upload Button */}
               {formData.attachments.length < 2 && (
-                <label className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-amber-500/50 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors group">
-                  <Upload className="w-6 h-6 text-slate-400 dark:text-slate-500 group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors mb-1" />
+                <label className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500/50 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors group">
+                  <Upload className="w-6 h-6 text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-1" />
                   <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white">
                     Click to select PDF document
                   </span>
@@ -287,7 +384,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
                 type="checkbox"
                 checked={formData.isPublished}
                 onChange={(e) => setFormData({ ...formData, isPublished: e.target.checked })}
-                className="w-4 h-4 accent-amber-500 rounded cursor-pointer"
+                className="w-4 h-4 accent-blue-600 rounded cursor-pointer"
               />
             </div>
           </div>
@@ -304,7 +401,7 @@ export const AnnouncementFormModal = ({ isOpen, announcement = null, onSave, onC
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
+              className="px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2"
             >
               {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
               <span>{announcement ? 'Update Announcement' : 'Publish Announcement'}</span>

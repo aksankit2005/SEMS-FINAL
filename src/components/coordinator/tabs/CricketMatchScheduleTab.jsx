@@ -12,9 +12,13 @@ export const CricketMatchScheduleTab = ({ matches, user, onUpdateMatches, global
   const sportName = 'Cricket';
 
   // Active scheduled matches for Cricket
-  const scheduledMatches = (matches || []).filter(
-    (m) => m && m.status !== 'COMPLETED' && m.status !== 'FINISHED'
-  );
+  const scheduledMatches = (matches || []).filter((m) => {
+    if (!m || m.status === 'COMPLETED' || m.status === 'FINISHED') return false;
+    const mSport = (m.sport || m.sportId || '').toLowerCase();
+    const mTitle = (m.eventTitle || m.title || '').toLowerCase();
+    if (mSport.includes('gully') || mTitle.includes('gully')) return false;
+    return true;
+  });
 
   // Search filter
   const filteredMatches = scheduledMatches.filter((m) => {
@@ -498,7 +502,7 @@ export const CricketMatchScheduleTab = ({ matches, user, onUpdateMatches, global
                   </h4>
 
                   <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                    📍 {displayVenue} | Date: {m.date || '2026-08-05'} | Time: {m.time || '09:00 AM'} | Event: {m.eventTitle || 'T20 Cricket Championship'}
+                    📍 {displayVenue} | Date: {m.date || new Date().toISOString().split('T')[0]} | Time: {m.time || '09:00 AM'} | Event: {m.eventTitle || 'T20 Cricket Championship'}
                   </p>
                 </div>
 

@@ -65,7 +65,7 @@ export const getCollegeAuthScope = async (user) => {
         collegeCode = colRes.rows[0].code;
         collegeName = colRes.rows[0].name;
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // 2. Lookup DB account by username if collegeId is not set
@@ -84,7 +84,7 @@ export const getCollegeAuthScope = async (user) => {
         collegeCode = row.code || row.college || collegeCode;
         collegeName = row.name || collegeName;
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // 3. Lookup college by code or name if collegeId still missing
@@ -99,7 +99,7 @@ export const getCollegeAuthScope = async (user) => {
         collegeCode = colRes.rows[0].code;
         collegeName = colRes.rows[0].name;
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // 4. Build exact canonical aliases for strict comparison (NO substring LIKE matches)
@@ -116,17 +116,20 @@ export const getCollegeAuthScope = async (user) => {
     exactAliases.add('mips');
     exactAliases.add('maharana institute of professional studies');
     exactAliases.add('mips kanpur');
-  } else if (cleanCode === 'MPCPS (KN142)' || cleanCode === 'MPCPS' || cleanCode.includes('KN142')) {
-    exactAliases.add('mpcps (kn142)');
-    exactAliases.add('mpcps');
-    exactAliases.add('kn142');
-    exactAliases.add('maharana pratap college of pharmacy & science');
-    exactAliases.add('maharana pratap college of pharmacy and science');
-  } else if (cleanCode === 'MPCPS (BPHARMACY)' || cleanCode.includes('BPHARM')) {
+  } else if (cleanCode.includes('BPHARM') || cleanCode === 'MPCPS (BPHARMACY)') {
     exactAliases.add('mpcps (bpharmacy)');
     exactAliases.add('mpcps (bpharm)');
     exactAliases.add('mpcps bpharmacy');
     exactAliases.add('mpcps bpharm');
+    exactAliases.add('bpharmacy');
+    exactAliases.add('bpharm');
+  } else if (cleanCode.includes('KN142') || cleanCode === 'MPCPS (KN142)') {
+    exactAliases.add('mpcps (kn142)');
+    exactAliases.add('kn142');
+    exactAliases.add('kn 142');
+    exactAliases.add('mpcps kn142');
+    exactAliases.add('maharana pratap college of pharmacy & science');
+    exactAliases.add('maharana pratap college of pharmacy and science');
   } else if (cleanCode === 'MPCP') {
     exactAliases.add('mpcp');
     exactAliases.add('maharana pratap college of pharmacy');
@@ -269,14 +272,14 @@ export const getDashboardStats = async (req, res) => {
         SELECT COUNT(DISTINCT r.id) AS count
         FROM registrations r
         LEFT JOIN colleges c ON r."collegeId" = c.id
-        LEFT JOIN college_registrations cr ON cr.registration_id = r.id OR cr.id::text = r.id::text
+        LEFT JOIN college_registrations cr ON (cr.registration_id = r.id OR cr.id::text = r.id::text)
         WHERE (
-          ($1::text IS NOT NULL AND r."collegeId"::text = $1)
-          OR (r."collegeId" IS NULL AND (
+          ($1::text IS NOT NULL AND (r."collegeId"::text = $1 OR c.id::text = $1))
+          OR (
             LOWER(TRIM(COALESCE(c.code, ''))) = ANY($2::text[])
             OR LOWER(TRIM(COALESCE(c.name, ''))) = ANY($2::text[])
             OR LOWER(TRIM(COALESCE(cr.college, ''))) = ANY($2::text[])
-          ))
+          )
         )
       `, [collegeId, exactAliases]).catch(() => null),
 
@@ -285,30 +288,31 @@ export const getDashboardStats = async (req, res) => {
         FROM registration_members m
         JOIN registrations r ON m."registrationId" = r.id
         LEFT JOIN colleges c ON r."collegeId" = c.id
-        LEFT JOIN college_registrations cr ON cr.registration_id = r.id OR cr.id::text = r.id::text
+        LEFT JOIN college_registrations cr ON (cr.registration_id = r.id OR cr.id::text = r.id::text OR cr.id::text = m."registrationId"::text)
         WHERE (
-          ($1::text IS NOT NULL AND r."collegeId"::text = $1)
-          OR (r."collegeId" IS NULL AND (
+          ($1::text IS NOT NULL AND (r."collegeId"::text = $1 OR c.id::text = $1))
+          OR (
             LOWER(TRIM(COALESCE(c.code, ''))) = ANY($2::text[])
             OR LOWER(TRIM(COALESCE(c.name, ''))) = ANY($2::text[])
             OR LOWER(TRIM(COALESCE(cr.college, ''))) = ANY($2::text[])
-          ))
+          )
         )
       `, [collegeId, exactAliases]).catch(() => null),
 
       queryDb(`
-        SELECT COUNT(DISTINCT COALESCE(cr.sport_id, r."sportId", s.slug, s.name)) AS count
-        FROM registrations r
+        SELECT COUNT(DISTINCT UPPER(REPLACE(COALESCE(s.name, cr.sport_id, r."sportId"::text, 'SPORT'), '-', ' '))) AS count
+        FROM registration_members m
+        JOIN registrations r ON m."registrationId" = r.id
         LEFT JOIN colleges c ON r."collegeId" = c.id
-        LEFT JOIN college_registrations cr ON cr.registration_id = r.id
-        LEFT JOIN sports s ON (s.id::text = r."sportId"::text OR s.slug = r."sportId")
+        LEFT JOIN college_registrations cr ON (cr.registration_id = r.id OR cr.id::text = r.id::text OR cr.id::text = m."registrationId"::text)
+        LEFT JOIN sports s ON (s.slug = r."sportId"::text OR s.slug = cr.sport_id OR s.name = r."sportId"::text OR s.id::text = r."sportId"::text)
         WHERE (
-          ($1::text IS NOT NULL AND r."collegeId"::text = $1)
-          OR (r."collegeId" IS NULL AND (
+          ($1::text IS NOT NULL AND (r."collegeId"::text = $1 OR c.id::text = $1))
+          OR (
             LOWER(TRIM(COALESCE(c.code, ''))) = ANY($2::text[])
             OR LOWER(TRIM(COALESCE(c.name, ''))) = ANY($2::text[])
             OR LOWER(TRIM(COALESCE(cr.college, ''))) = ANY($2::text[])
-          ))
+          )
         )
       `, [collegeId, exactAliases]).catch(() => null)
     ]);
@@ -320,6 +324,22 @@ export const getDashboardStats = async (req, res) => {
     // Medal Summary
     let medals = inMemoryCollegeMedals[collegeCode] || { gold: 0, silver: 0, bronze: 0, totalPoints: 0, topSport: 'N/A' };
     try {
+      let topSport = 'N/A';
+      try {
+        const topSportRes = await queryDb(
+          `SELECT sport_id, COUNT(*) AS wins 
+           FROM leaderboard_entries 
+           WHERE LOWER(TRIM(winner_college)) = ANY($1::text[])
+           GROUP BY sport_id 
+           ORDER BY wins DESC 
+           LIMIT 1`,
+          [exactAliases]
+        );
+        if (topSportRes && topSportRes.rows.length > 0) {
+          topSport = (topSportRes.rows[0].sport_id || 'Sport').replace(/-/g, ' ').toUpperCase();
+        }
+      } catch (e) { }
+
       const medalRes = await queryDb(
         `SELECT gold_count AS "gold", silver_count AS "silver", bronze_count AS "bronze", total_points AS "totalPoints" 
          FROM college_leaderboards 
@@ -335,10 +355,10 @@ export const getDashboardStats = async (req, res) => {
           silver: Number(medalRes.rows[0].silver || 0),
           bronze: Number(medalRes.rows[0].bronze || 0),
           totalPoints: Number(medalRes.rows[0].totalPoints || 0),
-          topSport: 'N/A'
+          topSport
         };
       }
-    } catch (e) {}
+    } catch (e) { }
 
     return res.json({
       college: collegeCode,
@@ -358,8 +378,28 @@ export const getStudents = async (req, res) => {
   try {
     const scope = await getCollegeAuthScope(req.user);
     const { collegeId, collegeCode, exactAliases } = scope;
-    const { search, sport, status, page, limit } = req.query;
+    const { search, sport, status, gender, format, eventTitle, page, limit } = req.query;
 
+    // 1. Fetch coordinator created events to match sport/event IDs to exact event titles
+    const coordEventsRes = await queryDb('SELECT id, sport_id, title FROM coordinator_event_items').catch(() => null);
+    const coordEventMap = new Map();
+    const availableEventsSet = new Set();
+
+    if (coordEventsRes && coordEventsRes.rows) {
+      coordEventsRes.rows.forEach(e => {
+        if (e.title && e.title.trim()) {
+          availableEventsSet.add(e.title.trim());
+        }
+        if (e.sport_id && e.title) {
+          const sKey = e.sport_id.toLowerCase().replace(/[^a-z0-9]/g, '-');
+          coordEventMap.set(sKey, e.title.trim());
+          coordEventMap.set(e.sport_id.toLowerCase().trim(), e.title.trim());
+          coordEventMap.set(e.id.toString(), e.title.trim());
+        }
+      });
+    }
+
+    // 2. Query athlete roster joining registration_members, registrations, and college_registrations safely
     const dbRes = await queryDb(`
       SELECT 
         m.id,
@@ -372,59 +412,102 @@ export const getStudents = async (req, res) => {
         m.mobile AS phone,
         m.email,
         m."isCaptain",
-        COALESCE(cr.sport_id, r."sportId", s.slug, s.name, 'sport') AS "sportId",
-        COALESCE(s.name, cr.sport_id, r."sportId", 'Sport') AS "sportName",
+        COALESCE(cr.members_count, 1) AS "membersCount",
+        COALESCE(cr.sport_id, r."sportId"::text, s.slug, s.name, 'sport') AS "sportId",
+        COALESCE(s.name, cr.sport_id, r."sportId"::text, 'Sport') AS "sportName",
+        COALESCE(cei.title, cr.participant_data->>'eventTitle', cr.participant_data->>'selectedEvent', cr.participant_data->>'subEvent', cr.participant_data->>'category', cr.participant_data->>'eventType', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb",
+        COALESCE(r."registrationType", cr.participant_data->>'matchFormat', NULL) AS "rawFormat",
         COALESCE(cr.team_name, r."teamName", 'Individual') AS "teamName",
+        COALESCE(cr.college, c.code, c.name, 'MPEC') AS college,
         COALESCE(cr.status, r.status::text, 'VERIFIED') AS status,
-        COALESCE(cr.event_id, 'APEX-2026') AS "eventType",
-        m."createdAt" AS "createdAt"
+        COALESCE(cr.event_id, r."eventId"::text, 'APEX-2026') AS "eventType",
+        COALESCE(cr.participant_data->>'subEvent', cr.participant_data->>'athleticsEvent', cr.participant_data->>'gameName', NULL) AS "subEvent",
+        TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', COALESCE(cr.created_at, r."createdAt", m."createdAt"))), 'YYYY-MM-DD') AS "regDate",
+        TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', COALESCE(cr.created_at, r."createdAt", m."createdAt"))), 'HH12:MI AM') AS "regTime",
+        COALESCE(cr.created_at, r."createdAt", m."createdAt") AS "createdAt"
       FROM registration_members m
       JOIN registrations r ON m."registrationId" = r.id
-      LEFT JOIN college_registrations cr ON cr.registration_id = r.id
-      LEFT JOIN sports s ON s.slug = r."sportId" OR s.slug = cr.sport_id OR s.name = r."sportId" OR s.id::text = r."sportId"::text
-      LEFT JOIN colleges c ON c.id = r."collegeId"
+      LEFT JOIN college_registrations cr ON (cr.registration_id = r.id OR cr.id::text = r.id::text OR cr.id::text = m."registrationId"::text)
+      LEFT JOIN coordinator_event_items cei ON (cei.id::text = cr.event_id::text OR cei.id::text = r."eventId"::text)
+      LEFT JOIN sports s ON (s.slug = r."sportId"::text OR s.slug = cr.sport_id OR s.name = r."sportId"::text OR s.id::text = r."sportId"::text)
+      LEFT JOIN colleges c ON (c.id = r."collegeId" OR c.code = cr.college OR c.name = cr.college)
       WHERE (
-        ($1::text IS NOT NULL AND r."collegeId"::text = $1)
-        OR (r."collegeId" IS NULL AND (
+        ($1::text IS NOT NULL AND (r."collegeId"::text = $1 OR c.id::text = $1))
+        OR (
           LOWER(TRIM(COALESCE(c.code, ''))) = ANY($2::text[])
           OR LOWER(TRIM(COALESCE(c.name, ''))) = ANY($2::text[])
           OR LOWER(TRIM(COALESCE(cr.college, ''))) = ANY($2::text[])
-        ))
+        )
       )
-      ORDER BY m."createdAt" DESC
+      ORDER BY COALESCE(cr.created_at, m."createdAt") DESC
     `, [collegeId, exactAliases]).catch((err) => {
-      console.warn('College head members query error:', err.message);
+      console.warn('College head members query warning:', err.message);
       return null;
     });
 
-    let students = [];
+    let rawList = [];
+    const seenIds = new Set();
+
     if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
-      students = dbRes.rows.map((s) => ({
-        id: s.id,
-        studentName: s.studentName,
-        rollNumber: s.rollNumber || 'N/A',
-        course: s.course || 'N/A',
-        yearSemester: s.yearSemester || 'N/A',
-        year: s.year || s.yearSemester || 'N/A',
-        gender: s.gender || 'Boys',
-        phone: s.phone || 'N/A',
-        email: s.email || 'N/A',
-        isCaptain: (s.isCaptain === true || s.isCaptain === 1 || s.isCaptain === 'true' || s.isCaptain === '1'),
-        sportId: (s.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
-        sportName: (s.sportName || 'Sport').replace(/-/g, ' ').toUpperCase(),
-        teamName: s.teamName || 'Individual',
-        status: s.status || 'VERIFIED',
-        eventType: s.eventType || 'APEX-2026'
-      }));
-    } else {
-      // Fallback to prisma collegeRegistration if no members table entries
+      dbRes.rows.forEach(row => {
+        seenIds.add(row.id);
+        rawList.push(row);
+      });
+    }
+
+    // 3. Include any standalone entries from college_registrations for complete coverage
+    try {
+      const crStandaloneRes = await queryDb(`
+        SELECT 
+          cr.id,
+          cr.student_name AS "studentName",
+          cr.enrollment_no AS "rollNumber",
+          cr.department AS course,
+          'N/A' AS "yearSemester",
+          'N/A' AS year,
+          cr.gender,
+          cr.phone,
+          cr.email,
+          true AS "isCaptain",
+          COALESCE(cr.members_count, 1) AS "membersCount",
+          COALESCE(cr.sport_id, 'sport') AS "sportId",
+          COALESCE(cr.sport_id, 'Sport') AS "sportName",
+          COALESCE(cr.participant_data->>'subEvent', cr.participant_data->>'athleticsEvent', cr.participant_data->>'gameName', NULL) AS "subEvent",
+          COALESCE(cei.title, cr.participant_data->>'eventTitle', cr.participant_data->>'selectedEvent', cr.participant_data->>'subEvent', cr.participant_data->>'category', cr.participant_data->>'eventType', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb",
+          COALESCE(cr.participant_data->>'matchFormat', NULL) AS "rawFormat",
+          COALESCE(cr.team_name, 'Individual') AS "teamName",
+          COALESCE(cr.college, 'MPEC') AS college,
+          COALESCE(cr.status, 'VERIFIED') AS status,
+          COALESCE(cr.event_id, 'APEX-2026') AS "eventType",
+          TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', cr.created_at)), 'YYYY-MM-DD') AS "regDate",
+          TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', cr.created_at)), 'HH12:MI AM') AS "regTime",
+          cr.created_at AS "createdAt"
+        FROM college_registrations cr
+        LEFT JOIN coordinator_event_items cei ON cei.id::text = cr.event_id::text
+        WHERE LOWER(TRIM(COALESCE(cr.college, ''))) = ANY($1::text[])
+        ORDER BY cr.created_at DESC
+      `, [exactAliases]);
+
+      if (crStandaloneRes && crStandaloneRes.rows) {
+        crStandaloneRes.rows.forEach(r => {
+          if (!seenIds.has(r.id)) {
+            seenIds.add(r.id);
+            rawList.push(r);
+          }
+        });
+      }
+    } catch (crErr) { }
+
+    // Fallback to Prisma if database returned empty
+    if (rawList.length === 0) {
       const fallbackRegs = await prisma.collegeRegistration.findMany({
         where: {
           college: { in: exactAliases, mode: 'insensitive' }
         },
         orderBy: { createdAt: 'desc' }
-      });
-      students = fallbackRegs.map((r) => ({
+      }).catch(() => []);
+
+      rawList = fallbackRegs.map((r) => ({
         id: r.id,
         studentName: r.studentName,
         rollNumber: r.enrollmentNo || 'N/A',
@@ -435,21 +518,175 @@ export const getStudents = async (req, res) => {
         phone: r.phone || 'N/A',
         email: r.email || 'N/A',
         isCaptain: true,
-        sportId: (r.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-'),
-        sportName: (r.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
+        membersCount: Number(r.membersCount || 1),
+        sportId: r.sportId || 'sport',
+        sportName: r.sportId || 'Sport',
+        subEvent: r.participantData?.subEvent || r.participantData?.athleticsEvent || null,
+        eventTitleFromDb: r.participantData?.eventTitle || r.participantData?.eventName || null,
+        rawFormat: r.participantData?.matchFormat || null,
         teamName: r.teamName || 'Individual',
+        college: r.college || 'MPEC',
+        regDate: r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) : '2026-08-10',
+        regTime: r.createdAt ? new Date(r.createdAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }) : '10:00 AM',
+        createdAt: r.createdAt,
         status: r.status || 'VERIFIED',
         eventType: r.eventId || 'APEX-2026'
       }));
     }
 
-    if (sport && sport !== 'all') {
-      const sp = sport.toLowerCase();
-      students = students.filter((s) => (s.sportId || '').toLowerCase().includes(sp) || (s.sportName || '').toLowerCase().includes(sp));
+    // 4. Map, normalize, and resolve event titles & match formats
+    let students = rawList.map((s) => {
+      const rawGen = (s.gender || '').toUpperCase().trim();
+      const normalizedGender = (rawGen.includes('FEM') || rawGen.includes('GIRL') || rawGen.includes('WOM')) ? 'FEMALE' : 'MALE';
+
+      const sportKey = (s.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-');
+      let sportDisplayName = (s.sportName || 'Sport').replace(/-/g, ' ').toUpperCase();
+
+      // Athletics subEvent handling
+      const isAthletics = sportKey.includes('athletics') || sportDisplayName.toLowerCase().includes('athletics');
+      let subEvent = s.subEvent || null;
+      if (isAthletics && !subEvent) {
+        const OFFICIAL = ['100m Race', '200m Race', '4*100m relay Race', 'Long Jump', 'Javelin Throw', 'Shot Put', 'Discus Throw'];
+        const searchStr = `${s.eventTitleFromDb || ''} ${s.teamName || ''}`;
+        const found = OFFICIAL.find((o) => searchStr.toLowerCase().includes(o.toLowerCase()));
+        if (found) subEvent = found;
+        if (!subEvent) subEvent = '100m Race';
+      }
+
+      if (isAthletics && subEvent) {
+        sportDisplayName = `ATHLETICS (${subEvent.toUpperCase()})`;
+      }
+
+      // Priority for eventTitle: Athletics subEvent -> Exact coordinator created event title -> DB eventTitle -> APEX 2026 title
+      const matchedCoordTitle = coordEventMap.get(sportKey) || coordEventMap.get((s.sportId || '').toLowerCase()) || coordEventMap.get(s.eventType || '');
+      let displayEventTitle = s.eventTitleFromDb;
+      if (isAthletics && subEvent) {
+        displayEventTitle = `Athletics - ${subEvent}`;
+      } else if (!displayEventTitle || displayEventTitle.toLowerCase().endsWith('championship')) {
+        displayEventTitle = matchedCoordTitle || `APEX ${sportDisplayName} 2026`;
+      }
+      // Available events set strictly retains only genuine active coordinator created events
+
+      // Accurate Match Format Resolution
+      const sKey = sportKey.toLowerCase();
+      const isPureTeamSport = ['cricket', 'football', 'basketball', 'volleyball', 'kabaddi', 'kho-kho', 'tug-of-war'].some(ts => sKey.includes(ts));
+      const teamNameVal = (s.teamName || '').trim();
+      const isIndivName = !teamNameVal || teamNameVal.toLowerCase() === 'individual' || teamNameVal.toLowerCase() === (s.studentName || '').toLowerCase();
+      const rawFmt = (s.rawFormat || '').toUpperCase().trim();
+
+      let resolvedFormat = 'Single';
+      if (rawFmt === 'DOUBLE' || rawFmt === 'DOUBLES' || rawFmt === 'DUO' || Number(s.membersCount || 1) === 2) {
+        resolvedFormat = 'Double';
+      } else if (isPureTeamSport || (!isIndivName && Number(s.membersCount || 1) > 1) || rawFmt === 'TEAM') {
+        resolvedFormat = 'Team';
+      } else {
+        resolvedFormat = 'Single';
+      }
+
+      // Accurate Time & Date resolution
+      let regTime = s.regTime;
+      let regDate = s.regDate;
+      if (!regTime || !regDate) {
+        const ts = s.createdAt;
+        if (ts && !isNaN(new Date(ts).getTime())) {
+          const d = new Date(ts);
+          regDate = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+          regTime = d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
+        } else {
+          regDate = '2026-08-10';
+          regTime = '10:00 AM';
+        }
+      }
+
+      return {
+        id: s.id,
+        studentName: s.studentName,
+        rollNumber: s.rollNumber || 'N/A',
+        course: s.course || 'N/A',
+        yearSemester: s.yearSemester || 'N/A',
+        year: s.year || s.yearSemester || 'N/A',
+        gender: normalizedGender,
+        phone: s.phone || 'N/A',
+        email: s.email || 'N/A',
+        isCaptain: (s.isCaptain === true || s.isCaptain === 1 || s.isCaptain === 'true' || s.isCaptain === '1'),
+        membersCount: Number(s.membersCount || 1),
+        sportId: sportKey,
+        sportName: sportDisplayName,
+        subEvent: subEvent || 'N/A',
+        eventTitle: displayEventTitle,
+        matchFormat: resolvedFormat,
+        teamName: isIndivName ? 'Individual' : (s.teamName || 'Individual'),
+        college: s.college || collegeCode,
+        regDate,
+        regTime,
+        status: s.status || 'VERIFIED',
+        eventType: s.eventType || 'APEX-2026',
+        createdAt: s.createdAt
+      };
+    });
+
+    const availableEvents = Array.from(availableEventsSet);
+
+    // 5. Apply filters
+    if (sport && sport !== 'all' && sport !== 'ALL') {
+      const sp = sport.toLowerCase().trim().replace(/_/g, '-');
+      const isStdCricket = sp === 'cricket' || (sp.includes('cricket') && !sp.includes('gully'));
+      const isGully = sp.includes('gully');
+
+      students = students.filter((s) => {
+        const sid = (s.sportId || '').toLowerCase().replace(/_/g, '-');
+        const sname = (s.sportName || '').toLowerCase().replace(/_/g, '-');
+
+        if (isStdCricket) {
+          if (sid.includes('gully') || sname.includes('gully')) return false;
+          return sid.includes('cricket') || sname.includes('cricket');
+        }
+        if (isGully) {
+          return sid.includes('gully') || sname.includes('gully');
+        }
+        return (
+          sid === sp ||
+          sid.replace(/[^a-z0-9]/g, '') === sp.replace(/[^a-z0-9]/g, '') ||
+          sname === sp ||
+          sname.includes(sp) ||
+          sid.includes(sp)
+        );
+      });
     }
 
-    if (status && status !== 'all') {
-      students = students.filter((s) => (s.status || '').toLowerCase() === status.toLowerCase());
+    if (status && status !== 'all' && status !== 'ALL') {
+      students = students.filter((s) => (s.status || '').toLowerCase() === status.toLowerCase().trim());
+    }
+
+    if (gender && gender !== 'all' && gender !== 'ALL') {
+      const g = gender.toUpperCase().trim();
+      students = students.filter((s) => (s.gender || '').toUpperCase().trim() === g);
+    }
+
+    if (format && format !== 'all' && format !== 'ALL') {
+      const fmt = format.toUpperCase().trim();
+      students = students.filter((s) => {
+        const mf = (s.matchFormat || '').toUpperCase().trim();
+        if (fmt === 'SINGLE' || fmt === 'INDIVIDUAL' || fmt === 'SOLO') {
+          return mf === 'SINGLE' || mf === 'INDIVIDUAL' || mf === 'SOLO';
+        }
+        if (fmt === 'DOUBLE' || fmt === 'DOUBLES' || fmt === 'DUO') {
+          return mf === 'DOUBLE' || mf === 'DOUBLES' || mf === 'DUO';
+        }
+        if (fmt === 'TEAM') {
+          return mf === 'TEAM';
+        }
+        return mf === fmt;
+      });
+    }
+
+    if (eventTitle && eventTitle !== 'all' && eventTitle !== 'ALL') {
+      const ev = eventTitle.toLowerCase().trim();
+      students = students.filter((s) =>
+        (s.eventTitle || '').toLowerCase().trim() === ev ||
+        (s.eventTitle || '').toLowerCase().includes(ev) ||
+        ev.includes((s.eventTitle || '').toLowerCase().trim())
+      );
     }
 
     if (search) {
@@ -457,8 +694,11 @@ export const getStudents = async (req, res) => {
       students = students.filter((s) =>
         (s.studentName && s.studentName.toLowerCase().includes(q)) ||
         (s.rollNumber && s.rollNumber.toLowerCase().includes(q)) ||
+        (s.phone && s.phone.toLowerCase().includes(q)) ||
+        (s.email && s.email.toLowerCase().includes(q)) ||
         (s.course && s.course.toLowerCase().includes(q)) ||
         (s.sportName && s.sportName.toLowerCase().includes(q)) ||
+        (s.eventTitle && s.eventTitle.toLowerCase().includes(q)) ||
         (s.teamName && s.teamName.toLowerCase().includes(q))
       );
     }
@@ -475,7 +715,9 @@ export const getStudents = async (req, res) => {
       return res.json({
         college: collegeCode,
         count: sanitizedStudents.length,
+        totalCount: sanitizedStudents.length,
         students: paginated,
+        availableEvents,
         pagination: {
           page: pageNum,
           limit: limitNum,
@@ -488,11 +730,76 @@ export const getStudents = async (req, res) => {
     return res.json({
       college: collegeCode,
       count: sanitizedStudents.length,
+      totalCount: sanitizedStudents.length,
       students: sanitizedStudents,
+      availableEvents
     });
   } catch (err) {
     console.error('Error fetching college head students:', err);
     return res.status(500).json({ message: 'Error loading student list' });
+  }
+};
+
+export const getCollegeHeadEvents = async (req, res) => {
+  try {
+    const eventsList = [];
+    const seenTitles = new Set();
+
+    // Fetch ONLY active coordinator created events from coordinator_event_items
+    try {
+      const dbRes = await queryDb(`
+        SELECT id, sport_id AS "sportId", title AS "eventTitle"
+        FROM coordinator_event_items
+        WHERE title IS NOT NULL AND TRIM(title) != ''
+        ORDER BY title ASC
+      `);
+      if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+        dbRes.rows.forEach((r) => {
+          const t = (r.eventTitle || '').trim();
+          if (t && !seenTitles.has(t.toLowerCase())) {
+            seenTitles.add(t.toLowerCase());
+            eventsList.push({
+              id: r.id,
+              sportId: r.sportId || '',
+              title: t
+            });
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('Direct SQL fetch for coordinator_event_items failed, using Prisma fallback:', e.message);
+    }
+
+    if (eventsList.length === 0) {
+      try {
+        const prismaEvents = await prisma.coordinatorEventItem.findMany({
+          where: { title: { not: '' } },
+          select: { id: true, sportId: true, title: true },
+          orderBy: { title: 'asc' }
+        });
+        if (prismaEvents) {
+          prismaEvents.forEach((r) => {
+            const t = (r.title || '').trim();
+            if (t && !seenTitles.has(t.toLowerCase())) {
+              seenTitles.add(t.toLowerCase());
+              eventsList.push({
+                id: r.id,
+                sportId: r.sportId || '',
+                title: t
+              });
+            }
+          });
+        }
+      } catch (pErr) { }
+    }
+
+    return res.json({
+      success: true,
+      count: eventsList.length,
+      events: eventsList
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -616,6 +923,22 @@ export const getMedalSummary = async (req, res) => {
     const scope = await getCollegeAuthScope(req.user);
     const { collegeId, collegeCode, exactAliases } = scope;
 
+    let topSport = 'N/A';
+    try {
+      const topSportRes = await queryDb(
+        `SELECT sport_id, COUNT(*) AS wins 
+         FROM leaderboard_entries 
+         WHERE LOWER(TRIM(winner_college)) = ANY($1::text[])
+         GROUP BY sport_id 
+         ORDER BY wins DESC 
+         LIMIT 1`,
+        [exactAliases]
+      );
+      if (topSportRes && topSportRes.rows.length > 0) {
+        topSport = (topSportRes.rows[0].sport_id || 'Sport').replace(/-/g, ' ').toUpperCase();
+      }
+    } catch (e) { }
+
     const dbRes = await queryDb(
       `SELECT gold_count AS "gold", silver_count AS "silver", bronze_count AS "bronze", total_points AS "totalPoints" 
        FROM college_leaderboards 
@@ -634,17 +957,17 @@ export const getMedalSummary = async (req, res) => {
         silver: Number(row.silver || 0),
         bronze: Number(row.bronze || 0),
         totalPoints: Number(row.totalPoints || 0),
-        topSport: 'N/A'
+        topSport
       });
     }
 
     const medals = inMemoryCollegeMedals[collegeCode] || { gold: 0, silver: 0, bronze: 0, totalPoints: 0, topSport: 'N/A' };
-    return res.json({ college: collegeCode, ...medals });
+    return res.json({ college: collegeCode, ...medals, topSport });
   } catch (err) {
     console.warn('Error fetching college head medal summary from DB:', err.message);
     const scope = await getCollegeAuthScope(req.user).catch(() => ({ collegeCode: 'MPEC' }));
     const medals = inMemoryCollegeMedals[scope.collegeCode] || { gold: 0, silver: 0, bronze: 0, totalPoints: 0, topSport: 'N/A' };
-    return res.json({ college: scope.collegeCode, ...medals });
+    return res.json({ college: scope.collegeCode, ...medals, topSport: 'N/A' });
   }
 };
 
@@ -673,18 +996,18 @@ export const exportReport = async (req, res) => {
         m."createdAt" AS "createdAt"
       FROM registration_members m
       JOIN registrations r ON m."registrationId" = r.id
-      LEFT JOIN college_registrations cr ON cr.registration_id = r.id
-      LEFT JOIN sports s ON s.slug = r."sportId" OR s.slug = cr.sport_id OR s.name = r."sportId"
-      LEFT JOIN colleges c ON c.id = r."collegeId"
+      LEFT JOIN college_registrations cr ON (cr.registration_id = r.id OR cr.id::text = r.id::text OR cr.id::text = m."registrationId"::text)
+      LEFT JOIN sports s ON (s.slug = r."sportId"::text OR s.slug = cr.sport_id OR s.name = r."sportId"::text OR s.id::text = r."sportId"::text)
+      LEFT JOIN colleges c ON (c.id = r."collegeId" OR c.code = cr.college OR c.name = cr.college)
       WHERE (
-        ($1::text IS NOT NULL AND r."collegeId"::text = $1)
-        OR (r."collegeId" IS NULL AND (
+        ($1::text IS NOT NULL AND (r."collegeId"::text = $1 OR c.id::text = $1))
+        OR (
           LOWER(TRIM(COALESCE(c.code, ''))) = ANY($2::text[])
           OR LOWER(TRIM(COALESCE(c.name, ''))) = ANY($2::text[])
           OR LOWER(TRIM(COALESCE(cr.college, ''))) = ANY($2::text[])
-        ))
+        )
       )
-      ORDER BY m."createdAt" DESC
+      ORDER BY COALESCE(cr.created_at, m."createdAt") DESC
     `, [collegeId, exactAliases]);
 
     const sanitizedStudents = (dbRes?.rows || []).map(sanitizeStudentForCollegeHead);
@@ -708,7 +1031,7 @@ export const exportReport = async (req, res) => {
           totalPoints: Number(medalRes.rows[0].totalPoints || 0)
         };
       }
-    } catch (e) {}
+    } catch (e) { }
 
     return res.json({
       college: collegeCode,
@@ -723,3 +1046,69 @@ export const exportReport = async (req, res) => {
     return res.status(500).json({ message: 'Error exporting report' });
   }
 };
+
+export const changeCollegeHeadPassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const username = req.user?.username;
+  const userId = req.user?.id;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ message: 'Current password and new password are required.' });
+  }
+
+  const trimmedNew = newPassword.trim();
+  if (trimmedNew.length < 6) {
+    return res.status(400).json({ message: 'New password must be at least 6 characters long.' });
+  }
+
+  if (currentPassword === trimmedNew) {
+    return res.status(400).json({ message: 'New password must be different from current password.' });
+  }
+
+  try {
+    const userKey = (username || '').toLowerCase();
+    const dbResult = await queryDb(
+      'SELECT * FROM college_head_users WHERE LOWER(username) = $1 OR id = $2',
+      [userKey, userId || 0]
+    );
+
+    if (!dbResult || dbResult.rows.length === 0) {
+      return res.status(404).json({ message: 'College head account not found.' });
+    }
+
+    const user = dbResult.rows[0];
+    const expectedPassword = headPasswords[userKey];
+
+    let isValid = false;
+    if (user.password_hash) {
+      isValid = await bcrypt.compare(currentPassword, user.password_hash);
+    } else if (expectedPassword) {
+      isValid = (currentPassword === expectedPassword);
+    }
+
+    if (!isValid) {
+      return res.status(400).json({ message: 'Current password is incorrect.' });
+    }
+
+    const hashed = await bcrypt.hash(trimmedNew, 10);
+    await queryDb(
+      'UPDATE college_head_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 OR LOWER(username) = $3',
+      [hashed, user.id, userKey]
+    );
+
+    logAuditEvent({
+      userId: user.id,
+      actorName: user.username,
+      role: 'COLLEGE_HEAD',
+      action: 'Password Changed',
+      entity: `College Head: ${user.username} (${user.college})`,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    });
+
+    return res.json({ success: true, message: 'Password updated successfully.' });
+  } catch (err) {
+    console.error('Error changing college head password:', err.message);
+    return res.status(500).json({ message: 'Failed to update password in database.' });
+  }
+};
+

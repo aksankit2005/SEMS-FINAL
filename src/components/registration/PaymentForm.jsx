@@ -38,9 +38,17 @@ export const PaymentForm = ({
           <span className="text-slate-500 dark:text-slate-400">Registration Sport:</span>
           <span className="font-bold text-blue-600 dark:text-blue-400">{sport.name}</span>
         </div>
+        {(formData.subEvent || formData.selectedEvents?.[0]) && (
+          <div className="flex justify-between text-xs font-semibold">
+            <span className="text-slate-500 dark:text-slate-400">Selected Sub-Event:</span>
+            <span className="font-bold text-[#7156A5] dark:text-[#B8A5E5]">{formData.subEvent || formData.selectedEvents?.[0]}</span>
+          </div>
+        )}
         <div className="pt-2.5 border-t border-slate-200 dark:border-slate-850 flex justify-between items-center">
           <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Amount to Pay:</span>
-          <span className="font-black text-xl text-emerald-600 dark:text-emerald-400">₹{sport.entryFee}</span>
+          <span className="font-black text-xl text-emerald-600 dark:text-emerald-400">
+            {sport.entryFee === 0 ? 'FREE (₹0)' : `₹${sport.entryFee}`}
+          </span>
         </div>
       </div>
 

@@ -63,6 +63,16 @@ const DEFAULT_SESSIONS = [
 ];
 
 export const committeeApi = {
+  // Get cached sessions synchronously without network delay
+  getCachedData: () => {
+    try {
+      const saved = localStorage.getItem(COMMITTEE_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : DEFAULT_SESSIONS;
+    } catch (e) {
+      return DEFAULT_SESSIONS;
+    }
+  },
+
   // Get all sessions with advisors & executive committee from database
   getCommitteeData: async () => {
     try {
@@ -81,6 +91,11 @@ export const committeeApi = {
     } catch (e) {
       return DEFAULT_SESSIONS;
     }
+  },
+
+  // Resilient alias matching alternate naming conventions
+  fetchSessions: async () => {
+    return await committeeApi.getCommitteeData();
   },
 
   // Save/Create/Update Session
@@ -116,6 +131,8 @@ export const committeeApi = {
         type,
         name: memberData.name,
         role: memberData.role,
+        designation: memberData.designation || '',
+        description: memberData.description || '',
         image: memberData.image,
         publicId: memberData.publicId,
         email: memberData.email || '',

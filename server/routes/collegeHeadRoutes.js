@@ -6,7 +6,9 @@ import {
   getRegistrations,
   getSportsParticipation,
   getMedalSummary,
-  exportReport
+  exportReport,
+  getCollegeHeadEvents,
+  changeCollegeHeadPassword
 } from '../controllers/collegeHeadController.js';
 import { verifyCollegeHeadToken } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimiters.js';
@@ -14,8 +16,10 @@ import { authLimiter } from '../middleware/rateLimiters.js';
 const router = express.Router();
 
 router.post('/college-head/login', authLimiter, collegeHeadLogin);
+router.post('/college-head/change-password', verifyCollegeHeadToken, changeCollegeHeadPassword);
 router.get('/college-head/dashboard-stats', verifyCollegeHeadToken, getDashboardStats);
 router.get('/college-head/students', verifyCollegeHeadToken, getStudents);
+router.get('/college-head/events', verifyCollegeHeadToken, getCollegeHeadEvents);
 router.get('/college-head/registrations', verifyCollegeHeadToken, getRegistrations);
 router.get('/college-head/sports-participation', verifyCollegeHeadToken, getSportsParticipation);
 router.get('/college-head/medal-summary', verifyCollegeHeadToken, getMedalSummary);

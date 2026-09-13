@@ -70,8 +70,13 @@ export const AthleticsResultManagementTab = ({ sportName = 'Athletics', sportSlu
 
   // Filter registrations for the selected sub-event
   const registeredEntries = registrations.filter((r) => {
-    const selected = r.selectedEvents || (r.event ? [r.event] : []);
-    return selected.includes(selectedSubEvent);
+    const sub = r.subEvent || r.athleticsEvent || r.participantData?.subEvent || r.participantData?.athleticsEvent;
+    if (sub && sub.toLowerCase() === selectedSubEvent.toLowerCase()) return true;
+    const selected = Array.isArray(r.selectedEvents) ? r.selectedEvents : (r.event ? [r.event] : []);
+    if (selected.some((s) => s.toLowerCase() === selectedSubEvent.toLowerCase())) return true;
+    if (r.eventTitle && r.eventTitle.toLowerCase().includes(selectedSubEvent.toLowerCase())) return true;
+    if (r.event && r.event.toLowerCase().includes(selectedSubEvent.toLowerCase())) return true;
+    return false;
   });
 
   const manualEntries = manualAthletes[selectedSubEvent] || [];

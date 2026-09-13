@@ -74,7 +74,7 @@ export const ImageCropperModal = ({ imageSrc, onClose, onCropComplete }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xs animate-fade-in font-sans">
+    <div className="fixed inset-0 z-[10050] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xs animate-fade-in font-sans">
       <div className="w-full max-w-2xl bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-5">
         
         {/* Modal Header */}

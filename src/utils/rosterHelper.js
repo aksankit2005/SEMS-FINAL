@@ -121,6 +121,23 @@ export const getParticipationType = (record, explicitSportId = null) => {
   return normalizeParticipationType(record, explicitSportId);
 };
 
+export const matchesParticipationTypeFilter = (record, selectedFilter) => {
+  if (!selectedFilter || selectedFilter === 'ALL') return true;
+  const pType = getParticipationType(record);
+  const sel = String(selectedFilter).trim().toUpperCase();
+
+  if (sel === 'INDIVIDUAL' || sel === 'SINGLE' || sel === 'SINGLES') {
+    return pType === 'INDIVIDUAL';
+  }
+  if (sel === 'DUO' || sel === 'DOUBLE' || sel === 'DOUBLES') {
+    return pType === 'DUO';
+  }
+  if (sel === 'TEAM') {
+    return pType === 'TEAM';
+  }
+  return true;
+};
+
 /**
  * Standardizes and flattens registration records into individual athlete rows.
  * - Individual sports (e.g. Chess, Athletics 100m, Table Tennis singles, Badminton singles) -> 1 row per participant.
@@ -133,6 +150,24 @@ export const getParticipationType = (record, explicitSportId = null) => {
  * - Preserves shared registration metadata (registrationId, teamName, college, sport, event, status, timestamp).
  * - No mock data injection, no obsolete branch/section fields.
  */
+const resolveGender = (m, reg) => {
+  const explicit = m?.gender || reg?.gender || reg?.participantData?.gender || reg?.participantData?.teamGender || reg?.genderCategory || reg?.category;
+  if (explicit && typeof explicit === 'string' && explicit.trim()) {
+    const el = explicit.trim().toLowerCase();
+    if (el === 'female' || el === 'girl' || el === 'girls' || el === 'women' || el === 'woman' || el === 'f') return 'Female';
+    if (el === 'male' || el === 'boy' || el === 'boys' || el === 'men' || el === 'man' || el === 'm') return 'Male';
+    return explicit.trim().charAt(0).toUpperCase() + explicit.trim().slice(1);
+  }
+  const eventStr = `${reg?.eventTitle || ''} ${reg?.eventType || ''} ${reg?.event || ''}`.toLowerCase();
+  if (eventStr.includes('girl') || eventStr.includes('female') || eventStr.includes('women') || eventStr.includes('woman')) {
+    return 'Female';
+  }
+  if (eventStr.includes('boy') || eventStr.includes('male') || eventStr.includes('men') || eventStr.includes('man')) {
+    return 'Male';
+  }
+  return 'Male';
+};
+
 export const flattenRegistrationRoster = (registrations = [], options = {}) => {
   const { defaultSport = 'Sport' } = options;
   const flattened = [];
@@ -143,8 +178,29 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
     if (!reg) return;
 
     const registrationId = reg.receiptId || reg.registrationId || reg.id || 'N/A';
-    const sportName = reg.sport || reg.sportName || defaultSport;
-    const eventName = reg.eventTitle || reg.eventType || `${sportName} Championship`;
+    const isAthletics = (reg.sport || reg.sportName || reg.sportId || defaultSport || '').toLowerCase().includes('athletics');
+
+    // Resolve athletics sub-event from all potential sources
+    let subEvent = reg.subEvent || reg.athleticsEvent || reg.participantData?.subEvent || reg.participantData?.athleticsEvent || (Array.isArray(reg.selectedEvents) ? reg.selectedEvents[0] : (typeof reg.selectedEvents === 'string' ? reg.selectedEvents : null)) || (Array.isArray(reg.participantData?.selectedEvents) ? reg.participantData.selectedEvents[0] : null);
+
+    const OFFICIAL = ['100m Race', '200m Race', '4*100m relay Race', 'Long Jump', 'Javelin Throw', 'Shot Put', 'Discus Throw'];
+    if (isAthletics && !subEvent) {
+      const searchStr = `${reg.eventTitle || ''} ${reg.eventType || ''} ${reg.sport || ''} ${reg.sportName || ''} ${reg.teamName || ''}`;
+      const found = OFFICIAL.find((o) => searchStr.toLowerCase().includes(o.toLowerCase()));
+      if (found) subEvent = found;
+    }
+    if (isAthletics && !subEvent) {
+      subEvent = '100m Race';
+    }
+
+    let sportName = reg.sport || reg.sportName || defaultSport;
+    if (isAthletics && subEvent && !sportName.includes('(')) {
+      sportName = `Athletics (${subEvent})`;
+    }
+
+    const eventName = isAthletics && subEvent 
+      ? `Athletics - ${subEvent}` 
+      : (reg.eventTitle || reg.eventType || `${sportName} Championship`);
     const collegeName = reg.collegeName || reg.college || reg.player1?.college || 'N/A';
     const timestamp = reg.timestamp || reg.registeredDate || (reg.createdAt ? new Date(reg.createdAt).toLocaleDateString() : 'N/A');
     const status = reg.status || 'VERIFIED';
@@ -165,6 +221,8 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
           timestamp,
           sport: sportName,
           event: eventName,
+          subEvent: subEvent || null,
+          athleticsEvent: subEvent || null,
           teamName: teamDisplayName,
           collegeName,
           participationType,
@@ -172,7 +230,7 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
           rollNo: m.rollNo || m.roll || (mIdx === 0 ? (reg.enrollmentNo || reg.roll) : 'N/A'),
           phone: m.mobile || m.phone || (mIdx === 0 ? (reg.phone || reg.mobile) : 'N/A'),
           email: m.email || (mIdx === 0 ? reg.email : 'N/A'),
-          gender: m.gender || reg.gender || 'Male',
+          gender: resolveGender(m, reg),
           course: m.course || reg.department || 'N/A',
           yearSemester: m.yearSemester || 'N/A',
           isCaptain: isCap,
@@ -194,6 +252,8 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
           timestamp,
           sport: sportName,
           event: eventName,
+          subEvent: subEvent || null,
+          athleticsEvent: subEvent || null,
           teamName: teamDisplayName,
           collegeName,
           participationType,
@@ -201,7 +261,7 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
           rollNo: m.rollNo || m.roll || 'N/A',
           phone: m.phone || m.mobile || (mIdx === 0 ? (reg.phone || reg.mobile) : 'N/A'),
           email: m.email || (mIdx === 0 ? reg.email : 'N/A'),
-          gender: m.gender || reg.gender || 'Male',
+          gender: resolveGender(m, reg),
           course: m.course || reg.department || 'N/A',
           yearSemester: m.semester || m.year || m.yearSemester || 'N/A',
           isCaptain: isCap,
@@ -224,6 +284,8 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
         timestamp,
         sport: sportName,
         event: eventName,
+        subEvent: subEvent || null,
+        athleticsEvent: subEvent || null,
         teamName: teamDisplayName,
         collegeName,
         participationType,
@@ -231,7 +293,7 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
         rollNo: p1.roll || reg.enrollmentNo || 'N/A',
         phone: p1.phone || reg.phone || 'N/A',
         email: p1.email || reg.email || 'N/A',
-        gender: p1.gender || reg.gender || 'Male',
+        gender: resolveGender(p1, reg),
         course: p1.department || reg.department || 'N/A',
         yearSemester: p1.year || 'N/A',
         isCaptain: true,
@@ -246,6 +308,8 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
         timestamp,
         sport: sportName,
         event: eventName,
+        subEvent: subEvent || null,
+        athleticsEvent: subEvent || null,
         teamName: teamDisplayName,
         collegeName,
         participationType,
@@ -253,7 +317,7 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
         rollNo: p2.roll || 'N/A',
         phone: p2.phone || 'N/A',
         email: p2.email || 'N/A',
-        gender: p2.gender || reg.gender || 'Male',
+        gender: resolveGender(p2, reg),
         course: p2.department || reg.department || 'N/A',
         yearSemester: p2.year || 'N/A',
         isCaptain: false,
@@ -272,6 +336,8 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
       timestamp,
       sport: sportName,
       event: eventName,
+      subEvent: subEvent || null,
+      athleticsEvent: subEvent || null,
       teamName: isIndividual ? 'Individual' : teamDisplayName,
       collegeName,
       participationType,
@@ -279,7 +345,7 @@ export const flattenRegistrationRoster = (registrations = [], options = {}) => {
       rollNo: p1.roll || reg.enrollmentNo || reg.roll || 'N/A',
       phone: p1.phone || reg.phone || reg.mobile || 'N/A',
       email: p1.email || reg.email || 'N/A',
-      gender: p1.gender || reg.gender || 'Male',
+      gender: resolveGender(p1, reg),
       course: p1.department || reg.department || reg.course || 'N/A',
       yearSemester: p1.year || reg.yearSemester || 'N/A',
       isCaptain: true,

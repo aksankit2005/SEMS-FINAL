@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Calendar, Layers, CheckCircle2, Clock, XCircle, Edit, Trash2, Eye, 
   Upload, Crop, Image as ImageIcon, Users, DollarSign, ShieldAlert, Download, 
-  Search, Filter, ToggleLeft, ToggleRight, X, AlertCircle, Sparkles, FileText, Phone, Mail
+  Search, Filter, ToggleLeft, ToggleRight, X, AlertCircle, Sparkles, FileText, Phone, Mail, Lock, ChevronDown
 } from 'lucide-react';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { ImageCropperModal } from '../../common/ImageCropperModal';
@@ -20,6 +20,7 @@ export const EventsTab = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
+  const [activeDropdownEventId, setActiveDropdownEventId] = useState(null);
   
   // Participant Drawer/Modal state
   const [selectedEventForParticipants, setSelectedEventForParticipants] = useState(null);
@@ -42,9 +43,9 @@ export const EventsTab = ({ user }) => {
     coverImage: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80',
     description: '',
     regStartDate: new Date().toISOString().split('T')[0],
-    regEndDate: '2026-08-25',
-    tournStartDate: '2026-09-01',
-    tournEndDate: '2026-09-03',
+    regEndDate: '2026-09-15',
+    tournStartDate: '2026-09-16',
+    tournEndDate: '2026-09-18',
     entryFee: 400,
     singlesFee: 300,
     doublesFee: 600,
@@ -108,9 +109,9 @@ export const EventsTab = ({ user }) => {
       coverImage: eventObj.coverImage || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80',
       description: eventObj.description || '',
       regStartDate: eventObj.regStartDate || new Date().toISOString().split('T')[0],
-      regEndDate: eventObj.regEndDate || '2026-08-25',
-      tournStartDate: eventObj.tournStartDate || '2026-09-01',
-      tournEndDate: eventObj.tournEndDate || '2026-09-03',
+      regEndDate: eventObj.regEndDate || '2026-09-15',
+      tournStartDate: eventObj.tournStartDate || '2026-09-16',
+      tournEndDate: eventObj.tournEndDate || '2026-09-18',
       entryFee: eventObj.entryFee !== undefined ? eventObj.entryFee : 400,
       singlesFee: eventObj.singlesFee !== undefined ? eventObj.singlesFee : 300,
       doublesFee: eventObj.doublesFee !== undefined ? eventObj.doublesFee : 600,
@@ -144,9 +145,9 @@ export const EventsTab = ({ user }) => {
       coverImage: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80',
       description: `Official inter-college ${user?.sportName} tournament. Register your entries today!`,
       regStartDate: new Date().toISOString().split('T')[0],
-      regEndDate: '2026-08-25',
-      tournStartDate: '2026-09-01',
-      tournEndDate: '2026-09-03',
+      regEndDate: '2026-09-15',
+      tournStartDate: '2026-09-16',
+      tournEndDate: '2026-09-18',
       entryFee: 400,
       singlesFee: 300,
       doublesFee: 600,
@@ -211,6 +212,7 @@ export const EventsTab = ({ user }) => {
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
+        setFormData((prev) => ({ ...prev, coverImage: reader.result }));
         setCropperRawSrc(reader.result);
         setShowCropper(true);
       };
@@ -343,10 +345,119 @@ export const EventsTab = ({ user }) => {
     setParticipants(eventRegs.length > 0 ? eventRegs : allRegs);
   };
 
+  const [allRegistrations, setAllRegistrations] = useState([]);
+
+  useEffect(() => {
+    const loadRegs = async () => {
+      try {
+        const list = await coordinatorApi.getRegistrations();
+        setAllRegistrations(list || []);
+      } catch (e) {}
+    };
+    loadRegs();
+  }, [events]);
+
+  const handleToggleCloseEvent = async (eventObj) => {
+    const regStatus = computeEffectiveRegistrationStatus(eventObj);
+    const isCurrentlyClosed = eventObj.status === 'Closed' || eventObj.registrationOpen === false || regStatus.isDeadlinePassed;
+    
+    const targetStatus = isCurrentlyClosed ? 'Published' : 'Closed';
+    const targetRegOpen = isCurrentlyClosed;
+    let newRegEndDate = eventObj.regEndDate;
+
+    if (isCurrentlyClosed && regStatus.isDeadlinePassed) {
+      const future = new Date();
+      future.setDate(future.getDate() + 7);
+      newRegEndDate = future.toISOString().split('T')[0];
+    }
+
+    try {
+      const payload = {
+        status: targetStatus,
+        registrationOpen: targetRegOpen,
+        ...(newRegEndDate !== eventObj.regEndDate ? { regEndDate: newRegEndDate } : {})
+      };
+
+      const updated = await coordinatorApi.updateEvent(eventObj.id, payload);
+      setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, ...payload } : item)));
+      
+      if (!targetRegOpen) {
+        addToast(`🔒 Event "${eventObj.title}" is now Closed.`, 'info');
+      } else {
+        addToast(`🔓 Event "${eventObj.title}" is now Active & Open for registrations!`, 'success');
+      }
+      fetchEvents();
+      window.dispatchEvent(new Event('sems_events_updated'));
+    } catch (err) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to update event status';
+      addToast(errMsg, 'error');
+    }
+  };
+
+  const handleSetEventStatus = async (eventObj, actionKey) => {
+    setActiveDropdownEventId(null);
+    try {
+      if (actionKey === 'OPEN') {
+        const nowStr = new Date().toISOString().split('T')[0];
+        let newEndDate = eventObj.regEndDate;
+        if (!eventObj.regEndDate || eventObj.regEndDate < nowStr) {
+          const futureDate = new Date();
+          futureDate.setDate(futureDate.getDate() + 7);
+          newEndDate = futureDate.toISOString().split('T')[0];
+        }
+        const updated = await coordinatorApi.updateEvent(eventObj.id, {
+          status: 'Published',
+          registrationOpen: true,
+          regEndDate: newEndDate
+        });
+        setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, status: 'Published', registrationOpen: true, regEndDate: newEndDate } : item)));
+        addToast(`🔓 Registration is now OPEN for "${eventObj.title}"! (Deadline: ${newEndDate})`, 'success');
+      } else if (actionKey === 'CLOSE') {
+        const updated = await coordinatorApi.updateEvent(eventObj.id, {
+          status: 'Closed',
+          registrationOpen: false
+        });
+        setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, status: 'Closed', registrationOpen: false } : item)));
+        addToast(`🔒 Registration CLOSED for "${eventObj.title}". Fixtures can now be scheduled!`, 'info');
+      } else if (actionKey === 'UPCOMING') {
+        const updated = await coordinatorApi.updateEvent(eventObj.id, {
+          status: 'Upcoming',
+          registrationOpen: false
+        });
+        setEvents((prev) => prev.map((item) => (item.id === eventObj.id ? { ...item, ...updated, status: 'Upcoming', registrationOpen: false } : item)));
+        addToast(`⏳ Event marked as UPCOMING for "${eventObj.title}".`, 'info');
+      } else if (actionKey === 'EXTEND') {
+        handleOpenEdit(eventObj);
+        return;
+      }
+      fetchEvents();
+      window.dispatchEvent(new Event('sems_events_updated'));
+    } catch (err) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to update event status';
+      addToast(errMsg, 'error');
+    }
+  };
+
   // Dashboard Stats calculation
   const totalEvents = events.length;
-  const activeEvents = events.filter((e) => e.status === 'Published').length;
-  const closedEvents = events.filter((e) => e.status === 'Closed').length;
+  const activeEvents = events.filter((e) => {
+    const s = (e.status || '').toLowerCase();
+    const regStatus = computeEffectiveRegistrationStatus(e);
+    return (s === 'published' || s === 'active') && e.status !== 'Closed' && !regStatus.isDeadlinePassed && e.registrationOpen !== false;
+  }).length;
+
+  const upcomingEvents = events.filter((e) => {
+    const s = (e.status || '').toLowerCase();
+    const regStatus = computeEffectiveRegistrationStatus(e);
+    return s === 'upcoming' || s === 'draft' || regStatus.code === 'UPCOMING' || regStatus.code === 'NOT_STARTED';
+  }).length;
+
+  const closedEvents = events.filter((e) => {
+    const s = (e.status || '').toLowerCase();
+    const regStatus = computeEffectiveRegistrationStatus(e);
+    return s === 'closed' || s === 'inactive' || s === 'completed' || regStatus.isDeadlinePassed || regStatus.code.startsWith('CLOSED') || e.registrationOpen === false;
+  }).length;
+
   const totalRegCount = events.reduce((acc, curr) => acc + (curr.registeredCount || 0), 0);
   const totalRevenue = events.reduce((acc, curr) => acc + ((curr.registeredCount || 0) * (curr.entryFee || 0)), 0);
   const totalAvailableSlots = events.reduce((acc, curr) => acc + Math.max(0, (curr.maxRegistrations || 64) - (curr.registeredCount || 0)), 0);
@@ -362,18 +473,18 @@ export const EventsTab = ({ user }) => {
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Active (Published)</span>
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Active Events</span>
           <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">{activeEvents}</p>
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Registration Closed</span>
-          <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight">{closedEvents}</p>
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Upcoming Events</span>
+          <p className="text-2xl font-black text-amber-500 dark:text-amber-400 tracking-tight">{upcomingEvents}</p>
         </div>
 
         <div className="bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-1 shadow-sm">
-          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Assigned Sport</span>
-          <p className="text-sm font-black text-slate-900 dark:text-white truncate">{user?.sportName || 'Badminton'}</p>
+          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Closed Events</span>
+          <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">{closedEvents}</p>
         </div>
       </div>
 
@@ -417,20 +528,18 @@ export const EventsTab = ({ user }) => {
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
               Click the "Create Registration Event" button above to publish your first tournament registration event for {user?.sportName}.
             </p>
-            <button
-              onClick={handleOpenCreate}
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
-            >
-              + Create First Event
-            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {events.map((event) => {
-              const registered = event.registeredCount || 0;
+              const eventRegsCount = allRegistrations.filter(
+                (r) => r.eventId === event.id || r.sportId === event.sportId || r.sport === event.sportName
+              ).length;
+              const registered = Math.max(event.registeredCount || 0, eventRegsCount);
               const limit = event.maxRegistrations || 64;
               const percent = Math.min(100, Math.round((registered / limit) * 100));
-              const isRegOpen = event.registrationOpen !== false && event.status !== 'Closed';
+              const regStatus = computeEffectiveRegistrationStatus(event);
+              const isClosed = event.status === 'Closed' || event.registrationOpen === false || regStatus.isDeadlinePassed;
 
               return (
                 <div
@@ -502,40 +611,113 @@ export const EventsTab = ({ user }) => {
 
                     {/* Actions Bar */}
                     <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <EventStatusActionButton 
-                          event={event} 
-                          onToggleStatus={handleToggleEventStatus} 
-                        />
-                        <RegistrationActionButton 
-                          event={event} 
-                          onToggle={handleToggleRegistrationOpen} 
-                          onOpenEdit={handleOpenEdit} 
-                        />
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Unified Status Roll-Down Menu */}
+                        <div className="relative">
+                          {(() => {
+                            const statusInfo = computeEffectiveRegistrationStatus(event);
+                            const isRegOpen = statusInfo.effectiveRegistrationOpen;
+                            const isUpcoming = statusInfo.code === 'UPCOMING' || statusInfo.code === 'NOT_STARTED' || (event.status || '').toLowerCase() === 'upcoming';
+
+                            return (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveDropdownEventId(activeDropdownEventId === event.id ? null : event.id)}
+                                  className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                                    isRegOpen
+                                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                                      : isUpcoming
+                                      ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 hover:bg-blue-500/20'
+                                      : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30 hover:bg-rose-500/20'
+                                  }`}
+                                >
+                                  <span className={`w-2 h-2 rounded-full ${
+                                    isRegOpen ? 'bg-emerald-500 animate-pulse' : isUpcoming ? 'bg-blue-500' : 'bg-rose-500'
+                                  }`} />
+                                  <span>
+                                    {isRegOpen ? 'Registration Open' : isUpcoming ? 'Upcoming' : 'Closed'}
+                                  </span>
+                                  <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+                                </button>
+
+                                {activeDropdownEventId === event.id && (
+                                  <div className="absolute left-0 bottom-full mb-2 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 z-40 animate-fade-in text-xs space-y-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSetEventStatus(event, 'OPEN')}
+                                      className="w-full px-3 py-2 rounded-xl text-left font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 flex items-center gap-2 cursor-pointer"
+                                    >
+                                      <CheckCircle2 className="w-3.5 h-3.5" />
+                                      <span>Open / Activate Registration</span>
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSetEventStatus(event, 'CLOSE')}
+                                      className="w-full px-3 py-2 rounded-xl text-left font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 cursor-pointer"
+                                    >
+                                      <XCircle className="w-3.5 h-3.5" />
+                                      <span>Close Registration</span>
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSetEventStatus(event, 'UPCOMING')}
+                                      className="w-full px-3 py-2 rounded-xl text-left font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 flex items-center gap-2 cursor-pointer"
+                                    >
+                                      <Clock className="w-3.5 h-3.5" />
+                                      <span>Mark as Upcoming</span>
+                                    </button>
+
+                                    <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSetEventStatus(event, 'EXTEND')}
+                                      className="w-full px-3 py-2 rounded-xl text-left font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 cursor-pointer"
+                                    >
+                                      <Calendar className="w-3.5 h-3.5 text-orange-500" />
+                                      <span>Extend End Date (Edit)</span>
+                                    </button>
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
+
+                        {/* Roster Button */}
                         <button
+                          type="button"
                           onClick={() => handleViewParticipants(event)}
-                          className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 text-blue-600 dark:text-indigo-400 border border-blue-200 dark:border-indigo-500/30 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
+                          className="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 text-blue-600 dark:text-indigo-400 border border-blue-200 dark:border-indigo-500/30 font-bold text-[11px] transition flex items-center gap-1.5 cursor-pointer shadow-xs"
                         >
                           <Users className="w-3.5 h-3.5" />
                           <span>Roster ({registered})</span>
                         </button>
                       </div>
 
+                      {/* Edit & Delete Action Buttons */}
                       <div className="flex items-center gap-1.5">
                         <button
+                          type="button"
                           onClick={() => handleOpenEdit(event)}
-                          className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer"
+                          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer flex items-center gap-1.5 text-xs font-semibold shadow-xs"
                           title="Edit Event"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-3.5 h-3.5" />
+                          <span>Edit</span>
                         </button>
 
                         <button
+                          type="button"
                           onClick={() => handleDeleteEvent(event.id, event.title)}
-                          className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/20 dark:hover:bg-rose-500/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 transition cursor-pointer"
+                          className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/20 dark:hover:bg-rose-500/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 transition cursor-pointer flex items-center gap-1.5 text-xs font-semibold shadow-xs"
                           title="Delete Event"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete</span>
                         </button>
                       </div>
                     </div>

@@ -3,7 +3,7 @@ import { Wrench, Shield, Mail, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const MaintenancePage = ({ settings = {} }) => {
-  const adminEmail = settings.adminEmail || 'admin.sports@mpec.ac.in';
+  const adminEmail = settings.adminEmail || 'sports@mpgi.edu.in';
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-6 relative font-sans">

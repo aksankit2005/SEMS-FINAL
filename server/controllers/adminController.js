@@ -174,15 +174,16 @@ export const getMasterParticipants = async (req, res) => {
         m.id,
         m.id AS "memberId",
         r.id AS "registrationId",
-        cr.id AS "receiptId",
-        TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', m."createdAt")), 'HH12:MI AM') AS time,
-        TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', m."createdAt")), 'YYYY-MM-DD') AS date,
-        m."createdAt" AS "createdAt",
-        r."registrationType" AS "participationType",
-        COALESCE(cr.sport_id, r."sportId", s.slug, s.name, 'sport') AS "sportId",
-        COALESCE(s.name, cr.sport_id, r."sportId", 'Sport') AS "sportName",
+        COALESCE(cr.id, r.id::text) AS "receiptId",
+        TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', COALESCE(cr.created_at, r."createdAt", m."createdAt"))), 'HH12:MI AM') AS time,
+        TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', COALESCE(cr.created_at, r."createdAt", m."createdAt"))), 'YYYY-MM-DD') AS date,
+        COALESCE(cr.created_at, r."createdAt", m."createdAt") AS "createdAt",
+        COALESCE(r."registrationType", cr.participant_data->>'matchFormat', 'SINGLE') AS "participationType",
+        COALESCE(cr.sport_id, r."sportId"::text, s.slug, s.name, 'sport') AS "sportId",
+        COALESCE(s.name, cr.sport_id, r."sportId"::text, 'Sport') AS "sportName",
         COALESCE(cr.team_name, r."teamName", m."fullName") AS "teamName",
         COALESCE(cr.college, c.code, c.name, 'MPEC') AS college,
+        COALESCE(cr.participant_data->>'subEvent', cr.participant_data->>'athleticsEvent', cr.participant_data->>'gameName', NULL) AS "subEvent",
         COALESCE(cei.title, cr.participant_data->>'eventTitle', cr.participant_data->>'selectedEvent', cr.participant_data->>'subEvent', cr.participant_data->>'category', cr.participant_data->>'eventType', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb",
         cr.participant_data AS "participantData",
         m."fullName" AS name,
@@ -197,11 +198,11 @@ export const getMasterParticipants = async (req, res) => {
         COALESCE(cr.fee_paid, r.amount, 0) AS "feePaid"
       FROM registration_members m
       JOIN registrations r ON m."registrationId" = r.id
-      LEFT JOIN college_registrations cr ON cr.registration_id = r.id
+      LEFT JOIN college_registrations cr ON (cr.registration_id = r.id OR cr.id::text = r.id::text OR cr.id::text = m."registrationId"::text)
       LEFT JOIN coordinator_event_items cei ON (cei.id::text = cr.event_id::text OR cei.id::text = r."eventId"::text)
-      LEFT JOIN sports s ON s.slug = r."sportId" OR s.slug = cr.sport_id OR s.name = r."sportId"
-      LEFT JOIN colleges c ON c.id = r."collegeId"
-      ORDER BY m."createdAt" DESC
+      LEFT JOIN sports s ON (s.slug = r."sportId"::text OR s.slug = cr.sport_id OR s.name = r."sportId"::text OR s.id::text = r."sportId"::text)
+      LEFT JOIN colleges c ON (c.id = r."collegeId" OR c.code = cr.college OR c.name = cr.college)
+      ORDER BY COALESCE(cr.created_at, m."createdAt") DESC
     `).catch((err) => {
       console.warn('Registration members join query error:', err.message);
       return null;
@@ -256,12 +257,29 @@ export const getMasterParticipants = async (req, res) => {
         }
 
         const sportKey = (row.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-');
-        const sportDisplayName = (row.sportName || 'Sport').replace(/-/g, ' ').toUpperCase();
-        
-        // Priority for eventTitle: Exact coordinator created event title -> DB eventTitle -> APEX 2026 title
+        let sportDisplayName = (row.sportName || 'Sport').replace(/-/g, ' ').toUpperCase();
+
+        // Athletics subEvent handling
+        const isAthletics = sportKey.includes('athletics') || sportDisplayName.toLowerCase().includes('athletics');
+        let subEvent = row.subEvent || null;
+        if (isAthletics && !subEvent) {
+          const OFFICIAL = ['100m Race', '200m Race', '4*100m relay Race', 'Long Jump', 'Javelin Throw', 'Shot Put', 'Discus Throw'];
+          const searchStr = `${row.eventTitleFromDb || ''} ${row.teamName || ''}`;
+          const found = OFFICIAL.find((o) => searchStr.toLowerCase().includes(o.toLowerCase()));
+          if (found) subEvent = found;
+          if (!subEvent) subEvent = '100m Race';
+        }
+
+        if (isAthletics && subEvent) {
+          sportDisplayName = `ATHLETICS (${subEvent.toUpperCase()})`;
+        }
+
+        // Priority for eventTitle: Athletics subEvent -> Exact coordinator created event title -> DB eventTitle -> APEX 2026 title
         const matchedCoordTitle = coordEventMap.get(sportKey) || coordEventMap.get((row.sportId || '').toLowerCase());
         let displayEventTitle = row.eventTitleFromDb;
-        if (!displayEventTitle || displayEventTitle.toLowerCase().endsWith('championship')) {
+        if (isAthletics && subEvent) {
+          displayEventTitle = `Athletics - ${subEvent}`;
+        } else if (!displayEventTitle || displayEventTitle.toLowerCase().endsWith('championship')) {
           displayEventTitle = matchedCoordTitle || `APEX ${sportDisplayName} 2026`;
         }
 
@@ -275,6 +293,7 @@ export const getMasterParticipants = async (req, res) => {
           createdAt: row.createdAt,
           sportId: sportKey,
           sportName: sportDisplayName,
+          subEvent: subEvent || 'N/A',
           eventTitle: displayEventTitle,
           participationType: resolvedPartType,
           teamName: row.teamName || row.name || 'Participant',
@@ -301,11 +320,14 @@ export const getMasterParticipants = async (req, res) => {
         TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', cr.created_at)), 'HH12:MI AM') AS time,
         TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', cr.created_at)), 'YYYY-MM-DD') AS date,
         cr.created_at AS "createdAt",
-        cr.sport_id AS "sportId",
+        COALESCE(cr.sport_id, 'sport') AS "sportId",
+        COALESCE(s.name, cr.sport_id, 'Sport') AS "sportName",
         cr.student_name AS "name",
+        cr.enrollment_no AS "rollNo",
         cr.team_name AS "teamName",
-        cr.college,
-        cr.department,
+        COALESCE(cr.college, 'MPEC') AS college,
+        cr.department AS course,
+        'N/A' AS "yearSemester",
         cr.email,
         cr.phone AS mobile,
         cr.gender,
@@ -313,9 +335,11 @@ export const getMasterParticipants = async (req, res) => {
         cr.fee_paid AS "feePaid",
         cr.members_count AS "membersCount",
         cr.participant_data AS "participantData",
+        COALESCE(cr.participant_data->>'subEvent', cr.participant_data->>'athleticsEvent', cr.participant_data->>'gameName', NULL) AS "subEvent",
         COALESCE(cei.title, cr.participant_data->>'eventTitle', cr.participant_data->>'selectedEvent', cr.participant_data->>'subEvent', cr.participant_data->>'category', cr.participant_data->>'eventType', cr.participant_data->>'eventName', NULL) AS "eventTitleFromDb"
       FROM college_registrations cr
       LEFT JOIN coordinator_event_items cei ON cei.id::text = cr.event_id::text
+      LEFT JOIN sports s ON (s.slug = cr.sport_id OR s.name = cr.sport_id OR s.id::text = cr.sport_id)
       ORDER BY cr.created_at DESC
     `).catch(() => null);
 
@@ -340,11 +364,27 @@ export const getMasterParticipants = async (req, res) => {
           }
 
           const sportKey = (row.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-');
-          const sportDisplayName = (row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase();
-          
+          let sportDisplayName = (row.sportName || row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase();
+
+          const isAthletics = sportKey.includes('athletics') || sportDisplayName.toLowerCase().includes('athletics');
+          let subEvent = row.subEvent || null;
+          if (isAthletics && !subEvent) {
+            const OFFICIAL = ['100m Race', '200m Race', '4*100m relay Race', 'Long Jump', 'Javelin Throw', 'Shot Put', 'Discus Throw'];
+            const searchStr = `${row.eventTitleFromDb || ''} ${row.teamName || ''}`;
+            const found = OFFICIAL.find((o) => searchStr.toLowerCase().includes(o.toLowerCase()));
+            if (found) subEvent = found;
+            if (!subEvent) subEvent = '100m Race';
+          }
+
+          if (isAthletics && subEvent) {
+            sportDisplayName = `ATHLETICS (${subEvent.toUpperCase()})`;
+          }
+
           const matchedCoordTitle = coordEventMap.get(sportKey) || coordEventMap.get((row.sportId || '').toLowerCase());
           let displayEventTitle = row.eventTitleFromDb;
-          if (!displayEventTitle || displayEventTitle.toLowerCase().endsWith('championship')) {
+          if (isAthletics && subEvent) {
+            displayEventTitle = `Athletics - ${subEvent}`;
+          } else if (!displayEventTitle || displayEventTitle.toLowerCase().endsWith('championship')) {
             displayEventTitle = matchedCoordTitle || `APEX ${sportDisplayName} 2026`;
           }
 
@@ -358,6 +398,7 @@ export const getMasterParticipants = async (req, res) => {
             createdAt: row.createdAt,
             sportId: sportKey,
             sportName: sportDisplayName,
+            subEvent: subEvent || 'N/A',
             eventTitle: displayEventTitle,
             participationType: resolvedPartType,
             teamName: row.teamName || row.name || 'Participant',
@@ -418,7 +459,7 @@ export const getSuperCoordinatorEvents = async (req, res) => {
       dbRes.rows.forEach((e) => {
         let contact = e.contactInfo;
         if (typeof contact === 'string') {
-          try { contact = JSON.parse(contact); } catch (err) {}
+          try { contact = JSON.parse(contact); } catch (err) { }
         }
         eventsMap.set(e.id, {
           id: e.id,
@@ -455,7 +496,7 @@ export const getSuperCoordinatorEvents = async (req, res) => {
           if (e && e.id && !eventsMap.has(e.id)) {
             let contact = e.contactInfo;
             if (typeof contact === 'string') {
-              try { contact = JSON.parse(contact); } catch (err) {}
+              try { contact = JSON.parse(contact); } catch (err) { }
             }
             eventsMap.set(e.id, {
               id: e.id,
@@ -726,7 +767,7 @@ export const getHeroSlidesDB = async (req, res) => {
         try {
           const parsed = JSON.parse(val);
           if (Array.isArray(parsed) && parsed.length > 0) return res.json(parsed);
-        } catch (e) {}
+        } catch (e) { }
       }
     }
   } catch (err) {
@@ -926,7 +967,7 @@ export const saveCoordinatorDB = async (req, res) => {
           return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
         }
       }
-      
+
       const initialPass = passHash || await bcrypt.hash('Super@2026', 10);
       await queryDb(
         `INSERT INTO pr_users (id, username, password_hash, role, name, email, status, created_at, updated_at)
@@ -951,7 +992,7 @@ export const saveCoordinatorDB = async (req, res) => {
           return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
         }
       }
-      
+
       const initialPass = passHash || await bcrypt.hash('Head@2026', 10);
       await queryDb(
         `INSERT INTO college_head_users (id, username, password_hash, college, faculty_name, email, phone, status, created_at, updated_at)
@@ -976,7 +1017,7 @@ export const saveCoordinatorDB = async (req, res) => {
           return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
         }
       }
-      
+
       const initialPass = passHash || await bcrypt.hash('PRPass@2026', 10);
       await queryDb(
         `INSERT INTO pr_users (id, username, password_hash, role, name, email, status, created_at, updated_at)
@@ -1011,7 +1052,7 @@ export const saveCoordinatorDB = async (req, res) => {
           return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
         }
       }
-      
+
       const initialPass = passHash || await bcrypt.hash('Coord@2026', 10);
       await queryDb(
         `INSERT INTO sport_coordinators (id, username, password_hash, assigned_sport, sport_name, coordinator_name, email, phone, status, created_at, updated_at)
@@ -1225,7 +1266,7 @@ export const changeSuperCoordinatorPasswordDB = async (req, res) => {
 
   try {
     const hashed = await bcrypt.hash(newPass.trim(), 10);
-    
+
     await queryDb(
       `UPDATE pr_users 
        SET password_hash = $1, updated_at = CURRENT_TIMESTAMP 
@@ -1239,7 +1280,7 @@ export const changeSuperCoordinatorPasswordDB = async (req, res) => {
         update: { value: { password: newPass.trim() } },
         create: { key: 'super_coordinator_pass', value: { password: newPass.trim() } }
       });
-    } catch (e) {}
+    } catch (e) { }
 
     return res.json({ success: true, message: 'Super Coordinator password updated successfully in database.' });
   } catch (err) {
@@ -1429,58 +1470,191 @@ export const getAdminRegistrationsDB = async (req, res) => {
 
 export const deleteRegistrationDB = async (req, res) => {
   const { id } = req.params;
-  const isUuid = (val) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(val || ''));
-
   try {
-    // 1. Locate the parent registration UUID from college_registrations or registrations
-    let parentRegUuid = isUuid(id) ? id : null;
-    let collegeRegId = String(id);
+    const targetId = String(id).trim();
 
-    const lookupRes = await queryDb(
-      'SELECT id, registration_id FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1 LIMIT 1',
-      [String(id)]
-    );
+    // 1. Resolve associated registration_id UUIDs from college_registrations or registration_members
+    const crRes = await queryDb(
+      'SELECT id, registration_id FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1',
+      [targetId]
+    ).catch(() => null);
 
-    if (lookupRes && lookupRes.rows && lookupRes.rows.length > 0) {
-      if (lookupRes.rows[0].registration_id) {
-        parentRegUuid = String(lookupRes.rows[0].registration_id);
-      }
-      if (lookupRes.rows[0].id) {
-        collegeRegId = String(lookupRes.rows[0].id);
-      }
+    const regIds = new Set([targetId]);
+    if (crRes && crRes.rows) {
+      crRes.rows.forEach(r => {
+        if (r.id) regIds.add(String(r.id));
+        if (r.registration_id) regIds.add(String(r.registration_id));
+      });
     }
 
-    // 2. Cascade delete parent registration and all related records if UUID found
-    if (parentRegUuid && isUuid(parentRegUuid)) {
-      try {
-        await queryDb('DELETE FROM team_members WHERE "registrationId" = $1', [parentRegUuid]);
-        await queryDb('DELETE FROM teams WHERE "registrationId" = $1 OR "captainRegistrationId" = $1', [parentRegUuid]);
-        await queryDb('DELETE FROM receipts WHERE "paymentId" IN (SELECT id FROM payments WHERE "registrationId" = $1)', [parentRegUuid]);
-        await queryDb('DELETE FROM payments WHERE "registrationId" = $1', [parentRegUuid]);
-        await queryDb('DELETE FROM registration_members WHERE "registrationId" = $1', [parentRegUuid]);
-        await queryDb('DELETE FROM registrations WHERE id = $1::uuid', [parentRegUuid]);
-      } catch (cascadeErr) {
-        console.warn('Parent registration cascade delete warning:', cascadeErr.message);
-      }
+    const memRes = await queryDb(
+      'SELECT id, "registrationId" FROM registration_members WHERE id::text = $1 OR "registrationId"::text = $1',
+      [targetId]
+    ).catch(() => null);
+
+    if (memRes && memRes.rows) {
+      memRes.rows.forEach(m => {
+        if (m.id) regIds.add(String(m.id));
+        if (m.registrationId) regIds.add(String(m.registrationId));
+      });
     }
 
-    // 3. Delete from college_registrations and any remaining registration_members
-    await queryDb('DELETE FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1', [String(id)]);
-    await queryDb('DELETE FROM registration_members WHERE "registrationId"::text = $1 OR id::text = $1', [String(id)]);
+    for (const rid of regIds) {
+      await queryDb('DELETE FROM registration_members WHERE "registrationId"::text = $1 OR id::text = $1', [rid]);
+      await queryDb('DELETE FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1', [rid]);
+      await queryDb('DELETE FROM registrations WHERE id::text = $1', [rid]);
+    }
 
     logAuditEvent({
       actorName: req.user?.username || 'Admin',
       role: 'ADMIN',
       action: 'Registration Deleted',
-      entity: `Deleted registration ID: ${id} (Parent UUID: ${parentRegUuid || 'N/A'})`,
-      entityId: String(id),
+      entity: `Deleted registration ID: ${targetId}`,
+      entityId: targetId,
       ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
     });
 
-    return res.json({ success: true, message: 'Registration and associated records deleted from database successfully.' });
+    return res.json({ success: true, message: 'Registration and associated member records deleted from database successfully.' });
   } catch (err) {
     console.error('Error deleting registration from DB:', err.message);
     return res.status(500).json({ message: 'Failed to delete registration from database' });
+  }
+};
+
+/**
+ * Single Master Data Deletion Endpoint
+ * DELETE /api/admin/master-data/:id
+ */
+export const deleteMasterDataDB = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const targetId = String(id).trim();
+    if (!targetId) {
+      return res.status(400).json({ success: false, message: 'Invalid or missing participant ID' });
+    }
+
+    const regIds = new Set([targetId]);
+
+    const crRes = await queryDb(
+      'SELECT id, registration_id FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1',
+      [targetId]
+    ).catch(() => null);
+
+    if (crRes && crRes.rows) {
+      crRes.rows.forEach(r => {
+        if (r.id) regIds.add(String(r.id));
+        if (r.registration_id) regIds.add(String(r.registration_id));
+      });
+    }
+
+    const memRes = await queryDb(
+      'SELECT id, "registrationId" FROM registration_members WHERE id::text = $1 OR "registrationId"::text = $1',
+      [targetId]
+    ).catch(() => null);
+
+    if (memRes && memRes.rows) {
+      memRes.rows.forEach(m => {
+        if (m.id) regIds.add(String(m.id));
+        if (m.registrationId) regIds.add(String(m.registrationId));
+      });
+    }
+
+    for (const rid of regIds) {
+      await queryDb('DELETE FROM registration_members WHERE "registrationId"::text = $1 OR id::text = $1', [rid]);
+      await queryDb('DELETE FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1', [rid]);
+      await queryDb('DELETE FROM registrations WHERE id::text = $1', [rid]);
+    }
+
+    logAuditEvent({
+      actorName: req.user?.username || 'Admin',
+      role: req.user?.role || 'ADMIN',
+      action: 'Master Data Participant Deleted',
+      entity: `Deleted participant ID: ${targetId}`,
+      entityId: targetId,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    });
+
+    return res.json({
+      success: true,
+      message: 'Participant record deleted from Master Data successfully.',
+      targetId
+    });
+  } catch (err) {
+    console.error('Error deleting master data participant from DB:', err.message);
+    return res.status(500).json({ success: false, message: 'Failed to delete participant from Master Data', error: err.message });
+  }
+};
+
+/**
+ * Bulk Master Data Deletion Endpoint
+ * DELETE /api/admin/master-data/bulk
+ * Request body: { ids: ["id1", "id2", "id3"] }
+ */
+export const bulkDeleteMasterDataDB = async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ success: false, message: 'No participant IDs provided for bulk deletion.' });
+  }
+
+  try {
+    const cleanIds = ids.map(i => String(i).trim()).filter(Boolean);
+    const allTargetRegIds = new Set(cleanIds);
+
+    for (const tid of cleanIds) {
+      const crRes = await queryDb(
+        'SELECT id, registration_id FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1',
+        [tid]
+      ).catch(() => null);
+
+      if (crRes && crRes.rows) {
+        crRes.rows.forEach(r => {
+          if (r.id) allTargetRegIds.add(String(r.id));
+          if (r.registration_id) allTargetRegIds.add(String(r.registration_id));
+        });
+      }
+
+      const memRes = await queryDb(
+        'SELECT id, "registrationId" FROM registration_members WHERE id::text = $1 OR "registrationId"::text = $1',
+        [tid]
+      ).catch(() => null);
+
+      if (memRes && memRes.rows) {
+        memRes.rows.forEach(m => {
+          if (m.id) allTargetRegIds.add(String(m.id));
+          if (m.registrationId) allTargetRegIds.add(String(m.registrationId));
+        });
+      }
+    }
+
+    const regIdArray = Array.from(allTargetRegIds);
+    for (const rid of regIdArray) {
+      await queryDb('DELETE FROM registration_members WHERE "registrationId"::text = $1 OR id::text = $1', [rid]);
+      await queryDb('DELETE FROM college_registrations WHERE id::text = $1 OR registration_id::text = $1', [rid]);
+      await queryDb('DELETE FROM registrations WHERE id::text = $1', [rid]);
+    }
+
+    logAuditEvent({
+      actorName: req.user?.username || 'Admin',
+      role: req.user?.role || 'ADMIN',
+      action: 'Bulk Master Data Participants Deleted',
+      entity: `Bulk deleted ${cleanIds.length} participant records`,
+      entityId: cleanIds.join(','),
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    });
+
+    return res.json({
+      success: true,
+      message: `Successfully deleted ${cleanIds.length} records from Master Data database.`,
+      requestedCount: cleanIds.length,
+      deletedCount: cleanIds.length
+    });
+  } catch (err) {
+    console.error('Error executing bulk delete in DB:', err.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to complete bulk deletion in database.',
+      error: err.message
+    });
   }
 };
 
@@ -1517,6 +1691,7 @@ export const getAnnouncementsDB = async (req, res) => {
         id,
         title,
         description,
+        COALESCE(category, 'Schedule') AS category,
         audience,
         "sportSlug" AS "sportSlug",
         TO_CHAR("publishDate", 'YYYY-MM-DD') AS "publishDate",
@@ -1554,7 +1729,7 @@ export const getAnnouncementsDB = async (req, res) => {
 };
 
 export const saveAnnouncementDB = async (req, res) => {
-  const { id, title, description, audience, publishDate, expiryDate, isPublished, attachments } = req.body;
+  const { id, title, description, category, audience, publishDate, expiryDate, isPublished, attachments } = req.body;
 
   if (!title || !description) {
     return res.status(400).json({ message: 'Title and description are required.' });
@@ -1565,20 +1740,21 @@ export const saveAnnouncementDB = async (req, res) => {
     const published = isPublished ?? true;
     const pDate = publishDate ? new Date(publishDate) : new Date();
     const eDate = expiryDate ? new Date(expiryDate) : null;
+    const selectedCategory = category || 'Schedule';
 
     if (annId) {
       await queryDb(
         `UPDATE announcements 
-         SET title = $1, description = $2, audience = $3, "publishDate" = $4, "expiryDate" = $5, "isPublished" = $6, "updatedAt" = CURRENT_TIMESTAMP 
-         WHERE id::text = $7`,
-        [title, description, audience || 'PUBLIC', pDate, eDate, published, String(annId)]
+         SET title = $1, description = $2, category = $3, audience = $4, "publishDate" = $5, "expiryDate" = $6, "isPublished" = $7, "updatedAt" = CURRENT_TIMESTAMP 
+         WHERE id::text = $8`,
+        [title, description, selectedCategory, audience || 'PUBLIC', pDate, eDate, published, String(annId)]
       );
     } else {
       const newAnn = await queryDb(
-        `INSERT INTO announcements (id, title, description, audience, "publishDate", "expiryDate", "isPublished", "createdAt", "updatedAt")
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        `INSERT INTO announcements (id, title, description, category, audience, "publishDate", "expiryDate", "isPublished", "createdAt", "updatedAt")
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
          RETURNING id`,
-        [title, description, audience || 'PUBLIC', pDate, eDate, published]
+        [title, description, selectedCategory, audience || 'PUBLIC', pDate, eDate, published]
       );
       if (newAnn && newAnn.rows && newAnn.rows.length > 0) {
         annId = newAnn.rows[0].id;
@@ -1706,7 +1882,7 @@ export const deletePRMediaFileDB = async (req, res) => {
     const numId = Number(id) || 0;
     const existing = await queryDb('SELECT public_id, media_type FROM media WHERE id = $1', [numId]);
     if (existing && existing.rows.length > 0 && existing.rows[0].public_id) {
-      deleteCloudinaryAsset(existing.rows[0].public_id, existing.rows[0].media_type || 'image').catch(() => {});
+      deleteCloudinaryAsset(existing.rows[0].public_id, existing.rows[0].media_type || 'image').catch(() => { });
     }
 
     await queryDb('DELETE FROM media WHERE id = $1', [numId]);
@@ -1739,7 +1915,7 @@ export const deletePRFolderDB = async (req, res) => {
     }
 
     if (itemsToDelete.length > 0) {
-      deleteCloudinaryBatch(itemsToDelete).catch(() => {});
+      deleteCloudinaryBatch(itemsToDelete).catch(() => { });
     }
 
     await queryDb('DELETE FROM media WHERE event_id = $1', [numId]);
@@ -1756,7 +1932,12 @@ export const getSettingsDB = async (req, res) => {
   try {
     const setting = await prisma.systemSetting.findUnique({ where: { key: 'admin_portal_settings' } });
     if (setting && setting.value) {
-      return res.json(setting.value);
+      const val = setting.value;
+      return res.json({
+        ...val,
+        adminEmail: val.adminEmail && val.adminEmail !== 'admin.sports@mpec.ac.in' && val.adminEmail !== 'SS@email.com' ? val.adminEmail : '',
+        contactPhone: val.contactPhone && val.contactPhone !== '+91 98765 00000' && val.contactPhone !== '+91 98765 43210' ? val.contactPhone : ''
+      });
     }
   } catch (err) {
     console.error('Error fetching system settings from DB:', err.message);
@@ -1766,8 +1947,8 @@ export const getSettingsDB = async (req, res) => {
     allowRegistrations: true,
     currentFestYear: 2026,
     collegeName: 'Maharana Pratap Engineering College (MPEC)',
-    adminEmail: 'admin.sports@mpec.ac.in',
-    contactPhone: '+91 98765 00000',
+    adminEmail: '',
+    contactPhone: '',
     maxPdfSizeMB: 10
   });
 };
@@ -1826,8 +2007,8 @@ export const getCommitteeDB = async (req, res) => {
         include: { members: { orderBy: { sortOrder: 'asc' } } }
       });
 
-      await prisma.committeeSession.create({ data: { label: '2026-27', isActive: false } }).catch(() => {});
-      await prisma.committeeSession.create({ data: { label: '2027-28', isActive: false } }).catch(() => {});
+      await prisma.committeeSession.create({ data: { label: '2026-27', isActive: false } }).catch(() => { });
+      await prisma.committeeSession.create({ data: { label: '2027-28', isActive: false } }).catch(() => { });
 
       sessions = [seededSession];
     }
@@ -1840,6 +2021,8 @@ export const getCommitteeDB = async (req, res) => {
         id: m.id,
         name: m.name,
         role: m.role,
+        designation: m.designation || '',
+        description: m.description || '',
         image: m.photoUrl,
         publicId: m.publicId,
         email: m.email,
@@ -1850,6 +2033,8 @@ export const getCommitteeDB = async (req, res) => {
         id: m.id,
         name: m.name,
         role: m.role,
+        designation: m.designation || '',
+        description: m.description || '',
         image: m.photoUrl,
         publicId: m.publicId,
         email: m.email,
@@ -1896,7 +2081,7 @@ export const deleteSessionDB = async (req, res) => {
     const members = await prisma.committeeMember.findMany({ where: { sessionId: id } });
     const deleteItems = members.filter(m => m.publicId).map(m => ({ publicId: m.publicId, resourceType: 'image' }));
     if (deleteItems.length > 0) {
-      deleteCloudinaryBatch(deleteItems).catch(() => {});
+      deleteCloudinaryBatch(deleteItems).catch(() => { });
     }
 
     await prisma.committeeSession.delete({ where: { id } });
@@ -1908,7 +2093,7 @@ export const deleteSessionDB = async (req, res) => {
 };
 
 export const saveCommitteeMemberDB = async (req, res) => {
-  const { id, sessionId, type, name, role, photoUrl, image, publicId, email, phone, sortOrder } = req.body;
+  const { id, sessionId, type, name, role, designation, description, photoUrl, image, publicId, email, phone, sortOrder } = req.body;
   try {
     const finalPhoto = photoUrl || image || null;
     const normalizedType = (type === 'advisors' || type === 'ADVISOR') ? 'ADVISOR' : 'EXECUTIVE';
@@ -1949,7 +2134,7 @@ export const saveCommitteeMemberDB = async (req, res) => {
       const existing = await prisma.committeeMember.findUnique({ where: { id } });
       if (existing) {
         if (existing.publicId && publicId && existing.publicId !== publicId) {
-          deleteCloudinaryAsset(existing.publicId, 'image').catch(() => {});
+          deleteCloudinaryAsset(existing.publicId, 'image').catch(() => { });
         }
 
         const updated = await prisma.committeeMember.update({
@@ -1957,6 +2142,8 @@ export const saveCommitteeMemberDB = async (req, res) => {
           data: {
             name,
             role,
+            designation: designation !== undefined ? designation : existing.designation,
+            description: description !== undefined ? description : existing.description,
             type: normalizedType,
             photoUrl: finalPhoto,
             publicId: publicId || existing.publicId || null,
@@ -1975,6 +2162,8 @@ export const saveCommitteeMemberDB = async (req, res) => {
         type: normalizedType,
         name,
         role,
+        designation: designation || null,
+        description: description || null,
         photoUrl: finalPhoto,
         publicId: publicId || null,
         email: email || '',
@@ -1996,7 +2185,7 @@ export const deleteCommitteeMemberDB = async (req, res) => {
     if (isUuid) {
       const existing = await prisma.committeeMember.findUnique({ where: { id } });
       if (existing && existing.publicId) {
-        deleteCloudinaryAsset(existing.publicId, 'image').catch(() => {});
+        deleteCloudinaryAsset(existing.publicId, 'image').catch(() => { });
       }
       await prisma.committeeMember.delete({ where: { id } });
     }

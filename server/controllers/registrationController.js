@@ -9,6 +9,8 @@ import {
   verifyWebhookSignature,
   getRazorpayCredentials,
 } from '../services/razorpayService.js';
+import { triggerAsyncRegistrationEmail } from '../services/emailService.js';
+import { generateRegistrationPassPDFBuffer } from '../services/pdfService.js';
 
 let inMemoryCollegeRegistrations = [];
 
@@ -29,7 +31,8 @@ export const createPublicRegistrationOrder = async (req, res) => {
       const dbEventRes = await queryDb(
         `SELECT id, sport_id AS "sportId", entry_fee AS "entryFee", title,
                 registered_count AS "registeredCount", max_registrations AS "maxRegistrations", 
-                status, registration_open AS "registrationOpen", reg_start_date AS "regStartDate", reg_end_date AS "regEndDate"
+                status, registration_open AS "registrationOpen", reg_start_date AS "regStartDate", reg_end_date AS "regEndDate",
+                sub_events AS "subEvents", sub_event_fees AS "subEventFees", sub_events_config AS "subEventsConfig"
          FROM coordinator_event_items WHERE id = $1`,
         [eventId]
       );
@@ -39,6 +42,26 @@ export const createPublicRegistrationOrder = async (req, res) => {
         targetSportId = (event.sportId || targetSportId).toLowerCase();
         authoritativeFee = Number(event.entryFee || 0);
         eventName = event.title || eventName;
+
+        if (targetSportId === 'athletics') {
+          const selSub = participantData?.subEvent;
+          let subFees = event.subEventFees;
+          if (typeof subFees === 'string') {
+            try { subFees = JSON.parse(subFees); } catch (e) {}
+          }
+          let subConfig = event.subEventsConfig;
+          if (typeof subConfig === 'string') {
+            try { subConfig = JSON.parse(subConfig); } catch (e) {}
+          }
+          if (selSub && subFees && subFees[selSub] !== undefined) {
+            authoritativeFee = Number(subFees[selSub]);
+          } else if (selSub && Array.isArray(subConfig)) {
+            const foundSub = subConfig.find((c) => c.name === selSub);
+            if (foundSub?.entryFee !== undefined) authoritativeFee = Number(foundSub.entryFee);
+          } else if (participantData?.entryFee != null && Number(participantData.entryFee) > 0) {
+            authoritativeFee = Number(participantData.entryFee);
+          }
+        }
 
         const regStatus = computeEffectiveRegistrationStatus(event);
         if (!regStatus.effectiveRegistrationOpen) {
@@ -134,7 +157,8 @@ export const registerPublicEvent = async (req, res) => {
     const dbEventRes = await queryDb(
       `SELECT id, sport_id AS "sportId", entry_fee AS "entryFee", 
               registered_count AS "registeredCount", max_registrations AS "maxRegistrations", 
-              status, registration_open AS "registrationOpen", reg_start_date AS "regStartDate", reg_end_date AS "regEndDate"
+              status, registration_open AS "registrationOpen", reg_start_date AS "regStartDate", reg_end_date AS "regEndDate",
+              sub_events AS "subEvents", sub_event_fees AS "subEventFees", sub_events_config AS "subEventsConfig"
        FROM coordinator_event_items WHERE id = $1`,
       [eventId]
     );
@@ -142,6 +166,26 @@ export const registerPublicEvent = async (req, res) => {
       event = dbEventRes.rows[0];
       targetSportId = (event.sportId || targetSportId).toLowerCase();
       authoritativeFee = Number(event.entryFee || 0);
+
+      if (targetSportId === 'athletics') {
+        const selSub = participantData?.subEvent;
+        let subFees = event.subEventFees;
+        if (typeof subFees === 'string') {
+          try { subFees = JSON.parse(subFees); } catch (e) {}
+        }
+        let subConfig = event.subEventsConfig;
+        if (typeof subConfig === 'string') {
+          try { subConfig = JSON.parse(subConfig); } catch (e) {}
+        }
+        if (selSub && subFees && subFees[selSub] !== undefined) {
+          authoritativeFee = Number(subFees[selSub]);
+        } else if (selSub && Array.isArray(subConfig)) {
+          const foundSub = subConfig.find((c) => c.name === selSub);
+          if (foundSub?.entryFee !== undefined) authoritativeFee = Number(foundSub.entryFee);
+        } else if (participantData?.entryFee != null && Number(participantData.entryFee) > 0) {
+          authoritativeFee = Number(participantData.entryFee);
+        }
+      }
 
       const regStatus = computeEffectiveRegistrationStatus(event);
       if (!regStatus.effectiveRegistrationOpen) {
@@ -526,6 +570,17 @@ export const registerPublicEvent = async (req, res) => {
           });
         }
 
+        const isAthletics = (newRegRecord.sportId || targetSportId || sportId || '').toLowerCase().includes('athletics');
+        const enrichedParticipantData = { ...(participantData || {}) };
+        if (isAthletics) {
+          const sub = enrichedParticipantData.subEvent || enrichedParticipantData.athleticsEvent || (Array.isArray(enrichedParticipantData.selectedEvents) ? enrichedParticipantData.selectedEvents[0] : null) || '100m Race';
+          enrichedParticipantData.subEvent = sub;
+          enrichedParticipantData.athleticsEvent = sub;
+          enrichedParticipantData.selectedEvents = [sub];
+          enrichedParticipantData.gameName = sub;
+          enrichedParticipantData.eventTitle = `Athletics (${sub})`;
+        }
+
         await tx.collegeRegistration.create({
           data: {
             id: receiptId,
@@ -545,7 +600,7 @@ export const registerPublicEvent = async (req, res) => {
             paymentId: newRegRecord.paymentId || paymentTxnId,
             paymentStatus: newRegRecord.paymentStatus || 'PAID',
             membersCount: rosterList.length || 1,
-            participantData: participantData || {},
+            participantData: enrichedParticipantData,
           },
         });
       },
@@ -564,6 +619,19 @@ export const registerPublicEvent = async (req, res) => {
         );
       } catch (e) { }
     }
+    // Trigger non-blocking detached asynchronous email delivery via Resend
+    triggerAsyncRegistrationEmail({
+      registration: newRegRecord,
+      participantData,
+      event,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Event registration successful!',
+      receipt: newRegRecord,
+      updatedEvent: event,
+    });
   } catch (dbErr) {
     console.error('PostgreSQL Prisma Registration Insert Error:', dbErr);
     return res.status(500).json({
@@ -572,13 +640,6 @@ export const registerPublicEvent = async (req, res) => {
       error: dbErr.message,
     });
   }
-
-  return res.status(201).json({
-    success: true,
-    message: 'Event registration successful!',
-    receipt: newRegRecord,
-    updatedEvent: event,
-  });
 };
 
 /**
@@ -691,3 +752,97 @@ export const handleRazorpayWebhook = async (req, res) => {
     return res.status(500).json({ success: false, error: err.message });
   }
 };
+
+/**
+ * 4. Direct Public Registration Pass PDF Endpoint
+ * GET /api/public/registration-pass/:id
+ * GET /api/public/pass/:id
+ */
+export const getRegistrationPassPDF = async (req, res) => {
+  const rawId = (req.params.id || req.query.id || '').trim();
+  if (!rawId) {
+    return res.status(400).send('Registration ID or Receipt number is required.');
+  }
+
+  try {
+    // 1. Check in college_registrations table
+    let regRecord = null;
+    try {
+      const dbRes = await queryDb(
+        `SELECT id, registration_id AS "registrationId", event_id AS "eventId", sport_id AS "sportId",
+                student_name AS "studentName", team_name AS "teamName", college, department,
+                email, phone, gender, emergency_contact AS "emergencyContact", status,
+                fee_paid AS "feePaid", payment_id AS "paymentId", payment_status AS "paymentStatus",
+                members_count AS "membersCount", participant_data AS "participantData",
+                created_at AS "createdAt"
+         FROM college_registrations 
+         WHERE id = $1 OR registration_id::text = $1`,
+        [rawId]
+      );
+
+      if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+        regRecord = dbRes.rows[0];
+      }
+    } catch (dbErr) {
+      console.warn('DB lookup for registration pass notice:', dbErr.message);
+    }
+
+    if (!regRecord) {
+      // Fallback to in-memory store
+      regRecord = inMemoryCollegeRegistrations.find(r => r.id === rawId || r.receiptId === rawId);
+    }
+
+    if (!regRecord) {
+      return res.status(404).send('Registration pass not found for the specified ID.');
+    }
+
+    // Format pass payload
+    const participantData = regRecord.participantData || {};
+    const roster = Array.isArray(participantData.roster) && participantData.roster.length > 0
+      ? participantData.roster
+      : [
+          {
+            name: regRecord.studentName || participantData.fullName || participantData.name || 'Lead Athlete',
+            fatherName: participantData.fatherName || 'N/A',
+            gender: regRecord.gender || participantData.gender || 'Male',
+            dob: participantData.dob || '2004-05-15',
+            phone: regRecord.phone || participantData.phone || '+91 98765 43210',
+            email: regRecord.email || participantData.email || 'athlete@mpgisports.in',
+            rollNo: participantData.rollNo || participantData.enrollmentNo || 'ENR2026-001',
+            isCaptain: true,
+          }
+        ];
+
+    const passPayload = {
+      receiptId: regRecord.id,
+      college: regRecord.college || participantData.collegeName || 'MPGI Group of Institutions',
+      sportName: participantData.sportName || regRecord.sportId || 'APEX Championship',
+      category: participantData.category || regRecord.sportId || 'Championship',
+      participantName: regRecord.studentName || participantData.fullName || participantData.name,
+      fatherName: participantData.fatherName || 'N/A',
+      gender: regRecord.gender,
+      dob: participantData.dob || '2004-05-15',
+      phone: regRecord.phone,
+      email: regRecord.email,
+      teamName: regRecord.teamName || regRecord.college,
+      utrNumber: regRecord.paymentId || 'TXN-APEX-VERIFIED',
+      feePaid: regRecord.feePaid || '0',
+      date: new Date(regRecord.createdAt || Date.now()).toLocaleDateString('en-US'),
+      status: regRecord.status || 'CONFIRMED',
+      roster,
+    };
+
+    const pdfBuffer = generateRegistrationPassPDFBuffer(passPayload);
+
+    const isDownload = req.query.view !== 'true';
+    const disposition = isDownload ? 'attachment' : 'inline';
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `${disposition}; filename="APEX-Pass-${regRecord.id}.pdf"`);
+    return res.send(pdfBuffer);
+  } catch (err) {
+    console.error('Error generating registration pass PDF:', err);
+    return res.status(500).send('An error occurred while generating the registration pass PDF.');
+  }
+};
+

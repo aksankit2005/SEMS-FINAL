@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { HeaderNavbar } from './HeaderNavbar';
 import { MobileDrawer } from './MobileDrawer';
 import { Footer } from './Footer';
@@ -7,6 +7,17 @@ import { MaintenancePage } from '../common/MaintenancePage';
 import { adminApi } from '../../services/adminApi';
 
 export const DashboardLayout = () => {
+  const location = useLocation();
+  const isGalleryPage = location.pathname.startsWith('/gallery');
+  const isAboutOrJourneyPage = location.pathname.startsWith('/about') || location.pathname.startsWith('/journey') || location.pathname.startsWith('/contact') || location.pathname.startsWith('/legacy');
+  const isResultsPage = location.pathname.startsWith('/results');
+  const isSchedulePage = location.pathname.startsWith('/schedule');
+  const isLeaderboardPage = location.pathname.startsWith('/leaderboard');
+  const isLivePage = location.pathname.startsWith('/live');
+  const isRegistrationPage = location.pathname.startsWith('/registration');
+  const isAnnouncementsPage = location.pathname.startsWith('/announcements');
+  const isPortalPage = location.pathname.startsWith('/coordinator') || location.pathname.startsWith('/college-head') || location.pathname.startsWith('/pr');
+
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [settings, setSettings] = useState({ maintenanceMode: false });
   const [isLayoutHidden, setIsLayoutHidden] = useState(false);
@@ -46,7 +57,7 @@ export const DashboardLayout = () => {
   }
 
   return (
-    <div className={`min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors ${isLayoutHidden ? 'h-screen overflow-hidden' : ''}`}>
+    <div className={`min-h-screen flex flex-col bg-[#FAF9F6] dark:bg-[#070A13] text-[#211D2B] dark:text-[#F5F2FA] font-spatial-sans transition-colors ${isLayoutHidden ? 'h-screen overflow-hidden' : ''}`}>
       {/* Sticky Top Navbar */}
       {!isLayoutHidden && (
         <HeaderNavbar onOpenMobileDrawer={() => setIsMobileDrawerOpen(true)} />
@@ -58,8 +69,8 @@ export const DashboardLayout = () => {
           <Outlet />
         </main>
 
-        {/* Footer at bottom */}
-        {!isLayoutHidden && <Footer />}
+        {/* Footer at bottom (hidden on Gallery, About, Journey, Results, Schedule, Leaderboard, Live, Registration, Announcements, and Dedicated Portals) */}
+        {!isLayoutHidden && !isGalleryPage && !isAboutOrJourneyPage && !isResultsPage && !isSchedulePage && !isLeaderboardPage && !isLivePage && !isRegistrationPage && !isAnnouncementsPage && !isPortalPage && <Footer />}
       </div>
 
       {/* Mobile Navigation Drawer */}

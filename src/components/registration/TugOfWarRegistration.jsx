@@ -7,11 +7,11 @@ export const TugOfWarRegistration = (props) => {
       {...props}
       sportName="Tug of War"
       minPlayers={8}
-      maxPlayers={8}
+      maxPlayers={10}
     />
   );
 };
 
 export const validateTugOfWar = (step, formData) => {
-  return validateTeamSport(step, formData, 8, 8);
+  return validateTeamSport(step, formData, 8, 10);
 };

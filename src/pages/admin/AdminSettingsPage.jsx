@@ -10,8 +10,8 @@ export const AdminSettingsPage = () => {
     allowRegistrations: true,
     currentFestYear: 2026,
     collegeName: 'Maharana Pratap Engineering College (MPEC)',
-    adminEmail: 'admin.sports@mpec.ac.in',
-    contactPhone: '+91 98765 00000',
+    adminEmail: '',
+    contactPhone: '',
     maxPdfSizeMB: 10
   });
   const [loading, setLoading] = useState(true);
@@ -25,7 +25,12 @@ export const AdminSettingsPage = () => {
     setLoading(true);
     try {
       const data = await adminApi.getSettings();
-      setSettings(data || {});
+      setSettings(prev => ({
+        ...prev,
+        ...(data || {}),
+        adminEmail: data?.adminEmail ?? '',
+        contactPhone: data?.contactPhone ?? ''
+      }));
     } catch (err) {
       addToast('Failed to load system settings', 'error');
     } finally {
@@ -49,7 +54,7 @@ export const AdminSettingsPage = () => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <Loader2 className="w-8 h-8 text-amber-500 dark:text-amber-400 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" />
         <p className="text-xs text-slate-500 dark:text-slate-400">Loading system settings...</p>
       </div>
     );
@@ -88,7 +93,7 @@ export const AdminSettingsPage = () => {
               type="checkbox"
               checked={settings.allowRegistrations}
               onChange={(e) => setSettings({ ...settings, allowRegistrations: e.target.checked })}
-              className="w-5 h-5 accent-amber-500 rounded cursor-pointer"
+              className="w-5 h-5 accent-blue-600 rounded cursor-pointer"
             />
           </div>
 
@@ -101,7 +106,7 @@ export const AdminSettingsPage = () => {
               type="checkbox"
               checked={settings.maintenanceMode}
               onChange={(e) => setSettings({ ...settings, maintenanceMode: e.target.checked })}
-              className="w-5 h-5 accent-amber-500 rounded cursor-pointer"
+              className="w-5 h-5 accent-blue-600 rounded cursor-pointer"
             />
           </div>
         </div>
@@ -117,7 +122,7 @@ export const AdminSettingsPage = () => {
                 type="number"
                 value={settings.currentFestYear}
                 onChange={(e) => setSettings({ ...settings, currentFestYear: parseInt(e.target.value) || 2026 })}
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
               />
             </div>
 
@@ -127,7 +132,7 @@ export const AdminSettingsPage = () => {
                 type="number"
                 value={settings.maxPdfSizeMB}
                 onChange={(e) => setSettings({ ...settings, maxPdfSizeMB: parseInt(e.target.value) || 10 })}
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
               />
             </div>
           </div>
@@ -138,7 +143,7 @@ export const AdminSettingsPage = () => {
               type="text"
               value={settings.collegeName}
               onChange={(e) => setSettings({ ...settings, collegeName: e.target.value })}
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
             />
           </div>
 
@@ -147,9 +152,10 @@ export const AdminSettingsPage = () => {
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Admin Support Email</label>
               <input
                 type="email"
-                value={settings.adminEmail}
+                value={settings.adminEmail || ''}
                 onChange={(e) => setSettings({ ...settings, adminEmail: e.target.value })}
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+                placeholder="Enter support email"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
               />
             </div>
 
@@ -157,10 +163,12 @@ export const AdminSettingsPage = () => {
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Support Contact Phone</label>
               <input
                 type="text"
-                value={settings.contactPhone}
+                value={settings.contactPhone || ''}
                 onChange={(e) => setSettings({ ...settings, contactPhone: e.target.value })}
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+                placeholder="Enter support phone number"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
               />
+
             </div>
           </div>
 

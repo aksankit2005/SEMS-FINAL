@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
-import { Trophy, ArrowLeft, User, Users, Info, ShieldCheck, Sparkles, Calendar, MapPin, Clock, Loader2, Lock } from 'lucide-react';
+import { Trophy, ArrowLeft, User, Users, Info, ShieldCheck, Sparkles, Calendar, MapPin, Clock, Loader2, Lock, Filter, ChevronDown, Check } from 'lucide-react';
 import { SPORTS_DATA } from '../data/sportsData';
 import { SPORTS_CONFIG, SPORT_PLAYER_BOUNDS, resolveSportKey } from '../data/sportsConfig';
 import { useAuth } from '../context/AuthContext';
@@ -18,6 +18,8 @@ import { RegistrationReceipt } from '../components/registration/RegistrationRece
 import { generateCollegePassCode } from '../utils/pdfExporter';
 import { BadmintonRulesDisplay, BadmintonRulesModal } from '../components/registration/BadmintonRulesDisplay';
 import { computeEffectiveRegistrationStatus, parseRegistrationDeadline } from '../utils/registrationLifecycle';
+import { useTheme } from '../context/ThemeContext';
+import '../styles/spatialGallery.css';
 
 
 const MOCK_RECEIPT_IMAGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'><rect width='100%25' height='100%25' fill='%230f172a'/><text x='50%25' y='35%25' fill='%2310b981' font-family='sans-serif' font-size='22' font-weight='black' text-anchor='middle'>APEX 2026</text><text x='50%25' y='50%25' fill='%23ffffff' font-family='sans-serif' font-size='14' font-weight='bold' text-anchor='middle'>MOCK PAYMENT SUCCESSFUL</text><text x='50%25' y='65%25' fill='%2364748b' font-family='sans-serif' font-size='10' font-weight='medium' text-anchor='middle'>UTR: TXN-APEX-MOCK-998</text><rect x='20' y='220' width='260' height='50' fill='%231e293b' rx='10'/><text x='50%25' y='250%25' fill='%2338bdf8' font-family='sans-serif' font-size='12' font-weight='bold' text-anchor='middle'>VERIFIED DEMO RECEIPT</text></svg>";
@@ -75,8 +77,9 @@ const RegistrationCountdownTimer = ({ endDateStr }) => {
           setTimeLeft('Closed');
           return;
         }
-        const now = new Date();
-        const diff = deadline.getTime() - now.getTime();
+        const nowMs = Date.now();
+        const deadlineMs = typeof deadline === 'number' ? deadline : (deadline.getTime ? deadline.getTime() : new Date(deadline).getTime());
+        const diff = deadlineMs - nowMs;
 
         if (diff <= 0) {
           setTimeLeft('Closed');
@@ -112,6 +115,9 @@ const RegistrationCountdownTimer = ({ endDateStr }) => {
 };
 
 export const RegistrationPage = () => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { addRegistration } = useAuth();
@@ -257,6 +263,45 @@ export const RegistrationPage = () => {
     });
   }, [coordinatorEvents]);
 
+  // Roll-down sport filter state
+  const [selectedSportFilter, setSelectedSportFilter] = useState('All');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const availableSports = useMemo(() => {
+    const fromConfig = Object.values(SPORTS_CONFIG).map((c) => c.name);
+    const fromData = SPORTS_DATA.map((s) => s.name);
+    const fromEvents = (coordinatorEvents || []).map((e) => e.sportName || e.title).filter(Boolean);
+    return ['All', ...Array.from(new Set([...fromConfig, ...fromData, ...fromEvents]))];
+  }, [coordinatorEvents]);
+
+  const filteredCoordinatorEvents = useMemo(() => {
+    if (!sortedCoordinatorEvents) return [];
+    if (selectedSportFilter === 'All') return sortedCoordinatorEvents;
+    const filterClean = selectedSportFilter.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const isFilterCricket = filterClean === 'cricket' && !filterClean.includes('gully');
+    const isFilterGully = filterClean.includes('gully');
+
+    return sortedCoordinatorEvents.filter((evt) => {
+      const sportClean = (evt.sportName || evt.title || evt.sportId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const isEvtGully = sportClean.includes('gully');
+      if (isFilterCricket && isEvtGully) return false;
+      if (isFilterGully && !isEvtGully) return false;
+
+      return sportClean.includes(filterClean) || filterClean.includes(sportClean);
+    });
+  }, [sortedCoordinatorEvents, selectedSportFilter]);
+
   useEffect(() => {
     if (!coordinatorEvents || coordinatorEvents.length === 0) return;
 
@@ -275,7 +320,13 @@ export const RegistrationPage = () => {
           const sFee = typeof matchingEvent.singlesFee === 'number' ? matchingEvent.singlesFee : resolvedFee;
           const dFee = typeof matchingEvent.doublesFee === 'number' ? matchingEvent.doublesFee : resolvedFee * 2;
 
-          if (sport.entryFee !== resolvedFee || sport.singlesFee !== sFee || sport.doublesFee !== dFee) {
+          if (
+            sport.entryFee !== resolvedFee ||
+            sport.singlesFee !== sFee ||
+            sport.doublesFee !== dFee ||
+            matchingEvent.subEventsConfig !== sport.subEventsConfig ||
+            matchingEvent.subEventFees !== sport.subEventFees
+          ) {
             hasChanges = true;
             return {
               ...sport,
@@ -283,6 +334,9 @@ export const RegistrationPage = () => {
               teamFee: resolvedFee,
               singlesFee: sFee,
               doublesFee: dFee,
+              subEvents: matchingEvent.subEvents || sport.subEvents,
+              subEventFees: matchingEvent.subEventFees || sport.subEventFees,
+              subEventsConfig: matchingEvent.subEventsConfig || sport.subEventsConfig,
               venue: matchingEvent.venue || sport.venue,
               rules: matchingEvent.rules || sport.rules
             };
@@ -303,21 +357,39 @@ export const RegistrationPage = () => {
           : (typeof matchingEvent.teamFee === 'number' ? matchingEvent.teamFee : (matchingEvent.entryFee ?? matchingEvent.teamFee ?? 0));
         
         const isRacket = isRacketSportCheck(prevActive);
+        const isAthletics = key === 'athletics' || (prevActive.id || '').toLowerCase().includes('athletics');
         const sFee = typeof matchingEvent.singlesFee === 'number' ? matchingEvent.singlesFee : resolvedFee;
         const dFee = typeof matchingEvent.doublesFee === 'number' ? matchingEvent.doublesFee : resolvedFee * 2;
-        const currentFee = isRacket ? (formData.eventType === 'Doubles' ? dFee : sFee) : resolvedFee;
+        
+        let currentFee = resolvedFee;
+        if (isRacket) {
+          currentFee = formData.eventType === 'Doubles' ? dFee : sFee;
+        } else if (isAthletics && (formData.selectedEvents?.[0] || formData.subEvent)) {
+          const selSub = formData.selectedEvents?.[0] || formData.subEvent;
+          if (matchingEvent.subEventFees?.[selSub] !== undefined) {
+            currentFee = Number(matchingEvent.subEventFees[selSub]);
+          } else if (Array.isArray(matchingEvent.subEventsConfig)) {
+            const foundSub = matchingEvent.subEventsConfig.find((c) => c.name === selSub);
+            if (foundSub?.entryFee !== undefined) currentFee = Number(foundSub.entryFee);
+          }
+        }
 
         if (
           prevActive.entryFee !== currentFee ||
           prevActive.singlesFee !== sFee ||
-          prevActive.doublesFee !== dFee
+          prevActive.doublesFee !== dFee ||
+          matchingEvent.subEventsConfig !== prevActive.subEventsConfig ||
+          matchingEvent.subEventFees !== prevActive.subEventFees
         ) {
           return {
             ...prevActive,
             entryFee: currentFee,
             teamFee: resolvedFee,
             singlesFee: sFee,
-            doublesFee: dFee
+            doublesFee: dFee,
+            subEvents: matchingEvent.subEvents || prevActive.subEvents,
+            subEventFees: matchingEvent.subEventFees || prevActive.subEventFees,
+            subEventsConfig: matchingEvent.subEventsConfig || prevActive.subEventsConfig
           };
         }
       }
@@ -394,7 +466,10 @@ export const RegistrationPage = () => {
             tournStartDate: foundEv.tournStartDate,
             tournEndDate: foundEv.tournEndDate,
             rules: foundEv.rules || ['Official tournament rules apply.'],
-            requiredDocuments: foundEv.requiredDocuments || ['College ID Card']
+            requiredDocuments: foundEv.requiredDocuments || ['College ID Card'],
+            subEvents: foundEv.subEvents,
+            subEventFees: foundEv.subEventFees,
+            subEventsConfig: foundEv.subEventsConfig
           });
           setStep(1);
           return;
@@ -475,10 +550,40 @@ export const RegistrationPage = () => {
       ...sport,
       entryFee: initialFee,
       singlesFee: sFee,
-      doublesFee: dFee
+      doublesFee: dFee,
+      subEvents: sport.subEvents,
+      subEventFees: sport.subEventFees,
+      subEventsConfig: sport.subEventsConfig
     });
     setStep(1);
   };
+
+  // Synchronize Athletics sub-event entry fee with activeSport.entryFee
+  useEffect(() => {
+    if (!activeSport) return;
+    const isAthletics = resolveSportKey(activeSport) === 'athletics' || (activeSport.id || '').toLowerCase().includes('athletics');
+    if (!isAthletics) return;
+
+    const selectedSub = formData.selectedEvents?.[0] || formData.subEvent;
+    if (selectedSub) {
+      let matchedFee = null;
+      if (activeSport.subEventFees && activeSport.subEventFees[selectedSub] !== undefined) {
+        matchedFee = Number(activeSport.subEventFees[selectedSub]);
+      } else if (Array.isArray(activeSport.subEventsConfig)) {
+        const foundSub = activeSport.subEventsConfig.find((c) => c.name === selectedSub);
+        if (foundSub?.entryFee !== undefined) matchedFee = Number(foundSub.entryFee);
+      }
+
+      if (matchedFee === null) {
+        const isRelay = selectedSub === '4*100m relay Race' || selectedSub.toLowerCase().includes('relay');
+        matchedFee = isRelay ? 400 : (activeSport.singlesFee || activeSport.entryFee || 150);
+      }
+
+      if (typeof matchedFee === 'number' && activeSport.entryFee !== matchedFee) {
+        setActiveSport((prev) => (prev ? { ...prev, entryFee: matchedFee } : prev));
+      }
+    }
+  }, [formData.selectedEvents, formData.subEvent, activeSport?.subEventFees, activeSport?.subEventsConfig]);
 
 
   const handleBackToSports = () => {
@@ -535,6 +640,13 @@ export const RegistrationPage = () => {
     setIsProcessingPayment(true);
 
     try {
+      const isAthletics = resolveSportKey(activeSport) === 'athletics' || (activeSport.id || '').toLowerCase().includes('athletics') || (activeSport.name || '').toLowerCase().includes('athletics');
+      const selectedSubEvent = formData.subEvent || (formData.selectedEvents && formData.selectedEvents[0]) || (isAthletics ? '100m Race' : '');
+      const resolvedSportName = isAthletics && selectedSubEvent ? `Athletics (${selectedSubEvent})` : (activeSport.title || activeSport.name);
+      const resolvedEventTitle = isRacketSportCheck(activeSport) 
+        ? `${activeSport.name} (${formData.eventType})` 
+        : (isAthletics && selectedSubEvent ? `Athletics (${selectedSubEvent})` : (activeSport.title || activeSport.name));
+
       // Register event with coordinator backend API
       const result = await coordinatorApi.registerForEvent(
         activeSport.id,
@@ -552,13 +664,17 @@ export const RegistrationPage = () => {
           emergencyContact: formData.captainPhone || (formData.roster[0] && formData.roster[0].phone) || '+91 98765 43210',
           entryFee: activeSport.entryFee,
           roster: formData.roster || [],
-          eventTitle: isRacketSportCheck(activeSport) ? `${activeSport.name} (${formData.eventType})` : (activeSport.title || activeSport.name),
-          eventType: formData.eventType,
+          eventTitle: resolvedEventTitle,
+          eventType: isAthletics ? selectedSubEvent : formData.eventType,
           participationType: isRacketSportCheck(activeSport) 
             ? (formData.eventType === 'Doubles' ? 'DUO' : 'INDIVIDUAL')
             : (formData.roster?.length > 2 ? 'TEAM' : (formData.roster?.length === 2 ? 'DUO' : 'INDIVIDUAL')),
           category: activeSport.category,
-          subEvent: formData.selectedEvents?.join(', ') || formData.eventType || ''
+          subEvent: selectedSubEvent || formData.eventType || '',
+          athleticsEvent: isAthletics ? selectedSubEvent : '',
+          selectedEvents: isAthletics && selectedSubEvent ? [selectedSubEvent] : (formData.selectedEvents || []),
+          sportName: resolvedSportName,
+          gameName: isAthletics ? selectedSubEvent : (activeSport.name || activeSport.title)
         },
         paymentRes
       );
@@ -574,14 +690,16 @@ export const RegistrationPage = () => {
       let eventCategory = activeSport.category;
       if (isRacketSportCheck(activeSport)) {
         eventCategory = `${activeSport.category} (${formData.eventType})`;
-      } else if ((activeSport.id || '').toLowerCase() === 'athletics') {
-        eventCategory = `Athletics (${formData.selectedEvents.join(', ')})`;
+      } else if (isAthletics && selectedSubEvent) {
+        eventCategory = `Athletics (${selectedSubEvent})`;
       }
 
       const receipt = {
         receiptId: result.receipt?.id || `REC-APEX-${Math.floor(10000 + Math.random() * 90000)}`,
-        sportName: activeSport.name,
+        sportName: resolvedSportName,
         category: eventCategory,
+        subEvent: isAthletics ? selectedSubEvent : null,
+        athleticsEvent: isAthletics ? selectedSubEvent : null,
         participantName: formData.captainName || (firstRosterPlayer && firstRosterPlayer.name) || 'Lead Athlete',
         fatherName: (firstRosterPlayer && firstRosterPlayer.fatherName) || formData.fatherName || 'N/A',
         gender: (firstRosterPlayer && firstRosterPlayer.gender) || formData.gender || 'Male',
@@ -658,7 +776,9 @@ export const RegistrationPage = () => {
               email: formData.captainEmail || (formData.roster[0] && formData.roster[0].email) || 'athlete@apex.edu',
               phone: formData.captainPhone || (formData.roster[0] && formData.roster[0].phone) || '+91 98765 43210',
               collegeName: formData.collegeName || 'MPEC',
-              teamName: formData.teamName
+              teamName: formData.teamName,
+              entryFee: activeSport.entryFee,
+              subEvent: formData.selectedEvents?.[0] || formData.subEvent || ''
             }
           );
         } catch (orderErr) {
@@ -795,38 +915,38 @@ export const RegistrationPage = () => {
       <div className="space-y-6">
         {/* Racket Sport Event Type Toggle */}
         {isRacketSport && (
-          <div className="p-4 rounded-2xl bg-blue-50/60 dark:bg-slate-900 border border-blue-100 dark:border-slate-800 space-y-3">
-            <label className="block text-xs font-bold uppercase tracking-wider text-blue-900 dark:text-blue-300">
-              Select Event Mode & Fee <span className="text-rose-500">*</span>
+          <div className="p-4 rounded-lg bg-[#FAF9F6] dark:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] space-y-3">
+            <label className="block text-xs font-bold uppercase tracking-wider text-[#211D2B] dark:text-[#F5F2FA]">
+              Select Event Mode & Fee <span className="text-[#C62828] dark:text-[#FDA4AF]">*</span>
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => handleEventTypeToggle('Singles')}
-                className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-1 font-bold text-xs transition ${formData.eventType === 'Singles'
-                    ? 'border-blue-600 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-extrabold shadow-sm'
-                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                className={`p-3.5 rounded-lg border-2 flex flex-col items-center justify-center gap-1 font-semibold text-xs transition-all ${formData.eventType === 'Singles'
+                    ? 'border-[#7156A5] bg-[#7156A5]/10 text-[#7156A5] dark:text-[#B8A5E5] font-bold shadow-2xs'
+                    : 'border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] bg-[#FFFFFF] dark:bg-[#0D101A] text-[#686370] dark:text-[#AAA4B8] hover:border-[#7156A5]/40'
                   }`}
               >
                 <div className="flex items-center gap-1.5">
                   <User className="w-4 h-4" /> Singles (1 Player)
                 </div>
-                <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400">
+                <span className="text-[11px] font-bold text-[#1B5E20] dark:text-[#81C784]">
                   Singles Fee: {activeSport.singlesFee === 0 ? 'FREE (₹0)' : `₹${activeSport.singlesFee ?? 0}`}
                 </span>
               </button>
               <button
                 type="button"
                 onClick={() => handleEventTypeToggle('Doubles')}
-                className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-1 font-bold text-xs transition ${formData.eventType === 'Doubles'
-                    ? 'border-blue-600 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-extrabold shadow-sm'
-                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                className={`p-3.5 rounded-lg border-2 flex flex-col items-center justify-center gap-1 font-semibold text-xs transition-all ${formData.eventType === 'Doubles'
+                    ? 'border-[#7156A5] bg-[#7156A5]/10 text-[#7156A5] dark:text-[#B8A5E5] font-bold shadow-2xs'
+                    : 'border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] bg-[#FFFFFF] dark:bg-[#0D101A] text-[#686370] dark:text-[#AAA4B8] hover:border-[#7156A5]/40'
                   }`}
               >
                 <div className="flex items-center gap-1.5">
                   <Users className="w-4 h-4" /> Doubles (2 Players)
                 </div>
-                <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400">
+                <span className="text-[11px] font-bold text-[#7156A5] dark:text-[#B8A5E5]">
                   Doubles Fee: {activeSport.doublesFee === 0 ? 'FREE (₹0)' : `₹${activeSport.doublesFee ?? 0}`}
                 </span>
               </button>
@@ -886,38 +1006,115 @@ export const RegistrationPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white py-4 sm:py-6 transition-colors">
-      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+    <div className={`relative min-h-screen font-spatial-sans selection:bg-[#7156A5]/20 selection:text-[#211D2B] dark:selection:text-white overflow-x-hidden transition-colors duration-200 ${
+      isDark ? 'bg-[#070A13] text-[#F5F2FA]' : 'bg-[#FAF9F6] text-[#211D2B]'
+    }`}>
+      {/* Dark mode atmospheric overlays */}
+      {isDark && (
+        <>
+          <div className="fixed inset-0 pointer-events-none z-0 spatial-nebula-dark opacity-60" />
+          <div className="fixed inset-0 spatial-grain-overlay z-[1] pointer-events-none opacity-20" />
+        </>
+      )}
 
-        {/* Header */}
-        <div className="text-center mb-4 sm:mb-6">
-          <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wider mb-1.5">
-            <Trophy className="w-3.5 h-3.5 text-orange-500" /> Multi-Step Sports Registration
+      {/* Main Content Container */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16 space-y-6">
+
+        {/* Editorial Hero Banner */}
+        <div className="text-center max-w-2xl mx-auto space-y-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
+            <Trophy className="w-3.5 h-3.5 text-[#A98B57] dark:text-[#D2AB45]" />
+            <span>Championship Registration Dossier</span>
           </div>
-          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight">
-            Athlete & Team <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 bg-clip-text text-transparent">Registration</span>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight font-spatial-display text-[#211D2B] dark:text-[#F5F2FA]">
+            Event <span className="text-[#7156A5] dark:text-[#B8A5E5]">Registration</span>
           </h1>
+
+          <p className="text-xs sm:text-sm max-w-xl mx-auto text-[#686370] dark:text-[#AAA4B8] leading-relaxed">
+            Official multi-step team enrollment, participant dossiers, and slot verification across all championship events.
+          </p>
         </div>
+
+        {/* Sports Filter Bar */}
+        {!activeSport && (
+          <div className="bg-[#FFFFFF] dark:bg-[#0D101A] p-3 rounded-lg border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
+            {/* Left: Discipline & Count */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-[#211D2B] dark:text-[#F5F2FA]">
+                {selectedSportFilter === 'All' ? 'All Disciplines' : selectedSportFilter}
+              </span>
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
+                {filteredCoordinatorEvents.length} {filteredCoordinatorEvents.length === 1 ? 'Event' : 'Events'}
+              </span>
+            </div>
+
+            {/* Right: Roll-Down Sport Filter Dropdown */}
+            <div className="relative shrink-0" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 border cursor-pointer bg-[#FAF9F6] dark:bg-[#121625] text-[#211D2B] dark:text-[#F5F2FA] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] hover:border-[#7156A5] dark:hover:border-[#B8A5E5]"
+                title="Filter by Sport"
+                aria-label="Filter sport roll-down dropdown"
+              >
+                <Filter className="w-3.5 h-3.5 text-[#7156A5] dark:text-[#B8A5E5] shrink-0" />
+                <span className="truncate max-w-[120px]">
+                  {selectedSportFilter === 'All' ? 'Filter Sport' : selectedSportFilter}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 text-[#686370] dark:text-[#AAA4B8] shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Roll-Down Menu Popover */}
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-1.5 w-56 rounded-lg p-1.5 z-50 shadow-md border bg-[#FFFFFF] dark:bg-[#0D101A] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] max-h-80 overflow-y-auto font-spatial-sans">
+                  <div className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#686370] dark:text-[#AAA4B8] border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.1)] mb-1 flex items-center justify-between">
+                    <span>Select Sport</span>
+                    <span className="text-[9px]">{availableSports.length} Options</span>
+                  </div>
+                  {availableSports.map((sport) => {
+                    const isSelected = selectedSportFilter === sport;
+                    return (
+                      <button
+                        key={sport}
+                        onClick={() => {
+                          setSelectedSportFilter(sport);
+                          setIsDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-2.5 py-1.5 rounded text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] font-semibold'
+                            : 'hover:bg-[#FAF9F6] dark:hover:bg-[#161B2E] text-[#211D2B] dark:text-[#F5F2FA]'
+                        }`}
+                      >
+                        <span className="truncate">{sport}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-[#7156A5] dark:text-[#B8A5E5] shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* SPORTS LIST & COORDINATOR EVENTS STATE */}
         {!activeSport ? (
           <div className="space-y-6">
             
             {/* DYNAMIC OFFICIAL COORDINATOR PUBLISHED EVENTS SECTION */}
-            {sortedCoordinatorEvents && sortedCoordinatorEvents.length > 0 && (
+            {filteredCoordinatorEvents && filteredCoordinatorEvents.length > 0 && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-indigo-500 animate-pulse" />
-                    APEX SPORTS EVENTS
+                <div className="flex items-center justify-between pb-2 border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)]">
+                  <h2 className="text-lg font-bold font-spatial-display text-[#211D2B] dark:text-[#F5F2FA] flex items-center gap-2">
+                    <Trophy className="w-4 h-4 text-[#A98B57] dark:text-[#D2AB45]" />
+                    Official Championship Events
                   </h2>
-                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-mono text-xs font-bold border border-indigo-500/20">
-                    Live Published Events ({sortedCoordinatorEvents.length})
+                  <span className="px-2 py-0.5 rounded text-xs font-semibold bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
+                    Published Events ({filteredCoordinatorEvents.length})
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 w-full">
-                  {sortedCoordinatorEvents.map((evt) => {
+                  {filteredCoordinatorEvents.map((evt) => {
                     const registered = evt.registeredCount || 0;
                     const limit = evt.maxRegistrations || 64;
                     const slotsLeft = Math.max(0, limit - registered);
@@ -930,6 +1127,25 @@ export const RegistrationPage = () => {
                     const dFee = typeof evt.doublesFee === 'number' ? Number(evt.doublesFee) : currentFee * 2;
 
                     const key = resolveSportKey(evt);
+                    const isAthletics = key === 'athletics' || (evt.sportId || '').toLowerCase().includes('athletics') || (evt.title || '').toLowerCase().includes('athletics');
+
+                    let feeBadgeText = currentFee > 0 ? `Fee: ₹${currentFee}` : 'FREE (₹0)';
+                    if (isRacket) {
+                      feeBadgeText = `Singles: ₹${sFee} | Doubles: ₹${dFee}`;
+                    } else if (isAthletics) {
+                      let prices = [];
+                      if (evt.subEventFees && typeof evt.subEventFees === 'object') {
+                        prices = Object.values(evt.subEventFees).map(Number).filter((n) => !isNaN(n));
+                      } else if (Array.isArray(evt.subEventsConfig)) {
+                        prices = evt.subEventsConfig.filter((c) => c.enabled !== false).map((c) => Number(c.entryFee)).filter((n) => !isNaN(n));
+                      }
+                      if (prices.length > 0) {
+                        const minP = Math.min(...prices);
+                        const maxP = Math.max(...prices);
+                        feeBadgeText = minP === maxP ? (minP === 0 ? 'FREE (₹0)' : `Fee: ₹${minP}`) : `₹${minP} - ₹${maxP} / game`;
+                      }
+                    }
+
                     const bounds = SPORT_PLAYER_BOUNDS[key] || { min: 1, max: 10 };
                     const minP = evt.minPlayers !== undefined ? Number(evt.minPlayers) : bounds.min;
                     const maxP = evt.maxPlayers !== undefined ? Number(evt.maxPlayers) : bounds.max;
@@ -937,59 +1153,59 @@ export const RegistrationPage = () => {
                     return (
                       <div
                         key={evt.id}
-                        className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-md hover:shadow-xl transition duration-300 flex flex-col justify-between group"
+                        className="w-full rounded-lg border overflow-hidden shadow-2xs transition-all duration-200 flex flex-col justify-between group bg-[#FFFFFF] dark:bg-[#0D101A] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] hover:border-[#7156A5]/40 dark:hover:border-[#8B5CF6]/40"
                       >
-                        <div className="relative h-44 w-full overflow-hidden bg-slate-950">
+                        <div className="relative h-40 w-full overflow-hidden bg-slate-950">
                           <img
                             src={evt.coverImage || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80'}
                             alt={evt.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-500 brightness-90"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#070A13] via-[#070A13]/40 to-transparent" />
 
-                          <div className="absolute top-3 left-3 flex items-center gap-2">
-                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase shadow-md ${
+                          <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
                               isUpcoming
-                                ? 'bg-amber-500 text-slate-950 font-black'
+                                ? 'bg-[#FFF8E1] text-[#A98B57] border border-[#FFE082]'
                                 : isClosed
-                                ? 'bg-rose-500 text-white'
-                                : 'bg-emerald-500 text-white'
+                                ? 'bg-[#FBEDEF] text-[#C62828] border border-[#FFCDD2]'
+                                : 'bg-[#EDF7F0] text-[#1B5E20] border border-[#C8E6C9]'
                             }`}>
                               {isUpcoming ? '🟡 Upcoming' : isClosed ? '● Closed' : '● Open'}
                             </span>
                           </div>
 
-                          <div className="absolute top-3 right-3 bg-slate-950/85 backdrop-blur-xs px-3 py-1 rounded-full text-[11px] font-black text-amber-400 border border-slate-700 shadow-md">
-                            {isRacket ? `Singles: ₹${sFee} | Doubles: ₹${dFee}` : (currentFee > 0 ? `Fee: ₹${currentFee}` : 'FREE (₹0)')}
+                          <div className="absolute top-2.5 right-2.5 bg-[#FAF9F6]/95 dark:bg-[#0D101A]/95 backdrop-blur-xs px-2.5 py-0.5 rounded text-[11px] font-semibold text-[#211D2B] dark:text-[#F5F2FA] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] font-mono">
+                            {feeBadgeText}
                           </div>
 
-                          <div className="absolute bottom-3 left-4 right-4">
-                            <span className="text-[10px] font-mono font-bold text-indigo-400 uppercase tracking-wider block">
-                              {evt.sportName} Event
+                          <div className="absolute bottom-2.5 left-3.5 right-3.5">
+                            <span className="text-[10px] font-mono font-semibold text-[#B8A5E5] uppercase tracking-wider block">
+                              {evt.sportName}
                             </span>
-                            <h3 className="text-lg sm:text-xl font-black text-white leading-tight drop-shadow-md">
+                            <h3 className="text-base sm:text-lg font-bold font-spatial-display text-white leading-tight drop-shadow-xs uppercase">
                               {evt.title}
                             </h3>
                           </div>
                         </div>
 
-                        <div className="p-5 space-y-3.5 flex-1 flex flex-col justify-between">
-                          <div className="grid grid-cols-2 gap-2.5 text-xs bg-slate-50 dark:bg-slate-950 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800">
+                        <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                          <div className="grid grid-cols-2 gap-2 text-xs p-2.5 rounded-lg border bg-[#FAF9F6] dark:bg-[#121625] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]">
                             <div>
-                              <span className="text-[9px] text-slate-400 uppercase font-mono block">Reg Deadline</span>
-                              <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px]">{evt.regEndDate}</span>
+                              <span className="text-[9px] text-[#686370] dark:text-[#AAA4B8] uppercase font-mono block">Reg Deadline</span>
+                              <span className="font-semibold font-mono text-[10px] text-[#211D2B] dark:text-[#F5F2FA]">{evt.regEndDate}</span>
                             </div>
                             <div>
-                              <span className="text-[9px] text-slate-400 uppercase font-mono block">Tournament Start</span>
-                              <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px]">{evt.tournStartDate}</span>
+                              <span className="text-[9px] text-[#686370] dark:text-[#AAA4B8] uppercase font-mono block">Tournament Start</span>
+                              <span className="font-semibold font-mono text-[10px] text-[#211D2B] dark:text-[#F5F2FA]">{evt.tournStartDate}</span>
                             </div>
                             <div>
-                              <span className="text-[9px] text-slate-400 uppercase font-mono block">Venue</span>
-                              <span className="font-bold text-blue-600 dark:text-blue-400 text-[10px] truncate block">{evt.venue}</span>
+                              <span className="text-[9px] text-[#686370] dark:text-[#AAA4B8] uppercase font-mono block">Venue</span>
+                              <span className="font-semibold text-[#7156A5] dark:text-[#B8A5E5] text-[10px] truncate block font-mono">{evt.venue}</span>
                             </div>
                             <div>
-                              <span className="text-[9px] text-slate-400 uppercase font-mono block">Team Size</span>
-                              <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px]">{evt.teamSize || `${minP} - ${maxP} Players`}</span>
+                              <span className="text-[9px] text-[#686370] dark:text-[#AAA4B8] uppercase font-mono block">Team Size</span>
+                              <span className="font-semibold font-mono text-[10px] text-[#211D2B] dark:text-[#F5F2FA]">{evt.teamSize || `${minP} - ${maxP} Players`}</span>
                             </div>
                           </div>
 
@@ -997,10 +1213,10 @@ export const RegistrationPage = () => {
                             <button
                               type="button"
                               onClick={() => setRulesModalSport({ sportName: evt.sportName || evt.title, rules: evt.rules })}
-                              className="flex-1 py-2.5 rounded-2xl font-bold text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-xs"
+                              className="flex-1 py-2 rounded-lg font-semibold text-xs border transition-all flex items-center justify-center gap-1.5 cursor-pointer bg-[#FAF9F6] dark:bg-[#121625] hover:bg-[#F4F2F7] dark:hover:bg-[#161B2E] text-[#211D2B] dark:text-[#F5F2FA] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] shadow-2xs"
                               title="View Official Tournament Rules for this event"
                             >
-                              <Info className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                              <Info className="w-3.5 h-3.5 text-[#7156A5] dark:text-[#B8A5E5]" />
                               <span>View Rules</span>
                             </button>
 
@@ -1022,6 +1238,9 @@ export const RegistrationPage = () => {
                                   entryFee: sFee,
                                   singlesFee: sFee,
                                   doublesFee: dFee,
+                                  subEvents: evt.subEvents,
+                                  subEventFees: evt.subEventFees,
+                                  subEventsConfig: evt.subEventsConfig,
                                   minPlayers: minP,
                                   maxPlayers: maxP,
                                   teamSize: evt.teamSize || `${minP} - ${maxP} Players`,
@@ -1034,23 +1253,23 @@ export const RegistrationPage = () => {
                                 };
                                 handleSportSelect(adaptedSport);
                               }}
-                              className={`flex-1 py-2.5 rounded-2xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 ${
+                              className={`flex-1 py-2 rounded-lg font-semibold text-xs transition-all flex items-center justify-center gap-1.5 font-mono uppercase tracking-wider shadow-2xs ${
                                 isUpcoming
-                                  ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 cursor-not-allowed font-extrabold'
+                                  ? 'bg-[#FFF8E1] dark:bg-[#A98B57]/20 text-[#A98B57] border border-[#FFE082] dark:border-[#A98B57]/30 cursor-not-allowed'
                                   : isClosed
-                                  ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-300 dark:border-slate-700'
-                                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white shadow-blue-500/20 active:scale-[0.98]'
+                                  ? 'bg-[#F4F2F7] dark:bg-[#121625] text-[#686370] dark:text-[#AAA4B8] cursor-not-allowed border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]'
+                                  : 'bg-[#7156A5] hover:bg-[#5E4491] dark:bg-[#8B5CF6] dark:hover:bg-[#7C3AED] text-white cursor-pointer'
                               }`}
                             >
                               <span>
                                 {isUpcoming
-                                  ? '⏳ Coming Soon'
+                                  ? '⏳ Soon'
                                   : isClosed
-                                  ? (slotsLeft === 0 ? 'Event Full' : 'Registration Closed')
-                                  : 'Register Now'
+                                  ? (slotsLeft === 0 ? 'Event Full' : 'Closed')
+                                  : 'Register'
                                 }
                               </span>
-                              {!isUpcoming && !isClosed && <Trophy className="w-4 h-4" />}
+                              {!isUpcoming && !isClosed && <Trophy className="w-3.5 h-3.5" />}
                             </button>
                           </div>
 
@@ -1063,14 +1282,18 @@ export const RegistrationPage = () => {
             )}
 
             {/* EMPTY STATE WHEN NO COORDINATOR EVENTS PUBLISHED YET */}
-            {(!sortedCoordinatorEvents || sortedCoordinatorEvents.length === 0) && (
-              <div className="text-center py-12 px-6 sm:px-10 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md space-y-3 w-full">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+            {(!filteredCoordinatorEvents || filteredCoordinatorEvents.length === 0) && (
+              <div className="text-center py-16 px-6 sm:px-10 space-y-2 w-full bg-[#FFFFFF] dark:bg-[#0D101A] rounded-lg border border-dashed border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)]">
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center mx-auto text-xl bg-[#F4F2F7] dark:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)] text-[#A98B57] dark:text-[#D2AB45]">
                   <Trophy className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white">No Coordinator Events Published Yet</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-                  Registration for events opens as soon as the respective sports coordinator publishes an active event. Please check back shortly!
+                <h3 className="text-base font-bold font-spatial-display text-[#211D2B] dark:text-[#F5F2FA]">
+                  No Events Published Yet
+                </h3>
+                <p className="text-xs max-w-md mx-auto text-[#686370] dark:text-[#AAA4B8]">
+                  {selectedSportFilter === 'All'
+                    ? 'Registration will open once coordinators publish the official schedule. Please check back shortly.'
+                    : `No events currently published for ${selectedSportFilter}. Select another discipline or check back soon.`}
                 </p>
               </div>
             )}
@@ -1085,9 +1308,11 @@ export const RegistrationPage = () => {
             {step < 3 && (
               <button
                 onClick={handleBackToSports}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-blue-500 dark:text-slate-400 transition"
+                className={`inline-flex items-center gap-1.5 text-xs font-mono font-bold transition ${
+                  isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                }`}
               >
-                <ArrowLeft className="w-3.5 h-3.5" /> Back to Dashboard
+                <ArrowLeft className="w-3.5 h-3.5" /> Back to Events
               </button>
             )}
 
@@ -1095,30 +1320,30 @@ export const RegistrationPage = () => {
             <RegistrationStepper currentStep={step} />
 
             {/* Wizard Body Card */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-10 border border-slate-200 dark:border-slate-800 shadow-xl">
+            <div className="rounded-lg p-5 sm:p-8 border shadow-xs transition-all bg-[#FFFFFF] dark:bg-[#0D101A] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)]">
 
               {/* STEP 1: DETAILS */}
               {step === 1 && (
                 <div className="space-y-6">
                   {activeSport?.status === 'Upcoming' && (
-                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs font-bold flex items-center gap-2.5">
+                    <div className="p-3.5 rounded-lg bg-[#FFF8E1] dark:bg-[#A98B57]/15 border border-[#FFE082] dark:border-[#A98B57]/30 text-[#A98B57] dark:text-[#D2AB45] text-xs font-semibold flex items-center gap-2">
                       <span className="text-base">⏳</span>
-                      <span>This event is currently <strong>Upcoming (Coming Soon)</strong>. Registration will open on {activeSport.regStartDate || 'the scheduled opening date'}.</span>
+                      <span>This event is currently <strong>Upcoming</strong>. Registration opens on {activeSport.regStartDate || 'the scheduled date'}.</span>
                     </div>
                   )}
                   {renderDetailsStep()}
-                  <div className="flex justify-end pt-6 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex justify-end pt-5 border-t border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]">
                     {activeSport?.status === 'Upcoming' ? (
                       <button
                         disabled
-                        className="px-8 py-3 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-sm border border-amber-500/40 cursor-not-allowed flex items-center gap-2"
+                        className="px-6 py-2.5 rounded-lg bg-[#FFF8E1] dark:bg-[#A98B57]/20 text-[#A98B57] font-semibold text-sm border border-[#FFE082] dark:border-[#A98B57]/30 cursor-not-allowed flex items-center gap-2"
                       >
                         <span>⏳ Registration Opening Soon</span>
                       </button>
                     ) : (
                       <button
                         onClick={handleDetailsSubmit}
-                        className="px-8 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-sm shadow-md shadow-blue-500/20 flex items-center gap-2 transition active:scale-[0.98]"
+                        className="px-6 py-2.5 rounded-lg bg-[#7156A5] hover:bg-[#5E4491] dark:bg-[#8B5CF6] dark:hover:bg-[#7C3AED] text-white font-semibold text-sm shadow-2xs flex items-center gap-2 transition-all cursor-pointer"
                       >
                         <span>Proceed to Payment</span>
                         <Trophy className="w-4 h-4" />
@@ -1132,36 +1357,36 @@ export const RegistrationPage = () => {
               {step === 2 && (
                 <form onSubmit={handlePaymentSubmit} className="space-y-6">
                   
-                  {/* Card 1: MANDATORY DECLARATION CARD (FIRST THING USER SEES) */}
-                  <div className="p-6 rounded-3xl border-2 border-amber-500/40 bg-amber-500/5 dark:bg-amber-500/10 space-y-4 shadow-lg transition duration-300">
-                    <div className="flex items-center justify-between border-b border-amber-500/20 pb-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400">
-                          <ShieldCheck className="w-5 h-5" />
+                  {/* Card 1: MANDATORY DECLARATION CARD */}
+                  <div className="p-5 rounded-lg border bg-[#FAF9F6] dark:bg-[#121625] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] space-y-3.5 shadow-2xs">
+                    <div className="flex items-center justify-between border-b border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] pb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-[#F4F2F7] dark:bg-[#0D101A] text-[#A98B57] dark:text-[#D2AB45] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
+                          <ShieldCheck className="w-4 h-4" />
                         </div>
                         <div>
-                          <h4 className="font-black uppercase tracking-wider text-slate-900 dark:text-white text-sm">
+                          <h4 className="font-bold uppercase tracking-wider text-[#211D2B] dark:text-[#F5F2FA] text-xs sm:text-sm">
                             1. Mandatory Athlete Declaration & Rules Agreement
                           </h4>
-                          <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase">
-                            Must be read & accepted prior to payment checkout
+                          <p className="text-[10px] text-[#A98B57] dark:text-[#D2AB45] font-semibold uppercase">
+                            Required prior to payment checkout
                           </p>
                         </div>
                       </div>
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-amber-500 text-slate-950">
-                        Step 2 First Action
+                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold uppercase bg-[#F4F2F7] dark:bg-[#0D101A] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
+                        Declaration
                       </span>
                     </div>
 
-                    <div className="p-4 rounded-2xl bg-white/60 dark:bg-slate-900/80 border border-amber-500/20">
-                      <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic">
+                    <div className="p-3.5 rounded-lg bg-[#FFFFFF] dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]">
+                      <p className="text-xs text-[#686370] dark:text-[#AAA4B8] leading-relaxed italic">
                         "I hereby declare that the information provided by me in this registration form is true and correct to the best of my knowledge. I agree to abide by all the rules and regulations of the sports event. If I am found guilty of providing false information or engaging in any act of indiscipline or misconduct, I understand that I may be disqualified, and I agree to accept the decision of the Organizing Committee as final."
                       </p>
                     </div>
 
                     {/* Mandatory Checkbox & Read Rulebook Button */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-amber-500 transition">
-                      <label className="flex items-start gap-3 cursor-pointer select-none">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg bg-[#FFFFFF] dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
+                      <label className="flex items-start gap-2.5 cursor-pointer select-none">
                         <input
                           type="checkbox"
                           checked={formData.declarationAccepted || false}
@@ -1176,35 +1401,35 @@ export const RegistrationPage = () => {
                               setErrors((prev) => ({ ...prev, declarationAccepted: null }));
                             }
                           }}
-                          className="w-5 h-5 mt-0.5 rounded border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-blue-600 focus:ring-blue-500 shrink-0"
+                          className="w-4 h-4 mt-0.5 rounded border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] text-[#7156A5] focus:ring-[#7156A5] shrink-0"
                         />
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-snug">
-                          I have read, understood, and agree to the above mandatory declaration, discipline rules, and university verification policy.
+                        <span className="text-xs font-medium text-[#211D2B] dark:text-[#F5F2FA] leading-snug">
+                          I have read, understood, and agree to the mandatory declaration, discipline rules, and university verification policy.
                         </span>
                       </label>
 
                       <button
                         type="button"
                         onClick={() => setRulesModalSport(activeSport?.name || 'Badminton')}
-                        className="px-3.5 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold shrink-0 flex items-center gap-1.5 transition active:scale-95"
+                        className="px-3 py-1.5 rounded-lg bg-[#EDF7F0] dark:bg-[#1B5E20]/20 hover:bg-[#C8E6C9]/40 text-[#1B5E20] dark:text-[#81C784] border border-[#C8E6C9] dark:border-[#1B5E20]/30 text-xs font-semibold shrink-0 flex items-center gap-1.5 transition-all cursor-pointer"
                       >
-                        <span>📖 Read Official Rulebook</span>
+                        <span>📖 Read Rulebook</span>
                       </button>
                     </div>
                     {errors.declarationAccepted && (
-                      <p className="text-xs text-rose-500 font-black flex items-center gap-1">
+                      <p className="text-xs text-[#C62828] dark:text-[#FDA4AF] font-semibold flex items-center gap-1">
                         ⚠️ {errors.declarationAccepted}
                       </p>
                     )}
                   </div>
 
-                  {/* Card 2: Verification & Approval Information */}
-                  <div className="p-5 rounded-2xl border border-blue-500/30 bg-blue-500/5 dark:bg-blue-500/10 text-slate-800 dark:text-blue-100 flex items-start gap-3">
-                    <Info className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                    <div className="text-xs space-y-1.5">
-                      <h4 className="font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">2. College Verification Policy</h4>
-                      <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                        Upon successful submission and payment, your registration will be reviewed and verified by your respective <strong>College Head</strong>. Ensure all student details are valid to prevent rejection during gate pass generation.
+                  {/* Card 2: Verification Policy */}
+                  <div className="p-4 rounded-lg border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)] bg-[#FAF9F6] dark:bg-[#121625] text-[#211D2B] dark:text-[#F5F2FA] flex items-start gap-2.5">
+                    <Info className="w-4 h-4 text-[#7156A5] dark:text-[#B8A5E5] mt-0.5 shrink-0" />
+                    <div className="text-xs space-y-1">
+                      <h4 className="font-bold uppercase tracking-wider text-[#7156A5] dark:text-[#B8A5E5]">2. College Verification Policy</h4>
+                      <p className="text-[#686370] dark:text-[#AAA4B8] leading-relaxed">
+                        Upon submission and payment, registration will be reviewed and verified by your respective <strong>College Head</strong>. Ensure student details are accurate to avoid rejection during biometric gate pass generation.
                       </p>
                     </div>
                   </div>
@@ -1219,12 +1444,12 @@ export const RegistrationPage = () => {
                   />
 
                   {/* Action Buttons */}
-                  <div className="flex justify-between pt-6 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex justify-between pt-5 border-t border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]">
                     <button
                       type="button"
                       disabled={isProcessingPayment}
                       onClick={handlePrevStep}
-                      className="px-6 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm flex items-center gap-2 transition hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50"
+                      className="px-5 py-2.5 rounded-lg bg-[#FAF9F6] dark:bg-[#121625] text-[#211D2B] dark:text-[#F5F2FA] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.2)] font-semibold text-sm flex items-center gap-1.5 hover:bg-[#F4F2F7] dark:hover:bg-[#161B2E] transition-all shadow-2xs cursor-pointer disabled:opacity-50"
                     >
                       <ArrowLeft className="w-4 h-4" /> Back
                     </button>
@@ -1232,10 +1457,11 @@ export const RegistrationPage = () => {
                     <button
                       type="submit"
                       disabled={isProcessingPayment || !formData.declarationAccepted}
-                      className={`px-8 py-3 rounded-2xl font-bold text-sm shadow-md flex items-center gap-2 transition ${formData.declarationAccepted && !isProcessingPayment
-                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white shadow-blue-500/20 active:scale-[0.98]'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-200/40 dark:border-slate-700/40'
-                        }`}
+                      className={`px-6 py-2.5 rounded-lg font-semibold text-sm shadow-2xs flex items-center gap-2 transition-all ${
+                        formData.declarationAccepted && !isProcessingPayment
+                          ? 'bg-[#7156A5] hover:bg-[#5E4491] dark:bg-[#8B5CF6] dark:hover:bg-[#7C3AED] text-white cursor-pointer'
+                          : 'bg-[#F4F2F7] dark:bg-[#121625] text-[#686370] dark:text-[#AAA4B8] cursor-not-allowed border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]'
+                      }`}
                     >
                       {isProcessingPayment ? (
                         <>
@@ -1315,6 +1541,35 @@ export const RegistrationPage = () => {
             </div>
           </div>
         )}
+
+        {/* ─── DEDICATION QUOTE FOOTER ─── */}
+        <div className="pt-14 sm:pt-20 pb-10 text-center space-y-3">
+          <div className="flex items-center justify-center gap-3 opacity-60">
+            <div className={`h-[1px] w-12 sm:w-24 bg-gradient-to-r from-transparent ${isDark ? 'to-indigo-400' : 'to-indigo-600'}`} />
+            <Trophy className={`w-3.5 h-3.5 ${isDark ? 'text-amber-400' : 'text-amber-500'} animate-pulse`} />
+            <div className={`h-[1px] w-12 sm:w-24 bg-gradient-to-l from-transparent ${isDark ? 'to-indigo-400' : 'to-indigo-600'}`} />
+          </div>
+
+          <p className={`font-spatial-display text-sm sm:text-base md:text-lg tracking-[0.14em] uppercase font-medium select-none ${
+            isDark ? 'text-slate-300' : 'text-slate-700'
+          }`}>
+            &ldquo;The field is waiting.{' '}
+            <span className={`bg-gradient-to-r bg-clip-text text-transparent font-bold ${
+              isDark
+                ? 'from-purple-400 via-indigo-300 to-amber-300'
+                : 'from-purple-700 via-indigo-700 to-amber-600'
+            }`}>
+              Are you ready?
+            </span>
+            &rdquo;
+          </p>
+
+          <p className={`text-[11px] sm:text-xs font-spatial-sans tracking-widest uppercase italic font-medium ${
+            isDark ? 'text-indigo-400/80' : 'text-indigo-700'
+          }`}>
+            APEX 2026 Registration Arena
+          </p>
+        </div>
 
       </div>
     </div>

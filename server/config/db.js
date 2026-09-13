@@ -13,8 +13,11 @@ if (!databaseUrl) {
 
 const isLocal = databaseUrl ? (databaseUrl.includes('localhost') || databaseUrl.includes('127.0.0.1')) : false;
 
+// Strip sslmode query param so node-pg honors { rejectUnauthorized: false } without certificate chain errors
+const sanitizedUrl = databaseUrl ? databaseUrl.replace(/([?&])sslmode=[^&]*(&|$)/g, '$1').replace(/[?&]$/, '') : databaseUrl;
+
 const dbConfig = {
-  connectionString: databaseUrl,
+  connectionString: sanitizedUrl,
   ssl: isLocal ? false : { rejectUnauthorized: false },
   max: 10,
   idleTimeoutMillis: 30000,
@@ -30,6 +33,7 @@ export const prisma = new PrismaClient({ adapter: prismaAdapter });
 
 // Helper to execute SQL query with fallback
 export const queryDb = async (text, params) => {
+  if (!databaseUrl) return null;
   try {
     const res = await pool.query(text, params);
     return res;

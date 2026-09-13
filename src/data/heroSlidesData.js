@@ -62,22 +62,12 @@ export const getHeroSlides = () => {
     const saved = localStorage.getItem('sems_home_hero_slides');
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length >= 5) {
-        // Fix any broken or missing images in localStorage
-        const sanitized = parsed.slice(0, 5).map((slide, idx) => {
-          const defaultSlide = DEFAULT_HERO_SLIDES[idx] || DEFAULT_HERO_SLIDES[0];
-          if (!slide.image || slide.image.includes('photo-1508098682722') || slide.image.includes('photo-1561080695')) {
-            return { ...slide, image: defaultSlide.image };
-          }
-          return slide;
-        });
-        localStorage.setItem('sems_home_hero_slides', JSON.stringify(sanitized));
-        return sanitized;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
       }
     }
   } catch (e) {}
 
-  localStorage.setItem('sems_home_hero_slides', JSON.stringify(DEFAULT_HERO_SLIDES));
   return DEFAULT_HERO_SLIDES;
 };
 
@@ -88,7 +78,6 @@ export const fetchHeroSlidesFromDB = async () => {
       const slides = await res.json();
       if (Array.isArray(slides) && slides.length > 0) {
         localStorage.setItem('sems_home_hero_slides', JSON.stringify(slides));
-        window.dispatchEvent(new Event('sems_slides_updated'));
         return slides;
       }
     }

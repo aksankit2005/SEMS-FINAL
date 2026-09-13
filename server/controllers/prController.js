@@ -189,16 +189,25 @@ export const getEventById = async (req, res) => {
  * Create new event album
  */
 export const createEvent = async (req, res) => {
-  const { event_name, event_date, cover_image, public_id, description } = req.body;
+  const { event_name, event_date, cover_image, public_id, description, category } = req.body;
 
   if (!event_name || !event_date || !cover_image) {
     return res.status(400).json({ message: 'Event name, event date, and cover image are required.' });
   }
 
-  const dbResult = await queryDb(
-    'INSERT INTO events (event_name, event_date, cover_image, public_id, description, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) RETURNING *',
-    [event_name, event_date, cover_image, public_id || null, description || '']
-  );
+  let dbResult = null;
+  try {
+    dbResult = await queryDb(
+      'INSERT INTO events (event_name, event_date, cover_image, public_id, description, category, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW()) RETURNING *',
+      [event_name, event_date, cover_image, public_id || null, description || '', category || null]
+    );
+  } catch (err) {
+    // Graceful fallback if category column doesn't exist yet on remote db
+    dbResult = await queryDb(
+      'INSERT INTO events (event_name, event_date, cover_image, public_id, description, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) RETURNING *',
+      [event_name, event_date, cover_image, public_id || null, description || '']
+    );
+  }
 
   if (dbResult && dbResult.rows.length > 0) {
     return res.status(201).json(dbResult.rows[0]);
@@ -211,6 +220,7 @@ export const createEvent = async (req, res) => {
     cover_image,
     public_id: public_id || null,
     description: description || '',
+    category: category || null,
     created_at: new Date().toISOString(),
     photos_count: 0,
     videos_count: 0,
@@ -224,7 +234,7 @@ export const createEvent = async (req, res) => {
  */
 export const updateEvent = async (req, res) => {
   const { id } = req.params;
-  const { event_name, event_date, cover_image, public_id, description } = req.body;
+  const { event_name, event_date, cover_image, public_id, description, category } = req.body;
 
   // If cover image was changed and old cover image had a public_id, we can clean up old asset
   if (cover_image) {
@@ -237,10 +247,18 @@ export const updateEvent = async (req, res) => {
     }
   }
 
-  const dbResult = await queryDb(
-    'UPDATE events SET event_name = $1, event_date = $2, cover_image = $3, public_id = COALESCE($4, public_id), description = $5, updated_at = NOW() WHERE id = $6 RETURNING *',
-    [event_name, event_date, cover_image, public_id || null, description, id]
-  );
+  let dbResult = null;
+  try {
+    dbResult = await queryDb(
+      'UPDATE events SET event_name = $1, event_date = $2, cover_image = $3, public_id = COALESCE($4, public_id), description = $5, category = $6, updated_at = NOW() WHERE id = $7 RETURNING *',
+      [event_name, event_date, cover_image, public_id || null, description, category || null, id]
+    );
+  } catch (err) {
+    dbResult = await queryDb(
+      'UPDATE events SET event_name = $1, event_date = $2, cover_image = $3, public_id = COALESCE($4, public_id), description = $5, updated_at = NOW() WHERE id = $6 RETURNING *',
+      [event_name, event_date, cover_image, public_id || null, description, id]
+    );
+  }
 
   if (dbResult && dbResult.rows.length > 0) {
     return res.json(dbResult.rows[0]);
@@ -256,6 +274,7 @@ export const updateEvent = async (req, res) => {
     cover_image: cover_image || inMemoryEvents[index].cover_image,
     public_id: public_id !== undefined ? public_id : inMemoryEvents[index].public_id,
     description: description !== undefined ? description : inMemoryEvents[index].description,
+    category: category !== undefined ? category : inMemoryEvents[index].category,
   };
 
   return res.json(inMemoryEvents[index]);

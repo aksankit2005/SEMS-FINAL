@@ -11,18 +11,10 @@ export const TeamDetailsForm = ({
   errors,
   setErrors
 }) => {
-  const isTugOfWar = resolveSportKey(sport) === 'tug-of-war';
-
-  const colleges = isTugOfWar
-    ? [
-        { value: '', label: 'Select College / University' },
-        { value: 'MPEC', label: 'MPEC' },
-        { value: 'MIPS', label: 'MIPS' }
-      ]
-    : [
-        { value: '', label: 'Select College / University' },
-        ...Object.keys(collegeCourses).map((c) => ({ value: c, label: c }))
-      ];
+  const colleges = [
+    { value: '', label: 'Select College / University' },
+    ...Object.keys(collegeCourses).map((c) => ({ value: c, label: c }))
+  ];
 
   const genders = [
     { value: '', label: 'Select Gender' },
@@ -340,7 +332,6 @@ export const TeamDetailsForm = ({
                   teamGender={formData.gender}
                   isFirstPlayer={idx === 0}
                   sameAsCaptain={formData.sameAsCaptain !== false}
-                  isTugOfWar={isTugOfWar}
                   onToggleSameAsCaptain={(val) => {
                     setFormData((prev) => {
                       const updatedRoster = [...prev.roster];
@@ -381,7 +372,6 @@ export const TeamDetailsForm = ({
 export const validateTeamForm = (sport, formData) => {
   const errors = {};
 
-  const isTugOfWar = resolveSportKey(sport) === 'tug-of-war';
   const minPlayers = sport.minPlayers || 2;
   const maxPlayers = sport.maxPlayers || 2;
 
@@ -437,15 +427,8 @@ export const validateTeamForm = (sport, formData) => {
       errors[`player_${idx}_name`] = 'Full Name is required';
     }
 
-    if (isTugOfWar) {
-      if (!player.rollNo?.trim() && !player.lt?.trim()) {
-        errors[`player_${idx}_lt`] = 'LT is required';
-        errors[`player_${idx}_rollNo`] = 'LT is required';
-      }
-    } else {
-      if (!player.rollNo?.trim()) {
-        errors[`player_${idx}_rollNo`] = 'Roll Number is required';
-      }
+    if (!player.rollNo?.trim()) {
+      errors[`player_${idx}_rollNo`] = 'Roll Number is required';
     }
 
     const aadhaar = player.aadhaar?.trim();

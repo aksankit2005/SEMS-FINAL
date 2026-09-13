@@ -215,7 +215,7 @@ export const TugOfWarLiveScoreControllerModal = ({ match, venueName, onClose, on
   return createPortal(
     <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xs font-sans overflow-y-auto">
       <div className="w-full max-w-4xl bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-6 my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
-        
+
         {/* Header Bar */}
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
@@ -233,11 +233,10 @@ export const TugOfWarLiveScoreControllerModal = ({ match, venueName, onClose, on
           <div className="flex items-center gap-2">
             <button
               onClick={handleTogglePause}
-              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1 cursor-pointer ${
-                isPaused
-                  ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-              }`}
+              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1 cursor-pointer ${isPaused
+                ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                }`}
             >
               {isPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
               <span>{isPaused ? 'Resume' : 'Pause'}</span>
@@ -314,7 +313,7 @@ export const TugOfWarLiveScoreControllerModal = ({ match, venueName, onClose, on
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
+
             {/* TEAM 1 CONTROLLER */}
             <div className="p-6 rounded-3xl bg-orange-500/5 border border-orange-500/20 space-y-6 text-center">
               <div>
@@ -372,13 +371,12 @@ export const TugOfWarLiveScoreControllerModal = ({ match, venueName, onClose, on
             {roundsHistory.slice(0, maxRounds).map((s) => (
               <div
                 key={s.round}
-                className={`p-3 rounded-2xl border text-center space-y-2 transition ${
-                  s.round === currentRoundIndex && !matchWinner
-                    ? 'bg-orange-500/10 border-orange-500/50 shadow-md'
-                    : s.isLocked
+                className={`p-3 rounded-2xl border text-center space-y-2 transition ${s.round === currentRoundIndex && !matchWinner
+                  ? 'bg-orange-500/10 border-orange-500/50 shadow-md'
+                  : s.isLocked
                     ? 'bg-slate-100 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800'
                     : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 opacity-60'
-                }`}
+                  }`}
               >
                 <div className="text-[10px] font-mono font-bold uppercase text-slate-500">
                   Round {s.round}

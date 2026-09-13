@@ -62,7 +62,7 @@ export const AdminActivityPage = () => {
     }
     if (r.includes('COLLEGE') || r.includes('HEAD')) {
       return (
-        <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+        <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
           College Head
         </span>
       );
@@ -113,7 +113,7 @@ export const AdminActivityPage = () => {
             onClick={handleExportCSV}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold transition-colors cursor-pointer"
           >
-            <Download className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+            <Download className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <span>Export Logs</span>
           </button>
           <button
@@ -136,7 +136,7 @@ export const AdminActivityPage = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search user, action, details..."
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
             />
           </div>
 
@@ -144,7 +144,7 @@ export const AdminActivityPage = () => {
           <select
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
-            className="bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+            className="bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
           >
             <option value="ALL" className="bg-white dark:bg-slate-900">Actor Role: All Roles</option>
             <option value="ADMIN" className="bg-white dark:bg-slate-900">Admin</option>
@@ -157,7 +157,7 @@ export const AdminActivityPage = () => {
           <select
             value={filterAction}
             onChange={(e) => setFilterAction(e.target.value)}
-            className="bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+            className="bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
           >
             <option value="ALL" className="bg-white dark:bg-slate-900">Action Type: All Actions</option>
             <option value="Admin Login" className="bg-white dark:bg-slate-900">Admin Login</option>
@@ -184,7 +184,7 @@ export const AdminActivityPage = () => {
       <div className="p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm transition-colors">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12 space-y-3">
-            <Loader2 className="w-6 h-6 text-amber-500 dark:text-amber-400 animate-spin" />
+            <Loader2 className="w-6 h-6 text-blue-600 dark:text-blue-400 animate-spin" />
             <p className="text-xs text-slate-500 dark:text-slate-400">Loading audit activity logs...</p>
           </div>
         ) : filteredLogs.length === 0 ? (
@@ -217,7 +217,7 @@ export const AdminActivityPage = () => {
                       {getRoleBadge(log.role)}
                     </td>
                     <td className="py-3 px-3 whitespace-nowrap">
-                      <span className="font-semibold text-amber-600 dark:text-amber-400">
+                      <span className="font-semibold text-blue-600 dark:text-blue-400">
                         {log.action}
                       </span>
                     </td>

@@ -69,7 +69,7 @@ export const galleryApi = {
 
   // Check PR Auth status
   isPRAuthenticated() {
-    return !!(localStorage.getItem('pr_auth_token') || localStorage.getItem('sems_admin_token') || localStorage.getItem('sems_super_coord_token'));
+    return !!localStorage.getItem('pr_auth_token');
   },
 
   // Get Cloudinary upload signature from backend

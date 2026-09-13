@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminApi } from '../../services/adminApi';
 import { useToast } from '../../context/ToastContext';
-import { ALL_12_SPORTS, ALL_COLLEGES } from '../../services/superCoordinatorApi';
+import { ALL_12_SPORTS, ALL_COLLEGES, matchesCollegeFilter } from '../../services/superCoordinatorApi';
 import { CoordinatorFormModal } from '../../components/admin/CoordinatorFormModal';
 import { ResetPasswordModal } from '../../components/admin/ResetPasswordModal';
 import { ConfirmationModal } from '../../components/admin/ConfirmationModal';
@@ -131,7 +131,7 @@ export const AdminCoordinatorsPage = () => {
   const filteredCoordinators = coordinators.filter((c) => {
     if (filterRole !== 'ALL' && (c.role || '').toLowerCase() !== filterRole.toLowerCase()) return false;
     if (filterStatus !== 'ALL' && (c.status || '').toLowerCase() !== filterStatus.toLowerCase()) return false;
-    if (filterCollege !== 'ALL' && (c.college || '').toLowerCase() !== filterCollege.toLowerCase()) return false;
+    if (filterCollege !== 'ALL' && !matchesCollegeFilter(c.college, filterCollege)) return false;
     if (filterSport !== 'ALL' && (c.assignedSport || c.sportName || '').toLowerCase() !== filterSport.toLowerCase()) return false;
 
     if (searchQuery.trim()) {
@@ -164,7 +164,7 @@ export const AdminCoordinatorsPage = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl transition-colors">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl transition-colors">
         <div className="space-y-1">
           <h1 className="text-2xl font-black text-slate-900 dark:text-white">Coordinator & Role Management</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -175,7 +175,7 @@ export const AdminCoordinatorsPage = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => { setSelectedCoord(null); setIsFormOpen(true); }}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-lg shadow-amber-500/20 transition-all shrink-0 cursor-pointer"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-blue-500/20 transition-all shrink-0 cursor-pointer"
           >
             <UserPlus className="w-4 h-4" />
             <span>Create New Account</span>
@@ -194,7 +194,7 @@ export const AdminCoordinatorsPage = () => {
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm transition-colors">
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
-            <Filter className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+            <Filter className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <span>Master Account Filters</span>
           </div>
 
@@ -214,7 +214,7 @@ export const AdminCoordinatorsPage = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 text-xs">
           {/* Live Search */}
           <div>
             <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">🔍 Search Account</label>
@@ -224,7 +224,7 @@ export const AdminCoordinatorsPage = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search name, email, sport..."
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
               />
               <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-2.5" />
             </div>
@@ -236,7 +236,7 @@ export const AdminCoordinatorsPage = () => {
             <select
               value={filterRole}
               onChange={(e) => setFilterRole(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
             >
               <option value="ALL" className="bg-white dark:bg-slate-900">All Roles</option>
               <option value="Coordinator" className="bg-white dark:bg-slate-900">Coordinator (12 Sports)</option>
@@ -252,7 +252,7 @@ export const AdminCoordinatorsPage = () => {
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
             >
               <option value="ALL" className="bg-white dark:bg-slate-900">All Status</option>
               <option value="Active" className="bg-white dark:bg-slate-900">Active</option>
@@ -266,7 +266,7 @@ export const AdminCoordinatorsPage = () => {
             <select
               value={filterCollege}
               onChange={(e) => setFilterCollege(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
             >
               <option value="ALL" className="bg-white dark:bg-slate-900">All Colleges</option>
               {ALL_COLLEGES.map((c) => (
@@ -283,7 +283,7 @@ export const AdminCoordinatorsPage = () => {
             <select
               value={filterSport}
               onChange={(e) => setFilterSport(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
             >
               <option value="ALL" className="bg-white dark:bg-slate-900">All 12 Sports</option>
               {ALL_12_SPORTS.map((s) => (
@@ -301,15 +301,15 @@ export const AdminCoordinatorsPage = () => {
         <div className="p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm transition-colors">
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
-              <Trophy className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+              <Trophy className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <span>1. Sports Coordinators ({sportsCoordinators.length})</span>
             </div>
-            <span className="text-[11px] text-amber-600 dark:text-amber-400 font-mono">{ALL_12_SPORTS.length} Games Covered</span>
+            <span className="text-[11px] text-blue-600 dark:text-blue-400 font-mono">{ALL_12_SPORTS.length} Games Covered</span>
           </div>
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-3">
-              <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
+              <Loader2 className="w-6 h-6 text-blue-600 dark:text-blue-400 animate-spin" />
               <p className="text-xs text-slate-400">Loading sports coordinators...</p>
             </div>
           ) : sportsCoordinators.length === 0 ? (
@@ -318,41 +318,41 @@ export const AdminCoordinatorsPage = () => {
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-bold text-[10px] tracking-wider">
-                    <th className="py-3 px-3">Sport / Game</th>
-                    <th className="py-3 px-3">Coordinator Name</th>
-                    <th className="py-3 px-3">Username</th>
-                    <th className="py-3 px-3">Email</th>
-                    <th className="py-3 px-3">Phone</th>
-                    <th className="py-3 px-3">Status</th>
-                    <th className="py-3 px-3 text-right">Actions</th>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] tracking-wider bg-slate-50/75 dark:bg-slate-900/60">
+                    <th className="py-3 px-3.5">Sport / Game</th>
+                    <th className="py-3 px-3.5">Coordinator Name</th>
+                    <th className="py-3 px-3.5">Username</th>
+                    <th className="py-3 px-3.5">Email</th>
+                    <th className="py-3 px-3.5">Phone</th>
+                    <th className="py-3 px-3.5">Status</th>
+                    <th className="py-3 px-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200">
                   {sportsCoordinators.map((coordinator) => {
                     const sportObj = ALL_12_SPORTS.find(
-                      (s) =>
+                       (s) =>
                         s.id.toLowerCase() === (coordinator.assignedSport || '').toLowerCase() ||
                         s.name.toLowerCase() === (coordinator.sportName || '').toLowerCase()
                     ) || { icon: '🎯', name: coordinator.sportName || 'General' };
                     return (
                       <tr key={coordinator.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                        <td className="py-3 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                        <td className="py-3 px-3.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">
                           <span className="mr-1.5">{sportObj.icon}</span> {sportObj.name}
                         </td>
-                        <td className="py-3 px-3 font-semibold whitespace-nowrap">
-                          <span className="text-amber-600 dark:text-amber-400">{coordinator.name}</span>
+                        <td className="py-3 px-3.5 font-semibold whitespace-nowrap">
+                          <span className="text-blue-600 dark:text-blue-400">{coordinator.name}</span>
                         </td>
-                        <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                        <td className="py-3 px-3.5 whitespace-nowrap text-slate-700 dark:text-slate-300">
                           {coordinator.username}
                         </td>
-                        <td className="py-3 px-3 whitespace-nowrap text-slate-500 dark:text-slate-400">
+                        <td className="py-3 px-3.5 whitespace-nowrap text-slate-500 dark:text-slate-400">
                           {coordinator.email}
                         </td>
-                        <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                        <td className="py-3 px-3.5 whitespace-nowrap text-slate-700 dark:text-slate-300">
                           {coordinator.phone}
                         </td>
-                        <td className="py-3 px-3 whitespace-nowrap">
+                        <td className="py-3 px-3.5 whitespace-nowrap">
                           <span
                             className={`px-2 py-0.5 text-[10px] font-bold rounded ${
                               coordinator.status === 'Active'
@@ -373,7 +373,7 @@ export const AdminCoordinatorsPage = () => {
                           </button>
                           <button
                             onClick={() => setResetTargetCoord(coordinator)}
-                            className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-semibold text-[11px] border border-amber-500/20 transition-colors cursor-pointer"
+                            className="px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-semibold text-[11px] border border-blue-500/20 transition-colors cursor-pointer"
                             title="Reset Password"
                           >
                             Reset Password
@@ -423,25 +423,25 @@ export const AdminCoordinatorsPage = () => {
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-bold text-[10px] tracking-wider">
-                    <th className="py-3 px-3">College Name</th>
-                    <th className="py-3 px-3">Head Coordinator Name</th>
-                    <th className="py-3 px-3">Username</th>
-                    <th className="py-3 px-3">Email</th>
-                    <th className="py-3 px-3">Phone</th>
-                    <th className="py-3 px-3">Status</th>
-                    <th className="py-3 px-3 text-right">Actions</th>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] tracking-wider bg-slate-50/75 dark:bg-slate-900/60">
+                    <th className="py-3 px-3.5">College Name</th>
+                    <th className="py-3 px-3.5">Head Coordinator Name</th>
+                    <th className="py-3 px-3.5">Username</th>
+                    <th className="py-3 px-3.5">Email</th>
+                    <th className="py-3 px-3.5">Phone</th>
+                    <th className="py-3 px-3.5">Status</th>
+                    <th className="py-3 px-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200">
                   {headCoordinators.map((c) => (
                     <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3 px-3 font-bold text-purple-600 dark:text-purple-400 whitespace-nowrap">{c.college || 'MPEC'}</td>
-                      <td className="py-3 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">{c.name}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.username}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-500 dark:text-slate-400">{c.email}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.phone}</td>
-                      <td className="py-3 px-3 whitespace-nowrap">
+                      <td className="py-3 px-3.5 font-bold text-purple-600 dark:text-purple-400 whitespace-nowrap">{c.college || 'MPEC'}</td>
+                      <td className="py-3 px-3.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">{c.name}</td>
+                      <td className="py-3 px-3.5 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.username}</td>
+                      <td className="py-3 px-3.5 whitespace-nowrap text-slate-500 dark:text-slate-400">{c.email}</td>
+                      <td className="py-3 px-3.5 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.phone}</td>
+                      <td className="py-3 px-3.5 whitespace-nowrap">
                         <span
                           className={`px-2 py-0.5 text-[10px] font-bold rounded ${
                             c.status === 'Active'
@@ -461,7 +461,7 @@ export const AdminCoordinatorsPage = () => {
                         </button>
                         <button
                           onClick={() => setResetTargetCoord(c)}
-                          className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-semibold text-[11px] border border-amber-500/20 transition-colors cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-semibold text-[11px] border border-blue-500/20 transition-colors cursor-pointer"
                         >
                           Reset Password
                         </button>
@@ -497,10 +497,10 @@ export const AdminCoordinatorsPage = () => {
         <div className="p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm transition-colors">
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
-              <Crown className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+              <Crown className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <span>3. Super Coordinators / Event Hosts ({superCoordinators.length})</span>
             </div>
-            <span className="text-[11px] text-amber-600 dark:text-amber-400 font-mono">Global Fest Authority</span>
+            <span className="text-[11px] text-blue-600 dark:text-blue-400 font-mono">Global Fest Authority</span>
           </div>
 
           {superCoordinators.length === 0 ? (
@@ -509,23 +509,23 @@ export const AdminCoordinatorsPage = () => {
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-bold text-[10px] tracking-wider">
-                    <th className="py-3 px-3">Super Coordinator Name</th>
-                    <th className="py-3 px-3">Username</th>
-                    <th className="py-3 px-3">Email</th>
-                    <th className="py-3 px-3">Phone</th>
-                    <th className="py-3 px-3">Status</th>
-                    <th className="py-3 px-3 text-right">Actions</th>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] tracking-wider bg-slate-50/75 dark:bg-slate-900/60">
+                    <th className="py-3 px-3.5">Super Coordinator Name</th>
+                    <th className="py-3 px-3.5">Username</th>
+                    <th className="py-3 px-3.5">Email</th>
+                    <th className="py-3 px-3.5">Phone</th>
+                    <th className="py-3 px-3.5">Status</th>
+                    <th className="py-3 px-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200">
                   {superCoordinators.map((c) => (
                     <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3 px-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">{c.name}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.username}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-500 dark:text-slate-400">{c.email}</td>
-                      <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.phone}</td>
-                      <td className="py-3 px-3 whitespace-nowrap">
+                      <td className="py-3 px-3.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">{c.name}</td>
+                      <td className="py-3 px-3.5 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.username}</td>
+                      <td className="py-3 px-3.5 whitespace-nowrap text-slate-500 dark:text-slate-400">{c.email}</td>
+                      <td className="py-3 px-3.5 whitespace-nowrap text-slate-700 dark:text-slate-300">{c.phone}</td>
+                      <td className="py-3 px-3.5 whitespace-nowrap">
                         <span
                           className={`px-2 py-0.5 text-[10px] font-bold rounded ${
                             c.status === 'Active'
@@ -545,7 +545,7 @@ export const AdminCoordinatorsPage = () => {
                         </button>
                         <button
                           onClick={() => setResetTargetCoord(c)}
-                          className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-semibold text-[11px] border border-amber-500/20 transition-colors cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-semibold text-[11px] border border-blue-500/20 transition-colors cursor-pointer"
                         >
                           Reset Password
                         </button>
@@ -629,7 +629,7 @@ export const AdminCoordinatorsPage = () => {
                         </button>
                         <button
                           onClick={() => setResetTargetCoord(c)}
-                          className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-semibold text-[11px] border border-amber-500/20 transition-colors cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-semibold text-[11px] border border-blue-500/20 transition-colors cursor-pointer"
                         >
                           Reset Password
                         </button>

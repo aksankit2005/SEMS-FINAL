@@ -40,6 +40,7 @@ export const PREventsPage = () => {
   // Form State
   const [eventName, setEventName] = useState('');
   const [eventDate, setEventDate] = useState('');
+  const [category, setCategory] = useState('');
   const [coverImageMode, setCoverImageMode] = useState('upload'); // 'upload' | 'url'
   const [coverImage, setCoverImage] = useState('');
   const [coverPublicId, setCoverPublicId] = useState('');
@@ -73,6 +74,7 @@ export const PREventsPage = () => {
     setSelectedEvent(null);
     setEventName('');
     setEventDate(new Date().toISOString().split('T')[0]);
+    setCategory('');
     setCoverImage('https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=1200&q=80');
     setCoverPublicId('');
     setDescription('');
@@ -85,6 +87,7 @@ export const PREventsPage = () => {
     setEventName(eventItem.event_name || '');
     const formattedDate = eventItem.event_date ? eventItem.event_date.toString().split('T')[0] : '';
     setEventDate(formattedDate);
+    setCategory(eventItem.category || '');
     setCoverImage(eventItem.cover_image || '');
     setCoverPublicId(eventItem.public_id || '');
     setDescription(eventItem.description || '');
@@ -165,6 +168,7 @@ export const PREventsPage = () => {
           cover_image: coverImage,
           public_id: coverPublicId || null,
           description,
+          category: category || null,
         });
         showToast('Event Album Created Successfully!', 'success');
       } else if (activeModal === 'edit' && selectedEvent) {
@@ -174,6 +178,7 @@ export const PREventsPage = () => {
           cover_image: coverImage,
           public_id: coverPublicId || null,
           description,
+          category: category || null,
         });
         showToast('Event Details Updated Successfully!', 'success');
       }
@@ -203,7 +208,7 @@ export const PREventsPage = () => {
   };
 
   return (
-    <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-200">
+    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 bg-transparent text-[#211D2B] dark:text-[#F5F2FA] transition-colors duration-200 font-spatial-sans">
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header */}
@@ -211,25 +216,27 @@ export const PREventsPage = () => {
           <div className="space-y-1">
             <Link
               to="/pr/dashboard"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline mb-1"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#7156A5] dark:text-[#B8A5E5] hover:underline mb-1"
             >
               <ArrowLeft className="w-4 h-4" /> Back to PR Dashboard
             </Link>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
-              <Trophy className="w-8 h-8 text-orange-500" /> Event Albums Management
+            <h1 className="text-2xl sm:text-3xl font-bold font-spatial-display uppercase tracking-wide text-[#211D2B] dark:text-[#F5F2FA] flex items-center gap-3">
+              <Trophy className="w-7 h-7 text-[#7156A5] dark:text-[#B8A5E5]" /> Event Albums Management
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-[#686370] dark:text-[#AAA4B8]">
               Create, edit, upload cover photos, and manage photos/videos in tournament event albums.
             </p>
           </div>
 
-          <button
-            onClick={openCreateModal}
-            className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 hover:from-blue-500 hover:to-orange-400 text-white font-black text-xs shadow-xl shadow-blue-600/20 transition flex items-center justify-center gap-2"
-          >
-            <PlusCircle className="w-5 h-5" />
-            <span>Create New Event</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={openCreateModal}
+              className="px-5 py-2.5 rounded-xl bg-[#7156A5] hover:bg-[#5E458B] dark:bg-[#8B5CF6] dark:hover:bg-[#7C3AED] text-white font-bold text-xs shadow-lg shadow-purple-500/20 transition flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Create New Event</span>
+            </button>
+          </div>
         </div>
 
         {/* Event List / Grid */}
@@ -350,6 +357,31 @@ export const PREventsPage = () => {
               <form onSubmit={handleSave} className="space-y-4 pt-1">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                    Sport / Game Category
+                  </label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  >
+                    <option value="">-- Choose Sport (Optional) --</option>
+                    <option value="Football">Football</option>
+                    <option value="Cricket">Cricket</option>
+                    <option value="Badminton">Badminton</option>
+                    <option value="Basketball">Basketball</option>
+                    <option value="Athletics">Athletics</option>
+                    <option value="Volleyball">Volleyball</option>
+                    <option value="Kabaddi">Kabaddi</option>
+                    <option value="Chess">Chess</option>
+                    <option value="Table Tennis">Table Tennis</option>
+                    <option value="Kho Kho">Kho Kho</option>
+                    <option value="Tug of War">Tug of War</option>
+                    <option value="General">General / Tournament Wide</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                     Event Name *
                   </label>
                   <input
@@ -357,7 +389,7 @@ export const PREventsPage = () => {
                     required
                     value={eventName}
                     onChange={(e) => setEventName(e.target.value)}
-                    placeholder="e.g. Football Championship 2026"
+                    placeholder="e.g. Championship Finals 2026"
                     className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>

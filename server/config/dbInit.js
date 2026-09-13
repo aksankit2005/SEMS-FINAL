@@ -98,6 +98,7 @@ export const seedInitialAccountHashes = async () => {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sport_id VARCHAR(50);`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS event_id TEXT;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS event_title TEXT;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS team1_id TEXT;`);
@@ -109,6 +110,29 @@ export const seedInitialAccountHashes = async () => {
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS sets_won2 INT DEFAULT 0;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS current_quarter TEXT DEFAULT 'Quarter 1';`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;`);
+
+    // Ensure matches table exists with all required columns
+    await queryDb(`
+      CREATE TABLE IF NOT EXISTS matches (
+        id TEXT PRIMARY KEY,
+        sport_id VARCHAR(50),
+        format VARCHAR(50),
+        status VARCHAR(50),
+        team1 TEXT,
+        team2 TEXT,
+        match_title TEXT,
+        table_number VARCHAR(100),
+        time VARCHAR(50),
+        score1 INT DEFAULT 0,
+        score2 INT DEFAULT 0,
+        winner TEXT,
+        details JSONB,
+        event_id TEXT,
+        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await queryDb(`ALTER TABLE matches ADD COLUMN IF NOT EXISTS sport_id VARCHAR(50);`);
 
     // 5. Seed Initial Sport Coordinators if not present
     const defaultSports = [
@@ -233,7 +257,22 @@ export const initDatabaseSchema = async () => {
       );
     `);
 
-    // Ensure columns exist on pre-existing live_matches table
+    // Ensure announcements table exists with category support
+    await queryDb(`
+      CREATE TABLE IF NOT EXISTS announcements (
+        id TEXT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        category VARCHAR(100) DEFAULT 'Schedule',
+        audience VARCHAR(50) DEFAULT 'All',
+        "publishDate" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "expiryDate" TIMESTAMP WITH TIME ZONE,
+        "isPublished" BOOLEAN DEFAULT TRUE,
+        "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await queryDb(`ALTER TABLE announcements ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT 'Schedule';`).catch(() => {});
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS stream_url TEXT;`);
     await queryDb(`ALTER TABLE live_matches ADD COLUMN IF NOT EXISTS is_live_streaming BOOLEAN DEFAULT FALSE;`);
@@ -281,7 +320,12 @@ export const initDatabaseSchema = async () => {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    await queryDb(`ALTER TABLE coordinator_event_items ADD COLUMN IF NOT EXISTS sport_id VARCHAR(50);`);
+    await queryDb(`ALTER TABLE coordinator_event_items ADD COLUMN IF NOT EXISTS sport_name VARCHAR(100);`);
     await queryDb(`ALTER TABLE coordinator_event_items ADD COLUMN IF NOT EXISTS registration_open BOOLEAN DEFAULT TRUE;`);
+    await queryDb(`ALTER TABLE coordinator_event_items ADD COLUMN IF NOT EXISTS sub_events JSONB;`);
+    await queryDb(`ALTER TABLE coordinator_event_items ADD COLUMN IF NOT EXISTS sub_event_fees JSONB;`);
+    await queryDb(`ALTER TABLE coordinator_event_items ADD COLUMN IF NOT EXISTS sub_events_config JSONB;`);
 
     // Backfill details JSONB for pre-existing rows where details IS NULL
     await queryDb(`
@@ -327,10 +371,15 @@ export const initDatabaseSchema = async () => {
       BEGIN 
         IF NOT EXISTS (
           SELECT 1 FROM pg_constraint WHERE conname = 'unique_match_team_jersey'
+        ) AND NOT EXISTS (
+          SELECT 1 FROM pg_class WHERE relname = 'unique_match_team_jersey'
         ) THEN 
           ALTER TABLE basketball_player_stats 
           ADD CONSTRAINT unique_match_team_jersey UNIQUE (match_id, team_name, jersey_no);
         END IF;
+      EXCEPTION 
+        WHEN duplicate_table OR duplicate_object OR others THEN 
+          NULL;
       END $$;
     `);
 
@@ -349,6 +398,7 @@ export const initDatabaseSchema = async () => {
     `);
     await queryDb(`ALTER TABLE events ADD COLUMN IF NOT EXISTS public_id VARCHAR(255);`);
     await queryDb(`ALTER TABLE events ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;`);
+    await queryDb(`ALTER TABLE events ADD COLUMN IF NOT EXISTS category VARCHAR(100);`).catch(() => {});
     await queryDb(`ALTER TABLE events ALTER COLUMN updated_at SET DEFAULT CURRENT_TIMESTAMP;`);
     await queryDb(`ALTER TABLE events ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP;`);
 
@@ -435,6 +485,8 @@ export const initDatabaseSchema = async () => {
       );
     `);
     await queryDb(`ALTER TABLE committee_members ADD COLUMN IF NOT EXISTS public_id VARCHAR(255);`);
+    await queryDb(`ALTER TABLE committee_members ADD COLUMN IF NOT EXISTS description TEXT;`);
+    await queryDb(`ALTER TABLE committee_members ADD COLUMN IF NOT EXISTS designation VARCHAR(255);`);
 
     // 6. Ensure system_settings table exists for hero slides and configuration
     await queryDb(`
@@ -447,7 +499,12 @@ export const initDatabaseSchema = async () => {
       );
     `);
 
-    // 7. Seed user account tables and password hashes
+    // 7. Ensure college_registrations has email status tracking columns
+    await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS email_status VARCHAR(20) DEFAULT 'pending';`);
+    await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS email_error TEXT;`);
+    await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS email_sent_at TIMESTAMP WITH TIME ZONE;`);
+
+    // 8. Seed user account tables and password hashes
     await seedInitialAccountHashes();
 
   } catch (err) {

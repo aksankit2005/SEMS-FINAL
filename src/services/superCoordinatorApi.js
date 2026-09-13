@@ -30,6 +30,8 @@ export const ALL_COLLEGES = [
   { id: 'EXTERNAL', name: 'EXTERNAL' }
 ];
 
+export { matchesCollegeFilter } from '../utils/collegeHelper';
+
 const getAuthHeaders = () => {
   const token = localStorage.getItem('sems_super_coord_token') || localStorage.getItem('sems_admin_token');
   const headers = { 'Content-Type': 'application/json' };
@@ -274,6 +276,55 @@ export const superCoordinatorApi = {
     } catch (e) {
       console.error('Error updating password in DB:', e);
       return { ok: false, message: 'Server connection failed while updating password' };
+    }
+  },
+
+  deleteRegistration: async (id) => {
+    try {
+      const res = await fetch(apiUrl(`/admin/master-data/${id}`), {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      if (res.ok) return await res.json();
+      const fbRes = await fetch(apiUrl(`/admin/registrations/${id}`), {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      if (fbRes.ok) return await fbRes.json();
+    } catch (e) {
+      console.error('Error deleting registration:', e);
+    }
+    return false;
+  },
+
+  deleteMasterDataParticipant: async (id) => {
+    try {
+      const res = await fetch(apiUrl(`/admin/master-data/${id}`), {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      if (res.ok) return await res.json();
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Failed to delete participant from Master Data');
+    } catch (e) {
+      console.error('Error deleting master data participant:', e);
+      throw e;
+    }
+  },
+
+  bulkDeleteMasterData: async (ids) => {
+    try {
+      const res = await fetch(apiUrl('/admin/master-data/bulk'), {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ ids })
+      });
+      if (res.ok) return await res.json();
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Failed to bulk delete master data records');
+    } catch (e) {
+      console.error('Error bulk deleting master data records:', e);
+      throw e;
     }
   }
 };

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Settings, ShieldCheck, ShieldAlert, CheckCircle2, XCircle, User, Lock } from 'lucide-react';
-import { ThemeToggle } from '../../common/ThemeToggle';
 
 export const SettingsTab = ({ user }) => {
   const allowedPermissions = [

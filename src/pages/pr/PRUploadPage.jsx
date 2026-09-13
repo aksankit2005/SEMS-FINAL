@@ -235,34 +235,36 @@ export const PRUploadPage = () => {
   };
 
   return (
-    <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-200">
+    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 bg-transparent text-[#211D2B] dark:text-[#F5F2FA] transition-colors duration-200 font-spatial-sans">
       <div className="max-w-4xl mx-auto space-y-8">
 
         {/* Header */}
-        <div className="space-y-1">
-          <Link
-            to="/pr/dashboard"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline mb-1"
-          >
-            <ArrowLeft className="w-4 h-4" /> Back to PR Dashboard
-          </Link>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
-            <UploadCloud className="w-8 h-8 text-orange-500" /> Multi-Photo & YouTube Media Center
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Upload multiple photos simultaneously from your computer to Cloudinary or link YouTube video highlights.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <Link
+              to="/pr/dashboard"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#7156A5] dark:text-[#B8A5E5] hover:underline mb-1"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to PR Dashboard
+            </Link>
+            <h1 className="text-2xl sm:text-3xl font-bold font-spatial-display uppercase tracking-wide text-[#211D2B] dark:text-[#F5F2FA] flex items-center gap-3">
+              <UploadCloud className="w-7 h-7 text-[#7156A5] dark:text-[#B8A5E5]" /> Multi-Photo & YouTube Media Center
+            </h1>
+            <p className="text-xs text-[#686370] dark:text-[#AAA4B8]">
+              Upload multiple photos simultaneously from your computer to Cloudinary or link YouTube video highlights.
+            </p>
+          </div>
         </div>
 
         {/* Upload Mode Tabs */}
-        <div className="flex rounded-2xl bg-slate-200/80 dark:bg-slate-900 p-1.5 border border-slate-300 dark:border-slate-800">
+        <div className="flex rounded-2xl bg-[#FFFFFF] dark:bg-[#0D101A] p-1.5 border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] shadow-xs">
           <button
             type="button"
             onClick={() => setUploadMode('direct')}
-            className={`flex-1 py-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
               uploadMode === 'direct'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-[#7156A5] dark:bg-[#8B5CF6] text-white shadow-md shadow-purple-500/20'
+                : 'text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-[#F5F2FA] hover:bg-[#FAF9F6] dark:hover:bg-[#121625]'
             }`}
           >
             <Layers className="w-4 h-4" />
@@ -272,10 +274,10 @@ export const PRUploadPage = () => {
           <button
             type="button"
             onClick={() => setUploadMode('youtube')}
-            className={`flex-1 py-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
               uploadMode === 'youtube'
-                ? 'bg-orange-500 text-white shadow-md'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-[#7156A5] dark:bg-[#8B5CF6] text-white shadow-md shadow-purple-500/20'
+                : 'text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-[#F5F2FA] hover:bg-[#FAF9F6] dark:hover:bg-[#121625]'
             }`}
           >
             <YoutubeIcon className="w-4 h-4" />

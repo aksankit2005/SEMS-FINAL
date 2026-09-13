@@ -1,4 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
 @import "tailwindcss";
+@import "./styles/spatialGallery.css";
+@import "./styles/veerLegacy.css";
+@import "./styles/adminPortalTheme.css";
 
 @variant dark (&:where(.dark, .dark *));
 
@@ -173,3 +177,18 @@
   background: #94a3b8;
 }
 
+/* Hide scrollbar but keep scroll functionality (used for filter chip rows) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Touch-friendly minimum tap target for small buttons on mobile */
+@media (max-width: 640px) {
+  button, a {
+    min-height: 36px;
+  }
+}

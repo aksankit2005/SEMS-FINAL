@@ -264,24 +264,50 @@ export const coordinatorApi = {
     try {
       const res = await api.get('/coordinator/matches');
       if (res.data && Array.isArray(res.data)) {
-        const serverData = res.data.map(m => ({
-          ...m,
-          sport: sportKey,
-          sportId: sportKey,
-          sportName: user.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1))
-        }));
+        const serverData = res.data.map(m => {
+          let detailsObj = m.details;
+          if (typeof detailsObj === 'string') {
+            try { detailsObj = JSON.parse(detailsObj); } catch (e) {}
+          }
+          if (!detailsObj || typeof detailsObj !== 'object') detailsObj = {};
+
+          return {
+            ...detailsObj,
+            ...m,
+            date: m.date || detailsObj.date || (m.createdAt ? new Date(m.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+            time: m.time || detailsObj.time || '04:00 PM',
+            category: m.category || detailsObj.category || 'Open',
+            eventTitle: m.eventTitle || detailsObj.eventTitle || m.matchTitle || `${user.sportName || 'Championship'} Match`,
+            sport: sportKey,
+            sportId: sportKey,
+            sportName: user.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1))
+          };
+        });
         return serverData;
       }
     } catch (e) {
       console.warn('Backend matches API fallback:', e.message);
     }
 
-    return savedMatches.map(m => ({
-      ...m,
-      sport: sportKey,
-      sportId: sportKey,
-      sportName: user.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1))
-    }));
+    return savedMatches.map(m => {
+      let detailsObj = m.details;
+      if (typeof detailsObj === 'string') {
+        try { detailsObj = JSON.parse(detailsObj); } catch (e) {}
+      }
+      if (!detailsObj || typeof detailsObj !== 'object') detailsObj = {};
+
+      return {
+        ...detailsObj,
+        ...m,
+        date: m.date || detailsObj.date || new Date().toISOString().split('T')[0],
+        time: m.time || detailsObj.time || '04:00 PM',
+        category: m.category || detailsObj.category || 'Open',
+        eventTitle: m.eventTitle || detailsObj.eventTitle || m.matchTitle || `${user.sportName || 'Championship'} Match`,
+        sport: sportKey,
+        sportId: sportKey,
+        sportName: user.sportName || (sportKey.charAt(0).toUpperCase() + sportKey.slice(1))
+      };
+    });
   },
 
   // Save matches array to localStorage & sync to Backend PostgreSQL DB
@@ -837,6 +863,7 @@ async deleteMatch(id) {
       status: 'COMPLETED',
       tableNumber: null,
       isLiveStreaming: false,
+      date: winnerData.date || target.date || target.details?.date || new Date().toISOString().split('T')[0],
       completedAt: new Date().toISOString(),
       winner: winnerData.winner || (target.score1 >= target.score2 ? target.team1 : target.team2),
     };
@@ -894,6 +921,17 @@ async deleteMatch(id) {
     window.dispatchEvent(new Event('sems_matches_updated'));
     window.dispatchEvent(new Event('sems_results_updated'));
     return completedObj;
+  },
+
+  // Delete match from backend PostgreSQL database and memory
+  async deleteMatch(matchId) {
+    try {
+      const res = await api.delete(`/coordinator/matches/${matchId}`);
+      return res.data;
+    } catch (e) {
+      console.warn('deleteMatch API error:', e?.response?.data?.message || e.message);
+      return null;
+    }
   },
 
 
@@ -1166,6 +1204,9 @@ async deleteMatch(id) {
       status: eventData.status || 'Published',
       rules: eventData.rules || [],
       requiredDocuments: eventData.requiredDocuments || ['College ID Card'],
+      subEvents: eventData.subEvents,
+      subEventFees: eventData.subEventFees,
+      subEventsConfig: eventData.subEventsConfig,
       contactInfo: eventData.contactInfo || {
         name: user.coordinatorName,
         email: user.email,
@@ -1205,7 +1246,16 @@ async deleteMatch(id) {
     const newRegCount = eventData.registeredCount !== undefined ? eventData.registeredCount : target.registeredCount;
     const newMaxReg = eventData.maxRegistrations !== undefined ? eventData.maxRegistrations : target.maxRegistrations;
 
-    if (newRegCount >= newMaxReg) {
+    // Only auto-reopen if regEndDate was specifically modified in this payload and status was not explicitly specified
+    const regEndDate = eventData.regEndDate;
+    if (regEndDate && eventData.status === undefined && target.status === 'Closed' && newRegCount < newMaxReg) {
+      const parsedEnd = Date.parse(`${regEndDate}T23:59:59.999+05:30`);
+      if (!isNaN(parsedEnd) && parsedEnd >= Date.now()) {
+        newStatus = 'Published';
+      }
+    }
+
+    if (newRegCount >= newMaxReg && eventData.status === undefined) {
       newStatus = 'Closed';
     }
 
@@ -1213,6 +1263,7 @@ async deleteMatch(id) {
       ...target,
       ...eventData,
       status: newStatus,
+      registrationOpen: eventData.registrationOpen !== undefined ? Boolean(eventData.registrationOpen) : (newStatus !== 'Closed' && newStatus !== 'Draft' && newStatus !== 'Completed'),
       updatedAt: new Date().toISOString()
     };
 
@@ -1305,7 +1356,7 @@ async deleteMatch(id) {
     }
   },
 
-  // Get all Published & Closed coordinator events across all sports from production database
+  // Get all Published & Closed coordinator events across all sports from production database or local cache
   async getPublicEvents() {
     let deletedSet = new Set();
     try {
@@ -1313,29 +1364,68 @@ async deleteMatch(id) {
       deletedSet = new Set(deletedArr);
     } catch (e) { }
 
+    let serverList = [];
     try {
       const res = await api.get('/public/events');
       if (res.data && Array.isArray(res.data)) {
-        const currentDate = new Date();
-        return res.data
-          .filter((e) => e && e.id && !deletedSet.has(e.id))
-          .map((e) => {
-            let status = e.status || 'Published';
-            if (status !== 'Upcoming' && status !== 'Coming Soon' && e.regEndDate && new Date(e.regEndDate + 'T23:59:59') < currentDate) {
-              status = 'Closed';
-            }
-            return {
-              ...e,
-              status,
-              availableSlots: Math.max(0, (e.maxRegistrations || 64) - (e.registeredCount || 0))
-            };
-          });
+        serverList = res.data;
       }
     } catch (e) {
-      console.warn('Error fetching public events from server:', e.message);
+      console.warn('Error fetching public events from server, using local events fallback:', e.message);
     }
 
-    return [];
+    // Merge with any published events saved across localStorage (sems_coord_events_*)
+    const localEvents = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('sems_coord_events_') || k.includes('coord_events'))) {
+          const raw = localStorage.getItem(k);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              localEvents.push(...parsed);
+            }
+          }
+        }
+      }
+    } catch (e) { }
+
+    const combinedMap = new Map();
+    // 1. Add local events first
+    localEvents.forEach((e) => {
+      if (e && e.id && !deletedSet.has(e.id)) {
+        const rawStatus = (e.status || 'Published').toLowerCase();
+        if (rawStatus !== 'draft') {
+          combinedMap.set(e.id, e);
+        }
+      }
+    });
+
+    // 2. Merge server events (authoritative)
+    serverList.forEach((e) => {
+      if (e && e.id && !deletedSet.has(e.id)) {
+        const rawStatus = (e.status || 'Published').toLowerCase();
+        if (rawStatus !== 'draft') {
+          const existing = combinedMap.get(e.id) || {};
+          combinedMap.set(e.id, { ...existing, ...e });
+        }
+      }
+    });
+
+    const currentDate = new Date();
+    return Array.from(combinedMap.values()).map((e) => {
+      let status = e.status || 'Published';
+      const parsedEnd = e.regEndDate ? Date.parse(`${e.regEndDate}T23:59:59.999+05:30`) : null;
+      if (status !== 'Upcoming' && status !== 'Coming Soon' && parsedEnd && !isNaN(parsedEnd) && parsedEnd < currentDate.getTime()) {
+        status = 'Closed';
+      }
+      return {
+        ...e,
+        status,
+        availableSlots: Math.max(0, (Number(e.maxRegistrations) || 64) - (Number(e.registeredCount) || 0))
+      };
+    });
   },
 
 

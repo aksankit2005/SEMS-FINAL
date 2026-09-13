@@ -555,7 +555,7 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
                     {displayTeam1} <span className="text-slate-400 font-normal">vs</span> {displayTeam2}
                   </h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                    📍 {displayVenue} | Date: {m.date || '2026-08-05'} | Time: {m.time || '05:34 PM'} | Event: {m.eventTitle || `${sportName} Championship`}
+                    📍 {displayVenue} | Date: {m.date || new Date().toISOString().split('T')[0]} | Time: {m.time || '05:34 PM'} | Event: {m.eventTitle || `${sportName} Championship`}
                   </p>
                 </div>
 
@@ -584,7 +584,7 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
                         team2Player1: '',
                         team2Player2: '',
                         tableNumber: m.tableNumber || `${venueLabel} 1`,
-                        date: m.date || '2026-08-05',
+                        date: m.date || new Date().toISOString().split('T')[0],
                         time: m.time || '05:34 PM',
                       });
                     }}

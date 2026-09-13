@@ -22,7 +22,7 @@ export const TugOfWarLiveMatchControlTab = ({ matches, user, onUpdateMatchScore 
         if (parsed && typeof parsed === 'object') {
           return parsed;
         }
-      } catch (e) {}
+      } catch (e) { }
     }
     return {};
   });
@@ -38,7 +38,7 @@ export const TugOfWarLiveMatchControlTab = ({ matches, user, onUpdateMatchScore 
     const globalSaved = localStorage.getItem('sems_active_live_matches');
     let globalActiveMap = {};
     if (globalSaved) {
-      try { globalActiveMap = JSON.parse(globalSaved); } catch (e) {}
+      try { globalActiveMap = JSON.parse(globalSaved); } catch (e) { }
     }
 
     const mergedMap = { ...globalActiveMap, ...liveAssignments };
@@ -52,7 +52,7 @@ export const TugOfWarLiveMatchControlTab = ({ matches, user, onUpdateMatchScore 
             status: 'running',
             venue: matchItem.tableNumber || 'Tug of War Ground 1',
           });
-        } catch (err) {}
+        } catch (err) { }
       }
     });
   }, [liveAssignments, assignedSport]);

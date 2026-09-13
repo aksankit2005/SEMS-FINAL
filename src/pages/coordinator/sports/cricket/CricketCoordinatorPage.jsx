@@ -46,8 +46,18 @@ export const CricketCoordinatorPage = () => {
           coordinatorApi.getRegistrations(),
         ]);
         if (isMounted) {
-          setMatches(mList);
-          setRegistrations(rList);
+          const cleanMatches = (mList || []).filter((m) => {
+            const mSport = (m?.sport || m?.sportId || '').toLowerCase();
+            const mTitle = (m?.eventTitle || m?.title || '').toLowerCase();
+            return !mSport.includes('gully') && !mTitle.includes('gully');
+          });
+          const cleanRegs = (rList || []).filter((r) => {
+            const rSport = (r?.sport || r?.sportId || '').toLowerCase();
+            const rTitle = (r?.eventTitle || r?.eventName || '').toLowerCase();
+            return !rSport.includes('gully') && !rTitle.includes('gully');
+          });
+          setMatches(cleanMatches);
+          setRegistrations(cleanRegs);
         }
       } catch (err) {
         if (showLoading) addToast('Error loading cricket operations console', 'error');

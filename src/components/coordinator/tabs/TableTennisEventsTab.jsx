@@ -33,7 +33,7 @@ export const TableTennisEventsTab = ({ user }) => {
     coverImage: 'https://images.unsplash.com/photo-1534158914592-062992fbe900?auto=format&fit=crop&w=800&q=80',
     description: 'Official inter-college Table Tennis tournament. Register your entries today!',
     regStartDate: new Date().toISOString().split('T')[0],
-    regEndDate: '2026-08-25',
+    regEndDate: '2026-09-15',
     tournStartDate: '2026-09-01',
     tournEndDate: '2026-09-03',
     entryFee: 300,
@@ -108,7 +108,7 @@ export const TableTennisEventsTab = ({ user }) => {
       coverImage: eventObj.coverImage || 'https://images.unsplash.com/photo-1534158914592-062992fbe900?auto=format&fit=crop&w=800&q=80',
       description: eventObj.description || 'Official inter-college Table Tennis tournament. Register your entries today!',
       regStartDate: eventObj.regStartDate || new Date().toISOString().split('T')[0],
-      regEndDate: eventObj.regEndDate || '2026-08-25',
+      regEndDate: eventObj.regEndDate || '2026-09-15',
       tournStartDate: eventObj.tournStartDate || '2026-09-01',
       tournEndDate: eventObj.tournEndDate || '2026-09-03',
       entryFee: eventObj.singlesFee !== undefined ? eventObj.singlesFee : 300,
@@ -142,7 +142,7 @@ export const TableTennisEventsTab = ({ user }) => {
       coverImage: 'https://images.unsplash.com/photo-1534158914592-062992fbe900?auto=format&fit=crop&w=800&q=80',
       description: 'Official inter-college Table Tennis tournament. Register your entries today!',
       regStartDate: new Date().toISOString().split('T')[0],
-      regEndDate: '2026-08-25',
+      regEndDate: '2026-09-15',
       tournStartDate: '2026-09-01',
       tournEndDate: '2026-09-03',
       entryFee: 300,
@@ -335,12 +335,6 @@ export const TableTennisEventsTab = ({ user }) => {
             <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto">
               Click the "Create Registration Event" button above to publish your first tournament registration event for Table Tennis.
             </p>
-            <button
-              onClick={handleOpenCreate}
-              className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
-            >
-              + Create First Event
-            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
