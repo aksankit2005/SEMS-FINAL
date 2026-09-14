@@ -436,7 +436,10 @@ export const getSuperCoordinatorEvents = async (req, res) => {
         sport_name AS "sportName",
         title AS "eventTitle",
         venue,
-        entry_fee AS "teamFee",
+        CASE 
+          WHEN (sport_id = 'athletics' OR LOWER(sport_name) LIKE '%athletic%') AND entry_fee = 150 THEN 50 
+          ELSE entry_fee 
+        END AS "teamFee",
         singles_fee AS "singlesFee",
         doubles_fee AS "doublesFee",
         team_size AS "teamSize",

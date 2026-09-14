@@ -65,7 +65,16 @@ export const superCoordinatorApi = {
       });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data)) serverEvents = data;
+        if (Array.isArray(data)) {
+          serverEvents = data.map((ev) => {
+            const sKey = (ev.sportId || ev.sportName || '').toLowerCase();
+            const isAthletics = sKey === 'athletics' || sKey.includes('athletic');
+            if (isAthletics && Number(ev.teamFee) === 150) {
+              return { ...ev, teamFee: 50, entryFee: 50 };
+            }
+            return ev;
+          });
+        }
       }
     } catch (e) {}
 
@@ -86,6 +95,10 @@ export const superCoordinatorApi = {
         sportEvents.forEach((ev) => {
           if (ev && ev.id && !seenIds.has(ev.id) && !deletedIds.has(ev.id)) {
             seenIds.add(ev.id);
+            const rawFee = Number(ev.entryFee ?? ev.teamFee ?? 0);
+            const isAth = key === 'athletics' || (ev.sportId || '').toLowerCase().includes('athletic');
+            const resolvedFee = isAth && rawFee === 150 ? 50 : rawFee;
+
             localEvents.push({
               id: ev.id,
               sportId: ev.sportId || key,
@@ -99,7 +112,7 @@ export const superCoordinatorApi = {
               tournStartDate: ev.tournStartDate || '',
               tournEndDate: ev.tournEndDate || '',
               venue: ev.venue || 'Sports Arena',
-              teamFee: Number(ev.entryFee || ev.teamFee || 0),
+              teamFee: resolvedFee,
               minPlayers: ev.minPlayers || 1,
               maxPlayers: ev.maxPlayers || 1,
               category: ev.category || 'Open',

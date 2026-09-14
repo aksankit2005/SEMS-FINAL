@@ -170,6 +170,17 @@ export const AdminMasterDataPage = () => {
     const eSportKey = (evt.sportId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     const sSportKey = selectedSport.toLowerCase().replace(/[^a-z0-9]/g, '');
     const eSportName = (evt.sportName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    const isStdCricket = sSportKey === 'cricket';
+    const isGully = sSportKey.includes('gully');
+
+    if (isStdCricket) {
+      return (eSportKey.includes('cricket') || eSportName.includes('cricket')) && !eSportKey.includes('gully') && !eSportName.includes('gully');
+    }
+    if (isGully) {
+      return eSportKey.includes('gully') || eSportName.includes('gully');
+    }
+
     return eSportKey === sSportKey || eSportName === sSportKey ||
            eSportKey.includes(sSportKey) || sSportKey.includes(eSportKey) ||
            (evt.sportName || '').toLowerCase().includes(selectedSport.toLowerCase());

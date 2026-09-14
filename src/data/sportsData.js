@@ -262,7 +262,7 @@ export const SPORTS_DATA = [
     status: "Open",
     participantsCount: 118,
     maxParticipants: 150,
-    entryFee: 200,
+    entryFee: 50,
     minPlayers: 1,
     maxPlayers: 4,
     teamSize: "1 Player / Relay Team",

@@ -6,6 +6,7 @@ import { getParticipationType, matchesParticipationTypeFilter } from '../../util
 import { RegistrationDetailsModal } from '../../components/admin/RegistrationDetailsModal';
 import { ConfirmationModal } from '../../components/admin/ConfirmationModal';
 import { ALL_12_SPORTS, ALL_COLLEGES, matchesCollegeFilter } from '../../services/superCoordinatorApi';
+import { resolveSportKey } from '../../data/sportsConfig';
 import {
   ClipboardList,
   Search,
@@ -112,18 +113,35 @@ export const AdminRegistrationsPage = () => {
     }
   };
 
+  // Helper to match sport filter safely (strictly disambiguates Cricket vs Gully Cricket)
+  const matchesSportSelection = (itemSport, filterSport) => {
+    if (!filterSport || filterSport === 'ALL') return true;
+    const sStr = (typeof itemSport === 'string' ? itemSport : (itemSport?.sportName || itemSport?.sportId || itemSport?.gameSport || '')).toLowerCase().replace(/_/g, '-');
+    const fStr = filterSport.toLowerCase().replace(/_/g, '-');
+    
+    const isStdCricket = fStr === 'cricket' || (fStr.includes('cricket') && !fStr.includes('gully'));
+    const isGully = fStr.includes('gully');
+
+    if (isStdCricket) {
+      if (sStr.includes('gully')) return false;
+      return sStr.includes('cricket') || resolveSportKey(itemSport) === 'cricket';
+    }
+    if (isGully) {
+      return sStr.includes('gully') || resolveSportKey(itemSport) === 'gully-cricket';
+    }
+
+    return resolveSportKey(itemSport) === resolveSportKey(filterSport) || sStr.includes(fStr) || fStr.includes(sStr);
+  };
+
   // Available Coordinator Events matching selected sport
   const availableEvents = coordinatorEvents.filter((evt) => {
-    if (selectedSport === 'ALL') return true;
-    return (evt.sportId || '').toLowerCase() === selectedSport.toLowerCase() ||
-           (evt.sportName || '').toLowerCase().includes(selectedSport.toLowerCase());
+    return matchesSportSelection(evt, selectedSport);
   });
 
   // Filtered Student Registrations
   const filteredRegistrations = registrations.filter((reg) => {
     if (selectedSport !== 'ALL') {
-      const pSport = (reg.gameSport || reg.sportName || '').toLowerCase();
-      if (!pSport.includes(selectedSport.toLowerCase())) return false;
+      if (!matchesSportSelection(reg, selectedSport)) return false;
     }
 
     if (selectedEvent !== 'ALL') {
@@ -171,8 +189,7 @@ export const AdminRegistrationsPage = () => {
   // Filtered Coordinator Events
   const filteredCoordinatorEvents = coordinatorEvents.filter((evt) => {
     if (selectedSport !== 'ALL') {
-      const s = (evt.sportName || evt.sportId || '').toLowerCase();
-      if (!s.includes(selectedSport.toLowerCase())) return false;
+      if (!matchesSportSelection(evt, selectedSport)) return false;
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -629,7 +646,11 @@ export const AdminRegistrationsPage = () => {
                       </td>
                       <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300">{evt.venue || 'Main Stadium'}</td>
                       <td className="py-3 px-3 whitespace-nowrap font-bold text-emerald-600 dark:text-emerald-400">
-                        {evt.teamFee > 0 ? `₹${evt.teamFee}` : 'Free Entry'}
+                        {(() => {
+                          const isAthletics = evt.sportId === 'athletics' || (evt.sportName || '').toLowerCase().includes('athletics');
+                          const resolvedFee = isAthletics && Number(evt.teamFee) === 150 ? 50 : (evt.teamFee ?? evt.entryFee ?? 0);
+                          return resolvedFee > 0 ? `₹${resolvedFee}` : 'Free Entry';
+                        })()}
                       </td>
                       <td className="py-3 px-3 whitespace-nowrap">
                         <span

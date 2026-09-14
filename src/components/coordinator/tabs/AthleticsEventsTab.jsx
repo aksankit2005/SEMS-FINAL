@@ -14,13 +14,13 @@ import { EventStatusBadge, EventStatusActionButton, RegistrationStatusBadge, Reg
 import { computeEffectiveRegistrationStatus } from '../../../utils/registrationLifecycle';
 
 const DEFAULT_SUB_EVENTS_CONFIG = [
-  { name: '100m Race', enabled: true, isRelay: false, entryFee: 100 },
-  { name: '200m Race', enabled: true, isRelay: false, entryFee: 150 },
-  { name: '4*100m relay Race', enabled: true, isRelay: true, entryFee: 400 },
-  { name: 'Long Jump', enabled: true, isRelay: false, entryFee: 150 },
-  { name: 'Javelin Throw', enabled: true, isRelay: false, entryFee: 150 },
-  { name: 'Shot Put', enabled: true, isRelay: false, entryFee: 150 },
-  { name: 'Discus Throw', enabled: true, isRelay: false, entryFee: 150 },
+  { name: '100m Race', enabled: true, isRelay: false, entryFee: 50 },
+  { name: '200m Race', enabled: true, isRelay: false, entryFee: 50 },
+  { name: '4*100m relay Race', enabled: true, isRelay: true, entryFee: 200 },
+  { name: 'Long Jump', enabled: true, isRelay: false, entryFee: 50 },
+  { name: 'Javelin Throw', enabled: true, isRelay: false, entryFee: 50 },
+  { name: 'Shot Put', enabled: true, isRelay: false, entryFee: 50 },
+  { name: 'Discus Throw', enabled: true, isRelay: false, entryFee: 50 },
 ];
 
 export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
@@ -53,7 +53,7 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
     regEndDate: '2026-09-15',
     tournStartDate: '2026-09-01',
     tournEndDate: '2026-09-03',
-    entryFee: 150,
+    entryFee: 50,
     registeredCount: 0,
     venue: 'Main University Stadium Athletics Track & Field',
     category: 'Open', // Boys, Girls, Open
@@ -121,7 +121,7 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
       regEndDate: eventObj.regEndDate || '2026-09-15',
       tournStartDate: eventObj.tournStartDate || '2026-09-01',
       tournEndDate: eventObj.tournEndDate || '2026-09-03',
-      entryFee: eventObj.entryFee !== undefined ? eventObj.entryFee : 150,
+      entryFee: eventObj.entryFee !== undefined ? (Number(eventObj.entryFee) === 150 ? 50 : eventObj.entryFee) : 50,
       registeredCount: eventObj.registeredCount || 0,
       venue: eventObj.venue || 'Main University Stadium Athletics Track & Field',
       category: eventObj.category || 'Open',
@@ -154,7 +154,7 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
       regEndDate: '2026-09-15',
       tournStartDate: '2026-09-01',
       tournEndDate: '2026-09-03',
-      entryFee: 150,
+      entryFee: 50,
       registeredCount: 0,
       venue: 'Main University Stadium Athletics Track & Field',
       category: 'Open',
@@ -816,7 +816,7 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <div>
                       <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Venue / Ground</label>
                       <input
@@ -824,6 +824,20 @@ export const AthleticsEventsTab = ({ user, sportSlug = 'athletics' }) => {
                         value={formData.venue}
                         onChange={(e) => setFormData((prev) => ({ ...prev, venue: e.target.value }))}
                         className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+                        General Entry Fee (₹)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.entryFee}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, entryFee: parseFloat(e.target.value) || 0 }))}
+                        placeholder="50"
+                        className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs focus:border-blue-500 focus:outline-none"
                       />
                     </div>
 

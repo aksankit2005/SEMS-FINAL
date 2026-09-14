@@ -327,6 +327,13 @@ export const initDatabaseSchema = async () => {
     await queryDb(`ALTER TABLE coordinator_event_items ADD COLUMN IF NOT EXISTS sub_event_fees JSONB;`);
     await queryDb(`ALTER TABLE coordinator_event_items ADD COLUMN IF NOT EXISTS sub_events_config JSONB;`);
 
+    // Auto-fix legacy Athletics coordinator events where entry_fee was defaulted to 150
+    await queryDb(`
+      UPDATE coordinator_event_items 
+      SET entry_fee = 50 
+      WHERE (sport_id = 'athletics' OR LOWER(sport_name) LIKE '%athletic%') AND entry_fee = 150;
+    `).catch(() => {});
+
     // Backfill details JSONB for pre-existing rows where details IS NULL
     await queryDb(`
       UPDATE live_matches 
