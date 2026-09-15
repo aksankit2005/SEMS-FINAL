@@ -7,7 +7,7 @@ import {
 } from '../controllers/registrationController.js';
 import { getHeroSlidesDB, getCommitteeDB } from '../controllers/adminController.js';
 import { getLeaderboardStandings } from '../services/leaderboardService.js';
-import { queryDb, pool } from '../config/db.js';
+import { queryDb, pool, prisma } from '../config/db.js';
 import { extractYouTubeVideoIdBackend, inMemoryCoordinatorEvents } from '../controllers/coordinatorController.js';
 import { publicReadLimiter, apiLimiter } from '../middleware/rateLimiters.js';
 import { computeEffectiveRegistrationStatus } from '../utils/registrationLifecycle.js';
@@ -596,19 +596,26 @@ router.get('/leaderboard', publicReadLimiter, async (req, res) => {
   }
 });
 
-// GET /api/announcements - Spectator public announcements endpoint from Supabase
+// GET /api/announcements - Spectator public announcements endpoint from Supabase / Postgres
 router.get('/announcements', publicReadLimiter, async (req, res) => {
   try {
-    const list = await prisma.announcement.findMany({
-      where: { isPublished: true },
-      include: { attachments: true },
-      orderBy: { createdAt: 'desc' }
-    });
-    if (list && list.length > 0) {
-      return res.json(list.map(a => ({
-        ...a,
-        category: a.category || 'Schedule'
-      })));
+    if (prisma?.announcement) {
+      const list = await prisma.announcement.findMany({
+        where: { isPublished: true },
+        include: { attachments: true },
+        orderBy: { createdAt: 'desc' }
+      });
+      if (list && Array.isArray(list)) {
+        return res.json(list.map(a => ({
+          ...a,
+          category: a.category || 'Schedule',
+          date: a.publishDate ? new Date(a.publishDate).toISOString().split('T')[0] : (a.createdAt ? new Date(a.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+          attachments: (a.attachments || []).map(att => ({
+            ...att,
+            size: att.size || (att.sizeBytes ? `${(att.sizeBytes / (1024 * 1024)).toFixed(1)} MB` : '1.0 MB')
+          }))
+        })));
+      }
     }
   } catch (err) {
     console.warn('Prisma fetching announcements notice, trying pool query:', err.message);
@@ -621,15 +628,37 @@ router.get('/announcements', publicReadLimiter, async (req, res) => {
         a.title, 
         a.description, 
         COALESCE(a.category, 'Schedule') AS category, 
-        a."publishDate", 
-        a."expiryDate", 
+        a.audience,
+        TO_CHAR(a."publishDate", 'YYYY-MM-DD') AS "publishDate", 
+        TO_CHAR(a."expiryDate", 'YYYY-MM-DD') AS "expiryDate", 
         a."isPublished", 
-        a."createdAt"
+        TO_CHAR(a."createdAt", 'YYYY-MM-DD') AS "createdAt"
       FROM announcements a
       WHERE a."isPublished" = true
       ORDER BY a."createdAt" DESC
     `);
-    return res.json((rawRes && rawRes.rows) || []);
+
+    if (rawRes && rawRes.rows) {
+      const announcements = [];
+      for (const ann of rawRes.rows) {
+        const attRes = await queryDb(
+          `SELECT id, name, url, "mimeType" AS "mimeType", "sizeBytes" AS "sizeBytes" 
+           FROM announcement_attachments WHERE "announcementId"::text = $1`,
+          [String(ann.id)]
+        );
+        announcements.push({
+          ...ann,
+          date: ann.publishDate || ann.createdAt || new Date().toISOString().split('T')[0],
+          status: 'Published',
+          attachments: (attRes && attRes.rows) ? attRes.rows.map(att => ({
+            ...att,
+            size: att.size || (att.sizeBytes ? `${(att.sizeBytes / (1024 * 1024)).toFixed(1)} MB` : '1.0 MB')
+          })) : []
+        });
+      }
+      return res.json(announcements);
+    }
+    return res.json([]);
   } catch (err2) {
     console.error('Error fetching public announcements from DB fallback:', err2.message);
     return res.json([]);

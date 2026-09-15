@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Bell, Search, ChevronRight, X, FileText, Download, Eye, Paperclip,
   Calendar, BookOpen, AlertTriangle, Sparkles, Filter, CheckCircle2
@@ -53,13 +53,19 @@ export const getCategoryMeta = (category) => {
 };
 
 export const AnnouncementsPage = () => {
-  const { announcements } = useSportsData();
+  const { announcements, syncAnnouncements } = useSportsData();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
   const [query, setQuery] = useState('');
   const [selectedCat, setSelectedCat] = useState('All');
   const [activeModal, setActiveModal] = useState(null);
+
+  useEffect(() => {
+    if (syncAnnouncements) {
+      syncAnnouncements();
+    }
+  }, [syncAnnouncements]);
 
   const categories = ['All', 'Schedule', 'Rules & Guidelines', 'Emergency & Safety', 'Event Highlight'];
 

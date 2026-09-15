@@ -195,7 +195,7 @@ export const HomeAnnouncementsLeaderboardSection = () => {
 
                     {/* Bottom Indicator */}
                     <div className="mt-3 pt-2.5 border-t border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] flex items-center justify-between text-xs font-semibold text-[#686370] dark:text-[#AAA4B8]">
-                      {item.attachment ? (
+                      {(item.attachments && item.attachments.length > 0) || item.attachment ? (
                         <span className="flex items-center gap-1 text-[#7156A5] dark:text-[#B8A5E5] text-[11px]">
                           <Paperclip className="w-3 h-3" /> PDF Document Attached
                         </span>

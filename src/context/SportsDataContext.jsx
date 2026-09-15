@@ -99,18 +99,28 @@ export const SportsDataProvider = ({ children }) => {
   const syncAnnouncements = async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/announcements`);
-      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+      if (res.data && Array.isArray(res.data)) {
         const dbList = res.data.map((a) => ({
           id: a.id,
           title: a.title,
           summary: a.description || 'Official announcement notice',
           content: a.description || 'Official announcement notice',
           category: a.category || 'Schedule',
-          date: a.createdAt ? new Date(a.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          date: a.publishDate
+            ? (String(a.publishDate).includes('T') ? new Date(a.publishDate).toISOString().split('T')[0] : String(a.publishDate))
+            : (a.createdAt ? (String(a.createdAt).includes('T') ? new Date(a.createdAt).toISOString().split('T')[0] : String(a.createdAt)) : new Date().toISOString().split('T')[0]),
           time: '10:00 AM',
           author: 'System Administrator (Admin)',
           isImportant: true,
-          attachments: a.attachments || []
+          attachments: Array.isArray(a.attachments)
+            ? a.attachments.map((att) => ({
+                id: att.id || att.name,
+                name: att.name || 'Attachment.pdf',
+                url: att.url || '#',
+                size: att.size || (att.sizeBytes ? `${(att.sizeBytes / (1024 * 1024)).toFixed(1)} MB` : '1.0 MB'),
+                mimeType: att.mimeType || 'application/pdf'
+              }))
+            : []
         }));
         setAnnouncements(dbList);
         return;
@@ -217,7 +227,8 @@ export const SportsDataProvider = ({ children }) => {
     leaderboard,
     announcements,
     updateLiveMatchScore,
-    addAnnouncement
+    addAnnouncement,
+    syncAnnouncements
   }), [sports, liveMatches, schedule, results, leaderboard, announcements]);
 
   return (
