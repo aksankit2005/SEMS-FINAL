@@ -5,7 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { ConfirmProvider } from './context/ConfirmContext';
 import { SportsDataProvider } from './context/SportsDataContext';
-import { ContactPage } from './Pages/ContactPage'
+import { ContactPage } from './pages/ContactPage';
 
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { AuthModal } from './components/common/AuthModal';
