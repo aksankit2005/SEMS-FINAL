@@ -28,7 +28,7 @@ export const TableTennisLiveMatchControlTab = ({ matches, user, onUpdateMatchSco
         if (parsed && typeof parsed === 'object') {
           const cleaned = {};
           Object.keys(parsed).forEach((k) => {
-            if (parsed[k] && parsed[k].id !== 'M595473') {
+            if (parsed[k] && parsed[k].id) {
               cleaned[k] = parsed[k];
             }
           });

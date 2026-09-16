@@ -258,7 +258,7 @@ export const getMasterParticipants = async (req, res) => {
 
         const sportKey = (row.sportId || 'sport').toLowerCase().replace(/[^a-z0-9]/g, '-');
         let sportDisplayName = (row.sportName || 'Sport').replace(/-/g, ' ').toUpperCase();
-        
+
         // Athletics subEvent handling
         const isAthletics = sportKey.includes('athletics') || sportDisplayName.toLowerCase().includes('athletics');
         let subEvent = row.subEvent || null;
@@ -379,7 +379,7 @@ export const getMasterParticipants = async (req, res) => {
           if (isAthletics && subEvent) {
             sportDisplayName = `ATHLETICS (${subEvent.toUpperCase()})`;
           }
-          
+
           const matchedCoordTitle = coordEventMap.get(sportKey) || coordEventMap.get((row.sportId || '').toLowerCase());
           let displayEventTitle = row.eventTitleFromDb;
           if (isAthletics && subEvent) {
@@ -462,7 +462,7 @@ export const getSuperCoordinatorEvents = async (req, res) => {
       dbRes.rows.forEach((e) => {
         let contact = e.contactInfo;
         if (typeof contact === 'string') {
-          try { contact = JSON.parse(contact); } catch (err) {}
+          try { contact = JSON.parse(contact); } catch (err) { }
         }
         eventsMap.set(e.id, {
           id: e.id,
@@ -499,7 +499,7 @@ export const getSuperCoordinatorEvents = async (req, res) => {
           if (e && e.id && !eventsMap.has(e.id)) {
             let contact = e.contactInfo;
             if (typeof contact === 'string') {
-              try { contact = JSON.parse(contact); } catch (err) {}
+              try { contact = JSON.parse(contact); } catch (err) { }
             }
             eventsMap.set(e.id, {
               id: e.id,
@@ -770,7 +770,7 @@ export const getHeroSlidesDB = async (req, res) => {
         try {
           const parsed = JSON.parse(val);
           if (Array.isArray(parsed) && parsed.length > 0) return res.json(parsed);
-        } catch (e) {}
+        } catch (e) { }
       }
     }
   } catch (err) {
@@ -970,7 +970,7 @@ export const saveCoordinatorDB = async (req, res) => {
           return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
         }
       }
-      
+
       const initialPass = passHash || await bcrypt.hash('Super@2026', 10);
       await queryDb(
         `INSERT INTO pr_users (id, username, password_hash, role, name, email, status, created_at, updated_at)
@@ -995,7 +995,7 @@ export const saveCoordinatorDB = async (req, res) => {
           return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
         }
       }
-      
+
       const initialPass = passHash || await bcrypt.hash('Head@2026', 10);
       await queryDb(
         `INSERT INTO college_head_users (id, username, password_hash, college, faculty_name, email, phone, status, created_at, updated_at)
@@ -1020,7 +1020,7 @@ export const saveCoordinatorDB = async (req, res) => {
           return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
         }
       }
-      
+
       const initialPass = passHash || await bcrypt.hash('PRPass@2026', 10);
       await queryDb(
         `INSERT INTO pr_users (id, username, password_hash, role, name, email, status, created_at, updated_at)
@@ -1055,7 +1055,7 @@ export const saveCoordinatorDB = async (req, res) => {
           return res.json({ success: true, message: 'Coordinator saved to database successfully.' });
         }
       }
-      
+
       const initialPass = passHash || await bcrypt.hash('Coord@2026', 10);
       await queryDb(
         `INSERT INTO sport_coordinators (id, username, password_hash, assigned_sport, sport_name, coordinator_name, email, phone, status, created_at, updated_at)
@@ -1269,7 +1269,7 @@ export const changeSuperCoordinatorPasswordDB = async (req, res) => {
 
   try {
     const hashed = await bcrypt.hash(newPass.trim(), 10);
-    
+
     await queryDb(
       `UPDATE pr_users 
        SET password_hash = $1, updated_at = CURRENT_TIMESTAMP 
@@ -1283,7 +1283,7 @@ export const changeSuperCoordinatorPasswordDB = async (req, res) => {
         update: { value: { password: newPass.trim() } },
         create: { key: 'super_coordinator_pass', value: { password: newPass.trim() } }
       });
-    } catch (e) {}
+    } catch (e) { }
 
     return res.json({ success: true, message: 'Super Coordinator password updated successfully in database.' });
   } catch (err) {
@@ -1885,7 +1885,7 @@ export const deletePRMediaFileDB = async (req, res) => {
     const numId = Number(id) || 0;
     const existing = await queryDb('SELECT public_id, media_type FROM media WHERE id = $1', [numId]);
     if (existing && existing.rows.length > 0 && existing.rows[0].public_id) {
-      deleteCloudinaryAsset(existing.rows[0].public_id, existing.rows[0].media_type || 'image').catch(() => {});
+      deleteCloudinaryAsset(existing.rows[0].public_id, existing.rows[0].media_type || 'image').catch(() => { });
     }
 
     await queryDb('DELETE FROM media WHERE id = $1', [numId]);
@@ -1918,7 +1918,7 @@ export const deletePRFolderDB = async (req, res) => {
     }
 
     if (itemsToDelete.length > 0) {
-      deleteCloudinaryBatch(itemsToDelete).catch(() => {});
+      deleteCloudinaryBatch(itemsToDelete).catch(() => { });
     }
 
     await queryDb('DELETE FROM media WHERE event_id = $1', [numId]);
@@ -2010,8 +2010,8 @@ export const getCommitteeDB = async (req, res) => {
         include: { members: { orderBy: { sortOrder: 'asc' } } }
       });
 
-      await prisma.committeeSession.create({ data: { label: '2026-27', isActive: false } }).catch(() => {});
-      await prisma.committeeSession.create({ data: { label: '2027-28', isActive: false } }).catch(() => {});
+      await prisma.committeeSession.create({ data: { label: '2026-27', isActive: false } }).catch(() => { });
+      await prisma.committeeSession.create({ data: { label: '2027-28', isActive: false } }).catch(() => { });
 
       sessions = [seededSession];
     }
@@ -2084,7 +2084,7 @@ export const deleteSessionDB = async (req, res) => {
     const members = await prisma.committeeMember.findMany({ where: { sessionId: id } });
     const deleteItems = members.filter(m => m.publicId).map(m => ({ publicId: m.publicId, resourceType: 'image' }));
     if (deleteItems.length > 0) {
-      deleteCloudinaryBatch(deleteItems).catch(() => {});
+      deleteCloudinaryBatch(deleteItems).catch(() => { });
     }
 
     await prisma.committeeSession.delete({ where: { id } });
@@ -2137,7 +2137,7 @@ export const saveCommitteeMemberDB = async (req, res) => {
       const existing = await prisma.committeeMember.findUnique({ where: { id } });
       if (existing) {
         if (existing.publicId && publicId && existing.publicId !== publicId) {
-          deleteCloudinaryAsset(existing.publicId, 'image').catch(() => {});
+          deleteCloudinaryAsset(existing.publicId, 'image').catch(() => { });
         }
 
         const updated = await prisma.committeeMember.update({
@@ -2188,7 +2188,7 @@ export const deleteCommitteeMemberDB = async (req, res) => {
     if (isUuid) {
       const existing = await prisma.committeeMember.findUnique({ where: { id } });
       if (existing && existing.publicId) {
-        deleteCloudinaryAsset(existing.publicId, 'image').catch(() => {});
+        deleteCloudinaryAsset(existing.publicId, 'image').catch(() => { });
       }
       await prisma.committeeMember.delete({ where: { id } });
     }

@@ -12,7 +12,7 @@ export const ResultManagementTab = ({ user }) => {
   const { confirmDelete } = useConfirm();
   const [resultsList, setResultsList] = useState([]);
   const [selectedDetailResult, setSelectedDetailResult] = useState(null);
-  
+
   // Filter States
   const [selectedEvent, setSelectedEvent] = useState('ALL');
   const [selectedGender, setSelectedGender] = useState('ALL');
@@ -102,7 +102,7 @@ export const ResultManagementTab = ({ user }) => {
             list.push(apiMatch);
           }
         });
-      } catch (e) {}
+      } catch (e) { }
 
       // Purge legacy mock test entries
       const mockIds = ['M540746', 'M635812', 'M741299', 'M882104', 'M645537', 'M-CHESS-101', 'M-CHESS-102', 'M-BADM-101', 'M-BADM-102'];
@@ -116,25 +116,25 @@ export const ResultManagementTab = ({ user }) => {
 
       let cleaned = Array.isArray(list)
         ? list.filter((r) => {
-            if (!r) return false;
-            if (mockIds.includes(r.id)) return false;
-            const t1 = (r.team1 || '').trim().toLowerCase();
-            const t2 = (r.team2 || '').trim().toLowerCase();
-            const w = (r.winner || '').trim().toLowerCase();
-            if (mockNames.includes(t1) || mockNames.includes(t2) || mockNames.includes(w)) return false;
+          if (!r) return false;
+          if (mockIds.includes(r.id)) return false;
+          const t1 = (r.team1 || '').trim().toLowerCase();
+          const t2 = (r.team2 || '').trim().toLowerCase();
+          const w = (r.winner || '').trim().toLowerCase();
+          if (mockNames.includes(t1) || mockNames.includes(t2) || mockNames.includes(w)) return false;
 
-            if (isStdCricket) {
-              const rSport = (r.sport || r.sportId || '').toLowerCase();
-              const rTitle = (r.eventTitle || r.subEvent || '').toLowerCase();
-              if (rSport.includes('gully') || rTitle.includes('gully')) return false;
-            } else if (isGully) {
-              const rSport = (r.sport || r.sportId || '').toLowerCase();
-              const rTitle = (r.eventTitle || r.subEvent || '').toLowerCase();
-              if (!rSport.includes('gully') && !rTitle.includes('gully')) return false;
-            }
+          if (isStdCricket) {
+            const rSport = (r.sport || r.sportId || '').toLowerCase();
+            const rTitle = (r.eventTitle || r.subEvent || '').toLowerCase();
+            if (rSport.includes('gully') || rTitle.includes('gully')) return false;
+          } else if (isGully) {
+            const rSport = (r.sport || r.sportId || '').toLowerCase();
+            const rTitle = (r.eventTitle || r.subEvent || '').toLowerCase();
+            if (!rSport.includes('gully') && !rTitle.includes('gully')) return false;
+          }
 
-            return true;
-          })
+          return true;
+        })
         : [];
 
       if (cleaned.length === 0 && !isBadminton) {
@@ -210,13 +210,13 @@ export const ResultManagementTab = ({ user }) => {
       const updated = resultsList.map((r) =>
         r.id === id
           ? {
-              ...r,
-              winner: newWinner,
-              score1: s1,
-              score2: s2,
-              scoreText: newScoreText,
-              scoreSummary: newScoreText,
-            }
+            ...r,
+            winner: newWinner,
+            score1: s1,
+            score2: s2,
+            scoreText: newScoreText,
+            scoreSummary: newScoreText,
+          }
           : r
       );
       setResultsList(updated);
@@ -321,10 +321,10 @@ export const ResultManagementTab = ({ user }) => {
 
   return (
     <div className="space-y-6 text-slate-900 dark:text-slate-200 animate-fade-in font-sans">
-      
+
       {/* Table Container */}
       <div className="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-2xl space-y-5">
-        
+
         {/* Top Title & Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
           <div>
@@ -435,16 +435,15 @@ export const ResultManagementTab = ({ user }) => {
 
                   return (
                     <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                      
+
                       {/* MATCH DETAILS */}
                       <td className="p-4 space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">#{r.id}</span>
-                          <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase border ${
-                            isChess
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase border ${isChess
                               ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
                               : 'bg-blue-500/10 text-blue-600 dark:text-indigo-300 border-blue-500/20'
-                          }`}>
+                            }`}>
                             {display.format || (isChess ? 'INDIVIDUAL' : 'SINGLES')}
                           </span>
                           <span className="text-[10px] font-mono font-semibold text-slate-500 dark:text-slate-400">
@@ -567,11 +566,10 @@ export const ResultManagementTab = ({ user }) => {
                           ) : (
                             <button
                               onClick={() => handleSetWinner(r.id, display.winner || r.team1)}
-                              className={`px-4 py-2 rounded-xl text-white font-bold text-xs shadow-md transition cursor-pointer ${
-                                isChess
+                              className={`px-4 py-2 rounded-xl text-white font-bold text-xs shadow-md transition cursor-pointer ${isChess
                                   ? 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/20'
                                   : 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/20'
-                              }`}
+                                }`}
                             >
                               Set Winner
                             </button>

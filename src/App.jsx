@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { ConfirmProvider } from './context/ConfirmContext';
 import { SportsDataProvider } from './context/SportsDataContext';
+import { ContactPage } from './Pages/ContactPage'
 
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { AuthModal } from './components/common/AuthModal';
@@ -84,141 +85,141 @@ function App() {
         <ToastProvider>
           <ConfirmProvider>
             <SportsDataProvider>
-            <Router>
-              <ScrollToTop />
-              <Routes>
-                {/* Standalone Admin Portal Login Routes */}
-                <Route path="/admin/login" element={<AdminLoginPage />} />
-                <Route path="/portal/admin/login" element={<AdminLoginPage />} />
-                <Route path="/admin-login" element={<AdminLoginPage />} />
+              <Router>
+                <ScrollToTop />
+                <Routes>
+                  {/* Standalone Admin Portal Login Routes */}
+                  <Route path="/admin/login" element={<AdminLoginPage />} />
+                  <Route path="/portal/admin/login" element={<AdminLoginPage />} />
+                  <Route path="/admin-login" element={<AdminLoginPage />} />
 
-                {/* Dedicated Protected Admin Portal Routes */}
-                <Route
-                  path="/admin"
-                  element={
-                    <AdminProtectedRoute>
-                      <AdminLayout />
-                    </AdminProtectedRoute>
-                  }
-                >
-                  <Route index element={<AdminDashboardPage />} />
-                  <Route path="dashboard" element={<AdminDashboardPage />} />
-                  <Route path="registrations" element={<AdminRegistrationsPage />} />
-                  <Route path="pr-management" element={<AdminPRManagementPage />} />
-                  <Route path="pr" element={<AdminPRManagementPage />} />
-                  <Route path="coordinators" element={<AdminCoordinatorsPage />} />
-                  <Route path="announcements" element={<AdminAnnouncementsPage />} />
-                  <Route path="master-data" element={<AdminMasterDataPage />} />
-                  <Route path="participants" element={<AdminMasterDataPage />} />
-                  <Route path="committee" element={<AdminCommitteePage />} />
-                  <Route path="results" element={<AdminResultsPage />} />
-                  <Route path="activity" element={<AdminActivityPage />} />
-                  <Route path="audit-logs" element={<AdminActivityPage />} />
-                  <Route path="settings" element={<AdminSettingsPage />} />
-                </Route>
+                  {/* Dedicated Protected Admin Portal Routes */}
+                  <Route
+                    path="/admin"
+                    element={
+                      <AdminProtectedRoute>
+                        <AdminLayout />
+                      </AdminProtectedRoute>
+                    }
+                  >
+                    <Route index element={<AdminDashboardPage />} />
+                    <Route path="dashboard" element={<AdminDashboardPage />} />
+                    <Route path="registrations" element={<AdminRegistrationsPage />} />
+                    <Route path="pr-management" element={<AdminPRManagementPage />} />
+                    <Route path="pr" element={<AdminPRManagementPage />} />
+                    <Route path="coordinators" element={<AdminCoordinatorsPage />} />
+                    <Route path="announcements" element={<AdminAnnouncementsPage />} />
+                    <Route path="master-data" element={<AdminMasterDataPage />} />
+                    <Route path="participants" element={<AdminMasterDataPage />} />
+                    <Route path="committee" element={<AdminCommitteePage />} />
+                    <Route path="results" element={<AdminResultsPage />} />
+                    <Route path="activity" element={<AdminActivityPage />} />
+                    <Route path="audit-logs" element={<AdminActivityPage />} />
+                    <Route path="settings" element={<AdminSettingsPage />} />
+                  </Route>
 
-                <Route
-                  path="/portal/admin"
-                  element={
-                    <AdminProtectedRoute>
-                      <AdminLayout />
-                    </AdminProtectedRoute>
-                  }
-                >
-                  <Route index element={<AdminDashboardPage />} />
-                  <Route path="dashboard" element={<AdminDashboardPage />} />
-                  <Route path="registrations" element={<AdminRegistrationsPage />} />
-                  <Route path="pr-management" element={<AdminPRManagementPage />} />
-                  <Route path="pr" element={<AdminPRManagementPage />} />
-                  <Route path="coordinators" element={<AdminCoordinatorsPage />} />
-                  <Route path="announcements" element={<AdminAnnouncementsPage />} />
-                  <Route path="master-data" element={<AdminMasterDataPage />} />
-                  <Route path="participants" element={<AdminMasterDataPage />} />
-                  <Route path="committee" element={<AdminCommitteePage />} />
-                  <Route path="results" element={<AdminResultsPage />} />
-                  <Route path="activity" element={<AdminActivityPage />} />
-                  <Route path="audit-logs" element={<AdminActivityPage />} />
-                  <Route path="settings" element={<AdminSettingsPage />} />
-                </Route>
+                  <Route
+                    path="/portal/admin"
+                    element={
+                      <AdminProtectedRoute>
+                        <AdminLayout />
+                      </AdminProtectedRoute>
+                    }
+                  >
+                    <Route index element={<AdminDashboardPage />} />
+                    <Route path="dashboard" element={<AdminDashboardPage />} />
+                    <Route path="registrations" element={<AdminRegistrationsPage />} />
+                    <Route path="pr-management" element={<AdminPRManagementPage />} />
+                    <Route path="pr" element={<AdminPRManagementPage />} />
+                    <Route path="coordinators" element={<AdminCoordinatorsPage />} />
+                    <Route path="announcements" element={<AdminAnnouncementsPage />} />
+                    <Route path="master-data" element={<AdminMasterDataPage />} />
+                    <Route path="participants" element={<AdminMasterDataPage />} />
+                    <Route path="committee" element={<AdminCommitteePage />} />
+                    <Route path="results" element={<AdminResultsPage />} />
+                    <Route path="activity" element={<AdminActivityPage />} />
+                    <Route path="audit-logs" element={<AdminActivityPage />} />
+                    <Route path="settings" element={<AdminSettingsPage />} />
+                  </Route>
 
-                {/* Standalone Super Coordinator (President / Event Host) Routes */}
-                <Route path="/super-coordinator/login" element={<SuperCoordinatorLoginPage />} />
-                <Route path="/super-coordinator-login" element={<SuperCoordinatorLoginPage />} />
-                <Route path="/super-coordinator/dashboard" element={<SuperCoordinatorProtectedRoute><SuperCoordinatorDashboardPage /></SuperCoordinatorProtectedRoute>} />
-                <Route path="/super-coordinator" element={<SuperCoordinatorProtectedRoute><SuperCoordinatorDashboardPage /></SuperCoordinatorProtectedRoute>} />
+                  {/* Standalone Super Coordinator (President / Event Host) Routes */}
+                  <Route path="/super-coordinator/login" element={<SuperCoordinatorLoginPage />} />
+                  <Route path="/super-coordinator-login" element={<SuperCoordinatorLoginPage />} />
+                  <Route path="/super-coordinator/dashboard" element={<SuperCoordinatorProtectedRoute><SuperCoordinatorDashboardPage /></SuperCoordinatorProtectedRoute>} />
+                  <Route path="/super-coordinator" element={<SuperCoordinatorProtectedRoute><SuperCoordinatorDashboardPage /></SuperCoordinatorProtectedRoute>} />
 
-                {/* Standalone Full-Screen APEX Legacy & Journey Timeline */}
-                <Route path="/journey" element={<JourneyPage />} />
-                <Route path="/legacy" element={<JourneyPage />} />
+                  {/* Standalone Full-Screen APEX Legacy & Journey Timeline */}
+                  <Route path="/journey" element={<JourneyPage />} />
+                  <Route path="/legacy" element={<JourneyPage />} />
 
-                <Route element={<DashboardLayout />}>
-                  <Route path="/" element={<HomePage />} />
+                  <Route element={<DashboardLayout />}>
+                    <Route path="/" element={<HomePage />} />
 
-                  <Route path="/registration" element={<RegistrationPage />} />
-                  <Route path="/registration/:eventId" element={<RegistrationPage />} />
-                  <Route path="/register/:eventId" element={<RegistrationPage />} />
-                  <Route path="/live" element={<LiveMatchPortalPage />} />
-                  <Route path="/schedule" element={<SchedulePage />} />
-                  <Route path="/results" element={<ResultsPage />} />
-                  <Route path="/coordinator-results" element={<AdminCoordinatorMatchResultsPage />} />
-                  <Route path="/admin-coordinator-results" element={<AdminCoordinatorMatchResultsPage />} />
-                  <Route path="/leaderboard" element={<LeaderboardPage />} />
-                  <Route path="/announcements" element={<AnnouncementsPage />} />
-                  <Route path="/gallery" element={<GalleryPage />} />
-                  <Route path="/about" element={<AboutPage />} />
-                  <Route path="/contact" element={<AboutPage />} />
-                  <Route path="/dashboard" element={<DashboardPage />} />
-                  <Route path="/faq" element={<FAQPage />} />
-                  <Route path="/terms" element={<TermsPage />} />
-                  <Route path="/privacy" element={<PrivacyPage />} />
+                    <Route path="/registration" element={<RegistrationPage />} />
+                    <Route path="/registration/:eventId" element={<RegistrationPage />} />
+                    <Route path="/register/:eventId" element={<RegistrationPage />} />
+                    <Route path="/live" element={<LiveMatchPortalPage />} />
+                    <Route path="/schedule" element={<SchedulePage />} />
+                    <Route path="/results" element={<ResultsPage />} />
+                    <Route path="/coordinator-results" element={<AdminCoordinatorMatchResultsPage />} />
+                    <Route path="/admin-coordinator-results" element={<AdminCoordinatorMatchResultsPage />} />
+                    <Route path="/leaderboard" element={<LeaderboardPage />} />
+                    <Route path="/announcements" element={<AnnouncementsPage />} />
+                    <Route path="/gallery" element={<GalleryPage />} />
+                    <Route path="/about" element={<AboutPage />} />
+                    <Route path="/contact" element={<ContactPage />} />
+                    <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/faq" element={<FAQPage />} />
+                    <Route path="/terms" element={<TermsPage />} />
+                    <Route path="/privacy" element={<PrivacyPage />} />
 
-                  {/* Public PR Login Routes */}
-                  <Route path="/pr/login" element={<PRLoginPage />} />
-                  <Route path="/pr-login" element={<PRLoginPage />} />
+                    {/* Public PR Login Routes */}
+                    <Route path="/pr/login" element={<PRLoginPage />} />
+                    <Route path="/pr-login" element={<PRLoginPage />} />
 
-                  {/* Protected PR Coordinator Portal Routes */}
-                  <Route path="/pr/dashboard" element={<PRProtectedRoute><PRDashboardPage /></PRProtectedRoute>} />
-                  <Route path="/pr-dashboard" element={<PRProtectedRoute><PRDashboardPage /></PRProtectedRoute>} />
-                  <Route path="/pr/events" element={<PRProtectedRoute><PREventsPage /></PRProtectedRoute>} />
-                  <Route path="/pr/upload" element={<PRProtectedRoute><PRUploadPage /></PRProtectedRoute>} />
-                  <Route path="/pr/gallery-upload" element={<PRProtectedRoute><PRUploadPage /></PRProtectedRoute>} />
-                  <Route path="/pr/video-upload" element={<PRProtectedRoute><PRUploadPage /></PRProtectedRoute>} />
-                  <Route path="/pr/media-management" element={<PRProtectedRoute><PREventsPage /></PRProtectedRoute>} />
+                    {/* Protected PR Coordinator Portal Routes */}
+                    <Route path="/pr/dashboard" element={<PRProtectedRoute><PRDashboardPage /></PRProtectedRoute>} />
+                    <Route path="/pr-dashboard" element={<PRProtectedRoute><PRDashboardPage /></PRProtectedRoute>} />
+                    <Route path="/pr/events" element={<PRProtectedRoute><PREventsPage /></PRProtectedRoute>} />
+                    <Route path="/pr/upload" element={<PRProtectedRoute><PRUploadPage /></PRProtectedRoute>} />
+                    <Route path="/pr/gallery-upload" element={<PRProtectedRoute><PRUploadPage /></PRProtectedRoute>} />
+                    <Route path="/pr/video-upload" element={<PRProtectedRoute><PRUploadPage /></PRProtectedRoute>} />
+                    <Route path="/pr/media-management" element={<PRProtectedRoute><PREventsPage /></PRProtectedRoute>} />
 
-                  {/* Public College Head Login Route */}
-                  <Route path="/college-head/login" element={<CollegeHeadLoginPage />} />
+                    {/* Public College Head Login Route */}
+                    <Route path="/college-head/login" element={<CollegeHeadLoginPage />} />
 
-                  {/* Protected College Head Portal Routes */}
-                  <Route path="/college-head/dashboard" element={<CollegeHeadProtectedRoute><CollegeHeadDashboardPage /></CollegeHeadProtectedRoute>} />
+                    {/* Protected College Head Portal Routes */}
+                    <Route path="/college-head/dashboard" element={<CollegeHeadProtectedRoute><CollegeHeadDashboardPage /></CollegeHeadProtectedRoute>} />
 
-                  {/* Public Sport Coordinator Login Routes */}
-                  <Route path="/coordinator/login" element={<CoordinatorLoginPage />} />
-                  <Route path="/coordinator-login" element={<CoordinatorLoginPage />} />
+                    {/* Public Sport Coordinator Login Routes */}
+                    <Route path="/coordinator/login" element={<CoordinatorLoginPage />} />
+                    <Route path="/coordinator-login" element={<CoordinatorLoginPage />} />
 
-                  {/* Protected Sport Coordinator Portal Routes */}
-                  <Route path="/coordinator/badminton" element={<CoordinatorProtectedRoute><BadmintonCoordinatorPage /></CoordinatorProtectedRoute>} />
-                  <Route path="/coordinator/football" element={<CoordinatorProtectedRoute><FootballCoordinatorPage /></CoordinatorProtectedRoute>} />
-                  <Route path="/coordinator/basketball" element={<CoordinatorProtectedRoute><BasketballCoordinatorPage /></CoordinatorProtectedRoute>} />
-                  <Route path="/coordinator/volleyball" element={<CoordinatorProtectedRoute><VolleyballCoordinatorPage /></CoordinatorProtectedRoute>} />
-                  <Route path="/coordinator/table-tennis" element={<CoordinatorProtectedRoute><TableTennisCoordinatorPage /></CoordinatorProtectedRoute>} />
-                  <Route path="/coordinator/chess" element={<CoordinatorProtectedRoute><ChessCoordinatorPage /></CoordinatorProtectedRoute>} />
-                  <Route path="/coordinator/kabaddi" element={<CoordinatorProtectedRoute><KabaddiCoordinatorPage /></CoordinatorProtectedRoute>} />
-                  <Route path="/coordinator/kho-kho" element={<CoordinatorProtectedRoute><KhoKhoCoordinatorPage /></CoordinatorProtectedRoute>} />
-                  <Route path="/coordinator/athletics" element={<CoordinatorProtectedRoute><AthleticsCoordinatorPage /></CoordinatorProtectedRoute>} />
-                  <Route path="/coordinator/tug-of-war" element={<CoordinatorProtectedRoute><TugOfWarCoordinatorPage /></CoordinatorProtectedRoute>} />
-                  <Route path="/coordinator/gully-cricket" element={<CoordinatorProtectedRoute><GullyCricketCoordinatorPage /></CoordinatorProtectedRoute>} />
-                  <Route path="/coordinator/cricket" element={<CoordinatorProtectedRoute><CricketCoordinatorPage /></CoordinatorProtectedRoute>} />
-                </Route>
+                    {/* Protected Sport Coordinator Portal Routes */}
+                    <Route path="/coordinator/badminton" element={<CoordinatorProtectedRoute><BadmintonCoordinatorPage /></CoordinatorProtectedRoute>} />
+                    <Route path="/coordinator/football" element={<CoordinatorProtectedRoute><FootballCoordinatorPage /></CoordinatorProtectedRoute>} />
+                    <Route path="/coordinator/basketball" element={<CoordinatorProtectedRoute><BasketballCoordinatorPage /></CoordinatorProtectedRoute>} />
+                    <Route path="/coordinator/volleyball" element={<CoordinatorProtectedRoute><VolleyballCoordinatorPage /></CoordinatorProtectedRoute>} />
+                    <Route path="/coordinator/table-tennis" element={<CoordinatorProtectedRoute><TableTennisCoordinatorPage /></CoordinatorProtectedRoute>} />
+                    <Route path="/coordinator/chess" element={<CoordinatorProtectedRoute><ChessCoordinatorPage /></CoordinatorProtectedRoute>} />
+                    <Route path="/coordinator/kabaddi" element={<CoordinatorProtectedRoute><KabaddiCoordinatorPage /></CoordinatorProtectedRoute>} />
+                    <Route path="/coordinator/kho-kho" element={<CoordinatorProtectedRoute><KhoKhoCoordinatorPage /></CoordinatorProtectedRoute>} />
+                    <Route path="/coordinator/athletics" element={<CoordinatorProtectedRoute><AthleticsCoordinatorPage /></CoordinatorProtectedRoute>} />
+                    <Route path="/coordinator/tug-of-war" element={<CoordinatorProtectedRoute><TugOfWarCoordinatorPage /></CoordinatorProtectedRoute>} />
+                    <Route path="/coordinator/gully-cricket" element={<CoordinatorProtectedRoute><GullyCricketCoordinatorPage /></CoordinatorProtectedRoute>} />
+                    <Route path="/coordinator/cricket" element={<CoordinatorProtectedRoute><CricketCoordinatorPage /></CoordinatorProtectedRoute>} />
+                  </Route>
 
-                {/* Full-Screen Standalone Global 404 Route */}
-                <Route path="*" element={<NotFoundPage />} />
-              </Routes>
+                  {/* Full-Screen Standalone Global 404 Route */}
+                  <Route path="*" element={<NotFoundPage />} />
+                </Routes>
 
-              <AuthModal />
-            </Router>
-          </SportsDataProvider>
-        </ConfirmProvider>
-      </ToastProvider>
+                <AuthModal />
+              </Router>
+            </SportsDataProvider>
+          </ConfirmProvider>
+        </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
   );

@@ -65,6 +65,8 @@ async function main() {
     create: { username: "pr_admin", passwordHash, role: "pr_coordinator", name: "PR Admin" },
   });
 
+  const mpec = await prisma.college.findUnique({ where: { code: "MPEC" } });
+
   const collegeRecords = await prisma.college.findMany();
   const collegeMap = new Map(collegeRecords.map(c => [c.code, c.id]));
 
@@ -113,15 +115,15 @@ async function main() {
   // 4. Remove Demo Records if present in Database
   await prisma.collegeRegistration.deleteMany({
     where: { id: { in: ["REC-DEMO-001", "REC-DEMO-002", "REC-DEMO-003"] } }
-  }).catch(() => {});
+  }).catch(() => { });
 
   await prisma.liveMatch.deleteMany({
     where: { id: { in: ["LIVE-DEMO-CRICKET", "LIVE-DEMO-BADMINTON"] } }
-  }).catch(() => {});
+  }).catch(() => { });
 
   await prisma.coordinatorEventItem.deleteMany({
     where: { id: { in: ["EVT-CRICKET-DEMO-2026", "EVT-BADMINTON-DEMO-2026", "EVT-FOOTBALL-DEMO-2026"] } }
-  }).catch(() => {});
+  }).catch(() => { });
 
   console.log("✅ Master setup seeded cleanly. All mock demo records purged!");
 }

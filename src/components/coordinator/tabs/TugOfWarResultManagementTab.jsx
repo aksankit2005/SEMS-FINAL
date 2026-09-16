@@ -67,7 +67,7 @@ export const TugOfWarResultManagementTab = ({ user }) => {
             deletedIds = new Set(parsed);
           }
         }
-      } catch (e) {}
+      } catch (e) { }
 
       // 1. Gather local storage edited results
       const localResultsMap = {};
@@ -82,7 +82,7 @@ export const TugOfWarResultManagementTab = ({ user }) => {
               }
             });
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const mergedMap = { ...localResultsMap };
@@ -99,16 +99,16 @@ export const TugOfWarResultManagementTab = ({ user }) => {
               if (m.details) {
                 try {
                   detailsObj = typeof m.details === 'object' ? m.details : JSON.parse(m.details);
-                } catch (e) {}
+                } catch (e) { }
               }
 
               const t1 = m.team1 || detailsObj.team1 || detailsObj.team1Name || 'Team 1';
               const t2 = m.team2 || detailsObj.team2 || detailsObj.team2Name || 'Team 2';
-              const rw1 = m.roundsWon1 !== undefined && m.roundsWon1 !== null 
-                ? Number(m.roundsWon1) 
+              const rw1 = m.roundsWon1 !== undefined && m.roundsWon1 !== null
+                ? Number(m.roundsWon1)
                 : (detailsObj.roundsWon1 !== undefined ? Number(detailsObj.roundsWon1) : Number(m.score1 || 0));
-              const rw2 = m.roundsWon2 !== undefined && m.roundsWon2 !== null 
-                ? Number(m.roundsWon2) 
+              const rw2 = m.roundsWon2 !== undefined && m.roundsWon2 !== null
+                ? Number(m.roundsWon2)
                 : (detailsObj.roundsWon2 !== undefined ? Number(detailsObj.roundsWon2) : Number(m.score2 || 0));
 
               const itemNormalized = {
@@ -273,7 +273,7 @@ export const TugOfWarResultManagementTab = ({ user }) => {
           localStorage.setItem('sems_deleted_result_ids', JSON.stringify(filteredDeleted));
         }
       }
-    } catch (e) {}
+    } catch (e) { }
 
     try {
       await coordinatorApi.completeMatch(editingResult.id, updatedObj);
@@ -315,14 +315,14 @@ export const TugOfWarResultManagementTab = ({ user }) => {
       const deletedStr = localStorage.getItem('sems_deleted_result_ids');
       let deletedArr = [];
       if (deletedStr) {
-        try { deletedArr = JSON.parse(deletedStr); } catch (e) {}
+        try { deletedArr = JSON.parse(deletedStr); } catch (e) { }
       }
       if (!Array.isArray(deletedArr)) deletedArr = [];
       if (!deletedArr.includes(id)) {
         deletedArr.push(id);
         localStorage.setItem('sems_deleted_result_ids', JSON.stringify(deletedArr));
       }
-    } catch (e) {}
+    } catch (e) { }
 
     try {
       await coordinatorApi.deleteMatch(id);
@@ -601,7 +601,7 @@ export const TugOfWarResultManagementTab = ({ user }) => {
       {editingResult && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs font-sans animate-fade-in overflow-y-auto">
           <div className="w-full max-w-2xl bg-white dark:bg-[#111827] text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5 my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
-            
+
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
               <div>
                 <span className="text-[10px] font-mono uppercase font-bold text-orange-600 dark:text-orange-400">
@@ -620,7 +620,7 @@ export const TugOfWarResultManagementTab = ({ user }) => {
             </div>
 
             <form onSubmit={handleSaveEdit} className="space-y-4 text-xs">
-              
+
               {/* Contestant Teams */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-orange-500/5 border border-orange-500/20">
                 <div>

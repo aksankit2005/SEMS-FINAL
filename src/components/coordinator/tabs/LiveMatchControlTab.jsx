@@ -45,7 +45,7 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
         if (parsed && typeof parsed === 'object') {
           const cleaned = {};
           Object.keys(parsed).forEach((k) => {
-            if (parsed[k] && parsed[k].id !== 'M595473') {
+            if (parsed[k] && parsed[k].id) {
               cleaned[k] = parsed[k];
             }
           });
@@ -90,15 +90,14 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
 
     if (
       match?.sportId?.toLowerCase() === assignedSport ||
-      match?.sportName?.toLowerCase() === assignedSport ||
-      match?.id === 'M595473'
+      match?.sportName?.toLowerCase() === assignedSport
     ) {
       delete globalActiveMap[key];
     }
   });
 
   Object.values(liveAssignments).forEach((match) => {
-    if (match?.id && match.id !== 'M595473') {
+    if (match?.id) {
       globalActiveMap[match.id] = match;
     }
   });

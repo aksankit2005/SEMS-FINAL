@@ -34,26 +34,12 @@ export const VolleyballResultManagementTab = ({ user }) => {
         setAvailableEvents([]);
       }
 
-      const mockIds = ['M540746', 'M635812', 'M741299', 'M882104', 'M645537'];
-      const mockNames = [
-        '1', '2', 'a', 'b', 'player 1', 'player 2', 'player 3', 'player 4', 'team 1', 'team 2', 'team a', 'team b', 'albert', 'romi',
-        'aarav sharma (mpec)', 'rohan gupta (mips)', 'ankur dixit (mpcps)', 'aditya singh (mpec)',
-        'aagaz khan (mpcps kn142)', 'shiv prakash (mpcps kn142)', 'kapil verma (mpcps kn142)', 'anubhav sachan (mpcps kn142)',
-        'kapil verma', 'anubhav sachan', 'team a', 'team b', 'team 1', 'team 2', 'player / team a', 'player / team b'
-      ];
       const saved = localStorage.getItem(resultsKey);
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
           const cleaned = Array.isArray(parsed)
-            ? parsed.filter((r) => {
-                if (!r) return false;
-                if (mockIds.includes(r.id)) return false;
-                const t1 = (r.team1 || '').trim().toLowerCase();
-                const t2 = (r.team2 || '').trim().toLowerCase();
-                const w = (r.winner || '').trim().toLowerCase();
-                return !mockNames.includes(t1) && !mockNames.includes(t2) && !mockNames.includes(w);
-              })
+            ? parsed.filter((r) => r && r.id && r.team1 && r.team2)
             : [];
           setResultsList(cleaned);
           localStorage.setItem(resultsKey, JSON.stringify(cleaned));

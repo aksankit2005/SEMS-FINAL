@@ -40,7 +40,7 @@ export const LiveMatchPortalPage = () => {
         const formattedLive = publicLive
           .filter((m) => {
             const s = (m?.status || '').toLowerCase();
-            return m && m.id && m.id !== 'M595473' && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active');
+            return m && m.id && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active');
           })
           .map((m) => {
             const inferredSportId = (m.sportId || m.sport || (m.sportName ? m.sportName.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'badminton')).toLowerCase();

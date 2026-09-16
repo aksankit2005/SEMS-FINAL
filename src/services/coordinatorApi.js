@@ -1448,68 +1448,19 @@ async deleteMatch(id) {
     }
   },
 
-  // Register for public event
+  // Register for public event (Strict database persistence - BUG-CRIT-002)
   async registerForEvent(eventId, sportId, participantData, paymentData) {
     try {
       const res = await api.post('/public/register-event', { eventId, sportId, participantData, paymentData });
       if (res.data && res.data.success) {
         return res.data;
       }
+      throw new Error(res.data?.message || 'Failed to complete registration');
     } catch (e) {
-      console.warn('Backend register event unreachable, saving to local storage fallback:', e.response?.data?.message || e.message);
+      const errorMessage = e.response?.data?.message || e.message || 'Registration failed. Please try again.';
+      console.error('Registration API error:', errorMessage);
+      throw new Error(errorMessage);
     }
-
-    // Local storage fallback for incrementing registered count
-    const targetSport = (sportId || 'badminton').toLowerCase();
-    const key = `sems_coord_events_${targetSport}`;
-    const saved = localStorage.getItem(key);
-    let event = null;
-
-    if (saved) {
-      try {
-        const events = JSON.parse(saved);
-        const idx = events.findIndex((e) => e.id === eventId);
-        if (idx !== -1) {
-          events[idx].registeredCount = (events[idx].registeredCount || 0) + 1;
-          if (events[idx].registeredCount >= events[idx].maxRegistrations) {
-            events[idx].status = 'Closed';
-          }
-          event = events[idx];
-          localStorage.setItem(key, JSON.stringify(events));
-        }
-      } catch (err) { }
-    }
-
-    // Save to participants list
-    const participantKey = `sems_participants_${targetSport}`;
-    const savedParticipants = localStorage.getItem(participantKey);
-    const pList = savedParticipants ? JSON.parse(savedParticipants) : [];
-
-    const receiptId = `REC-APEX-${Math.floor(10000 + Math.random() * 90000)}`;
-    const newRecord = {
-      id: receiptId,
-      eventId: eventId || 'DEFAULT',
-      teamName: participantData.teamName || participantData.fullName || 'Solo Entry',
-      studentName: participantData.fullName || participantData.captainName || 'Athlete',
-      college: participantData.collegeName || 'MPEC',
-      department: participantData.department || 'Engineering',
-      gender: participantData.gender || 'Male',
-      contactPhone: participantData.phone || '+91 98765 43210',
-      registeredDate: new Date().toLocaleDateString(),
-      status: 'Approved',
-      feePaid: event ? event.entryFee : (participantData.entryFee || 0),
-      paymentId: paymentData?.razorpayPaymentId || `TXN-RP-${Math.floor(100000000000 + Math.random() * 900000000000)}`
-    };
-
-    pList.unshift(newRecord);
-    localStorage.setItem(participantKey, JSON.stringify(pList));
-
-    return {
-      success: true,
-      message: 'Event registration confirmed',
-      receipt: newRecord,
-      updatedEvent: event
-    };
   }
 };
 
