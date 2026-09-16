@@ -98,6 +98,51 @@ export const SuperCoordinatorDashboardPage = () => {
   const [runnerUpTeamName, setRunnerUpTeamName] = useState('');
   const [runnerUpCollegeId, setRunnerUpCollegeId] = useState('MIPS');
 
+  // Student Photo and Academic Credentials State
+  const [winnerRollNo, setWinnerRollNo] = useState('');
+  const [winnerCourse, setWinnerCourse] = useState('B.Tech CSE');
+  const [winnerYearSem, setWinnerYearSem] = useState('3rd Yr (6th Sem)');
+  const [winnerPhotoUrl, setWinnerPhotoUrl] = useState('');
+  const [winnerHighlights, setWinnerHighlights] = useState('');
+  const [uploadingWinnerPhoto, setUploadingWinnerPhoto] = useState(false);
+
+  const [runnerUpRollNo, setRunnerUpRollNo] = useState('');
+  const [runnerUpCourse, setRunnerUpCourse] = useState('BCA');
+  const [runnerUpYearSem, setRunnerUpYearSem] = useState('2nd Yr (4th Sem)');
+  const [runnerUpPhotoUrl, setRunnerUpPhotoUrl] = useState('');
+  const [runnerUpHighlights, setRunnerUpHighlights] = useState('');
+  const [uploadingRunnerUpPhoto, setUploadingRunnerUpPhoto] = useState(false);
+
+  // Student Photo Upload Handler
+  const handleStudentPhotoUpload = async (file, target = 'winner') => {
+    if (!file) return;
+    const setUploading = target === 'winner' ? setUploadingWinnerPhoto : setUploadingRunnerUpPhoto;
+    const setPhoto = target === 'winner' ? setWinnerPhotoUrl : setRunnerUpPhotoUrl;
+    setUploading(true);
+    try {
+      const uploaded = await uploadFileToCloudinary(file, () => {}, 'sems_medals');
+      if (uploaded?.url) {
+        setPhoto(uploaded.url);
+        addToast(`${target === 'winner' ? 'Winner' : 'Runner-Up'} photo uploaded!`, 'success');
+        setUploading(false);
+        return;
+      }
+    } catch (e) {
+      console.warn('Cloudinary upload notice, using local file reader fallback:', e.message);
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setPhoto(e.target.result);
+      setUploading(false);
+      addToast(`${target === 'winner' ? 'Winner' : 'Runner-Up'} photo attached!`, 'success');
+    };
+    reader.onerror = () => {
+      setUploading(false);
+      addToast('Failed to read photo', 'error');
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleAwardSportChange = (newSportId) => {
     setAwardSportId(newSportId);
     const formats = getFormatsForSport(newSportId);
@@ -294,6 +339,11 @@ export const SuperCoordinatorDashboardPage = () => {
       winnerCollege: winnerObj.id,
       winnerCollegeName: winnerObj.name,
       winnerPoints: 5,
+      winnerPhotoUrl,
+      winnerRollNo,
+      winnerCourse,
+      winnerYearSem,
+      winnerHighlights,
 
       // Runner-Up Details
       runnerUpName: rName,
@@ -301,9 +351,73 @@ export const SuperCoordinatorDashboardPage = () => {
       runnerUpCollege: runnerObj.id,
       runnerUpCollegeName: runnerObj.name,
       runnerUpPoints: 3,
+      runnerUpPhotoUrl,
+      runnerUpRollNo,
+      runnerUpCourse,
+      runnerUpYearSem,
+      runnerUpHighlights,
 
       date: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
     };
+
+    // Sync student photo cards to sems_custom_medal_entries for Leaderboard showcase
+    try {
+      const medalEntryId = `medal-${newEntry.id}`;
+      const sportEmoji = 
+        sportObj.id.includes('badminton') ? '🏸' :
+        sportObj.id.includes('cricket') ? '🏏' :
+        sportObj.id.includes('football') ? '⚽' :
+        sportObj.id.includes('chess') ? '♟️' :
+        sportObj.id.includes('table-tennis') || sportObj.id.includes('tt') ? '🏓' :
+        sportObj.id.includes('basketball') ? '🏀' :
+        sportObj.id.includes('volleyball') ? '🏐' :
+        sportObj.id.includes('kabaddi') ? '🤼' :
+        sportObj.id.includes('athletics') ? '🏃‍♂️' :
+        sportObj.id.includes('kho') ? '🏃' :
+        sportObj.id.includes('tug') ? '🪢' : '🏆';
+
+      const medalItem = {
+        id: medalEntryId,
+        sportId: sportObj.id,
+        sportName: finalSportName,
+        sportIcon: sportEmoji,
+        gender: matchGender,
+        matchFormat,
+        subEvent: isAthletics ? athleticsSubEvent : `${sportObj.name} Final`,
+        scoreSummary: 'Champion Match Declared by Super Coordinator',
+        declaredAt: new Date().toISOString(),
+        winner: {
+          studentName: wName,
+          teamName: wTeam,
+          collegeCode: winnerObj.id,
+          collegeName: winnerObj.name,
+          medal: 'GOLD',
+          rollNo: winnerRollNo.trim(),
+          course: winnerCourse.trim(),
+          yearSemester: winnerYearSem.trim(),
+          photoUrl: winnerPhotoUrl,
+          highlights: winnerHighlights.trim() || 'Champion Gold Medalist'
+        },
+        runnerUp: {
+          studentName: rName,
+          teamName: rTeam,
+          collegeCode: runnerObj.id,
+          collegeName: runnerObj.name,
+          medal: 'SILVER',
+          rollNo: runnerUpRollNo.trim(),
+          course: runnerUpCourse.trim(),
+          yearSemester: runnerUpYearSem.trim(),
+          photoUrl: runnerUpPhotoUrl,
+          highlights: runnerUpHighlights.trim() || 'Silver Medalist Runner-Up'
+        }
+      };
+
+      const existingMedals = JSON.parse(localStorage.getItem('sems_custom_medal_entries') || '[]');
+      const updatedMedals = [medalItem, ...existingMedals.filter((m) => m.id !== medalEntryId)];
+      localStorage.setItem('sems_custom_medal_entries', JSON.stringify(updatedMedals));
+    } catch (err) {
+      console.error('Error syncing custom medal entries:', err);
+    }
 
     const res = await superCoordinatorApi.saveLeaderboardEntries(leaderboardEntries, newEntry);
     if (res && res.entry) {
@@ -312,13 +426,24 @@ export const SuperCoordinatorDashboardPage = () => {
       const freshEntries = await superCoordinatorApi.getLeaderboardEntries();
       setLeaderboardEntries(freshEntries);
     }
-    addToast(`Result Saved! Winner: ${wName} (${winnerObj.id}) [+5 Pts] & Runner-Up: ${rName} (${runnerObj.id}) [+3 Pts]`, 'success');
+
+    // Trigger reactive updates on Leaderboard
+    window.dispatchEvent(new Event('sems_leaderboard_updated'));
+    window.dispatchEvent(new Event('storage'));
+
+    addToast(`Result Saved! Winner: ${wName} (${winnerObj.id}) [+5 Pts] & Runner-Up: ${rName} (${runnerObj.id}) [+3 Pts] with Student Winner Cards!`, 'success');
 
     // Reset input fields
     setWinnerName('');
     setWinnerTeamName('');
+    setWinnerPhotoUrl('');
+    setWinnerRollNo('');
+    setWinnerHighlights('');
     setRunnerUpName('');
     setRunnerUpTeamName('');
+    setRunnerUpPhotoUrl('');
+    setRunnerUpRollNo('');
+    setRunnerUpHighlights('');
   };
 
   const handleDeleteLeaderboardEntry = async (id) => {
@@ -339,11 +464,21 @@ export const SuperCoordinatorDashboardPage = () => {
 
       if (!isConfirmed) return;
 
+      // Remove from custom medal entries as well
+      try {
+        const medalEntryId = `medal-${id}`;
+        const existingMedals = JSON.parse(localStorage.getItem('sems_custom_medal_entries') || '[]');
+        const updatedMedals = existingMedals.filter((m) => m.id !== medalEntryId && m.id !== id);
+        localStorage.setItem('sems_custom_medal_entries', JSON.stringify(updatedMedals));
+      } catch (e) {}
+
       const res = await superCoordinatorApi.deleteLeaderboardEntry(id);
       if (res !== false) {
         setLeaderboardEntries((prev) => prev.filter((e) => e.id !== id));
         const freshEntries = await superCoordinatorApi.getLeaderboardEntries();
         if (freshEntries) setLeaderboardEntries(freshEntries);
+        window.dispatchEvent(new Event('sems_leaderboard_updated'));
+        window.dispatchEvent(new Event('storage'));
         addToast('Leaderboard entry removed from database', 'info');
       } else {
         addToast('Failed to delete leaderboard entry', 'error');
@@ -1044,6 +1179,90 @@ export const SuperCoordinatorDashboardPage = () => {
                           ))}
                         </select>
                       </div>
+
+                      {/* Winner Student Photo Upload */}
+                      <div className="flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-slate-950 border border-emerald-300/60 dark:border-emerald-700/40">
+                        <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-emerald-400 bg-slate-100 dark:bg-slate-800 flex-shrink-0 flex items-center justify-center group shadow-xs">
+                          {winnerPhotoUrl ? (
+                            <>
+                              <img src={winnerPhotoUrl} alt="Winner" className="w-full h-full object-cover" />
+                              <button
+                                type="button"
+                                onClick={() => setWinnerPhotoUrl('')}
+                                className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                                title="Remove photo"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </>
+                          ) : (
+                            <User className="w-7 h-7 text-slate-400" />
+                          )}
+                          {uploadingWinnerPhoto && (
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-[9px] font-mono">Uploading...</div>
+                          )}
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <label className="block text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                            📸 Winner Athlete Photo
+                          </label>
+                          <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
+                            <Camera className="w-3.5 h-3.5" />
+                            <span>Upload Photo</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => e.target.files?.[0] && handleStudentPhotoUpload(e.target.files[0], 'winner')}
+                            />
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Winner Academic Credentials */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                          <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Roll No</label>
+                          <input
+                            type="text"
+                            value={winnerRollNo}
+                            onChange={(e) => setWinnerRollNo(e.target.value)}
+                            placeholder="2101640100012"
+                            className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-emerald-400/60 dark:border-emerald-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Course / Branch</label>
+                          <input
+                            type="text"
+                            value={winnerCourse}
+                            onChange={(e) => setWinnerCourse(e.target.value)}
+                            placeholder="B.Tech CSE"
+                            className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-emerald-400/60 dark:border-emerald-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Year / Sem</label>
+                          <input
+                            type="text"
+                            value={winnerYearSem}
+                            onChange={(e) => setWinnerYearSem(e.target.value)}
+                            placeholder="3rd Yr (6th Sem)"
+                            className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-emerald-400/60 dark:border-emerald-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Match Highlight Quote</label>
+                        <input
+                          type="text"
+                          value={winnerHighlights}
+                          onChange={(e) => setWinnerHighlights(e.target.value)}
+                          placeholder="e.g. Scored 18 smash winners in 3rd set"
+                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-emerald-400/60 dark:border-emerald-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -1102,6 +1321,90 @@ export const SuperCoordinatorDashboardPage = () => {
                             </option>
                           ))}
                         </select>
+                      </div>
+
+                      {/* Runner-Up Student Photo Upload */}
+                      <div className="flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-slate-950 border border-blue-300/60 dark:border-blue-700/40">
+                        <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-blue-400 bg-slate-100 dark:bg-slate-800 flex-shrink-0 flex items-center justify-center group shadow-xs">
+                          {runnerUpPhotoUrl ? (
+                            <>
+                              <img src={runnerUpPhotoUrl} alt="Runner-Up" className="w-full h-full object-cover" />
+                              <button
+                                type="button"
+                                onClick={() => setRunnerUpPhotoUrl('')}
+                                className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                                title="Remove photo"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </>
+                          ) : (
+                            <User className="w-7 h-7 text-slate-400" />
+                          )}
+                          {uploadingRunnerUpPhoto && (
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-[9px] font-mono">Uploading...</div>
+                          )}
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <label className="block text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                            📸 Runner-Up Athlete Photo
+                          </label>
+                          <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
+                            <Camera className="w-3.5 h-3.5" />
+                            <span>Upload Photo</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => e.target.files?.[0] && handleStudentPhotoUpload(e.target.files[0], 'runnerup')}
+                            />
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Runner-Up Academic Credentials */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                          <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Roll No</label>
+                          <input
+                            type="text"
+                            value={runnerUpRollNo}
+                            onChange={(e) => setRunnerUpRollNo(e.target.value)}
+                            placeholder="2201720200045"
+                            className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-blue-400/60 dark:border-blue-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Course / Branch</label>
+                          <input
+                            type="text"
+                            value={runnerUpCourse}
+                            onChange={(e) => setRunnerUpCourse(e.target.value)}
+                            placeholder="BCA"
+                            className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-blue-400/60 dark:border-blue-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Year / Sem</label>
+                          <input
+                            type="text"
+                            value={runnerUpYearSem}
+                            onChange={(e) => setRunnerUpYearSem(e.target.value)}
+                            placeholder="2nd Yr (4th Sem)"
+                            className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-blue-400/60 dark:border-blue-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Match Highlight Quote</label>
+                        <input
+                          type="text"
+                          value={runnerUpHighlights}
+                          onChange={(e) => setRunnerUpHighlights(e.target.value)}
+                          placeholder="e.g. Fought valiantly in tournament final"
+                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-blue-400/60 dark:border-blue-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                        />
                       </div>
                     </div>
                   </div>
@@ -1229,9 +1532,19 @@ export const SuperCoordinatorDashboardPage = () => {
                             <span>+5 PTS</span>
                           </div>
                           <div className="pt-1 space-y-1">
+                            {entry.winnerPhotoUrl && (
+                              <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-emerald-400 mb-1.5 shadow-2xs">
+                                <img src={entry.winnerPhotoUrl} alt="Winner" className="w-full h-full object-cover" />
+                              </div>
+                            )}
                             <p className="text-slate-900 dark:text-white font-extrabold text-sm">
                               👤 Winner Name: <span className="text-emerald-700 dark:text-emerald-300">{entry.winnerName || 'Winner'}</span>
                             </p>
+                            {entry.winnerRollNo && (
+                              <p className="text-slate-600 dark:text-slate-400 font-mono text-[11px]">
+                                🎓 Roll No: <span className="font-bold text-slate-800 dark:text-slate-200">{entry.winnerRollNo}</span> {entry.winnerCourse && `(${entry.winnerCourse})`}
+                              </p>
+                            )}
                             <p className="text-slate-700 dark:text-slate-300 font-bold">
                               🛡️ Team Name: <span className="text-slate-900 dark:text-white">{entry.winnerTeamName || entry.winnerName || 'N/A'}</span>
                             </p>
@@ -1248,9 +1561,19 @@ export const SuperCoordinatorDashboardPage = () => {
                             <span>+3 PTS</span>
                           </div>
                           <div className="pt-1 space-y-1">
+                            {entry.runnerUpPhotoUrl && (
+                              <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-blue-400 mb-1.5 shadow-2xs">
+                                <img src={entry.runnerUpPhotoUrl} alt="Runner-Up" className="w-full h-full object-cover" />
+                              </div>
+                            )}
                             <p className="text-slate-900 dark:text-white font-extrabold text-sm">
                               👤 Runner-Up Name: <span className="text-blue-700 dark:text-blue-300">{entry.runnerUpName || 'Runner-Up'}</span>
                             </p>
+                            {entry.runnerUpRollNo && (
+                              <p className="text-slate-600 dark:text-slate-400 font-mono text-[11px]">
+                                🎓 Roll No: <span className="font-bold text-slate-800 dark:text-slate-200">{entry.runnerUpRollNo}</span> {entry.runnerUpCourse && `(${entry.runnerUpCourse})`}
+                              </p>
+                            )}
                             <p className="text-slate-700 dark:text-slate-300 font-bold">
                               🛡️ Team Name: <span className="text-slate-900 dark:text-white">{entry.runnerUpTeamName || entry.runnerUpName || 'N/A'}</span>
                             </p>

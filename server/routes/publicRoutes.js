@@ -7,7 +7,7 @@ import {
 } from '../controllers/registrationController.js';
 import { getHeroSlidesDB, getCommitteeDB } from '../controllers/adminController.js';
 import { getLeaderboardStandings } from '../services/leaderboardService.js';
-import { queryDb, pool } from '../config/db.js';
+import { queryDb, pool, prisma } from '../config/db.js';
 import { extractYouTubeVideoIdBackend, inMemoryCoordinatorEvents } from '../controllers/coordinatorController.js';
 import { publicReadLimiter, apiLimiter } from '../middleware/rateLimiters.js';
 import { computeEffectiveRegistrationStatus } from '../utils/registrationLifecycle.js';
