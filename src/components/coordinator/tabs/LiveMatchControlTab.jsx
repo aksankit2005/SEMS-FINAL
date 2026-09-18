@@ -222,7 +222,24 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
     const active = liveAssignments[venue];
     if (!active) return;
 
-    const winnerName = active.winner || (active.score1 >= active.score2 ? active.team1 : active.team2);
+    let winnerName = active.winner;
+    if (!winnerName) {
+      const sWon1 = active.setsWon1 || 0;
+      const sWon2 = active.setsWon2 || 0;
+      const s1 = active.score1 || 0;
+      const s2 = active.score2 || 0;
+      let defWinner = active.team1;
+      if (sWon1 > sWon2 || (sWon1 === sWon2 && s1 > s2)) defWinner = active.team1;
+      else if (sWon2 > sWon1 || (sWon1 === sWon2 && s2 > s1)) defWinner = active.team2;
+
+      const choice = window.prompt(
+        `Declare Winner for "${active.team1} vs ${active.team2}":\n1: ${active.team1}\n2: ${active.team2}\n(Or enter winner name):`,
+        defWinner
+      );
+      if (!choice || !choice.trim()) return;
+      winnerName = choice.trim() === '1' ? active.team1 : choice.trim() === '2' ? active.team2 : choice.trim();
+    }
+
     const completedObj = {
       ...active,
       winner: winnerName,
@@ -245,7 +262,35 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
     }
     existingList = [completedObj, ...existingList.filter((item) => item.id !== completedObj.id)];
     localStorage.setItem(resultsKey, JSON.stringify(existingList));
+
+    // Clean from active live matches in localStorage
+    const matchId = active.id;
+    const activeKey = `sems_active_live_matches_${assignedSport}`;
+    const savedSportActive = localStorage.getItem(activeKey);
+    if (savedSportActive) {
+      try {
+        const parsed = JSON.parse(savedSportActive);
+        delete parsed[venue];
+        Object.keys(parsed).forEach((k) => {
+          if (parsed[k]?.id === matchId) delete parsed[k];
+        });
+        localStorage.setItem(activeKey, JSON.stringify(parsed));
+      } catch (e) {}
+    }
+
+    const savedGlobalActive = localStorage.getItem('sems_active_live_matches');
+    if (savedGlobalActive) {
+      try {
+        const parsed = JSON.parse(savedGlobalActive);
+        delete parsed[matchId];
+        delete parsed[venue];
+        localStorage.setItem('sems_active_live_matches', JSON.stringify(parsed));
+      } catch (e) {}
+    }
+
     window.dispatchEvent(new Event('sems_results_updated'));
+    window.dispatchEvent(new Event('sems_matches_updated'));
+    window.dispatchEvent(new Event('storage'));
 
     onUpdateMatchScore(active.id, { status: 'COMPLETED', score1: active.score1, score2: active.score2 });
     setLiveAssignments((prev) => {
@@ -546,15 +591,34 @@ export const LiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
                 delete copy[activeControllerVenue];
                 return copy;
               });
-              // Purge from active live matches key in localStorage
+              // Purge from active live matches key in localStorage by match ID and venue
               const savedActiveStr = localStorage.getItem('sems_active_live_matches');
               if (savedActiveStr) {
                 try {
                   const activeMap = JSON.parse(savedActiveStr);
+                  delete activeMap[id];
                   delete activeMap[activeControllerVenue];
                   localStorage.setItem('sems_active_live_matches', JSON.stringify(activeMap));
                 } catch (e) {}
               }
+
+              const activeKey = `sems_active_live_matches_${assignedSport}`;
+              const savedSportActive = localStorage.getItem(activeKey);
+              if (savedSportActive) {
+                try {
+                  const parsed = JSON.parse(savedSportActive);
+                  delete parsed[activeControllerVenue];
+                  Object.keys(parsed).forEach((k) => {
+                    if (parsed[k]?.id === id) delete parsed[k];
+                  });
+                  localStorage.setItem(activeKey, JSON.stringify(parsed));
+                } catch (e) {}
+              }
+
+              window.dispatchEvent(new Event('sems_results_updated'));
+              window.dispatchEvent(new Event('sems_matches_updated'));
+              window.dispatchEvent(new Event('storage'));
+
               onUpdateMatchScore(id, payload);
             } else {
               setLiveAssignments((prev) => ({

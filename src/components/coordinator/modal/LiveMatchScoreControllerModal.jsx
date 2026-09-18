@@ -491,125 +491,131 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
   };
 
   // Finish Match Action directly from Controller for Sets Sports
-const handleFinishMatch = async () => {
-  const defaultTeam1 = match?.team1 || 'Player 1';
-  const defaultTeam2 = match?.team2 || 'Player 2';
+  // Finish Match Action directly from Controller for Sets Sports
+  const handleFinishMatch = async () => {
+    const defaultTeam1 = match?.team1 || 'Player 1';
+    const defaultTeam2 = match?.team2 || 'Player 2';
 
-  const currentSets = Array.isArray(setsHistory) ? setsHistory : parseSetsHistory(setsHistory);
-  const lockedSets = currentSets.filter((s) => s && s.isLocked);
+    const currentSets = Array.isArray(setsHistory) ? setsHistory : parseSetsHistory(setsHistory);
+    const activeSets = currentSets.filter((s) => s && (s.isLocked || (s.score1 > 0 || s.score2 > 0)));
 
-  const calculatedSetsWon1 = lockedSets.filter(
-    (s) => s && s.winner === match?.team1
-  ).length;
+    const calculatedSetsWon1 = currentSets.filter(
+      (s) => s && (s.winner === match?.team1 || (s.isLocked && s.score1 > s.score2))
+    ).length;
 
-  const calculatedSetsWon2 = lockedSets.filter(
-    (s) => s && s.winner === match?.team2
-  ).length;
+    const calculatedSetsWon2 = currentSets.filter(
+      (s) => s && (s.winner === match?.team2 || (s.isLocked && s.score2 > s.score1))
+    ).length;
 
-  const requiredSets =
-    format === 'Best of 3 Sets' ? 2 : 3;
+    let suggestedWinner = defaultTeam1;
+    if (calculatedSetsWon1 > calculatedSetsWon2) {
+      suggestedWinner = defaultTeam1;
+    } else if (calculatedSetsWon2 > calculatedSetsWon1) {
+      suggestedWinner = defaultTeam2;
+    } else if (score1 > score2) {
+      suggestedWinner = defaultTeam1;
+    } else if (score2 > score1) {
+      suggestedWinner = defaultTeam2;
+    }
 
-  let winnerName = null;
-
-  if (calculatedSetsWon1 >= requiredSets) {
-    winnerName = defaultTeam1;
-  }
-
-  if (calculatedSetsWon2 >= requiredSets) {
-    winnerName = defaultTeam2;
-  }
-
-  if (!winnerName) {
-    addToast(
-      `Match cannot be finished yet. A player must win ${requiredSets} locked sets.`,
-      'error'
+    const winnerChoice = window.prompt(
+      `Finish Match: Declare Winner for "${defaultTeam1} vs ${defaultTeam2}":\n1: ${defaultTeam1}\n2: ${defaultTeam2}\n(Or enter winner name manually):`,
+      suggestedWinner
     );
-    return;
-  }
+    if (!winnerChoice || !winnerChoice.trim()) return;
 
-  if (
-    !window.confirm(
-      `Finish match and declare winner as "${winnerName}"?`
-    )
-  ) {
-    return;
-  }
+    let winnerName = winnerChoice.trim();
+    if (winnerChoice === '1') winnerName = defaultTeam1;
+    else if (winnerChoice === '2') winnerName = defaultTeam2;
 
-  const matchId =
-    match?.id ||
-    `M${Math.floor(100000 + Math.random() * 900000)}`;
+    const matchId = match?.id || `M${Math.floor(100000 + Math.random() * 900000)}`;
 
-  const setsBreakdownStr = lockedSets
-    .map(
-      (s) =>
-        `S${s.set}: ${s.score1}-${s.score2}`
-    )
-    .join(', ');
+    const setsBreakdownStr = activeSets
+      .map((s) => `S${s.set}: ${s.score1 || 0}-${s.score2 || 0}`)
+      .join(', ');
 
-  const scoreSummary =
-    `${calculatedSetsWon1} - ${calculatedSetsWon2} Sets` +
-    (setsBreakdownStr
-      ? ` (${setsBreakdownStr})`
-      : '');
+    const scoreSummary = activeSets.length > 0
+      ? `${calculatedSetsWon1} - ${calculatedSetsWon2} Sets${setsBreakdownStr ? ` (${setsBreakdownStr})` : ''}`
+      : `Winner: ${winnerName}`;
 
-  const completedObj = {
-    ...match,
-    id: matchId,
-    winner: winnerName,
-    score1,
-    score2,
-    setsWon1: calculatedSetsWon1,
-    setsWon2: calculatedSetsWon2,
-    setsHistory,
-    playerStats1,
-    playerStats2,
-    scoreSummary,
-    status: 'COMPLETED',
-    tableNumber: null,
-    isLiveStreaming: false,
-    completedAt: new Date().toISOString(),
-  };
+    const sportKey = (match?.sportId || match?.sportName || match?.assignedSport || 'badminton').toLowerCase().replace(/_/g, '-');
 
-  try {
-    await coordinatorApi.completeMatch(
-      matchId,
-      completedObj
-    );
+    const completedObj = {
+      ...match,
+      id: matchId,
+      sportId: sportKey,
+      sport: sportKey,
+      winner: winnerName,
+      score1,
+      score2,
+      setsWon1: calculatedSetsWon1,
+      setsWon2: calculatedSetsWon2,
+      setsHistory: currentSets,
+      playerStats1,
+      playerStats2,
+      scoreSummary,
+      status: 'COMPLETED',
+      tableNumber: null,
+      isLiveStreaming: false,
+      completedAt: new Date().toISOString(),
+    };
 
     try {
-      generateMatchResultPDF(
-        completedObj,
-        match?.sportName || 'Badminton'
-      );
-    } catch (pdfErr) {
-      console.warn(
-        'PDF export error:',
-        pdfErr
-      );
+      await coordinatorApi.completeMatch(matchId, completedObj);
+
+      const resultsKey = `sems_completed_results_${sportKey}`;
+      const existingStr = localStorage.getItem(resultsKey);
+      let existingList = [];
+      if (existingStr) {
+        try { existingList = JSON.parse(existingStr); } catch (e) {}
+      }
+      existingList = [completedObj, ...existingList.filter((item) => item.id !== matchId)];
+      localStorage.setItem(resultsKey, JSON.stringify(existingList));
+
+      // Also clean from active live matches in localStorage
+      const activeKey = `sems_active_live_matches_${sportKey}`;
+      const savedSportActive = localStorage.getItem(activeKey);
+      if (savedSportActive) {
+        try {
+          const parsed = JSON.parse(savedSportActive);
+          Object.keys(parsed).forEach((k) => {
+            if (parsed[k]?.id === matchId || k === venueName) delete parsed[k];
+          });
+          localStorage.setItem(activeKey, JSON.stringify(parsed));
+        } catch (e) {}
+      }
+
+      const savedGlobalActive = localStorage.getItem('sems_active_live_matches');
+      if (savedGlobalActive) {
+        try {
+          const parsed = JSON.parse(savedGlobalActive);
+          delete parsed[matchId];
+          if (venueName) delete parsed[venueName];
+          localStorage.setItem('sems_active_live_matches', JSON.stringify(parsed));
+        } catch (e) {}
+      }
+
+      window.dispatchEvent(new Event('sems_results_updated'));
+      window.dispatchEvent(new Event('sems_matches_updated'));
+      window.dispatchEvent(new Event('storage'));
+
+      try {
+        generateMatchResultPDF(completedObj, match?.sportName || 'Badminton');
+      } catch (pdfErr) {
+        console.warn('PDF export error:', pdfErr);
+      }
+
+      if (onMatchUpdated) {
+        onMatchUpdated(matchId, completedObj);
+      }
+
+      addToast(`🏆 Match Finished! Winner: ${winnerName}. Saved to Results section.`, 'success');
+      onClose();
+    } catch (err) {
+      console.error('Error finishing match:', err);
+      addToast('Failed to finish match. Please try again.', 'error');
     }
-
-    if (onMatchUpdated) {
-      onMatchUpdated(matchId, completedObj);
-    }
-
-    addToast(
-      `🏆 ${winnerName} won the match ${calculatedSetsWon1}-${calculatedSetsWon2} sets!`,
-      'success'
-    );
-
-    onClose();
-  } catch (err) {
-    console.error(
-      'Error finishing match:',
-      err
-    );
-
-    addToast(
-      'Failed to finish match. Please try again.',
-      'error'
-    );
-  }
-};
+  };
 
   // ─── DEDICATED CHESS WINNER SELECTION MODAL ─────────────────────────
   if (isChess) {

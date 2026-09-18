@@ -336,7 +336,10 @@ export const getSportResultExportConfig = (rawSportId) => {
         const setsWon1 = r.setsWon1 ?? details.setsWon1 ?? (r.score1 > r.score2 ? 2 : 0);
         const setsWon2 = r.setsWon2 ?? details.setsWon2 ?? (r.score2 > r.score1 ? 2 : 0);
         const sets = (Array.isArray(r.setsHistory) ? r.setsHistory : details.setsHistory) || [];
-        const winner = str(r.winner || r.winnerName || (setsWon1 >= setsWon2 ? t1 : t2), 'Winner');
+        const winner = str(
+          r.winner || r.winnerName || (setsWon1 > setsWon2 ? t1 : setsWon2 > setsWon1 ? t2 : (r.score1 > r.score2 ? t1 : r.score2 > r.score1 ? t2 : 'Declared Winner')),
+          'Winner'
+        );
         const winCollege = str(r.winnerCollege || details.winnerCollege || 'MPEC');
 
         return [
@@ -713,7 +716,7 @@ export const getSportResultDisplay = (r) => {
       format: format || (isTT ? 'SINGLES (Best of 5)' : 'SINGLES (Best of 3)'),
       category,
       date,
-      winner: winner || (setsWon1 >= setsWon2 ? team1 : team2),
+      winner: winner || (setsWon1 > setsWon2 ? team1 : setsWon2 > setsWon1 ? team2 : (r.score1 > r.score2 ? team1 : r.score2 > r.score1 ? team2 : 'Declared Winner')),
       mvp: mvp && mvp !== winner ? mvp : null,
       racket: {
         setsWon1,

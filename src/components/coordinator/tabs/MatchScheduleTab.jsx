@@ -105,6 +105,56 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
     return match ? match[1].trim() : teamStr.trim();
   };
 
+  const handleFinishSlot = async (matchItem) => {
+    if (!matchItem) return;
+    const name1 = getCleanTeamName(matchItem.team1) || 'Player 1';
+    const name2 = getCleanTeamName(matchItem.team2) || 'Player 2';
+
+    const winnerChoice = window.prompt(
+      `Finish Match: Select Winner for "${name1} vs ${name2}":\n1: ${name1}\n2: ${name2}\n(Or enter winner name manually):`,
+      name1
+    );
+    if (!winnerChoice || !winnerChoice.trim()) return;
+
+    let winnerName = winnerChoice.trim();
+    if (winnerChoice === '1') winnerName = name1;
+    else if (winnerChoice === '2') winnerName = name2;
+
+    const completedObj = {
+      ...matchItem,
+      status: 'COMPLETED',
+      winner: winnerName,
+      completedAt: new Date().toISOString(),
+      scoreSummary: `Winner: ${winnerName}`,
+    };
+
+    try {
+      await coordinatorApi.completeMatch(matchItem.id, completedObj);
+
+      const updated = matches.filter((m) => m.id !== matchItem.id);
+      onUpdateMatches(updated);
+      await coordinatorApi.saveMatches(updated);
+
+      const resultsKey = `sems_completed_results_${assignedSport}`;
+      const existingStr = localStorage.getItem(resultsKey);
+      let existingList = [];
+      if (existingStr) {
+        try { existingList = JSON.parse(existingStr); } catch (e) {}
+      }
+      existingList = [completedObj, ...existingList.filter((item) => item.id !== completedObj.id)];
+      localStorage.setItem(resultsKey, JSON.stringify(existingList));
+
+      window.dispatchEvent(new Event('sems_results_updated'));
+      window.dispatchEvent(new Event('sems_matches_updated'));
+      window.dispatchEvent(new Event('storage'));
+
+      addToast(`🏆 Match Finished! Winner: ${winnerName}. Moved to Results section.`, 'success');
+    } catch (err) {
+      console.error('Error finishing match from schedule:', err);
+      addToast('Failed to finish match. Please try again.', 'error');
+    }
+  };
+
   const handleAddSlot = async (e) => {
     e.preventDefault();
 

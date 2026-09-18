@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Trash2, Download, Filter, RefreshCw, FileSpreadsheet, Eye, X, Award } from 'lucide-react';
+import { Trophy, Trash2, Download, Filter, RefreshCw, FileSpreadsheet, Eye, X, Award, Edit2, Save } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { useConfirm } from '../../../context/ConfirmContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
@@ -12,6 +12,12 @@ export const ResultManagementTab = ({ user }) => {
   const { confirmDelete } = useConfirm();
   const [resultsList, setResultsList] = useState([]);
   const [selectedDetailResult, setSelectedDetailResult] = useState(null);
+  const [editingResult, setEditingResult] = useState(null);
+  const [editForm, setEditForm] = useState({
+    winner: '',
+    scoreSummary: '',
+    sets: []
+  });
 
   // Filter States
   const [selectedEvent, setSelectedEvent] = useState('ALL');
@@ -234,15 +240,102 @@ export const ResultManagementTab = ({ user }) => {
     }
   };
 
+  const handleOpenEdit = (r) => {
+    let sets = [];
+    if (Array.isArray(r.setsHistory) && r.setsHistory.length > 0) {
+      sets = JSON.parse(JSON.stringify(r.setsHistory));
+    } else {
+      sets = [
+        { set: 1, score1: r.score1 || 0, score2: r.score2 || 0 },
+        { set: 2, score1: 0, score2: 0 },
+        { set: 3, score1: 0, score2: 0 },
+      ];
+    }
+    setEditingResult(r);
+    setEditForm({
+      winner: r.winner || r.team1,
+      scoreSummary: r.scoreSummary || r.scoreText || '',
+      sets,
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingResult) return;
+
+    const currentSets = editForm.sets || [];
+    const setsWon1 = currentSets.filter((s) => Number(s.score1 || 0) > Number(s.score2 || 0)).length;
+    const setsWon2 = currentSets.filter((s) => Number(s.score2 || 0) > Number(s.score1 || 0)).length;
+
+    const setsBreakdownStr = currentSets
+      .filter((s) => Number(s.score1 || 0) > 0 || Number(s.score2 || 0) > 0)
+      .map((s) => `S${s.set}: ${s.score1}-${s.score2}`)
+      .join(', ');
+
+    const computedSummary = editForm.scoreSummary.trim() ||
+      (setsBreakdownStr ? `${setsWon1} - ${setsWon2} Sets (${setsBreakdownStr})` : `Winner: ${editForm.winner}`);
+
+    const updatedObj = {
+      ...editingResult,
+      winner: editForm.winner,
+      scoreSummary: computedSummary,
+      scoreText: computedSummary,
+      setsWon1,
+      setsWon2,
+      setsHistory: currentSets,
+      updatedAt: new Date().toISOString()
+    };
+
+    try {
+      await coordinatorApi.completeMatch(editingResult.id, updatedObj);
+    } catch (e) {
+      console.warn('Backend sync edit result fallback:', e);
+    }
+
+    const updatedList = resultsList.map((item) => (item.id === editingResult.id ? updatedObj : item));
+    setResultsList(updatedList);
+    localStorage.setItem(resultsKey, JSON.stringify(updatedList));
+
+    window.dispatchEvent(new Event('sems_results_updated'));
+    window.dispatchEvent(new Event('storage'));
+
+    addToast(`Updated match result #${editingResult.id}`, 'success');
+    setEditingResult(null);
+  };
+
   const handleDeleteResult = async (id) => {
     const isConfirmed = await confirmDelete({
       title: 'Delete Result Entry',
       message: 'Are you sure you want to delete this result entry?'
     });
     if (!isConfirmed) return;
+
+    try {
+      await coordinatorApi.deleteMatch(id);
+    } catch (e) {
+      console.warn('Backend delete match fallback:', e);
+    }
+
     const updated = resultsList.filter((r) => r.id !== id);
     setResultsList(updated);
     localStorage.setItem(resultsKey, JSON.stringify(updated));
+
+    // Register in sems_deleted_result_ids so public Results page filters it out permanently
+    try {
+      const deletedStr = localStorage.getItem('sems_deleted_result_ids');
+      let delList = [];
+      if (deletedStr) {
+        try { delList = JSON.parse(deletedStr); } catch (e) {}
+      }
+      if (!delList.includes(id)) {
+        delList.push(id);
+        localStorage.setItem('sems_deleted_result_ids', JSON.stringify(delList));
+      }
+    } catch (e) {}
+
+    window.dispatchEvent(new Event('sems_results_updated'));
+    window.dispatchEvent(new Event('sems_matches_updated'));
+    window.dispatchEvent(new Event('storage'));
+
     addToast('Result entry deleted', 'info');
   };
 
@@ -550,23 +643,36 @@ export const ResultManagementTab = ({ user }) => {
                           <button
                             onClick={() => generateMatchResultPDF(r, user?.sportName || user?.assignedSport || (isChess ? 'Chess' : 'Badminton'))}
                             className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-500/20 dark:hover:bg-purple-500/30 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 font-bold text-xs transition flex items-center gap-1 cursor-pointer"
+                            title="Download PDF"
                           >
                             <Download className="w-3.5 h-3.5" />
                             <span>PDF</span>
                           </button>
 
-                          {isBadminton ? (
+                          {isBadminton && (
                             <button
                               onClick={() => setSelectedDetailResult(r)}
-                              className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-200 dark:border-slate-700 transition flex items-center gap-1 cursor-pointer"
+                              title="View Details"
                             >
                               <Eye className="w-3.5 h-3.5" />
-                              <span>View Details</span>
+                              <span>Details</span>
                             </button>
-                          ) : (
+                          )}
+
+                          <button
+                            onClick={() => handleOpenEdit(r)}
+                            className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-sm transition flex items-center gap-1 cursor-pointer"
+                            title="Edit Result"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                            <span>Edit</span>
+                          </button>
+
+                          {!isBadminton && (
                             <button
                               onClick={() => handleSetWinner(r.id, display.winner || r.team1)}
-                              className={`px-4 py-2 rounded-xl text-white font-bold text-xs shadow-md transition cursor-pointer ${isChess
+                              className={`px-3 py-1.5 rounded-xl text-white font-bold text-xs shadow-md transition cursor-pointer ${isChess
                                   ? 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/20'
                                   : 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/20'
                                 }`}
@@ -574,6 +680,14 @@ export const ResultManagementTab = ({ user }) => {
                               Set Winner
                             </button>
                           )}
+
+                          <button
+                            onClick={() => handleDeleteResult(r.id)}
+                            className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-white border border-rose-200 dark:border-rose-500/20 transition cursor-pointer"
+                            title="Delete Result"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -664,6 +778,138 @@ export const ResultManagementTab = ({ user }) => {
                 >
                   <Download className="w-4 h-4" />
                   <span>Download Official Result Sheet (PDF)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Match Result Modal */}
+      {editingResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in font-sans">
+          <div className="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <Edit2 className="w-5 h-5 text-indigo-500" />
+                <h3 className="text-base font-black text-slate-900 dark:text-white">Edit Match Result #{editingResult.id}</h3>
+              </div>
+              <button
+                onClick={() => setEditingResult(null)}
+                className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              {/* Event & Contestants */}
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800">
+                <p className="text-[10px] uppercase font-bold text-slate-400">{editingResult.eventTitle || 'Tournament Event'}</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                  {editingResult.team1} <span className="text-slate-400 font-normal">vs</span> {editingResult.team2}
+                </p>
+              </div>
+
+              {/* Declared Winner Selection */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Declared Winner</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditForm((prev) => ({ ...prev, winner: editingResult.team1 }))}
+                    className={`p-2.5 rounded-xl border text-xs font-bold transition text-left cursor-pointer ${
+                      editForm.winner === editingResult.team1
+                        ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500'
+                        : 'bg-white dark:bg-[#0B1120] border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-400'
+                    }`}
+                  >
+                    <span className="text-[10px] text-slate-400 block uppercase">Player 1</span>
+                    <span className="truncate block">{editingResult.team1}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditForm((prev) => ({ ...prev, winner: editingResult.team2 }))}
+                    className={`p-2.5 rounded-xl border text-xs font-bold transition text-left cursor-pointer ${
+                      editForm.winner === editingResult.team2
+                        ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500'
+                        : 'bg-white dark:bg-[#0B1120] border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-400'
+                    }`}
+                  >
+                    <span className="text-[10px] text-slate-400 block uppercase">Player 2</span>
+                    <span className="truncate block">{editingResult.team2}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Set Scores Editing */}
+              {editForm.sets && editForm.sets.length > 0 && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Set Scores (Player 1 - Player 2)</label>
+                  <div className="space-y-2">
+                    {editForm.sets.map((s, idx) => (
+                      <div key={idx} className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800">
+                        <span className="text-xs font-bold text-slate-500 w-14 shrink-0">Set {idx + 1}:</span>
+                        <div className="flex items-center gap-2 flex-1">
+                          <input
+                            type="number"
+                            min="0"
+                            value={s.score1}
+                            onChange={(e) => {
+                              const val = Math.max(0, parseInt(e.target.value) || 0);
+                              const updatedSets = editForm.sets.map((setObj, i) => i === idx ? { ...setObj, score1: val } : setObj);
+                              setEditForm((prev) => ({ ...prev, sets: updatedSets }));
+                            }}
+                            className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-center font-bold text-slate-900 dark:text-white"
+                          />
+                          <span className="text-slate-400 font-bold">-</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={s.score2}
+                            onChange={(e) => {
+                              const val = Math.max(0, parseInt(e.target.value) || 0);
+                              const updatedSets = editForm.sets.map((setObj, i) => i === idx ? { ...setObj, score2: val } : setObj);
+                              setEditForm((prev) => ({ ...prev, sets: updatedSets }));
+                            }}
+                            className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-center font-bold text-slate-900 dark:text-white"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Custom Score Summary / Note */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Score Summary</label>
+                <input
+                  type="text"
+                  value={editForm.scoreSummary}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, scoreSummary: e.target.value }))}
+                  placeholder="e.g. 2 - 1 Sets (S1: 21-18, S2: 19-21, S3: 21-15)"
+                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-white"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingResult(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEdit}
+                  className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Changes</span>
                 </button>
               </div>
             </div>
