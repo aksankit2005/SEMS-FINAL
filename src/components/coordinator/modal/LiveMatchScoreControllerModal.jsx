@@ -75,24 +75,6 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
   const [maxSets, setMaxSets] = useState(() => match?.maxSets || (isKhoKho ? 2 : format === 'Best of 3 Sets' ? 3 : 5));
   const targetSetsToWin = isKhoKho ? 2 : format === 'Best of 3 Sets' ? 2 : 3;
 
-  const [score1, setScore1] = useState(() => {
-    if (isKabaddi && playerStats1 && playerStats1.length > 0) {
-      return playerStats1.reduce((sum, p) => sum + (p.total || 0), 0);
-    }
-    return match?.score1 || 0;
-  });
-
-  const [score2, setScore2] = useState(() => {
-    if (isKabaddi && playerStats2 && playerStats2.length > 0) {
-      return playerStats2.reduce((sum, p) => sum + (p.total || 0), 0);
-    }
-    return match?.score2 || 0;
-  });
-
-  const [activeTurn, setActiveTurn] = useState(match?.activeTurn || 1);
-  const [currentSetIndex, setCurrentSetIndex] = useState(match?.currentSet || 1);
-  const [isPaused, setIsPaused] = useState(match?.isPaused || false);
-
   const parseSetsHistory = (raw) => {
     if (typeof raw === 'string') {
       try {
@@ -113,7 +95,44 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
     ];
   };
 
-  const [setsHistory, setSetsHistory] = useState(() => parseSetsHistory(match?.setsHistory));
+  const initialParsedSets = parseSetsHistory(match?.setsHistory);
+  const firstUnlocked = initialParsedSets.find((s) => !s.isLocked);
+  const matchCurrentSet = match?.currentSet;
+  const currentSetEntry = initialParsedSets.find((s) => s.set === matchCurrentSet);
+
+  // If match.currentSet points to an already locked set, automatically advance to first unlocked set
+  const initialCurrentSetIndex = (() => {
+    if (currentSetEntry && currentSetEntry.isLocked) {
+      return firstUnlocked ? firstUnlocked.set : (matchCurrentSet || 1);
+    }
+    return matchCurrentSet || (firstUnlocked ? firstUnlocked.set : 1);
+  })();
+
+  const [score1, setScore1] = useState(() => {
+    if (isKabaddi && playerStats1 && playerStats1.length > 0) {
+      return playerStats1.reduce((sum, p) => sum + (p.total || 0), 0);
+    }
+    if (currentSetEntry && currentSetEntry.isLocked) {
+      return firstUnlocked ? (firstUnlocked.score1 || 0) : 0;
+    }
+    return match?.score1 || 0;
+  });
+
+  const [score2, setScore2] = useState(() => {
+    if (isKabaddi && playerStats2 && playerStats2.length > 0) {
+      return playerStats2.reduce((sum, p) => sum + (p.total || 0), 0);
+    }
+    if (currentSetEntry && currentSetEntry.isLocked) {
+      return firstUnlocked ? (firstUnlocked.score2 || 0) : 0;
+    }
+    return match?.score2 || 0;
+  });
+
+  const [activeTurn, setActiveTurn] = useState(match?.activeTurn || 1);
+  const [currentSetIndex, setCurrentSetIndex] = useState(initialCurrentSetIndex);
+  const [isPaused, setIsPaused] = useState(match?.isPaused || false);
+
+  const [setsHistory, setSetsHistory] = useState(initialParsedSets);
 
   const [historyStack, setHistoryStack] = useState([]);
   const [showLockDialog, setShowLockDialog] = useState(null);
@@ -269,21 +288,22 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
     });
     setSetsHistory(updatedSets);
 
-    syncToServer({ score1: newS1, score2: newS2, setsHistory: updatedSets });
+    syncToServer({ score1: newS1, score2: newS2, currentSet: currentSetIndex, setsHistory: updatedSets });
   };
 
   // Lock Set Action
   const handleLockSetConfirm = (targetSetIndex = currentSetIndex) => {
+    const actualTargetSetIndex = (typeof targetSetIndex === 'number') ? targetSetIndex : (showLockDialog?.setNum || currentSetIndex);
     const currentSets = Array.isArray(setsHistory) ? setsHistory : parseSetsHistory(setsHistory);
-    const s1 = targetSetIndex === currentSetIndex ? score1 : (currentSets.find((s) => s.set === targetSetIndex)?.score1 || 0);
-    const s2 = targetSetIndex === currentSetIndex ? score2 : (currentSets.find((s) => s.set === targetSetIndex)?.score2 || 0);
+    const s1 = actualTargetSetIndex === currentSetIndex ? score1 : (currentSets.find((s) => s.set === actualTargetSetIndex)?.score1 || 0);
+    const s2 = actualTargetSetIndex === currentSetIndex ? score2 : (currentSets.find((s) => s.set === actualTargetSetIndex)?.score2 || 0);
 
-    if (!showLockDialog && !window.confirm(`Lock Set ${targetSetIndex} score (${s1}-${s2})?`)) return;
+    if (!showLockDialog && !window.confirm(`Lock Set ${actualTargetSetIndex} score (${s1}-${s2})?`)) return;
 
     const winner = showLockDialog ? showLockDialog.winner : (s1 > s2 ? match.team1 : s2 > s1 ? match.team2 : 'TIE');
 
     const updatedSets = currentSets.map((s) => {
-      if (s.set === targetSetIndex) {
+      if (s.set === actualTargetSetIndex) {
         return { ...s, score1: s1, score2: s2, isLocked: true, winner };
       }
       return s;
@@ -296,11 +316,15 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
 
     setShowLockDialog(null);
 
+    let nextIndex = actualTargetSetIndex;
+    let nextS1 = s1;
+    let nextS2 = s2;
+
     if (isKhoKho) {
       const totP1 = updatedSets.reduce((sum, s) => sum + (s.score1 || 0), 0);
       const totP2 = updatedSets.reduce((sum, s) => sum + (s.score2 || 0), 0);
 
-      if (targetSetIndex >= maxSets) {
+      if (actualTargetSetIndex >= maxSets) {
         if (totP1 === totP2) {
           addToast(`⚖️ KHO-KHO MATCH TIED (${totP1} - ${totP2})! Click "➕ Add Extra Set / Tie-Breaker" below to play Set ${maxSets + 1}.`, 'warning');
         } else {
@@ -309,11 +333,13 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
           addToast(`🏆 ${winnerTeam} WON THE KHO-KHO MATCH (${totP1} - ${totP2})!`, 'success');
         }
       } else {
-        const nextIndex = targetSetIndex + 1;
+        nextIndex = actualTargetSetIndex + 1;
+        nextS1 = 0;
+        nextS2 = 0;
         setCurrentSetIndex(nextIndex);
         setScore1(0);
         setScore2(0);
-        addToast(`Set ${targetSetIndex} locked (${s1}-${s2}). Starting Set ${nextIndex} from 0-0!`, 'success');
+        addToast(`Set ${actualTargetSetIndex} locked (${s1}-${s2}). Starting Set ${nextIndex} from 0-0!`, 'success');
       }
     } else {
       if (newSetsWon1 >= targetSetsToWin) {
@@ -323,17 +349,26 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
         setMatchWinner(match.team2);
         addToast(`🏆 ${match.team2} WON THE MATCH (${newSetsWon2} - ${newSetsWon1})!`, 'success');
       } else {
-        if (targetSetIndex < maxSets) {
-          const nextIndex = targetSetIndex + 1;
+        if (actualTargetSetIndex < maxSets) {
+          nextIndex = actualTargetSetIndex + 1;
+          nextS1 = 0;
+          nextS2 = 0;
           setCurrentSetIndex(nextIndex);
           setScore1(0);
           setScore2(0);
-          addToast(`Set ${targetSetIndex} locked (${winner} won). Starting Set ${nextIndex} from 0-0!`, 'success');
+          addToast(`Set ${actualTargetSetIndex} locked (${winner} won). Starting Set ${nextIndex} from 0-0!`, 'success');
         }
       }
     }
 
-    syncToServer({ setsHistory: updatedSets, setsWon1: newSetsWon1, setsWon2: newSetsWon2 });
+    syncToServer({
+      currentSet: nextIndex,
+      score1: nextS1,
+      score2: nextS2,
+      setsHistory: updatedSets,
+      setsWon1: newSetsWon1,
+      setsWon2: newSetsWon2
+    });
   };
 
   // Unlock Set Action
@@ -342,6 +377,7 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
     if (!reason) return;
 
     const currentSets = Array.isArray(setsHistory) ? setsHistory : parseSetsHistory(setsHistory);
+    const targetSet = currentSets.find((s) => s.set === setNum);
     const updatedSets = currentSets.map((s) => {
       if (s.set === setNum) {
         return { ...s, isLocked: false };
@@ -349,10 +385,26 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
       return s;
     });
 
+    const newSetsWon1 = updatedSets.filter((s) => s && s.isLocked && s.winner === match?.team1).length;
+    const newSetsWon2 = updatedSets.filter((s) => s && s.isLocked && s.winner === match?.team2).length;
+
+    const restoredS1 = targetSet ? (targetSet.score1 || 0) : score1;
+    const restoredS2 = targetSet ? (targetSet.score2 || 0) : score2;
+
     setSetsHistory(updatedSets);
     setCurrentSetIndex(setNum);
+    setScore1(restoredS1);
+    setScore2(restoredS2);
+    setMatchWinner(null);
     addToast(`Set ${setNum} unlocked for referee correction`, 'warning');
-    syncToServer({ setsHistory: updatedSets });
+    syncToServer({
+      currentSet: setNum,
+      score1: restoredS1,
+      score2: restoredS2,
+      setsHistory: updatedSets,
+      setsWon1: newSetsWon1,
+      setsWon2: newSetsWon2
+    });
   };
 
   // Reset Match Action
