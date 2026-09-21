@@ -16,7 +16,8 @@ export const SportCard = ({ sport, onRegisterSelect }) => {
 
   const regStatus = computeEffectiveRegistrationStatus({
     status: sport.status || 'Published',
-    registrationOpen: sport.registrationOpen !== false,
+    registrationOpen: sport.registrationOpen !== false && sport.allowRegistrations !== false,
+    allowRegistrations: sport.allowRegistrations,
     regStartDate: startDate,
     regEndDate: endDate,
     registeredCount: sport.registeredCount || sport.participantsCount,

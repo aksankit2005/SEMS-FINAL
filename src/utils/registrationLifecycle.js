@@ -98,6 +98,22 @@ export function computeEffectiveRegistrationStatus(event, now = new Date()) {
   const isCancelled = normalizedStatus === 'cancelled';
   const isEventActive = !isDraft && !isCompleted && !isCancelled;
 
+  // 1b. Global Registration Freeze Check (from Admin Portal)
+  if (event.allowRegistrations === false || event.allowRegistrations === 'false' || event.globalRegistrationsOpen === false) {
+    return {
+      effectiveRegistrationOpen: false,
+      effectiveRegistrationClosed: true,
+      isDeadlinePassed: false,
+      isStarted: false,
+      canReopen: false,
+      canScheduleFixtures: false,
+      code: 'CLOSED_BY_ADMIN',
+      label: 'Closed by Admin',
+      badgeStyle: 'bg-rose-500/20 text-rose-400 border-rose-500/40',
+      reason: 'Student registrations are currently paused portal-wide by Central Administration.'
+    };
+  }
+
   // 2. Manual Toggle Check
   const isManualOpen = event.registrationOpen !== false && event.registrationOpen !== 'false' && event.registrationOpen !== 0 && normalizedStatus !== 'closed';
 

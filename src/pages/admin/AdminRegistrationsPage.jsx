@@ -22,7 +22,9 @@ import {
   FileText,
   Calendar,
   Layers,
-  Users
+  Users,
+  Lock,
+  Unlock
 } from 'lucide-react';
 
 export const AdminRegistrationsPage = () => {
@@ -110,6 +112,28 @@ export const AdminRegistrationsPage = () => {
       addToast(err.message || 'Failed to delete item', 'error');
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  // Toggle Registration Open/Closed for a Coordinator Event
+  const [togglingEventId, setTogglingEventId] = useState(null);
+
+  const handleToggleEventRegistration = async (evt) => {
+    const isCurrentlyOpen = evt.registrationOpen !== false;
+    const nextState = !isCurrentlyOpen;
+    setTogglingEventId(evt.id);
+    try {
+      await adminApi.toggleEventRegistration(evt.id, nextState);
+      setCoordinatorEvents(prev => prev.map(item => item.id === evt.id ? { ...item, registrationOpen: nextState } : item));
+      if (!nextState) {
+        addToast(`🔒 Registration closed for "${evt.eventTitle || evt.sportName}".`, 'warning');
+      } else {
+        addToast(`🔓 Registration reopened for "${evt.eventTitle || evt.sportName}".`, 'success');
+      }
+    } catch (err) {
+      addToast(err.message || 'Failed to toggle event registration status', 'error');
+    } finally {
+      setTogglingEventId(null);
     }
   };
 
@@ -653,24 +677,59 @@ export const AdminRegistrationsPage = () => {
                         })()}
                       </td>
                       <td className="py-3 px-3 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-0.5 text-[10px] font-bold rounded ${
-                            evt.status === 'Published'
-                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
-                          }`}
-                        >
-                          {evt.status || 'Published'}
-                        </span>
+                        <div className="flex flex-col gap-1 items-start">
+                          <span
+                            className={`px-2 py-0.5 text-[10px] font-bold rounded ${
+                              evt.status === 'Published'
+                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                            }`}
+                          >
+                            {evt.status || 'Published'}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 text-[10px] font-bold rounded ${
+                              evt.registrationOpen !== false
+                                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                                : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                            }`}
+                          >
+                            {evt.registrationOpen !== false ? '● Reg Open' : '○ Reg Closed'}
+                          </span>
+                        </div>
                       </td>
-                      <td className="py-3 px-3 whitespace-nowrap text-right">
+                      <td className="py-3 px-3 whitespace-nowrap text-right space-x-2">
+                        <button
+                          onClick={() => handleToggleEventRegistration(evt)}
+                          disabled={togglingEventId === evt.id}
+                          className={`px-3 py-1.5 rounded-lg border font-bold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 ${
+                            evt.registrationOpen !== false
+                              ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                              : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                          }`}
+                          title={evt.registrationOpen !== false ? 'Click to Turn OFF Registration' : 'Click to Turn ON Registration'}
+                        >
+                          {togglingEventId === evt.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : evt.registrationOpen !== false ? (
+                            <>
+                              <Lock className="w-3.5 h-3.5" />
+                              <span>Close Reg</span>
+                            </>
+                          ) : (
+                            <>
+                              <Unlock className="w-3.5 h-3.5" />
+                              <span>Open Reg</span>
+                            </>
+                          )}
+                        </button>
                         <button
                           onClick={() => setDeletingItem({ type: 'coordinator_event', item: evt })}
-                          className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-bold text-xs flex items-center gap-1 ml-auto transition-colors cursor-pointer"
+                          className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-bold text-xs inline-flex items-center gap-1 transition-colors cursor-pointer"
                           title="Delete Event Registration from everywhere"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
-                          <span>Delete Event</span>
+                          <span>Delete</span>
                         </button>
                       </td>
                     </tr>

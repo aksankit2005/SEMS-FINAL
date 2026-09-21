@@ -6,6 +6,7 @@ import { SPORTS_CONFIG, SPORT_PLAYER_BOUNDS, resolveSportKey } from '../data/spo
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { coordinatorApi } from '../services/coordinatorApi';
+import { adminApi } from '../services/adminApi';
 import { RazorpayModal } from '../components/registration/RazorpayModal';
 
 // Import newly created modular components
@@ -205,6 +206,21 @@ export const RegistrationPage = () => {
   const [showRazorpayModal, setShowRazorpayModal] = useState(false);
   const [rulesModalSport, setRulesModalSport] = useState(null);
 
+  // Global Admin Portal Settings (e.g. allowRegistrations)
+  const [globalSettings, setGlobalSettings] = useState(() => {
+    try {
+      const cached = localStorage.getItem('sems_admin_settings');
+      return cached ? JSON.parse(cached) : { allowRegistrations: true };
+    } catch (e) {
+      return { allowRegistrations: true };
+    }
+  });
+
+  const isGlobalRegistrationClosed =
+    globalSettings?.allowRegistrations === false ||
+    globalSettings?.allowRegistrations === 'false' ||
+    globalSettings?.allowRegistrations === 0;
+
   useEffect(() => {
     const fetchCoordinatorEvents = async () => {
       try {
@@ -215,12 +231,41 @@ export const RegistrationPage = () => {
       }
     };
 
-    fetchCoordinatorEvents();
+    const fetchAdminSettings = async () => {
+      try {
+        const s = await adminApi.getSettings();
+        if (s) {
+          setGlobalSettings(s);
+          try {
+            localStorage.setItem('sems_admin_settings', JSON.stringify(s));
+          } catch (e) {}
+        }
+      } catch (err) {
+        console.warn('Error fetching admin settings in RegistrationPage', err);
+      }
+    };
 
-    const handleRefresh = () => fetchCoordinatorEvents();
+    fetchCoordinatorEvents();
+    fetchAdminSettings();
+
+    const handleRefresh = () => {
+      fetchCoordinatorEvents();
+      fetchAdminSettings();
+    };
+
+    const handleSettingsUpdate = (e) => {
+      if (e?.detail) {
+        setGlobalSettings(e.detail);
+      } else {
+        fetchAdminSettings();
+      }
+      fetchCoordinatorEvents();
+    };
+
     window.addEventListener('storage', handleRefresh);
     window.addEventListener('focus', handleRefresh);
     window.addEventListener('sems_events_updated', handleRefresh);
+    window.addEventListener('sems_settings_updated', handleSettingsUpdate);
 
     const interval = setInterval(fetchCoordinatorEvents, 60000);
 
@@ -230,6 +275,7 @@ export const RegistrationPage = () => {
       window.removeEventListener('storage', handleRefresh);
       window.removeEventListener('focus', handleRefresh);
       window.removeEventListener('sems_events_updated', handleRefresh);
+      window.removeEventListener('sems_settings_updated', handleSettingsUpdate);
       clearInterval(interval);
     };
   }, []);
@@ -243,7 +289,7 @@ export const RegistrationPage = () => {
         const limit = evt.maxRegistrations || 64;
         const slotsLeft = Math.max(0, limit - registered);
         const isUpcoming = evt.status === 'Upcoming' || evt.status === 'Coming Soon';
-        const isClosed = !isUpcoming && (evt.status === 'Closed' || slotsLeft === 0);
+        const isClosed = isGlobalRegistrationClosed || (!isUpcoming && (evt.status === 'Closed' || evt.registrationOpen === false || evt.effectiveRegistrationOpen === false || slotsLeft === 0));
 
         if (!isUpcoming && !isClosed) return 3; // 1st: Open
         if (isUpcoming) return 2;               // 2nd: Upcoming
@@ -601,8 +647,16 @@ export const RegistrationPage = () => {
 
   // Step 1 Validation
   const handleDetailsSubmit = () => {
+    if (isGlobalRegistrationClosed) {
+      addToast('Student registrations are currently paused portal-wide by Central Administration.', 'error');
+      return;
+    }
+
     if (activeSport) {
-      const regStatus = computeEffectiveRegistrationStatus(activeSport);
+      const regStatus = computeEffectiveRegistrationStatus({
+        ...activeSport,
+        allowRegistrations: !isGlobalRegistrationClosed
+      });
       if (!regStatus.effectiveRegistrationOpen) {
         addToast(regStatus.reason || 'Registration is closed for this event.', 'error');
         return;
@@ -739,8 +793,16 @@ export const RegistrationPage = () => {
   const handlePaymentSubmit = async (e) => {
     if (e) e.preventDefault();
 
+    if (isGlobalRegistrationClosed) {
+      addToast('Student registrations are currently paused portal-wide by Central Administration.', 'error');
+      return;
+    }
+
     if (activeSport) {
-      const regStatus = computeEffectiveRegistrationStatus(activeSport);
+      const regStatus = computeEffectiveRegistrationStatus({
+        ...activeSport,
+        allowRegistrations: !isGlobalRegistrationClosed
+      });
       if (!regStatus.effectiveRegistrationOpen) {
         addToast(regStatus.reason || 'Registration is closed for this event.', 'error');
         return;
@@ -778,7 +840,9 @@ export const RegistrationPage = () => {
               collegeName: formData.collegeName || 'MPEC',
               teamName: formData.teamName,
               entryFee: activeSport.entryFee,
-              subEvent: formData.selectedEvents?.[0] || formData.subEvent || ''
+              eventType: formData.eventType || '',
+              subEvent: formData.selectedEvents?.[0] || formData.subEvent || formData.eventType || '',
+              athleticsEvent: formData.selectedEvents?.[0] || formData.subEvent || ''
             }
           );
         } catch (orderErr) {
@@ -1035,6 +1099,21 @@ export const RegistrationPage = () => {
           </p>
         </div>
 
+        {/* Global Registration Lock Warning Banner */}
+        {isGlobalRegistrationClosed && (
+          <div className="max-w-3xl mx-auto p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 flex items-start gap-3.5 shadow-sm">
+            <div className="p-2 rounded-lg bg-rose-500/20 text-rose-600 dark:text-rose-400 shrink-0">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div className="space-y-1 text-left">
+              <h3 className="text-sm font-bold tracking-tight">Registrations Temporarily Paused</h3>
+              <p className="text-xs leading-relaxed text-rose-600 dark:text-rose-300/90">
+                Student and team registrations are currently paused portal-wide by Central Administration. New registrations cannot be submitted at this time.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Sports Filter Bar */}
         {!activeSport && (
           <div className="bg-[#FFFFFF] dark:bg-[#0D101A] p-3 rounded-lg border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
@@ -1119,7 +1198,7 @@ export const RegistrationPage = () => {
                     const limit = evt.maxRegistrations || 64;
                     const slotsLeft = Math.max(0, limit - registered);
                     const isUpcoming = evt.status === 'Upcoming' || evt.status === 'Coming Soon';
-                    const isClosed = !isUpcoming && (evt.status === 'Closed' || slotsLeft === 0);
+                    const isClosed = isGlobalRegistrationClosed || (!isUpcoming && (evt.status === 'Closed' || evt.registrationOpen === false || evt.effectiveRegistrationOpen === false || slotsLeft === 0));
 
                     const isRacket = isRacketSportCheck(evt);
                     const currentFee = typeof evt.entryFee === 'number' ? evt.entryFee : (typeof evt.teamFee === 'number' ? evt.teamFee : (evt.entryFee ?? evt.teamFee ?? 0));
@@ -1221,7 +1300,7 @@ export const RegistrationPage = () => {
                             </button>
 
                             <button
-                              disabled={isClosed || isUpcoming}
+                              disabled={isClosed || isUpcoming || isGlobalRegistrationClosed}
                               onClick={() => {
                                 const adaptedSport = {
                                   id: evt.sportId || evt.id,
@@ -1256,20 +1335,22 @@ export const RegistrationPage = () => {
                               className={`flex-1 py-2 rounded-lg font-semibold text-xs transition-all flex items-center justify-center gap-1.5 font-mono uppercase tracking-wider shadow-2xs ${
                                 isUpcoming
                                   ? 'bg-[#FFF8E1] dark:bg-[#A98B57]/20 text-[#A98B57] border border-[#FFE082] dark:border-[#A98B57]/30 cursor-not-allowed'
-                                  : isClosed
+                                  : isClosed || isGlobalRegistrationClosed
                                   ? 'bg-[#F4F2F7] dark:bg-[#121625] text-[#686370] dark:text-[#AAA4B8] cursor-not-allowed border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]'
                                   : 'bg-[#7156A5] hover:bg-[#5E4491] dark:bg-[#8B5CF6] dark:hover:bg-[#7C3AED] text-white cursor-pointer'
                               }`}
                             >
                               <span>
-                                {isUpcoming
+                                {isGlobalRegistrationClosed
+                                  ? '🔒 Closed'
+                                  : isUpcoming
                                   ? '⏳ Soon'
                                   : isClosed
                                   ? (slotsLeft === 0 ? 'Event Full' : 'Closed')
                                   : 'Register'
                                 }
                               </span>
-                              {!isUpcoming && !isClosed && <Trophy className="w-3.5 h-3.5" />}
+                              {!isUpcoming && !isClosed && !isGlobalRegistrationClosed && <Trophy className="w-3.5 h-3.5" />}
                             </button>
                           </div>
 
@@ -1333,7 +1414,15 @@ export const RegistrationPage = () => {
                   )}
                   {renderDetailsStep()}
                   <div className="flex justify-end pt-5 border-t border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]">
-                    {activeSport?.status === 'Upcoming' ? (
+                    {isGlobalRegistrationClosed ? (
+                      <button
+                        disabled
+                        className="px-6 py-2.5 rounded-lg bg-rose-500/20 text-rose-400 font-semibold text-sm border border-rose-500/30 cursor-not-allowed flex items-center gap-2"
+                      >
+                        <Lock className="w-4 h-4" />
+                        <span>Registrations Paused by Admin</span>
+                      </button>
+                    ) : activeSport?.status === 'Upcoming' ? (
                       <button
                         disabled
                         className="px-6 py-2.5 rounded-lg bg-[#FFF8E1] dark:bg-[#A98B57]/20 text-[#A98B57] font-semibold text-sm border border-[#FFE082] dark:border-[#A98B57]/30 cursor-not-allowed flex items-center gap-2"
@@ -1456,9 +1545,11 @@ export const RegistrationPage = () => {
 
                     <button
                       type="submit"
-                      disabled={isProcessingPayment || !formData.declarationAccepted}
+                      disabled={isProcessingPayment || !formData.declarationAccepted || isGlobalRegistrationClosed}
                       className={`px-6 py-2.5 rounded-lg font-semibold text-sm shadow-2xs flex items-center gap-2 transition-all ${
-                        formData.declarationAccepted && !isProcessingPayment
+                        isGlobalRegistrationClosed
+                          ? 'bg-rose-500/20 text-rose-400 cursor-not-allowed border border-rose-500/30'
+                          : formData.declarationAccepted && !isProcessingPayment
                           ? 'bg-[#7156A5] hover:bg-[#5E4491] dark:bg-[#8B5CF6] dark:hover:bg-[#7C3AED] text-white cursor-pointer'
                           : 'bg-[#F4F2F7] dark:bg-[#121625] text-[#686370] dark:text-[#AAA4B8] cursor-not-allowed border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]'
                       }`}
@@ -1467,6 +1558,11 @@ export const RegistrationPage = () => {
                         <>
                           <div className="w-4 h-4 rounded-full border-2 border-white/20 border-t-white animate-spin" />
                           <span>Processing Pay...</span>
+                        </>
+                      ) : isGlobalRegistrationClosed ? (
+                        <>
+                          <Lock className="w-4 h-4" />
+                          <span>Registrations Paused</span>
                         </>
                       ) : (
                         <>

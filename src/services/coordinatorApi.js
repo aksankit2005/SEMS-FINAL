@@ -934,6 +934,17 @@ async deleteMatch(id) {
     }
   },
 
+  // Clear all matches for current coordinator's sport from backend
+  async deleteAllMatches() {
+    try {
+      const res = await api.delete('/coordinator/matches');
+      return res.data;
+    } catch (e) {
+      console.warn('deleteAllMatches API error:', e?.response?.data?.message || e.message);
+      return null;
+    }
+  },
+
 
   // Fetch all registrations from backend server PostgreSQL DB
   async getRegistrations() {

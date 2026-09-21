@@ -419,6 +419,17 @@ router.get('/public/events', publicReadLimiter, async (req, res) => {
 
   // 1. Raw SQL QueryDb from PostgreSQL
   try {
+    let allowRegistrationsGlobal = true;
+    try {
+      const globalSetting = await prisma.systemSetting.findUnique({ where: { key: 'admin_portal_settings' } });
+      if (globalSetting && globalSetting.value) {
+        const val = globalSetting.value;
+        if (val.allowRegistrations === false || val.allowRegistrations === 'false' || val.allowRegistrations === 0) {
+          allowRegistrationsGlobal = false;
+        }
+      }
+    } catch (err) {}
+
     const dbRes = await queryDb(
       `SELECT 
         id, sport_id AS "sportId", sport_name AS "sportName", title, 
@@ -443,9 +454,10 @@ router.get('/public/events', publicReadLimiter, async (req, res) => {
           return;
         }
 
-        const isRegOpen = e.registrationOpen !== false && e.registrationOpen !== 'false' && e.registrationOpen !== 0;
+        const isRegOpen = allowRegistrationsGlobal && e.registrationOpen !== false && e.registrationOpen !== 'false' && e.registrationOpen !== 0;
         const regStatus = computeEffectiveRegistrationStatus({
           ...e,
+          allowRegistrations: allowRegistrationsGlobal,
           registrationOpen: isRegOpen
         });
 
@@ -519,9 +531,10 @@ router.get('/public/events', publicReadLimiter, async (req, res) => {
           const rawStatus = (e.status || 'Published').toLowerCase();
           if (rawStatus === 'draft') return;
 
-          const isRegOpen = e.registrationOpen !== false && e.registrationOpen !== 'false' && e.registrationOpen !== 0;
+          const isRegOpen = allowRegistrationsGlobal && e.registrationOpen !== false && e.registrationOpen !== 'false' && e.registrationOpen !== 0;
           const regStatus = computeEffectiveRegistrationStatus({
             ...e,
+            allowRegistrations: allowRegistrationsGlobal,
             registrationOpen: isRegOpen
           });
 
@@ -578,6 +591,7 @@ router.post('/public/register', apiLimiter, registerPublicEvent);
 // POST /api/public/razorpay-webhook - Razorpay lifecycle webhooks
 router.post('/public/razorpay-webhook', handleRazorpayWebhook);
 router.post('/razorpay/webhook', handleRazorpayWebhook);
+router.post('/razorpay-webhook', handleRazorpayWebhook);
 
 // GET /api/public/registration-pass/:id - Direct vector PDF pass stream / download
 router.get('/public/registration-pass/:id', publicReadLimiter, getRegistrationPassPDF);

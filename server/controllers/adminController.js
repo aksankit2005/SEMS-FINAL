@@ -446,6 +446,7 @@ export const getSuperCoordinatorEvents = async (req, res) => {
         max_registrations AS "maxRegistrations",
         registered_count AS "registeredCount",
         status,
+        registration_open AS "registrationOpen",
         reg_start_date AS "regStartDate",
         reg_end_date AS "regEndDate",
         tourn_start_date AS "tournStartDate",
@@ -482,6 +483,7 @@ export const getSuperCoordinatorEvents = async (req, res) => {
           maxPlayers: 1,
           category: e.category || 'Open',
           status: e.status || 'Published',
+          registrationOpen: e.registrationOpen !== false && e.registrationOpen !== 'false' && e.registrationOpen !== 0,
           registeredCount: Number(e.registeredCount || 0),
           maxRegistrations: Number(e.maxRegistrations || 64)
         });
@@ -519,6 +521,7 @@ export const getSuperCoordinatorEvents = async (req, res) => {
               maxPlayers: 1,
               category: e.category || 'Open',
               status: e.status || 'Published',
+              registrationOpen: e.registrationOpen !== false && e.registrationOpen !== 'false' && e.registrationOpen !== 0,
               registeredCount: Number(e.registeredCount || 0),
               maxRegistrations: Number(e.maxRegistrations || 64)
             });
@@ -568,6 +571,46 @@ export const deleteCoordinatorEventDB = async (req, res) => {
   } catch (err) {
     console.error('Error deleting coordinator event from DB:', err.message);
     return res.status(500).json({ message: 'Failed to delete coordinator event from database' });
+  }
+};
+
+export const toggleCoordinatorEventRegistrationDB = async (req, res) => {
+  const { id } = req.params;
+  const { registrationOpen } = req.body;
+
+  if (!id) {
+    return res.status(400).json({ message: 'Event ID is required' });
+  }
+
+  try {
+    const checkRes = await queryDb('SELECT id, title, registration_open FROM coordinator_event_items WHERE id = $1', [id]);
+    if (!checkRes || !checkRes.rows || checkRes.rows.length === 0) {
+      return res.status(404).json({ message: 'Coordinator event not found' });
+    }
+
+    const currentRegOpen = checkRes.rows[0].registration_open;
+    const newRegOpen = registrationOpen !== undefined ? Boolean(registrationOpen) : !currentRegOpen;
+
+    await queryDb('UPDATE coordinator_event_items SET registration_open = $1, updated_at = NOW() WHERE id = $2', [newRegOpen, id]);
+
+    logAuditEvent({
+      actorName: req.user?.username || 'Admin',
+      role: req.user?.role === 'ADMIN' ? 'ADMIN' : 'SUPER_COORDINATOR',
+      action: newRegOpen ? 'Event Registration Opened' : 'Event Registration Closed',
+      entity: `Event ${id} (${checkRes.rows[0].title || ''}) registration set to ${newRegOpen ? 'OPEN' : 'CLOSED'}`,
+      entityId: id,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    });
+
+    return res.json({
+      success: true,
+      id,
+      registrationOpen: newRegOpen,
+      message: `Event registration is now ${newRegOpen ? 'OPEN' : 'CLOSED'}`
+    });
+  } catch (err) {
+    console.error('Error toggling coordinator event registration:', err.message);
+    return res.status(500).json({ message: 'Failed to update event registration state' });
   }
 };
 

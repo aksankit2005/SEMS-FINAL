@@ -867,12 +867,77 @@ export const deleteMatch = async (req, res) => {
     return res.status(403).json({ message: 'Sport coordinator authorization missing.' });
   }
 
-  if (inMemoryCoordinatorMatches[sportId]) {
-    inMemoryCoordinatorMatches[sportId] = inMemoryCoordinatorMatches[sportId].filter((m) => m.id !== id);
-  }
+  const isTug = sportId.includes('tug');
+  let result = null;
 
-  const result = await queryDb('DELETE FROM live_matches WHERE id = $1 AND LOWER(sport_id) = $2 RETURNING id', [id, sportId]);
-  try { await queryDb('DELETE FROM matches WHERE id = $1 AND LOWER(sport_id) = $2', [id, sportId]); } catch (e) { }
+  if (isTug) {
+    // 1. Clean in-memory entries across all Tug of War variations
+    ['tug-of-war', 'tug_of_war', 'tug of war', 'tug'].forEach((k) => {
+      if (inMemoryCoordinatorMatches[k]) {
+        inMemoryCoordinatorMatches[k] = inMemoryCoordinatorMatches[k].filter((m) => m.id !== id);
+      }
+    });
+
+    // 2. Flexible delete from live_matches matching Tug of War variants
+    result = await queryDb(
+      `DELETE FROM live_matches 
+       WHERE id = $1 
+         AND (
+           LOWER(sport_id) = $2 
+           OR REPLACE(LOWER(sport_id), ' ', '-') = 'tug-of-war' 
+           OR REPLACE(LOWER(sport_id), '_', '-') = 'tug-of-war' 
+           OR LOWER(sport_id) LIKE '%tug%'
+           OR LOWER(match_title) LIKE '%tug%'
+           OR details::text ILIKE '%tug%'
+         ) 
+       RETURNING id`,
+      [id, sportId]
+    );
+
+    // 3. Fallback: If not deleted by query above, inspect match to ensure it belongs to Tug of War
+    if (!result || !result.rows || result.rows.length === 0) {
+      try {
+        const checkRes = await queryDb('SELECT id, sport_id, match_title, details FROM live_matches WHERE id = $1', [id]);
+        if (checkRes && checkRes.rows && checkRes.rows.length > 0) {
+          const row = checkRes.rows[0];
+          const rowSport = (row.sport_id || '').toLowerCase();
+          const rowTitle = (row.match_title || '').toLowerCase();
+          const rowDetails = JSON.stringify(row.details || {}).toLowerCase();
+          if (rowSport.includes('tug') || rowTitle.includes('tug') || rowDetails.includes('tug') || !row.sport_id) {
+            result = await queryDb('DELETE FROM live_matches WHERE id = $1 RETURNING id', [id]);
+          }
+        }
+      } catch (e) {
+        console.warn('Tug of War delete fallback check error:', e.message);
+      }
+    }
+
+    // 4. Also delete from matches table
+    try {
+      await queryDb(
+        `DELETE FROM matches 
+         WHERE id = $1 
+           AND (
+             LOWER(sport_id) = $2 
+             OR REPLACE(LOWER(sport_id), ' ', '-') = 'tug-of-war' 
+             OR REPLACE(LOWER(sport_id), '_', '-') = 'tug-of-war' 
+             OR LOWER(sport_id) LIKE '%tug%'
+             OR LOWER(match_title) LIKE '%tug%'
+             OR details::text ILIKE '%tug%'
+           )`,
+        [id, sportId]
+      );
+    } catch (e) { }
+
+  } else {
+    // Non-Tug of War sports: Exact original behavior
+    if (inMemoryCoordinatorMatches[sportId]) {
+      inMemoryCoordinatorMatches[sportId] = inMemoryCoordinatorMatches[sportId].filter((m) => m.id !== id);
+    }
+
+    result = await queryDb('DELETE FROM live_matches WHERE id = $1 AND LOWER(sport_id) = $2 RETURNING id', [id, sportId]);
+    try { await queryDb('DELETE FROM matches WHERE id = $1 AND LOWER(sport_id) = $2', [id, sportId]); } catch (e) { }
+  }
 
   if (result && result.rows && result.rows.length > 0) {
     logAuditEvent({
@@ -889,15 +954,43 @@ export const deleteMatch = async (req, res) => {
 };
 
 export const deleteAllMatches = async (req, res) => {
-  const sportId = req.user.assignedSport.toLowerCase();
+  const sportId = (req.user?.assignedSport || '').toLowerCase();
+  const isTug = sportId.includes('tug');
 
-  inMemoryCoordinatorMatches[sportId] = [];
+  if (isTug) {
+    ['tug-of-war', 'tug_of_war', 'tug of war', 'tug'].forEach((k) => {
+      inMemoryCoordinatorMatches[k] = [];
+    });
 
-  try {
-    await queryDb('DELETE FROM live_matches WHERE LOWER(sport_id) = $1', [sportId]);
-    await queryDb('DELETE FROM matches WHERE LOWER(sport_id) = $1', [sportId]);
-  } catch (e) {
-    console.warn('Backend deleteAllMatches query error:', e);
+    try {
+      await queryDb(
+        `DELETE FROM live_matches 
+         WHERE LOWER(sport_id) = $1 
+            OR REPLACE(LOWER(sport_id), ' ', '-') = 'tug-of-war' 
+            OR REPLACE(LOWER(sport_id), '_', '-') = 'tug-of-war' 
+            OR LOWER(sport_id) LIKE '%tug%'`,
+        [sportId]
+      );
+      await queryDb(
+        `DELETE FROM matches 
+         WHERE LOWER(sport_id) = $1 
+            OR REPLACE(LOWER(sport_id), ' ', '-') = 'tug-of-war' 
+            OR REPLACE(LOWER(sport_id), '_', '-') = 'tug-of-war' 
+            OR LOWER(sport_id) LIKE '%tug%'`,
+        [sportId]
+      );
+    } catch (e) {
+      console.warn('Backend deleteAllMatches query error:', e);
+    }
+  } else {
+    inMemoryCoordinatorMatches[sportId] = [];
+
+    try {
+      await queryDb('DELETE FROM live_matches WHERE LOWER(sport_id) = $1', [sportId]);
+      await queryDb('DELETE FROM matches WHERE LOWER(sport_id) = $1', [sportId]);
+    } catch (e) {
+      console.warn('Backend deleteAllMatches query error:', e);
+    }
   }
 
   return res.json({ success: true, message: `All matches cleared for ${sportId}` });

@@ -40,6 +40,7 @@ import {
   deleteCommitteeMemberDB,
   getAdminResultsDB,
   deleteCoordinatorEventDB,
+  toggleCoordinatorEventRegistrationDB,
   deleteMasterDataDB,
   bulkDeleteMasterDataDB
 } from '../controllers/adminController.js';
@@ -103,8 +104,10 @@ router.get('/admin/results', verifyAdminOrSuperCoordinatorToken, getAdminResults
 // SuperCoordinator & Admin Data & Leaderboard endpoints
 router.get('/admin/master-participants', verifyAdminToken, getMasterParticipants);
 router.get('/admin/coordinator-events', verifyAdminToken, getSuperCoordinatorEvents);
+router.patch('/admin/coordinator-events/:id/registration', verifyAdminToken, toggleCoordinatorEventRegistrationDB);
 router.get('/super-coordinator/participants', verifySuperCoordinatorToken, getMasterParticipants);
 router.get('/super-coordinator/events', verifySuperCoordinatorToken, getSuperCoordinatorEvents);
+router.patch('/super-coordinator/events/:id/registration', verifySuperCoordinatorToken, toggleCoordinatorEventRegistrationDB);
 router.delete('/super-coordinator/events/:id', verifySuperCoordinatorToken, deleteCoordinatorEventDB);
 router.delete('/admin/coordinator-events/:id', verifyAdminToken, deleteCoordinatorEventDB);
 router.delete('/admin/events/:id', verifyAdminToken, deleteCoordinatorEventDB);

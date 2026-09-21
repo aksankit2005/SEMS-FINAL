@@ -510,8 +510,27 @@ export const initDatabaseSchema = async () => {
     await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS email_status VARCHAR(20) DEFAULT 'pending';`);
     await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS email_error TEXT;`);
     await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS email_sent_at TIMESTAMP WITH TIME ZONE;`);
+    await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS order_id VARCHAR(100);`);
+    await queryDb(`CREATE INDEX IF NOT EXISTS idx_college_reg_order_id ON college_registrations(order_id);`);
 
-    // 8. Seed user account tables and password hashes
+    // 8. Ensure registration_orders table exists for pre-payment draft persistence & webhook auto-recovery
+    await queryDb(`
+      CREATE TABLE IF NOT EXISTS registration_orders (
+        id VARCHAR(100) PRIMARY KEY,
+        event_id VARCHAR(100),
+        sport_id VARCHAR(100),
+        fee_amount NUMERIC(10, 2) DEFAULT 0,
+        participant_data JSONB,
+        status VARCHAR(30) DEFAULT 'CREATED',
+        payment_id VARCHAR(100),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await queryDb(`CREATE INDEX IF NOT EXISTS idx_reg_orders_status ON registration_orders(status);`);
+    await queryDb(`CREATE INDEX IF NOT EXISTS idx_reg_orders_payment_id ON registration_orders(payment_id);`);
+
+    // 9. Seed user account tables and password hashes
     await seedInitialAccountHashes();
 
   } catch (err) {

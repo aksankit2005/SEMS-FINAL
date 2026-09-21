@@ -15,6 +15,7 @@ import prRoutes from './routes/prRoutes.js';
 import collegeHeadRoutes from './routes/collegeHeadRoutes.js';
 import coordinatorRoutes from './routes/coordinatorRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
+import { handleRazorpayWebhook } from './controllers/registrationController.js';
 import { initDatabaseSchema } from './config/dbInit.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -105,6 +106,9 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({ extended: false, limit: '25mb' }));
+
+// Root-level Webhook Endpoints (Ensures compatibility even if Razorpay Dashboard omits /api)
+app.post(['/razorpay/webhook', '/razorpay-webhook', '/public/razorpay-webhook'], handleRazorpayWebhook);
 
 // ─── API ROUTES ──────────────────────────────────────────────────────────────
 // Public spectator routes use publicReadLimiter for high-cadence reading & live updates

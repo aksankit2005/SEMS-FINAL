@@ -43,11 +43,13 @@ export const HomeRegistrationSection = () => {
 
     const handleUpdate = () => loadEvents();
     window.addEventListener('sems_events_updated', handleUpdate);
+    window.addEventListener('sems_settings_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
 
     return () => {
       isMounted = false;
       window.removeEventListener('sems_events_updated', handleUpdate);
+      window.removeEventListener('sems_settings_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
   }, []);

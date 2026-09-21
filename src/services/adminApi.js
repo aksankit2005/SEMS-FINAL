@@ -678,11 +678,38 @@ export const adminApi = {
           target: 'Updated system configuration in database'
         });
         const data = await res.json();
-        return data.settings || newSettings;
+        const saved = data.settings || newSettings;
+        try {
+          localStorage.setItem('sems_admin_settings', JSON.stringify(saved));
+        } catch (e) {}
+        window.dispatchEvent(new CustomEvent('sems_settings_updated', { detail: saved }));
+        window.dispatchEvent(new Event('sems_events_updated'));
+        return saved;
       }
     } catch (err) {
       console.error('Error updating system settings in DB:', err);
     }
     return newSettings;
+  },
+
+  // ── Coordinator Events Registration Toggle ──────────────────────────────
+  toggleEventRegistration: async (eventId, registrationOpen) => {
+    try {
+      const res = await fetch(apiUrl(`/admin/coordinator-events/${eventId}/registration`), {
+        method: 'PATCH',
+        headers: getAdminHeaders(),
+        body: JSON.stringify({ registrationOpen })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        window.dispatchEvent(new Event('sems_events_updated'));
+        return data;
+      }
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Failed to toggle event registration status');
+    } catch (err) {
+      console.error('Error toggling event registration:', err);
+      throw err;
+    }
   }
 };

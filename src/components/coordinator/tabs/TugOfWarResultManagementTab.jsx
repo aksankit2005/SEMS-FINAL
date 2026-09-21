@@ -91,6 +91,21 @@ export const TugOfWarResultManagementTab = ({ user }) => {
       try {
         const dbResults = await coordinatorApi.getPublicResults();
         if (dbResults && Array.isArray(dbResults)) {
+          // Auto-reconcile lingering deleted matches from server database:
+          // If marked deleted locally in deletedIds, ensure it is purged from server DB so public users don't see it
+          for (const m of dbResults) {
+            if (!m || !m.id) continue;
+            const rawSport = (m.sportId || m.sport || m.sportName || '').toLowerCase().replace(/_/g, '-');
+            const isTugMatch = rawSport.includes('tug') || rawSport.includes('tow');
+            if (isTugMatch && deletedIds.has(m.id)) {
+              try {
+                await coordinatorApi.deleteMatch(m.id);
+              } catch (delErr) {
+                console.warn('Auto-purge lingering Tug of War match failed:', m.id, delErr);
+              }
+            }
+          }
+
           dbResults.forEach((m) => {
             if (!m || !m.id || deletedIds.has(m.id)) return;
             const rawSport = (m.sportId || m.sport || m.sportName || '').toLowerCase().replace(/_/g, '-');
@@ -303,10 +318,14 @@ export const TugOfWarResultManagementTab = ({ user }) => {
   const handleDeleteResult = async (id) => {
     const isConfirmed = await confirmDelete({
       title: 'Delete Result Entry',
-      message: 'Are you sure you want to delete this Tug of War match result entry? It will be removed from database and public portal.'
+      message: 'Are you sure you want to delete this Tug of War match result entry? It will be permanently removed from the database and public portal.'
     });
     if (!isConfirmed) return;
-    const updated = resultsList.filter((r) => r.id !== id);
+
+    const targetItem = resultsList.find((r) => r.id === id);
+    const targetId = targetItem?.rawMatch?.id || targetItem?.id || id;
+
+    const updated = resultsList.filter((r) => r.id !== id && r.id !== targetId);
     setResultsList(updated);
     localStorage.setItem(resultsKey, JSON.stringify(updated));
 
@@ -318,14 +337,19 @@ export const TugOfWarResultManagementTab = ({ user }) => {
         try { deletedArr = JSON.parse(deletedStr); } catch (e) { }
       }
       if (!Array.isArray(deletedArr)) deletedArr = [];
-      if (!deletedArr.includes(id)) {
-        deletedArr.push(id);
-        localStorage.setItem('sems_deleted_result_ids', JSON.stringify(deletedArr));
-      }
+      [id, targetId].forEach((delId) => {
+        if (delId && !deletedArr.includes(delId)) {
+          deletedArr.push(delId);
+        }
+      });
+      localStorage.setItem('sems_deleted_result_ids', JSON.stringify(deletedArr));
     } catch (e) { }
 
     try {
-      await coordinatorApi.deleteMatch(id);
+      await coordinatorApi.deleteMatch(targetId);
+      if (targetId !== id) {
+        await coordinatorApi.deleteMatch(id);
+      }
     } catch (e) {
       console.warn('Delete match API error:', e);
     }
@@ -338,12 +362,23 @@ export const TugOfWarResultManagementTab = ({ user }) => {
   const handleClearResults = async () => {
     const isConfirmed = await confirmDelete({
       title: 'Clear All Results',
-      message: 'Are you sure you want to clear all declared Tug of War results data from storage?'
+      message: 'Are you sure you want to clear all declared Tug of War results data? This will permanently delete all Tug of War completed results from the database and public portal.'
     });
     if (isConfirmed) {
+      try {
+        const idsToDelete = resultsList.map((r) => r.rawMatch?.id || r.id).filter(Boolean);
+        for (const tid of idsToDelete) {
+          try { await coordinatorApi.deleteMatch(tid); } catch (e) { }
+        }
+        await coordinatorApi.deleteAllMatches();
+      } catch (err) {
+        console.warn('Clear all results server error:', err);
+      }
       setResultsList([]);
       localStorage.removeItem(resultsKey);
-      addToast('All declared results cleared', 'info');
+      window.dispatchEvent(new Event('sems_results_updated'));
+      window.dispatchEvent(new Event('storage'));
+      addToast('All declared Tug of War results cleared from database and storage', 'info');
     }
   };
 
@@ -439,6 +474,29 @@ export const TugOfWarResultManagementTab = ({ user }) => {
                   <span>Export Excel</span>
                 </button>
               </>
+            )}
+
+            <button
+              onClick={() => {
+                window.dispatchEvent(new Event('sems_results_updated'));
+                addToast('Synced results with server database', 'info');
+              }}
+              className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-300 dark:border-slate-700 transition flex items-center gap-1.5 cursor-pointer"
+              title="Sync with server"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>Sync</span>
+            </button>
+
+            {resultsList.length > 0 && (
+              <button
+                onClick={handleClearResults}
+                className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/20 dark:hover:bg-rose-500/30 text-rose-600 dark:text-rose-400 font-bold text-xs border border-rose-200 dark:border-rose-500/30 transition flex items-center gap-1.5 cursor-pointer"
+                title="Clear all declared results from database"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Clear All</span>
+              </button>
             )}
           </div>
         </div>
