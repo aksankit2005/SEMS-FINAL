@@ -11,9 +11,23 @@ export const TeamDetailsForm = ({
   errors,
   setErrors
 }) => {
-  const colleges = [
-    { value: '', label: 'Select College / University' },
-    ...Object.keys(collegeCourses).map((c) => ({ value: c, label: c }))
+  const isTugOfWar = resolveSportKey(sport) === 'tug-of-war';
+
+  const colleges = isTugOfWar
+    ? [
+        { value: '', label: 'Select College (MPCP / MPCPS Only)' },
+        { value: 'MPCP (200)', label: 'MPCP (200)' },
+        { value: 'MPCPS (889)', label: 'MPCPS (889)' }
+      ]
+    : [
+        { value: '', label: 'Select College / University' },
+        ...Object.keys(collegeCourses).map((c) => ({ value: c, label: c }))
+      ];
+
+  const tugOfWarSemesters = [
+    { value: '', label: 'Select Semester (1st Year Only)' },
+    { value: '1st Sem (1st Year)', label: '1st Semester (1st Year)' },
+    { value: '2nd Sem (1st Year)', label: '2nd Semester (1st Year)' }
   ];
 
   const genders = [
@@ -196,7 +210,9 @@ export const TeamDetailsForm = ({
   };
 
   const currentRosterSize = effectiveRoster.length;
-  const availableCourses = collegeCourses[formData.collegeName] || [];
+  const availableCourses = isTugOfWar
+    ? (formData.collegeName ? ['B.Pharma', 'D.Pharma', 'M.Pharma'] : [])
+    : (collegeCourses[formData.collegeName] || []);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -208,9 +224,26 @@ export const TeamDetailsForm = ({
         </div>
         <div>
           <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase">{sport.name} Details</h2>
-          <p className="text-xs text-slate-400 font-bold">Team Squad & Captain Profile Registration</p>
+          <p className="text-xs text-slate-400 font-bold">
+            {isTugOfWar
+              ? 'Exclusively for 1st Year Pharmacy Students (MPCP 200 & MPCPS 889)'
+              : 'Team Squad & Captain Profile Registration'}
+          </p>
         </div>
       </div>
+
+      {/* Tug of War Strict Eligibility Notice */}
+      {isTugOfWar && (
+        <div className="p-3.5 rounded-xl bg-purple-500/10 dark:bg-purple-950/30 border border-purple-500/30 text-purple-900 dark:text-purple-200 text-xs flex items-start gap-2.5 shadow-2xs">
+          <ShieldAlert className="w-4 h-4 shrink-0 text-purple-600 dark:text-purple-400 mt-0.5" />
+          <div>
+            <p className="font-bold text-xs">Exclusively for 1st Year Pharmacy Students</p>
+            <p className="text-[11px] text-purple-700 dark:text-purple-300/90 mt-0.5 leading-relaxed">
+              Eligible Colleges: <strong>MPCP (200)</strong> and <strong>MPCPS (889)</strong> only. All participating athletes must be currently enrolled in 1st Year Pharmacy.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Team Details Group */}
       <div className="p-5 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-4">
@@ -328,6 +361,7 @@ export const TeamDetailsForm = ({
                   showRemove={currentRosterSize > minPlayers}
                   errors={playerErrors}
                   availableCourses={availableCourses}
+                  allowedSemesters={isTugOfWar ? tugOfWarSemesters : null}
                   teamCollege={formData.collegeName}
                   teamGender={formData.gender}
                   isFirstPlayer={idx === 0}
@@ -371,6 +405,7 @@ export const TeamDetailsForm = ({
 // Team form validation
 export const validateTeamForm = (sport, formData) => {
   const errors = {};
+  const isTugOfWar = resolveSportKey(sport) === 'tug-of-war';
 
   const minPlayers = sport.minPlayers || 2;
   const maxPlayers = sport.maxPlayers || 2;
@@ -379,7 +414,11 @@ export const validateTeamForm = (sport, formData) => {
     errors.teamName = 'Team Name is required';
   }
   if (!formData.collegeName) {
-    errors.collegeName = 'Please select a college';
+    errors.collegeName = isTugOfWar
+      ? 'Please select a college (MPCP (200) or MPCPS (889) only)'
+      : 'Please select a college';
+  } else if (isTugOfWar && !['MPCP (200)', 'MPCPS (889)'].includes(formData.collegeName)) {
+    errors.collegeName = 'Tug of War is exclusively available for MPCP (200) and MPCPS (889) students.';
   }
   if (!formData.gender) {
     errors.gender = 'Gender is required';
@@ -438,10 +477,22 @@ export const validateTeamForm = (sport, formData) => {
       errors[`player_${idx}_aadhaar`] = 'Aadhaar Number must contain exactly 12 digits.';
     }
     if (!player.branch?.trim()) {
-      errors[`player_${idx}_branch`] = 'Course is required';
+      errors[`player_${idx}_branch`] = isTugOfWar ? 'Pharmacy course is required' : 'Course is required';
+    } else if (isTugOfWar) {
+      const bLower = (player.branch || '').toLowerCase();
+      if (!bLower.includes('pharm')) {
+        errors[`player_${idx}_branch`] = 'Only Pharmacy students (B.Pharma / D.Pharma / M.Pharma) are eligible for Tug of War';
+      }
     }
+
     if (!player.semester) {
-      errors[`player_${idx}_semester`] = 'Semester is required';
+      errors[`player_${idx}_semester`] = isTugOfWar ? 'Semester is required (1st Year only)' : 'Semester is required';
+    } else if (isTugOfWar) {
+      const sem = player.semester || '';
+      const isFirstYear = sem.includes('1st Year') || sem.includes('1st Sem') || sem.includes('2nd Sem');
+      if (!isFirstYear) {
+        errors[`player_${idx}_semester`] = 'Only 1st Year Pharmacy students are eligible for Tug of War';
+      }
     }
 
     const pPhone = player.phone?.trim();

@@ -112,7 +112,8 @@ export const PlayerDetailsCard = ({
   teamGender = '',
   isFirstPlayer = false,
   sameAsCaptain = false,
-  onToggleSameAsCaptain = null
+  onToggleSameAsCaptain = null,
+  allowedSemesters = null
 }) => {
   const allSemesters = [
     { value: '', label: 'Select Semester/Year' },
@@ -128,11 +129,13 @@ export const PlayerDetailsCard = ({
   ];
 
   const course = (player.branch || '').trim().toLowerCase();
-  let semesters = allSemesters;
-  if (course === 'bba' || course === 'bca') {
-    semesters = allSemesters.slice(0, 7);
-  } else if (course === 'mca' || course === 'mba') {
-    semesters = allSemesters.slice(0, 5);
+  let semesters = allowedSemesters || allSemesters;
+  if (!allowedSemesters) {
+    if (course === 'bba' || course === 'bca') {
+      semesters = allSemesters.slice(0, 7);
+    } else if (course === 'mca' || course === 'mba') {
+      semesters = allSemesters.slice(0, 5);
+    }
   }
 
   const handleChange = (field, val) => {

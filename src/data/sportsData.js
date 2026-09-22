@@ -280,8 +280,8 @@ export const SPORTS_DATA = [
     name: "Tug of War",
     category: "Strength",
     type: "Team (8 Players)",
-    tagline: "Unbreakable Grip, Ultimate Strength",
-    description: "Raw test of collective power, grip endurance, and teamwork in a best-of-3 pulls showdown.",
+    tagline: "Exclusively for 1st Year Pharmacy Students (MPCP 200 & MPCPS 889)",
+    description: "Exclusively for 1st Year Pharmacy students from MPCP (200) & MPCPS (889). Raw test of collective power, grip endurance, and teamwork in a best-of-3 pulls showdown.",
     image: "https://ichef.bbci.co.uk/ace/standard/799/cpsprodpb/61bf/live/ae15cb30-6170-11ef-9ad8-5bacd187043d.jpg",
     icon: "Dumbbell",
     status: "Open",
@@ -293,6 +293,7 @@ export const SPORTS_DATA = [
     teamSize: "8 Players (Combined weight < 680kg)",
     venue: "Main Central Grass Field",
     rules: [
+      "Exclusively open to 1st Year Pharmacy students from MPCP (200) and MPCPS (889).",
       "TWIF official rules & weight class limits.",
       "Best of 3 pulls; 4-meter mark to cross centerline.",
       "No boots with metal studs or cleats allowed.",
