@@ -513,6 +513,22 @@ export const initDatabaseSchema = async () => {
     await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS order_id VARCHAR(100);`);
     await queryDb(`CREATE INDEX IF NOT EXISTS idx_college_reg_order_id ON college_registrations(order_id);`);
 
+    // Clean up any historical duplicate entries with matching non-empty order_id
+    await queryDb(`
+      DELETE FROM college_registrations a USING college_registrations b
+      WHERE a.ctid < b.ctid 
+        AND a.order_id IS NOT NULL 
+        AND a.order_id != ''
+        AND a.order_id = b.order_id;
+    `).catch(() => {});
+
+    // Ensure database-level uniqueness on order_id to strictly prevent concurrent duplicate rows
+    await queryDb(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_uniq_college_reg_order_id 
+      ON college_registrations(order_id) 
+      WHERE order_id IS NOT NULL AND order_id != '';
+    `).catch(() => {});
+
     // Ensure registration_members column constraints do not cause transaction rollbacks
     await queryDb(`ALTER TABLE registration_members ALTER COLUMN "aadhaarNumber" DROP NOT NULL;`).catch(() => {});
     await queryDb(`ALTER TABLE registration_members ALTER COLUMN "fatherMotherName" DROP NOT NULL;`).catch(() => {});

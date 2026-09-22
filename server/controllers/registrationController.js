@@ -14,6 +14,9 @@ import { generateRegistrationPassPDFBuffer } from '../services/pdfService.js';
 
 let inMemoryCollegeRegistrations = [];
 
+// Global In-Flight Mutex Map to prevent race-condition double registration between Webhook and Frontend
+const inFlightRegistrationsLock = new Map();
+
 /**
  * 1. Create a server-side Razorpay Order with Auto-Capture enabled at order level
  * POST /api/public/create-order
@@ -277,6 +280,48 @@ export const registerPublicEvent = async (req, res) => {
     console.warn('Admin settings check notice:', settingErr.message);
   }
 
+  const razorpayOrderId = paymentData?.razorpayOrderId || paymentData?.razorpay_order_id || null;
+  const razorpayPaymentId = paymentData?.razorpayPaymentId || paymentData?.razorpay_payment_id || null;
+  const lockKey = razorpayOrderId || razorpayPaymentId;
+
+  // 1. Concurrency Wait: If background webhook is currently writing this registration, await it
+  if (lockKey && inFlightRegistrationsLock.has(lockKey)) {
+    console.log(`⏳ [registerPublicEvent] Awaiting in-flight registration for lock ${lockKey}...`);
+    try {
+      await inFlightRegistrationsLock.get(lockKey);
+    } catch (e) {}
+  }
+
+  // 2. Early Idempotency Resolution: If already saved in college_registrations (e.g. by Webhook), return success immediately
+  if (razorpayPaymentId || razorpayOrderId) {
+    try {
+      const existingCheck = await queryDb(
+        `SELECT id, registration_id AS "registrationId", event_id AS "eventId", sport_id AS "sportId",
+                student_name AS "studentName", team_name AS "teamName", college, department,
+                email, phone, gender, emergency_contact AS "emergencyContact", status,
+                fee_paid AS "feePaid", payment_id AS "paymentId", payment_status AS "paymentStatus",
+                members_count AS "membersCount", participant_data AS "participantData"
+         FROM college_registrations
+         WHERE ($1::text IS NOT NULL AND payment_id = $1)
+            OR ($2::text IS NOT NULL AND (order_id = $2 OR participant_data->>'orderId' = $2 OR participant_data->>'razorpayOrderId' = $2))
+         LIMIT 1`,
+        [razorpayPaymentId || null, razorpayOrderId || null]
+      );
+
+      if (existingCheck && existingCheck.rows && existingCheck.rows.length > 0) {
+        const existing = existingCheck.rows[0];
+        console.log(`✅ [registerPublicEvent Idempotent Match] Payment ${razorpayPaymentId || razorpayOrderId} already confirmed. Returning existing receipt ${existing.id}.`);
+        return res.status(200).json({
+          success: true,
+          message: 'Registration already confirmed!',
+          receipt: existing,
+        });
+      }
+    } catch (checkErr) {
+      console.warn('Idempotency pre-check notice in registerPublicEvent:', checkErr.message);
+    }
+  }
+
   let event = null;
   let targetSportId = (sportId || '').toLowerCase();
   let authoritativeFee = 0;
@@ -375,13 +420,15 @@ export const registerPublicEvent = async (req, res) => {
              $6::text = '' 
              OR LOWER(COALESCE(cr.participant_data->>'subEvent', cr.participant_data->>'eventType', cr.participant_data->>'athleticsEvent', '')) = LOWER($6)
            )
+           AND ($7::text = '' OR cr.order_id IS NULL OR cr.order_id != $7)
+           AND ($8::text = '' OR cr.payment_id IS NULL OR cr.payment_id != $8)
            AND (
              ($2::text[] IS NOT NULL AND array_length($2::text[], 1) > 0 AND m."rollNo" = ANY($2::text[]))
              OR ($3::text[] IS NOT NULL AND array_length($3::text[], 1) > 0 AND LOWER(m.email) = ANY($3::text[]))
              OR ($4::text[] IS NOT NULL AND array_length($4::text[], 1) > 0 AND m.mobile = ANY($4::text[]))
            )
          LIMIT 1`,
-        [eventId, rollNosToCheck, emailsToCheck, mobilesToCheck, targetSportId || sportId || '', targetSubEvent]
+        [eventId, rollNosToCheck, emailsToCheck, mobilesToCheck, targetSportId || sportId || '', targetSubEvent, razorpayOrderId || '', razorpayPaymentId || '']
       );
 
       if (dupMemberRes && dupMemberRes.rows && dupMemberRes.rows.length > 0) {
@@ -405,8 +452,6 @@ export const registerPublicEvent = async (req, res) => {
   const { keySecret } = getRazorpayCredentials();
   let isPaymentVerified = false;
   let paymentTxnId = null;
-  let razorpayOrderId = paymentData?.razorpayOrderId || paymentData?.razorpay_order_id || null;
-  let razorpayPaymentId = paymentData?.razorpayPaymentId || paymentData?.razorpay_payment_id || null;
   let razorpaySignature = paymentData?.razorpaySignature || paymentData?.razorpay_signature || null;
 
   const isRealRazorpayPayment = Boolean(
@@ -572,6 +617,15 @@ export const persistConfirmedRegistration = async ({
 }) => {
   const targetSportId = (sportId || '').toLowerCase();
   let feeToUse = Number(authoritativeFee || 0);
+  const lockKey = razorpayOrderId || paymentTxnId;
+
+  // 0. Concurrency Guard: If another process (Webhook / Frontend) is currently inserting for this order/payment, await it
+  if (lockKey && inFlightRegistrationsLock.has(lockKey)) {
+    console.log(`⏳ [persistConfirmedRegistration] In-flight registration lock active for ${lockKey}. Waiting...`);
+    try {
+      await inFlightRegistrationsLock.get(lockKey);
+    } catch (e) {}
+  }
 
   // 1. Idempotency Check: Prevent duplicate registration records if both frontend & webhook trigger
   if (paymentTxnId || razorpayOrderId) {
@@ -624,6 +678,17 @@ export const persistConfirmedRegistration = async ({
       console.warn('Idempotency pre-check notice:', checkErr.message);
     }
   }
+
+  // Acquire in-flight lock for this payment/order
+  let releaseLock = () => {};
+  if (lockKey) {
+    const lockPromise = new Promise((resolve) => {
+      releaseLock = resolve;
+    });
+    inFlightRegistrationsLock.set(lockKey, lockPromise);
+  }
+
+  try {
 
   // 2. Resolve DB event if exists
   let event = null;
@@ -961,6 +1026,12 @@ export const persistConfirmedRegistration = async ({
     receipt: newRegRecord,
     updatedEvent: event,
   };
+  } finally {
+    if (lockKey) {
+      inFlightRegistrationsLock.delete(lockKey);
+      releaseLock();
+    }
+  }
 };
 
 /**
@@ -1008,6 +1079,13 @@ export const handleRazorpayWebhook = async (req, res) => {
         console.log(`⚡ [Webhook Reconciliation] Processing captured/paid event for PaymentId: ${paymentId || 'N/A'}, OrderId: ${orderId || 'N/A'}`);
 
         if (paymentId || orderId) {
+          const lockKey = orderId || paymentId;
+          if (lockKey && inFlightRegistrationsLock.has(lockKey)) {
+            console.log(`⏳ [Webhook Lock] Awaiting in-flight registration for ${lockKey}...`);
+            try {
+              await inFlightRegistrationsLock.get(lockKey);
+            } catch (e) {}
+          }
           // Update matching payment in Postgres if already exists
           await prisma.payment.updateMany({
             where: {

@@ -849,6 +849,16 @@ export const RegistrationPage = () => {
             }
           );
         } catch (orderErr) {
+          // If already registered or registrations frozen by admin, BLOCK immediately BEFORE taking payment
+          if (
+            orderErr.response?.status === 409 ||
+            orderErr.response?.status === 403 ||
+            (orderErr.response?.status === 400 && orderErr.response?.data?.code?.includes('REGISTRATION'))
+          ) {
+            setIsProcessingPayment(false);
+            addToast(orderErr.response?.data?.message || 'Participant is already registered for this event.', 'error');
+            return;
+          }
           console.warn('Backend order creation endpoint skipped, initiating direct client checkout:', orderErr.message);
         }
 
