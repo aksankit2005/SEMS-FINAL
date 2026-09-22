@@ -513,6 +513,17 @@ export const initDatabaseSchema = async () => {
     await queryDb(`ALTER TABLE college_registrations ADD COLUMN IF NOT EXISTS order_id VARCHAR(100);`);
     await queryDb(`CREATE INDEX IF NOT EXISTS idx_college_reg_order_id ON college_registrations(order_id);`);
 
+    // Ensure registration_members column constraints do not cause transaction rollbacks
+    await queryDb(`ALTER TABLE registration_members ALTER COLUMN "aadhaarNumber" DROP NOT NULL;`).catch(() => {});
+    await queryDb(`ALTER TABLE registration_members ALTER COLUMN "fatherMotherName" DROP NOT NULL;`).catch(() => {});
+    await queryDb(`ALTER TABLE registration_members ALTER COLUMN "father_mother_name" DROP NOT NULL;`).catch(() => {});
+    await queryDb(`ALTER TABLE registration_members ALTER COLUMN "dateOfBirth" DROP NOT NULL;`).catch(() => {});
+    await queryDb(`ALTER TABLE registration_members ALTER COLUMN "mobile" DROP NOT NULL;`).catch(() => {});
+    await queryDb(`ALTER TABLE registration_members ALTER COLUMN "email" DROP NOT NULL;`).catch(() => {});
+    await queryDb(`ALTER TABLE registration_members ALTER COLUMN "course" DROP NOT NULL;`).catch(() => {});
+    await queryDb(`ALTER TABLE registration_members ALTER COLUMN "yearSemester" DROP NOT NULL;`).catch(() => {});
+    await queryDb(`ALTER TABLE registration_members ALTER COLUMN "year_semester" DROP NOT NULL;`).catch(() => {});
+
     // 8. Ensure registration_orders table exists for pre-payment draft persistence & webhook auto-recovery
     await queryDb(`
       CREATE TABLE IF NOT EXISTS registration_orders (

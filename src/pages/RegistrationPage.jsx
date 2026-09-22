@@ -842,7 +842,10 @@ export const RegistrationPage = () => {
               entryFee: activeSport.entryFee,
               eventType: formData.eventType || '',
               subEvent: formData.selectedEvents?.[0] || formData.subEvent || formData.eventType || '',
-              athleticsEvent: formData.selectedEvents?.[0] || formData.subEvent || ''
+              athleticsEvent: formData.selectedEvents?.[0] || formData.subEvent || '',
+              category: activeSport.category || '',
+              sportName: activeSport.name || activeSport.title || '',
+              roster: formData.roster || []
             }
           );
         } catch (orderErr) {

@@ -185,10 +185,15 @@ export const verifyPaymentSignature = ({
  * 5. Razorpay Webhook signature verification
  */
 export const verifyWebhookSignature = (rawBody, signature, secretOverride) => {
-  const { webhookSecret } = getRazorpayCredentials();
-  const secret = secretOverride || webhookSecret;
+  const { keySecret, webhookSecret } = getRazorpayCredentials();
+  const primarySecret = secretOverride || webhookSecret;
 
-  if (!secret || !signature) {
+  if (!signature) {
+    return false;
+  }
+
+  const secretsToTry = Array.from(new Set([primarySecret, keySecret].filter(Boolean)));
+  if (secretsToTry.length === 0) {
     return false;
   }
 
@@ -196,17 +201,25 @@ export const verifyWebhookSignature = (rawBody, signature, secretOverride) => {
     ? rawBody
     : Buffer.from(typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody));
 
-  const expectedSignature = crypto
-    .createHmac('sha256', secret)
-    .update(bodyBuffer)
-    .digest('hex');
+  for (const secret of secretsToTry) {
+    try {
+      const expectedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(bodyBuffer)
+        .digest('hex');
 
-  if (expectedSignature.length !== signature.length) {
-    return false;
+      if (expectedSignature.length === signature.length) {
+        if (crypto.timingSafeEqual(
+          Buffer.from(expectedSignature, 'utf-8'),
+          Buffer.from(signature, 'utf-8')
+        )) {
+          return true;
+        }
+      }
+    } catch (e) {
+      // Continue trying next candidate
+    }
   }
 
-  return crypto.timingSafeEqual(
-    Buffer.from(expectedSignature, 'utf-8'),
-    Buffer.from(signature, 'utf-8')
-  );
+  return false;
 };

@@ -756,6 +756,12 @@ export const persistConfirmedRegistration = async ({
         },
       });
 
+      const parseSafeDate = (d) => {
+        if (!d) return new Date('2004-05-15');
+        const dt = new Date(d);
+        return isNaN(dt.getTime()) ? new Date('2004-05-15') : dt;
+      };
+
       const rosterList =
         Array.isArray(participantData.roster) && participantData.roster.length > 0
           ? participantData.roster
@@ -764,10 +770,10 @@ export const persistConfirmedRegistration = async ({
               name: newRegRecord.studentName,
               fatherName: participantData.fatherName || 'N/A',
               rollNo: newRegRecord.enrollmentNo,
-              dob: participantData.dob ? new Date(participantData.dob) : new Date('2004-05-15'),
+              dob: parseSafeDate(participantData.dob),
               phone: newRegRecord.phone,
               email: newRegRecord.email,
-              aadhaarNumber: participantData.aadhaarNumber || null,
+              aadhaarNumber: (participantData.aadhaar || participantData.aadhaarNumber || '000000000000').toString().trim(),
               course: participantData.course || newRegRecord.department || 'B.Tech',
               yearSemester: participantData.yearSemester || participantData.year || '3rd Year',
               gender: (newRegRecord.gender || 'Male').toUpperCase() === 'FEMALE' ? 'FEMALE' : 'MALE',
@@ -775,6 +781,7 @@ export const persistConfirmedRegistration = async ({
             },
           ];
 
+      const createdMembers = [];
       for (let idx = 0; idx < rosterList.length; idx++) {
         const m = rosterList[idx];
         const parsedCaptain =
@@ -785,22 +792,35 @@ export const persistConfirmedRegistration = async ({
               : null;
         const isCap = parsedCaptain !== null ? parsedCaptain : idx === 0;
 
-        await tx.registrationMember.create({
+        const safeMemberDob = parseSafeDate(m.dob);
+        const memberAadhaar = (
+          m.aadhaar ||
+          m.aadhaarNumber ||
+          participantData.aadhaarNumber ||
+          participantData.aadhaar ||
+          '000000000000'
+        ).toString().trim();
+
+        const rawGender = (m.gender || newRegRecord.gender || participantData.gender || 'Male').toString().trim().toUpperCase();
+        const safeGender = rawGender.includes('FEM') ? 'FEMALE' : 'MALE';
+
+        const memberRecord = await tx.registrationMember.create({
           data: {
             registrationId: registration.id,
-            fullName: (m.name || newRegRecord.studentName || '').trim(),
+            fullName: (m.name || m.fullName || newRegRecord.studentName || '').trim() || 'Athlete',
             fatherMotherName: (m.fatherName || m.fatherMotherName || participantData.fatherName || 'N/A').trim(),
             rollNo: (m.rollNo || m.rollNumber || newRegRecord.enrollmentNo || 'ENR2026-001').trim(),
-            dateOfBirth: m.dob ? new Date(m.dob) : new Date('2004-05-15'),
-            mobile: (m.phone || newRegRecord.phone || '+91 98765 43210').trim(),
+            dateOfBirth: safeMemberDob,
+            mobile: (m.phone || m.mobile || newRegRecord.phone || '+91 98765 43210').trim(),
             email: (m.email || newRegRecord.email || 'athlete@sems.edu').trim().toLowerCase(),
-            aadhaarNumber: m.aadhaarNumber || null,
-            course: (m.course || participantData.course || newRegRecord.department || 'B.Tech').trim(),
+            aadhaarNumber: memberAadhaar,
+            course: (m.course || m.branch || participantData.course || newRegRecord.department || 'B.Tech').trim(),
             yearSemester: (m.yearSemester || m.year || m.semester || '3rd Year').trim(),
-            gender: (m.gender || newRegRecord.gender || 'Male').toUpperCase() === 'FEMALE' ? 'FEMALE' : 'MALE',
+            gender: safeGender,
             isCaptain: isCap,
           },
         });
+        createdMembers.push(memberRecord);
       }
 
       const payment = await tx.payment.create({
@@ -834,12 +854,21 @@ export const persistConfirmedRegistration = async ({
           },
         });
 
-        await tx.teamMember.create({
-          data: {
-            teamId: team.id,
-            registrationId: registration.id,
-          },
-        });
+        for (const createdMem of createdMembers) {
+          await tx.teamMember.create({
+            data: {
+              teamId: team.id,
+              registrationMemberId: createdMem.id,
+              registrationId: registration.id,
+              name: createdMem.fullName,
+              rollNo: createdMem.rollNo,
+              phone: createdMem.mobile,
+              email: createdMem.email,
+              gender: createdMem.gender,
+              isCaptain: createdMem.isCaptain,
+            },
+          });
+        }
       }
 
       const isAthletics = (newRegRecord.sportId || targetSportId || sportId || '').toLowerCase().includes('athletics');
