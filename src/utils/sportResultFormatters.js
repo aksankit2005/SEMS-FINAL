@@ -635,8 +635,8 @@ export const getSportResultDisplay = (r) => {
   const details = parseDetails(r);
 
   // Safe team name resolution (eliminating undefined vs undefined)
-  const team1 = str(r.team1 || r.team1Name || details.team1 || details.team1Name, 'Team 1');
-  const team2 = str(r.team2 || r.team2Name || details.team2 || details.team2Name, 'Team 2');
+  const team1 = str(r.team1 || r.team1Name || r.player1 || r.player1Name || details.team1 || details.team1Name || details.player1 || details.player1Name, 'Team 1');
+  const team2 = str(r.team2 || r.team2Name || r.player2 || r.player2Name || details.team2 || details.team2Name || details.player2 || details.player2Name, 'Team 2');
   const eventTitle = str(r.eventTitle || r.event || r.matchTitle || details.eventTitle || details.matchTitle || `${team1} vs ${team2}`);
   const winner = str(r.winner || r.winnerName || details.winner, '');
   const format = str(r.format || details.format, '');
@@ -724,7 +724,7 @@ export const getSportResultDisplay = (r) => {
         setsScoreText,
         setsBreakdown
       },
-      summaryText: `${setsScoreText}${breakdownStr ? ` (${breakdownStr})` : ''}`
+      summaryText: `${team1} vs ${team2} • ${setsScoreText}${breakdownStr ? ` (${breakdownStr})` : ''}`
     };
   }
 
