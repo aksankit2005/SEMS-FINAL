@@ -49,31 +49,81 @@ const SportResultSummary = ({ resultData }) => {
         </div>
       );
 
-    case 'racket':
+    case 'racket': {
+      const wLower = (display.winner || '').toLowerCase().trim();
+      const t1Lower = (display.team1 || '').toLowerCase().trim();
+      const t2Lower = (display.team2 || '').toLowerCase().trim();
+      const isWinnerT1 = Boolean(wLower && (wLower === t1Lower || wLower.includes(t1Lower) || t1Lower.includes(wLower)));
+      const isWinnerT2 = Boolean(wLower && (wLower === t2Lower || wLower.includes(t2Lower) || t2Lower.includes(wLower)));
+
       return (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-mono font-bold text-[#211D2B] dark:text-[#F5F2FA]">
-              {display.racket.setsScoreText}
+        <div className="space-y-2.5">
+          {/* Match Contestants (Player 1 vs Player 2) */}
+          <div className="p-2.5 rounded-lg bg-[#F4F2F7] dark:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]">
+            <span className="text-[9px] font-mono uppercase font-semibold text-[#7156A5] dark:text-[#B8A5E5] block mb-1">
+              Match Contestants
             </span>
-            <span className="text-[10px] font-mono font-semibold text-[#7156A5] dark:text-[#B8A5E5] uppercase">
-              {display.format}
+            <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-[#211D2B] dark:text-[#F5F2FA]">
+              <span
+                className={`truncate max-w-[45%] ${isWinnerT1 ? 'text-[#1B5E20] dark:text-[#81C784]' : 'text-[#A98B57] dark:text-[#D2AB45]'}`}
+                title={display.team1}
+              >
+                {display.team1}
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#FAF9F6] dark:bg-[#070A13] text-[#686370] dark:text-[#AAA4B8] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] shrink-0 mx-1">
+                VS
+              </span>
+              <span
+                className={`truncate max-w-[45%] text-right ${isWinnerT2 ? 'text-[#1B5E20] dark:text-[#81C784]' : 'text-[#7156A5] dark:text-[#B8A5E5]'}`}
+                title={display.team2}
+              >
+                {display.team2}
+              </span>
+            </div>
+          </div>
+
+          {/* Sets Won Breakdown with Player Names */}
+          <div className="flex items-center justify-between p-2 rounded-lg bg-[#FAF9F6] dark:bg-[#0D101A] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]">
+            <div className="space-y-0.5 min-w-0 pr-2">
+              <span className="text-[10px] font-mono uppercase text-[#686370] dark:text-[#AAA4B8] block">
+                Sets Won
+              </span>
+              <div className="text-xs font-mono font-bold text-[#211D2B] dark:text-[#F5F2FA] flex items-center gap-1.5 flex-wrap">
+                <span className="truncate max-w-[120px]">
+                  {display.team1}: <strong className="text-[#A98B57] dark:text-[#D2AB45]">{display.racket?.setsWon1 ?? 0}</strong>
+                </span>
+                <span className="text-[#686370] dark:text-[#AAA4B8]">—</span>
+                <span className="truncate max-w-[120px]">
+                  {display.team2}: <strong className="text-[#7156A5] dark:text-[#B8A5E5]">{display.racket?.setsWon2 ?? 0}</strong>
+                </span>
+              </div>
+            </div>
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)] shrink-0">
+              {display.racket?.setsScoreText || 'Sets'}
             </span>
           </div>
-          {display.racket.setsBreakdown && display.racket.setsBreakdown.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {display.racket.setsBreakdown.map((s, idx) => (
-                <span
-                  key={idx}
-                  className="px-2 py-0.5 rounded text-xs font-mono font-medium bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]"
-                >
-                  {s.label}
-                </span>
-              ))}
+
+          {/* Sets Breakdown (Set 1, Set 2, etc.) */}
+          {display.racket?.setsBreakdown && display.racket.setsBreakdown.length > 0 && (
+            <div className="space-y-1 pt-0.5">
+              <span className="text-[10px] font-mono uppercase font-semibold text-[#686370] dark:text-[#AAA4B8] block">
+                Sets Breakdown
+              </span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {display.racket.setsBreakdown.map((s, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2 py-0.5 rounded text-xs font-mono font-medium bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)]"
+                  >
+                    {s.label}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
         </div>
       );
+    }
 
     case 'volleyball':
       return (
@@ -348,6 +398,7 @@ export const ResultsPage = () => {
               winner: display.winner || mergedItem.winner || 'Declared Winner',
               scoreSummary: display.summaryText || mergedItem.scoreSummary || 'Completed',
               date: display.date || mergedItem.date,
+              completedAt: mergedItem.completedAt || mergedItem.updatedAt || mergedItem.createdAt || mergedItem.date,
               mvp: display.mvp,
               rawMatch: mergedItem.rawMatch || mergedItem
             });
@@ -369,9 +420,20 @@ export const ResultsPage = () => {
           winner: display.winner || item.winner || 'Declared Winner',
           scoreSummary: display.summaryText || item.scoreSummary || 'Match Completed',
           date: display.date || (item.completedAt ? item.completedAt.split('T')[0] : new Date().toISOString().split('T')[0]),
+          completedAt: item.completedAt || item.updatedAt || item.createdAt || item.date,
           mvp: display.mvp,
           rawMatch: item
         });
+      });
+
+      // Sort results by latest completed date/time descending (newest on top)
+      list.sort((a, b) => {
+        const timeA = new Date(a.completedAt || a.date || 0).getTime();
+        const timeB = new Date(b.completedAt || b.date || 0).getTime();
+        if (!isNaN(timeA) && !isNaN(timeB) && timeB !== timeA) {
+          return timeB - timeA;
+        }
+        return String(b.id || '').localeCompare(String(a.id || ''));
       });
 
       setDynamicResults(list);
@@ -407,11 +469,16 @@ export const ResultsPage = () => {
   const combinedResults = dynamicResults;
 
   const filteredResults = combinedResults.filter((r) => {
+    const rawMatch = r.rawMatch || {};
+    const t1 = rawMatch.team1 || rawMatch.team1Name || '';
+    const t2 = rawMatch.team2 || rawMatch.team2Name || '';
     const matchesQuery =
       (r.sport || '').toLowerCase().includes(query.toLowerCase()) ||
       (r.winner || '').toLowerCase().includes(query.toLowerCase()) ||
       (r.event || '').toLowerCase().includes(query.toLowerCase()) ||
-      (r.scoreSummary || '').toLowerCase().includes(query.toLowerCase());
+      (r.scoreSummary || '').toLowerCase().includes(query.toLowerCase()) ||
+      t1.toLowerCase().includes(query.toLowerCase()) ||
+      t2.toLowerCase().includes(query.toLowerCase());
 
     const matchesSport =
       selectedSport === 'All' ||
