@@ -17,7 +17,8 @@ import {
   Loader2,
   FileSpreadsheet,
   Crown,
-  CheckCircle2
+  CheckCircle2,
+  User
 } from 'lucide-react';
 
 // Normalize declared results (super coord leaderboard entries + admin saved results)
@@ -26,11 +27,20 @@ const normalizeDeclaredResult = (entry) => {
     s.id === (entry.sportId || '') || s.name === (entry.sportName || '')
   );
 
+  let det = {};
+  if (entry.details) {
+    try {
+      det = typeof entry.details === 'object' ? entry.details : JSON.parse(entry.details);
+    } catch (e) {}
+  }
+
+  const athleticsSubEvent = entry.athleticsSubEvent || entry.subEvent || det.athleticsSubEvent || det.subEvent || null;
+
   const eventTitle =
     entry.eventTitle ||
-    (entry.athleticsSubEvent
-      ? `${entry.sportName} (${entry.athleticsSubEvent})`
-      : `${entry.sportName || 'Sports'} Championship`);
+    (athleticsSubEvent
+      ? `${entry.sportName || sport?.name || 'Athletics'} (${athleticsSubEvent})`
+      : `${sport?.name || entry.sportName || 'Sports'} Championship`);
 
   return {
     id: entry.id,
@@ -38,17 +48,33 @@ const normalizeDeclaredResult = (entry) => {
     sportName: sport?.name || entry.sportName || '',
     sportIcon: sport?.icon || '🏅',
     eventTitle,
+    athleticsSubEvent,
     matchFormat: entry.matchFormat || 'Team',
     gender: entry.gender || 'Boys',
-    winnerName: entry.winnerName || entry.winnerTeamName || 'Declared Winner',
-    winnerTeamName: entry.winnerTeamName || entry.winnerName || 'Declared Winner',
+
+    // Winner Details
+    winnerName: entry.winnerName || entry.winnerTeamName || entry.winnerTeam || 'Declared Winner',
+    winnerTeamName: entry.winnerTeamName || entry.winnerTeam || entry.winnerName || 'Declared Winner',
     winnerCollege: entry.winnerCollegeName || entry.winnerCollege || 'MPEC',
-    runnerUpName: entry.runnerUpName || entry.runnerUpTeamName || 'Runner Up',
-    runnerUpTeamName: entry.runnerUpTeamName || entry.runnerUpName || 'Runner Up',
+    winnerPhotoUrl: entry.winnerPhotoUrl || det.winnerPhotoUrl || '',
+    winnerRollNo: entry.winnerRollNo || det.winnerRollNo || '',
+    winnerCourse: entry.winnerCourse || det.winnerCourse || '',
+    winnerYearSem: entry.winnerYearSem || det.winnerYearSem || '',
+    winnerHighlights: entry.winnerHighlights || det.winnerHighlights || '',
+
+    // Runner-Up Details
+    runnerUpName: entry.runnerUpName || entry.runnerUpTeamName || entry.runnerUpTeam || 'Runner Up',
+    runnerUpTeamName: entry.runnerUpTeamName || entry.runnerUpTeam || entry.runnerUpName || 'Runner Up',
     runnerUpCollege: entry.runnerUpCollegeName || entry.runnerUpCollege || 'MIPS',
-    score: entry.score || entry.scoreSummary || '',
+    runnerUpPhotoUrl: entry.runnerUpPhotoUrl || det.runnerUpPhotoUrl || '',
+    runnerUpRollNo: entry.runnerUpRollNo || det.runnerUpRollNo || '',
+    runnerUpCourse: entry.runnerUpCourse || det.runnerUpCourse || '',
+    runnerUpYearSem: entry.runnerUpYearSem || det.runnerUpYearSem || '',
+    runnerUpHighlights: entry.runnerUpHighlights || det.runnerUpHighlights || '',
+
+    score: entry.score || entry.scoreSummary || det.scoreSummary || '',
     status: entry.status || 'COMPLETED',
-    uploadedBy: entry.uploadedBy || 'Super Coordinator',
+    uploadedBy: entry.uploadedBy || 'Super Coordinator / Admin',
     uploadedDate: entry.uploadedDate || entry.date || ''
   };
 };
@@ -104,13 +130,94 @@ export const AdminResultsPage = () => {
 
   const handleSaveResult = async (formData) => {
     try {
+      // 1. Sync custom medal entries in localStorage for live showcase & public leaderboard
+      try {
+        const sportObj = ALL_12_SPORTS.find((s) => s.id === formData.sportId) || ALL_12_SPORTS[0];
+        const winnerObj = ALL_COLLEGES.find((c) => c.id === formData.winnerCollege) || ALL_COLLEGES[0];
+        const runnerObj = ALL_COLLEGES.find((c) => c.id === formData.runnerUpCollege) || ALL_COLLEGES[1];
+        const isAthletics = (formData.sportId || '').toLowerCase().includes('athletics');
+        const finalSportName = isAthletics && formData.athleticsSubEvent 
+          ? `Athletics (${formData.athleticsSubEvent})` 
+          : sportObj.name;
+
+        const sportEmoji = 
+          sportObj.id.includes('badminton') ? '🏸' :
+          sportObj.id.includes('cricket') ? '🏏' :
+          sportObj.id.includes('football') ? '⚽' :
+          sportObj.id.includes('chess') ? '♟️' :
+          sportObj.id.includes('table-tennis') || sportObj.id.includes('tt') ? '🏓' :
+          sportObj.id.includes('basketball') ? '🏀' :
+          sportObj.id.includes('volleyball') ? '🏐' :
+          sportObj.id.includes('kabaddi') ? '🤼' :
+          sportObj.id.includes('athletics') ? '🏃‍♂️' :
+          sportObj.id.includes('kho') ? '🏃' :
+          sportObj.id.includes('tug') ? '🪢' : '🏆';
+
+        const medalEntryId = `medal-${formData.id || Date.now()}`;
+        const medalItem = {
+          id: medalEntryId,
+          eventId: formData.id || medalEntryId,
+          sportId: sportObj.id,
+          sportName: finalSportName,
+          sportIcon: sportEmoji,
+          gender: formData.gender,
+          matchFormat: formData.matchFormat,
+          subEvent: isAthletics ? formData.athleticsSubEvent : `${sportObj.name} Final`,
+          scoreSummary: formData.score || '',
+          declaredAt: new Date().toISOString(),
+          winner: {
+            studentName: formData.winnerName.trim() || formData.winnerTeamName.trim(),
+            teamName: formData.winnerTeamName.trim() || formData.winnerName.trim(),
+            collegeCode: winnerObj.id,
+            collegeName: winnerObj.name,
+            medal: 'GOLD',
+            rollNo: (formData.winnerRollNo || '').trim(),
+            course: (formData.winnerCourse || '').trim(),
+            yearSemester: (formData.winnerYearSem || '').trim(),
+            photoUrl: formData.winnerPhotoUrl || '',
+            highlights: (formData.winnerHighlights || '').trim()
+          },
+          runnerUp: {
+            studentName: formData.runnerUpName.trim() || formData.runnerUpTeamName.trim(),
+            teamName: formData.runnerUpTeamName.trim() || formData.runnerUpName.trim(),
+            collegeCode: runnerObj.id,
+            collegeName: runnerObj.name,
+            medal: 'SILVER',
+            rollNo: (formData.runnerUpRollNo || '').trim(),
+            course: (formData.runnerUpCourse || '').trim(),
+            yearSemester: (formData.runnerUpYearSem || '').trim(),
+            photoUrl: formData.runnerUpPhotoUrl || '',
+            highlights: (formData.runnerUpHighlights || '').trim()
+          }
+        };
+
+        const existingMedals = JSON.parse(localStorage.getItem('sems_custom_medal_entries') || '[]');
+        const updatedMedals = [
+          medalItem, 
+          ...existingMedals.filter((m) => m.id !== medalEntryId && m.eventId !== formData.id && String(m.id) !== String(formData.id))
+        ];
+        localStorage.setItem('sems_custom_medal_entries', JSON.stringify(updatedMedals));
+      } catch (syncErr) {
+        console.error('Error syncing custom medal entries:', syncErr);
+      }
+
       await adminApi.saveResult(formData);
       await fetchResultsData();
-      addToast('Match result & Inter-College leaderboard updated successfully!', 'success');
+
+      window.dispatchEvent(new Event('sems_leaderboard_updated'));
+      window.dispatchEvent(new Event('sems_results_updated'));
+      window.dispatchEvent(new Event('storage'));
+
+      addToast(
+        formData.id 
+          ? 'Match result & Inter-College leaderboard updated successfully!' 
+          : 'Official match result declared & leaderboard updated!', 
+        'success'
+      );
       setIsEditOpen(false);
       setSelectedResult(null);
     } catch (err) {
-      addToast(err.message || 'Failed to update result', 'error');
+      addToast(err.message || 'Failed to save result', 'error');
     }
   };
 
@@ -119,8 +226,21 @@ export const AdminResultsPage = () => {
       return;
     }
     try {
+      try {
+        const existingMedals = JSON.parse(localStorage.getItem('sems_custom_medal_entries') || '[]');
+        const updatedMedals = existingMedals.filter((m) => 
+          m.id !== `medal-${id}` && m.eventId !== id && String(m.id) !== String(id)
+        );
+        localStorage.setItem('sems_custom_medal_entries', JSON.stringify(updatedMedals));
+      } catch (e) {}
+
       await adminApi.deleteResult(id);
       await fetchResultsData();
+
+      window.dispatchEvent(new Event('sems_leaderboard_updated'));
+      window.dispatchEvent(new Event('sems_results_updated'));
+      window.dispatchEvent(new Event('storage'));
+
       addToast('Declared result & leaderboard entry removed', 'success');
     } catch (err) {
       addToast(err.message || 'Failed to delete result', 'error');
@@ -205,11 +325,11 @@ export const AdminResultsPage = () => {
     // 3. Search Query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchWinner = (res.winnerName || res.winnerTeamName || '').toLowerCase().includes(q);
-      const matchRunnerUp = (res.runnerUpName || res.runnerUpTeamName || '').toLowerCase().includes(q);
+      const matchWinner = (res.winnerName || res.winnerTeamName || '').toLowerCase().includes(q) || (res.winnerRollNo || '').toLowerCase().includes(q);
+      const matchRunnerUp = (res.runnerUpName || res.runnerUpTeamName || '').toLowerCase().includes(q) || (res.runnerUpRollNo || '').toLowerCase().includes(q);
       const matchCollege = (res.winnerCollege || res.runnerUpCollege || '').toLowerCase().includes(q);
       const matchSport = (res.sportName || res.sportId || '').toLowerCase().includes(q);
-      const matchEvent = (res.eventTitle || '').toLowerCase().includes(q);
+      const matchEvent = (res.eventTitle || res.athleticsSubEvent || '').toLowerCase().includes(q);
       return matchWinner || matchRunnerUp || matchCollege || matchSport || matchEvent;
     }
     return true;
@@ -423,7 +543,7 @@ export const AdminResultsPage = () => {
               {/* 3. 🔍 Search Input */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                  🔍 Search Match / Winner
+                  🔍 Search Match / Winner / Roll No
                 </label>
                 <div className="relative">
                   <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-2.5" />
@@ -431,7 +551,7 @@ export const AdminResultsPage = () => {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search team, winner, college..."
+                    placeholder="Search player, team, roll no, college..."
                     className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
                   />
                 </div>
@@ -482,8 +602,8 @@ export const AdminResultsPage = () => {
                       <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Sport & Event</th>
                       <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Gender</th>
                       <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Format</th>
-                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-blue-600 dark:text-blue-400 whitespace-nowrap">🥇 Winner</th>
-                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">🥈 Runner-Up</th>
+                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 whitespace-nowrap">🥇 Winner (Gold)</th>
+                      <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-blue-600 dark:text-blue-400 whitespace-nowrap">🥈 Runner-Up (Silver)</th>
                       <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Score / Result</th>
                       <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Declared By</th>
                       <th className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 whitespace-nowrap">Date</th>
@@ -499,11 +619,16 @@ export const AdminResultsPage = () => {
                         {/* Sport & Event */}
                         <td className="px-4 py-3 whitespace-nowrap max-w-[220px]">
                           <div className="space-y-1">
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="text-sm">{res.sportIcon}</span>
                               <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide border bg-blue-500/10 text-blue-400 border-blue-500/20">
                                 {res.sportName}
                               </span>
+                              {res.athleticsSubEvent && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                                  🏃 {res.athleticsSubEvent}
+                                </span>
+                              )}
                             </div>
                             <p className="text-slate-300 font-semibold text-[11px] line-clamp-1 max-w-[190px]" title={res.eventTitle}>
                               {res.eventTitle}
@@ -533,23 +658,53 @@ export const AdminResultsPage = () => {
                         </td>
 
                         {/* Winner */}
-                        <td className="px-4 py-3 whitespace-nowrap max-w-[180px]">
-                          <div className="flex items-center gap-1.5">
-                            <Trophy className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                            <div>
-                              <p className="font-bold text-blue-400 text-xs line-clamp-1" title={res.winnerName}>{res.winnerName}</p>
-                              <p className="text-[10px] text-slate-500 font-mono">{res.winnerCollege}</p>
+                        <td className="px-4 py-3 whitespace-nowrap max-w-[220px]">
+                          <div className="flex items-center gap-2.5">
+                            <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0 border border-emerald-400/40 bg-slate-800 flex items-center justify-center shadow-xs">
+                              {res.winnerPhotoUrl ? (
+                                <img src={res.winnerPhotoUrl} alt={res.winnerName} className="w-full h-full object-cover" />
+                              ) : (
+                                <Trophy className="w-4 h-4 text-emerald-400" />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-bold text-emerald-400 text-xs line-clamp-1" title={res.winnerName}>
+                                {res.winnerName}
+                              </p>
+                              {res.winnerTeamName && res.winnerTeamName !== res.winnerName && (
+                                <p className="text-[10px] text-slate-300 font-semibold line-clamp-1">{res.winnerTeamName}</p>
+                              )}
+                              <p className="text-[10px] text-slate-500 font-mono line-clamp-1">
+                                <span className="text-emerald-500/80 font-bold">{res.winnerCollege}</span>
+                                {res.winnerRollNo && <span> • {res.winnerRollNo}</span>}
+                                {res.winnerCourse && <span> ({res.winnerCourse})</span>}
+                              </p>
                             </div>
                           </div>
                         </td>
 
                         {/* Runner-Up */}
-                        <td className="px-4 py-3 whitespace-nowrap max-w-[180px]">
-                          <div className="flex items-center gap-1.5">
-                            <Medal className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <div>
-                              <p className="font-semibold text-slate-300 text-xs line-clamp-1" title={res.runnerUpName}>{res.runnerUpName}</p>
-                              <p className="text-[10px] text-slate-500 font-mono">{res.runnerUpCollege}</p>
+                        <td className="px-4 py-3 whitespace-nowrap max-w-[220px]">
+                          <div className="flex items-center gap-2.5">
+                            <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0 border border-blue-400/40 bg-slate-800 flex items-center justify-center shadow-xs">
+                              {res.runnerUpPhotoUrl ? (
+                                <img src={res.runnerUpPhotoUrl} alt={res.runnerUpName} className="w-full h-full object-cover" />
+                              ) : (
+                                <Medal className="w-4 h-4 text-blue-400" />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-slate-200 text-xs line-clamp-1" title={res.runnerUpName}>
+                                {res.runnerUpName}
+                              </p>
+                              {res.runnerUpTeamName && res.runnerUpTeamName !== res.runnerUpName && (
+                                <p className="text-[10px] text-slate-400 font-semibold line-clamp-1">{res.runnerUpTeamName}</p>
+                              )}
+                              <p className="text-[10px] text-slate-500 font-mono line-clamp-1">
+                                <span className="text-blue-400/80 font-bold">{res.runnerUpCollege}</span>
+                                {res.runnerUpRollNo && <span> • {res.runnerUpRollNo}</span>}
+                                {res.runnerUpCourse && <span> ({res.runnerUpCourse})</span>}
+                              </p>
                             </div>
                           </div>
                         </td>
