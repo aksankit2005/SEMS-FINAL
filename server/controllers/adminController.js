@@ -639,47 +639,110 @@ export const getSuperCoordinatorCoordinators = async (req, res) => {
 
 export const getLeaderboardEntries = async (req, res) => {
   try {
-    const dbRes = await queryDb(`
-      SELECT 
-        id,
-        sport_id AS "sportId",
-        match_format AS "matchFormat",
-        gender,
-        sub_event AS "subEvent",
-        winner_name AS "winnerName",
-        winner_team AS "winnerTeam",
-        winner_college AS "winnerCollege",
-        runner_up_name AS "runnerUpName",
-        runner_up_team AS "runnerUpTeam",
-        runner_up_college AS "runnerUpCollege",
-        points,
-        declared_at AS "declaredAt"
-      FROM leaderboard_entries
-      ORDER BY declared_at DESC
-    `);
+    let dbRes;
+    try {
+      dbRes = await queryDb(`
+        SELECT 
+          id,
+          sport_id AS "sportId",
+          match_format AS "matchFormat",
+          gender,
+          sub_event AS "subEvent",
+          winner_name AS "winnerName",
+          winner_team AS "winnerTeam",
+          winner_college AS "winnerCollege",
+          runner_up_name AS "runnerUpName",
+          runner_up_team AS "runnerUpTeam",
+          runner_up_college AS "runnerUpCollege",
+          points,
+          details,
+          winner_photo_url AS "winnerPhotoUrl",
+          runner_up_photo_url AS "runnerUpPhotoUrl",
+          declared_at AS "declaredAt"
+        FROM leaderboard_entries
+        ORDER BY declared_at DESC
+      `);
+    } catch (colErr) {
+      try {
+        dbRes = await queryDb(`
+          SELECT 
+            id,
+            sport_id AS "sportId",
+            match_format AS "matchFormat",
+            gender,
+            sub_event AS "subEvent",
+            winner_name AS "winnerName",
+            winner_team AS "winnerTeam",
+            winner_college AS "winnerCollege",
+            runner_up_name AS "runnerUpName",
+            runner_up_team AS "runnerUpTeam",
+            runner_up_college AS "runnerUpCollege",
+            points,
+            details,
+            declared_at AS "declaredAt"
+          FROM leaderboard_entries
+          ORDER BY declared_at DESC
+        `);
+      } catch (colErr2) {
+        dbRes = await queryDb(`
+          SELECT 
+            id,
+            sport_id AS "sportId",
+            match_format AS "matchFormat",
+            gender,
+            sub_event AS "subEvent",
+            winner_name AS "winnerName",
+            winner_team AS "winnerTeam",
+            winner_college AS "winnerCollege",
+            runner_up_name AS "runnerUpName",
+            runner_up_team AS "runnerUpTeam",
+            runner_up_college AS "runnerUpCollege",
+            points,
+            declared_at AS "declaredAt"
+          FROM leaderboard_entries
+          ORDER BY declared_at DESC
+        `);
+      }
+    }
 
     if (dbRes && dbRes.rows) {
-      const formatted = dbRes.rows.map((row) => ({
-        id: row.id,
-        sportId: row.sportId,
-        sportName: (row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
-        matchFormat: row.matchFormat || 'Team',
-        gender: row.gender || 'Boys',
-        subEvent: row.subEvent,
-        athleticsSubEvent: row.subEvent,
-        winnerName: row.winnerName || '',
-        winnerTeamName: row.winnerTeam || row.winnerName || '',
-        winnerCollege: row.winnerCollege || 'MPEC',
-        winnerCollegeName: row.winnerCollege || 'MPEC',
-        winnerPoints: 5,
-        runnerUpName: row.runnerUpName || '',
-        runnerUpTeamName: row.runnerUpTeam || row.runnerUpName || '',
-        runnerUpCollege: row.runnerUpCollege || 'MIPS',
-        runnerUpCollegeName: row.runnerUpCollege || 'MIPS',
-        runnerUpPoints: 3,
-        points: Number(row.points || 10),
-        date: row.declaredAt ? new Date(row.declaredAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }) : new Date().toLocaleString()
-      }));
+      const formatted = dbRes.rows.map((row) => {
+        let det = {};
+        if (row.details) {
+          try { det = typeof row.details === 'object' ? row.details : JSON.parse(row.details); } catch (err) {}
+        }
+        return {
+          id: row.id,
+          sportId: row.sportId,
+          sportName: (row.sportId || 'Sport').replace(/-/g, ' ').toUpperCase(),
+          matchFormat: row.matchFormat || 'Team',
+          gender: row.gender || 'Boys',
+          subEvent: row.subEvent,
+          athleticsSubEvent: row.subEvent,
+          winnerName: row.winnerName || '',
+          winnerTeamName: row.winnerTeam || row.winnerName || '',
+          winnerCollege: row.winnerCollege || 'MPEC',
+          winnerCollegeName: row.winnerCollege || 'MPEC',
+          winnerPoints: 5,
+          winnerPhotoUrl: row.winnerPhotoUrl || det.winnerPhotoUrl || '',
+          winnerRollNo: det.winnerRollNo || '',
+          winnerCourse: det.winnerCourse || '',
+          winnerYearSem: det.winnerYearSem || '',
+          winnerHighlights: det.winnerHighlights || '',
+          runnerUpName: row.runnerUpName || '',
+          runnerUpTeamName: row.runnerUpTeam || row.runnerUpName || '',
+          runnerUpCollege: row.runnerUpCollege || 'MIPS',
+          runnerUpCollegeName: row.runnerUpCollege || 'MIPS',
+          runnerUpPoints: 3,
+          runnerUpPhotoUrl: row.runnerUpPhotoUrl || det.runnerUpPhotoUrl || '',
+          runnerUpRollNo: det.runnerUpRollNo || '',
+          runnerUpCourse: det.runnerUpCourse || '',
+          runnerUpYearSem: det.runnerUpYearSem || '',
+          runnerUpHighlights: det.runnerUpHighlights || '',
+          points: Number(row.points || 10),
+          date: row.declaredAt ? new Date(row.declaredAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }) : new Date().toLocaleString()
+        };
+      });
       return res.json(formatted);
     }
   } catch (err) {
@@ -687,6 +750,188 @@ export const getLeaderboardEntries = async (req, res) => {
   }
 
   return res.json([]);
+};
+
+export const getPublicMedalists = async (req, res) => {
+  try {
+    let dbRes;
+    try {
+      dbRes = await queryDb(`
+        SELECT 
+          id,
+          sport_id AS "sportId",
+          match_format AS "matchFormat",
+          gender,
+          sub_event AS "subEvent",
+          winner_name AS "winnerName",
+          winner_team AS "winnerTeam",
+          winner_college AS "winnerCollege",
+          runner_up_name AS "runnerUpName",
+          runner_up_team AS "runnerUpTeam",
+          runner_up_college AS "runnerUpCollege",
+          points,
+          details,
+          winner_photo_url AS "winnerPhotoUrl",
+          runner_up_photo_url AS "runnerUpPhotoUrl",
+          declared_at AS "declaredAt"
+        FROM leaderboard_entries
+        ORDER BY declared_at DESC
+      `);
+    } catch (e1) {
+      try {
+        dbRes = await queryDb(`
+          SELECT 
+            id,
+            sport_id AS "sportId",
+            match_format AS "matchFormat",
+            gender,
+            sub_event AS "subEvent",
+            winner_name AS "winnerName",
+            winner_team AS "winnerTeam",
+            winner_college AS "winnerCollege",
+            runner_up_name AS "runnerUpName",
+            runner_up_team AS "runnerUpTeam",
+            runner_up_college AS "runnerUpCollege",
+            points,
+            details,
+            declared_at AS "declaredAt"
+          FROM leaderboard_entries
+          ORDER BY declared_at DESC
+        `);
+      } catch (e2) {
+        dbRes = await queryDb(`
+          SELECT 
+            id,
+            sport_id AS "sportId",
+            match_format AS "matchFormat",
+            gender,
+            sub_event AS "subEvent",
+            winner_name AS "winnerName",
+            winner_team AS "winnerTeam",
+            winner_college AS "winnerCollege",
+            runner_up_name AS "runnerUpName",
+            runner_up_team AS "runnerUpTeam",
+            runner_up_college AS "runnerUpCollege",
+            points,
+            declared_at AS "declaredAt"
+          FROM leaderboard_entries
+          ORDER BY declared_at DESC
+        `);
+      }
+    }
+
+    if (!dbRes || !dbRes.rows) {
+      return res.json([]);
+    }
+
+    const collegeNamesMap = {
+      MPEC: 'Maharana Pratap Engineering College',
+      MPDC: 'Maharana Pratap Dental College',
+      MPCP: 'Maharana Pratap College of Pharmacy',
+      MIPS: 'Maharana Institute of Professional Studies',
+      MPCPS: 'Maharana Pratap College of Professional Studies',
+      MPGI: 'MPGI Group',
+      MPCT: 'Maharana Pratap College of Technology',
+      MPCPG: 'Maharana Pratap College of Post Graduate',
+      MPCAMS: 'Maharana Pratap College of Applied Medical Sciences'
+    };
+
+    const getSportIcon = (sportId = '') => {
+      const s = String(sportId).toLowerCase();
+      if (s.includes('badminton')) return '🏸';
+      if (s.includes('cricket')) return '🏏';
+      if (s.includes('football')) return '⚽';
+      if (s.includes('chess')) return '♟️';
+      if (s.includes('table-tennis') || s.includes('tt')) return '🏓';
+      if (s.includes('basketball')) return '🏀';
+      if (s.includes('volleyball')) return '🏐';
+      if (s.includes('kabaddi')) return '🤼';
+      if (s.includes('athletics')) return '🏃‍♂️';
+      if (s.includes('kho')) return '🏃';
+      if (s.includes('tug')) return '🪢';
+      return '🏆';
+    };
+
+    const studentMedalists = [];
+
+    dbRes.rows.forEach((row) => {
+      let det = {};
+      if (row.details) {
+        try {
+          det = typeof row.details === 'object' ? row.details : JSON.parse(row.details);
+        } catch (e) {}
+      }
+
+      const sId = row.sportId || 'sport';
+      const cleanSport = sId.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      const sportName = row.subEvent && sId.toLowerCase().includes('athletics')
+        ? `Athletics (${row.subEvent})`
+        : cleanSport;
+      const sportIcon = getSportIcon(sId);
+
+      const wPhoto = row.winnerPhotoUrl || det.winnerPhotoUrl || '';
+      const rPhoto = row.runnerUpPhotoUrl || det.runnerUpPhotoUrl || '';
+
+      // 1. Winner (GOLD)
+      if (row.winnerName || row.winnerTeam || row.winnerCollege) {
+        studentMedalists.push({
+          id: `${row.id}-gold`,
+          eventId: row.id,
+          sportId: sId,
+          sportName: sportName,
+          sportIcon: sportIcon,
+          gender: row.gender || 'Boys',
+          matchFormat: row.matchFormat || 'Team',
+          subEvent: row.subEvent || `${cleanSport} Final`,
+          scoreSummary: 'Champion Declared by Super Coordinator',
+          declaredAt: row.declaredAt || new Date().toISOString(),
+          medal: 'GOLD',
+          studentName: row.winnerName || row.winnerTeam || 'Gold Champion',
+          teamName: row.winnerTeam || row.winnerName || '',
+          collegeCode: row.winnerCollege || 'MPEC',
+          collegeName: collegeNamesMap[row.winnerCollege] || row.winnerCollege || 'Maharana Pratap Engineering College',
+          rollNo: det.winnerRollNo || '',
+          course: det.winnerCourse || '',
+          yearSemester: det.winnerYearSem || '',
+          photoUrl: wPhoto,
+          highlights: det.winnerHighlights || 'Tournament Champion Gold Medalist',
+          points: 5
+        });
+      }
+
+      // 2. Runner-Up (SILVER)
+      if (row.runnerUpName || row.runnerUpTeam || row.runnerUpCollege) {
+        studentMedalists.push({
+          id: `${row.id}-silver`,
+          eventId: row.id,
+          sportId: sId,
+          sportName: sportName,
+          sportIcon: sportIcon,
+          gender: row.gender || 'Boys',
+          matchFormat: row.matchFormat || 'Team',
+          subEvent: row.subEvent || `${cleanSport} Final`,
+          scoreSummary: 'Runner-Up Declared by Super Coordinator',
+          declaredAt: row.declaredAt || new Date().toISOString(),
+          medal: 'SILVER',
+          studentName: row.runnerUpName || row.runnerUpTeam || 'Silver Runner-Up',
+          teamName: row.runnerUpTeam || row.runnerUpName || '',
+          collegeCode: row.runnerUpCollege || 'MIPS',
+          collegeName: collegeNamesMap[row.runnerUpCollege] || row.runnerUpCollege || 'Maharana Institute of Professional Studies',
+          rollNo: det.runnerUpRollNo || '',
+          course: det.runnerUpCourse || '',
+          yearSemester: det.runnerUpYearSem || '',
+          photoUrl: rPhoto,
+          highlights: det.runnerUpHighlights || 'Tournament Finalist Silver Medalist',
+          points: 3
+        });
+      }
+    });
+
+    return res.json(studentMedalists);
+  } catch (err) {
+    console.error('Error fetching public medalists from DB:', err.message);
+    return res.status(500).json([]);
+  }
 };
 
 export const saveLeaderboardEntry = async (req, res) => {
@@ -701,42 +946,119 @@ export const saveLeaderboardEntry = async (req, res) => {
     winnerTeamName,
     winnerCollege,
     winnerCollegeId,
+    winnerPhotoUrl,
+    winnerRollNo,
+    winnerCourse,
+    winnerYearSem,
+    winnerHighlights,
     runnerUpName,
     runnerUpTeamName,
     runnerUpCollege,
     runnerUpCollegeId,
+    runnerUpPhotoUrl,
+    runnerUpRollNo,
+    runnerUpCourse,
+    runnerUpYearSem,
+    runnerUpHighlights,
     points
   } = req.body;
 
   const finalSubEvent = athleticsSubEvent || subEvent || null;
   const wCollege = winnerCollege || winnerCollegeId || 'MPEC';
   const rCollege = runnerUpCollege || runnerUpCollegeId || 'MIPS';
+  const sportName = (sportId || 'Sport').replace(/-/g, ' ').toUpperCase();
+
+  const detailsPayload = {
+    winnerPhotoUrl: winnerPhotoUrl || '',
+    winnerRollNo: winnerRollNo || '',
+    winnerCourse: winnerCourse || '',
+    winnerYearSem: winnerYearSem || '',
+    winnerHighlights: winnerHighlights || '',
+    runnerUpPhotoUrl: runnerUpPhotoUrl || '',
+    runnerUpRollNo: runnerUpRollNo || '',
+    runnerUpCourse: runnerUpCourse || '',
+    runnerUpYearSem: runnerUpYearSem || '',
+    runnerUpHighlights: runnerUpHighlights || ''
+  };
 
   try {
-    const dbRes = await queryDb(
-      `INSERT INTO leaderboard_entries 
-        (sport_id, match_format, gender, sub_event, winner_name, winner_team, winner_college, runner_up_name, runner_up_team, runner_up_college, points, declared_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
-       RETURNING *`,
-      [
-        sportId || 'general',
-        matchFormat || 'Team',
-        gender || 'Boys',
-        finalSubEvent,
-        winnerName || '',
-        winnerTeamName || winnerName || '',
-        wCollege,
-        runnerUpName || '',
-        runnerUpTeamName || runnerUpName || '',
-        rCollege,
-        Number(points || 10)
-      ]
-    );
+    let dbRes;
+    try {
+      dbRes = await queryDb(
+        `INSERT INTO leaderboard_entries 
+          (sport_id, match_format, gender, sub_event, winner_name, winner_team, winner_college, runner_up_name, runner_up_team, runner_up_college, points, details, winner_photo_url, runner_up_photo_url, declared_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_TIMESTAMP)
+         RETURNING *`,
+        [
+          sportId || 'general',
+          matchFormat || 'Team',
+          gender || 'Boys',
+          finalSubEvent,
+          winnerName || '',
+          winnerTeamName || winnerName || '',
+          wCollege,
+          runnerUpName || '',
+          runnerUpTeamName || runnerUpName || '',
+          rCollege,
+          Number(points || 10),
+          JSON.stringify(detailsPayload),
+          winnerPhotoUrl || '',
+          runnerUpPhotoUrl || ''
+        ]
+      );
+    } catch (insertColErr) {
+      try {
+        dbRes = await queryDb(
+          `INSERT INTO leaderboard_entries 
+            (sport_id, match_format, gender, sub_event, winner_name, winner_team, winner_college, runner_up_name, runner_up_team, runner_up_college, points, details, declared_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)
+           RETURNING *`,
+          [
+            sportId || 'general',
+            matchFormat || 'Team',
+            gender || 'Boys',
+            finalSubEvent,
+            winnerName || '',
+            winnerTeamName || winnerName || '',
+            wCollege,
+            runnerUpName || '',
+            runnerUpTeamName || runnerUpName || '',
+            rCollege,
+            Number(points || 10),
+            JSON.stringify(detailsPayload)
+          ]
+        );
+      } catch (insertColErr2) {
+        dbRes = await queryDb(
+          `INSERT INTO leaderboard_entries 
+            (sport_id, match_format, gender, sub_event, winner_name, winner_team, winner_college, runner_up_name, runner_up_team, runner_up_college, points, declared_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
+           RETURNING *`,
+          [
+            sportId || 'general',
+            matchFormat || 'Team',
+            gender || 'Boys',
+            finalSubEvent,
+            winnerName || '',
+            winnerTeamName || winnerName || '',
+            wCollege,
+            runnerUpName || '',
+            runnerUpTeamName || runnerUpName || '',
+            rCollege,
+            Number(points || 10)
+          ]
+        );
+      }
+    }
 
     await syncCollegeLeaderboards();
 
     if (dbRes && dbRes.rows.length > 0) {
       const row = dbRes.rows[0];
+      let rowDetails = {};
+      if (row.details) {
+        try { rowDetails = typeof row.details === 'object' ? row.details : JSON.parse(row.details); } catch (e) {}
+      }
       const entry = {
         id: row.id,
         sportId: row.sport_id,
@@ -750,11 +1072,21 @@ export const saveLeaderboardEntry = async (req, res) => {
         winnerCollege: row.winner_college,
         winnerCollegeName: row.winner_college,
         winnerPoints: 5,
+        winnerPhotoUrl: rowDetails.winnerPhotoUrl || winnerPhotoUrl || '',
+        winnerRollNo: rowDetails.winnerRollNo || winnerRollNo || '',
+        winnerCourse: rowDetails.winnerCourse || winnerCourse || '',
+        winnerYearSem: rowDetails.winnerYearSem || winnerYearSem || '',
+        winnerHighlights: rowDetails.winnerHighlights || winnerHighlights || '',
         runnerUpName: row.runner_up_name,
         runnerUpTeamName: row.runner_up_team,
         runnerUpCollege: row.runner_up_college,
         runnerUpCollegeName: row.runner_up_college,
         runnerUpPoints: 3,
+        runnerUpPhotoUrl: rowDetails.runnerUpPhotoUrl || runnerUpPhotoUrl || '',
+        runnerUpRollNo: rowDetails.runnerUpRollNo || runnerUpRollNo || '',
+        runnerUpCourse: rowDetails.runnerUpCourse || runnerUpCourse || '',
+        runnerUpYearSem: rowDetails.runnerUpYearSem || runnerUpYearSem || '',
+        runnerUpHighlights: rowDetails.runnerUpHighlights || runnerUpHighlights || '',
         points: Number(row.points || 10),
         date: new Date(row.declared_at).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
       };
@@ -762,8 +1094,8 @@ export const saveLeaderboardEntry = async (req, res) => {
         actorName: req.user?.username || 'Super Coordinator',
         role: 'SUPER_COORDINATOR',
         action: 'Leaderboard Updated',
-        entity: `Declared winners for ${sportName}: 1st ${winnerCollege} (${winnerName}), 2nd ${runnerUpCollege}`,
-        details: { sportName, winnerCollege, runnerUpCollege },
+        entity: `Declared winners for ${sportName}: 1st ${wCollege} (${winnerName}), 2nd ${rCollege}`,
+        details: { sportName, winnerCollege: wCollege, runnerUpCollege: rCollege },
         ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
       });
       return res.status(201).json({ success: true, entry });
@@ -774,6 +1106,194 @@ export const saveLeaderboardEntry = async (req, res) => {
   }
 
   return res.json({ success: true });
+};
+
+export const updateLeaderboardEntry = async (req, res) => {
+  const { id } = req.params;
+  const {
+    sportId,
+    matchFormat,
+    gender,
+    subEvent,
+    athleticsSubEvent,
+    winnerName,
+    winnerTeamName,
+    winnerCollege,
+    winnerCollegeId,
+    winnerPhotoUrl,
+    winnerRollNo,
+    winnerCourse,
+    winnerYearSem,
+    winnerHighlights,
+    runnerUpName,
+    runnerUpTeamName,
+    runnerUpCollege,
+    runnerUpCollegeId,
+    runnerUpPhotoUrl,
+    runnerUpRollNo,
+    runnerUpCourse,
+    runnerUpYearSem,
+    runnerUpHighlights,
+    points
+  } = req.body;
+
+  const finalSubEvent = athleticsSubEvent || subEvent || null;
+  const wCollege = winnerCollege || winnerCollegeId || 'MPEC';
+  const rCollege = runnerUpCollege || runnerUpCollegeId || 'MIPS';
+  const sportName = (sportId || 'Sport').replace(/-/g, ' ').toUpperCase();
+
+  const detailsPayload = {
+    winnerPhotoUrl: winnerPhotoUrl || '',
+    winnerRollNo: winnerRollNo || '',
+    winnerCourse: winnerCourse || '',
+    winnerYearSem: winnerYearSem || '',
+    winnerHighlights: winnerHighlights || '',
+    runnerUpPhotoUrl: runnerUpPhotoUrl || '',
+    runnerUpRollNo: runnerUpRollNo || '',
+    runnerUpCourse: runnerUpCourse || '',
+    runnerUpYearSem: runnerUpYearSem || '',
+    runnerUpHighlights: runnerUpHighlights || ''
+  };
+
+  try {
+    let dbRes;
+    try {
+      dbRes = await queryDb(
+        `UPDATE leaderboard_entries 
+         SET sport_id = $1, match_format = $2, gender = $3, sub_event = $4, 
+             winner_name = $5, winner_team = $6, winner_college = $7, 
+             runner_up_name = $8, runner_up_team = $9, runner_up_college = $10, 
+             points = $11, details = $12, winner_photo_url = $13, runner_up_photo_url = $14
+         WHERE id::text = $15
+         RETURNING *`,
+        [
+          sportId || 'general',
+          matchFormat || 'Team',
+          gender || 'Boys',
+          finalSubEvent,
+          winnerName || '',
+          winnerTeamName || winnerName || '',
+          wCollege,
+          runnerUpName || '',
+          runnerUpTeamName || runnerUpName || '',
+          rCollege,
+          Number(points || 10),
+          JSON.stringify(detailsPayload),
+          winnerPhotoUrl || '',
+          runnerUpPhotoUrl || '',
+          String(id)
+        ]
+      );
+    } catch (errCol) {
+      try {
+        dbRes = await queryDb(
+          `UPDATE leaderboard_entries 
+           SET sport_id = $1, match_format = $2, gender = $3, sub_event = $4, 
+               winner_name = $5, winner_team = $6, winner_college = $7, 
+               runner_up_name = $8, runner_up_team = $9, runner_up_college = $10, 
+               points = $11, details = $12
+           WHERE id::text = $13
+           RETURNING *`,
+          [
+            sportId || 'general',
+            matchFormat || 'Team',
+            gender || 'Boys',
+            finalSubEvent,
+            winnerName || '',
+            winnerTeamName || winnerName || '',
+            wCollege,
+            runnerUpName || '',
+            runnerUpTeamName || runnerUpName || '',
+            rCollege,
+            Number(points || 10),
+            JSON.stringify(detailsPayload),
+            String(id)
+          ]
+        );
+      } catch (errCol2) {
+        dbRes = await queryDb(
+          `UPDATE leaderboard_entries 
+           SET sport_id = $1, match_format = $2, gender = $3, sub_event = $4, 
+               winner_name = $5, winner_team = $6, winner_college = $7, 
+               runner_up_name = $8, runner_up_team = $9, runner_up_college = $10, 
+               points = $11
+           WHERE id::text = $12
+           RETURNING *`,
+          [
+            sportId || 'general',
+            matchFormat || 'Team',
+            gender || 'Boys',
+            finalSubEvent,
+            winnerName || '',
+            winnerTeamName || winnerName || '',
+            wCollege,
+            runnerUpName || '',
+            runnerUpTeamName || runnerUpName || '',
+            rCollege,
+            Number(points || 10),
+            String(id)
+          ]
+        );
+      }
+    }
+
+    await syncCollegeLeaderboards();
+
+    if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+      const row = dbRes.rows[0];
+      let rowDetails = {};
+      if (row.details) {
+        try { rowDetails = typeof row.details === 'object' ? row.details : JSON.parse(row.details); } catch (e) {}
+      }
+      const entry = {
+        id: row.id,
+        sportId: row.sport_id,
+        sportName: (row.sport_id || 'Sport').replace(/-/g, ' ').toUpperCase(),
+        matchFormat: row.match_format,
+        gender: row.gender,
+        subEvent: row.sub_event,
+        athleticsSubEvent: row.sub_event,
+        winnerName: row.winner_name,
+        winnerTeamName: row.winner_team,
+        winnerCollege: row.winner_college,
+        winnerCollegeName: row.winner_college,
+        winnerPoints: 5,
+        winnerPhotoUrl: rowDetails.winnerPhotoUrl || winnerPhotoUrl || '',
+        winnerRollNo: rowDetails.winnerRollNo || winnerRollNo || '',
+        winnerCourse: rowDetails.winnerCourse || winnerCourse || '',
+        winnerYearSem: rowDetails.winnerYearSem || winnerYearSem || '',
+        winnerHighlights: rowDetails.winnerHighlights || winnerHighlights || '',
+        runnerUpName: row.runner_up_name,
+        runnerUpTeamName: row.runner_up_team,
+        runnerUpCollege: row.runner_up_college,
+        runnerUpCollegeName: row.runner_up_college,
+        runnerUpPoints: 3,
+        runnerUpPhotoUrl: rowDetails.runnerUpPhotoUrl || runnerUpPhotoUrl || '',
+        runnerUpRollNo: rowDetails.runnerUpRollNo || runnerUpRollNo || '',
+        runnerUpCourse: rowDetails.runnerUpCourse || runnerUpCourse || '',
+        runnerUpYearSem: rowDetails.runnerUpYearSem || runnerUpYearSem || '',
+        runnerUpHighlights: rowDetails.runnerUpHighlights || runnerUpHighlights || '',
+        points: Number(row.points || 10),
+        date: row.declared_at ? new Date(row.declared_at).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }) : new Date().toLocaleString()
+      };
+
+      logAuditEvent({
+        actorName: req.user?.username || 'Super Coordinator',
+        role: 'SUPER_COORDINATOR',
+        action: 'Leaderboard Updated',
+        entity: `Updated result entry for ${sportName}: 1st ${wCollege} (${winnerName}), 2nd ${rCollege}`,
+        details: { id, sportName, wCollege, rCollege },
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      });
+
+      return res.json({ success: true, entry });
+    }
+
+    return res.status(404).json({ message: 'Leaderboard entry not found' });
+  } catch (err) {
+    console.error('Error updating leaderboard entry in DB:', err.message);
+    return res.status(500).json({ message: 'Failed to update leaderboard entry' });
+  }
 };
 
 export const deleteLeaderboardEntry = async (req, res) => {
@@ -794,74 +1314,6 @@ export const deleteLeaderboardEntry = async (req, res) => {
   } catch (err) {
     console.error('Error deleting leaderboard entry:', err.message);
     return res.status(500).json({ message: 'Failed to delete leaderboard entry' });
-  }
-};
-
-export const getHeroSlidesDB = async (req, res) => {
-  try {
-    const setting = await prisma.systemSetting.findUnique({ where: { key: 'hero_slides' } });
-    if (setting && Array.isArray(setting.value) && setting.value.length > 0) {
-      return res.json(setting.value);
-    }
-
-    // Direct database query fallback
-    const rawRes = await queryDb("SELECT value FROM system_settings WHERE key = 'hero_slides'");
-    if (rawRes && rawRes.rows && rawRes.rows.length > 0) {
-      const val = rawRes.rows[0].value;
-      if (Array.isArray(val) && val.length > 0) return res.json(val);
-      if (typeof val === 'string') {
-        try {
-          const parsed = JSON.parse(val);
-          if (Array.isArray(parsed) && parsed.length > 0) return res.json(parsed);
-        } catch (e) { }
-      }
-    }
-  } catch (err) {
-    console.error('Error fetching hero slides from DB:', err.message);
-  }
-  return res.json([]);
-};
-
-export const saveHeroSlidesDB = async (req, res) => {
-  const slides = req.body;
-  if (!Array.isArray(slides)) {
-    return res.status(400).json({ message: 'Slides must be an array.' });
-  }
-
-  try {
-    const updated = await prisma.systemSetting.upsert({
-      where: { key: 'hero_slides' },
-      update: { value: slides, updatedAt: new Date() },
-      create: { key: 'hero_slides', value: slides }
-    });
-    logAuditEvent({
-      actorName: req.user?.username || 'Super Coordinator',
-      role: 'SUPER_COORDINATOR',
-      action: 'Hero Slides Updated',
-      entity: `Saved ${slides.length} hero slides to database`,
-      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
-    });
-    return res.json({ success: true, slides: updated.value });
-  } catch (err) {
-    console.error('Error saving hero slides via Prisma, attempting raw query fallback:', err.message);
-    try {
-      await queryDb(`
-        INSERT INTO system_settings (key, value, "updatedAt")
-        VALUES ('hero_slides', $1::jsonb, NOW())
-        ON CONFLICT (key) DO UPDATE SET value = $1::jsonb, "updatedAt" = NOW()
-      `, [JSON.stringify(slides)]);
-      logAuditEvent({
-        actorName: req.user?.username || 'Super Coordinator',
-        role: 'SUPER_COORDINATOR',
-        action: 'Hero Slides Updated',
-        entity: `Saved ${slides.length} hero slides via raw query fallback`,
-        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
-      });
-      return res.json({ success: true, slides });
-    } catch (rawErr) {
-      console.error('Error saving hero slides via raw query:', rawErr.message);
-      return res.status(500).json({ message: 'Failed to save hero slides to database' });
-    }
   }
 };
 

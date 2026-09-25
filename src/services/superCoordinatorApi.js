@@ -225,6 +225,24 @@ export const superCoordinatorApi = {
     return null;
   },
 
+  // Update Inter-College Leaderboard Entry in Backend PostgreSQL DB
+  updateLeaderboardEntry: async (entryId, entryData) => {
+    try {
+      const res = await fetch(apiUrl(`/super-coordinator/leaderboard/${entryId}`), {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(entryData)
+      });
+      if (res.ok) {
+        window.dispatchEvent(new Event('sems_leaderboard_updated'));
+        return await res.json();
+      }
+    } catch (e) {
+      console.error('Error updating leaderboard entry in DB:', e);
+    }
+    return null;
+  },
+
   // Delete Inter-College Leaderboard Entry from Backend PostgreSQL DB
   deleteLeaderboardEntry: async (entryId) => {
     try {
@@ -242,39 +260,6 @@ export const superCoordinatorApi = {
     return false;
   },
 
-  // Get Hero Slides from Backend PostgreSQL DB
-  getHeroSlides: async () => {
-    try {
-      const res = await fetch(apiUrl('/super-coordinator/hero-slides'), {
-        headers: getAuthHeaders()
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) return data;
-      }
-    } catch (e) {
-      console.error('Error fetching hero slides from DB:', e);
-    }
-    return null;
-  },
-
-  // Save Hero Slides to Backend PostgreSQL DB
-  saveHeroSlides: async (slides) => {
-    try {
-      const res = await fetch(apiUrl('/super-coordinator/hero-slides'), {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(slides)
-      });
-      if (res.ok) {
-        window.dispatchEvent(new Event('sems_slides_updated'));
-        return await res.json();
-      }
-    } catch (e) {
-      console.error('Error saving hero slides to DB:', e);
-    }
-    return null;
-  },
 
   changePassword: async (newPass) => {
     try {

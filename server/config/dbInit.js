@@ -447,6 +447,10 @@ export const initDatabaseSchema = async () => {
       );
     `);
 
+    await queryDb(`ALTER TABLE leaderboard_entries ADD COLUMN IF NOT EXISTS details JSONB DEFAULT '{}';`).catch(() => {});
+    await queryDb(`ALTER TABLE leaderboard_entries ADD COLUMN IF NOT EXISTS winner_photo_url TEXT;`).catch(() => {});
+    await queryDb(`ALTER TABLE leaderboard_entries ADD COLUMN IF NOT EXISTS runner_up_photo_url TEXT;`).catch(() => {});
+
     // 4. Ensure college_leaderboards table exists
     await queryDb(`
       CREATE TABLE IF NOT EXISTS college_leaderboards (

@@ -3,7 +3,7 @@ import { X, Trophy, Medal, Sparkles, Filter, ChevronRight, School } from 'lucide
 import { StudentMedalCard } from './StudentMedalCard';
 import { getCollegeMedalBreakdown } from '../../data/mockLeaderboardMedals';
 
-export const CollegeMedalsModal = ({ isOpen, onClose, college, standingsRank }) => {
+export const CollegeMedalsModal = ({ isOpen, onClose, college, standingsRank, medalistsList = [] }) => {
   const [selectedSport, setSelectedSport] = useState('ALL');
   const [medalFilter, setMedalFilter] = useState('ALL'); // 'ALL' | 'GOLD' | 'SILVER'
 
@@ -31,8 +31,8 @@ export const CollegeMedalsModal = ({ isOpen, onClose, college, standingsRank }) 
   const breakdown = useMemo(() => {
     if (!college) return null;
     const code = college.code || college.id;
-    return getCollegeMedalBreakdown(code);
-  }, [college]);
+    return getCollegeMedalBreakdown(code, medalistsList);
+  }, [college, medalistsList]);
 
   if (!isOpen || !college || !breakdown) return null;
 

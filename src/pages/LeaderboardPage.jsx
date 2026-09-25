@@ -76,6 +76,8 @@ export const LeaderboardPage = () => {
   const [showcaseSearch, setShowcaseSearch] = useState('');
 
   const [medalsVersion, setMedalsVersion] = useState(0);
+  const [realMedalists, setRealMedalists] = useState([]);
+  const [loadingMedalists, setLoadingMedalists] = useState(false);
 
   const normalizeStandings = (data) => {
     if (!Array.isArray(data)) return [];
@@ -101,6 +103,24 @@ export const LeaderboardPage = () => {
   }, [leaderboard]);
 
   useEffect(() => {
+    const fetchMedalists = async () => {
+      try {
+        setLoadingMedalists(true);
+        const res = await fetch(apiUrl('/leaderboard/medalists'));
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            setRealMedalists(data);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Notice fetching public medalists from server:', e);
+      } finally {
+        setLoadingMedalists(false);
+      }
+    };
+
     const refresh = async () => {
       try {
         const res = await fetch(apiUrl('/leaderboard'));
@@ -121,12 +141,14 @@ export const LeaderboardPage = () => {
       setStandings(normalizeStandings(computeStandings()));
     };
 
+    fetchMedalists();
     if (!leaderboard || leaderboard.length === 0) {
       refresh();
     }
 
     const handler = () => {
       refresh();
+      fetchMedalists();
       setMedalsVersion((v) => v + 1);
     };
     window.addEventListener('sems_leaderboard_updated', handler);
@@ -147,8 +169,13 @@ export const LeaderboardPage = () => {
   const top3 = standings.slice(0, 3);
   const hasData = standings.length > 0;
 
-  // All student medalists (reactive to medalsVersion)
-  const allMedalists = useMemo(() => getFlattenedMedalists(), [medalsVersion]);
+  // All student medalists (reactive to real backend data & medalsVersion)
+  const allMedalists = useMemo(() => {
+    if (realMedalists && realMedalists.length > 0) {
+      return realMedalists;
+    }
+    return getFlattenedMedalists();
+  }, [realMedalists, medalsVersion]);
 
   // Distinct sports from medalists
   const distinctSports = useMemo(() => {
@@ -700,14 +727,26 @@ export const LeaderboardPage = () => {
             </div>
 
             {/* Student Cards Grid */}
-            {filteredMedalists.length === 0 ? (
+            {loadingMedalists ? (
               <div className="text-center py-20 rounded-2xl border p-8 max-w-md mx-auto bg-[#FFFFFF] dark:bg-[#0D101A] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] shadow-2xs">
-                <Medal className="w-12 h-12 text-[#686370] dark:text-[#AAA4B8] mx-auto mb-3 opacity-50" />
+                <div className="w-10 h-10 border-3 border-[#7156A5] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                 <h3 className="text-base font-bold font-spatial-display uppercase tracking-wide text-[#211D2B] dark:text-[#F5F2FA]">
-                  No Student Medalists Found
+                  Loading Official Medalists...
                 </h3>
                 <p className="text-xs font-mono mt-1 text-[#686370] dark:text-[#AAA4B8]">
-                  Try adjusting your sport, college, or search query.
+                  Fetching declared champions and photos from tournament database.
+                </p>
+              </div>
+            ) : filteredMedalists.length === 0 ? (
+              <div className="text-center py-20 rounded-2xl border p-8 max-w-lg mx-auto bg-[#FFFFFF] dark:bg-[#0D101A] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] shadow-2xs">
+                <Medal className="w-12 h-12 text-[#A98B57] dark:text-[#D2AB45] mx-auto mb-3 opacity-60" />
+                <h3 className="text-base font-bold font-spatial-display uppercase tracking-wide text-[#211D2B] dark:text-[#F5F2FA]">
+                  {allMedalists.length === 0 ? 'No Official Winners Declared Yet' : 'No Matching Student Medalists Found'}
+                </h3>
+                <p className="text-xs font-mono mt-1 text-[#686370] dark:text-[#AAA4B8] max-w-sm mx-auto">
+                  {allMedalists.length === 0 
+                    ? 'Official match results, winner photographs, and student credentials will appear here live once declared by the Super Coordinator.'
+                    : 'Try adjusting your sport, college, or search query.'}
                 </p>
               </div>
             ) : (
@@ -752,6 +791,7 @@ export const LeaderboardPage = () => {
         onClose={() => setSelectedCollegeModal(null)}
         college={selectedCollegeModal}
         standingsRank={selectedCollegeModal?.rankNumber}
+        medalistsList={allMedalists}
       />
     </div>
   );

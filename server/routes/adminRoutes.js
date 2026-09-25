@@ -8,9 +8,8 @@ import {
   getSuperCoordinatorCoordinators,
   getLeaderboardEntries,
   saveLeaderboardEntry,
+  updateLeaderboardEntry,
   deleteLeaderboardEntry,
-  getHeroSlidesDB,
-  saveHeroSlidesDB,
   changeSuperCoordinatorPasswordDB,
   getCoordinatorsDB,
   saveCoordinatorDB,
@@ -114,9 +113,8 @@ router.delete('/admin/events/:id', verifyAdminToken, deleteCoordinatorEventDB);
 router.get('/super-coordinator/coordinators', verifySuperCoordinatorToken, getSuperCoordinatorCoordinators);
 router.get('/super-coordinator/leaderboard', verifySuperCoordinatorToken, getLeaderboardEntries);
 router.post('/super-coordinator/leaderboard', verifySuperCoordinatorToken, saveLeaderboardEntry);
+router.put('/super-coordinator/leaderboard/:id', verifySuperCoordinatorToken, updateLeaderboardEntry);
 router.delete('/super-coordinator/leaderboard/:id', verifySuperCoordinatorToken, deleteLeaderboardEntry);
-router.get('/super-coordinator/hero-slides', verifySuperCoordinatorToken, getHeroSlidesDB);
-router.post('/super-coordinator/hero-slides', verifySuperCoordinatorToken, saveHeroSlidesDB);
 router.get('/super-coordinator/cloudinary-signature', verifySuperCoordinatorToken, getCloudinarySignature);
 router.post('/super-coordinator/change-password', verifySuperCoordinatorToken, changeSuperCoordinatorPasswordDB);
 

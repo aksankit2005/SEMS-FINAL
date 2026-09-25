@@ -5,7 +5,7 @@ import {
   handleRazorpayWebhook,
   getRegistrationPassPDF,
 } from '../controllers/registrationController.js';
-import { getHeroSlidesDB, getCommitteeDB } from '../controllers/adminController.js';
+import { getCommitteeDB, getPublicMedalists } from '../controllers/adminController.js';
 import { getLeaderboardStandings } from '../services/leaderboardService.js';
 import { queryDb, pool, prisma } from '../config/db.js';
 import { extractYouTubeVideoIdBackend, inMemoryCoordinatorEvents } from '../controllers/coordinatorController.js';
@@ -14,7 +14,6 @@ import { computeEffectiveRegistrationStatus } from '../utils/registrationLifecyc
 
 const router = express.Router();
 
-router.get('/public/hero-slides', publicReadLimiter, getHeroSlidesDB);
 router.get('/committee', publicReadLimiter, getCommitteeDB);
 
 // GET /api/live-matches - Spectator endpoint
@@ -609,6 +608,9 @@ router.get('/leaderboard', publicReadLimiter, async (req, res) => {
     return res.json([]);
   }
 });
+
+// GET /api/leaderboard/medalists - Spectator public declared student medalists endpoint
+router.get('/leaderboard/medalists', publicReadLimiter, getPublicMedalists);
 
 // GET /api/announcements - Spectator public announcements endpoint from Supabase / Postgres
 router.get('/announcements', publicReadLimiter, async (req, res) => {

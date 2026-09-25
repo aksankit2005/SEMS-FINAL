@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, Trophy, Layers, Filter, Search, Download, Calendar, MapPin, DollarSign, 
-  CheckCircle2, Image as ImageIcon, ShieldAlert, Sparkles, RefreshCw, Eye, UserCheck, Phone, Mail, Award, BookOpen,
-  FolderOpen, Folder, ArrowLeft, Camera, Film, X, Maximize2, Key, EyeOff, User, Lock, Building2, Crown, Upload
+  CheckCircle2, Image as ImageIcon, ShieldAlert, RefreshCw, Eye, UserCheck, Phone, Mail, Award, BookOpen,
+  FolderOpen, Folder, ArrowLeft, Camera, Film, X, Maximize2, Key, EyeOff, User, Lock, Building2, Crown, Upload, Edit2
 } from 'lucide-react';
 
 import { superCoordinatorApi, ALL_12_SPORTS, ALL_COLLEGES, matchesCollegeFilter } from '../../services/superCoordinatorApi';
@@ -13,7 +13,6 @@ import { exportToCSV, exportToPDF } from '../../utils/pdfExporter';
 import { getParticipationType, matchesParticipationTypeFilter } from '../../utils/rosterHelper';
 import { exportResultsToExcel } from '../../utils/excelExporter';
 import { GoogleDriveImage } from '../../components/common/GoogleDriveImage';
-import { getHeroSlides, saveHeroSlides, DEFAULT_HERO_SLIDES } from '../../data/heroSlidesData';
 import { uploadFileToCloudinary } from '../../services/cloudinaryService';
 
 export const SuperCoordinatorDashboardPage = () => {
@@ -33,8 +32,6 @@ export const SuperCoordinatorDashboardPage = () => {
   const [masterParticipants, setMasterParticipants] = useState([]);
   const [prPhotos, setPrPhotos] = useState([]);
   const [leaderboardEntries, setLeaderboardEntries] = useState([]);
-  const [editableHeroSlides, setEditableHeroSlides] = useState(() => getHeroSlides());
-  const [uploadingSlideIdx, setUploadingSlideIdx] = useState(null);
 
   // PR Media Folders & Folder Details State
   const [prFolders, setPrFolders] = useState([]);
@@ -112,6 +109,36 @@ export const SuperCoordinatorDashboardPage = () => {
   const [runnerUpPhotoUrl, setRunnerUpPhotoUrl] = useState('');
   const [runnerUpHighlights, setRunnerUpHighlights] = useState('');
   const [uploadingRunnerUpPhoto, setUploadingRunnerUpPhoto] = useState(false);
+
+  // Edit Leaderboard Entry Modal State
+  const [editingEntry, setEditingEntry] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const [editSportId, setEditSportId] = useState('football');
+  const [editMatchFormat, setEditMatchFormat] = useState('Team');
+  const [editMatchGender, setEditMatchGender] = useState('Boys');
+  const [editAthleticsSubEvent, setEditAthleticsSubEvent] = useState('100m Sprint');
+
+  const [editWinnerName, setEditWinnerName] = useState('');
+  const [editWinnerTeamName, setEditWinnerTeamName] = useState('');
+  const [editWinnerCollegeId, setEditWinnerCollegeId] = useState('MPEC');
+  const [editWinnerPhotoUrl, setEditWinnerPhotoUrl] = useState('');
+  const [editWinnerRollNo, setEditWinnerRollNo] = useState('');
+  const [editWinnerCourse, setEditWinnerCourse] = useState('B.Tech CSE');
+  const [editWinnerYearSem, setEditWinnerYearSem] = useState('3rd Yr (6th Sem)');
+  const [editWinnerHighlights, setEditWinnerHighlights] = useState('');
+  const [uploadingEditWinnerPhoto, setUploadingEditWinnerPhoto] = useState(false);
+
+  const [editRunnerUpName, setEditRunnerUpName] = useState('');
+  const [editRunnerUpTeamName, setEditRunnerUpTeamName] = useState('');
+  const [editRunnerUpCollegeId, setEditRunnerUpCollegeId] = useState('MIPS');
+  const [editRunnerUpPhotoUrl, setEditRunnerUpPhotoUrl] = useState('');
+  const [editRunnerUpRollNo, setEditRunnerUpRollNo] = useState('');
+  const [editRunnerUpCourse, setEditRunnerUpCourse] = useState('BCA');
+  const [editRunnerUpYearSem, setEditRunnerUpYearSem] = useState('2nd Yr (4th Sem)');
+  const [editRunnerUpHighlights, setEditRunnerUpHighlights] = useState('');
+  const [uploadingEditRunnerUpPhoto, setUploadingEditRunnerUpPhoto] = useState(false);
 
   // Student Photo Upload Handler
   const handleStudentPhotoUpload = async (file, target = 'winner') => {
@@ -208,13 +235,12 @@ export const SuperCoordinatorDashboardPage = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [eventsList, participantsList, photosList, lbList, foldersList, heroSlides] = await Promise.all([
+      const [eventsList, participantsList, photosList, lbList, foldersList] = await Promise.all([
         superCoordinatorApi.getCoordinatorEvents(),
         superCoordinatorApi.getMasterParticipants(),
         superCoordinatorApi.getPRPhotos(),
         superCoordinatorApi.getLeaderboardEntries(),
-        superCoordinatorApi.getPREventFolders(),
-        superCoordinatorApi.getHeroSlides().catch(() => null)
+        superCoordinatorApi.getPREventFolders()
       ]);
 
       setCoordinatorEvents(eventsList || []);
@@ -222,10 +248,6 @@ export const SuperCoordinatorDashboardPage = () => {
       setPrPhotos(photosList || []);
       setLeaderboardEntries(lbList || []);
       setPrFolders(foldersList || []);
-      if (heroSlides && Array.isArray(heroSlides) && heroSlides.length > 0) {
-        setEditableHeroSlides(heroSlides);
-        localStorage.setItem('sems_home_hero_slides', JSON.stringify(heroSlides));
-      }
 
       if (selectedPRFolder) {
         const mediaDetails = await superCoordinatorApi.getPRFolderMedia(selectedPRFolder.id);
@@ -489,6 +511,206 @@ export const SuperCoordinatorDashboardPage = () => {
     }
   };
 
+  const handleOpenEditModal = (entry) => {
+    setEditingEntry(entry);
+    const matchedSport = ALL_12_SPORTS.find((s) => s.id === entry.sportId || entry.sportName?.toLowerCase().includes(s.name.toLowerCase()));
+    const sId = matchedSport?.id || entry.sportId || 'football';
+    setEditSportId(sId);
+    setEditMatchFormat(entry.matchFormat || 'Team');
+    setEditMatchGender(entry.gender || 'Boys');
+    setEditAthleticsSubEvent(entry.athleticsSubEvent || entry.subEvent || '100m Sprint');
+
+    setEditWinnerName(entry.winnerName || '');
+    setEditWinnerTeamName(entry.winnerTeamName || entry.winnerName || '');
+    setEditWinnerCollegeId(entry.winnerCollege || 'MPEC');
+    setEditWinnerPhotoUrl(entry.winnerPhotoUrl || '');
+    setEditWinnerRollNo(entry.winnerRollNo || '');
+    setEditWinnerCourse(entry.winnerCourse || 'B.Tech CSE');
+    setEditWinnerYearSem(entry.winnerYearSem || '3rd Yr (6th Sem)');
+    setEditWinnerHighlights(entry.winnerHighlights || '');
+
+    setEditRunnerUpName(entry.runnerUpName || '');
+    setEditRunnerUpTeamName(entry.runnerUpTeamName || entry.runnerUpName || '');
+    setEditRunnerUpCollegeId(entry.runnerUpCollege || 'MIPS');
+    setEditRunnerUpPhotoUrl(entry.runnerUpPhotoUrl || '');
+    setEditRunnerUpRollNo(entry.runnerUpRollNo || '');
+    setEditRunnerUpCourse(entry.runnerUpCourse || 'BCA');
+    setEditRunnerUpYearSem(entry.runnerUpYearSem || '2nd Yr (4th Sem)');
+    setEditRunnerUpHighlights(entry.runnerUpHighlights || '');
+
+    setShowEditModal(true);
+  };
+
+  const handleEditStudentPhotoUpload = async (file, target = 'winner') => {
+    if (!file) return;
+    const setUploading = target === 'winner' ? setUploadingEditWinnerPhoto : setUploadingEditRunnerUpPhoto;
+    const setPhoto = target === 'winner' ? setEditWinnerPhotoUrl : setEditRunnerUpPhotoUrl;
+    setUploading(true);
+    try {
+      const uploaded = await uploadFileToCloudinary(file, () => {}, 'sems_medals');
+      if (uploaded?.url) {
+        setPhoto(uploaded.url);
+        addToast(`${target === 'winner' ? 'Winner' : 'Runner-Up'} photo uploaded!`, 'success');
+        setUploading(false);
+        return;
+      }
+    } catch (e) {
+      console.warn('Cloudinary upload notice, using local file reader fallback:', e.message);
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setPhoto(e.target.result);
+      setUploading(false);
+      addToast(`${target === 'winner' ? 'Winner' : 'Runner-Up'} photo attached!`, 'success');
+    };
+    reader.onerror = () => {
+      setUploading(false);
+      addToast('Failed to read photo', 'error');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveEditedEntry = async (e) => {
+    if (e) e.preventDefault();
+    if (!editingEntry) return;
+
+    if (!editWinnerName.trim() && !editWinnerTeamName.trim()) {
+      addToast('Please enter Winner Player Name or Winner Team Name', 'error');
+      return;
+    }
+    if (!editRunnerUpName.trim() && !editRunnerUpTeamName.trim()) {
+      addToast('Please enter Runner-Up Player Name or Runner-Up Team Name', 'error');
+      return;
+    }
+
+    try {
+      setSavingEdit(true);
+      const isAthletics = editSportId.toLowerCase().includes('athletics');
+      const sportObj = ALL_12_SPORTS.find((s) => s.id === editSportId) || ALL_12_SPORTS[0];
+      const winnerObj = ALL_COLLEGES.find((c) => c.id === editWinnerCollegeId) || ALL_COLLEGES[0];
+      const runnerObj = ALL_COLLEGES.find((c) => c.id === editRunnerUpCollegeId) || ALL_COLLEGES[1];
+
+      const finalSportName = isAthletics ? `Athletics (${editAthleticsSubEvent})` : sportObj.name;
+      const wName = editWinnerName.trim() || editWinnerTeamName.trim();
+      const wTeam = editWinnerTeamName.trim() || editWinnerName.trim();
+      const rName = editRunnerUpName.trim() || editRunnerUpTeamName.trim();
+      const rTeam = editRunnerUpTeamName.trim() || editRunnerUpName.trim();
+
+      const updatedPayload = {
+        id: editingEntry.id,
+        sportId: sportObj.id,
+        sportName: finalSportName,
+        athleticsSubEvent: isAthletics ? editAthleticsSubEvent : null,
+        matchFormat: editMatchFormat,
+        gender: editMatchGender,
+
+        winnerName: wName,
+        winnerTeamName: wTeam,
+        winnerCollege: winnerObj.id,
+        winnerCollegeName: winnerObj.name,
+        winnerPoints: 5,
+        winnerPhotoUrl: editWinnerPhotoUrl,
+        winnerRollNo: editWinnerRollNo,
+        winnerCourse: editWinnerCourse,
+        winnerYearSem: editWinnerYearSem,
+        winnerHighlights: editWinnerHighlights,
+
+        runnerUpName: rName,
+        runnerUpTeamName: rTeam,
+        runnerUpCollege: runnerObj.id,
+        runnerUpCollegeName: runnerObj.name,
+        runnerUpPoints: 3,
+        runnerUpPhotoUrl: editRunnerUpPhotoUrl,
+        runnerUpRollNo: editRunnerUpRollNo,
+        runnerUpCourse: editRunnerUpCourse,
+        runnerUpYearSem: editRunnerUpYearSem,
+        runnerUpHighlights: editRunnerUpHighlights,
+
+        date: editingEntry.date || new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
+      };
+
+      // 1. Sync custom medal entries in localStorage for live showcase
+      try {
+        const medalEntryId = `medal-${editingEntry.id}`;
+        const sportEmoji = 
+          sportObj.id.includes('badminton') ? '🏸' :
+          sportObj.id.includes('cricket') ? '🏏' :
+          sportObj.id.includes('football') ? '⚽' :
+          sportObj.id.includes('chess') ? '♟️' :
+          sportObj.id.includes('table-tennis') || sportObj.id.includes('tt') ? '🏓' :
+          sportObj.id.includes('basketball') ? '🏀' :
+          sportObj.id.includes('volleyball') ? '🏐' :
+          sportObj.id.includes('kabaddi') ? '🤼' :
+          sportObj.id.includes('athletics') ? '🏃‍♂️' :
+          sportObj.id.includes('kho') ? '🏃' :
+          sportObj.id.includes('tug') ? '🪢' : '🏆';
+
+        const medalItem = {
+          id: medalEntryId,
+          sportId: sportObj.id,
+          sportName: finalSportName,
+          sportIcon: sportEmoji,
+          gender: editMatchGender,
+          matchFormat: editMatchFormat,
+          subEvent: isAthletics ? editAthleticsSubEvent : `${sportObj.name} Final`,
+          scoreSummary: 'Champion Match Declared by Super Coordinator',
+          declaredAt: new Date().toISOString(),
+          winner: {
+            studentName: wName,
+            teamName: wTeam,
+            collegeCode: winnerObj.id,
+            collegeName: winnerObj.name,
+            medal: 'GOLD',
+            rollNo: editWinnerRollNo.trim(),
+            course: editWinnerCourse.trim(),
+            yearSemester: editWinnerYearSem.trim(),
+            photoUrl: editWinnerPhotoUrl,
+            highlights: editWinnerHighlights.trim() || 'Champion Gold Medalist'
+          },
+          runnerUp: {
+            studentName: rName,
+            teamName: rTeam,
+            collegeCode: runnerObj.id,
+            collegeName: runnerObj.name,
+            medal: 'SILVER',
+            rollNo: editRunnerUpRollNo.trim(),
+            course: editRunnerUpCourse.trim(),
+            yearSemester: editRunnerUpYearSem.trim(),
+            photoUrl: editRunnerUpPhotoUrl,
+            highlights: editRunnerUpHighlights.trim() || 'Silver Medalist Runner-Up'
+          }
+        };
+
+        const existingMedals = JSON.parse(localStorage.getItem('sems_custom_medal_entries') || '[]');
+        const updatedMedals = [medalItem, ...existingMedals.filter((m) => m.id !== medalEntryId)];
+        localStorage.setItem('sems_custom_medal_entries', JSON.stringify(updatedMedals));
+      } catch (err) {
+        console.error('Error syncing custom medal entries on edit:', err);
+      }
+
+      // 2. Call backend update API
+      await superCoordinatorApi.updateLeaderboardEntry(editingEntry.id, updatedPayload);
+
+      // 3. Update state in-place
+      setLeaderboardEntries((prev) =>
+        prev.map((item) => (String(item.id) === String(editingEntry.id) ? { ...item, ...updatedPayload } : item))
+      );
+
+      // Reactive events
+      window.dispatchEvent(new Event('sems_leaderboard_updated'));
+      window.dispatchEvent(new Event('storage'));
+
+      addToast(`Result Entry Updated! ${finalSportName} details and standings updated successfully.`, 'success');
+      setShowEditModal(false);
+      setEditingEntry(null);
+    } catch (err) {
+      console.error('Error updating leaderboard entry:', err);
+      addToast(err.message || 'Failed to update result entry', 'error');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   // Handle Export Leaderboard Standings PDF Report
   const handleExportLeaderboardPDF = () => {
     if (collegeStandings.length === 0) {
@@ -627,31 +849,6 @@ export const SuperCoordinatorDashboardPage = () => {
     addToast(`Exported ${filteredParticipants.length} filtered participant records to Excel (CSV)`, 'success');
   };
 
-  const handleUpdateSlideField = (idx, field, value) => {
-    const updated = editableHeroSlides.map((s, i) => (i === idx ? { ...s, [field]: value } : s));
-    setEditableHeroSlides(updated);
-  };
-
-  const handleSaveHeroSlides = async () => {
-    try {
-      await saveHeroSlides(editableHeroSlides);
-      addToast('Hero 5-Slide Carousel updated & saved to Database! Home Page updated live in real time.', 'success');
-    } catch (e) {
-      addToast(`Error saving slides to database: ${e.message}`, 'error');
-    }
-  };
-
-  const handleResetHeroSlides = async () => {
-    if (window.confirm('Reset all 5 slides to default configuration?')) {
-      setEditableHeroSlides(DEFAULT_HERO_SLIDES);
-      try {
-        await saveHeroSlides(DEFAULT_HERO_SLIDES);
-        addToast('Reset Hero Slides to default and saved to Database!', 'info');
-      } catch (e) {
-        addToast(`Error resetting slides: ${e.message}`, 'error');
-      }
-    }
-  };
 
   return (
     <div className="super-coordinator-portal-root min-h-screen bg-[#FAF9F6] dark:bg-[#070A13] text-[#211D2B] dark:text-[#F5F2FA] transition-colors font-spatial-sans pb-16 w-full overflow-x-hidden relative">
@@ -684,17 +881,6 @@ export const SuperCoordinatorDashboardPage = () => {
             <span>🏆 Leaderboard & Winner Entry</span>
           </button>
 
-          <button
-            onClick={() => setActiveTab('hero_slider')}
-            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
-              activeTab === 'hero_slider'
-                ? 'bg-[#7156A5] dark:bg-[#8B5CF6] text-white shadow-md shadow-purple-500/20'
-                : 'text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-[#F5F2FA] hover:bg-[#F4F2F7] dark:hover:bg-[#121625]'
-            }`}
-          >
-            <Sparkles className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
-            <span>🎨 Home Hero Slider (5 Slides)</span>
-          </button>
 
           <button
             onClick={() => setActiveTab('match_results')}
@@ -757,246 +943,7 @@ export const SuperCoordinatorDashboardPage = () => {
           </button>
         </div>
 
-        {/* SECTION: HOME HERO SLIDER MANAGEMENT */}
-        {activeTab === 'hero_slider' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[11px] font-mono font-bold uppercase">
-                    SUPER COORDINATOR CONTROL
-                  </span>
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                    Home Hero 5-Slide Carousel Management
-                  </h2>
-                </div>
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5">
-                  Update Title, Description, Image URL, and Buttons for each of the 5 Home Page Hero Slides.
-                </p>
-              </div>
 
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleResetHeroSlides}
-                  className="px-5 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs sm:text-sm transition border border-slate-200 dark:border-slate-700 cursor-pointer min-h-[46px]"
-                >
-                  Reset Defaults
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveHeroSlides}
-                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs sm:text-sm shadow-md shadow-blue-500/25 transition flex items-center gap-2 cursor-pointer active:scale-95 min-h-[46px]"
-                >
-                  <Sparkles className="w-4 h-4 text-white" />
-                  <span>Save All 5 Slides</span>
-                </button>
-              </div>
-            </div>
-
-            {/* 5 Slide Edit Forms */}
-            <div className="space-y-6">
-              {editableHeroSlides.map((slide, idx) => (
-                <div
-                  key={slide.id || idx}
-                  className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5"
-                >
-                  <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-                    <div className="flex items-center gap-3">
-                      <span className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-black text-sm flex items-center justify-center">
-                        {idx + 1}
-                      </span>
-                      <h3 className="font-black text-sm sm:text-base text-slate-900 dark:text-white uppercase tracking-wide">
-                        Slide {idx + 1} Settings
-                      </h3>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={slide.image || DEFAULT_HERO_SLIDES[idx]?.image}
-                        alt={slide.title}
-                        className="w-14 h-9 rounded-xl object-cover border border-slate-700 bg-slate-900 shadow-sm"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = DEFAULT_HERO_SLIDES[idx]?.image || DEFAULT_HERO_SLIDES[0].image;
-                        }}
-                      />
-                      <span className="px-3 py-1.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono text-xs font-bold border border-blue-500/20">
-                        Slide #{idx + 1}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {/* Title / Heading */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-mono font-bold uppercase text-slate-600 dark:text-slate-400 block">
-                        Heading Title <span className="text-rose-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={slide.title || ''}
-                        onChange={(e) => handleUpdateSlideField(idx, 'title', e.target.value)}
-                        className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 min-h-[48px]"
-                        placeholder="Slide Heading..."
-                      />
-                    </div>
-
-                    {/* Image URL & File Upload */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-mono font-bold uppercase text-slate-600 dark:text-slate-400 block">
-                        Background Image (URL or Local File Upload) <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-                        <input
-                          type="text"
-                          value={slide.image || ''}
-                          onChange={(e) => handleUpdateSlideField(idx, 'image', e.target.value)}
-                          className="flex-1 px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 min-h-[48px]"
-                          placeholder="Paste image URL or click upload..."
-                        />
-                        <label className={`px-5 py-3 rounded-2xl text-white font-black text-xs sm:text-sm cursor-pointer flex items-center justify-center gap-2 shrink-0 transition active:scale-95 shadow-sm min-h-[48px] ${
-                          uploadingSlideIdx === idx ? 'bg-blue-400 opacity-80 cursor-wait' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500'
-                        }`}>
-                          {uploadingSlideIdx === idx ? (
-                            <>
-                              <RefreshCw className="w-4 h-4 animate-spin" />
-                              <span>Uploading...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="w-4 h-4" />
-                              <span>Upload File</span>
-                            </>
-                          )}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                try {
-                                  setUploadingSlideIdx(idx);
-                                  addToast(`Uploading image for Slide ${idx + 1}...`, 'info');
-                                  const cloudRes = await uploadFileToCloudinary(file, () => {}, 'sems_gallery');
-                                  if (cloudRes && cloudRes.url) {
-                                    handleUpdateSlideField(idx, 'image', cloudRes.url);
-                                    addToast(`Uploaded custom image for Slide ${idx + 1}! Click 'Save All 5 Slides' to save live.`, 'success');
-                                  }
-                                } catch (err) {
-                                  addToast(err.message || 'Failed to upload image', 'error');
-                                } finally {
-                                  setUploadingSlideIdx(null);
-                                }
-                              }
-                            }}
-                            className="hidden"
-                            disabled={uploadingSlideIdx === idx}
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Description / Subtitle */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-mono font-bold uppercase text-slate-600 dark:text-slate-400 block">
-                      Subtitle / Description Text <span className="text-rose-500">*</span>
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={slide.description || ''}
-                      onChange={(e) => handleUpdateSlideField(idx, 'description', e.target.value)}
-                      className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
-                      placeholder="Slide description text..."
-                    />
-                  </div>
-
-                  {/* Buttons Settings */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-mono font-bold text-slate-500 uppercase block">
-                        Primary Button Text
-                      </label>
-                      <input
-                        type="text"
-                        value={slide.primaryBtnText || ''}
-                        onChange={(e) => handleUpdateSlideField(idx, 'primaryBtnText', e.target.value)}
-                        className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 min-h-[48px]"
-                        placeholder="e.g. Register Your Team"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-mono font-bold text-slate-500 uppercase block">
-                        Primary Button Route/Link
-                      </label>
-                      <input
-                        type="text"
-                        value={slide.primaryBtnLink || ''}
-                        onChange={(e) => handleUpdateSlideField(idx, 'primaryBtnLink', e.target.value)}
-                        className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 min-h-[48px]"
-                        placeholder="e.g. /registration"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-mono font-bold text-slate-500 uppercase block">
-                        Secondary Button Text
-                      </label>
-                      <input
-                        type="text"
-                        value={slide.secondaryBtnText || ''}
-                        onChange={(e) => handleUpdateSlideField(idx, 'secondaryBtnText', e.target.value)}
-                        className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 min-h-[48px]"
-                        placeholder="e.g. View Live Score"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-mono font-bold text-slate-500 uppercase block">
-                        Secondary Button Route/Link
-                      </label>
-                      <input
-                        type="text"
-                        value={slide.secondaryBtnLink || ''}
-                        onChange={(e) => handleUpdateSlideField(idx, 'secondaryBtnLink', e.target.value)}
-                        className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 min-h-[48px]"
-                        placeholder="e.g. /live"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Card Visual Preview Footer */}
-                  <div className="pt-2">
-                    <div className="relative rounded-2xl overflow-hidden h-28 sm:h-36 border border-slate-800 shadow-inner">
-                      <img
-                        src={slide.image || DEFAULT_HERO_SLIDES[idx]?.image}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = DEFAULT_HERO_SLIDES[idx]?.image || DEFAULT_HERO_SLIDES[0].image;
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/50 to-transparent flex items-end p-4 sm:p-5">
-                        <div className="space-y-1">
-                          <span className="px-2.5 py-1 rounded-md bg-blue-500/20 text-blue-400 text-[10px] font-mono font-bold uppercase border border-blue-500/30">
-                            Slide #{idx + 1} Visual Card Preview
-                          </span>
-                          <h4 className="text-sm sm:text-base font-black text-white uppercase tracking-tight line-clamp-1">
-                            {slide.title || 'Slide Title Preview'}
-                          </h4>
-                          <p className="text-xs text-slate-300 line-clamp-1 font-normal">
-                            {slide.description || 'Slide description preview text.'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* SECTION 0: INTER-COLLEGE CHAMPIONSHIP LEADERBOARD */}
         {(activeTab === 'leaderboard' || activeTab === 'dashboard') && (
@@ -1510,11 +1457,21 @@ export const SuperCoordinatorDashboardPage = () => {
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-3 text-[11px] sm:text-xs font-mono">
+                        <div className="flex items-center gap-2 text-[11px] sm:text-xs font-mono">
                           <span className="text-slate-500">{entry.date}</span>
                           <button
+                            type="button"
+                            onClick={() => handleOpenEditModal(entry)}
+                            className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold text-xs transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                            title="Edit match result entry"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => handleDeleteLeaderboardEntry(entry.id)}
-                            className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs transition cursor-pointer"
+                            className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs transition cursor-pointer flex items-center gap-1 shadow-2xs"
                             title="Delete result entry"
                           >
                             Delete
@@ -1712,12 +1669,13 @@ export const SuperCoordinatorDashboardPage = () => {
                         <th className="p-4 sm:p-5 whitespace-nowrap">Gender</th>
                         <th className="p-4 sm:p-5 min-w-[260px]">🥇 Winner (1st Place)</th>
                         <th className="p-4 sm:p-5 min-w-[260px]">🥈 Runner-Up (2nd Place)</th>
+                        <th className="p-4 sm:p-5 text-right whitespace-nowrap">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-xs sm:text-sm">
                       {filteredDeclaredResults.length === 0 ? (
                         <tr>
-                          <td colSpan="6" className="p-12 text-center text-slate-500 italic">
+                          <td colSpan="7" className="p-12 text-center text-slate-500 italic">
                             No declared match results matching the selected filters.
                           </td>
                         </tr>
@@ -1770,6 +1728,29 @@ export const SuperCoordinatorDashboardPage = () => {
                                 <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
                                   🏫 College: <span className="font-bold text-slate-700 dark:text-slate-300">{entry.runnerUpCollegeName || entry.runnerUpCollege}</span>
                                 </div>
+                              </div>
+                            </td>
+
+                            {/* Actions Column */}
+                            <td className="p-4 sm:p-5 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-1.5 font-mono">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditModal(entry)}
+                                  className="px-2.5 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold text-xs transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                                  title="Edit result entry"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                  <span>Edit</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteLeaderboardEntry(entry.id)}
+                                  className="px-2.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                                  title="Delete result entry"
+                                >
+                                  Delete
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -2560,6 +2541,465 @@ export const SuperCoordinatorDashboardPage = () => {
                   Update Password
                 </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT LEADERBOARD RESULT ENTRY MODAL */}
+      {showEditModal && editingEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md overflow-y-auto animate-fade-in">
+          <div className="relative w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-5 sm:p-8 space-y-6 max-h-[92vh] overflow-y-auto my-auto font-spatial-sans">
+            
+            {/* Header */}
+            <div className="flex items-start justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono text-[10px] sm:text-xs font-bold uppercase border border-blue-500/20">
+                    ID: {editingEntry.id}
+                  </span>
+                  <h3 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400 shrink-0" />
+                    <span>Edit Winner Declaration Entry</span>
+                  </h3>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                  Update Game, Match Format, Gender, and 1st & 2nd Place Winner credentials. Changes will instantly recalculate leaderboard points.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingEntry(null);
+                }}
+                className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition cursor-pointer shrink-0"
+                title="Close modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSaveEditedEntry} className="space-y-6">
+              
+              {/* Row 1: Game, Format, Gender */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+                {/* 1. Game / Sport */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono font-bold text-blue-600 dark:text-blue-400 uppercase">
+                    🎯 Select Game / Sport *
+                  </label>
+                  <select
+                    value={editSportId}
+                    onChange={(e) => {
+                      const newSport = e.target.value;
+                      setEditSportId(newSport);
+                      const formats = getFormatsForSport(newSport);
+                      if (!formats.some((f) => f.id === editMatchFormat)) {
+                        setEditMatchFormat(formats[0]?.id || 'Team');
+                      }
+                    }}
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
+                  >
+                    {ALL_12_SPORTS.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.icon} {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 2. Match Format */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
+                    🎾 Match Format *
+                  </label>
+                  <div className="flex flex-wrap gap-1.5 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 min-h-[48px] items-center">
+                    {getFormatsForSport(editSportId).map((fmt) => (
+                      <button
+                        key={fmt.id}
+                        type="button"
+                        onClick={() => setEditMatchFormat(fmt.id)}
+                        className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-extrabold transition cursor-pointer text-center min-h-[36px] ${
+                          editMatchFormat === fmt.id
+                            ? 'bg-blue-600 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        {fmt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. Gender Category */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
+                    ⚧️ Gender Category *
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 min-h-[48px] items-center">
+                    {[
+                      { id: 'Boys', label: 'Boys' },
+                      { id: 'Girls', label: 'Girls' },
+                      { id: 'Mixed', label: 'Mixed' }
+                    ].map((g) => (
+                      <button
+                        key={g.id}
+                        type="button"
+                        onClick={() => setEditMatchGender(g.id)}
+                        className={`py-2 px-1 rounded-xl text-xs font-extrabold transition cursor-pointer text-center min-h-[36px] ${
+                          editMatchGender === g.id
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        {g.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Athletics Sub-Event Selector */}
+              {editSportId.toLowerCase().includes('athletics') && (
+                <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 space-y-1.5 animate-fade-in">
+                  <label className="block text-xs font-mono font-black text-blue-600 dark:text-blue-400 uppercase">
+                    🏃 Select Athletics Event / Discipline *
+                  </label>
+                  <select
+                    value={editAthleticsSubEvent}
+                    onChange={(e) => setEditAthleticsSubEvent(e.target.value)}
+                    className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-slate-950 border border-blue-500/50 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
+                  >
+                    {ATHLETICS_SUB_EVENTS.map((subEv) => (
+                      <option key={subEv} value={subEv}>
+                        🏃 {subEv}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Row 2: Winner & Runner-Up Cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 pt-2 border-t border-slate-200 dark:border-slate-800">
+                
+                {/* Winner Card */}
+                <div className="p-5 sm:p-6 rounded-3xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-800/60 space-y-4 shadow-sm">
+                  <div className="flex items-center justify-between pb-2 border-b border-emerald-200/50 dark:border-emerald-800/40">
+                    <span className="text-xs sm:text-sm font-mono font-black text-emerald-700 dark:text-emerald-400 uppercase flex items-center gap-2">
+                      🥇 Winner Details (1st Place)
+                    </span>
+                    <span className="px-3 py-1 rounded-xl bg-emerald-500 text-slate-950 font-mono font-black text-xs shadow-xs">
+                      +5 POINTS
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 text-xs sm:text-sm">
+                    <div className="space-y-1">
+                      <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
+                        👤 Winner Player Name {editMatchFormat === 'Single' || editMatchFormat === 'Individual' ? '*' : '(Optional)'}
+                      </label>
+                      <input
+                        type="text"
+                        value={editWinnerName}
+                        onChange={(e) => setEditWinnerName(e.target.value)}
+                        placeholder="Enter Winner Player Name"
+                        className="w-full px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-emerald-400 dark:border-emerald-700/60 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px]"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
+                        🛡️ Winner Team Name {editMatchFormat === 'Team' || editMatchFormat === 'Double' ? '*' : '(Optional)'}
+                      </label>
+                      <input
+                        type="text"
+                        value={editWinnerTeamName}
+                        onChange={(e) => setEditWinnerTeamName(e.target.value)}
+                        placeholder="e.g. MPEC Titans"
+                        className="w-full px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-emerald-400 dark:border-emerald-700/60 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px]"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
+                        🏫 Winner College Name *
+                      </label>
+                      <select
+                        value={editWinnerCollegeId}
+                        onChange={(e) => setEditWinnerCollegeId(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-emerald-400 dark:border-emerald-700/60 text-emerald-800 dark:text-emerald-300 font-bold focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px]"
+                      >
+                        {ALL_COLLEGES.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Winner Photo */}
+                    <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-emerald-300/60 dark:border-emerald-700/40">
+                      <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-emerald-400 bg-slate-100 dark:bg-slate-800 flex-shrink-0 flex items-center justify-center group shadow-xs">
+                        {editWinnerPhotoUrl ? (
+                          <>
+                            <img src={editWinnerPhotoUrl} alt="Winner" className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => setEditWinnerPhotoUrl('')}
+                              className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                              title="Remove photo"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </>
+                        ) : (
+                          <User className="w-6 h-6 text-slate-400" />
+                        )}
+                        {uploadingEditWinnerPhoto && (
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-[9px] font-mono">Uploading...</div>
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <label className="block text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                          📸 Winner Athlete Photo
+                        </label>
+                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
+                          <Camera className="w-3.5 h-3.5" />
+                          <span>Upload Photo</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => e.target.files?.[0] && handleEditStudentPhotoUpload(e.target.files[0], 'winner')}
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Winner Academic Credentials */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div>
+                        <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Roll No</label>
+                        <input
+                          type="text"
+                          value={editWinnerRollNo}
+                          onChange={(e) => setEditWinnerRollNo(e.target.value)}
+                          placeholder="2101640100012"
+                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-emerald-400/60 dark:border-emerald-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Course / Branch</label>
+                        <input
+                          type="text"
+                          value={editWinnerCourse}
+                          onChange={(e) => setEditWinnerCourse(e.target.value)}
+                          placeholder="B.Tech CSE"
+                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-emerald-400/60 dark:border-emerald-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Year / Sem</label>
+                        <input
+                          type="text"
+                          value={editWinnerYearSem}
+                          onChange={(e) => setEditWinnerYearSem(e.target.value)}
+                          placeholder="3rd Yr (6th Sem)"
+                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-emerald-400/60 dark:border-emerald-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Match Highlight Quote</label>
+                      <input
+                        type="text"
+                        value={editWinnerHighlights}
+                        onChange={(e) => setEditWinnerHighlights(e.target.value)}
+                        placeholder="e.g. Scored 18 smash winners in 3rd set"
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-emerald-400/60 dark:border-emerald-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Runner-Up Card */}
+                <div className="p-5 sm:p-6 rounded-3xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-300 dark:border-blue-800/60 space-y-4 shadow-sm">
+                  <div className="flex items-center justify-between pb-2 border-b border-blue-200/50 dark:border-blue-800/40">
+                    <span className="text-xs sm:text-sm font-mono font-black text-blue-700 dark:text-blue-400 uppercase flex items-center gap-2">
+                      🥈 Runner-Up Details (2nd Place)
+                    </span>
+                    <span className="px-3 py-1 rounded-xl bg-blue-500 text-white font-mono font-black text-xs shadow-xs">
+                      +3 POINTS
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 text-xs sm:text-sm">
+                    <div className="space-y-1">
+                      <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
+                        👤 Runner-Up Player Name {editMatchFormat === 'Single' || editMatchFormat === 'Individual' ? '*' : '(Optional)'}
+                      </label>
+                      <input
+                        type="text"
+                        value={editRunnerUpName}
+                        onChange={(e) => setEditRunnerUpName(e.target.value)}
+                        placeholder="Enter Runner-Up Player Name"
+                        className="w-full px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-blue-400 dark:border-blue-700/60 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-blue-500 outline-none min-h-[44px]"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
+                        🛡️ Runner-Up Team Name {editMatchFormat === 'Team' || editMatchFormat === 'Double' ? '*' : '(Optional)'}
+                      </label>
+                      <input
+                        type="text"
+                        value={editRunnerUpTeamName}
+                        onChange={(e) => setEditRunnerUpTeamName(e.target.value)}
+                        placeholder="e.g. MIPS Strikers"
+                        className="w-full px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-blue-400 dark:border-blue-700/60 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-blue-500 outline-none min-h-[44px]"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
+                        🏫 Runner-Up College Name *
+                      </label>
+                      <select
+                        value={editRunnerUpCollegeId}
+                        onChange={(e) => setEditRunnerUpCollegeId(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-blue-400 dark:border-blue-700/60 text-blue-800 dark:text-blue-300 font-bold focus:ring-2 focus:ring-blue-500 outline-none min-h-[44px]"
+                      >
+                        {ALL_COLLEGES.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Runner-Up Photo */}
+                    <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-blue-300/60 dark:border-blue-700/40">
+                      <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-blue-400 bg-slate-100 dark:bg-slate-800 flex-shrink-0 flex items-center justify-center group shadow-xs">
+                        {editRunnerUpPhotoUrl ? (
+                          <>
+                            <img src={editRunnerUpPhotoUrl} alt="Runner-Up" className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => setEditRunnerUpPhotoUrl('')}
+                              className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                              title="Remove photo"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </>
+                        ) : (
+                          <User className="w-6 h-6 text-slate-400" />
+                        )}
+                        {uploadingEditRunnerUpPhoto && (
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-[9px] font-mono">Uploading...</div>
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <label className="block text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                          📸 Runner-Up Athlete Photo
+                        </label>
+                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
+                          <Camera className="w-3.5 h-3.5" />
+                          <span>Upload Photo</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => e.target.files?.[0] && handleEditStudentPhotoUpload(e.target.files[0], 'runnerup')}
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Runner-Up Academic Credentials */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div>
+                        <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Roll No</label>
+                        <input
+                          type="text"
+                          value={editRunnerUpRollNo}
+                          onChange={(e) => setEditRunnerUpRollNo(e.target.value)}
+                          placeholder="2201720200045"
+                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-blue-400/60 dark:border-blue-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Course / Branch</label>
+                        <input
+                          type="text"
+                          value={editRunnerUpCourse}
+                          onChange={(e) => setEditRunnerUpCourse(e.target.value)}
+                          placeholder="BCA"
+                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-blue-400/60 dark:border-blue-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Year / Sem</label>
+                        <input
+                          type="text"
+                          value={editRunnerUpYearSem}
+                          onChange={(e) => setEditRunnerUpYearSem(e.target.value)}
+                          placeholder="2nd Yr (4th Sem)"
+                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-blue-400/60 dark:border-blue-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Match Highlight Quote</label>
+                      <input
+                        type="text"
+                        value={editRunnerUpHighlights}
+                        onChange={(e) => setEditRunnerUpHighlights(e.target.value)}
+                        placeholder="e.g. Fought valiantly in tournament final"
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-blue-400/60 dark:border-blue-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Modal Buttons */}
+              <div className="pt-4 flex flex-col-reverse sm:flex-row items-center justify-end gap-3 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingEntry(null);
+                  }}
+                  className="w-full sm:w-auto px-6 py-3 rounded-2xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer min-h-[48px]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit}
+                  className="w-full sm:w-auto px-8 py-3 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50 min-h-[48px]"
+                >
+                  {savingEdit ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Saving Changes...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Update / Save Result Entry (+5 & +3 Pts)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
             </form>
           </div>
         </div>
