@@ -86,7 +86,7 @@ export const LeaderboardPage = () => {
 
   const [medalsVersion, setMedalsVersion] = useState(0);
   const [realMedalists, setRealMedalists] = useState([]);
-  const [loadingMedalists, setLoadingMedalists] = useState(false);
+  const [loadingMedalists, setLoadingMedalists] = useState(true);
 
   const normalizeStandings = (data) => {
     if (!Array.isArray(data)) return [];
@@ -107,66 +107,76 @@ export const LeaderboardPage = () => {
 
   useEffect(() => {
     if (Array.isArray(leaderboard) && leaderboard.length > 0) {
-      setStandings(normalizeStandings(leaderboard));
+      setStandings((prev) => {
+        const next = normalizeStandings(leaderboard);
+        if (JSON.stringify(prev) === JSON.stringify(next)) return prev;
+        return next;
+      });
+    } else {
+      const computed = normalizeStandings(computeStandings());
+      setStandings((prev) => (prev.length > 0 ? prev : computed));
     }
   }, [leaderboard]);
 
+  // Fetch medalists once on mount and update on relevant tournament events
   useEffect(() => {
-    const fetchMedalists = async () => {
-      try {
+    let isMounted = true;
+    let lastRefreshTime = 0;
+
+    const fetchMedalists = async (silent = false) => {
+      if (!silent) {
         setLoadingMedalists(true);
+      }
+      try {
         const res = await fetch(apiUrl('/leaderboard/medalists'));
-        if (res.ok) {
+        if (res.ok && isMounted) {
           const data = await res.json();
           if (Array.isArray(data)) {
-            setRealMedalists(data);
+            setRealMedalists((prev) => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              return data;
+            });
             return;
           }
         }
       } catch (e) {
         console.warn('Notice fetching public medalists from server:', e);
       } finally {
-        setLoadingMedalists(false);
+        if (isMounted) {
+          setLoadingMedalists(false);
+        }
       }
     };
 
-    const refresh = async () => {
-      try {
-        const res = await fetch(apiUrl('/leaderboard'));
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setStandings(normalizeStandings(data));
-            return;
-          }
-        }
-      } catch (e) { }
+    // Initial load
+    fetchMedalists(false);
 
-      if (leaderboard && leaderboard.length > 0) {
-        setStandings(normalizeStandings(leaderboard));
+    // Event handler for realtime updates
+    const handleUpdate = (e) => {
+      // If it's a storage event, only care if it's specifically for medals or standings
+      if (e?.type === 'storage' && e.key && e.key !== 'sems_custom_medal_entries' && e.key !== 'sems_super_coord_leaderboard') {
         return;
       }
+      const now = Date.now();
+      if (now - lastRefreshTime < 2500) return; // Throttle to prevent multiple rapid executions
+      lastRefreshTime = now;
 
-      setStandings(normalizeStandings(computeStandings()));
-    };
-
-    fetchMedalists();
-    if (!leaderboard || leaderboard.length === 0) {
-      refresh();
-    }
-
-    const handler = () => {
-      refresh();
-      fetchMedalists();
+      // Silent background refresh (no loader unmounting existing cards)
+      fetchMedalists(true);
       setMedalsVersion((v) => v + 1);
     };
-    window.addEventListener('sems_leaderboard_updated', handler);
-    window.addEventListener('storage', handler);
+
+    window.addEventListener('sems_leaderboard_updated', handleUpdate);
+    window.addEventListener('sems_results_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+
     return () => {
-      window.removeEventListener('sems_leaderboard_updated', handler);
-      window.removeEventListener('storage', handler);
+      isMounted = false;
+      window.removeEventListener('sems_leaderboard_updated', handleUpdate);
+      window.removeEventListener('sems_results_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
     };
-  }, [leaderboard]);
+  }, []);
 
   const filteredStandings = standings.filter((item) => {
     const colName = String(item.college || item.name || '').toLowerCase();
@@ -762,7 +772,7 @@ export const LeaderboardPage = () => {
             </div>
 
             {/* Student Cards Grid */}
-            {loadingMedalists ? (
+            {loadingMedalists && allMedalists.length === 0 ? (
               <div className="text-center py-20 rounded-2xl border p-8 max-w-md mx-auto bg-[#FFFFFF] dark:bg-[#0D101A] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] shadow-2xs">
                 <div className="w-10 h-10 border-3 border-[#7156A5] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                 <h3 className="text-base font-bold font-spatial-display uppercase tracking-wide text-[#211D2B] dark:text-[#F5F2FA]">
