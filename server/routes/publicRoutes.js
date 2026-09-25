@@ -360,10 +360,10 @@ router.get('/schedules', publicReadLimiter, async (req, res) => {
     const dbRes = await queryDb(
       `SELECT id, sport_id AS "sportId", format, status, team1, team2, 
               match_title AS "matchTitle", table_number AS "tableNumber", 
-              time, score1, score2, details, updated_at AS "updatedAt", created_at AS "createdAt"
+              time, score1, score2, details, updated_at AS "updatedAt"
        FROM live_matches 
        WHERE LOWER(status) IN ('scheduled', 'upcoming', 'draft')
-       ORDER BY created_at DESC`
+       ORDER BY updated_at DESC`
     );
 
     if (dbRes && dbRes.rows) {
@@ -378,10 +378,10 @@ router.get('/schedules', publicReadLimiter, async (req, res) => {
           } catch (e) {}
         }
 
-        const t1 = m.team1 || detailsObj.team1Name || 'TBD';
-        const t2 = m.team2 || detailsObj.team2Name || 'TBD';
+        const t1 = m.team1 || detailsObj.team1 || detailsObj.team1Name || detailsObj.player1 || detailsObj.player1Name || 'Team 1';
+        const t2 = m.team2 || detailsObj.team2 || detailsObj.team2Name || detailsObj.player2 || detailsObj.player2Name || 'Team 2';
         const matchTitle = m.matchTitle || detailsObj.eventTitle || `${t1} vs ${t2}`;
-        const matchDate = detailsObj.date || (m.createdAt ? new Date(m.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+        const matchDate = detailsObj.date || (m.updatedAt ? new Date(m.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
         const matchCategory = detailsObj.category || 'Open';
         const matchVenue = m.tableNumber || detailsObj.venue || 'Arena 1';
 

@@ -78,6 +78,20 @@ export const LiveMatchPortalPage = () => {
     }
   };
 
+const isMatchToday = (matchDate) => {
+  if (!matchDate) return true;
+  const str = String(matchDate).trim().toLowerCase();
+  if (str === 'today') return true;
+
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const todayIso = `${yyyy}-${mm}-${dd}`;
+
+  return str.startsWith(todayIso) || str === todayIso;
+};
+
   const fetchUpcomingSchedules = async () => {
     try {
       const publicSchedules = await coordinatorApi.getPublicSchedules();
@@ -88,24 +102,49 @@ export const LiveMatchPortalPage = () => {
             return m && m.id && s !== 'completed' && s !== 'finished' && s !== 'running' && s !== 'live';
           })
           .map((m) => {
-            const t1 = typeof m.team1 === 'object' ? (m.team1?.name || '') : String(m.team1 || '').trim();
-            const t2 = typeof m.team2 === 'object' ? (m.team2?.name || '') : String(m.team2 || '').trim();
+            const details = typeof m.details === 'object' && m.details !== null
+              ? m.details
+              : (typeof m.details === 'string' ? (() => { try { return JSON.parse(m.details); } catch(e) { return {}; } })() : {});
+
+            let t1 = typeof m.team1 === 'object' ? (m.team1?.name || '') : String(m.team1 || details.team1 || details.team1Name || details.player1 || details.player1Name || '').trim();
+            let t2 = typeof m.team2 === 'object' ? (m.team2?.name || '') : String(m.team2 || details.team2 || details.team2Name || details.player2 || details.player2Name || '').trim();
+
+            const rawTitle = m.matchTitle || m.event || details.eventTitle || '';
+            if ((!t1 || t1 === 'Team 1' || t1 === 'TBD') && rawTitle && rawTitle.toLowerCase().includes(' vs ')) {
+              const parts = rawTitle.split(/ vs /i);
+              if (parts.length === 2) {
+                t1 = parts[0].trim();
+                t2 = parts[1].trim();
+              }
+            }
+
             const inferredSportId = (m.sportId || 'badminton').toLowerCase();
+            const dateVal = m.date || details.date || 'Today';
+
             return {
               id: m.id,
               sportId: inferredSportId,
               sportName: m.sportName || m.sport || (inferredSportId.charAt(0).toUpperCase() + inferredSportId.slice(1).replace('-', ' ')),
-              matchTitle: m.matchTitle || m.event || `${t1 || 'Team 1'} vs ${t2 || 'Team 2'}`,
-              team1: t1 || 'Team 1',
-              team2: t2 || 'Team 2',
-              venue: m.tableNumber || m.venue || 'Court 1',
-              tableNumber: m.tableNumber || m.venue || 'Court 1',
-              time: m.time || '10:00 AM',
-              date: m.date || 'Today',
+              matchTitle: rawTitle || `${t1 || 'Team 1'} vs ${t2 || 'Team 2'}`,
+              team1: t1 || 'Player 1',
+              team2: t2 || 'Player 2',
+              venue: m.tableNumber || m.venue || details.venue || 'Court 1',
+              tableNumber: m.tableNumber || m.venue || details.venue || 'Court 1',
+              time: m.time || details.time || '10:00 AM',
+              date: dateVal,
+              isToday: isMatchToday(dateVal),
             };
           });
 
         const sortedUpcoming = sortLiveMatches(formattedUpcoming);
+
+        // Prioritize today's matches first
+        sortedUpcoming.sort((a, b) => {
+          if (a.isToday && !b.isToday) return -1;
+          if (!a.isToday && b.isToday) return 1;
+          return 0;
+        });
+
         setUpcomingMatches(sortedUpcoming);
       }
     } catch (err) {
@@ -573,29 +612,73 @@ export const LiveMatchPortalPage = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-              {filteredUpcomingMatches.slice(0, 6).map((item) => (
-                <div
-                  key={item.id}
-                  className="bg-[#FFFFFF] dark:bg-[#0D101A] p-3.5 rounded-lg border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] space-y-2 shadow-2xs"
-                >
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]">
-                      {item.sportName}
-                    </span>
-                    <span className="text-[11px] text-[#686370] dark:text-[#AAA4B8] flex items-center gap-1 font-medium">
-                      <Clock className="w-3 h-3 text-[#596B98] dark:text-[#B8A5E5]" />
-                      {item.time}
-                    </span>
+              {filteredUpcomingMatches.slice(0, 6).map((item) => {
+                const isToday = isMatchToday(item.date);
+                const t1 = item.team1 || 'Team 1';
+                const t2 = item.team2 || 'Team 2';
+                const titleLower = (item.matchTitle || '').toLowerCase();
+                const hasDistinctTitle = item.matchTitle && 
+                  titleLower !== `${t1.toLowerCase()} vs ${t2.toLowerCase()}` &&
+                  titleLower !== `${t2.toLowerCase()} vs ${t1.toLowerCase()}`;
+
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-[#FFFFFF] dark:bg-[#0D101A] p-3.5 rounded-lg border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] space-y-2.5 shadow-2xs hover:border-[#7156A5]/30 transition-all flex flex-col justify-between"
+                  >
+                    {/* Top bar: Sport, Today badge, Time */}
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#F4F2F7] dark:bg-[#121625] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]">
+                          {item.sportName}
+                        </span>
+                        {isToday && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-[#EDF7F0] dark:bg-[#1B5E20]/25 text-[#1B5E20] dark:text-[#81C784] border border-[#C8E6C9] dark:border-[#1B5E20]/40 uppercase tracking-wider">
+                            Today
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-[#686370] dark:text-[#AAA4B8] flex items-center gap-1 font-medium font-mono">
+                        <Clock className="w-3 h-3 text-[#596B98] dark:text-[#B8A5E5]" />
+                        {item.time}
+                      </span>
+                    </div>
+
+                    {/* Sub-event / Tournament Title */}
+                    {hasDistinctTitle && (
+                      <p className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#7156A5] dark:text-[#B8A5E5] truncate">
+                        {item.matchTitle}
+                      </p>
+                    )}
+
+                    {/* Contestants Box: Both Players / Teams (Player 1 vs Player 2) */}
+                    <div className="p-2.5 rounded-lg bg-[#FAF9F6] dark:bg-[#121625] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] flex items-center justify-between gap-2">
+                      <span className="text-xs sm:text-sm font-bold text-[#211D2B] dark:text-[#F5F2FA] truncate max-w-[42%]" title={t1}>
+                        {t1}
+                      </span>
+                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#F4F2F7] dark:bg-[#070A13] text-[#7156A5] dark:text-[#B8A5E5] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)] shrink-0">
+                        VS
+                      </span>
+                      <span className="text-xs sm:text-sm font-bold text-[#211D2B] dark:text-[#F5F2FA] truncate max-w-[42%] text-right" title={t2}>
+                        {t2}
+                      </span>
+                    </div>
+
+                    {/* Bottom bar: Venue & Date */}
+                    <div className="flex items-center justify-between text-[11px] text-[#686370] dark:text-[#AAA4B8] pt-0.5 border-t border-[#E5E1E8]/60 dark:border-[rgba(184,165,229,0.08)]">
+                      <div className="flex items-center gap-1 min-w-0">
+                        <MapPin className="w-3 h-3 text-[#A98B57] dark:text-[#D2AB45] shrink-0" />
+                        <span className="truncate">{item.venue}</span>
+                      </div>
+                      {item.date && (
+                        <span className="text-[10px] font-mono text-[#686370] dark:text-[#AAA4B8] shrink-0">
+                          {item.date}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <h4 className="text-xs font-bold text-[#211D2B] dark:text-[#F5F2FA] truncate">
-                    {item.matchTitle}
-                  </h4>
-                  <div className="text-[11px] text-[#686370] dark:text-[#AAA4B8] flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-[#A98B57] dark:text-[#D2AB45]" />
-                    <span className="truncate">{item.venue}</span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
