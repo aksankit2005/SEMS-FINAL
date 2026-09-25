@@ -884,6 +884,13 @@ export const getPublicMedalists = async (req, res) => {
       const wPhoto = row.winnerPhotoUrl || det.winnerPhotoUrl || '';
       const rPhoto = row.runnerUpPhotoUrl || det.runnerUpPhotoUrl || '';
 
+      const cleanWinnerHighlights = (det.winnerHighlights || '')
+        .replace(/Tournament Champion Gold Medalist/gi, '')
+        .trim();
+      const cleanRunnerUpHighlights = (det.runnerUpHighlights || '')
+        .replace(/Tournament Finalist Silver Medalist/gi, '')
+        .trim();
+
       // 1. Winner (GOLD)
       if (row.winnerName || row.winnerTeam || row.winnerCollege) {
         studentMedalists.push({
@@ -895,7 +902,7 @@ export const getPublicMedalists = async (req, res) => {
           gender: row.gender || 'Boys',
           matchFormat: row.matchFormat || 'Team',
           subEvent: row.subEvent || `${cleanSport} Final`,
-          scoreSummary: 'Champion Declared by Super Coordinator',
+          scoreSummary: (det.scoreSummary || '').toLowerCase().includes('declared by') ? '' : (det.scoreSummary || ''),
           declaredAt: row.declaredAt || new Date().toISOString(),
           medal: 'GOLD',
           studentName: row.winnerName || row.winnerTeam || 'Gold Champion',
@@ -906,7 +913,7 @@ export const getPublicMedalists = async (req, res) => {
           course: det.winnerCourse || '',
           yearSemester: det.winnerYearSem || '',
           photoUrl: wPhoto,
-          highlights: det.winnerHighlights || 'Tournament Champion Gold Medalist',
+          highlights: cleanWinnerHighlights,
           points: 5
         });
       }
@@ -922,7 +929,7 @@ export const getPublicMedalists = async (req, res) => {
           gender: row.gender || 'Boys',
           matchFormat: row.matchFormat || 'Team',
           subEvent: row.subEvent || `${cleanSport} Final`,
-          scoreSummary: 'Runner-Up Declared by Super Coordinator',
+          scoreSummary: (det.scoreSummary || '').toLowerCase().includes('declared by') ? '' : (det.scoreSummary || ''),
           declaredAt: row.declaredAt || new Date().toISOString(),
           medal: 'SILVER',
           studentName: row.runnerUpName || row.runnerUpTeam || 'Silver Runner-Up',
@@ -933,7 +940,7 @@ export const getPublicMedalists = async (req, res) => {
           course: det.runnerUpCourse || '',
           yearSemester: det.runnerUpYearSem || '',
           photoUrl: rPhoto,
-          highlights: det.runnerUpHighlights || 'Tournament Finalist Silver Medalist',
+          highlights: cleanRunnerUpHighlights,
           points: 3
         });
       }

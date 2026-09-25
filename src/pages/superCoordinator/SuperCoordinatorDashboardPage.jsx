@@ -406,7 +406,7 @@ export const SuperCoordinatorDashboardPage = () => {
         gender: matchGender,
         matchFormat,
         subEvent: isAthletics ? athleticsSubEvent : `${sportObj.name} Final`,
-        scoreSummary: 'Champion Match Declared by Super Coordinator',
+        scoreSummary: '',
         declaredAt: new Date().toISOString(),
         winner: {
           studentName: wName,
@@ -418,7 +418,7 @@ export const SuperCoordinatorDashboardPage = () => {
           course: winnerCourse.trim(),
           yearSemester: winnerYearSem.trim(),
           photoUrl: winnerPhotoUrl,
-          highlights: winnerHighlights.trim() || 'Champion Gold Medalist'
+          highlights: winnerHighlights.trim()
         },
         runnerUp: {
           studentName: rName,
@@ -430,7 +430,7 @@ export const SuperCoordinatorDashboardPage = () => {
           course: runnerUpCourse.trim(),
           yearSemester: runnerUpYearSem.trim(),
           photoUrl: runnerUpPhotoUrl,
-          highlights: runnerUpHighlights.trim() || 'Silver Medalist Runner-Up'
+          highlights: runnerUpHighlights.trim()
         }
       };
 
@@ -653,7 +653,7 @@ export const SuperCoordinatorDashboardPage = () => {
           gender: editMatchGender,
           matchFormat: editMatchFormat,
           subEvent: isAthletics ? editAthleticsSubEvent : `${sportObj.name} Final`,
-          scoreSummary: 'Champion Match Declared by Super Coordinator',
+          scoreSummary: '',
           declaredAt: new Date().toISOString(),
           winner: {
             studentName: wName,
@@ -665,7 +665,7 @@ export const SuperCoordinatorDashboardPage = () => {
             course: editWinnerCourse.trim(),
             yearSemester: editWinnerYearSem.trim(),
             photoUrl: editWinnerPhotoUrl,
-            highlights: editWinnerHighlights.trim() || 'Champion Gold Medalist'
+            highlights: editWinnerHighlights.trim()
           },
           runnerUp: {
             studentName: rName,
@@ -677,7 +677,7 @@ export const SuperCoordinatorDashboardPage = () => {
             course: editRunnerUpCourse.trim(),
             yearSemester: editRunnerUpYearSem.trim(),
             photoUrl: editRunnerUpPhotoUrl,
-            highlights: editRunnerUpHighlights.trim() || 'Silver Medalist Runner-Up'
+            highlights: editRunnerUpHighlights.trim()
           }
         };
 
