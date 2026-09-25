@@ -41,6 +41,7 @@ export const SchedulePage = () => {
       const allSchedules = [];
       const completedMatchIds = new Set();
       const completedMatchTitles = new Set();
+      const deletedMatchIds = new Set(JSON.parse(localStorage.getItem('sems_deleted_match_ids') || '[]'));
 
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -67,7 +68,7 @@ export const SchedulePage = () => {
         const dbSchedules = await coordinatorApi.getPublicSchedules();
         if (dbSchedules && Array.isArray(dbSchedules)) {
           dbSchedules.forEach((m) => {
-            if (m && m.id && !completedMatchIds.has(m.id)) {
+            if (m && m.id && !completedMatchIds.has(m.id) && !deletedMatchIds.has(m.id)) {
               allSchedules.push({
                 id: m.id,
                 event: m.event || m.matchTitle || `${m.sport} Match`,
@@ -93,7 +94,7 @@ export const SchedulePage = () => {
         const publicMatches = await coordinatorApi.getPublicMatches();
         if (publicMatches && Array.isArray(publicMatches)) {
           publicMatches.forEach((m) => {
-            if (m && m.status !== 'COMPLETED' && m.status !== 'FINISHED' && !completedMatchIds.has(m.id)) {
+            if (m && m.status !== 'COMPLETED' && m.status !== 'FINISHED' && !completedMatchIds.has(m.id) && !deletedMatchIds.has(m.id)) {
               if (allSchedules.some((s) => s.id === m.id)) return;
               const sportId = (m.sportId || m.sport || 'badminton').toLowerCase();
               const rawSportName = m.sportName || m.sport || (sportId.charAt(0).toUpperCase() + sportId.slice(1).replace('-', ' '));

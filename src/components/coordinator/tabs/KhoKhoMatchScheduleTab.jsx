@@ -128,12 +128,12 @@ export const KhoKhoMatchScheduleTab = ({ matches, user, onUpdateMatches, globalS
   const handleAddSlot = async (e) => {
     e.preventDefault();
 
-    if (!selectedEvent) {
+    if (!selectedEvent && !editingId) {
       addToast('No active event selected for match scheduling.', 'error');
       return;
     }
 
-    if (!isRegClosed) {
+    if (!editingId && !isRegClosed) {
       addToast('Registration must be closed before fixtures can be scheduled.', 'error');
       return;
     }
@@ -162,31 +162,19 @@ export const KhoKhoMatchScheduleTab = ({ matches, user, onUpdateMatches, globalS
             team2: finalTeam2,
             team1Id: finalTeam1Id,
             team2Id: finalTeam2Id,
-            eventId: selectedEvent.id,
-            eventTitle: selectedEvent.title,
+            eventId: selectedEvent?.id || m.eventId,
+            eventTitle: selectedEvent?.title || m.eventTitle || form.eventTitle,
             tableNumber: form.tableNumber,
             date: form.date,
             time: form.time,
-            format: 'Standard (9 Players)',
+            format: form.format || 'Standard (9 Players)',
             category: form.category,
           }
           : m
       );
       onUpdateMatches(updated);
-      await coordinatorApi.updateMatchScoring(editingId, {
-        team1: finalTeam1,
-        team2: finalTeam2,
-        team1Id: finalTeam1Id,
-        team2Id: finalTeam2Id,
-        eventId: selectedEvent.id,
-        eventTitle: selectedEvent.title,
-        tableNumber: form.tableNumber,
-        date: form.date,
-        time: form.time,
-        format: form.format || '2 Innings / 2 Sets (Standard 9v9)',
-        category: form.category,
-      });
-      addToast('Kho-Kho match fixture updated!', 'success');
+      await coordinatorApi.saveMatches(updated);
+      addToast('Kho-Kho match fixture updated successfully!', 'success');
       setEditingId(null);
     } else {
       const newSlot = {
@@ -275,7 +263,7 @@ export const KhoKhoMatchScheduleTab = ({ matches, user, onUpdateMatches, globalS
 
         {/* Form Box */}
         <div className={`p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-2xl space-y-4 ${
-          !isRegClosed ? 'opacity-60 pointer-events-none' : ''
+          !editingId && !isRegClosed ? 'opacity-60 pointer-events-none' : ''
         }`}>
           <form onSubmit={handleAddSlot} className="space-y-4">
 
@@ -508,12 +496,15 @@ export const KhoKhoMatchScheduleTab = ({ matches, user, onUpdateMatches, globalS
                   <button
                     onClick={() => {
                       setEditingId(m.id);
+                      if (m.eventId) setSelectedEventId(m.eventId);
                       setForm({
-                        format: 'Standard (9 Players)',
+                        format: m.format || 'Standard (9 Players)',
                         category: m.category || 'Open',
                         eventTitle: m.eventTitle || createdEvents[0]?.title || 'Kho-Kho Championship 2026',
                         team1: m.team1 || '',
                         team2: m.team2 || '',
+                        team1Id: m.team1Id || '',
+                        team2Id: m.team2Id || '',
                         tableNumber: m.tableNumber || 'Kho-Kho Field 1',
                         date: m.date || new Date().toISOString().split('T')[0],
                         time: m.time || '04:00 PM',

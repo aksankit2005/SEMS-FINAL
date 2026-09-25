@@ -34,13 +34,15 @@ export const LiveMatchPortalPage = () => {
 
   const fetchLiveScores = async () => {
     try {
+      const deletedArr = JSON.parse(localStorage.getItem('sems_deleted_match_ids') || '[]');
+      const deletedSet = new Set(deletedArr);
       const publicLive = await coordinatorApi.getPublicLiveMatches();
 
       if (Array.isArray(publicLive)) {
         const formattedLive = publicLive
           .filter((m) => {
             const s = (m?.status || '').toLowerCase();
-            return m && m.id && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active');
+            return m && m.id && !deletedSet.has(m.id) && (s === 'running' || s === 'live' || s === 'in_progress' || s === 'active');
           })
           .map((m) => {
             const inferredSportId = (m.sportId || m.sport || (m.sportName ? m.sportName.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'badminton')).toLowerCase();
@@ -63,7 +65,7 @@ export const LiveMatchPortalPage = () => {
         setLiveMatches(sortedLive);
 
         setSelectedMatch((prev) => {
-          if (!prev || !prev.id) return null;
+          if (!prev || !prev.id || deletedSet.has(prev.id)) return null;
           const fresh = sortedLive.find((m) => m.id === prev.id);
           if (fresh) {
             return mergeMatchState(prev, fresh);
@@ -80,12 +82,14 @@ export const LiveMatchPortalPage = () => {
 
   const fetchUpcomingSchedules = async () => {
     try {
+      const deletedArr = JSON.parse(localStorage.getItem('sems_deleted_match_ids') || '[]');
+      const deletedSet = new Set(deletedArr);
       const publicSchedules = await coordinatorApi.getPublicSchedules();
       if (Array.isArray(publicSchedules)) {
         const formattedUpcoming = publicSchedules
           .filter((m) => {
             const s = (m?.status || '').toLowerCase();
-            return m && m.id && s !== 'completed' && s !== 'finished' && s !== 'running' && s !== 'live';
+            return m && m.id && !deletedSet.has(m.id) && s !== 'completed' && s !== 'finished' && s !== 'running' && s !== 'live';
           })
           .map((m) => {
             const t1 = typeof m.team1 === 'object' ? (m.team1?.name || '') : String(m.team1 || '').trim();

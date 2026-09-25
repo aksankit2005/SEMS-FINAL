@@ -158,12 +158,12 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
   const handleAddSlot = async (e) => {
     e.preventDefault();
 
-    if (!selectedEvent) {
+    if (!selectedEvent && !editingId) {
       addToast('No active event selected for match scheduling.', 'error');
       return;
     }
 
-    if (!isRegClosed) {
+    if (!editingId && !isRegClosed) {
       addToast('Registration must be closed before fixtures can be scheduled.', 'error');
       return;
     }
@@ -206,8 +206,8 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
             team2: finalTeam2,
             team1Id: finalTeam1Id,
             team2Id: finalTeam2Id,
-            eventId: selectedEvent.id,
-            eventTitle: selectedEvent.title,
+            eventId: selectedEvent?.id || m.eventId,
+            eventTitle: selectedEvent?.title || m.eventTitle || form.eventTitle,
             tableNumber: form.tableNumber,
             date: form.date,
             time: form.time,
@@ -217,20 +217,8 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
           : m
       );
       onUpdateMatches(updated);
-      await coordinatorApi.updateMatchScoring(editingId, {
-        team1: finalTeam1,
-        team2: finalTeam2,
-        team1Id: finalTeam1Id,
-        team2Id: finalTeam2Id,
-        eventId: selectedEvent.id,
-        eventTitle: selectedEvent.title,
-        tableNumber: form.tableNumber,
-        date: form.date,
-        time: form.time,
-        format: form.format,
-        category: form.category,
-      });
-      addToast('Match slot updated!', 'success');
+      await coordinatorApi.saveMatches(updated);
+      addToast('Match slot updated successfully!', 'success');
       setEditingId(null);
     } else {
       const newSlot = {
@@ -325,7 +313,7 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
 
         {/* Form Box: Add Match Slot */}
         <div className={`p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-2xl space-y-4 ${
-          !isRegClosed ? 'opacity-60 pointer-events-none' : ''
+          !editingId && !isRegClosed ? 'opacity-60 pointer-events-none' : ''
         }`}>
           <form onSubmit={handleAddSlot} className="space-y-3.5">
             {/* Event Name */}
@@ -555,13 +543,33 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
               </div>
             </div>
 
-            <button
-              type="submit"
-              className={`w-full py-3 rounded-xl ${isChess ? 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/30' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30'} text-white font-black text-xs shadow-lg transition flex items-center justify-center gap-1.5 cursor-pointer`}
-            >
-              <Plus className="w-4 h-4" />
-              <span>{editingId ? 'Save Changes' : '+ Add Match Fixture'}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="submit"
+                className={`flex-1 py-3 rounded-xl ${isChess ? 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/30' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30'} text-white font-black text-xs shadow-lg transition flex items-center justify-center gap-1.5 cursor-pointer`}
+              >
+                <Plus className="w-4 h-4" />
+                <span>{editingId ? 'Save Changes' : '+ Add Match Fixture'}</span>
+              </button>
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingId(null);
+                    setForm((prev) => ({
+                      ...prev,
+                      team1: '',
+                      team2: '',
+                      team1Id: '',
+                      team2Id: '',
+                    }));
+                  }}
+                  className="px-4 py-3 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
           </form>
         </div>
 
@@ -621,12 +629,15 @@ export const MatchScheduleTab = ({ matches, user, onUpdateMatches, globalSearch 
                   <button
                     onClick={() => {
                       setEditingId(m.id);
+                      if (m.eventId) setSelectedEventId(m.eventId);
                       setForm({
                         format: m.format || 'Singles',
                         category: m.category || 'Male',
                         eventTitle: m.eventTitle || createdEvents[0]?.title || `${sportName} Championship 2026`,
                         team1: m.team1 || '',
                         team2: m.team2 || '',
+                        team1Id: m.team1Id || '',
+                        team2Id: m.team2Id || '',
                         team1Name: '',
                         team1Player1: '',
                         team1Player2: '',

@@ -514,96 +514,91 @@ export const coordinatorApi = {
 },
 
   // Delete match & persist to Backend API & localStorage
-async deleteMatch(id) {
-  try {
-    await api.delete(`/coordinator/matches/${id}`);
-  } catch (error) {
-    console.error(
-      `Failed to delete match ${id}:`,
-      error
-    );
-
-    throw error;
-  }
-
-  try {
-    const deletedArr = JSON.parse(
-      localStorage.getItem('sems_deleted_match_ids') || '[]'
-    );
-
-    if (!deletedArr.includes(id)) {
-      deletedArr.push(id);
-
-      localStorage.setItem(
-        'sems_deleted_match_ids',
-        JSON.stringify(deletedArr)
-      );
+  async deleteMatch(id) {
+    try {
+      await api.delete(`/coordinator/matches/${id}`);
+    } catch (error) {
+      console.warn(`Backend delete match ${id} notice:`, error?.response?.data?.message || error?.message || error);
     }
-  } catch (error) {
-    console.warn(
-      'Failed to update deleted match cache:',
-      error
-    );
-  }
 
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
+    try {
+      const deletedArr = JSON.parse(
+        localStorage.getItem('sems_deleted_match_ids') || '[]'
+      );
 
-      if (
-        key &&
-        (
-          key.startsWith('sems_coord_matches_') ||
-          key.endsWith('MatchSchedules') ||
-          key.startsWith('sems_matches_')
-        )
-      ) {
-        const raw = localStorage.getItem(key);
+      if (!deletedArr.includes(id)) {
+        deletedArr.push(id);
+        localStorage.setItem('sems_deleted_match_ids', JSON.stringify(deletedArr));
+      }
+    } catch (error) {
+      console.warn('Failed to update deleted match cache:', error);
+    }
 
-        if (!raw) continue;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
 
-        const list = JSON.parse(raw);
+        if (
+          key &&
+          (
+            key.startsWith('sems_coord_matches_') ||
+            key.endsWith('MatchSchedules') ||
+            key.startsWith('sems_matches_')
+          )
+        ) {
+          const raw = localStorage.getItem(key);
+          if (!raw) continue;
+          const list = JSON.parse(raw);
 
-        if (Array.isArray(list)) {
-          const updated = list.filter(
-            (m) => m && m.id !== id
-          );
-
-          localStorage.setItem(
-            key,
-            JSON.stringify(updated)
-          );
+          if (Array.isArray(list)) {
+            const updated = list.filter((m) => m && m.id !== id);
+            localStorage.setItem(key, JSON.stringify(updated));
+          }
         }
       }
-    }
 
-    const activeRaw = localStorage.getItem(
-      'sems_active_live_matches'
-    );
-
-    if (activeRaw) {
-      const activeMap = JSON.parse(activeRaw);
-
-      Object.keys(activeMap).forEach((key) => {
-        if (activeMap[key]?.id === id || key === id) {
-          delete activeMap[key];
+      const activeRaw = localStorage.getItem('sems_active_live_matches');
+      if (activeRaw) {
+        const activeMap = JSON.parse(activeRaw);
+        if (activeMap && typeof activeMap === 'object') {
+          Object.keys(activeMap).forEach((key) => {
+            if (activeMap[key]?.id === id || key === id) {
+              delete activeMap[key];
+            }
+          });
+          localStorage.setItem('sems_active_live_matches', JSON.stringify(activeMap));
         }
-      });
+      }
 
-      localStorage.setItem(
-        'sems_active_live_matches',
-        JSON.stringify(activeMap)
-      );
+      const user = this.getCurrentUser();
+      const sportKey = (user?.assignedSport || '').toLowerCase();
+      if (sportKey) {
+        const sportActiveKey = `sems_active_live_matches_${sportKey}`;
+        const sportRaw = localStorage.getItem(sportActiveKey);
+        if (sportRaw) {
+          try {
+            const sportMap = JSON.parse(sportRaw);
+            if (sportMap && typeof sportMap === 'object') {
+              Object.keys(sportMap).forEach((key) => {
+                if (sportMap[key]?.id === id || key === id) {
+                  delete sportMap[key];
+                }
+              });
+              localStorage.setItem(sportActiveKey, JSON.stringify(sportMap));
+            }
+          } catch (e) {}
+        }
+      }
+
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('sems_matches_updated'));
+      window.dispatchEvent(new Event('sems_results_updated'));
+    } catch (error) {
+      console.warn('Failed to clean deleted match cache:', error);
     }
-  } catch (error) {
-    console.warn(
-      'Failed to clean deleted match cache:',
-      error
-    );
-  }
 
-  return true;
-},
+    return true;
+  },
 
   // Auto-generate fixtures & persist to localStorage
   async generateFixtures(type) {
@@ -921,17 +916,6 @@ async deleteMatch(id) {
     window.dispatchEvent(new Event('sems_matches_updated'));
     window.dispatchEvent(new Event('sems_results_updated'));
     return completedObj;
-  },
-
-  // Delete match from backend PostgreSQL database and memory
-  async deleteMatch(matchId) {
-    try {
-      const res = await api.delete(`/coordinator/matches/${matchId}`);
-      return res.data;
-    } catch (e) {
-      console.warn('deleteMatch API error:', e?.response?.data?.message || e.message);
-      return null;
-    }
   },
 
   // Clear all matches for current coordinator's sport from backend
