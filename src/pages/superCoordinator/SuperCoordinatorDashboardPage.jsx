@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Users, Trophy, Layers, Filter, Search, Download, Calendar, MapPin, DollarSign, 
   CheckCircle2, Image as ImageIcon, ShieldAlert, RefreshCw, Eye, UserCheck, Phone, Mail, Award, BookOpen,
-  FolderOpen, Folder, ArrowLeft, Camera, Film, X, Maximize2, Key, EyeOff, User, Lock, Building2, Crown, Upload, Edit2
+  FolderOpen, Folder, ArrowLeft, Camera, Film, X, Maximize2, Key, EyeOff, User, Lock, Building2, Crown, Upload, Edit2, Crop
 } from 'lucide-react';
 
 import { superCoordinatorApi, ALL_12_SPORTS, ALL_COLLEGES, matchesCollegeFilter } from '../../services/superCoordinatorApi';
@@ -14,6 +14,7 @@ import { getParticipationType, matchesParticipationTypeFilter } from '../../util
 import { exportResultsToExcel } from '../../utils/excelExporter';
 import { GoogleDriveImage } from '../../components/common/GoogleDriveImage';
 import { uploadFileToCloudinary } from '../../services/cloudinaryService';
+import { ImageCropperModal } from '../../components/common/ImageCropperModal';
 
 export const SuperCoordinatorDashboardPage = () => {
   const { addToast } = useToast();
@@ -140,34 +141,99 @@ export const SuperCoordinatorDashboardPage = () => {
   const [editRunnerUpHighlights, setEditRunnerUpHighlights] = useState('');
   const [uploadingEditRunnerUpPhoto, setUploadingEditRunnerUpPhoto] = useState(false);
 
-  // Student Photo Upload Handler
-  const handleStudentPhotoUpload = async (file, target = 'winner') => {
+  // Athlete Photo Cropper State
+  const [photoCropperState, setPhotoCropperState] = useState({
+    isOpen: false,
+    imageSrc: null,
+    target: 'winner', // 'winner' | 'runnerUp' | 'editWinner' | 'editRunnerUp'
+    title: '📸 Winner Athlete Photo - Zoom & Crop'
+  });
+
+  const handlePhotoFileSelect = (file, target = 'winner') => {
     if (!file) return;
-    const setUploading = target === 'winner' ? setUploadingWinnerPhoto : setUploadingRunnerUpPhoto;
-    const setPhoto = target === 'winner' ? setWinnerPhotoUrl : setRunnerUpPhotoUrl;
-    setUploading(true);
-    try {
-      const uploaded = await uploadFileToCloudinary(file, () => {}, 'sems_medals');
-      if (uploaded?.url) {
-        setPhoto(uploaded.url);
-        addToast(`${target === 'winner' ? 'Winner' : 'Runner-Up'} photo uploaded!`, 'success');
-        setUploading(false);
-        return;
-      }
-    } catch (e) {
-      console.warn('Cloudinary upload notice, using local file reader fallback:', e.message);
-    }
+    const isWinner = target.toLowerCase().includes('winner');
     const reader = new FileReader();
     reader.onload = (e) => {
-      setPhoto(e.target.result);
-      setUploading(false);
-      addToast(`${target === 'winner' ? 'Winner' : 'Runner-Up'} photo attached!`, 'success');
-    };
-    reader.onerror = () => {
-      setUploading(false);
-      addToast('Failed to read photo', 'error');
+      setPhotoCropperState({
+        isOpen: true,
+        imageSrc: e.target.result,
+        target,
+        title: isWinner ? '📸 Winner Athlete Photo - Zoom & Crop' : '📸 Runner-Up Athlete Photo - Zoom & Crop'
+      });
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleOpenCropperForExisting = (target) => {
+    let existingUrl = '';
+    if (target === 'winner') existingUrl = winnerPhotoUrl;
+    else if (target === 'runnerUp') existingUrl = runnerUpPhotoUrl;
+    else if (target === 'editWinner') existingUrl = editWinnerPhotoUrl;
+    else if (target === 'editRunnerUp') existingUrl = editRunnerUpPhotoUrl;
+
+    if (existingUrl) {
+      const isWinner = target.toLowerCase().includes('winner');
+      setPhotoCropperState({
+        isOpen: true,
+        imageSrc: existingUrl,
+        target,
+        title: isWinner ? '📸 Winner Athlete Photo - Zoom & Crop' : '📸 Runner-Up Athlete Photo - Zoom & Crop'
+      });
+    }
+  };
+
+  const handleCroppedPhotoComplete = async (finalDataUrl) => {
+    const target = photoCropperState.target;
+    setPhotoCropperState((prev) => ({ ...prev, isOpen: false }));
+    await applyFinalPhoto(finalDataUrl, target, 'cropped');
+  };
+
+  const handleUseOriginalPhoto = async (originalSrc) => {
+    const target = photoCropperState.target;
+    setPhotoCropperState((prev) => ({ ...prev, isOpen: false }));
+    await applyFinalPhoto(originalSrc, target, 'original');
+  };
+
+  const applyFinalPhoto = async (dataUrlOrUrl, target, mode = 'cropped') => {
+    const isWinner = target === 'winner' || target === 'editWinner';
+
+    // 1. Instantly update UI state for zero latency
+    if (target === 'winner') setWinnerPhotoUrl(dataUrlOrUrl);
+    else if (target === 'runnerUp') setRunnerUpPhotoUrl(dataUrlOrUrl);
+    else if (target === 'editWinner') setEditWinnerPhotoUrl(dataUrlOrUrl);
+    else if (target === 'editRunnerUp') setEditRunnerUpPhotoUrl(dataUrlOrUrl);
+
+    addToast(
+      `${isWinner ? 'Winner' : 'Runner-Up'} photo ${mode === 'cropped' ? 'cropped & attached' : 'attached'}!`,
+      'success'
+    );
+
+    // 2. Upload to Cloudinary if it's base64 dataUrl
+    if (dataUrlOrUrl && dataUrlOrUrl.startsWith('data:')) {
+      const setUploading =
+        target === 'winner' ? setUploadingWinnerPhoto :
+        target === 'runnerUp' ? setUploadingRunnerUpPhoto :
+        target === 'editWinner' ? setUploadingEditWinnerPhoto :
+        setUploadingEditRunnerUpPhoto;
+
+      setUploading(true);
+      try {
+        const res = await fetch(dataUrlOrUrl);
+        const blob = await res.blob();
+        const file = new File([blob], `${target}_athlete.jpg`, { type: 'image/jpeg' });
+        const uploaded = await uploadFileToCloudinary(file, () => {}, 'sems_medals');
+        if (uploaded?.url) {
+          if (target === 'winner') setWinnerPhotoUrl(uploaded.url);
+          else if (target === 'runnerUp') setRunnerUpPhotoUrl(uploaded.url);
+          else if (target === 'editWinner') setEditWinnerPhotoUrl(uploaded.url);
+          else if (target === 'editRunnerUp') setEditRunnerUpPhotoUrl(uploaded.url);
+        }
+      } catch (e) {
+        console.warn('Background Cloudinary upload notice, dataUrl preserved:', e);
+      } finally {
+        setUploading(false);
+      }
+    }
   };
 
   const handleAwardSportChange = (newSportId) => {
@@ -541,34 +607,6 @@ export const SuperCoordinatorDashboardPage = () => {
     setShowEditModal(true);
   };
 
-  const handleEditStudentPhotoUpload = async (file, target = 'winner') => {
-    if (!file) return;
-    const setUploading = target === 'winner' ? setUploadingEditWinnerPhoto : setUploadingEditRunnerUpPhoto;
-    const setPhoto = target === 'winner' ? setEditWinnerPhotoUrl : setEditRunnerUpPhotoUrl;
-    setUploading(true);
-    try {
-      const uploaded = await uploadFileToCloudinary(file, () => {}, 'sems_medals');
-      if (uploaded?.url) {
-        setPhoto(uploaded.url);
-        addToast(`${target === 'winner' ? 'Winner' : 'Runner-Up'} photo uploaded!`, 'success');
-        setUploading(false);
-        return;
-      }
-    } catch (e) {
-      console.warn('Cloudinary upload notice, using local file reader fallback:', e.message);
-    }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPhoto(e.target.result);
-      setUploading(false);
-      addToast(`${target === 'winner' ? 'Winner' : 'Runner-Up'} photo attached!`, 'success');
-    };
-    reader.onerror = () => {
-      setUploading(false);
-      addToast('Failed to read photo', 'error');
-    };
-    reader.readAsDataURL(file);
-  };
 
   const handleSaveEditedEntry = async (e) => {
     if (e) e.preventDefault();
@@ -1133,14 +1171,24 @@ export const SuperCoordinatorDashboardPage = () => {
                           {winnerPhotoUrl ? (
                             <>
                               <img src={winnerPhotoUrl} alt="Winner" className="w-full h-full object-cover" />
-                              <button
-                                type="button"
-                                onClick={() => setWinnerPhotoUrl('')}
-                                className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
-                                title="Remove photo"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenCropperForExisting('winner')}
+                                  className="w-6 h-6 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                  title="Zoom & Crop Photo"
+                                >
+                                  <Crop className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setWinnerPhotoUrl('')}
+                                  className="w-6 h-6 rounded-lg bg-red-600 hover:bg-red-500 text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                  title="Remove photo"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </>
                           ) : (
                             <User className="w-7 h-7 text-slate-400" />
@@ -1149,20 +1197,37 @@ export const SuperCoordinatorDashboardPage = () => {
                             <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-[9px] font-mono">Uploading...</div>
                           )}
                         </div>
-                        <div className="flex-1 space-y-1">
+                        <div className="flex-1 space-y-1.5">
                           <label className="block text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
                             📸 Winner Athlete Photo
                           </label>
-                          <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
-                            <Camera className="w-3.5 h-3.5" />
-                            <span>Upload Photo</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => e.target.files?.[0] && handleStudentPhotoUpload(e.target.files[0], 'winner')}
-                            />
-                          </label>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
+                              <Camera className="w-3.5 h-3.5" />
+                              <span>{winnerPhotoUrl ? 'Change Photo' : 'Upload Photo'}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  if (e.target.files?.[0]) {
+                                    handlePhotoFileSelect(e.target.files[0], 'winner');
+                                    e.target.value = '';
+                                  }
+                                }}
+                              />
+                            </label>
+                            {winnerPhotoUrl && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenCropperForExisting('winner')}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-emerald-400 dark:border-emerald-700/60 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition cursor-pointer"
+                              >
+                                <Crop className="w-3.5 h-3.5" />
+                                <span>Zoom & Crop</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -1276,14 +1341,24 @@ export const SuperCoordinatorDashboardPage = () => {
                           {runnerUpPhotoUrl ? (
                             <>
                               <img src={runnerUpPhotoUrl} alt="Runner-Up" className="w-full h-full object-cover" />
-                              <button
-                                type="button"
-                                onClick={() => setRunnerUpPhotoUrl('')}
-                                className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
-                                title="Remove photo"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenCropperForExisting('runnerUp')}
+                                  className="w-6 h-6 rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                  title="Zoom & Crop Photo"
+                                >
+                                  <Crop className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setRunnerUpPhotoUrl('')}
+                                  className="w-6 h-6 rounded-lg bg-red-600 hover:bg-red-500 text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                  title="Remove photo"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </>
                           ) : (
                             <User className="w-7 h-7 text-slate-400" />
@@ -1292,20 +1367,37 @@ export const SuperCoordinatorDashboardPage = () => {
                             <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-[9px] font-mono">Uploading...</div>
                           )}
                         </div>
-                        <div className="flex-1 space-y-1">
+                        <div className="flex-1 space-y-1.5">
                           <label className="block text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
                             📸 Runner-Up Athlete Photo
                           </label>
-                          <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
-                            <Camera className="w-3.5 h-3.5" />
-                            <span>Upload Photo</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => e.target.files?.[0] && handleStudentPhotoUpload(e.target.files[0], 'runnerup')}
-                            />
-                          </label>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
+                              <Camera className="w-3.5 h-3.5" />
+                              <span>{runnerUpPhotoUrl ? 'Change Photo' : 'Upload Photo'}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  if (e.target.files?.[0]) {
+                                    handlePhotoFileSelect(e.target.files[0], 'runnerUp');
+                                    e.target.value = '';
+                                  }
+                                }}
+                              />
+                            </label>
+                            {runnerUpPhotoUrl && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenCropperForExisting('runnerUp')}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-blue-400 dark:border-blue-700/60 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-bold hover:bg-blue-100 transition cursor-pointer"
+                              >
+                                <Crop className="w-3.5 h-3.5" />
+                                <span>Zoom & Crop</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -2746,14 +2838,24 @@ export const SuperCoordinatorDashboardPage = () => {
                         {editWinnerPhotoUrl ? (
                           <>
                             <img src={editWinnerPhotoUrl} alt="Winner" className="w-full h-full object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => setEditWinnerPhotoUrl('')}
-                              className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
-                              title="Remove photo"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenCropperForExisting('editWinner')}
+                                className="w-6 h-6 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                title="Zoom & Crop Photo"
+                              >
+                                <Crop className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditWinnerPhotoUrl('')}
+                                className="w-6 h-6 rounded-lg bg-red-600 hover:bg-red-500 text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                title="Remove photo"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
                           </>
                         ) : (
                           <User className="w-6 h-6 text-slate-400" />
@@ -2766,16 +2868,33 @@ export const SuperCoordinatorDashboardPage = () => {
                         <label className="block text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
                           📸 Winner Athlete Photo
                         </label>
-                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
-                          <Camera className="w-3.5 h-3.5" />
-                          <span>Upload Photo</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => e.target.files?.[0] && handleEditStudentPhotoUpload(e.target.files[0], 'winner')}
-                          />
-                        </label>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
+                            <Camera className="w-3.5 h-3.5" />
+                            <span>{editWinnerPhotoUrl ? 'Change Photo' : 'Upload Photo'}</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) {
+                                  handlePhotoFileSelect(e.target.files[0], 'editWinner');
+                                  e.target.value = '';
+                                }
+                              }}
+                            />
+                          </label>
+                          {editWinnerPhotoUrl && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenCropperForExisting('editWinner')}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-emerald-400 dark:border-emerald-700/60 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition cursor-pointer"
+                            >
+                              <Crop className="w-3 h-3" />
+                              <span>Zoom & Crop</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -2887,14 +3006,24 @@ export const SuperCoordinatorDashboardPage = () => {
                         {editRunnerUpPhotoUrl ? (
                           <>
                             <img src={editRunnerUpPhotoUrl} alt="Runner-Up" className="w-full h-full object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => setEditRunnerUpPhotoUrl('')}
-                              className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
-                              title="Remove photo"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenCropperForExisting('editRunnerUp')}
+                                className="w-6 h-6 rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                title="Zoom & Crop Photo"
+                              >
+                                <Crop className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditRunnerUpPhotoUrl('')}
+                                className="w-6 h-6 rounded-lg bg-red-600 hover:bg-red-500 text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                title="Remove photo"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </>
                         ) : (
                           <User className="w-6 h-6 text-slate-400" />
@@ -2907,16 +3036,33 @@ export const SuperCoordinatorDashboardPage = () => {
                         <label className="block text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
                           📸 Runner-Up Athlete Photo
                         </label>
-                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
-                          <Camera className="w-3.5 h-3.5" />
-                          <span>Upload Photo</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => e.target.files?.[0] && handleEditStudentPhotoUpload(e.target.files[0], 'runnerup')}
-                          />
-                        </label>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
+                            <Camera className="w-3.5 h-3.5" />
+                            <span>{editRunnerUpPhotoUrl ? 'Change Photo' : 'Upload Photo'}</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) {
+                                  handlePhotoFileSelect(e.target.files[0], 'editRunnerUp');
+                                  e.target.value = '';
+                                }
+                              }}
+                            />
+                          </label>
+                          {editRunnerUpPhotoUrl && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenCropperForExisting('editRunnerUp')}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-blue-400 dark:border-blue-700/60 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-bold hover:bg-blue-100 transition cursor-pointer"
+                            >
+                              <Crop className="w-3.5 h-3.5" />
+                              <span>Zoom & Crop</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -3003,6 +3149,22 @@ export const SuperCoordinatorDashboardPage = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* ─── Athlete Photo Zoom & Crop Modal ─── */}
+      {photoCropperState.isOpen && photoCropperState.imageSrc && (
+        <ImageCropperModal
+          imageSrc={photoCropperState.imageSrc}
+          title={photoCropperState.title}
+          subtitle="Drag to reposition or zoom to center athlete's face (1:1 Leaderboard Avatar)"
+          aspectRatio="1:1"
+          shape="square"
+          cropButtonLabel="Crop & Save Photo"
+          skipButtonLabel="Use Original (No Crop)"
+          onClose={() => setPhotoCropperState((prev) => ({ ...prev, isOpen: false }))}
+          onCropComplete={handleCroppedPhotoComplete}
+          onUseOriginal={handleUseOriginalPhoto}
+        />
       )}
     </div>
   );

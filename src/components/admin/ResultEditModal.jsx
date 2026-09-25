@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, Trophy, Medal, CheckCircle2, Loader2, Camera, User, 
-  Sparkles, Award, GraduationCap, Building2, Flame, AlertCircle
+  Sparkles, Award, GraduationCap, Building2, Flame, AlertCircle, Crop
 } from 'lucide-react';
 import { ALL_12_SPORTS, ALL_COLLEGES } from '../../services/superCoordinatorApi';
 import { uploadFileToCloudinary } from '../../services/cloudinaryService';
+import { ImageCropperModal } from '../common/ImageCropperModal';
 
 // Athletics Sub-Events
 export const ATHLETICS_SUB_EVENTS = [
@@ -184,41 +185,79 @@ export const ResultEditModal = ({ isOpen, result = null, onSave, onClose }) => {
     }));
   };
 
-  const handlePhotoUpload = async (file, target = 'winner') => {
+  // Athlete Photo Cropper Modal State
+  const [photoCropperState, setPhotoCropperState] = useState({
+    isOpen: false,
+    imageSrc: null,
+    target: 'winner', // 'winner' | 'runnerUp'
+    title: '📸 Winner Athlete Photo - Zoom & Crop'
+  });
+
+  const handlePhotoFileSelect = (file, target = 'winner') => {
     if (!file) return;
-    const setUploading = target === 'winner' ? setUploadingWinnerPhoto : setUploadingRunnerUpPhoto;
-    setUploading(true);
-    setError('');
-
-    try {
-      // 1. Try Cloudinary upload
-      const uploaded = await uploadFileToCloudinary(file, () => {}, 'sems_medals');
-      if (uploaded?.url) {
-        setFormData((prev) => ({
-          ...prev,
-          [target === 'winner' ? 'winnerPhotoUrl' : 'runnerUpPhotoUrl']: uploaded.url
-        }));
-        setUploading(false);
-        return;
-      }
-    } catch (e) {
-      console.warn('Cloudinary upload notice, using local file reader fallback:', e.message);
-    }
-
-    // 2. Fallback to Local Base64 FileReader
+    const isWinner = target === 'winner';
     const reader = new FileReader();
     reader.onload = (e) => {
-      setFormData((prev) => ({
-        ...prev,
-        [target === 'winner' ? 'winnerPhotoUrl' : 'runnerUpPhotoUrl']: e.target.result
-      }));
-      setUploading(false);
-    };
-    reader.onerror = () => {
-      setUploading(false);
-      setError('Failed to read image file');
+      setPhotoCropperState({
+        isOpen: true,
+        imageSrc: e.target.result,
+        target,
+        title: isWinner ? '📸 Winner Athlete Photo - Zoom & Crop' : '📸 Runner-Up Athlete Photo - Zoom & Crop'
+      });
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleOpenCropperForExisting = (target) => {
+    const existingUrl = target === 'winner' ? formData.winnerPhotoUrl : formData.runnerUpPhotoUrl;
+    if (existingUrl) {
+      const isWinner = target === 'winner';
+      setPhotoCropperState({
+        isOpen: true,
+        imageSrc: existingUrl,
+        target,
+        title: isWinner ? '📸 Winner Athlete Photo - Zoom & Crop' : '📸 Runner-Up Athlete Photo - Zoom & Crop'
+      });
+    }
+  };
+
+  const handleCroppedPhotoComplete = async (finalDataUrl) => {
+    const target = photoCropperState.target;
+    setPhotoCropperState((prev) => ({ ...prev, isOpen: false }));
+    await applyFinalPhoto(finalDataUrl, target, 'cropped');
+  };
+
+  const handleUseOriginalPhoto = async (originalSrc) => {
+    const target = photoCropperState.target;
+    setPhotoCropperState((prev) => ({ ...prev, isOpen: false }));
+    await applyFinalPhoto(originalSrc, target, 'original');
+  };
+
+  const applyFinalPhoto = async (dataUrlOrUrl, target, mode = 'cropped') => {
+    const isWinner = target === 'winner';
+    const photoKey = isWinner ? 'winnerPhotoUrl' : 'runnerUpPhotoUrl';
+    const setUploading = isWinner ? setUploadingWinnerPhoto : setUploadingRunnerUpPhoto;
+
+    // 1. Immediately update formData for fast feedback
+    setFormData((prev) => ({ ...prev, [photoKey]: dataUrlOrUrl }));
+
+    // 2. Upload to Cloudinary in background if base64 dataUrl
+    if (dataUrlOrUrl && dataUrlOrUrl.startsWith('data:')) {
+      setUploading(true);
+      try {
+        const res = await fetch(dataUrlOrUrl);
+        const blob = await res.blob();
+        const file = new File([blob], `${target}_athlete.jpg`, { type: 'image/jpeg' });
+        const uploaded = await uploadFileToCloudinary(file, () => {}, 'sems_medals');
+        if (uploaded?.url) {
+          setFormData((prev) => ({ ...prev, [photoKey]: uploaded.url }));
+        }
+      } catch (err) {
+        console.warn('Background upload notice, dataUrl preserved:', err);
+      } finally {
+        setUploading(false);
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -569,16 +608,33 @@ export const ResultEditModal = ({ isOpen, result = null, onSave, onClose }) => {
                     <label className="block text-[11px] font-mono font-bold text-slate-700 dark:text-slate-300">
                       📸 Winner Athlete Photo
                     </label>
-                    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
-                      <Camera className="w-3.5 h-3.5" />
-                      <span>{formData.winnerPhotoUrl ? 'Change Photo' : 'Upload Photo'}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0], 'winner')}
-                      />
-                    </label>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>{formData.winnerPhotoUrl ? 'Change Photo' : 'Upload Photo'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) {
+                              handlePhotoFileSelect(e.target.files[0], 'winner');
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                      </label>
+                      {formData.winnerPhotoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenCropperForExisting('winner')}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-emerald-400 dark:border-emerald-700/60 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition cursor-pointer"
+                        >
+                          <Crop className="w-3.5 h-3.5" />
+                          <span>Zoom & Crop</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -716,16 +772,33 @@ export const ResultEditModal = ({ isOpen, result = null, onSave, onClose }) => {
                     <label className="block text-[11px] font-mono font-bold text-slate-700 dark:text-slate-300">
                       📸 Runner-Up Athlete Photo
                     </label>
-                    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
-                      <Camera className="w-3.5 h-3.5" />
-                      <span>{formData.runnerUpPhotoUrl ? 'Change Photo' : 'Upload Photo'}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0], 'runnerUp')}
-                      />
-                    </label>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>{formData.runnerUpPhotoUrl ? 'Change Photo' : 'Upload Photo'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) {
+                              handlePhotoFileSelect(e.target.files[0], 'runnerUp');
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                      </label>
+                      {formData.runnerUpPhotoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenCropperForExisting('runnerUp')}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-blue-400 dark:border-blue-700/60 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-bold hover:bg-blue-100 transition cursor-pointer"
+                        >
+                          <Crop className="w-3.5 h-3.5" />
+                          <span>Zoom & Crop</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -813,6 +886,22 @@ export const ResultEditModal = ({ isOpen, result = null, onSave, onClose }) => {
           </div>
         </form>
       </div>
+
+      {/* ─── Athlete Photo Zoom & Crop Modal ─── */}
+      {photoCropperState.isOpen && photoCropperState.imageSrc && (
+        <ImageCropperModal
+          imageSrc={photoCropperState.imageSrc}
+          title={photoCropperState.title}
+          subtitle="Drag to reposition or zoom to center athlete's face (1:1 Leaderboard Avatar)"
+          aspectRatio="1:1"
+          shape="square"
+          cropButtonLabel="Crop & Save Photo"
+          skipButtonLabel="Use Original (No Crop)"
+          onClose={() => setPhotoCropperState((prev) => ({ ...prev, isOpen: false }))}
+          onCropComplete={handleCroppedPhotoComplete}
+          onUseOriginal={handleUseOriginalPhoto}
+        />
+      )}
     </div>
   );
 };

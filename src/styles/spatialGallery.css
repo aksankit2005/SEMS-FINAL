@@ -232,3 +232,42 @@
 .dark .timeline-node-active {
   box-shadow: 0 0 20px rgba(168, 85, 247, 0.85), 0 0 40px rgba(168, 85, 247, 0.4);
 }
+
+/* ============================================================
+   CHAMPION CARD & TROPHY SHOWCASE ENHANCEMENTS
+   ============================================================ */
+
+@keyframes championShimmer {
+  0% { transform: translateX(-150%) rotate(25deg); }
+  100% { transform: translateX(250%) rotate(25deg); }
+}
+
+.animate-champion-shimmer {
+  animation: championShimmer 4.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes goldAuraGlow {
+  0%, 100% {
+    box-shadow: 0 0 25px rgba(245, 158, 11, 0.35), 0 0 50px rgba(245, 158, 11, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 42px rgba(245, 158, 11, 0.65), 0 0 80px rgba(245, 158, 11, 0.3);
+  }
+}
+
+.gold-aura-glow {
+  animation: goldAuraGlow 3.5s ease-in-out infinite;
+}
+
+@keyframes silverAuraGlow {
+  0%, 100% {
+    box-shadow: 0 0 22px rgba(148, 163, 184, 0.3), 0 0 45px rgba(148, 163, 184, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 38px rgba(148, 163, 184, 0.55), 0 0 70px rgba(148, 163, 184, 0.25);
+  }
+}
+
+.silver-aura-glow {
+  animation: silverAuraGlow 3.5s ease-in-out infinite;
+}
