@@ -741,7 +741,14 @@ export const persistConfirmedRegistration = async ({
     enrollmentNo: participantData.enrollmentNo || participantData.rollNo || participantData.captainRoll || 'ENR2026-001',
     email: participantData.email || participantData.captainEmail || 'athlete@sems.edu',
     phone: participantData.phone || participantData.mobile || participantData.captainPhone || '+91 98765 43210',
-    gender: participantData.gender || 'Male',
+    gender: (() => {
+      let g = participantData.gender;
+      if (!g && Array.isArray(participantData.roster) && participantData.roster.length > 0) {
+        const cap = participantData.roster.find(m => m.isCaptain) || participantData.roster[0];
+        if (cap && cap.gender) g = cap.gender;
+      }
+      return (g || 'Male').toString().trim();
+    })(),
     emergencyContact: participantData.emergencyContact || participantData.phone || '+91 98765 43211',
     status: finalStatus,
     registeredDate: new Date().toLocaleDateString(),
@@ -936,7 +943,9 @@ export const persistConfirmedRegistration = async ({
         }
       }
 
-      const isAthletics = (newRegRecord.sportId || targetSportId || sportId || '').toLowerCase().includes('athletics');
+      const sKey = (newRegRecord.sportId || targetSportId || sportId || '').toLowerCase();
+      const isAthletics = sKey.includes('athletics');
+      const isTeamSport = ['cricket', 'football', 'basketball', 'volleyball', 'kabaddi', 'kho-kho', 'tug-of-war', 'gully-cricket'].some(ts => sKey.includes(ts));
       const enrichedParticipantData = { ...(participantData || {}) };
       if (isAthletics) {
         const sub = enrichedParticipantData.subEvent || enrichedParticipantData.athleticsEvent || (Array.isArray(enrichedParticipantData.selectedEvents) ? enrichedParticipantData.selectedEvents[0] : null) || '100m Race';
@@ -945,6 +954,14 @@ export const persistConfirmedRegistration = async ({
         enrichedParticipantData.selectedEvents = [sub];
         enrichedParticipantData.gameName = sub;
         enrichedParticipantData.eventTitle = `Athletics (${sub})`;
+      } else if (isTeamSport) {
+        if (enrichedParticipantData.subEvent === 'Individual' || enrichedParticipantData.eventType === 'Individual') {
+          enrichedParticipantData.subEvent = null;
+          enrichedParticipantData.eventType = 'Team';
+        }
+        if (!enrichedParticipantData.eventTitle || enrichedParticipantData.eventTitle === 'Individual') {
+          enrichedParticipantData.eventTitle = `APEX ${sportRecord?.name || 'Sport'} 2026`;
+        }
       }
 
       if (razorpayOrderId) {

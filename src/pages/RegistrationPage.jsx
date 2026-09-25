@@ -544,13 +544,16 @@ export const RegistrationPage = () => {
       if (currentSportIdRef.current !== sportKey) {
         currentSportIdRef.current = sportKey;
         const isRacket = isRacketSportCheck(activeSport);
+        const sKey = resolveSportKey(activeSport);
+        const isTeamSport = ['football', 'basketball', 'volleyball', 'cricket', 'kabaddi', 'tug-of-war', 'kho-kho', 'gully-cricket'].includes(sKey);
         setFormData({
           collegeName: '',
           teamName: '',
           captainName: '',
           captainPhone: '',
           captainEmail: '',
-          eventType: isRacket ? 'Singles' : 'Individual',
+          gender: '',
+          eventType: isRacket ? 'Singles' : (isTeamSport ? 'Team' : 'Individual'),
           selectedEvents: [],
           roster: [
             {
@@ -710,7 +713,7 @@ export const RegistrationPage = () => {
           captainName: formData.captainName,
           email: formData.captainEmail || (formData.roster[0] && formData.roster[0].email) || 'athlete@apex.edu',
           phone: formData.captainPhone || (formData.roster[0] && formData.roster[0].phone) || '+91 98765 43210',
-          gender: formData.roster[0]?.gender || formData.gender || 'Male',
+          gender: formData.gender || formData.roster[0]?.gender || 'Male',
           collegeName: formData.collegeName || 'MPEC',
           department: formData.roster[0]?.branch || formData.roster[0]?.department || 'Engineering',
           enrollmentNo: formData.roster[0]?.rollNo || formData.roster[0]?.rollNumber || formData.captainRoll || 'ENR2026-001',
@@ -719,12 +722,12 @@ export const RegistrationPage = () => {
           entryFee: activeSport.entryFee,
           roster: formData.roster || [],
           eventTitle: resolvedEventTitle,
-          eventType: isAthletics ? selectedSubEvent : formData.eventType,
+          eventType: isAthletics ? selectedSubEvent : (formData.eventType === 'Individual' && ['football', 'basketball', 'volleyball', 'cricket', 'kabaddi', 'tug-of-war', 'kho-kho', 'gully-cricket'].includes(resolveSportKey(activeSport)) ? 'Team' : formData.eventType),
           participationType: isRacketSportCheck(activeSport) 
             ? (formData.eventType === 'Doubles' ? 'DUO' : 'INDIVIDUAL')
             : (formData.roster?.length > 2 ? 'TEAM' : (formData.roster?.length === 2 ? 'DUO' : 'INDIVIDUAL')),
           category: activeSport.category,
-          subEvent: selectedSubEvent || formData.eventType || '',
+          subEvent: isAthletics ? selectedSubEvent : (['football', 'basketball', 'volleyball', 'cricket', 'kabaddi', 'tug-of-war', 'kho-kho', 'gully-cricket'].includes(resolveSportKey(activeSport)) ? '' : (selectedSubEvent || formData.eventType || '')),
           athleticsEvent: isAthletics ? selectedSubEvent : '',
           selectedEvents: isAthletics && selectedSubEvent ? [selectedSubEvent] : (formData.selectedEvents || []),
           sportName: resolvedSportName,
