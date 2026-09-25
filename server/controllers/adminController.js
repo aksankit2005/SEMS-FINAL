@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { envConfig } from '../config/env.js';
 import { queryDb, prisma } from '../config/db.js';
 import { syncCollegeLeaderboards } from '../services/leaderboardService.js';
+import { initDatabaseSchema } from '../config/dbInit.js';
 import { deleteCloudinaryAsset, deleteCloudinaryBatch } from '../services/cloudinaryService.js';
 import { logAuditEvent } from '../utils/auditLogger.js';
 import { inMemoryCoordinatorEvents } from './coordinatorController.js';
@@ -779,6 +780,7 @@ export const getPublicMedalists = async (req, res) => {
       `);
     } catch (e1) {
       try {
+        await initDatabaseSchema();
         dbRes = await queryDb(`
           SELECT 
             id,
@@ -794,29 +796,14 @@ export const getPublicMedalists = async (req, res) => {
             runner_up_college AS "runnerUpCollege",
             points,
             details,
+            winner_photo_url AS "winnerPhotoUrl",
+            runner_up_photo_url AS "runnerUpPhotoUrl",
             declared_at AS "declaredAt"
           FROM leaderboard_entries
           ORDER BY declared_at DESC
         `);
       } catch (e2) {
-        dbRes = await queryDb(`
-          SELECT 
-            id,
-            sport_id AS "sportId",
-            match_format AS "matchFormat",
-            gender,
-            sub_event AS "subEvent",
-            winner_name AS "winnerName",
-            winner_team AS "winnerTeam",
-            winner_college AS "winnerCollege",
-            runner_up_name AS "runnerUpName",
-            runner_up_team AS "runnerUpTeam",
-            runner_up_college AS "runnerUpCollege",
-            points,
-            declared_at AS "declaredAt"
-          FROM leaderboard_entries
-          ORDER BY declared_at DESC
-        `);
+        console.warn('Fallback public medalists query notice:', e2.message);
       }
     }
 
@@ -1051,7 +1038,11 @@ export const saveLeaderboardEntry = async (req, res) => {
       }
     }
 
-    await syncCollegeLeaderboards();
+    try {
+      await syncCollegeLeaderboards();
+    } catch (syncErr) {
+      console.warn('syncCollegeLeaderboards warning:', syncErr.message);
+    }
 
     if (dbRes && dbRes.rows.length > 0) {
       const row = dbRes.rows[0];
@@ -1237,7 +1228,11 @@ export const updateLeaderboardEntry = async (req, res) => {
       }
     }
 
-    await syncCollegeLeaderboards();
+    try {
+      await syncCollegeLeaderboards();
+    } catch (syncErr) {
+      console.warn('syncCollegeLeaderboards warning:', syncErr.message);
+    }
 
     if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
       const row = dbRes.rows[0];

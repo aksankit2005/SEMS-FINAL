@@ -62,7 +62,16 @@ export const LeaderboardPage = () => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const [activeTab, setActiveTab] = useState('standings'); // 'standings' | 'showcase'
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam === 'showcase' || tabParam === 'medals' || window.location.hash.includes('medals') || window.location.hash.includes('showcase')) {
+        return 'showcase';
+      }
+    }
+    return 'standings';
+  });
   const [selectedCollegeModal, setSelectedCollegeModal] = useState(null);
 
   // Standings table search
@@ -301,6 +310,32 @@ export const LeaderboardPage = () => {
         {/* ════════════════ TAB 1: COLLEGE STANDINGS & PODIUM ════════════════ */}
         {activeTab === 'standings' && (
           <div className="space-y-6 animate-in fade-in duration-200">
+            
+            {/* Quick Switch Banner to Student Cards */}
+            {allMedalists.length > 0 && (
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-[#7156A5]/10 via-[#B8A5E5]/10 to-[#7156A5]/10 border border-[#7156A5]/30 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-3 text-left">
+                  <span className="text-2xl">🥇</span>
+                  <div>
+                    <h4 className="font-bold text-xs sm:text-sm text-[#211D2B] dark:text-[#F5F2FA]">
+                      {allMedalists.length} Official Student Champions & Medalists Declared!
+                    </h4>
+                    <p className="text-[11px] font-mono text-[#686370] dark:text-[#AAA4B8]">
+                      Click to view student athlete photographs, colleges, roll numbers, and highlight quotes.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('showcase')}
+                  className="px-4 py-2 rounded-xl bg-[#7156A5] hover:bg-[#5D448B] text-white text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer shadow-sm w-full sm:w-auto justify-center"
+                >
+                  <span>View Student Winner Cards</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
             {/* ─── TOP 3 PODIUM OR EMPTY STATE ─── */}
             {!hasData ? (
               <div className="text-center py-16 rounded-2xl border p-8 max-w-lg mx-auto transition-all bg-[#FFFFFF] dark:bg-[#0D101A] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] shadow-2xs">

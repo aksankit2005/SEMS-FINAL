@@ -4,8 +4,8 @@ import { initDatabaseSchema } from '../server/config/dbInit.js';
 let isDbInitialized = false;
 
 export default async function handler(req, res) {
-  // Only execute dynamic schema init in non-production environments to prevent cold start latency & DDL locks
-  if (!isDbInitialized && process.env.NODE_ENV !== 'production') {
+  // Ensure database schema and tables exist on Vercel serverless initialization
+  if (!isDbInitialized) {
     try {
       await initDatabaseSchema();
       isDbInitialized = true;
