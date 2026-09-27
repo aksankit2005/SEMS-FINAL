@@ -118,10 +118,10 @@ router.delete('/super-coordinator/leaderboard/:id', verifySuperCoordinatorToken,
 router.get('/super-coordinator/cloudinary-signature', verifySuperCoordinatorToken, getCloudinarySignature);
 router.post('/super-coordinator/change-password', verifySuperCoordinatorToken, changeSuperCoordinatorPasswordDB);
 
-// Master Data Single and Bulk Delete Endpoints
-router.delete('/admin/master-data/bulk', verifyAdminOrSuperCoordinatorToken, bulkDeleteMasterDataDB);
-router.delete('/admin/master-data/:id', verifyAdminOrSuperCoordinatorToken, deleteMasterDataDB);
-router.delete('/super-coordinator/master-data/bulk', verifyAdminOrSuperCoordinatorToken, bulkDeleteMasterDataDB);
-router.delete('/super-coordinator/master-data/:id', verifyAdminOrSuperCoordinatorToken, deleteMasterDataDB);
+// Master Data Single and Bulk Delete Endpoints (Strictly Admin Only)
+router.delete('/admin/master-data/bulk', verifyAdminToken, bulkDeleteMasterDataDB);
+router.delete('/admin/master-data/:id', verifyAdminToken, deleteMasterDataDB);
+router.delete('/super-coordinator/master-data/bulk', verifyAdminToken, bulkDeleteMasterDataDB);
+router.delete('/super-coordinator/master-data/:id', verifyAdminToken, deleteMasterDataDB);
 
 export default router;

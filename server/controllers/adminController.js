@@ -180,7 +180,7 @@ export const getMasterParticipants = async (req, res) => {
         TO_CHAR(timezone('Asia/Kolkata', timezone('UTC', COALESCE(cr.created_at, r."createdAt", m."createdAt"))), 'YYYY-MM-DD') AS date,
         COALESCE(cr.created_at, r."createdAt", m."createdAt") AS "createdAt",
         COALESCE(r."registrationType", cr.participant_data->>'matchFormat', 'SINGLE') AS "participationType",
-        COALESCE(cr.sport_id, r."sportId"::text, s.slug, s.name, 'sport') AS "sportId",
+        COALESCE(s.slug, cr.sport_id, r."sportId"::text, s.name, 'sport') AS "sportId",
         COALESCE(s.name, cr.sport_id, r."sportId"::text, 'Sport') AS "sportName",
         COALESCE(cr.team_name, r."teamName", m."fullName") AS "teamName",
         COALESCE(cr.college, c.code, c.name, 'MPEC') AS college,
@@ -199,9 +199,9 @@ export const getMasterParticipants = async (req, res) => {
         COALESCE(cr.fee_paid, r.amount, 0) AS "feePaid"
       FROM registration_members m
       JOIN registrations r ON m."registrationId" = r.id
-      LEFT JOIN college_registrations cr ON (cr.registration_id = r.id OR cr.id::text = r.id::text OR cr.id::text = m."registrationId"::text)
+      LEFT JOIN college_registrations cr ON (cr.registration_id = r.id OR cr.registration_id::text = r.id::text)
       LEFT JOIN coordinator_event_items cei ON (cei.id::text = cr.event_id::text OR cei.id::text = r."eventId"::text)
-      LEFT JOIN sports s ON (s.slug = r."sportId"::text OR s.slug = cr.sport_id OR s.name = r."sportId"::text OR s.id::text = r."sportId"::text)
+      LEFT JOIN sports s ON (s.id::text = r."sportId"::text OR s.slug = r."sportId"::text OR s.name = r."sportId"::text OR s.slug = cr.sport_id OR s.name = cr.sport_id)
       LEFT JOIN colleges c ON (c.id = r."collegeId" OR c.code = cr.college OR c.name = cr.college)
       ORDER BY COALESCE(cr.created_at, m."createdAt") DESC
     `).catch((err) => {
@@ -1782,7 +1782,7 @@ export const deleteCoordinatorDB = async (req, res) => {
 };
 
 export const changeSuperCoordinatorPasswordDB = async (req, res) => {
-  const { newPass, username } = req.body;
+  const { currentPass, newPass, username } = req.body;
   const targetUser = (username || req.user?.username || 'super_coordinator').trim().toLowerCase();
 
   if (!newPass || newPass.trim().length < 6) {
@@ -1790,13 +1790,31 @@ export const changeSuperCoordinatorPasswordDB = async (req, res) => {
   }
 
   try {
+    const userRes = await queryDb(
+      `SELECT * FROM pr_users WHERE LOWER(username) = $1 AND (role = 'super_coordinator' OR role = 'Super Coordinator')`,
+      [targetUser]
+    );
+
+    if (!userRes || userRes.rows.length === 0) {
+      return res.status(404).json({ message: 'Super Coordinator account not found.' });
+    }
+
+    const user = userRes.rows[0];
+
+    if (currentPass && user.password_hash) {
+      const isMatch = await bcrypt.compare(currentPass, user.password_hash);
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Current password is incorrect.' });
+      }
+    }
+
     const hashed = await bcrypt.hash(newPass.trim(), 10);
 
     await queryDb(
       `UPDATE pr_users 
        SET password_hash = $1, updated_at = CURRENT_TIMESTAMP 
-       WHERE LOWER(username) = LOWER($2) OR role = 'super_coordinator' OR role = 'Super Coordinator'`,
-      [hashed, targetUser]
+       WHERE id = $2`,
+      [hashed, user.id]
     );
 
     try {

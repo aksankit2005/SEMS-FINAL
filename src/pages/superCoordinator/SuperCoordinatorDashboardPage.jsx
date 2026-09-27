@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   Users, Trophy, Layers, Filter, Search, Download, Calendar, MapPin, DollarSign, 
   CheckCircle2, Image as ImageIcon, ShieldAlert, RefreshCw, Eye, UserCheck, Phone, Mail, Award, BookOpen,
-  FolderOpen, Folder, ArrowLeft, Camera, Film, X, Maximize2, Key, EyeOff, User, Lock, Building2, Crown, Upload, Edit2, Crop
+  FolderOpen, Folder, ArrowLeft, Camera, Film, X, Maximize2, Key, EyeOff, User, Lock, Building2, Crown, Upload, Edit2, Crop,
+  FileSpreadsheet, FileText, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 import { superCoordinatorApi, ALL_12_SPORTS, ALL_COLLEGES, matchesCollegeFilter } from '../../services/superCoordinatorApi';
@@ -15,6 +16,7 @@ import { exportResultsToExcel } from '../../utils/excelExporter';
 import { GoogleDriveImage } from '../../components/common/GoogleDriveImage';
 import { uploadFileToCloudinary } from '../../services/cloudinaryService';
 import { ImageCropperModal } from '../../components/common/ImageCropperModal';
+import { RegistrationDetailsModal } from '../../components/admin/RegistrationDetailsModal';
 
 export const SuperCoordinatorDashboardPage = () => {
   const { addToast } = useToast();
@@ -256,6 +258,12 @@ export const SuperCoordinatorDashboardPage = () => {
   const [selectedType, setSelectedType] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Pagination & Inspection Modal for Master Data
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const [selectedParticipant, setSelectedParticipant] = useState(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
   // Active Tab View: 'leaderboard' | 'coordinator_creations' | 'participants' | 'pr_gallery' | 'profile'
   const [activeTab, setActiveTab] = useState('leaderboard');
 
@@ -270,7 +278,7 @@ export const SuperCoordinatorDashboardPage = () => {
       return;
     }
 
-    const res = await superCoordinatorApi.changePassword(passwordForm.newPass);
+    const res = await superCoordinatorApi.changePassword(passwordForm.newPass, passwordForm.current);
     if (res.ok) {
       addToast('Super Coordinator Password updated in database successfully!', 'success');
       setShowPasswordModal(false);
@@ -315,6 +323,12 @@ export const SuperCoordinatorDashboardPage = () => {
       setLeaderboardEntries(lbList || []);
       setPrFolders(foldersList || []);
 
+      if (Array.isArray(lbList)) {
+        try {
+          localStorage.setItem('sems_super_coord_leaderboard', JSON.stringify(lbList));
+        } catch (e) {}
+      }
+
       if (selectedPRFolder) {
         const mediaDetails = await superCoordinatorApi.getPRFolderMedia(selectedPRFolder.id);
         setSelectedFolderMedia(mediaDetails || { all: [], photos: [], videos: [] });
@@ -339,28 +353,33 @@ export const SuperCoordinatorDashboardPage = () => {
     }
   };
 
-  const handleSportChange = (sportId) => {
-    setSelectedSport(sportId);
+  const handleSportChange = (sportIdOrName) => {
+    setSelectedSport(sportIdOrName);
     setSelectedEvent('ALL');
+    setCurrentPage(1);
   };
 
   // Dynamic available events list based on selected sport
   const availableEvents = coordinatorEvents.filter((evt) => {
     if (selectedSport === 'ALL') return true;
-    const sId = (evt.sportId || '').toLowerCase().replace(/_/g, '-');
-    const sName = (evt.sportName || '').toLowerCase().replace(/_/g, '-');
-    const sel = selectedSport.toLowerCase().replace(/_/g, '-');
-    const isSelCricket = sel === 'cricket' || (sel.includes('cricket') && !sel.includes('gully'));
-    const isSelGully = sel.includes('gully');
+    const eSportKey = (evt.sportId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const sSportKey = selectedSport.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const eSportName = (evt.sportName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-    if (isSelCricket) {
-      if (sId.includes('gully') || sName.includes('gully')) return false;
-      return sId.includes('cricket') || sName.includes('cricket');
+    const isStdCricket = sSportKey === 'cricket';
+    const isGully = sSportKey.includes('gully');
+
+    if (isStdCricket) {
+      return (eSportKey.includes('cricket') || eSportName.includes('cricket')) && !eSportKey.includes('gully') && !eSportName.includes('gully');
     }
-    if (isSelGully) {
-      return sId.includes('gully') || sName.includes('gully');
+    if (isGully) {
+      return eSportKey.includes('gully') || eSportName.includes('gully');
     }
-    return sId === sel || sName.includes(sel);
+    return (
+      (eSportKey && (eSportKey === sSportKey || eSportKey.includes(sSportKey))) ||
+      (eSportName && (eSportName === sSportKey || eSportName.includes(sSportKey))) ||
+      (evt.sportName || '').toLowerCase().includes(selectedSport.toLowerCase())
+    );
   });
 
   // Calculate Inter-College Leaderboard Standings
@@ -508,12 +527,18 @@ export const SuperCoordinatorDashboardPage = () => {
     }
 
     const res = await superCoordinatorApi.saveLeaderboardEntries(leaderboardEntries, newEntry);
+    let nextEntries = [];
     if (res && res.entry) {
-      setLeaderboardEntries([res.entry, ...leaderboardEntries]);
+      nextEntries = [res.entry, ...leaderboardEntries];
+      setLeaderboardEntries(nextEntries);
     } else {
-      const freshEntries = await superCoordinatorApi.getLeaderboardEntries();
-      setLeaderboardEntries(freshEntries);
+      nextEntries = await superCoordinatorApi.getLeaderboardEntries();
+      setLeaderboardEntries(nextEntries);
     }
+
+    try {
+      localStorage.setItem('sems_super_coord_leaderboard', JSON.stringify(nextEntries));
+    } catch (e) {}
 
     // Trigger reactive updates on Leaderboard
     window.dispatchEvent(new Event('sems_leaderboard_updated'));
@@ -562,9 +587,18 @@ export const SuperCoordinatorDashboardPage = () => {
 
       const res = await superCoordinatorApi.deleteLeaderboardEntry(id);
       if (res !== false) {
-        setLeaderboardEntries((prev) => prev.filter((e) => e.id !== id));
+        const remaining = leaderboardEntries.filter((e) => e.id !== id);
+        setLeaderboardEntries(remaining);
+        try {
+          localStorage.setItem('sems_super_coord_leaderboard', JSON.stringify(remaining));
+        } catch (e) {}
         const freshEntries = await superCoordinatorApi.getLeaderboardEntries();
-        if (freshEntries) setLeaderboardEntries(freshEntries);
+        if (freshEntries) {
+          setLeaderboardEntries(freshEntries);
+          try {
+            localStorage.setItem('sems_super_coord_leaderboard', JSON.stringify(freshEntries));
+          } catch (e) {}
+        }
         window.dispatchEvent(new Event('sems_leaderboard_updated'));
         window.dispatchEvent(new Event('storage'));
         addToast('Leaderboard entry removed from database', 'info');
@@ -730,9 +764,13 @@ export const SuperCoordinatorDashboardPage = () => {
       await superCoordinatorApi.updateLeaderboardEntry(editingEntry.id, updatedPayload);
 
       // 3. Update state in-place
-      setLeaderboardEntries((prev) =>
-        prev.map((item) => (String(item.id) === String(editingEntry.id) ? { ...item, ...updatedPayload } : item))
+      const updatedList = leaderboardEntries.map((item) =>
+        String(item.id) === String(editingEntry.id) ? { ...item, ...updatedPayload } : item
       );
+      setLeaderboardEntries(updatedList);
+      try {
+        localStorage.setItem('sems_super_coord_leaderboard', JSON.stringify(updatedList));
+      } catch (e) {}
 
       // Reactive events
       window.dispatchEvent(new Event('sems_leaderboard_updated'));
@@ -796,22 +834,25 @@ export const SuperCoordinatorDashboardPage = () => {
 
   // Filtered Participants Logic
   const filteredParticipants = masterParticipants.filter((p) => {
-    let matchesSport = false;
-    if (selectedSport === 'ALL') {
-      matchesSport = true;
-    } else {
-      const sId = (p.sportId || '').toLowerCase().replace(/_/g, '-');
-      const sName = (p.sportName || '').toLowerCase().replace(/_/g, '-');
-      const sel = selectedSport.toLowerCase().replace(/_/g, '-');
-      const isSelCricket = sel === 'cricket' || (sel.includes('cricket') && !sel.includes('gully'));
-      const isSelGully = sel.includes('gully');
+    const pSportKey = (p.sportId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const sSportKey = selectedSport.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const pSportName = (p.sportName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-      if (isSelCricket) {
-        matchesSport = (!sId.includes('gully') && !sName.includes('gully')) && (sId.includes('cricket') || sName.includes('cricket'));
-      } else if (isSelGully) {
-        matchesSport = sId.includes('gully') || sName.includes('gully');
+    const isStdCricket = sSportKey === 'cricket';
+    const isGully = sSportKey.includes('gully');
+
+    let matchesSport = selectedSport === 'ALL';
+    if (!matchesSport) {
+      if (isStdCricket) {
+        matchesSport = (pSportKey.includes('cricket') || pSportName.includes('cricket')) && !pSportKey.includes('gully') && !pSportName.includes('gully');
+      } else if (isGully) {
+        matchesSport = pSportKey.includes('gully') || pSportName.includes('gully');
       } else {
-        matchesSport = sId === sel || sName.includes(sel);
+        matchesSport = (
+          (pSportKey && (pSportKey === sSportKey || pSportKey.includes(sSportKey))) ||
+          (pSportName && (pSportName === sSportKey || pSportName.includes(sSportKey))) ||
+          ((p.sportName || '').toLowerCase() === selectedSport.toLowerCase())
+        );
       }
     }
     const matchesEvent = selectedEvent === 'ALL' ||
@@ -835,57 +876,77 @@ export const SuperCoordinatorDashboardPage = () => {
       (p.teamName || '').toLowerCase().includes(q) ||
       (p.mobile || '').toLowerCase().includes(q) ||
       (p.email || '').toLowerCase().includes(q) ||
-      (p.college || '').toLowerCase().includes(q);
+      (p.college || '').toLowerCase().includes(q) ||
+      (p.sportName || '').toLowerCase().includes(q) ||
+      (p.receiptId || '').toLowerCase().includes(q) ||
+      (p.registrationId || '').toLowerCase().includes(q) ||
+      (p.id || '').toLowerCase().includes(q) ||
+      (p.rollNo || '').toLowerCase().includes(q);
 
     return matchesSport && matchesEvent && matchesGender && matchesCollege && matchesType && matchesSearch;
   });
 
-  // Handle Export Filtered Excel (CSV) Report
-  const handleExportFilteredExcel = () => {
+  const totalPages = Math.max(1, Math.ceil(filteredParticipants.length / itemsPerPage));
+  const paginatedParticipants = filteredParticipants.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handleExportCSV = () => {
     if (filteredParticipants.length === 0) {
-      addToast('No participant records matching current filters to export', 'warning');
+      addToast('No data available to export', 'error');
       return;
     }
+    const exportData = filteredParticipants.map((p, idx) => ({
+      'S.No.': idx + 1,
+      'Registration ID': p.receiptId || p.registrationId || p.id || 'N/A',
+      'Registration Date': p.date || 'N/A',
+      'Registration Time': p.time || 'N/A',
+      'Participation Type': p.participationType || getParticipationType(p),
+      'Sport': p.sportName || 'N/A',
+      'Event': p.eventTitle || `${p.sportName || 'Sport'} Championship`,
+      'Team Name': p.teamName || p.name || 'N/A',
+      'College': p.college || 'N/A',
+      'Player Name': p.name || 'N/A',
+      'Role': (p.isCaptain === true || p.isCaptain === 1 || p.isCaptain === 'true' || p.isCaptain === '1') ? 'Captain' : 'Player',
+      'Roll Number': p.rollNo || 'N/A',
+      'Mobile Number': p.mobile || 'N/A',
+      'Email Address': p.email || 'N/A',
+      'Gender': p.gender || 'N/A',
+      'Course': p.course || 'N/A',
+      'Year / Semester': p.yearSemester || 'N/A',
+      'Status': p.status || 'VERIFIED'
+    }));
+    exportToCSV(exportData, `Super_Coordinator_Master_Roster_${new Date().toISOString().split('T')[0]}`);
+    addToast('Super Coordinator Master Roster exported to CSV successfully!', 'success');
+  };
 
-    const headers = [
-      'Registration ID',
-      'Registration Date',
-      'Registration Time',
-      'Participation Type',
-      'Game / Sport',
-      'Event Registration Title',
-      'Team Name',
-      'College Name',
-      'Student Name',
-      'Mobile Number',
-      'Email Address',
-      'Gender',
-      'Verification Status'
-    ];
-
-    const rows = filteredParticipants.map((p) => [
+  const handleExportPDF = () => {
+    if (filteredParticipants.length === 0) {
+      addToast('No data available to export', 'error');
+      return;
+    }
+    const headers = ['#', 'Reg ID', 'Type', 'Sport', 'Team Name', 'College', 'Player Name', 'Role', 'Roll No', 'Mobile', 'Course', 'Status'];
+    const rows = filteredParticipants.map((p, idx) => [
+      idx + 1,
       p.receiptId || p.registrationId || p.id || 'N/A',
-      p.date || 'N/A',
-      p.time || '10:00 AM',
       p.participationType || getParticipationType(p),
-      p.sportName || 'Sport',
-      p.eventTitle || `${p.sportName || 'Sport'} Event`,
-      p.teamName || 'N/A',
-      p.college || 'MPEC',
-      p.name || 'Student',
+      p.sportName || 'N/A',
+      p.teamName || p.name || 'N/A',
+      p.college || 'N/A',
+      p.name || 'N/A',
+      (p.isCaptain === true || p.isCaptain === 1 || p.isCaptain === 'true' || p.isCaptain === '1') ? 'Captain' : 'Player',
+      p.rollNo || 'N/A',
       p.mobile || 'N/A',
-      p.email || 'N/A',
-      p.gender || 'Boys',
+      p.course || 'N/A',
       p.status || 'VERIFIED'
     ]);
-
-    const sportTag = selectedSport !== 'ALL' ? selectedSport : 'AllSports';
-    const eventTag = selectedEvent !== 'ALL' ? selectedEvent.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20) : '';
-    const fileName = `Filtered_Participants_${sportTag}${eventTag ? '_' + eventTag : ''}_${new Date().toISOString().split('T')[0]}.csv`;
-
-    exportToCSV(fileName, headers, rows);
-    addToast(`Exported ${filteredParticipants.length} filtered participant records to Excel (CSV)`, 'success');
+    exportToPDF('APEX 2026 - Master Participants Official Roster', headers, rows, `Super_Coordinator_Master_Roster_${new Date().toISOString().split('T')[0]}`);
+    addToast('Super Coordinator Master Roster exported to PDF successfully!', 'success');
   };
+
+  // Retain handleExportFilteredExcel for backward compatibility
+  const handleExportFilteredExcel = handleExportCSV;
 
 
   return (
@@ -1955,148 +2016,56 @@ export const SuperCoordinatorDashboardPage = () => {
         )}
 
 
-        {/* SECTION 3: MASTER PARTICIPANT DATABASE WITH MULTI-FILTERS */}
+        {/* SECTION 3: MASTER PARTICIPANT DATABASE WITH MULTI-FILTERS (ADMIN REPLICATED, READ-ONLY) */}
         {(activeTab === 'participants') && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                  <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  Master Participant Database & Multi-Filter Control
-                </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400">
-                  Filter participants by Game, Event Title, Gender, College, or Search Name
+          <div className="space-y-6 animate-fade-in">
+            {/* Header Banner */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl transition-colors">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                    Super Coordinator Portal
+                  </span>
+                </div>
+                <h1 className="text-2xl font-black text-slate-900 dark:text-white">Master Data / Participants Roster</h1>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Central database of all registered fest participants & squad rosters ({masterParticipants.length} Total Records)
                 </p>
               </div>
 
-              <button
-                onClick={handleExportFilteredExcel}
-                className="px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm shadow-md transition flex items-center gap-2 cursor-pointer active:scale-95 shrink-0 min-h-[46px]"
-                title="Export ONLY the displayed filtered student records below"
-              >
-                <Download className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-slate-950" />
-                <span>Export Filtered Excel ({filteredParticipants.length})</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleExportCSV}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  <span>CSV</span>
+                </button>
+                <button
+                  onClick={handleExportPDF}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>PDF</span>
+                </button>
+                <button
+                  onClick={fetchDashboardData}
+                  className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                  title="Refresh list"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
-            {/* Filter Control Bar */}
-            <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md dark:shadow-xl space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                
-                {/* 1. Sport / Game Filter */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
-                    🎯 Filter by Game
-                  </label>
-                  <select
-                    value={selectedSport}
-                    onChange={(e) => handleSportChange(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
-                  >
-                    <option value="ALL">All 12 Sports</option>
-                    {ALL_12_SPORTS.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.icon} {s.name}
-                      </option>
-                    ))}
-                  </select>
+            {/* 6 FILTERS CONTROL BAR */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm transition-colors">
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+                  <Filter className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span>Master Data Filters</span>
                 </div>
 
-                {/* 2. Event Title Filter (Populated dynamically) */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-mono font-bold text-blue-600 dark:text-blue-400 uppercase">
-                    📋 Filter by Event Title
-                  </label>
-                  <select
-                    value={selectedEvent}
-                    onChange={(e) => setSelectedEvent(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-blue-500/40 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
-                  >
-                    <option value="ALL">All Created Events ({availableEvents.length})</option>
-                    {availableEvents.map((evt) => (
-                      <option key={evt.id} value={evt.eventTitle}>
-                        {evt.eventTitle}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* 3. Gender Filter */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
-                    ⚧️ Filter by Gender
-                  </label>
-                  <select
-                    value={selectedGender}
-                    onChange={(e) => setSelectedGender(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
-                  >
-                    <option value="ALL">All Genders</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                  </select>
-                </div>
-
-                {/* 3. College Filter */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
-                    🏫 Filter by College
-                  </label>
-                  <select
-                    value={selectedCollege}
-                    onChange={(e) => setSelectedCollege(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
-                  >
-                    <option value="ALL">All Colleges</option>
-                    {ALL_COLLEGES.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* 5. Format Filter (Single / Double) */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
-                    🎽 Filter by Format
-                  </label>
-                  <select
-                    value={selectedType}
-                    onChange={(e) => setSelectedType(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
-                  >
-                    <option value="ALL">All Formats</option>
-                    <option value="INDIVIDUAL">Single (1 Player)</option>
-                    <option value="DUO">Double (2 Players)</option>
-                    <option value="TEAM">Team Event</option>
-                  </select>
-                </div>
-
-                {/* 6. Live Search Input */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
-                    🔍 Search Participant
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Search name, mobile, team..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full px-4 py-3 pl-10 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
-                    />
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Active Filter Chips */}
-              <div className="flex items-center justify-between text-xs sm:text-sm pt-3 border-t border-slate-200 dark:border-slate-800">
-                <span className="font-mono text-slate-600 dark:text-slate-400">
-                  Showing <strong className="text-blue-600 dark:text-blue-400 font-bold">{filteredParticipants.length}</strong> of {masterParticipants.length} Participants
-                </span>
                 {(selectedSport !== 'ALL' || selectedEvent !== 'ALL' || selectedGender !== 'ALL' || selectedCollege !== 'ALL' || selectedType !== 'ALL' || searchQuery) && (
                   <button
                     onClick={() => {
@@ -2106,65 +2075,291 @@ export const SuperCoordinatorDashboardPage = () => {
                       setSelectedCollege('ALL');
                       setSelectedType('ALL');
                       setSearchQuery('');
+                      setCurrentPage(1);
                     }}
-                    className="text-xs sm:text-sm font-bold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
+                    className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
                   >
                     Reset All Filters
                   </button>
                 )}
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+                {/* 1. 🎯 Filter by Game */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                    🎯 Filter by Game
+                  </label>
+                  <select
+                    value={selectedSport}
+                    onChange={(e) => { handleSportChange(e.target.value); }}
+                    className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  >
+                    <option value="ALL" className="bg-white dark:bg-slate-900">All 12 Sports</option>
+                    {ALL_12_SPORTS.map((s) => (
+                      <option key={s.id} value={s.name} className="bg-white dark:bg-slate-900">
+                        {s.icon} {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 2. 📋 Filter by Event Title */}
+                <div>
+                  <label className="block text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase mb-1">
+                    📋 Filter by Event Title
+                  </label>
+                  <select
+                    value={selectedEvent}
+                    onChange={(e) => { setSelectedEvent(e.target.value); setCurrentPage(1); }}
+                    className="w-full bg-slate-50 dark:bg-slate-800/70 border border-blue-500/40 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  >
+                    <option value="ALL" className="bg-white dark:bg-slate-900">All Created Events ({availableEvents.length})</option>
+                    {availableEvents.map((evt) => (
+                      <option key={evt.id} value={evt.eventTitle} className="bg-white dark:bg-slate-900">
+                        {evt.eventTitle}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 3. ⚧️ Filter by Gender */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                    ⚧️ Filter by Gender
+                  </label>
+                  <select
+                    value={selectedGender}
+                    onChange={(e) => { setSelectedGender(e.target.value); setCurrentPage(1); }}
+                    className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  >
+                    <option value="ALL" className="bg-white dark:bg-slate-900">All Genders</option>
+                    <option value="Male" className="bg-white dark:bg-slate-900">Male</option>
+                    <option value="Female" className="bg-white dark:bg-slate-900">Female</option>
+                  </select>
+                </div>
+
+                {/* 4. 🏫 Filter by College */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                    🏫 Filter by College
+                  </label>
+                  <select
+                    value={selectedCollege}
+                    onChange={(e) => { setSelectedCollege(e.target.value); setCurrentPage(1); }}
+                    className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  >
+                    <option value="ALL" className="bg-white dark:bg-slate-900">All Colleges</option>
+                    {ALL_COLLEGES.map((c) => (
+                      <option key={c.id} value={c.id} className="bg-white dark:bg-slate-900">
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 5. 🎽 Filter by Format */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                    🎽 Filter by Format
+                  </label>
+                  <select
+                    value={selectedType}
+                    onChange={(e) => { setSelectedType(e.target.value); setCurrentPage(1); }}
+                    className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  >
+                    <option value="ALL" className="bg-white dark:bg-slate-900">All Formats</option>
+                    <option value="INDIVIDUAL" className="bg-white dark:bg-slate-900">Single (1 Player)</option>
+                    <option value="DUO" className="bg-white dark:bg-slate-900">Double (2 Players)</option>
+                    <option value="TEAM" className="bg-white dark:bg-slate-900">Team Event</option>
+                  </select>
+                </div>
+
+                {/* 6. 🔍 Search Participant */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                    🔍 Search Participant
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                      placeholder="Search name, mobile, team..."
+                      className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+                    />
+                    <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-2.5" />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Master Participants Table */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-md dark:shadow-xl">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 text-xs uppercase font-mono font-bold border-b border-slate-200 dark:border-slate-800">
-                      <th className="p-4 sm:p-5">Reg Time</th>
-                      <th className="p-4 sm:p-5">Game & Event Title</th>
-                      <th className="p-4 sm:p-5">Team Name</th>
-                      <th className="p-4 sm:p-5">College Name</th>
-                      <th className="p-4 sm:p-5">Student Name</th>
-                      <th className="p-4 sm:p-5">Mobile No</th>
-                      <th className="p-4 sm:p-5">Gender</th>
-                      <th className="p-4 sm:p-5">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-xs sm:text-sm">
-                    {filteredParticipants.length === 0 ? (
-                      <tr>
-                        <td colSpan="8" className="p-12 text-center text-slate-500 italic">
-                          No participant records matching selected filter criteria.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredParticipants.map((p) => (
-                        <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition font-mono">
-                          <td className="p-4 sm:p-5 text-slate-700 dark:text-slate-300 font-mono">
-                            <div>{p.date || '2026-08-20'}</div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400">{p.time || '10:00 AM'}</div>
-                          </td>
-                          <td className="p-4 sm:p-5">
-                            <div className="font-bold text-blue-600 dark:text-blue-400">{p.sportName}</div>
-                            <div className="text-xs font-semibold text-slate-700 dark:text-slate-300">{p.eventTitle || `${p.sportName} Event`}</div>
-                          </td>
-                          <td className="p-4 sm:p-5 font-bold text-slate-900 dark:text-white">{p.teamName}</td>
-                          <td className="p-4 sm:p-5 font-bold text-slate-700 dark:text-slate-300">{p.college}</td>
-                          <td className="p-4 sm:p-5 font-extrabold text-emerald-600 dark:text-emerald-400">{p.name}</td>
-                          <td className="p-4 sm:p-5 text-slate-700 dark:text-slate-300">{p.mobile}</td>
-                          <td className="p-4 sm:p-5 text-slate-700 dark:text-slate-300">{p.gender}</td>
-                          <td className="p-4 sm:p-5">
-                            <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold">
-                              {p.status || 'VERIFIED'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+            {/* Participants Table */}
+            <div className="p-4 sm:p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm transition-colors">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+                <span className="text-xs font-bold text-slate-900 dark:text-white">
+                  Showing {filteredParticipants.length} of {masterParticipants.length} Participants
+                </span>
+                <span className="text-[11px] text-purple-600 dark:text-purple-400 font-mono">Master Database Records</span>
               </div>
+
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-3">
+                  <RefreshCw className="w-6 h-6 text-purple-600 dark:text-purple-400 animate-spin" />
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Loading Master Participant Roster...</p>
+                </div>
+              ) : paginatedParticipants.length === 0 ? (
+                <div className="text-center py-12 space-y-2">
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No participants found matching criteria.</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Adjust filters to broaden roster view.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto custom-scrollbar w-full">
+                  <table className="w-full text-left text-xs border-collapse min-w-[760px]">
+                    <thead>
+                      <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] tracking-wider bg-slate-50/75 dark:bg-slate-900/60">
+                        <th className="py-3 px-3.5 sticky left-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-xs shadow-[2px_0_6px_-2px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_6px_-2px_rgba(0,0,0,0.35)]">Reg Time</th>
+                        <th className="py-3 px-3.5">Game & Event Title</th>
+                        <th className="py-3 px-3.5">Team Name</th>
+                        <th className="py-3 px-3.5">College Name</th>
+                        <th className="py-3 px-3.5">Student Name</th>
+                        <th className="py-3 px-3.5">Mobile No</th>
+                        <th className="py-3 px-3.5">Gender</th>
+                        <th className="py-3 px-3.5">Status</th>
+                        <th className="py-3 px-3.5 text-right">Details</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200">
+                      {paginatedParticipants.map((p) => {
+                        return (
+                          <tr
+                            key={p.id || p.memberId || p.receiptId}
+                            className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                          >
+                            {/* 1. Reg Time */}
+                            <td className="py-3 px-3.5 whitespace-nowrap text-slate-700 dark:text-slate-300 font-mono sticky left-0 z-10 bg-white dark:bg-slate-900 shadow-[2px_0_6px_-2px_rgba(0,0,0,0.06)] dark:shadow-[2px_0_6px_-2px_rgba(0,0,0,0.3)]">
+                              <div>{p.date || '2026-08-05'}</div>
+                              <div className="text-[10px] text-slate-500 dark:text-slate-400">{p.time || '10:00 AM'}</div>
+                            </td>
+
+                            {/* 2. Game & Event Title */}
+                            <td className="py-3 px-3.5 whitespace-nowrap">
+                              <div className="font-bold text-slate-900 dark:text-white">{p.sportName}</div>
+                              <div className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold max-w-[200px] truncate" title={p.eventTitle}>
+                                {p.eventTitle || `${p.sportName} Championship`}
+                              </div>
+                            </td>
+
+                            {/* 3. Team Name */}
+                            <td className="py-3 px-3 whitespace-nowrap font-bold text-slate-800 dark:text-slate-200">
+                              {p.teamName || p.name}
+                            </td>
+
+                            {/* 4. College Name */}
+                            <td className="py-3 px-3 whitespace-nowrap font-medium text-blue-600 dark:text-blue-400">
+                              {p.college}
+                            </td>
+
+                            {/* 5. Student Name */}
+                            <td className="py-3 px-3 whitespace-nowrap font-semibold text-slate-900 dark:text-white">
+                              <div className="flex items-center gap-1.5">
+                                <span>{p.name}</span>
+                                {p.isCaptain && (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                                    Captain
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">
+                                {p.rollNo && p.rollNo !== 'N/A' ? `Roll: ${p.rollNo} • ` : ''}{p.email}
+                              </div>
+                            </td>
+
+                            {/* 6. Mobile No */}
+                            <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300 font-mono">
+                              {p.mobile}
+                            </td>
+
+                            {/* 7. Gender */}
+                            <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300 font-medium">
+                              {p.gender}
+                            </td>
+
+                            {/* 8. Status */}
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              <span className="px-2.5 py-0.5 text-[10px] font-bold rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                {p.status || 'VERIFIED'}
+                              </span>
+                            </td>
+
+                            {/* 9. Details Action (Read-only, NO DELETE) */}
+                            <td className="py-3 px-3 whitespace-nowrap text-right">
+                              <button
+                                onClick={() => {
+                                  setSelectedParticipant({
+                                    id: p.id,
+                                    participantName: p.name || p.teamName,
+                                    rollNumber: p.rollNo || 'N/A',
+                                    college: p.college,
+                                    course: p.course || 'N/A',
+                                    yearSemester: p.yearSemester || 'N/A',
+                                    year: p.yearSemester || 'N/A',
+                                    gender: p.gender,
+                                    gameSport: p.sportName,
+                                    category: p.teamName ? 'Team Event' : 'Individual',
+                                    mobile: p.mobile,
+                                    email: p.email,
+                                    registrationDate: p.date || '2026-08-05',
+                                    registrationTime: p.time || '10:00 AM',
+                                    paymentStatus: 'PAID',
+                                    registrationStatus: p.status || 'VERIFIED',
+                                    registeredBy: 'Super Coordinator Roster',
+                                    isCaptain: p.isCaptain
+                                  });
+                                  setIsDetailsOpen(true);
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                                title="View Full Participant Details"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Pagination Bar */}
+              {!loading && filteredParticipants.length > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-200 dark:border-slate-800 text-xs">
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredParticipants.length)} of {filteredParticipants.length} master records
+                  </span>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-40 transition-colors cursor-pointer"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="px-3 py-1 font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 rounded-lg">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-40 transition-colors cursor-pointer"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -3150,6 +3345,13 @@ export const SuperCoordinatorDashboardPage = () => {
           </div>
         </div>
       )}
+
+      {/* Registration Details Inspection Modal */}
+      <RegistrationDetailsModal
+        isOpen={isDetailsOpen}
+        registration={selectedParticipant}
+        onClose={() => { setIsDetailsOpen(false); setSelectedParticipant(null); }}
+      />
 
       {/* ─── Athlete Photo Zoom & Crop Modal ─── */}
       {photoCropperState.isOpen && photoCropperState.imageSrc && (

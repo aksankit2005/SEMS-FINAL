@@ -261,13 +261,13 @@ export const superCoordinatorApi = {
   },
 
 
-  changePassword: async (newPass) => {
+  changePassword: async (newPass, currentPass) => {
     try {
       const user = JSON.parse(localStorage.getItem('sems_super_coord_user') || '{}');
       const res = await fetch(apiUrl('/super-coordinator/change-password'), {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ newPass, username: user.username })
+        body: JSON.stringify({ newPass, currentPass, username: user.username })
       });
       const data = await res.json();
       return { ok: res.ok, message: data.message || 'Password update completed' };
