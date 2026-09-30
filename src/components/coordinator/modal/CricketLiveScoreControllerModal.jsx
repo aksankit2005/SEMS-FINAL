@@ -74,8 +74,8 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
   const norm = (str) => String(str || '').trim().toLowerCase();
 
   // Squads and Substitute Lists State
-  const defaultSquadLength = isGully ? 6 : 11;
-  const defaultSubsLength = isGully ? 2 : 4;
+  const defaultSquadLength = isGully ? 5 : 11;
+  const defaultSubsLength = isGully ? 3 : 4;
   const [teamAPlayerList, setTeamAPlayerList] = useState(
     setupData.teamAPlayers || Array.from({ length: defaultSquadLength }, (_, i) => ({ name: `${teamA} Player ${i + 1}` }))
   );
@@ -95,6 +95,17 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
 
   const currentBattingSubs = norm(battingTeam) === norm(teamA) ? teamASubsList : teamBSubsList;
   const currentBowlingSubs = norm(bowlingTeam) === norm(teamA) ? teamASubsList : teamBSubsList;
+
+  // Dynamic Maximum Wickets (Gully = 4 for 5-player on-field squad, or squad length - 1)
+  const maxWickets = Math.max(1, currentBattingSquad && currentBattingSquad.length > 1 ? currentBattingSquad.length - 1 : (isGully ? 4 : 10));
+
+  // Dynamic Bowler Quota (Gully = max 2 overs per bowler, Standard = totalOvers / 5)
+  const maxBowlerOvers = isGully ? 2 : Math.max(1, Math.floor(totalOversMax / 5));
+
+  // Dynamic Dismissals (Gully Cricket has No LBW, includes One-Tip One-Hand and Box Out)
+  const dismissalOptions = isGully
+    ? ['Bowled', 'Caught', 'One-Tip One-Hand', 'Box Out', 'Run Out', 'Hit Wicket']
+    : ['Bowled', 'Caught', 'LBW', 'Run Out', 'Stumped', 'Hit Wicket'];
 
   // Tactical Substitute Modal State
   const [substituteModalOpen, setSubstituteModalOpen] = useState(false);
@@ -333,7 +344,8 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
 
     // Check End of 2nd Innings Target
     if (currentInnings === 2 && targetRuns && newRuns >= targetRuns) {
-      const winner = `${battingTeam} won by ${10 - wickets} wickets!`;
+      const remainingWickets = Math.max(0, maxWickets - wickets);
+      const winner = `${battingTeam} won by ${remainingWickets} wicket${remainingWickets === 1 ? '' : 's'}!`;
       setMatchWinnerResult(winner);
       setMatchEndedModal(true);
       syncLiveState(newRuns, wickets, newLegalBalls, newOvers, finalStriker, finalNonStriker, updatedBowler, updatedRecent, updatedComm);
@@ -417,7 +429,8 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
     if (newFreeHit) setIsFreeHit(true);
 
     if (currentInnings === 2 && targetRuns && newRuns >= targetRuns) {
-      const winner = `${battingTeam} won by ${10 - wickets} wickets!`;
+      const remainingWickets = Math.max(0, maxWickets - wickets);
+      const winner = `${battingTeam} won by ${remainingWickets} wicket${remainingWickets === 1 ? '' : 's'}!`;
       setMatchWinnerResult(winner);
       setMatchEndedModal(true);
       return;
@@ -439,6 +452,9 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
       return;
     }
 
+    const nextWicketNum = wickets + 1;
+    const isFinalWicket = nextWicketNum >= maxWickets;
+
     // Available unused batsmen from squad
     const usedNames = [striker.name, nonStriker.name, ...battingCard1.map((b) => b.name), ...battingCard2.map((b) => b.name)];
     const available = currentBattingSquad.filter((p) => !usedNames.includes(p.name));
@@ -447,18 +463,23 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
       whoOut: 'striker',
       dismissal: dismissalType,
       fielder: '',
-      newBatsman: available[0]?.name || `Batsman ${wickets + 3}`,
+      newBatsman: isFinalWicket ? 'ALL OUT (Last Wicket)' : (available[0]?.name || `Batsman ${wickets + 3}`),
+      isFinalWicket,
     });
     setWicketModalOpen(true);
   };
 
   // Confirm Wicket
   const handleConfirmWicket = () => {
+    const isFinalWicket = (wickets + 1) >= maxWickets;
     const activeBattingCard = currentInnings === 1 ? battingCard1 : battingCard2;
-    const isAlreadyOut = activeBattingCard.some((b) => b.name.trim().toLowerCase() === (wicketDetails.newBatsman || '').trim().toLowerCase());
-    if (isAlreadyOut) {
-      addToast(`⛔ Player "${wicketDetails.newBatsman}" is already OUT and cannot bat again!`, 'error');
-      return;
+
+    if (!isFinalWicket) {
+      const isAlreadyOut = activeBattingCard.some((b) => b.name.trim().toLowerCase() === (wicketDetails.newBatsman || '').trim().toLowerCase());
+      if (isAlreadyOut) {
+        addToast(`⛔ Player "${wicketDetails.newBatsman}" is already OUT and cannot bat again!`, 'error');
+        return;
+      }
     }
 
     pushStateToUndo();
@@ -523,9 +544,9 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
     setCommentaryLog(updatedComm);
     setWicketModalOpen(false);
 
-    // Check All Out (10 Wickets)
-    if (newWickets >= 10) {
-      handleEndInnings(runs, 10, newOvers);
+    // Check All Out
+    if (newWickets >= maxWickets) {
+      handleEndInnings(runs, newWickets, newOvers);
       return;
     }
 
@@ -534,7 +555,7 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
     }
 
     syncLiveState(runs, newWickets, newLegalBalls, newOvers, isStrikerOut ? newIncomingBatter : striker, isStrikerOut ? nonStriker : newIncomingBatter, updatedBowler, updatedRecent, updatedComm);
-    addToast(`☝️ WICKET! ${outPlayer.name} ${dismissalText}. New batsman: ${newIncomingBatter.name}`, 'error');
+    addToast(`☝️ WICKET! ${outPlayer.name} ${dismissalText}. ${isFinalWicket ? 'ALL OUT!' : `New batsman: ${newIncomingBatter.name}`}`, 'error');
   };
 
   // Confirm Next Bowler Selection
@@ -552,7 +573,17 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
     }
 
     const currentBowlingCard = currentInnings === 1 ? bowlingCard1 : bowlingCard2;
-    const existing = currentBowlingCard.find((b) => b.name === trimmedName);
+    const existing = currentBowlingCard.find((b) => b.name.trim().toLowerCase() === trimmedName.toLowerCase());
+
+    // Rule: Maximum over quota per bowler
+    if (existing) {
+      const existingBalls = parseOversToBalls(existing.overs, existing.legalBalls);
+      const completedOvers = Math.floor(existingBalls / 6);
+      if (completedOvers >= maxBowlerOvers) {
+        addToast(`⛔ ${trimmedName} has already bowled the maximum quota of ${maxBowlerOvers} overs!`, 'warning');
+        return;
+      }
+    }
 
     // Record previous bowler to card with updated overs
     const prevBowlerObj = {
@@ -633,7 +664,8 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
     } else {
       let result = '';
       if (finalRuns >= (targetRuns || 0)) {
-        result = `${battingTeam} won by ${10 - finalWickets} wickets!`;
+        const remainingWickets = Math.max(0, maxWickets - finalWickets);
+        result = `${battingTeam} won by ${remainingWickets} wicket${remainingWickets === 1 ? '' : 's'}!`;
       } else if (finalRuns < (targetRuns || 0) - 1) {
         result = `${bowlingTeam} won by ${(targetRuns - 1) - finalRuns} runs!`;
       } else {
@@ -705,9 +737,11 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
 
   // Finish Match manually
   const handleFinishMatchNow = async () => {
+    const remainingWickets = Math.max(0, maxWickets - wickets);
+    const defaultResult = matchWinnerResult || `${battingTeam} won by ${remainingWickets} wicket${remainingWickets === 1 ? '' : 's'}!`;
     const result = window.prompt(
       'Enter Final Match Result / Winner String:',
-      matchWinnerResult || `${battingTeam} won by ${10 - wickets} wickets!`
+      defaultResult
     );
     if (!result) return;
 
@@ -758,6 +792,8 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
     try {
       await coordinatorApi.completeMatch(match.id, completedObj);
       generateMatchResultPDF(completedObj, isGully ? 'Gully Cricket' : 'Cricket');
+      window.dispatchEvent(new Event('sems_results_updated'));
+      window.dispatchEvent(new Event('storage'));
       if (onMatchUpdated) onMatchUpdated(match.id, completedObj);
       addToast(`🏆 ${isGully ? 'Gully Cricket' : 'Cricket'} Match Completed! ${result}. PDF Downloaded.`, 'success');
       onClose();
@@ -1104,13 +1140,15 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
 
             {/* Dismissal Buttons */}
             <div className="space-y-2">
-              <span className="text-[10px] font-mono font-bold text-rose-600 dark:text-rose-400 uppercase">DISMISSALS (WICKETS)</span>
-              <div className="grid grid-cols-4 gap-2">
-                {['Bowled', 'Caught', 'LBW', 'Run Out'].map((dis) => (
+              <span className="text-[10px] font-mono font-bold text-rose-600 dark:text-rose-400 uppercase">
+                {isGully ? 'GULLY DISMISSALS (NO LBW • 1-TIP 1-HAND • BOX OUT)' : 'DISMISSALS (WICKETS)'}
+              </span>
+              <div className={`grid ${isGully ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-6'} gap-2`}>
+                {dismissalOptions.map((dis) => (
                   <button
                     key={dis}
                     onClick={() => handleInitiateWicket(dis)}
-                    className="py-3 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-700 dark:text-rose-300 border border-rose-500/40 font-bold text-xs transition cursor-pointer"
+                    className="py-2.5 px-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-700 dark:text-rose-300 border border-rose-500/40 font-bold text-xs transition cursor-pointer text-center"
                   >
                     ☝️ {dis}
                   </button>
@@ -1227,37 +1265,49 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
                 </div>
               )}
 
-              <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  New Incoming Batsman (Select from {battingTeam} Roll-Down List)
-                </label>
-                <select
-                  value={wicketDetails.newBatsman}
-                  onChange={(e) => setWicketDetails({ ...wicketDetails, newBatsman: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-emerald-600 dark:text-emerald-400 font-bold text-xs mb-1.5"
-                >
-                  <option value="">-- Select Player from {battingTeam} Squad --</option>
-                  {currentBattingSquad.map((p) => {
-                    const activeCard = currentInnings === 1 ? battingCard1 : battingCard2;
-                    const isCurrent = p.name === striker.name || p.name === nonStriker.name;
-                    const isAlreadyOut = activeCard.some((b) => b.name.trim().toLowerCase() === p.name.trim().toLowerCase());
-                    const isDisabled = isCurrent || isAlreadyOut;
+              {wicketDetails.isFinalWicket ? (
+                <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs font-black">
+                    <AlertCircle className="w-4 h-4 text-amber-500" />
+                    <span>ALL OUT (Final Wicket)</span>
+                  </div>
+                  <p className="text-[11px] font-medium text-slate-600 dark:text-slate-400">
+                    This is wicket #{wickets + 1} of {maxWickets}. No more batsmen remaining in {battingTeam}. Confirming will conclude the innings.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <label className="block font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                    New Incoming Batsman (Select from {battingTeam} Roll-Down List)
+                  </label>
+                  <select
+                    value={wicketDetails.newBatsman}
+                    onChange={(e) => setWicketDetails({ ...wicketDetails, newBatsman: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-emerald-600 dark:text-emerald-400 font-bold text-xs mb-1.5"
+                  >
+                    <option value="">-- Select Player from {battingTeam} Squad --</option>
+                    {currentBattingSquad.map((p) => {
+                      const activeCard = currentInnings === 1 ? battingCard1 : battingCard2;
+                      const isCurrent = p.name === striker.name || p.name === nonStriker.name;
+                      const isAlreadyOut = activeCard.some((b) => b.name.trim().toLowerCase() === p.name.trim().toLowerCase());
+                      const isDisabled = isCurrent || isAlreadyOut;
 
-                    return (
-                      <option key={p.name} value={p.name} disabled={isDisabled}>
-                        {p.name} {isAlreadyOut ? '(OUT - Cannot Bat Again)' : isCurrent ? '(Currently Batting)' : ''}
-                      </option>
-                    );
-                  })}
-                </select>
-                <input
-                  type="text"
-                  value={wicketDetails.newBatsman}
-                  onChange={(e) => setWicketDetails({ ...wicketDetails, newBatsman: e.target.value })}
-                  placeholder="Or type custom batsman name..."
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-semibold"
-                />
-              </div>
+                      return (
+                        <option key={p.name} value={p.name} disabled={isDisabled}>
+                          {p.name} {isAlreadyOut ? '(OUT - Cannot Bat Again)' : isCurrent ? '(Currently Batting)' : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <input
+                    type="text"
+                    value={wicketDetails.newBatsman}
+                    onChange={(e) => setWicketDetails({ ...wicketDetails, newBatsman: e.target.value })}
+                    placeholder="Or type custom batsman name..."
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-semibold"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
@@ -1300,10 +1350,16 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
                 {currentBowlingSquad.map((p) => {
                   const justFinishedBowler = bowler.name;
                   const isJustBowled = justFinishedBowler && p.name.trim().toLowerCase() === justFinishedBowler.trim().toLowerCase();
+                  const currentBowlingCard = currentInnings === 1 ? bowlingCard1 : bowlingCard2;
+                  const existing = currentBowlingCard.find((b) => b.name.trim().toLowerCase() === p.name.trim().toLowerCase());
+                  const balls = existing ? parseOversToBalls(existing.overs, existing.legalBalls) : 0;
+                  const oversBowled = Math.floor(balls / 6);
+                  const isMaxQuota = oversBowled >= maxBowlerOvers;
+                  const isDisabled = isJustBowled || isMaxQuota;
 
                   return (
-                    <option key={p.name} value={p.name} disabled={isJustBowled}>
-                      {p.name} {isJustBowled ? '(Just Bowled Previous Over - Wait 1 Over)' : ''}
+                    <option key={p.name} value={p.name} disabled={isDisabled}>
+                      {p.name} ({oversBowled}/{maxBowlerOvers} ov) {isJustBowled ? '- Just Bowled' : isMaxQuota ? '- Quota Reached' : ''}
                     </option>
                   );
                 })}
@@ -1369,12 +1425,12 @@ export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onM
             </div>
 
             {/* Winner Banner */}
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-amber-500/20 border border-amber-500/40 space-y-1">
-              <span className="text-[10px] font-mono text-amber-700 dark:text-amber-300 font-bold uppercase">Official Winner Declaration</span>
-              <p className="text-lg font-black text-amber-600 dark:text-amber-400">
-                🏆 {matchWinnerResult || `${battingTeam} won by ${10 - wickets} wickets!`}
-              </p>
-            </div>
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-amber-500/20 border border-amber-500/40 space-y-1">
+                <span className="text-[10px] font-mono text-amber-700 dark:text-amber-300 font-bold uppercase">Official Winner Declaration</span>
+                <p className="text-lg font-black text-amber-600 dark:text-amber-400">
+                  🏆 {matchWinnerResult || `${battingTeam} won by ${Math.max(0, maxWickets - wickets)} wicket${(maxWickets - wickets) === 1 ? '' : 's'}!`}
+                </p>
+              </div>
 
             {/* Scores Summary */}
             <div className="grid grid-cols-2 gap-3 font-mono text-xs text-slate-700 dark:text-slate-300">

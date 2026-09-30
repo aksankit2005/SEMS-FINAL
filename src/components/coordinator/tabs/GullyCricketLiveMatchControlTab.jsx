@@ -182,6 +182,9 @@ export const GullyCricketLiveMatchControlTab = ({ matches, user, onUpdateMatchSc
 
     try {
       await coordinatorApi.completeMatch(matchItem.id, completedObj);
+      generateMatchResultPDF(completedObj, 'Gully Cricket');
+      window.dispatchEvent(new Event('sems_results_updated'));
+      window.dispatchEvent(new Event('storage'));
       setLiveAssignments((prev) => {
         const next = { ...prev };
         delete next[venueKey];
