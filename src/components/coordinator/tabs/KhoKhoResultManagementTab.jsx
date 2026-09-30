@@ -53,10 +53,14 @@ const DEFAULT_KHOKHO_RESULTS = [
   }
 ];
 
+const mockIds = ['M540746', 'M635812', 'M741299', 'M882104', 'M645537'];
+const mockNames = ['mock team', 'demo team', 'sample team', 'test team'];
+
 export const KhoKhoResultManagementTab = ({ user }) => {
   const { addToast } = useToast();
   const { confirmDelete } = useConfirm();
   const [resultsList, setResultsList] = useState([]);
+  const [winnerModalMatch, setWinnerModalMatch] = useState(null);
   
   // Filter States
   const [selectedEvent, setSelectedEvent] = useState('ALL');
@@ -86,7 +90,7 @@ export const KhoKhoResultManagementTab = ({ user }) => {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          list = Array.isArray(parsed) ? parsed.filter((r) => r && r.id && r.team1 && r.team2) : [];
+          list = Array.isArray(parsed) ? parsed.filter((r) => r && r.id && (r.team1 || r.team1Name)) : [];
         } catch (e) {
           list = [];
         }
@@ -96,7 +100,7 @@ export const KhoKhoResultManagementTab = ({ user }) => {
         const apiMatches = await coordinatorApi.getMatches();
         const completedApiMatches = (Array.isArray(apiMatches) ? apiMatches : []).filter((m) =>
           m && (m.status === 'COMPLETED' || m.status === 'FINISHED' || m.status === 'WALKOVER') &&
-          (!m.sport || m.sport.toLowerCase().includes('kho') || m.sportId?.toLowerCase().includes('kho'))
+          (!m.sport || m.sport.toLowerCase().includes('kho') || m.sportId?.toLowerCase().includes('kho') || m.eventTitle?.toLowerCase().includes('kho'))
         );
 
         completedApiMatches.forEach((apiMatch) => {
@@ -109,13 +113,13 @@ export const KhoKhoResultManagementTab = ({ user }) => {
       let cleaned = list.filter((r) => {
         if (!r) return false;
         if (mockIds.includes(r.id)) return false;
-        const t1 = (r.team1 || '').trim().toLowerCase();
-        const t2 = (r.team2 || '').trim().toLowerCase();
+        const t1 = (r.team1 || r.team1Name || '').trim().toLowerCase();
+        const t2 = (r.team2 || r.team2Name || '').trim().toLowerCase();
         const w = (r.winner || '').trim().toLowerCase();
         return !mockNames.includes(t1) && !mockNames.includes(t2) && !mockNames.includes(w);
       });
 
-      if (cleaned.length === 0) {
+      if (!saved && cleaned.length === 0) {
         cleaned = DEFAULT_KHOKHO_RESULTS;
       }
 
@@ -136,12 +140,15 @@ export const KhoKhoResultManagementTab = ({ user }) => {
   }, [resultsKey]);
 
   const handleSetWinner = async (id, winnerName) => {
+    if (!winnerName) return;
     try {
       const updated = resultsList.map((r) => (r.id === id ? { ...r, winner: winnerName } : r));
       setResultsList(updated);
       localStorage.setItem(resultsKey, JSON.stringify(updated));
       await coordinatorApi.completeMatch(id, { winner: winnerName });
-      addToast(`Declared official winner: ${winnerName}`, 'success');
+      setWinnerModalMatch(null);
+      window.dispatchEvent(new Event('sems_results_updated'));
+      addToast(`🏆 Declared official winner: ${winnerName}`, 'success');
     } catch (err) {
       addToast('Error setting match winner', 'error');
     }
@@ -153,21 +160,26 @@ export const KhoKhoResultManagementTab = ({ user }) => {
       message: 'Are you sure you want to delete this Kho-Kho match result entry?'
     });
     if (!isConfirmed) return;
+    try {
+      await coordinatorApi.deleteMatch(id).catch(() => {});
+    } catch (e) {}
     const updated = resultsList.filter((r) => r.id !== id);
     setResultsList(updated);
     localStorage.setItem(resultsKey, JSON.stringify(updated));
-    addToast('Result entry deleted', 'info');
+    window.dispatchEvent(new Event('sems_results_updated'));
+    addToast('Result entry deleted successfully', 'info');
   };
 
   const handleClearResults = async () => {
     const isConfirmed = await confirmDelete({
       title: 'Clear All Results',
-      message: 'Clear all declared Kho-Kho results data from storage?'
+      message: 'Are you sure you want to clear all declared Kho-Kho results data?'
     });
     if (isConfirmed) {
       setResultsList([]);
-      localStorage.removeItem(resultsKey);
+      localStorage.setItem(resultsKey, JSON.stringify([]));
       localStorage.removeItem('sems_completed_results_kho_kho');
+      window.dispatchEvent(new Event('sems_results_updated'));
       addToast('All declared Kho-Kho results cleared', 'info');
     }
   };
@@ -263,6 +275,13 @@ export const KhoKhoResultManagementTab = ({ user }) => {
                   <FileSpreadsheet className="w-4 h-4" />
                   <span>Export Excel</span>
                 </button>
+                <button
+                  onClick={handleClearResults}
+                  className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs border border-rose-200 dark:border-rose-500/20 transition flex items-center gap-1 cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Clear All</span>
+                </button>
               </>
             )}
           </div>
@@ -335,90 +354,165 @@ export const KhoKhoResultManagementTab = ({ user }) => {
                   </td>
                 </tr>
               ) : (
-                filteredResults.map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                    
-                    <td className="p-4 space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">#{r.id}</span>
-                        <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 uppercase">
-                          {r.format || '2 INNINGS / 2 SETS'}
-                        </span>
-                        <span className="text-[10px] font-mono font-semibold text-slate-500 dark:text-slate-400">
-                          {r.eventTitle || 'Kho-Kho Championship'}
-                        </span>
-                      </div>
-                      <p className="font-bold text-slate-900 dark:text-white text-sm">
-                        {r.team1 || r.team1Name || 'Team 1'} <span className="text-slate-400 text-xs font-normal">vs</span> {r.team2 || r.team2Name || 'Team 2'}
-                      </p>
-                    </td>
+                filteredResults.map((r) => {
+                  const t1Name = r.team1 || r.team1Name || 'Team 1';
+                  const t2Name = r.team2 || r.team2Name || 'Team 2';
 
-                    <td className="p-4 font-bold">
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/20">
-                        {r.category || r.gender || 'Open'}
-                      </span>
-                    </td>
-
-                    <td className="p-4 font-mono text-slate-600 dark:text-slate-400">
-                      📍 {r.tableNumber || r.venue || 'Ground 2 Kho-Kho Field 1'} • {r.time || 'Completed'}
-                    </td>
-
-                    <td className="p-4 font-bold">
-                      <div className="flex flex-col gap-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-black text-slate-900 dark:text-white text-sm">
-                            Total: {r.score1 !== undefined && r.score2 !== undefined
-                              ? `${r.score1} - ${r.score2} Pts`
-                              : (r.scoreSummary || 'Match Completed')}
+                  return (
+                    <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                      <td className="p-4 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">#{r.id}</span>
+                          <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 uppercase">
+                            {r.format || '2 INNINGS / 2 SETS'}
+                          </span>
+                          <span className="text-[10px] font-mono font-semibold text-slate-500 dark:text-slate-400">
+                            {r.eventTitle || 'Kho-Kho Championship'}
                           </span>
                         </div>
+                        <p className="font-bold text-slate-900 dark:text-white text-sm">
+                          {t1Name} <span className="text-slate-400 text-xs font-normal">vs</span> {t2Name}
+                        </p>
+                      </td>
 
-                        {/* 2 Sets / Innings Breakdown Pill */}
-                        {r.setsHistory && Array.isArray(r.setsHistory) && r.setsHistory.length > 0 ? (
-                          <div className="flex items-center gap-1.5 text-[11px] font-mono text-amber-600 dark:text-amber-400 font-semibold flex-wrap">
-                            {r.setsHistory.map((s, idx) => (
-                              <span key={idx} className="px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                                Set {s.set} (Inning {s.set}): {s.score1}-{s.score2}
-                              </span>
-                            ))}
-                          </div>
-                        ) : r.scoreSummary ? (
-                          <div className="text-[11px] font-mono text-amber-600 dark:text-amber-400 font-semibold">
-                            {r.scoreSummary}
-                          </div>
-                        ) : null}
-
-                        <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-xs font-black pt-0.5">
-                          <Trophy className="w-3.5 h-3.5 text-amber-500" /> Winner: {r.winner || r.team1}
+                      <td className="p-4 font-bold">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/20">
+                          {r.category || r.gender || 'Open'}
                         </span>
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => generateMatchResultPDF(r, 'Kho-Kho')}
-                          className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/20 dark:hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 font-bold text-xs transition flex items-center gap-1 cursor-pointer"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          <span>PDF</span>
-                        </button>
-                        <button
-                          onClick={() => handleSetWinner(r.id, r.winner || r.team1)}
-                          className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
-                        >
-                          Set Winner
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      <td className="p-4 font-mono text-slate-600 dark:text-slate-400">
+                        📍 {r.tableNumber || r.venue || 'Ground 2 Kho-Kho Field 1'} • {r.time || 'Completed'}
+                      </td>
+
+                      <td className="p-4 font-bold">
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-black text-slate-900 dark:text-white text-sm">
+                              Total: {r.score1 !== undefined && r.score2 !== undefined
+                                ? `${r.score1} - ${r.score2} Pts`
+                                : (r.scoreSummary || 'Match Completed')}
+                            </span>
+                          </div>
+
+                          {/* 2 Sets / Innings Breakdown Pill */}
+                          {r.setsHistory && Array.isArray(r.setsHistory) && r.setsHistory.length > 0 ? (
+                            <div className="flex items-center gap-1.5 text-[11px] font-mono text-amber-600 dark:text-amber-400 font-semibold flex-wrap">
+                              {r.setsHistory.map((s, idx) => (
+                                <span key={idx} className="px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                                  Set {s.set} (Inning {s.set}): {s.score1}-{s.score2}
+                                </span>
+                              ))}
+                            </div>
+                          ) : r.scoreSummary ? (
+                            <div className="text-[11px] font-mono text-amber-600 dark:text-amber-400 font-semibold">
+                              {r.scoreSummary}
+                            </div>
+                          ) : null}
+
+                          <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-xs font-black pt-0.5">
+                            <Trophy className="w-3.5 h-3.5 text-amber-500" /> Winner: {r.winner || t1Name}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="p-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => generateMatchResultPDF(r, 'Kho-Kho')}
+                            className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/20 dark:hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 font-bold text-xs transition flex items-center gap-1 cursor-pointer"
+                            title="Download Result PDF"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>PDF</span>
+                          </button>
+                          <button
+                            onClick={() => setWinnerModalMatch(r)}
+                            className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1 cursor-pointer"
+                          >
+                            <Trophy className="w-3.5 h-3.5" />
+                            <span>Set Winner</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteResult(r.id)}
+                            className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20 transition cursor-pointer"
+                            title="Delete Result"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
 
       </div>
+
+      {/* Winner Selection Modal */}
+      {winnerModalMatch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs font-sans">
+          <div className="w-full max-w-md bg-white dark:bg-[#111827] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-5 animate-fade-in">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-amber-500" />
+                <h3 className="text-base font-black">Declare Official Winner</h3>
+              </div>
+              <button
+                onClick={() => setWinnerModalMatch(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs font-bold px-2 py-1 rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              Select the winning team for match <strong className="text-slate-900 dark:text-white">#{winnerModalMatch.id}</strong>:
+            </p>
+
+            <div className="space-y-2.5">
+              <button
+                type="button"
+                onClick={() => handleSetWinner(winnerModalMatch.id, winnerModalMatch.team1 || winnerModalMatch.team1Name || 'Team 1')}
+                className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-amber-500 bg-slate-50 dark:bg-slate-900 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-left transition flex items-center justify-between group cursor-pointer"
+              >
+                <div>
+                  <span className="text-[10px] font-mono uppercase text-slate-400 block">Team 1</span>
+                  <span className="text-sm font-black group-hover:text-amber-600 dark:group-hover:text-amber-400">
+                    {winnerModalMatch.team1 || winnerModalMatch.team1Name || 'Team 1'}
+                  </span>
+                </div>
+                <span className="text-xs font-bold text-amber-600 dark:text-amber-400 opacity-0 group-hover:opacity-100 transition">Select 🥇</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSetWinner(winnerModalMatch.id, winnerModalMatch.team2 || winnerModalMatch.team2Name || 'Team 2')}
+                className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-amber-500 bg-slate-50 dark:bg-slate-900 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-left transition flex items-center justify-between group cursor-pointer"
+              >
+                <div>
+                  <span className="text-[10px] font-mono uppercase text-slate-400 block">Team 2</span>
+                  <span className="text-sm font-black group-hover:text-amber-600 dark:group-hover:text-amber-400">
+                    {winnerModalMatch.team2 || winnerModalMatch.team2Name || 'Team 2'}
+                  </span>
+                </div>
+                <span className="text-xs font-bold text-amber-600 dark:text-amber-400 opacity-0 group-hover:opacity-100 transition">Select 🥇</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSetWinner(winnerModalMatch.id, 'Match Draw / Tie')}
+                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/60 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs text-center transition cursor-pointer"
+              >
+                Declare Match Draw / Tie
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

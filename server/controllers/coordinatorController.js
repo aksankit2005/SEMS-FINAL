@@ -226,13 +226,34 @@ export const getMatches = async (req, res) => {
         try { detailsObj = JSON.parse(detailsObj); } catch (e) { }
       }
       if (!detailsObj || typeof detailsObj !== 'object') detailsObj = {};
+      const catVal = detailsObj.category || detailsObj.gender || m.category || 'Open';
+      const dateVal = detailsObj.date || (m.createdAt ? new Date(m.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+      const timeVal = detailsObj.time || m.time || '04:00 PM';
+      const venueVal = detailsObj.venue || detailsObj.tableNumber || m.tableNumber || 'Table 1';
+      const formatVal = detailsObj.format || m.format || 'SINGLES';
+
       return {
-        ...detailsObj,
         ...m,
-        date: detailsObj.date || (m.createdAt ? new Date(m.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
-        time: m.time || detailsObj.time || '04:00 PM',
-        category: detailsObj.category || 'Open',
-        details: detailsObj
+        ...detailsObj,
+        id: m.id,
+        sportId: m.sportId,
+        date: dateVal,
+        time: timeVal,
+        category: catVal,
+        gender: catVal,
+        format: formatVal,
+        tableNumber: venueVal,
+        venue: venueVal,
+        details: {
+          ...detailsObj,
+          date: dateVal,
+          time: timeVal,
+          category: catVal,
+          gender: catVal,
+          format: formatVal,
+          tableNumber: venueVal,
+          venue: venueVal
+        }
       };
     });
 
@@ -277,29 +298,32 @@ export const createMatch = async (req, res) => {
   // 1. Authoritative Event & Effective Registration-Closed Gate Check
   if (eventId && eventId !== 'DEFAULT') {
     try {
-      const evRes = await queryDb(
-        `SELECT id, sport_id AS "sportId", title, status, registration_open AS "registrationOpen", reg_start_date AS "regStartDate", reg_end_date AS "regEndDate"
-         FROM coordinator_event_items WHERE id = $1`,
-        [eventId]
-      );
-      if (evRes && evRes.rows && evRes.rows.length > 0) {
-        const ev = evRes.rows[0];
-        eventTitle = ev.title || eventTitle;
-        const regStatus = computeEffectiveRegistrationStatus(ev);
+      const existingMatchRes = await queryDb('SELECT id FROM live_matches WHERE id = $1', [matchId]);
+      if (!existingMatchRes || !existingMatchRes.rows || existingMatchRes.rows.length === 0) {
+        const evRes = await queryDb(
+          `SELECT id, sport_id AS "sportId", title, status, registration_open AS "registrationOpen", reg_start_date AS "regStartDate", reg_end_date AS "regEndDate"
+           FROM coordinator_event_items WHERE id = $1`,
+          [eventId]
+        );
+        if (evRes && evRes.rows && evRes.rows.length > 0) {
+          const ev = evRes.rows[0];
+          eventTitle = ev.title || eventTitle;
+          const regStatus = computeEffectiveRegistrationStatus(ev);
 
-        if (!regStatus.canScheduleFixtures) {
-          if (regStatus.effectiveRegistrationOpen) {
+          if (!regStatus.canScheduleFixtures) {
+            if (regStatus.effectiveRegistrationOpen) {
+              return res.status(400).json({
+                success: false,
+                message: 'Cannot schedule matches while registration is still open. Registration for this event must be closed before fixtures can be scheduled.',
+                code: 'REGISTRATION_STILL_OPEN'
+              });
+            }
             return res.status(400).json({
               success: false,
-              message: 'Cannot schedule matches while registration is still open. Registration for this event must be closed before fixtures can be scheduled.',
-              code: 'REGISTRATION_STILL_OPEN'
+              message: regStatus.reason || 'Cannot schedule matches for this event in its current state.',
+              code: regStatus.code
             });
           }
-          return res.status(400).json({
-            success: false,
-            message: regStatus.reason || 'Cannot schedule matches for this event in its current state.',
-            code: regStatus.code
-          });
         }
       }
     } catch (e) {
@@ -367,9 +391,14 @@ export const createMatch = async (req, res) => {
   ];
 
   const detailsObj = {
+    ...(req.body.details && typeof req.body.details === 'object' ? req.body.details : (typeof req.body.details === 'string' ? (() => { try { return JSON.parse(req.body.details); } catch (e) { return {}; } })() : {})),
     date: req.body.date || req.body.scheduledDate || new Date().toISOString().split('T')[0],
     category: req.body.category || req.body.gender || 'Open',
+    gender: req.body.category || req.body.gender || 'Open',
     format: (req.body.format || 'SINGLES').toUpperCase(),
+    time: req.body.time || req.body.scheduledTime || '05:30 PM',
+    venue: req.body.tableNumber || req.body.venue || 'Table 1',
+    tableNumber: req.body.tableNumber || req.body.venue || 'Table 1',
     eventId: eventId,
     eventTitle: newMatch.eventTitle,
     subEvent: req.body.subEvent || null,
@@ -381,8 +410,7 @@ export const createMatch = async (req, res) => {
     setsWon2: newMatch.setsWon2 || 0,
     youtubeVideoId: videoId,
     streamUrl: rawStreamUrl || null,
-    isLiveStreaming: isStreaming,
-    ...(req.body.details && typeof req.body.details === 'object' ? req.body.details : {})
+    isLiveStreaming: isStreaming
   };
 
   await queryDb(
@@ -462,6 +490,16 @@ export const batchSaveMatches = async (req, res) => {
 
   // 1. Authoritative Event & Effective Registration-Closed Gate Check for batch matches
   for (const m of matches) {
+    if (!m) continue;
+    const matchId = m.id || m.matchId;
+    if (matchId) {
+      try {
+        const existingMatchRes = await queryDb('SELECT id FROM live_matches WHERE id = $1', [matchId]);
+        if (existingMatchRes && existingMatchRes.rows && existingMatchRes.rows.length > 0) {
+          continue; // Existing match edit allowed
+        }
+      } catch (e) {}
+    }
     const eventId = m.eventId || m.event_id;
     if (eventId && eventId !== 'DEFAULT') {
       try {
@@ -520,11 +558,16 @@ export const batchSaveMatches = async (req, res) => {
     const isStreaming = Boolean(m.isLiveStreaming || videoId || rawStream);
 
     const detailsObj = {
+      ...(m.details && typeof m.details === 'object' ? m.details : (typeof m.details === 'string' ? (() => { try { return JSON.parse(m.details); } catch (e) { return {}; } })() : {})),
       date: m.date || m.scheduledDate || new Date().toISOString().split('T')[0],
       category: m.category || m.gender || 'Open',
+      gender: m.category || m.gender || 'Open',
       format: formatVal,
+      time: timeVal,
+      venue: tableNumberVal,
+      tableNumber: tableNumberVal,
       eventId: m.eventId || m.event_id || null,
-      eventTitle: m.eventTitle || m.title || `${sportId.toUpperCase()} Match`,
+      eventTitle: matchTitleVal,
       subEvent: m.subEvent || null,
       team1Id: m.team1Id || m.team1_id || null,
       team2Id: m.team2Id || m.team2_id || null,
@@ -534,8 +577,7 @@ export const batchSaveMatches = async (req, res) => {
       setsWon2: m.setsWon2 || 0,
       youtubeVideoId: videoId,
       streamUrl: rawStream || null,
-      isLiveStreaming: isStreaming,
-      ...(m.details && typeof m.details === 'object' ? m.details : {})
+      isLiveStreaming: isStreaming
     };
 
     try {
@@ -712,9 +754,14 @@ export const updateMatch = async (req, res) => {
 
   const detailsObj = {
     ...existingDetails,
+    ...(req.body.details && typeof req.body.details === 'object' ? req.body.details : (typeof req.body.details === 'string' ? (() => { try { return JSON.parse(req.body.details); } catch (e) { return {}; } })() : {})),
     date: req.body.date || req.body.scheduledDate || existingDetails.date || new Date().toISOString().split('T')[0],
     category: req.body.category || req.body.gender || existingDetails.category || 'Open',
+    gender: req.body.category || req.body.gender || existingDetails.gender || existingDetails.category || 'Open',
     format: req.body.format || existingDetails.format || 'SINGLES',
+    time: req.body.time || updatedMatch.time || existingDetails.time || '05:30 PM',
+    venue: req.body.tableNumber || req.body.venue || updatedMatch.tableNumber || existingDetails.venue || 'Table 1',
+    tableNumber: req.body.tableNumber || req.body.venue || updatedMatch.tableNumber || existingDetails.tableNumber || 'Table 1',
     setsHistory: setsHistoryArr,
     currentSet: currentSetVal,
     setsWon1: setsWon1Val,
@@ -726,8 +773,7 @@ export const updateMatch = async (req, res) => {
     playerStats2: req.body.playerStats2 || updatedMatch.playerStats2 || existingDetails.playerStats2 || null,
     youtubeVideoId: extractedVideoId || null,
     streamUrl: rawStreamUrl || null,
-    isLiveStreaming: isStreaming,
-    ...(req.body.details && typeof req.body.details === 'object' ? req.body.details : {})
+    isLiveStreaming: isStreaming
   };
 
   const t1Name = req.body.team1 || updatedMatch.team1 || existing?.team1 || 'Team 1';

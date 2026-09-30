@@ -165,10 +165,28 @@ export const KabaddiMatchScheduleTab = ({ matches, user, onUpdateMatches, global
             eventId: selectedEvent?.id || m.eventId,
             eventTitle: selectedEvent?.title || m.eventTitle || form.eventTitle,
             tableNumber: form.tableNumber,
+            venue: form.tableNumber,
             date: form.date,
             time: form.time,
             format: 'Pro Style (7 Players)',
             category: form.category,
+            gender: form.category,
+            details: {
+              ...(m.details && typeof m.details === 'object' ? m.details : {}),
+              team1: finalTeam1,
+              team2: finalTeam2,
+              team1Id: finalTeam1Id,
+              team2Id: finalTeam2Id,
+              eventId: selectedEvent?.id || m.eventId,
+              eventTitle: selectedEvent?.title || m.eventTitle || form.eventTitle,
+              tableNumber: form.tableNumber,
+              venue: form.tableNumber,
+              date: form.date,
+              time: form.time,
+              format: 'Pro Style (7 Players)',
+              category: form.category,
+              gender: form.category
+            }
           }
           : m
       );
@@ -188,13 +206,30 @@ export const KabaddiMatchScheduleTab = ({ matches, user, onUpdateMatches, global
         team1Id: finalTeam1Id,
         team2Id: finalTeam2Id,
         tableNumber: form.tableNumber,
+        venue: form.tableNumber,
         date: form.date,
         time: form.time,
         format: 'Pro Style (7 Players)',
         category: form.category,
+        gender: form.category,
         status: 'SCHEDULED',
         score1: 0,
         score2: 0,
+        details: {
+          team1: finalTeam1,
+          team2: finalTeam2,
+          team1Id: finalTeam1Id,
+          team2Id: finalTeam2Id,
+          eventId: selectedEvent.id,
+          eventTitle: selectedEvent.title,
+          tableNumber: form.tableNumber,
+          venue: form.tableNumber,
+          date: form.date,
+          time: form.time,
+          format: 'Pro Style (7 Players)',
+          category: form.category,
+          gender: form.category
+        }
       };
       const updated = [...matches, newSlot];
       onUpdateMatches(updated);

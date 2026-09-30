@@ -232,7 +232,18 @@ export const KhoKhoLiveMatchControlTab = ({ matches, user, onUpdateMatchScore })
   };
 
   const scheduledKhoKhoMatches = (Array.isArray(matches) ? matches : []).filter(
-    (m) => m && m.status !== 'COMPLETED' && m.status !== 'FINISHED' && m.status !== 'running' && (!m.sport || m.sport.toLowerCase() === assignedSport || m.sportId === assignedSport)
+    (m) =>
+      m &&
+      m.status !== 'COMPLETED' &&
+      m.status !== 'FINISHED' &&
+      m.status !== 'running' &&
+      (
+        (m.sport && m.sport.toLowerCase().includes('kho')) ||
+        (m.sportId && m.sportId.toLowerCase().includes('kho')) ||
+        (m.assignedSport && m.assignedSport.toLowerCase().includes('kho')) ||
+        (m.eventTitle && m.eventTitle.toLowerCase().includes('kho')) ||
+        (m.title && m.title.toLowerCase().includes('kho'))
+      )
   );
 
   return (

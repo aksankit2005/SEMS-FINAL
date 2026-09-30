@@ -129,8 +129,24 @@ export const AthleticsMatchScheduleTab = ({ user }) => {
       time: scheduledTime,
       venue: venueLocation,
       tableNumber: venueLocation,
+      category: 'Open',
+      gender: 'Open',
       status: 'SCHEDULED',
       createdAt: new Date().toISOString(),
+      details: {
+        eventId: selectedEvent.id,
+        eventTitle: selectedEvent.title,
+        subEvent: selectedSubEvent,
+        matchTitle: `${selectedSubEvent} — ${roundTitle}`,
+        team1: `${selectedSubEvent}`,
+        team2: `${roundTitle}`,
+        date: scheduledDate,
+        time: scheduledTime,
+        venue: venueLocation,
+        tableNumber: venueLocation,
+        category: 'Open',
+        gender: 'Open'
+      }
     };
 
     const updated = [newSchedule, ...schedules];

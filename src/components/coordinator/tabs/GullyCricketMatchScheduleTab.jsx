@@ -167,11 +167,30 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
             matchTitle: `${finalTeam1} vs ${finalTeam2}`,
             format: form.format,
             category: form.category,
+            gender: form.category,
             eventId: selectedEvent?.id || m.eventId,
             eventTitle: selectedEvent?.title || m.eventTitle || form.eventTitle,
             tableNumber: form.tableNumber,
+            venue: form.tableNumber,
             date: form.date,
             time: form.time,
+            details: {
+              ...(m.details && typeof m.details === 'object' ? m.details : {}),
+              team1: finalTeam1,
+              team2: finalTeam2,
+              team1Id: finalTeam1Id,
+              team2Id: finalTeam2Id,
+              matchTitle: `${finalTeam1} vs ${finalTeam2}`,
+              format: form.format,
+              category: form.category,
+              gender: form.category,
+              eventId: selectedEvent?.id || m.eventId,
+              eventTitle: selectedEvent?.title || m.eventTitle || form.eventTitle,
+              tableNumber: form.tableNumber,
+              venue: form.tableNumber,
+              date: form.date,
+              time: form.time
+            }
           }
           : m
       );
@@ -194,6 +213,7 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
         matchTitle: `${finalTeam1} vs ${finalTeam2}`,
         format: form.format,
         category: form.category,
+        gender: form.category,
         tableNumber: form.tableNumber,
         venue: form.tableNumber,
         date: form.date,
@@ -201,6 +221,22 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
         status: 'SCHEDULED',
         score1: 0,
         score2: 0,
+        details: {
+          team1: finalTeam1,
+          team2: finalTeam2,
+          team1Id: finalTeam1Id,
+          team2Id: finalTeam2Id,
+          matchTitle: `${finalTeam1} vs ${finalTeam2}`,
+          format: form.format,
+          category: form.category,
+          gender: form.category,
+          eventId: selectedEvent.id,
+          eventTitle: selectedEvent.title,
+          tableNumber: form.tableNumber,
+          venue: form.tableNumber,
+          date: form.date,
+          time: form.time
+        }
       };
 
       const updated = [newMatch, ...(matches || [])];

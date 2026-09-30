@@ -145,9 +145,14 @@ export const ResultManagementTab = ({ user }) => {
         })
         : [];
 
-      if (cleaned.length === 0 && !isBadminton) {
-        cleaned = getMockResultsData();
-      }
+      cleaned.sort((a, b) => {
+        const timeA = new Date(a.completedAt || a.updatedAt || a.date || 0).getTime();
+        const timeB = new Date(b.completedAt || b.updatedAt || b.date || 0).getTime();
+        if (!isNaN(timeA) && !isNaN(timeB) && timeB !== timeA) {
+          return timeB - timeA;
+        }
+        return String(b.id || '').localeCompare(String(a.id || ''));
+      });
 
       setResultsList(cleaned);
       localStorage.setItem(resultsKey, JSON.stringify(cleaned));
@@ -440,6 +445,13 @@ export const ResultManagementTab = ({ user }) => {
     }
 
     return true;
+  }).sort((a, b) => {
+    const timeA = new Date(a.completedAt || a.updatedAt || a.date || 0).getTime();
+    const timeB = new Date(b.completedAt || b.updatedAt || b.date || 0).getTime();
+    if (!isNaN(timeA) && !isNaN(timeB) && timeB !== timeA) {
+      return timeB - timeA;
+    }
+    return String(b.id || '').localeCompare(String(a.id || ''));
   });
 
   // Export Results to Excel (.xlsx)

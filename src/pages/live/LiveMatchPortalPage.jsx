@@ -571,20 +571,22 @@ const isMatchToday = (matchDate) => {
                       </button>
                     </div>
 
-                    {/* Set Scores Pill Row - ONLY for Racket Sports & Volleyball */}
-                    {isRacketOrVolleyball && (() => {
+                    {/* Set / Inning Scores Pill Row */}
+                    {(isRacketOrVolleyball || isKhoKhoMatch) && (() => {
                       const sets = Array.isArray(m.setsHistory)
                         ? m.setsHistory
                         : (typeof m.setsHistory === 'string' ? (() => { try { const p = JSON.parse(m.setsHistory); return Array.isArray(p) ? p : []; } catch { return []; } })() : []);
-                      const activeSets = sets.filter((s) => s && (s.score1 > 0 || s.score2 > 0 || s.isLocked));
+                      const activeSets = sets.filter((s) => s && (Number(s.score1 || 0) > 0 || Number(s.score2 || 0) > 0 || s.isLocked));
                       if (activeSets.length === 0) return null;
                       return (
                         <div className="pt-2 border-t border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)] flex items-center justify-between gap-2 text-[10px] font-mono">
-                          <span className="font-semibold text-[#686370] dark:text-[#AAA4B8] uppercase shrink-0">Set Scores:</span>
+                          <span className="font-semibold text-[#686370] dark:text-[#AAA4B8] uppercase shrink-0">
+                            {isKhoKhoMatch ? 'Innings Breakdown:' : 'Set Scores:'}
+                          </span>
                           <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
                             {activeSets.map((s) => (
                               <span key={s.set} className="px-2 py-0.5 rounded bg-[#FAF9F6] dark:bg-[#121625] text-[#211D2B] dark:text-[#F5F2FA] border border-[#E5E1E8] dark:border-[rgba(184,165,229,0.15)] font-semibold shrink-0">
-                                S{s.set}: {s.score1}-{s.score2}
+                                {isKhoKhoMatch ? `Inning ${s.set}: ${s.score1}-${s.score2}` : `S${s.set}: ${s.score1}-${s.score2}`}
                               </span>
                             ))}
                           </div>

@@ -428,8 +428,8 @@ export const ResultsPage = () => {
 
       // Sort results by latest completed date/time descending (newest on top)
       list.sort((a, b) => {
-        const timeA = new Date(a.completedAt || a.date || 0).getTime();
-        const timeB = new Date(b.completedAt || b.date || 0).getTime();
+        const timeA = new Date(a.completedAt || a.updatedAt || a.date || 0).getTime();
+        const timeB = new Date(b.completedAt || b.updatedAt || b.date || 0).getTime();
         if (!isNaN(timeA) && !isNaN(timeB) && timeB !== timeA) {
           return timeB - timeA;
         }

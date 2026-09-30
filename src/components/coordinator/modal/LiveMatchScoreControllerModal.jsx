@@ -128,7 +128,8 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
     return match?.score2 || 0;
   });
 
-  const [activeTurn, setActiveTurn] = useState(match?.activeTurn || 1);
+  const [activeTurn, setActiveTurn] = useState(match?.activeTurn || match?.turn || 1);
+  const [chasingTeamKey, setChasingTeamKey] = useState(() => match?.chasingTeamKey || 'team1');
   const [currentSetIndex, setCurrentSetIndex] = useState(initialCurrentSetIndex);
   const [isPaused, setIsPaused] = useState(match?.isPaused || false);
 
@@ -150,6 +151,8 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
       score1,
       score2,
       activeTurn,
+      turn: activeTurn,
+      chasingTeamKey,
       currentSet: currentSetIndex,
       isPaused,
       setsHistory,
@@ -166,6 +169,22 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
     } catch (err) {
       console.warn('Error syncing score state to server', err);
     }
+  };
+
+  const handleToggleKhoKhoRole = () => {
+    saveStateToUndo();
+    const nextKey = chasingTeamKey === 'team1' ? 'team2' : 'team1';
+    setChasingTeamKey(nextKey);
+    const nextTurn = activeTurn < 4 ? activeTurn + 1 : 1;
+    setActiveTurn(nextTurn);
+    const cName = nextKey === 'team1' ? (match.team1 || 'Team 1') : (match.team2 || 'Team 2');
+    const rName = nextKey === 'team1' ? (match.team2 || 'Team 2') : (match.team1 || 'Team 1');
+    addToast(`🔄 Switched to Turn ${nextTurn}! Chasing: ${cName}, Running: ${rName}`, 'success');
+    syncToServer({
+      chasingTeamKey: nextKey,
+      activeTurn: nextTurn,
+      turn: nextTurn
+    });
   };
 
   // Kabaddi Per-Player Stat Action Change
@@ -415,7 +434,10 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
       setScore2(0);
       setMatchWinner(null);
       setCurrentSetIndex(1);
-      const resetSets = [
+      const resetSets = isKhoKho ? [
+        { set: 1, label: 'Set 1 (Inning 1)', score1: 0, score2: 0, isLocked: false, winner: null },
+        { set: 2, label: 'Set 2 (Inning 2)', score1: 0, score2: 0, isLocked: false, winner: null },
+      ] : [
         { set: 1, score1: 0, score2: 0, isLocked: false, winner: null },
         { set: 2, score1: 0, score2: 0, isLocked: false, winner: null },
         { set: 3, score1: 0, score2: 0, isLocked: false, winner: null },
@@ -423,7 +445,7 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
         { set: 5, score1: 0, score2: 0, isLocked: false, winner: null },
       ];
       setSetsHistory(resetSets);
-      addToast('Match scorecard reset to 0-0', 'info');
+      addToast(isKhoKho ? 'Kho-Kho scorecard reset to 0-0 (2 Innings)' : 'Match scorecard reset to 0-0', 'info');
       syncToServer({ score1: 0, score2: 0, currentSet: 1, setsHistory: resetSets, setsWon1: 0, setsWon2: 0 });
     }
   };
@@ -542,32 +564,68 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
     }
   };
 
-  // Finish Match Action directly from Controller for Sets Sports
-  // Finish Match Action directly from Controller for Sets Sports
+  // Finish Match Action directly from Controller for Sets Sports & Kho-Kho
   const handleFinishMatch = async () => {
     const defaultTeam1 = match?.team1 || 'Player 1';
     const defaultTeam2 = match?.team2 || 'Player 2';
 
     const currentSets = Array.isArray(setsHistory) ? setsHistory : parseSetsHistory(setsHistory);
-    const activeSets = currentSets.filter((s) => s && (s.isLocked || (s.score1 > 0 || s.score2 > 0)));
-
-    const calculatedSetsWon1 = currentSets.filter(
-      (s) => s && (s.winner === match?.team1 || (s.isLocked && s.score1 > s.score2))
-    ).length;
-
-    const calculatedSetsWon2 = currentSets.filter(
-      (s) => s && (s.winner === match?.team2 || (s.isLocked && s.score2 > s.score1))
-    ).length;
+    const activeSets = currentSets.filter((s) => s && (s.isLocked || (Number(s.score1 || 0) > 0 || Number(s.score2 || 0) > 0)));
 
     let suggestedWinner = defaultTeam1;
-    if (calculatedSetsWon1 > calculatedSetsWon2) {
-      suggestedWinner = defaultTeam1;
-    } else if (calculatedSetsWon2 > calculatedSetsWon1) {
-      suggestedWinner = defaultTeam2;
-    } else if (score1 > score2) {
-      suggestedWinner = defaultTeam1;
-    } else if (score2 > score1) {
-      suggestedWinner = defaultTeam2;
+    let finalScore1 = score1;
+    let finalScore2 = score2;
+    let finalSetsWon1 = 0;
+    let finalSetsWon2 = 0;
+    let scoreSummary = '';
+
+    if (isKhoKho) {
+      // Kho-Kho Winner is determined strictly by Aggregate Total Points (Inning 1 + Inning 2)
+      const totP1 = currentSets.reduce((sum, s) => sum + Number(s.score1 || 0), 0);
+      const totP2 = currentSets.reduce((sum, s) => sum + Number(s.score2 || 0), 0);
+      finalScore1 = totP1;
+      finalScore2 = totP2;
+      finalSetsWon1 = totP1 >= totP2 ? 1 : 0;
+      finalSetsWon2 = totP2 > totP1 ? 1 : 0;
+
+      if (totP1 > totP2) suggestedWinner = defaultTeam1;
+      else if (totP2 > totP1) suggestedWinner = defaultTeam2;
+      else suggestedWinner = defaultTeam1;
+
+      const inningsBreakdownStr = activeSets
+        .map((s, idx) => `Inning ${s.set || (idx + 1)}: ${s.score1 || 0}-${s.score2 || 0}`)
+        .join(' | ');
+
+      scoreSummary = `${suggestedWinner} def. ${suggestedWinner === defaultTeam1 ? defaultTeam2 : defaultTeam1} ${Math.max(totP1, totP2)}-${Math.min(totP1, totP2)} Pts${inningsBreakdownStr ? ` (${inningsBreakdownStr})` : ''}`;
+    } else {
+      const calculatedSetsWon1 = currentSets.filter(
+        (s) => s && (s.winner === match?.team1 || (s.isLocked && s.score1 > s.score2))
+      ).length;
+
+      const calculatedSetsWon2 = currentSets.filter(
+        (s) => s && (s.winner === match?.team2 || (s.isLocked && s.score2 > s.score1))
+      ).length;
+
+      finalSetsWon1 = calculatedSetsWon1;
+      finalSetsWon2 = calculatedSetsWon2;
+
+      if (calculatedSetsWon1 > calculatedSetsWon2) {
+        suggestedWinner = defaultTeam1;
+      } else if (calculatedSetsWon2 > calculatedSetsWon1) {
+        suggestedWinner = defaultTeam2;
+      } else if (score1 > score2) {
+        suggestedWinner = defaultTeam1;
+      } else if (score2 > score1) {
+        suggestedWinner = defaultTeam2;
+      }
+
+      const setsBreakdownStr = activeSets
+        .map((s) => `S${s.set}: ${s.score1 || 0}-${s.score2 || 0}`)
+        .join(', ');
+
+      scoreSummary = activeSets.length > 0
+        ? `${calculatedSetsWon1} - ${calculatedSetsWon2} Sets${setsBreakdownStr ? ` (${setsBreakdownStr})` : ''}`
+        : `Winner: ${defaultTeam1}`;
     }
 
     const winnerChoice = window.prompt(
@@ -581,27 +639,19 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
     else if (winnerChoice === '2') winnerName = defaultTeam2;
 
     const matchId = match?.id || `M${Math.floor(100000 + Math.random() * 900000)}`;
-
-    const setsBreakdownStr = activeSets
-      .map((s) => `S${s.set}: ${s.score1 || 0}-${s.score2 || 0}`)
-      .join(', ');
-
-    const scoreSummary = activeSets.length > 0
-      ? `${calculatedSetsWon1} - ${calculatedSetsWon2} Sets${setsBreakdownStr ? ` (${setsBreakdownStr})` : ''}`
-      : `Winner: ${winnerName}`;
-
-    const sportKey = (match?.sportId || match?.sportName || match?.assignedSport || 'badminton').toLowerCase().replace(/_/g, '-');
+    const sportKey = isKhoKho ? 'kho-kho' : (match?.sportId || match?.sportName || match?.assignedSport || 'badminton').toLowerCase().replace(/_/g, '-');
 
     const completedObj = {
       ...match,
       id: matchId,
       sportId: sportKey,
       sport: sportKey,
+      sportName: isKhoKho ? 'Kho-Kho' : (match?.sportName || 'Badminton'),
       winner: winnerName,
-      score1,
-      score2,
-      setsWon1: calculatedSetsWon1,
-      setsWon2: calculatedSetsWon2,
+      score1: finalScore1,
+      score2: finalScore2,
+      setsWon1: finalSetsWon1,
+      setsWon2: finalSetsWon2,
       setsHistory: currentSets,
       playerStats1,
       playerStats2,
@@ -652,7 +702,7 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
       window.dispatchEvent(new Event('storage'));
 
       try {
-        generateMatchResultPDF(completedObj, match?.sportName || 'Badminton');
+        generateMatchResultPDF(completedObj, isKhoKho ? 'Kho-Kho' : (match?.sportName || 'Badminton'));
       } catch (pdfErr) {
         console.warn('PDF export error:', pdfErr);
       }
@@ -837,24 +887,36 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
         {/* Sticky Top Header Bar */}
         <div className="sticky top-0 z-20 p-5 sm:p-6 bg-slate-50/95 dark:bg-[#111827]/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4">
 
-          {/* Left Player Sets Won */}
+          {/* Left Player Sets Won / Kho-Kho Inning 1 */}
           <div className="flex flex-col items-center">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">SETS WON</span>
-            <span className="text-2xl font-black text-blue-600 dark:text-indigo-400 font-mono">{setsWon1}</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              {isKhoKho ? 'INNING 1' : 'SETS WON'}
+            </span>
+            <span className="text-2xl font-black text-blue-600 dark:text-indigo-400 font-mono">
+              {isKhoKho ? (safeSetsHistory[0]?.score1 || 0) : setsWon1}
+            </span>
           </div>
 
-          {/* Center Badge: Set X in Progress / Best of 5 Sets */}
+          {/* Center Badge */}
           <div className="text-center space-y-1">
             <div className="px-4 py-1.5 rounded-full bg-slate-100 dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 text-xs font-black text-slate-900 dark:text-white tracking-wide">
-              Set {currentSetIndex} in Progress
+              {isKhoKho
+                ? `🏃 Inning ${currentSetIndex} • Turn ${activeTurn || 1} of 4`
+                : `Set ${currentSetIndex} in Progress`}
             </div>
-            <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400">{format}</p>
+            <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+              {isKhoKho ? 'Standard 9v9 (2 Innings / 4 Turns)' : format}
+            </p>
           </div>
 
-          {/* Right Player Sets Won */}
+          {/* Right Player Sets Won / Kho-Kho Inning 2 */}
           <div className="flex flex-col items-center">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">SETS WON</span>
-            <span className="text-2xl font-black text-blue-600 dark:text-indigo-400 font-mono">{setsWon2}</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              {isKhoKho ? 'INNING 2' : 'SETS WON'}
+            </span>
+            <span className="text-2xl font-black text-blue-600 dark:text-indigo-400 font-mono">
+              {isKhoKho ? (safeSetsHistory[1]?.score1 || 0) : setsWon2}
+            </span>
           </div>
 
           <button
@@ -865,11 +927,46 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
           </button>
         </div>
 
+        {/* Kho-Kho Dedicated Active Roles & Turn Switch Bar */}
+        {isKhoKho && (
+          <div className="px-6 py-3 bg-amber-500/10 border-b border-amber-500/20 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-mono font-black uppercase text-amber-700 dark:text-amber-400">
+                🏃 ACTIVE TURN {activeTurn || 1}/4:
+              </span>
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                Chasers (Attacking): <strong className="text-rose-600 dark:text-rose-400">{chasingTeamKey === 'team1' ? (match.team1 || 'Team 1') : (match.team2 || 'Team 2')}</strong> | Runners (Defending): <strong className="text-blue-600 dark:text-blue-400">{chasingTeamKey === 'team1' ? (match.team2 || 'Team 2') : (match.team1 || 'Team 1')}</strong>
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleToggleKhoKhoRole}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-black text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>🔄 Switch Roles (Next Turn)</span>
+            </button>
+          </div>
+        )}
+
         {/* Player Cards Grid */}
         <div className="p-6 bg-white dark:bg-[#0B1120] grid grid-cols-1 md:grid-cols-12 gap-6 items-center border-b border-slate-200 dark:border-slate-800">
 
           {/* Player 1 Card (Left) */}
-          <div className="md:col-span-5 p-6 rounded-3xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-slate-800/90 shadow-soft dark:shadow-2xl flex flex-col items-center text-center space-y-4 relative">
+          <div className="md:col-span-5 p-6 rounded-3xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-slate-800/90 shadow-soft dark:shadow-2xl flex flex-col items-center text-center space-y-3 relative">
+            
+            {/* Kho-Kho Role Badge for Team 1 */}
+            {isKhoKho && (
+              <span className={`px-3 py-0.5 rounded-full text-[10px] font-mono font-black uppercase tracking-wider ${
+                chasingTeamKey === 'team1'
+                  ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30 animate-pulse'
+                  : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+              }`}>
+                {chasingTeamKey === 'team1' ? '🔥 CHASING (ATTACKING)' : '🛡️ RUNNING (DEFENDING)'}
+              </span>
+            )}
+
             <div>
               <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                 {(match.team1 || '').replace(/\s*\(.*?\)/, '')}
@@ -894,7 +991,7 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
                 onClick={() => handlePointChange(1, 1)}
                 className="py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-black text-sm shadow-lg shadow-blue-600/30 dark:shadow-indigo-600/30 transition cursor-pointer"
               >
-                + Point
+                {isKhoKho ? '+1 (Tag Out)' : '+ Point'}
               </button>
             </div>
           </div>
@@ -905,7 +1002,19 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
           </div>
 
           {/* Player 2 Card (Right) */}
-          <div className="md:col-span-5 p-6 rounded-3xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-slate-800/90 shadow-soft dark:shadow-2xl flex flex-col items-center text-center space-y-4 relative">
+          <div className="md:col-span-5 p-6 rounded-3xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-slate-800/90 shadow-soft dark:shadow-2xl flex flex-col items-center text-center space-y-3 relative">
+            
+            {/* Kho-Kho Role Badge for Team 2 */}
+            {isKhoKho && (
+              <span className={`px-3 py-0.5 rounded-full text-[10px] font-mono font-black uppercase tracking-wider ${
+                chasingTeamKey === 'team2'
+                  ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30 animate-pulse'
+                  : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+              }`}>
+                {chasingTeamKey === 'team2' ? '🔥 CHASING (ATTACKING)' : '🛡️ RUNNING (DEFENDING)'}
+              </span>
+            )}
+
             <div>
               <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                 {(match.team2 || '').replace(/\s*\(.*?\)/, '')}
@@ -930,7 +1039,7 @@ export const LiveMatchScoreControllerModal = ({ match, venueName, onClose, onMat
                 onClick={() => handlePointChange(2, 1)}
                 className="py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-black text-sm shadow-lg shadow-blue-600/30 dark:shadow-indigo-600/30 transition cursor-pointer"
               >
-                + Point
+                {isKhoKho ? '+1 (Tag Out)' : '+ Point'}
               </button>
             </div>
           </div>

@@ -273,6 +273,11 @@ const LiveScoreOverlay = ({ match }) => {
 
   // 8. Kho-Kho Overlay
   if (isKhoKho) {
+    const activeTurnNum = match.activeTurn || match.turn || 1;
+    const currentInningNum = match.currentSet || 1;
+    const chasingKey = match.chasingTeamKey || 'team1';
+    const chasingTeam = chasingKey === 'team1' ? team1Name : team2Name;
+
     return (
       <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4 z-20 pointer-events-none">
         <div className="bg-white/95 dark:bg-slate-950/95 backdrop-blur-md rounded-2xl border border-slate-200 dark:border-teal-500/40 p-2.5 sm:p-3 shadow-2xl text-slate-900 dark:text-white pointer-events-auto transition-all">
@@ -280,7 +285,10 @@ const LiveScoreOverlay = ({ match }) => {
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-teal-500 animate-ping" />
               <span className="font-black text-xs uppercase text-teal-600 dark:text-teal-400 tracking-wider">
-                🏃 KHO-KHO
+                🏃 KHO-KHO • INNING {currentInningNum} (TURN {activeTurnNum}/4)
+              </span>
+              <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[9px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                Chasing: {chasingTeam}
               </span>
             </div>
             <div className="flex items-center gap-3 sm:gap-4 font-black">
@@ -1288,6 +1296,39 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
                 </div>
               </div>
 
+            </div>
+          </div>
+        )}
+
+        {/* Kho-Kho Innings Breakdown */}
+        {isKhoKho && setsHistory.length > 0 && (
+          <div className="p-6 bg-white dark:bg-[#0F172A] border-b border-slate-200 dark:border-[#1E293B]">
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                <Award className="w-4 h-4 text-teal-600 dark:text-teal-400" /> 🏃 Kho-Kho 2-Innings Points Breakdown
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {setsHistory.map((s) => (
+                  <div
+                    key={s.set}
+                    className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[#090D16] border border-slate-200 dark:border-[#1E293B] text-xs"
+                  >
+                    <span className="font-bold text-slate-700 dark:text-slate-300 font-mono">
+                      Inning #{s.set} ({s.label || `Inning ${s.set}`})
+                    </span>
+                    <div className="flex items-center gap-3 font-mono font-bold">
+                      <span className={Number(s.score1 || 0) >= Number(s.score2 || 0) ? 'text-teal-600 dark:text-teal-400 font-black' : 'text-slate-500 dark:text-slate-400'}>
+                        {team1Name}: {s.score1 || 0}
+                      </span>
+                      <span className="text-slate-400 dark:text-slate-600">-</span>
+                      <span className={Number(s.score2 || 0) >= Number(s.score1 || 0) ? 'text-teal-600 dark:text-teal-400 font-black' : 'text-slate-500 dark:text-slate-400'}>
+                        {team2Name}: {s.score2 || 0}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}

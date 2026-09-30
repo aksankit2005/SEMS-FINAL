@@ -12,7 +12,17 @@ export const KhoKhoMatchScheduleTab = ({ matches, user, onUpdateMatches, globalS
   const sportName = 'Kho-Kho';
 
   const scheduledMatches = (matches || []).filter(
-    (m) => m && m.status !== 'COMPLETED' && m.status !== 'FINISHED' && (!m.sport || m.sport.toLowerCase() === assignedSport || m.sportId === assignedSport)
+    (m) =>
+      m &&
+      m.status !== 'COMPLETED' &&
+      m.status !== 'FINISHED' &&
+      (
+        (m.sport && m.sport.toLowerCase().includes('kho')) ||
+        (m.sportId && m.sportId.toLowerCase().includes('kho')) ||
+        (m.assignedSport && m.assignedSport.toLowerCase().includes('kho')) ||
+        (m.eventTitle && m.eventTitle.toLowerCase().includes('kho')) ||
+        (m.title && m.title.toLowerCase().includes('kho'))
+      )
   );
 
   const filteredMatches = scheduledMatches.filter((m) => {
@@ -110,6 +120,8 @@ export const KhoKhoMatchScheduleTab = ({ matches, user, onUpdateMatches, globalS
 
     const completedObj = {
       ...matchItem,
+      sportId: 'kho-kho',
+      sportName: 'Kho-Kho',
       status: 'COMPLETED',
       winner: winnerName.trim(),
       completedAt: new Date().toISOString(),
@@ -119,6 +131,20 @@ export const KhoKhoMatchScheduleTab = ({ matches, user, onUpdateMatches, globalS
       await coordinatorApi.completeMatch(matchItem.id, completedObj);
       const updated = matches.map((m) => (m.id === matchItem.id ? completedObj : m));
       onUpdateMatches(updated);
+
+      // Save to localStorage results for instant cross-tab sync
+      const resultsKey = 'sems_completed_results_kho-kho';
+      const existingStr = localStorage.getItem(resultsKey);
+      let existingList = [];
+      if (existingStr) {
+        try { existingList = JSON.parse(existingStr); } catch (e) {}
+      }
+      existingList = [completedObj, ...existingList.filter((item) => item.id !== matchItem.id)];
+      localStorage.setItem(resultsKey, JSON.stringify(existingList));
+
+      window.dispatchEvent(new Event('sems_results_updated'));
+      window.dispatchEvent(new Event('storage'));
+
       addToast(`🏆 Match Finished! Winner: ${winnerName.trim()}. Saved to Results section.`, 'success');
     } catch (err) {
       addToast('Failed to finish match', 'error');
@@ -165,10 +191,28 @@ export const KhoKhoMatchScheduleTab = ({ matches, user, onUpdateMatches, globalS
             eventId: selectedEvent?.id || m.eventId,
             eventTitle: selectedEvent?.title || m.eventTitle || form.eventTitle,
             tableNumber: form.tableNumber,
+            venue: form.tableNumber,
             date: form.date,
             time: form.time,
             format: form.format || 'Standard (9 Players)',
             category: form.category,
+            gender: form.category,
+            details: {
+              ...(m.details && typeof m.details === 'object' ? m.details : {}),
+              team1: finalTeam1,
+              team2: finalTeam2,
+              team1Id: finalTeam1Id,
+              team2Id: finalTeam2Id,
+              eventId: selectedEvent?.id || m.eventId,
+              eventTitle: selectedEvent?.title || m.eventTitle || form.eventTitle,
+              tableNumber: form.tableNumber,
+              venue: form.tableNumber,
+              date: form.date,
+              time: form.time,
+              format: form.format || 'Standard (9 Players)',
+              category: form.category,
+              gender: form.category
+            }
           }
           : m
       );
@@ -188,13 +232,30 @@ export const KhoKhoMatchScheduleTab = ({ matches, user, onUpdateMatches, globalS
         team1Id: finalTeam1Id,
         team2Id: finalTeam2Id,
         tableNumber: form.tableNumber,
+        venue: form.tableNumber,
         date: form.date,
         time: form.time,
-        format: 'Standard (9 Players)',
+        format: form.format || 'Standard (9 Players)',
         category: form.category,
+        gender: form.category,
         status: 'SCHEDULED',
         score1: 0,
         score2: 0,
+        details: {
+          team1: finalTeam1,
+          team2: finalTeam2,
+          team1Id: finalTeam1Id,
+          team2Id: finalTeam2Id,
+          eventId: selectedEvent.id,
+          eventTitle: selectedEvent.title,
+          tableNumber: form.tableNumber,
+          venue: form.tableNumber,
+          date: form.date,
+          time: form.time,
+          format: form.format || 'Standard (9 Players)',
+          category: form.category,
+          gender: form.category
+        }
       };
       const updated = [...matches, newSlot];
       onUpdateMatches(updated);
