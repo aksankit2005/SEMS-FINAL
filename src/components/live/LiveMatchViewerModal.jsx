@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Award, Tv, VideoOff, Users, ShieldAlert, AlertCircle, Maximize, Minimize } from 'lucide-react';
+import { X, Award, Tv, VideoOff, Users, ShieldAlert, AlertCircle, Maximize, Minimize, FileText, ArrowRight, Zap, Target } from 'lucide-react';
 import { resolveSportConfig } from '../../data/sportsConfig';
 import { getYouTubeEmbedUrl, extractYouTubeVideoId } from '../../utils/youtube';
 import { mergeMatchState } from '../../services/coordinatorApi';
+import { CricketScorecardModal } from '../coordinator/modal/CricketScorecardModal';
 
 const getShortCollege = (name) => {
   if (!name || typeof name !== 'string' || !name.trim()) return null;
@@ -395,6 +396,7 @@ const YouTubePlayer = React.memo(({ youtubeVideoId, match }) => {
 
 export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
   const [match, setMatch] = useState(initialMatch);
+  const [showCricketScorecard, setShowCricketScorecard] = useState(false);
 
   useEffect(() => {
     if (initialMatch) {
@@ -527,6 +529,34 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
 
   const roster1 = Array.isArray(match.roster1) ? match.roster1 : [];
   const roster2 = Array.isArray(match.roster2) ? match.roster2 : [];
+
+  // CRICKET LIVE METRICS CALCULATION
+  const cricketTarget = Number(match.targetRuns || match.details?.targetRuns || 0);
+  const cricketInningsNum = match.currentInnings || 1;
+  const cricketScoreVal = cricketInningsNum === 2 ? (match.score2 ?? score2Val) : (match.score1 ?? score1Val);
+  const cricketWicketsVal = cricketInningsNum === 2 ? (match.wickets2 ?? 0) : (match.wickets1 ?? 0);
+  const cricketOversVal = String(cricketInningsNum === 2 ? (match.overs2 || '0.0') : (match.overs1 || '0.0'));
+
+  const parseOversToBalls = (ov) => {
+    const parts = String(ov || '0.0').split('.');
+    return (parseInt(parts[0], 10) || 0) * 6 + (parseInt(parts[1], 10) || 0);
+  };
+
+  const cricketBallsBowled = parseOversToBalls(cricketOversVal);
+  const cricketMaxOvers = Number(match.totalOversMax || match.details?.totalOvers || (match.setupData?.matchDetails?.totalOvers) || 20);
+  const cricketMaxBalls = cricketMaxOvers * 6;
+  const cricketBallsRemaining = Math.max(0, cricketMaxBalls - cricketBallsBowled);
+  const cricketRunsNeeded = cricketTarget ? Math.max(0, cricketTarget - cricketScoreVal) : 0;
+  const cricketCRR = cricketBallsBowled > 0 ? (cricketScoreVal / (cricketBallsBowled / 6)).toFixed(2) : '0.00';
+  const cricketRRR = (cricketTarget > 0 && cricketBallsRemaining > 0) ? (cricketRunsNeeded / (cricketBallsRemaining / 6)).toFixed(2) : '0.00';
+
+  const cricketExtrasObj = match.extras || match.details?.innings1?.extras || match.details?.innings2?.extras || {
+    wides: 0, noBalls: 0, byes: 0, legByes: 0, penalty: 0, total: 0
+  };
+  const cricketPartnershipObj = match.partnership || match.details?.innings1?.partnership || match.details?.innings2?.partnership || {
+    runs: 0, balls: 0
+  };
+  const cricketFOWList = match.fallOfWickets || match.details?.innings1?.fallOfWickets || match.details?.innings2?.fallOfWickets || [];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-sm overflow-y-auto animate-fade-in font-sans">
@@ -666,17 +696,28 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
               {isCricket ? (
                 <div className="text-center bg-white dark:bg-[#090D16] p-4 sm:p-5 rounded-2xl border border-emerald-500/30 shadow-md space-y-2">
                   <span className="text-[10px] font-mono uppercase font-bold text-emerald-500 tracking-widest block">
-                    🏏 {match.currentInnings === 2 ? '2ND INNINGS' : '1ST INNINGS'}
+                    🏏 {cricketInningsNum === 2 ? '2ND INNINGS • LIVE CHASE' : '1ST INNINGS'}
                   </span>
                   
                   <div className="flex items-baseline justify-center gap-1.5 font-mono">
-                    <span className="text-4xl sm:text-5xl font-black text-emerald-500">{match.currentInnings === 2 ? (match.score2 ?? score2Val) : (match.score1 ?? score1Val)}</span>
+                    <span className="text-4xl sm:text-5xl font-black text-emerald-500">{cricketScoreVal}</span>
                     <span className="text-2xl text-slate-400 font-bold">/</span>
-                    <span className="text-2xl sm:text-3xl font-black text-rose-500">{match.currentInnings === 2 ? (match.wickets2 ?? 0) : (match.wickets1 ?? 0)}</span>
+                    <span className="text-2xl sm:text-3xl font-black text-rose-500">{cricketWicketsVal}</span>
                   </div>
 
                   <div className="text-xs font-mono text-slate-400">
-                    Overs: <strong className="text-white">{match.currentInnings === 2 ? (match.overs2 || '0.0') : (match.overs1 || '0.0')}</strong> / {match.totalOversMax || 20}
+                    Overs: <strong className="text-slate-900 dark:text-white font-bold">{cricketOversVal}</strong> / {cricketMaxOvers}
+                  </div>
+
+                  <div className="pt-1 flex items-center justify-center gap-2 flex-wrap text-[11px] font-mono">
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold">
+                      CRR: {cricketCRR}
+                    </span>
+                    {(cricketTarget > 0 && cricketInningsNum === 2) && (
+                      <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold">
+                        RRR: {cricketRRR}
+                      </span>
+                    )}
                   </div>
                 </div>
               ) : isChess ? (
@@ -866,6 +907,51 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
         {isCricket && (
           <div className="p-6 bg-slate-50 dark:bg-[#0B1120] border-b border-slate-200 dark:border-[#1E293B] space-y-6">
             
+            {/* Live Chase / Innings Status Banner */}
+            {cricketInningsNum === 2 && cricketTarget > 0 ? (
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-emerald-500/10 border border-amber-500/30 text-center space-y-1.5 shadow-sm">
+                <span className="text-[10px] font-mono font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest flex items-center justify-center gap-1.5">
+                  <Target className="w-3.5 h-3.5" /> 2ND INNINGS TARGET CHASE EQUATION
+                </span>
+                <div className="text-sm sm:text-base font-black text-slate-900 dark:text-white font-mono">
+                  Target: <span className="text-amber-500">{cricketTarget} Runs</span> • Need <span className="text-emerald-500">{cricketRunsNeeded} Runs</span> from <span className="text-blue-500">{cricketBallsRemaining} Balls</span>
+                </div>
+                <div className="flex items-center justify-center gap-4 text-xs font-mono font-bold text-slate-600 dark:text-slate-300 pt-1">
+                  <span>Required Run Rate: <strong className="text-amber-500">{cricketRRR}</strong></span>
+                  <span>|</span>
+                  <span>Current Run Rate: <strong className="text-emerald-500">{cricketCRR}</strong></span>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">1ST INNINGS LIVE SCORING IN PROGRESS</span>
+                </div>
+                <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300 font-bold">
+                  <span>CRR: <strong className="text-emerald-500">{cricketCRR}</strong></span>
+                  <span>•</span>
+                  <span>Projected ({cricketMaxOvers} ov): <strong className="text-blue-500">{Math.round(Number(cricketCRR) * cricketMaxOvers)}</strong></span>
+                </div>
+              </div>
+            )}
+
+            {/* Partnership & Extras Bar */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+              <div className="p-3 rounded-xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-[#1E293B] flex items-center justify-between shadow-xs">
+                <span className="text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px]">Current Partnership:</span>
+                <span className="font-black text-slate-900 dark:text-white">
+                  {cricketPartnershipObj.runs || 0} runs <span className="text-slate-500 dark:text-slate-400 font-normal">({cricketPartnershipObj.balls || 0} balls)</span>
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-[#1E293B] flex items-center justify-between shadow-xs">
+                <span className="text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px]">Extras:</span>
+                <span className="font-black text-slate-900 dark:text-white">
+                  Total {cricketExtrasObj.total || 0} <span className="text-slate-500 dark:text-slate-400 text-[10px] font-normal">(w {cricketExtrasObj.wides || 0}, nb {cricketExtrasObj.noBalls || 0}, b {cricketExtrasObj.byes || 0}, lb {cricketExtrasObj.legByes || 0})</span>
+                </span>
+              </div>
+            </div>
+
             {/* Recent Deliveries Ticker */}
             {(match.recentBalls || []).length > 0 && (
               <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-white dark:bg-[#090D16] border border-slate-200 dark:border-[#1E293B] shadow-sm">
@@ -989,6 +1075,37 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
                 </div>
               </div>
             )}
+
+            {/* Fall of Wickets / Recent Wickets */}
+            {cricketFOWList.length > 0 && (
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-[#1E293B] space-y-2 shadow-xs">
+                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
+                  Recent Wickets (Fall of Wickets):
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  {cricketFOWList.map((f, idx) => (
+                    <span key={idx} className="px-2.5 py-1 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 font-mono text-xs font-bold">
+                      {f.wicket}-{f.runs} ({f.batsman}, {f.over} ov)
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Action Bar: Open Live Full Scorecard */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-200 dark:border-[#1E293B]">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium text-center sm:text-left">
+                Want full batter, bowler & fielder performance? Check the real-time scorecard.
+              </span>
+              <button
+                onClick={() => setShowCricketScorecard(true)}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 transition cursor-pointer"
+              >
+                <FileText className="w-4 h-4" />
+                <span>View Full Live Scorecard</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
 
           </div>
         )}
@@ -1356,6 +1473,14 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
         </div>
 
       </div>
+
+      {/* Full Live Cricket Scorecard Overlay Modal */}
+      {showCricketScorecard && (
+        <CricketScorecardModal
+          match={match}
+          onClose={() => setShowCricketScorecard(false)}
+        />
+      )}
     </div>
   );
 };

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Trophy, Star, Search, Calendar, CheckCircle2, Award, Sparkles, Filter, ChevronDown, Check, X } from 'lucide-react';
+import { Trophy, Star, Search, Calendar, CheckCircle2, Award, Sparkles, Filter, ChevronDown, Check, X, FileText } from 'lucide-react';
 import { coordinatorApi } from '../services/coordinatorApi';
 import { resolveSportConfig } from '../data/sportsConfig';
 import { getSportResultDisplay } from '../utils/sportResultFormatters';
 import { useTheme } from '../context/ThemeContext';
+import { CricketScorecardModal } from '../components/coordinator/modal/CricketScorecardModal';
 import '../styles/spatialGallery.css';
 
 const SportResultSummary = ({ resultData }) => {
@@ -278,6 +279,7 @@ export const ResultsPage = () => {
   const [query, setQuery] = useState('');
   const [selectedSport, setSelectedSport] = useState('All');
   const [dynamicResults, setDynamicResults] = useState([]);
+  const [selectedScorecardMatch, setSelectedScorecardMatch] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -605,6 +607,25 @@ export const ResultsPage = () => {
                         <span className="truncate">Player of Match / MVP: <strong className="text-[#211D2B] dark:text-[#F5F2FA]">{res.mvp}</strong></span>
                       </div>
                     )}
+
+                    {/* View Scorecard Button for Cricket (Normal Cricket Only) */}
+                    {(() => {
+                      const sKey = String(res.sport || res.rawMatch?.sport || res.rawMatch?.sportId || '').toLowerCase();
+                      const isNormalCricket = sKey.includes('cricket') && !sKey.includes('gully');
+                      if (!isNormalCricket) return null;
+
+                      return (
+                        <div className="pt-2">
+                          <button
+                            onClick={() => setSelectedScorecardMatch(res.rawMatch || res)}
+                            className="w-full py-2 px-3 rounded-lg bg-[#EDF7F0] dark:bg-[#1B5E20]/20 hover:bg-[#C8E6C9] dark:hover:bg-[#1B5E20]/40 text-[#1B5E20] dark:text-[#81C784] border border-[#C8E6C9] dark:border-[#1B5E20]/30 text-xs font-bold font-spatial-sans flex items-center justify-center gap-1.5 transition cursor-pointer"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>View Complete Scorecard</span>
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               );
@@ -630,6 +651,14 @@ export const ResultsPage = () => {
         </div>
 
       </div>
+
+      {/* Cricket Match Permanent Record Scorecard Modal */}
+      {selectedScorecardMatch && (
+        <CricketScorecardModal
+          match={selectedScorecardMatch}
+          onClose={() => setSelectedScorecardMatch(null)}
+        />
+      )}
     </div>
   );
 };

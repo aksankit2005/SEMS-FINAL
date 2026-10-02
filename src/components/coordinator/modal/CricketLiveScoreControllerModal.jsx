@@ -9,8 +9,25 @@ import { useToast } from '../../../context/ToastContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { generateMatchResultPDF } from '../../../utils/pdfExporter';
 import { CricketScorecardModal } from './CricketScorecardModal';
+import { NormalCricketLiveScoreControllerModal } from './NormalCricketLiveScoreControllerModal';
 
-export const CricketLiveScoreControllerModal = ({ match, venueName, onClose, onMatchUpdated }) => {
+export const CricketLiveScoreControllerModal = (props) => {
+  const { match } = props;
+  const isGully = Boolean(
+    (match?.sportId || '').toLowerCase().includes('gully') ||
+    (match?.sport || '').toLowerCase().includes('gully') ||
+    (match?.sportName || '').toLowerCase().includes('gully') ||
+    (match?.eventTitle || '').toLowerCase().includes('gully')
+  );
+
+  if (!isGully) {
+    return <NormalCricketLiveScoreControllerModal {...props} />;
+  }
+
+  return <LegacyCricketLiveScoreControllerModal {...props} />;
+};
+
+const LegacyCricketLiveScoreControllerModal = ({ match, venueName, onClose, onMatchUpdated }) => {
   const { addToast } = useToast();
 
   // Fullscreen toggle

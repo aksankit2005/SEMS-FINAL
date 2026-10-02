@@ -491,6 +491,21 @@ export const LiveMatchPortalPage = () => {
                             </div>
                           </div>
                         </div>
+
+                        {(m.striker || m.bowler) && (
+                          <div className="pt-2 flex items-center justify-between text-[10px] font-mono text-[#686370] dark:text-[#AAA4B8] border-t border-[#E5E1E8] dark:border-[rgba(184,165,229,0.12)]">
+                            {m.striker && (
+                              <span className="truncate">
+                                🏏 <strong className="text-[#211D2B] dark:text-[#F5F2FA]">{m.striker.name}</strong> {m.striker.runs || 0}({m.striker.balls || 0}b)
+                              </span>
+                            )}
+                            {m.bowler && (
+                              <span className="truncate text-right">
+                                🎯 <strong className="text-[#211D2B] dark:text-[#F5F2FA]">{m.bowler.name}</strong> {m.bowler.wickets || 0}/{m.bowler.runs || 0} ({m.bowler.overs || '0.0'})
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ) : (
                       /* General Ball / Racket / Court Score Display */

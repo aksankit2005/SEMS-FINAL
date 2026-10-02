@@ -6,6 +6,7 @@ import { coordinatorApi } from '../../../services/coordinatorApi';
 import { generateMatchResultPDF, exportToCSV, exportSportResultPDF } from '../../../utils/pdfExporter';
 import { exportResultsToExcel } from '../../../utils/excelExporter';
 import { getSportResultDisplay } from '../../../utils/sportResultFormatters';
+import { CricketScorecardModal } from '../modal/CricketScorecardModal';
 
 export const ResultManagementTab = ({ user }) => {
   const { addToast } = useToast();
@@ -27,6 +28,8 @@ export const ResultManagementTab = ({ user }) => {
   const assignedSport = (user?.assignedSport || 'badminton').toLowerCase();
   const isChess = assignedSport === 'chess';
   const isBadminton = assignedSport === 'badminton';
+  const isCricket = assignedSport.includes('cricket') && !assignedSport.includes('gully');
+  const [selectedCricketScorecard, setSelectedCricketScorecard] = useState(null);
   const sportId = user?.assignedSport || 'badminton';
   const sportName = user?.sportName || (isChess ? 'Chess' : 'Badminton');
   const resultsKey = `sems_completed_results_${sportId}`;
@@ -660,6 +663,17 @@ export const ResultManagementTab = ({ user }) => {
                             </button>
                           )}
 
+                          {isCricket && (
+                            <button
+                              onClick={() => setSelectedCricketScorecard(r)}
+                              className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30 text-emerald-600 dark:text-emerald-300 font-bold text-xs border border-emerald-200 dark:border-emerald-500/30 transition flex items-center gap-1 cursor-pointer"
+                              title="View Cricket Scorecard"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Scorecard</span>
+                            </button>
+                          )}
+
                           <button
                             onClick={() => handleOpenEdit(r)}
                             className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-sm transition flex items-center gap-1 cursor-pointer"
@@ -915,6 +929,14 @@ export const ResultManagementTab = ({ user }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Cricket Scorecard Details Modal */}
+      {selectedCricketScorecard && (
+        <CricketScorecardModal
+          match={selectedCricketScorecard}
+          onClose={() => setSelectedCricketScorecard(null)}
+        />
       )}
     </div>
   );
