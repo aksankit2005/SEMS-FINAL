@@ -20,36 +20,46 @@ export const SportsDataProvider = ({ children }) => {
 
   // Fetch live matches from backend PostgreSQL database
   const syncLiveMatches = async () => {
-  try {
-    const resData = await coordinatorApi.getPublicLiveMatches();
+    try {
+      const deletedArr = JSON.parse(localStorage.getItem('sems_deleted_match_ids') || '[]');
+      const deletedSet = new Set(deletedArr);
+      const resData = await coordinatorApi.getPublicLiveMatches();
 
-    if (resData && Array.isArray(resData)) {
-      const dbLive = resData.filter(
-        (m) =>
-          m &&
-          m.id &&
-          (
-            m.status === 'running' ||
-            m.status === 'live' ||
-            m.status === 'in_progress' ||
-            m.status === 'active'
-          )
-      );
+      if (resData && Array.isArray(resData)) {
+        const dbLive = resData.filter(
+          (m) =>
+            m &&
+            m.id &&
+            !deletedSet.has(m.id) &&
+            (
+              m.status === 'running' ||
+              m.status === 'live' ||
+              m.status === 'in_progress' ||
+              m.status === 'active'
+            )
+        );
 
-      setLiveMatches(sortLiveMatches(dbLive));
-      return;
+        const sorted = sortLiveMatches(dbLive);
+        setLiveMatches((prev) => {
+          if (JSON.stringify(prev) === JSON.stringify(sorted)) return prev;
+          return sorted;
+        });
+        return;
+      }
+    } catch (e) {
+      console.warn('Live matches API fetch error:', e.message);
     }
-  } catch (e) {
-    console.warn('Live matches API fetch error:', e.message);
-  }
-};
+  };
 
   // Fetch schedule from backend PostgreSQL database
   const syncSchedule = async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/schedules`);
       if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-        setSchedule(res.data);
+        setSchedule((prev) => {
+          if (JSON.stringify(prev) === JSON.stringify(res.data)) return prev;
+          return res.data;
+        });
       }
     } catch (e) {
       console.warn('Schedules API fetch error:', e.message);
@@ -61,7 +71,10 @@ export const SportsDataProvider = ({ children }) => {
     try {
       const res = await axios.get(`${API_BASE_URL}/results`);
       if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-        setResults(res.data);
+        setResults((prev) => {
+          if (JSON.stringify(prev) === JSON.stringify(res.data)) return prev;
+          return res.data;
+        });
       }
     } catch (e) {
       console.warn('Results API fetch error:', e.message);
@@ -74,7 +87,10 @@ export const SportsDataProvider = ({ children }) => {
       const res = await axios.get(`${API_BASE_URL}/leaderboard`);
       if (res.data && Array.isArray(res.data) && res.data.length > 0) {
         const filtered = res.data.filter(c => (c.code || c.id) !== 'EXTERNAL');
-        setLeaderboard(filtered);
+        setLeaderboard((prev) => {
+          if (JSON.stringify(prev) === JSON.stringify(filtered)) return prev;
+          return filtered;
+        });
         return;
       }
     } catch (e) {
@@ -92,7 +108,10 @@ export const SportsDataProvider = ({ children }) => {
         silver: 0,
         totalPoints: 0,
       }));
-    setLeaderboard(standings);
+    setLeaderboard((prev) => {
+      if (JSON.stringify(prev) === JSON.stringify(standings)) return prev;
+      return standings;
+    });
   };
 
   // Fetch announcements from backend PostgreSQL database
@@ -122,7 +141,10 @@ export const SportsDataProvider = ({ children }) => {
               }))
             : []
         }));
-        setAnnouncements(dbList);
+        setAnnouncements((prev) => {
+          if (JSON.stringify(prev) === JSON.stringify(dbList)) return prev;
+          return dbList;
+        });
         return;
       }
     } catch (e) {

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, Trophy, Layers, Filter, Search, Download, Calendar, MapPin, DollarSign, 
-  CheckCircle2, Image as ImageIcon, ShieldAlert, Sparkles, RefreshCw, Eye, UserCheck, Phone, Mail, Award, BookOpen,
-  FolderOpen, Folder, ArrowLeft, Camera, Film, X, Maximize2, Key, EyeOff, User, Lock, Building2, Crown, Upload
+  CheckCircle2, Image as ImageIcon, ShieldAlert, RefreshCw, Eye, UserCheck, Phone, Mail, Award, BookOpen,
+  FolderOpen, Folder, ArrowLeft, Camera, Film, X, Maximize2, Key, EyeOff, User, Lock, Building2, Crown, Upload, Edit2, Crop,
+  FileSpreadsheet, FileText, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 import { superCoordinatorApi, ALL_12_SPORTS, ALL_COLLEGES, matchesCollegeFilter } from '../../services/superCoordinatorApi';
@@ -13,8 +14,9 @@ import { exportToCSV, exportToPDF } from '../../utils/pdfExporter';
 import { getParticipationType, matchesParticipationTypeFilter } from '../../utils/rosterHelper';
 import { exportResultsToExcel } from '../../utils/excelExporter';
 import { GoogleDriveImage } from '../../components/common/GoogleDriveImage';
-import { getHeroSlides, saveHeroSlides, DEFAULT_HERO_SLIDES } from '../../data/heroSlidesData';
 import { uploadFileToCloudinary } from '../../services/cloudinaryService';
+import { ImageCropperModal } from '../../components/common/ImageCropperModal';
+import { RegistrationDetailsModal } from '../../components/admin/RegistrationDetailsModal';
 
 export const SuperCoordinatorDashboardPage = () => {
   const { addToast } = useToast();
@@ -33,8 +35,6 @@ export const SuperCoordinatorDashboardPage = () => {
   const [masterParticipants, setMasterParticipants] = useState([]);
   const [prPhotos, setPrPhotos] = useState([]);
   const [leaderboardEntries, setLeaderboardEntries] = useState([]);
-  const [editableHeroSlides, setEditableHeroSlides] = useState(() => getHeroSlides());
-  const [uploadingSlideIdx, setUploadingSlideIdx] = useState(null);
 
   // PR Media Folders & Folder Details State
   const [prFolders, setPrFolders] = useState([]);
@@ -113,34 +113,129 @@ export const SuperCoordinatorDashboardPage = () => {
   const [runnerUpHighlights, setRunnerUpHighlights] = useState('');
   const [uploadingRunnerUpPhoto, setUploadingRunnerUpPhoto] = useState(false);
 
-  // Student Photo Upload Handler
-  const handleStudentPhotoUpload = async (file, target = 'winner') => {
+  // Edit Leaderboard Entry Modal State
+  const [editingEntry, setEditingEntry] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const [editSportId, setEditSportId] = useState('football');
+  const [editMatchFormat, setEditMatchFormat] = useState('Team');
+  const [editMatchGender, setEditMatchGender] = useState('Boys');
+  const [editAthleticsSubEvent, setEditAthleticsSubEvent] = useState('100m Sprint');
+
+  const [editWinnerName, setEditWinnerName] = useState('');
+  const [editWinnerTeamName, setEditWinnerTeamName] = useState('');
+  const [editWinnerCollegeId, setEditWinnerCollegeId] = useState('MPEC');
+  const [editWinnerPhotoUrl, setEditWinnerPhotoUrl] = useState('');
+  const [editWinnerRollNo, setEditWinnerRollNo] = useState('');
+  const [editWinnerCourse, setEditWinnerCourse] = useState('B.Tech CSE');
+  const [editWinnerYearSem, setEditWinnerYearSem] = useState('3rd Yr (6th Sem)');
+  const [editWinnerHighlights, setEditWinnerHighlights] = useState('');
+  const [uploadingEditWinnerPhoto, setUploadingEditWinnerPhoto] = useState(false);
+
+  const [editRunnerUpName, setEditRunnerUpName] = useState('');
+  const [editRunnerUpTeamName, setEditRunnerUpTeamName] = useState('');
+  const [editRunnerUpCollegeId, setEditRunnerUpCollegeId] = useState('MIPS');
+  const [editRunnerUpPhotoUrl, setEditRunnerUpPhotoUrl] = useState('');
+  const [editRunnerUpRollNo, setEditRunnerUpRollNo] = useState('');
+  const [editRunnerUpCourse, setEditRunnerUpCourse] = useState('BCA');
+  const [editRunnerUpYearSem, setEditRunnerUpYearSem] = useState('2nd Yr (4th Sem)');
+  const [editRunnerUpHighlights, setEditRunnerUpHighlights] = useState('');
+  const [uploadingEditRunnerUpPhoto, setUploadingEditRunnerUpPhoto] = useState(false);
+
+  // Athlete Photo Cropper State
+  const [photoCropperState, setPhotoCropperState] = useState({
+    isOpen: false,
+    imageSrc: null,
+    target: 'winner', // 'winner' | 'runnerUp' | 'editWinner' | 'editRunnerUp'
+    title: '📸 Winner Athlete Photo - Zoom & Crop'
+  });
+
+  const handlePhotoFileSelect = (file, target = 'winner') => {
     if (!file) return;
-    const setUploading = target === 'winner' ? setUploadingWinnerPhoto : setUploadingRunnerUpPhoto;
-    const setPhoto = target === 'winner' ? setWinnerPhotoUrl : setRunnerUpPhotoUrl;
-    setUploading(true);
-    try {
-      const uploaded = await uploadFileToCloudinary(file, () => {}, 'sems_medals');
-      if (uploaded?.url) {
-        setPhoto(uploaded.url);
-        addToast(`${target === 'winner' ? 'Winner' : 'Runner-Up'} photo uploaded!`, 'success');
-        setUploading(false);
-        return;
-      }
-    } catch (e) {
-      console.warn('Cloudinary upload notice, using local file reader fallback:', e.message);
-    }
+    const isWinner = target.toLowerCase().includes('winner');
     const reader = new FileReader();
     reader.onload = (e) => {
-      setPhoto(e.target.result);
-      setUploading(false);
-      addToast(`${target === 'winner' ? 'Winner' : 'Runner-Up'} photo attached!`, 'success');
-    };
-    reader.onerror = () => {
-      setUploading(false);
-      addToast('Failed to read photo', 'error');
+      setPhotoCropperState({
+        isOpen: true,
+        imageSrc: e.target.result,
+        target,
+        title: isWinner ? '📸 Winner Athlete Photo - Zoom & Crop' : '📸 Runner-Up Athlete Photo - Zoom & Crop'
+      });
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleOpenCropperForExisting = (target) => {
+    let existingUrl = '';
+    if (target === 'winner') existingUrl = winnerPhotoUrl;
+    else if (target === 'runnerUp') existingUrl = runnerUpPhotoUrl;
+    else if (target === 'editWinner') existingUrl = editWinnerPhotoUrl;
+    else if (target === 'editRunnerUp') existingUrl = editRunnerUpPhotoUrl;
+
+    if (existingUrl) {
+      const isWinner = target.toLowerCase().includes('winner');
+      setPhotoCropperState({
+        isOpen: true,
+        imageSrc: existingUrl,
+        target,
+        title: isWinner ? '📸 Winner Athlete Photo - Zoom & Crop' : '📸 Runner-Up Athlete Photo - Zoom & Crop'
+      });
+    }
+  };
+
+  const handleCroppedPhotoComplete = async (finalDataUrl) => {
+    const target = photoCropperState.target;
+    setPhotoCropperState((prev) => ({ ...prev, isOpen: false }));
+    await applyFinalPhoto(finalDataUrl, target, 'cropped');
+  };
+
+  const handleUseOriginalPhoto = async (originalSrc) => {
+    const target = photoCropperState.target;
+    setPhotoCropperState((prev) => ({ ...prev, isOpen: false }));
+    await applyFinalPhoto(originalSrc, target, 'original');
+  };
+
+  const applyFinalPhoto = async (dataUrlOrUrl, target, mode = 'cropped') => {
+    const isWinner = target === 'winner' || target === 'editWinner';
+
+    // 1. Instantly update UI state for zero latency
+    if (target === 'winner') setWinnerPhotoUrl(dataUrlOrUrl);
+    else if (target === 'runnerUp') setRunnerUpPhotoUrl(dataUrlOrUrl);
+    else if (target === 'editWinner') setEditWinnerPhotoUrl(dataUrlOrUrl);
+    else if (target === 'editRunnerUp') setEditRunnerUpPhotoUrl(dataUrlOrUrl);
+
+    addToast(
+      `${isWinner ? 'Winner' : 'Runner-Up'} photo ${mode === 'cropped' ? 'cropped & attached' : 'attached'}!`,
+      'success'
+    );
+
+    // 2. Upload to Cloudinary if it's base64 dataUrl
+    if (dataUrlOrUrl && dataUrlOrUrl.startsWith('data:')) {
+      const setUploading =
+        target === 'winner' ? setUploadingWinnerPhoto :
+        target === 'runnerUp' ? setUploadingRunnerUpPhoto :
+        target === 'editWinner' ? setUploadingEditWinnerPhoto :
+        setUploadingEditRunnerUpPhoto;
+
+      setUploading(true);
+      try {
+        const res = await fetch(dataUrlOrUrl);
+        const blob = await res.blob();
+        const file = new File([blob], `${target}_athlete.jpg`, { type: 'image/jpeg' });
+        const uploaded = await uploadFileToCloudinary(file, () => {}, 'sems_medals');
+        if (uploaded?.url) {
+          if (target === 'winner') setWinnerPhotoUrl(uploaded.url);
+          else if (target === 'runnerUp') setRunnerUpPhotoUrl(uploaded.url);
+          else if (target === 'editWinner') setEditWinnerPhotoUrl(uploaded.url);
+          else if (target === 'editRunnerUp') setEditRunnerUpPhotoUrl(uploaded.url);
+        }
+      } catch (e) {
+        console.warn('Background Cloudinary upload notice, dataUrl preserved:', e);
+      } finally {
+        setUploading(false);
+      }
+    }
   };
 
   const handleAwardSportChange = (newSportId) => {
@@ -163,6 +258,12 @@ export const SuperCoordinatorDashboardPage = () => {
   const [selectedType, setSelectedType] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Pagination & Inspection Modal for Master Data
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const [selectedParticipant, setSelectedParticipant] = useState(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
   // Active Tab View: 'leaderboard' | 'coordinator_creations' | 'participants' | 'pr_gallery' | 'profile'
   const [activeTab, setActiveTab] = useState('leaderboard');
 
@@ -177,7 +278,7 @@ export const SuperCoordinatorDashboardPage = () => {
       return;
     }
 
-    const res = await superCoordinatorApi.changePassword(passwordForm.newPass);
+    const res = await superCoordinatorApi.changePassword(passwordForm.newPass, passwordForm.current);
     if (res.ok) {
       addToast('Super Coordinator Password updated in database successfully!', 'success');
       setShowPasswordModal(false);
@@ -208,13 +309,12 @@ export const SuperCoordinatorDashboardPage = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [eventsList, participantsList, photosList, lbList, foldersList, heroSlides] = await Promise.all([
+      const [eventsList, participantsList, photosList, lbList, foldersList] = await Promise.all([
         superCoordinatorApi.getCoordinatorEvents(),
         superCoordinatorApi.getMasterParticipants(),
         superCoordinatorApi.getPRPhotos(),
         superCoordinatorApi.getLeaderboardEntries(),
-        superCoordinatorApi.getPREventFolders(),
-        superCoordinatorApi.getHeroSlides().catch(() => null)
+        superCoordinatorApi.getPREventFolders()
       ]);
 
       setCoordinatorEvents(eventsList || []);
@@ -222,9 +322,11 @@ export const SuperCoordinatorDashboardPage = () => {
       setPrPhotos(photosList || []);
       setLeaderboardEntries(lbList || []);
       setPrFolders(foldersList || []);
-      if (heroSlides && Array.isArray(heroSlides) && heroSlides.length > 0) {
-        setEditableHeroSlides(heroSlides);
-        localStorage.setItem('sems_home_hero_slides', JSON.stringify(heroSlides));
+
+      if (Array.isArray(lbList)) {
+        try {
+          localStorage.setItem('sems_super_coord_leaderboard', JSON.stringify(lbList));
+        } catch (e) {}
       }
 
       if (selectedPRFolder) {
@@ -251,28 +353,33 @@ export const SuperCoordinatorDashboardPage = () => {
     }
   };
 
-  const handleSportChange = (sportId) => {
-    setSelectedSport(sportId);
+  const handleSportChange = (sportIdOrName) => {
+    setSelectedSport(sportIdOrName);
     setSelectedEvent('ALL');
+    setCurrentPage(1);
   };
 
   // Dynamic available events list based on selected sport
   const availableEvents = coordinatorEvents.filter((evt) => {
     if (selectedSport === 'ALL') return true;
-    const sId = (evt.sportId || '').toLowerCase().replace(/_/g, '-');
-    const sName = (evt.sportName || '').toLowerCase().replace(/_/g, '-');
-    const sel = selectedSport.toLowerCase().replace(/_/g, '-');
-    const isSelCricket = sel === 'cricket' || (sel.includes('cricket') && !sel.includes('gully'));
-    const isSelGully = sel.includes('gully');
+    const eSportKey = (evt.sportId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const sSportKey = selectedSport.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const eSportName = (evt.sportName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-    if (isSelCricket) {
-      if (sId.includes('gully') || sName.includes('gully')) return false;
-      return sId.includes('cricket') || sName.includes('cricket');
+    const isStdCricket = sSportKey === 'cricket';
+    const isGully = sSportKey.includes('gully');
+
+    if (isStdCricket) {
+      return (eSportKey.includes('cricket') || eSportName.includes('cricket')) && !eSportKey.includes('gully') && !eSportName.includes('gully');
     }
-    if (isSelGully) {
-      return sId.includes('gully') || sName.includes('gully');
+    if (isGully) {
+      return eSportKey.includes('gully') || eSportName.includes('gully');
     }
-    return sId === sel || sName.includes(sel);
+    return (
+      (eSportKey && (eSportKey === sSportKey || eSportKey.includes(sSportKey))) ||
+      (eSportName && (eSportName === sSportKey || eSportName.includes(sSportKey))) ||
+      (evt.sportName || '').toLowerCase().includes(selectedSport.toLowerCase())
+    );
   });
 
   // Calculate Inter-College Leaderboard Standings
@@ -384,7 +491,7 @@ export const SuperCoordinatorDashboardPage = () => {
         gender: matchGender,
         matchFormat,
         subEvent: isAthletics ? athleticsSubEvent : `${sportObj.name} Final`,
-        scoreSummary: 'Champion Match Declared by Super Coordinator',
+        scoreSummary: '',
         declaredAt: new Date().toISOString(),
         winner: {
           studentName: wName,
@@ -396,7 +503,7 @@ export const SuperCoordinatorDashboardPage = () => {
           course: winnerCourse.trim(),
           yearSemester: winnerYearSem.trim(),
           photoUrl: winnerPhotoUrl,
-          highlights: winnerHighlights.trim() || 'Champion Gold Medalist'
+          highlights: winnerHighlights.trim()
         },
         runnerUp: {
           studentName: rName,
@@ -408,7 +515,7 @@ export const SuperCoordinatorDashboardPage = () => {
           course: runnerUpCourse.trim(),
           yearSemester: runnerUpYearSem.trim(),
           photoUrl: runnerUpPhotoUrl,
-          highlights: runnerUpHighlights.trim() || 'Silver Medalist Runner-Up'
+          highlights: runnerUpHighlights.trim()
         }
       };
 
@@ -420,12 +527,18 @@ export const SuperCoordinatorDashboardPage = () => {
     }
 
     const res = await superCoordinatorApi.saveLeaderboardEntries(leaderboardEntries, newEntry);
+    let nextEntries = [];
     if (res && res.entry) {
-      setLeaderboardEntries([res.entry, ...leaderboardEntries]);
+      nextEntries = [res.entry, ...leaderboardEntries];
+      setLeaderboardEntries(nextEntries);
     } else {
-      const freshEntries = await superCoordinatorApi.getLeaderboardEntries();
-      setLeaderboardEntries(freshEntries);
+      nextEntries = await superCoordinatorApi.getLeaderboardEntries();
+      setLeaderboardEntries(nextEntries);
     }
+
+    try {
+      localStorage.setItem('sems_super_coord_leaderboard', JSON.stringify(nextEntries));
+    } catch (e) {}
 
     // Trigger reactive updates on Leaderboard
     window.dispatchEvent(new Event('sems_leaderboard_updated'));
@@ -474,9 +587,18 @@ export const SuperCoordinatorDashboardPage = () => {
 
       const res = await superCoordinatorApi.deleteLeaderboardEntry(id);
       if (res !== false) {
-        setLeaderboardEntries((prev) => prev.filter((e) => e.id !== id));
+        const remaining = leaderboardEntries.filter((e) => e.id !== id);
+        setLeaderboardEntries(remaining);
+        try {
+          localStorage.setItem('sems_super_coord_leaderboard', JSON.stringify(remaining));
+        } catch (e) {}
         const freshEntries = await superCoordinatorApi.getLeaderboardEntries();
-        if (freshEntries) setLeaderboardEntries(freshEntries);
+        if (freshEntries) {
+          setLeaderboardEntries(freshEntries);
+          try {
+            localStorage.setItem('sems_super_coord_leaderboard', JSON.stringify(freshEntries));
+          } catch (e) {}
+        }
         window.dispatchEvent(new Event('sems_leaderboard_updated'));
         window.dispatchEvent(new Event('storage'));
         addToast('Leaderboard entry removed from database', 'info');
@@ -486,6 +608,182 @@ export const SuperCoordinatorDashboardPage = () => {
     } catch (err) {
       console.error('Error deleting leaderboard entry:', err);
       addToast(err.message || 'Failed to delete leaderboard entry', 'error');
+    }
+  };
+
+  const handleOpenEditModal = (entry) => {
+    setEditingEntry(entry);
+    const matchedSport = ALL_12_SPORTS.find((s) => s.id === entry.sportId || entry.sportName?.toLowerCase().includes(s.name.toLowerCase()));
+    const sId = matchedSport?.id || entry.sportId || 'football';
+    setEditSportId(sId);
+    setEditMatchFormat(entry.matchFormat || 'Team');
+    setEditMatchGender(entry.gender || 'Boys');
+    setEditAthleticsSubEvent(entry.athleticsSubEvent || entry.subEvent || '100m Sprint');
+
+    setEditWinnerName(entry.winnerName || '');
+    setEditWinnerTeamName(entry.winnerTeamName || entry.winnerName || '');
+    setEditWinnerCollegeId(entry.winnerCollege || 'MPEC');
+    setEditWinnerPhotoUrl(entry.winnerPhotoUrl || '');
+    setEditWinnerRollNo(entry.winnerRollNo || '');
+    setEditWinnerCourse(entry.winnerCourse || 'B.Tech CSE');
+    setEditWinnerYearSem(entry.winnerYearSem || '3rd Yr (6th Sem)');
+    setEditWinnerHighlights(entry.winnerHighlights || '');
+
+    setEditRunnerUpName(entry.runnerUpName || '');
+    setEditRunnerUpTeamName(entry.runnerUpTeamName || entry.runnerUpName || '');
+    setEditRunnerUpCollegeId(entry.runnerUpCollege || 'MIPS');
+    setEditRunnerUpPhotoUrl(entry.runnerUpPhotoUrl || '');
+    setEditRunnerUpRollNo(entry.runnerUpRollNo || '');
+    setEditRunnerUpCourse(entry.runnerUpCourse || 'BCA');
+    setEditRunnerUpYearSem(entry.runnerUpYearSem || '2nd Yr (4th Sem)');
+    setEditRunnerUpHighlights(entry.runnerUpHighlights || '');
+
+    setShowEditModal(true);
+  };
+
+
+  const handleSaveEditedEntry = async (e) => {
+    if (e) e.preventDefault();
+    if (!editingEntry) return;
+
+    if (!editWinnerName.trim() && !editWinnerTeamName.trim()) {
+      addToast('Please enter Winner Player Name or Winner Team Name', 'error');
+      return;
+    }
+    if (!editRunnerUpName.trim() && !editRunnerUpTeamName.trim()) {
+      addToast('Please enter Runner-Up Player Name or Runner-Up Team Name', 'error');
+      return;
+    }
+
+    try {
+      setSavingEdit(true);
+      const isAthletics = editSportId.toLowerCase().includes('athletics');
+      const sportObj = ALL_12_SPORTS.find((s) => s.id === editSportId) || ALL_12_SPORTS[0];
+      const winnerObj = ALL_COLLEGES.find((c) => c.id === editWinnerCollegeId) || ALL_COLLEGES[0];
+      const runnerObj = ALL_COLLEGES.find((c) => c.id === editRunnerUpCollegeId) || ALL_COLLEGES[1];
+
+      const finalSportName = isAthletics ? `Athletics (${editAthleticsSubEvent})` : sportObj.name;
+      const wName = editWinnerName.trim() || editWinnerTeamName.trim();
+      const wTeam = editWinnerTeamName.trim() || editWinnerName.trim();
+      const rName = editRunnerUpName.trim() || editRunnerUpTeamName.trim();
+      const rTeam = editRunnerUpTeamName.trim() || editRunnerUpName.trim();
+
+      const updatedPayload = {
+        id: editingEntry.id,
+        sportId: sportObj.id,
+        sportName: finalSportName,
+        athleticsSubEvent: isAthletics ? editAthleticsSubEvent : null,
+        matchFormat: editMatchFormat,
+        gender: editMatchGender,
+
+        winnerName: wName,
+        winnerTeamName: wTeam,
+        winnerCollege: winnerObj.id,
+        winnerCollegeName: winnerObj.name,
+        winnerPoints: 5,
+        winnerPhotoUrl: editWinnerPhotoUrl,
+        winnerRollNo: editWinnerRollNo,
+        winnerCourse: editWinnerCourse,
+        winnerYearSem: editWinnerYearSem,
+        winnerHighlights: editWinnerHighlights,
+
+        runnerUpName: rName,
+        runnerUpTeamName: rTeam,
+        runnerUpCollege: runnerObj.id,
+        runnerUpCollegeName: runnerObj.name,
+        runnerUpPoints: 3,
+        runnerUpPhotoUrl: editRunnerUpPhotoUrl,
+        runnerUpRollNo: editRunnerUpRollNo,
+        runnerUpCourse: editRunnerUpCourse,
+        runnerUpYearSem: editRunnerUpYearSem,
+        runnerUpHighlights: editRunnerUpHighlights,
+
+        date: editingEntry.date || new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
+      };
+
+      // 1. Sync custom medal entries in localStorage for live showcase
+      try {
+        const medalEntryId = `medal-${editingEntry.id}`;
+        const sportEmoji = 
+          sportObj.id.includes('badminton') ? '🏸' :
+          sportObj.id.includes('cricket') ? '🏏' :
+          sportObj.id.includes('football') ? '⚽' :
+          sportObj.id.includes('chess') ? '♟️' :
+          sportObj.id.includes('table-tennis') || sportObj.id.includes('tt') ? '🏓' :
+          sportObj.id.includes('basketball') ? '🏀' :
+          sportObj.id.includes('volleyball') ? '🏐' :
+          sportObj.id.includes('kabaddi') ? '🤼' :
+          sportObj.id.includes('athletics') ? '🏃‍♂️' :
+          sportObj.id.includes('kho') ? '🏃' :
+          sportObj.id.includes('tug') ? '🪢' : '🏆';
+
+        const medalItem = {
+          id: medalEntryId,
+          sportId: sportObj.id,
+          sportName: finalSportName,
+          sportIcon: sportEmoji,
+          gender: editMatchGender,
+          matchFormat: editMatchFormat,
+          subEvent: isAthletics ? editAthleticsSubEvent : `${sportObj.name} Final`,
+          scoreSummary: '',
+          declaredAt: new Date().toISOString(),
+          winner: {
+            studentName: wName,
+            teamName: wTeam,
+            collegeCode: winnerObj.id,
+            collegeName: winnerObj.name,
+            medal: 'GOLD',
+            rollNo: editWinnerRollNo.trim(),
+            course: editWinnerCourse.trim(),
+            yearSemester: editWinnerYearSem.trim(),
+            photoUrl: editWinnerPhotoUrl,
+            highlights: editWinnerHighlights.trim()
+          },
+          runnerUp: {
+            studentName: rName,
+            teamName: rTeam,
+            collegeCode: runnerObj.id,
+            collegeName: runnerObj.name,
+            medal: 'SILVER',
+            rollNo: editRunnerUpRollNo.trim(),
+            course: editRunnerUpCourse.trim(),
+            yearSemester: editRunnerUpYearSem.trim(),
+            photoUrl: editRunnerUpPhotoUrl,
+            highlights: editRunnerUpHighlights.trim()
+          }
+        };
+
+        const existingMedals = JSON.parse(localStorage.getItem('sems_custom_medal_entries') || '[]');
+        const updatedMedals = [medalItem, ...existingMedals.filter((m) => m.id !== medalEntryId)];
+        localStorage.setItem('sems_custom_medal_entries', JSON.stringify(updatedMedals));
+      } catch (err) {
+        console.error('Error syncing custom medal entries on edit:', err);
+      }
+
+      // 2. Call backend update API
+      await superCoordinatorApi.updateLeaderboardEntry(editingEntry.id, updatedPayload);
+
+      // 3. Update state in-place
+      const updatedList = leaderboardEntries.map((item) =>
+        String(item.id) === String(editingEntry.id) ? { ...item, ...updatedPayload } : item
+      );
+      setLeaderboardEntries(updatedList);
+      try {
+        localStorage.setItem('sems_super_coord_leaderboard', JSON.stringify(updatedList));
+      } catch (e) {}
+
+      // Reactive events
+      window.dispatchEvent(new Event('sems_leaderboard_updated'));
+      window.dispatchEvent(new Event('storage'));
+
+      addToast(`Result Entry Updated! ${finalSportName} details and standings updated successfully.`, 'success');
+      setShowEditModal(false);
+      setEditingEntry(null);
+    } catch (err) {
+      console.error('Error updating leaderboard entry:', err);
+      addToast(err.message || 'Failed to update result entry', 'error');
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -536,22 +834,25 @@ export const SuperCoordinatorDashboardPage = () => {
 
   // Filtered Participants Logic
   const filteredParticipants = masterParticipants.filter((p) => {
-    let matchesSport = false;
-    if (selectedSport === 'ALL') {
-      matchesSport = true;
-    } else {
-      const sId = (p.sportId || '').toLowerCase().replace(/_/g, '-');
-      const sName = (p.sportName || '').toLowerCase().replace(/_/g, '-');
-      const sel = selectedSport.toLowerCase().replace(/_/g, '-');
-      const isSelCricket = sel === 'cricket' || (sel.includes('cricket') && !sel.includes('gully'));
-      const isSelGully = sel.includes('gully');
+    const pSportKey = (p.sportId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const sSportKey = selectedSport.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const pSportName = (p.sportName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-      if (isSelCricket) {
-        matchesSport = (!sId.includes('gully') && !sName.includes('gully')) && (sId.includes('cricket') || sName.includes('cricket'));
-      } else if (isSelGully) {
-        matchesSport = sId.includes('gully') || sName.includes('gully');
+    const isStdCricket = sSportKey === 'cricket';
+    const isGully = sSportKey.includes('gully');
+
+    let matchesSport = selectedSport === 'ALL';
+    if (!matchesSport) {
+      if (isStdCricket) {
+        matchesSport = (pSportKey.includes('cricket') || pSportName.includes('cricket')) && !pSportKey.includes('gully') && !pSportName.includes('gully');
+      } else if (isGully) {
+        matchesSport = pSportKey.includes('gully') || pSportName.includes('gully');
       } else {
-        matchesSport = sId === sel || sName.includes(sel);
+        matchesSport = (
+          (pSportKey && (pSportKey === sSportKey || pSportKey.includes(sSportKey))) ||
+          (pSportName && (pSportName === sSportKey || pSportName.includes(sSportKey))) ||
+          ((p.sportName || '').toLowerCase() === selectedSport.toLowerCase())
+        );
       }
     }
     const matchesEvent = selectedEvent === 'ALL' ||
@@ -575,83 +876,78 @@ export const SuperCoordinatorDashboardPage = () => {
       (p.teamName || '').toLowerCase().includes(q) ||
       (p.mobile || '').toLowerCase().includes(q) ||
       (p.email || '').toLowerCase().includes(q) ||
-      (p.college || '').toLowerCase().includes(q);
+      (p.college || '').toLowerCase().includes(q) ||
+      (p.sportName || '').toLowerCase().includes(q) ||
+      (p.receiptId || '').toLowerCase().includes(q) ||
+      (p.registrationId || '').toLowerCase().includes(q) ||
+      (p.id || '').toLowerCase().includes(q) ||
+      (p.rollNo || '').toLowerCase().includes(q);
 
     return matchesSport && matchesEvent && matchesGender && matchesCollege && matchesType && matchesSearch;
   });
 
-  // Handle Export Filtered Excel (CSV) Report
-  const handleExportFilteredExcel = () => {
+  const totalPages = Math.max(1, Math.ceil(filteredParticipants.length / itemsPerPage));
+  const paginatedParticipants = filteredParticipants.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handleExportCSV = () => {
     if (filteredParticipants.length === 0) {
-      addToast('No participant records matching current filters to export', 'warning');
+      addToast('No data available to export', 'error');
       return;
     }
+    const exportData = filteredParticipants.map((p, idx) => ({
+      'S.No.': idx + 1,
+      'Registration ID': p.receiptId || p.registrationId || p.id || 'N/A',
+      'Registration Date': p.date || 'N/A',
+      'Registration Time': p.time || 'N/A',
+      'Participation Type': p.participationType || getParticipationType(p),
+      'Sport': p.sportName || 'N/A',
+      'Event': p.eventTitle || `${p.sportName || 'Sport'} Championship`,
+      'Team Name': p.teamName || p.name || 'N/A',
+      'College': p.college || 'N/A',
+      'Player Name': p.name || 'N/A',
+      'Role': (p.isCaptain === true || p.isCaptain === 1 || p.isCaptain === 'true' || p.isCaptain === '1') ? 'Captain' : 'Player',
+      'Roll Number': p.rollNo || 'N/A',
+      'Mobile Number': p.mobile || 'N/A',
+      'Email Address': p.email || 'N/A',
+      'Gender': p.gender || 'N/A',
+      'Course': p.course || 'N/A',
+      'Year / Semester': p.yearSemester || 'N/A',
+      'Status': p.status || 'VERIFIED'
+    }));
+    exportToCSV(exportData, `Super_Coordinator_Master_Roster_${new Date().toISOString().split('T')[0]}`);
+    addToast('Super Coordinator Master Roster exported to CSV successfully!', 'success');
+  };
 
-    const headers = [
-      'Registration ID',
-      'Registration Date',
-      'Registration Time',
-      'Participation Type',
-      'Game / Sport',
-      'Event Registration Title',
-      'Team Name',
-      'College Name',
-      'Student Name',
-      'Mobile Number',
-      'Email Address',
-      'Gender',
-      'Verification Status'
-    ];
-
-    const rows = filteredParticipants.map((p) => [
+  const handleExportPDF = () => {
+    if (filteredParticipants.length === 0) {
+      addToast('No data available to export', 'error');
+      return;
+    }
+    const headers = ['#', 'Reg ID', 'Type', 'Sport', 'Team Name', 'College', 'Player Name', 'Role', 'Roll No', 'Mobile', 'Course', 'Status'];
+    const rows = filteredParticipants.map((p, idx) => [
+      idx + 1,
       p.receiptId || p.registrationId || p.id || 'N/A',
-      p.date || 'N/A',
-      p.time || '10:00 AM',
       p.participationType || getParticipationType(p),
-      p.sportName || 'Sport',
-      p.eventTitle || `${p.sportName || 'Sport'} Event`,
-      p.teamName || 'N/A',
-      p.college || 'MPEC',
-      p.name || 'Student',
+      p.sportName || 'N/A',
+      p.teamName || p.name || 'N/A',
+      p.college || 'N/A',
+      p.name || 'N/A',
+      (p.isCaptain === true || p.isCaptain === 1 || p.isCaptain === 'true' || p.isCaptain === '1') ? 'Captain' : 'Player',
+      p.rollNo || 'N/A',
       p.mobile || 'N/A',
-      p.email || 'N/A',
-      p.gender || 'Boys',
+      p.course || 'N/A',
       p.status || 'VERIFIED'
     ]);
-
-    const sportTag = selectedSport !== 'ALL' ? selectedSport : 'AllSports';
-    const eventTag = selectedEvent !== 'ALL' ? selectedEvent.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20) : '';
-    const fileName = `Filtered_Participants_${sportTag}${eventTag ? '_' + eventTag : ''}_${new Date().toISOString().split('T')[0]}.csv`;
-
-    exportToCSV(fileName, headers, rows);
-    addToast(`Exported ${filteredParticipants.length} filtered participant records to Excel (CSV)`, 'success');
+    exportToPDF('APEX 2026 - Master Participants Official Roster', headers, rows, `Super_Coordinator_Master_Roster_${new Date().toISOString().split('T')[0]}`);
+    addToast('Super Coordinator Master Roster exported to PDF successfully!', 'success');
   };
 
-  const handleUpdateSlideField = (idx, field, value) => {
-    const updated = editableHeroSlides.map((s, i) => (i === idx ? { ...s, [field]: value } : s));
-    setEditableHeroSlides(updated);
-  };
+  // Retain handleExportFilteredExcel for backward compatibility
+  const handleExportFilteredExcel = handleExportCSV;
 
-  const handleSaveHeroSlides = async () => {
-    try {
-      await saveHeroSlides(editableHeroSlides);
-      addToast('Hero 5-Slide Carousel updated & saved to Database! Home Page updated live in real time.', 'success');
-    } catch (e) {
-      addToast(`Error saving slides to database: ${e.message}`, 'error');
-    }
-  };
-
-  const handleResetHeroSlides = async () => {
-    if (window.confirm('Reset all 5 slides to default configuration?')) {
-      setEditableHeroSlides(DEFAULT_HERO_SLIDES);
-      try {
-        await saveHeroSlides(DEFAULT_HERO_SLIDES);
-        addToast('Reset Hero Slides to default and saved to Database!', 'info');
-      } catch (e) {
-        addToast(`Error resetting slides: ${e.message}`, 'error');
-      }
-    }
-  };
 
   return (
     <div className="super-coordinator-portal-root min-h-screen bg-[#FAF9F6] dark:bg-[#070A13] text-[#211D2B] dark:text-[#F5F2FA] transition-colors font-spatial-sans pb-16 w-full overflow-x-hidden relative">
@@ -684,17 +980,6 @@ export const SuperCoordinatorDashboardPage = () => {
             <span>🏆 Leaderboard & Winner Entry</span>
           </button>
 
-          <button
-            onClick={() => setActiveTab('hero_slider')}
-            className={`px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer shrink-0 min-h-[44px] sm:min-h-[48px] ${
-              activeTab === 'hero_slider'
-                ? 'bg-[#7156A5] dark:bg-[#8B5CF6] text-white shadow-md shadow-purple-500/20'
-                : 'text-[#686370] dark:text-[#AAA4B8] hover:text-[#211D2B] dark:hover:text-[#F5F2FA] hover:bg-[#F4F2F7] dark:hover:bg-[#121625]'
-            }`}
-          >
-            <Sparkles className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
-            <span>🎨 Home Hero Slider (5 Slides)</span>
-          </button>
 
           <button
             onClick={() => setActiveTab('match_results')}
@@ -757,246 +1042,7 @@ export const SuperCoordinatorDashboardPage = () => {
           </button>
         </div>
 
-        {/* SECTION: HOME HERO SLIDER MANAGEMENT */}
-        {activeTab === 'hero_slider' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[11px] font-mono font-bold uppercase">
-                    SUPER COORDINATOR CONTROL
-                  </span>
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                    Home Hero 5-Slide Carousel Management
-                  </h2>
-                </div>
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5">
-                  Update Title, Description, Image URL, and Buttons for each of the 5 Home Page Hero Slides.
-                </p>
-              </div>
 
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleResetHeroSlides}
-                  className="px-5 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs sm:text-sm transition border border-slate-200 dark:border-slate-700 cursor-pointer min-h-[46px]"
-                >
-                  Reset Defaults
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveHeroSlides}
-                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs sm:text-sm shadow-md shadow-blue-500/25 transition flex items-center gap-2 cursor-pointer active:scale-95 min-h-[46px]"
-                >
-                  <Sparkles className="w-4 h-4 text-white" />
-                  <span>Save All 5 Slides</span>
-                </button>
-              </div>
-            </div>
-
-            {/* 5 Slide Edit Forms */}
-            <div className="space-y-6">
-              {editableHeroSlides.map((slide, idx) => (
-                <div
-                  key={slide.id || idx}
-                  className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5"
-                >
-                  <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-                    <div className="flex items-center gap-3">
-                      <span className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-black text-sm flex items-center justify-center">
-                        {idx + 1}
-                      </span>
-                      <h3 className="font-black text-sm sm:text-base text-slate-900 dark:text-white uppercase tracking-wide">
-                        Slide {idx + 1} Settings
-                      </h3>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={slide.image || DEFAULT_HERO_SLIDES[idx]?.image}
-                        alt={slide.title}
-                        className="w-14 h-9 rounded-xl object-cover border border-slate-700 bg-slate-900 shadow-sm"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = DEFAULT_HERO_SLIDES[idx]?.image || DEFAULT_HERO_SLIDES[0].image;
-                        }}
-                      />
-                      <span className="px-3 py-1.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono text-xs font-bold border border-blue-500/20">
-                        Slide #{idx + 1}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {/* Title / Heading */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-mono font-bold uppercase text-slate-600 dark:text-slate-400 block">
-                        Heading Title <span className="text-rose-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={slide.title || ''}
-                        onChange={(e) => handleUpdateSlideField(idx, 'title', e.target.value)}
-                        className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 min-h-[48px]"
-                        placeholder="Slide Heading..."
-                      />
-                    </div>
-
-                    {/* Image URL & File Upload */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-mono font-bold uppercase text-slate-600 dark:text-slate-400 block">
-                        Background Image (URL or Local File Upload) <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-                        <input
-                          type="text"
-                          value={slide.image || ''}
-                          onChange={(e) => handleUpdateSlideField(idx, 'image', e.target.value)}
-                          className="flex-1 px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 min-h-[48px]"
-                          placeholder="Paste image URL or click upload..."
-                        />
-                        <label className={`px-5 py-3 rounded-2xl text-white font-black text-xs sm:text-sm cursor-pointer flex items-center justify-center gap-2 shrink-0 transition active:scale-95 shadow-sm min-h-[48px] ${
-                          uploadingSlideIdx === idx ? 'bg-blue-400 opacity-80 cursor-wait' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500'
-                        }`}>
-                          {uploadingSlideIdx === idx ? (
-                            <>
-                              <RefreshCw className="w-4 h-4 animate-spin" />
-                              <span>Uploading...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="w-4 h-4" />
-                              <span>Upload File</span>
-                            </>
-                          )}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                try {
-                                  setUploadingSlideIdx(idx);
-                                  addToast(`Uploading image for Slide ${idx + 1}...`, 'info');
-                                  const cloudRes = await uploadFileToCloudinary(file, () => {}, 'sems_gallery');
-                                  if (cloudRes && cloudRes.url) {
-                                    handleUpdateSlideField(idx, 'image', cloudRes.url);
-                                    addToast(`Uploaded custom image for Slide ${idx + 1}! Click 'Save All 5 Slides' to save live.`, 'success');
-                                  }
-                                } catch (err) {
-                                  addToast(err.message || 'Failed to upload image', 'error');
-                                } finally {
-                                  setUploadingSlideIdx(null);
-                                }
-                              }
-                            }}
-                            className="hidden"
-                            disabled={uploadingSlideIdx === idx}
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Description / Subtitle */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-mono font-bold uppercase text-slate-600 dark:text-slate-400 block">
-                      Subtitle / Description Text <span className="text-rose-500">*</span>
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={slide.description || ''}
-                      onChange={(e) => handleUpdateSlideField(idx, 'description', e.target.value)}
-                      className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
-                      placeholder="Slide description text..."
-                    />
-                  </div>
-
-                  {/* Buttons Settings */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-mono font-bold text-slate-500 uppercase block">
-                        Primary Button Text
-                      </label>
-                      <input
-                        type="text"
-                        value={slide.primaryBtnText || ''}
-                        onChange={(e) => handleUpdateSlideField(idx, 'primaryBtnText', e.target.value)}
-                        className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 min-h-[48px]"
-                        placeholder="e.g. Register Your Team"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-mono font-bold text-slate-500 uppercase block">
-                        Primary Button Route/Link
-                      </label>
-                      <input
-                        type="text"
-                        value={slide.primaryBtnLink || ''}
-                        onChange={(e) => handleUpdateSlideField(idx, 'primaryBtnLink', e.target.value)}
-                        className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 min-h-[48px]"
-                        placeholder="e.g. /registration"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-mono font-bold text-slate-500 uppercase block">
-                        Secondary Button Text
-                      </label>
-                      <input
-                        type="text"
-                        value={slide.secondaryBtnText || ''}
-                        onChange={(e) => handleUpdateSlideField(idx, 'secondaryBtnText', e.target.value)}
-                        className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 min-h-[48px]"
-                        placeholder="e.g. View Live Score"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-mono font-bold text-slate-500 uppercase block">
-                        Secondary Button Route/Link
-                      </label>
-                      <input
-                        type="text"
-                        value={slide.secondaryBtnLink || ''}
-                        onChange={(e) => handleUpdateSlideField(idx, 'secondaryBtnLink', e.target.value)}
-                        className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 min-h-[48px]"
-                        placeholder="e.g. /live"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Card Visual Preview Footer */}
-                  <div className="pt-2">
-                    <div className="relative rounded-2xl overflow-hidden h-28 sm:h-36 border border-slate-800 shadow-inner">
-                      <img
-                        src={slide.image || DEFAULT_HERO_SLIDES[idx]?.image}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = DEFAULT_HERO_SLIDES[idx]?.image || DEFAULT_HERO_SLIDES[0].image;
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/50 to-transparent flex items-end p-4 sm:p-5">
-                        <div className="space-y-1">
-                          <span className="px-2.5 py-1 rounded-md bg-blue-500/20 text-blue-400 text-[10px] font-mono font-bold uppercase border border-blue-500/30">
-                            Slide #{idx + 1} Visual Card Preview
-                          </span>
-                          <h4 className="text-sm sm:text-base font-black text-white uppercase tracking-tight line-clamp-1">
-                            {slide.title || 'Slide Title Preview'}
-                          </h4>
-                          <p className="text-xs text-slate-300 line-clamp-1 font-normal">
-                            {slide.description || 'Slide description preview text.'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* SECTION 0: INTER-COLLEGE CHAMPIONSHIP LEADERBOARD */}
         {(activeTab === 'leaderboard' || activeTab === 'dashboard') && (
@@ -1186,14 +1232,24 @@ export const SuperCoordinatorDashboardPage = () => {
                           {winnerPhotoUrl ? (
                             <>
                               <img src={winnerPhotoUrl} alt="Winner" className="w-full h-full object-cover" />
-                              <button
-                                type="button"
-                                onClick={() => setWinnerPhotoUrl('')}
-                                className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
-                                title="Remove photo"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenCropperForExisting('winner')}
+                                  className="w-6 h-6 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                  title="Zoom & Crop Photo"
+                                >
+                                  <Crop className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setWinnerPhotoUrl('')}
+                                  className="w-6 h-6 rounded-lg bg-red-600 hover:bg-red-500 text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                  title="Remove photo"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </>
                           ) : (
                             <User className="w-7 h-7 text-slate-400" />
@@ -1202,20 +1258,37 @@ export const SuperCoordinatorDashboardPage = () => {
                             <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-[9px] font-mono">Uploading...</div>
                           )}
                         </div>
-                        <div className="flex-1 space-y-1">
+                        <div className="flex-1 space-y-1.5">
                           <label className="block text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
                             📸 Winner Athlete Photo
                           </label>
-                          <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
-                            <Camera className="w-3.5 h-3.5" />
-                            <span>Upload Photo</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => e.target.files?.[0] && handleStudentPhotoUpload(e.target.files[0], 'winner')}
-                            />
-                          </label>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
+                              <Camera className="w-3.5 h-3.5" />
+                              <span>{winnerPhotoUrl ? 'Change Photo' : 'Upload Photo'}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  if (e.target.files?.[0]) {
+                                    handlePhotoFileSelect(e.target.files[0], 'winner');
+                                    e.target.value = '';
+                                  }
+                                }}
+                              />
+                            </label>
+                            {winnerPhotoUrl && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenCropperForExisting('winner')}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-emerald-400 dark:border-emerald-700/60 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition cursor-pointer"
+                              >
+                                <Crop className="w-3.5 h-3.5" />
+                                <span>Zoom & Crop</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -1329,14 +1402,24 @@ export const SuperCoordinatorDashboardPage = () => {
                           {runnerUpPhotoUrl ? (
                             <>
                               <img src={runnerUpPhotoUrl} alt="Runner-Up" className="w-full h-full object-cover" />
-                              <button
-                                type="button"
-                                onClick={() => setRunnerUpPhotoUrl('')}
-                                className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
-                                title="Remove photo"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenCropperForExisting('runnerUp')}
+                                  className="w-6 h-6 rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                  title="Zoom & Crop Photo"
+                                >
+                                  <Crop className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setRunnerUpPhotoUrl('')}
+                                  className="w-6 h-6 rounded-lg bg-red-600 hover:bg-red-500 text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                  title="Remove photo"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </>
                           ) : (
                             <User className="w-7 h-7 text-slate-400" />
@@ -1345,20 +1428,37 @@ export const SuperCoordinatorDashboardPage = () => {
                             <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-[9px] font-mono">Uploading...</div>
                           )}
                         </div>
-                        <div className="flex-1 space-y-1">
+                        <div className="flex-1 space-y-1.5">
                           <label className="block text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
                             📸 Runner-Up Athlete Photo
                           </label>
-                          <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
-                            <Camera className="w-3.5 h-3.5" />
-                            <span>Upload Photo</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => e.target.files?.[0] && handleStudentPhotoUpload(e.target.files[0], 'runnerup')}
-                            />
-                          </label>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
+                              <Camera className="w-3.5 h-3.5" />
+                              <span>{runnerUpPhotoUrl ? 'Change Photo' : 'Upload Photo'}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  if (e.target.files?.[0]) {
+                                    handlePhotoFileSelect(e.target.files[0], 'runnerUp');
+                                    e.target.value = '';
+                                  }
+                                }}
+                              />
+                            </label>
+                            {runnerUpPhotoUrl && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenCropperForExisting('runnerUp')}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-blue-400 dark:border-blue-700/60 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-bold hover:bg-blue-100 transition cursor-pointer"
+                              >
+                                <Crop className="w-3.5 h-3.5" />
+                                <span>Zoom & Crop</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -1510,11 +1610,21 @@ export const SuperCoordinatorDashboardPage = () => {
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-3 text-[11px] sm:text-xs font-mono">
+                        <div className="flex items-center gap-2 text-[11px] sm:text-xs font-mono">
                           <span className="text-slate-500">{entry.date}</span>
                           <button
+                            type="button"
+                            onClick={() => handleOpenEditModal(entry)}
+                            className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold text-xs transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                            title="Edit match result entry"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => handleDeleteLeaderboardEntry(entry.id)}
-                            className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs transition cursor-pointer"
+                            className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs transition cursor-pointer flex items-center gap-1 shadow-2xs"
                             title="Delete result entry"
                           >
                             Delete
@@ -1712,12 +1822,13 @@ export const SuperCoordinatorDashboardPage = () => {
                         <th className="p-4 sm:p-5 whitespace-nowrap">Gender</th>
                         <th className="p-4 sm:p-5 min-w-[260px]">🥇 Winner (1st Place)</th>
                         <th className="p-4 sm:p-5 min-w-[260px]">🥈 Runner-Up (2nd Place)</th>
+                        <th className="p-4 sm:p-5 text-right whitespace-nowrap">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-xs sm:text-sm">
                       {filteredDeclaredResults.length === 0 ? (
                         <tr>
-                          <td colSpan="6" className="p-12 text-center text-slate-500 italic">
+                          <td colSpan="7" className="p-12 text-center text-slate-500 italic">
                             No declared match results matching the selected filters.
                           </td>
                         </tr>
@@ -1770,6 +1881,29 @@ export const SuperCoordinatorDashboardPage = () => {
                                 <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
                                   🏫 College: <span className="font-bold text-slate-700 dark:text-slate-300">{entry.runnerUpCollegeName || entry.runnerUpCollege}</span>
                                 </div>
+                              </div>
+                            </td>
+
+                            {/* Actions Column */}
+                            <td className="p-4 sm:p-5 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-1.5 font-mono">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditModal(entry)}
+                                  className="px-2.5 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold text-xs transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                                  title="Edit result entry"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                  <span>Edit</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteLeaderboardEntry(entry.id)}
+                                  className="px-2.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                                  title="Delete result entry"
+                                >
+                                  Delete
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -1882,148 +2016,56 @@ export const SuperCoordinatorDashboardPage = () => {
         )}
 
 
-        {/* SECTION 3: MASTER PARTICIPANT DATABASE WITH MULTI-FILTERS */}
+        {/* SECTION 3: MASTER PARTICIPANT DATABASE WITH MULTI-FILTERS (ADMIN REPLICATED, READ-ONLY) */}
         {(activeTab === 'participants') && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                  <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  Master Participant Database & Multi-Filter Control
-                </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400">
-                  Filter participants by Game, Event Title, Gender, College, or Search Name
+          <div className="space-y-6 animate-fade-in">
+            {/* Header Banner */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl transition-colors">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                    Super Coordinator Portal
+                  </span>
+                </div>
+                <h1 className="text-2xl font-black text-slate-900 dark:text-white">Master Data / Participants Roster</h1>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Central database of all registered fest participants & squad rosters ({masterParticipants.length} Total Records)
                 </p>
               </div>
 
-              <button
-                onClick={handleExportFilteredExcel}
-                className="px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm shadow-md transition flex items-center gap-2 cursor-pointer active:scale-95 shrink-0 min-h-[46px]"
-                title="Export ONLY the displayed filtered student records below"
-              >
-                <Download className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-slate-950" />
-                <span>Export Filtered Excel ({filteredParticipants.length})</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleExportCSV}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  <span>CSV</span>
+                </button>
+                <button
+                  onClick={handleExportPDF}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>PDF</span>
+                </button>
+                <button
+                  onClick={fetchDashboardData}
+                  className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                  title="Refresh list"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
-            {/* Filter Control Bar */}
-            <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md dark:shadow-xl space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                
-                {/* 1. Sport / Game Filter */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
-                    🎯 Filter by Game
-                  </label>
-                  <select
-                    value={selectedSport}
-                    onChange={(e) => handleSportChange(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
-                  >
-                    <option value="ALL">All 12 Sports</option>
-                    {ALL_12_SPORTS.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.icon} {s.name}
-                      </option>
-                    ))}
-                  </select>
+            {/* 6 FILTERS CONTROL BAR */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm transition-colors">
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+                  <Filter className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span>Master Data Filters</span>
                 </div>
 
-                {/* 2. Event Title Filter (Populated dynamically) */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-mono font-bold text-blue-600 dark:text-blue-400 uppercase">
-                    📋 Filter by Event Title
-                  </label>
-                  <select
-                    value={selectedEvent}
-                    onChange={(e) => setSelectedEvent(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-blue-500/40 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
-                  >
-                    <option value="ALL">All Created Events ({availableEvents.length})</option>
-                    {availableEvents.map((evt) => (
-                      <option key={evt.id} value={evt.eventTitle}>
-                        {evt.eventTitle}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* 3. Gender Filter */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
-                    ⚧️ Filter by Gender
-                  </label>
-                  <select
-                    value={selectedGender}
-                    onChange={(e) => setSelectedGender(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
-                  >
-                    <option value="ALL">All Genders</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                  </select>
-                </div>
-
-                {/* 3. College Filter */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
-                    🏫 Filter by College
-                  </label>
-                  <select
-                    value={selectedCollege}
-                    onChange={(e) => setSelectedCollege(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
-                  >
-                    <option value="ALL">All Colleges</option>
-                    {ALL_COLLEGES.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* 5. Format Filter (Single / Double) */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
-                    🎽 Filter by Format
-                  </label>
-                  <select
-                    value={selectedType}
-                    onChange={(e) => setSelectedType(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
-                  >
-                    <option value="ALL">All Formats</option>
-                    <option value="INDIVIDUAL">Single (1 Player)</option>
-                    <option value="DUO">Double (2 Players)</option>
-                    <option value="TEAM">Team Event</option>
-                  </select>
-                </div>
-
-                {/* 6. Live Search Input */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
-                    🔍 Search Participant
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Search name, mobile, team..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full px-4 py-3 pl-10 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
-                    />
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Active Filter Chips */}
-              <div className="flex items-center justify-between text-xs sm:text-sm pt-3 border-t border-slate-200 dark:border-slate-800">
-                <span className="font-mono text-slate-600 dark:text-slate-400">
-                  Showing <strong className="text-blue-600 dark:text-blue-400 font-bold">{filteredParticipants.length}</strong> of {masterParticipants.length} Participants
-                </span>
                 {(selectedSport !== 'ALL' || selectedEvent !== 'ALL' || selectedGender !== 'ALL' || selectedCollege !== 'ALL' || selectedType !== 'ALL' || searchQuery) && (
                   <button
                     onClick={() => {
@@ -2033,65 +2075,291 @@ export const SuperCoordinatorDashboardPage = () => {
                       setSelectedCollege('ALL');
                       setSelectedType('ALL');
                       setSearchQuery('');
+                      setCurrentPage(1);
                     }}
-                    className="text-xs sm:text-sm font-bold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
+                    className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
                   >
                     Reset All Filters
                   </button>
                 )}
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+                {/* 1. 🎯 Filter by Game */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                    🎯 Filter by Game
+                  </label>
+                  <select
+                    value={selectedSport}
+                    onChange={(e) => { handleSportChange(e.target.value); }}
+                    className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  >
+                    <option value="ALL" className="bg-white dark:bg-slate-900">All 12 Sports</option>
+                    {ALL_12_SPORTS.map((s) => (
+                      <option key={s.id} value={s.name} className="bg-white dark:bg-slate-900">
+                        {s.icon} {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 2. 📋 Filter by Event Title */}
+                <div>
+                  <label className="block text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase mb-1">
+                    📋 Filter by Event Title
+                  </label>
+                  <select
+                    value={selectedEvent}
+                    onChange={(e) => { setSelectedEvent(e.target.value); setCurrentPage(1); }}
+                    className="w-full bg-slate-50 dark:bg-slate-800/70 border border-blue-500/40 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  >
+                    <option value="ALL" className="bg-white dark:bg-slate-900">All Created Events ({availableEvents.length})</option>
+                    {availableEvents.map((evt) => (
+                      <option key={evt.id} value={evt.eventTitle} className="bg-white dark:bg-slate-900">
+                        {evt.eventTitle}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 3. ⚧️ Filter by Gender */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                    ⚧️ Filter by Gender
+                  </label>
+                  <select
+                    value={selectedGender}
+                    onChange={(e) => { setSelectedGender(e.target.value); setCurrentPage(1); }}
+                    className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  >
+                    <option value="ALL" className="bg-white dark:bg-slate-900">All Genders</option>
+                    <option value="Male" className="bg-white dark:bg-slate-900">Male</option>
+                    <option value="Female" className="bg-white dark:bg-slate-900">Female</option>
+                  </select>
+                </div>
+
+                {/* 4. 🏫 Filter by College */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                    🏫 Filter by College
+                  </label>
+                  <select
+                    value={selectedCollege}
+                    onChange={(e) => { setSelectedCollege(e.target.value); setCurrentPage(1); }}
+                    className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  >
+                    <option value="ALL" className="bg-white dark:bg-slate-900">All Colleges</option>
+                    {ALL_COLLEGES.map((c) => (
+                      <option key={c.id} value={c.id} className="bg-white dark:bg-slate-900">
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 5. 🎽 Filter by Format */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                    🎽 Filter by Format
+                  </label>
+                  <select
+                    value={selectedType}
+                    onChange={(e) => { setSelectedType(e.target.value); setCurrentPage(1); }}
+                    className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  >
+                    <option value="ALL" className="bg-white dark:bg-slate-900">All Formats</option>
+                    <option value="INDIVIDUAL" className="bg-white dark:bg-slate-900">Single (1 Player)</option>
+                    <option value="DUO" className="bg-white dark:bg-slate-900">Double (2 Players)</option>
+                    <option value="TEAM" className="bg-white dark:bg-slate-900">Team Event</option>
+                  </select>
+                </div>
+
+                {/* 6. 🔍 Search Participant */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                    🔍 Search Participant
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                      placeholder="Search name, mobile, team..."
+                      className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+                    />
+                    <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-2.5" />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Master Participants Table */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-md dark:shadow-xl">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 text-xs uppercase font-mono font-bold border-b border-slate-200 dark:border-slate-800">
-                      <th className="p-4 sm:p-5">Reg Time</th>
-                      <th className="p-4 sm:p-5">Game & Event Title</th>
-                      <th className="p-4 sm:p-5">Team Name</th>
-                      <th className="p-4 sm:p-5">College Name</th>
-                      <th className="p-4 sm:p-5">Student Name</th>
-                      <th className="p-4 sm:p-5">Mobile No</th>
-                      <th className="p-4 sm:p-5">Gender</th>
-                      <th className="p-4 sm:p-5">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-xs sm:text-sm">
-                    {filteredParticipants.length === 0 ? (
-                      <tr>
-                        <td colSpan="8" className="p-12 text-center text-slate-500 italic">
-                          No participant records matching selected filter criteria.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredParticipants.map((p) => (
-                        <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition font-mono">
-                          <td className="p-4 sm:p-5 text-slate-700 dark:text-slate-300 font-mono">
-                            <div>{p.date || '2026-08-20'}</div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400">{p.time || '10:00 AM'}</div>
-                          </td>
-                          <td className="p-4 sm:p-5">
-                            <div className="font-bold text-blue-600 dark:text-blue-400">{p.sportName}</div>
-                            <div className="text-xs font-semibold text-slate-700 dark:text-slate-300">{p.eventTitle || `${p.sportName} Event`}</div>
-                          </td>
-                          <td className="p-4 sm:p-5 font-bold text-slate-900 dark:text-white">{p.teamName}</td>
-                          <td className="p-4 sm:p-5 font-bold text-slate-700 dark:text-slate-300">{p.college}</td>
-                          <td className="p-4 sm:p-5 font-extrabold text-emerald-600 dark:text-emerald-400">{p.name}</td>
-                          <td className="p-4 sm:p-5 text-slate-700 dark:text-slate-300">{p.mobile}</td>
-                          <td className="p-4 sm:p-5 text-slate-700 dark:text-slate-300">{p.gender}</td>
-                          <td className="p-4 sm:p-5">
-                            <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold">
-                              {p.status || 'VERIFIED'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+            {/* Participants Table */}
+            <div className="p-4 sm:p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm transition-colors">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+                <span className="text-xs font-bold text-slate-900 dark:text-white">
+                  Showing {filteredParticipants.length} of {masterParticipants.length} Participants
+                </span>
+                <span className="text-[11px] text-purple-600 dark:text-purple-400 font-mono">Master Database Records</span>
               </div>
+
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-3">
+                  <RefreshCw className="w-6 h-6 text-purple-600 dark:text-purple-400 animate-spin" />
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Loading Master Participant Roster...</p>
+                </div>
+              ) : paginatedParticipants.length === 0 ? (
+                <div className="text-center py-12 space-y-2">
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No participants found matching criteria.</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Adjust filters to broaden roster view.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto custom-scrollbar w-full">
+                  <table className="w-full text-left text-xs border-collapse min-w-[760px]">
+                    <thead>
+                      <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] tracking-wider bg-slate-50/75 dark:bg-slate-900/60">
+                        <th className="py-3 px-3.5 sticky left-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-xs shadow-[2px_0_6px_-2px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_6px_-2px_rgba(0,0,0,0.35)]">Reg Time</th>
+                        <th className="py-3 px-3.5">Game & Event Title</th>
+                        <th className="py-3 px-3.5">Team Name</th>
+                        <th className="py-3 px-3.5">College Name</th>
+                        <th className="py-3 px-3.5">Student Name</th>
+                        <th className="py-3 px-3.5">Mobile No</th>
+                        <th className="py-3 px-3.5">Gender</th>
+                        <th className="py-3 px-3.5">Status</th>
+                        <th className="py-3 px-3.5 text-right">Details</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200">
+                      {paginatedParticipants.map((p) => {
+                        return (
+                          <tr
+                            key={p.id || p.memberId || p.receiptId}
+                            className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                          >
+                            {/* 1. Reg Time */}
+                            <td className="py-3 px-3.5 whitespace-nowrap text-slate-700 dark:text-slate-300 font-mono sticky left-0 z-10 bg-white dark:bg-slate-900 shadow-[2px_0_6px_-2px_rgba(0,0,0,0.06)] dark:shadow-[2px_0_6px_-2px_rgba(0,0,0,0.3)]">
+                              <div>{p.date || '2026-08-05'}</div>
+                              <div className="text-[10px] text-slate-500 dark:text-slate-400">{p.time || '10:00 AM'}</div>
+                            </td>
+
+                            {/* 2. Game & Event Title */}
+                            <td className="py-3 px-3.5 whitespace-nowrap">
+                              <div className="font-bold text-slate-900 dark:text-white">{p.sportName}</div>
+                              <div className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold max-w-[200px] truncate" title={p.eventTitle}>
+                                {p.eventTitle || `${p.sportName} Championship`}
+                              </div>
+                            </td>
+
+                            {/* 3. Team Name */}
+                            <td className="py-3 px-3 whitespace-nowrap font-bold text-slate-800 dark:text-slate-200">
+                              {p.teamName || p.name}
+                            </td>
+
+                            {/* 4. College Name */}
+                            <td className="py-3 px-3 whitespace-nowrap font-medium text-blue-600 dark:text-blue-400">
+                              {p.college}
+                            </td>
+
+                            {/* 5. Student Name */}
+                            <td className="py-3 px-3 whitespace-nowrap font-semibold text-slate-900 dark:text-white">
+                              <div className="flex items-center gap-1.5">
+                                <span>{p.name}</span>
+                                {p.isCaptain && (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                                    Captain
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">
+                                {p.rollNo && p.rollNo !== 'N/A' ? `Roll: ${p.rollNo} • ` : ''}{p.email}
+                              </div>
+                            </td>
+
+                            {/* 6. Mobile No */}
+                            <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300 font-mono">
+                              {p.mobile}
+                            </td>
+
+                            {/* 7. Gender */}
+                            <td className="py-3 px-3 whitespace-nowrap text-slate-700 dark:text-slate-300 font-medium">
+                              {p.gender}
+                            </td>
+
+                            {/* 8. Status */}
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              <span className="px-2.5 py-0.5 text-[10px] font-bold rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                {p.status || 'VERIFIED'}
+                              </span>
+                            </td>
+
+                            {/* 9. Details Action (Read-only, NO DELETE) */}
+                            <td className="py-3 px-3 whitespace-nowrap text-right">
+                              <button
+                                onClick={() => {
+                                  setSelectedParticipant({
+                                    id: p.id,
+                                    participantName: p.name || p.teamName,
+                                    rollNumber: p.rollNo || 'N/A',
+                                    college: p.college,
+                                    course: p.course || 'N/A',
+                                    yearSemester: p.yearSemester || 'N/A',
+                                    year: p.yearSemester || 'N/A',
+                                    gender: p.gender,
+                                    gameSport: p.sportName,
+                                    category: p.teamName ? 'Team Event' : 'Individual',
+                                    mobile: p.mobile,
+                                    email: p.email,
+                                    registrationDate: p.date || '2026-08-05',
+                                    registrationTime: p.time || '10:00 AM',
+                                    paymentStatus: 'PAID',
+                                    registrationStatus: p.status || 'VERIFIED',
+                                    registeredBy: 'Super Coordinator Roster',
+                                    isCaptain: p.isCaptain
+                                  });
+                                  setIsDetailsOpen(true);
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                                title="View Full Participant Details"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Pagination Bar */}
+              {!loading && filteredParticipants.length > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-200 dark:border-slate-800 text-xs">
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredParticipants.length)} of {filteredParticipants.length} master records
+                  </span>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-40 transition-colors cursor-pointer"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="px-3 py-1 font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 rounded-lg">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-40 transition-colors cursor-pointer"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -2563,6 +2831,542 @@ export const SuperCoordinatorDashboardPage = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* EDIT LEADERBOARD RESULT ENTRY MODAL */}
+      {showEditModal && editingEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md overflow-y-auto animate-fade-in">
+          <div className="relative w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-5 sm:p-8 space-y-6 max-h-[92vh] overflow-y-auto my-auto font-spatial-sans">
+            
+            {/* Header */}
+            <div className="flex items-start justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono text-[10px] sm:text-xs font-bold uppercase border border-blue-500/20">
+                    ID: {editingEntry.id}
+                  </span>
+                  <h3 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400 shrink-0" />
+                    <span>Edit Winner Declaration Entry</span>
+                  </h3>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                  Update Game, Match Format, Gender, and 1st & 2nd Place Winner credentials. Changes will instantly recalculate leaderboard points.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingEntry(null);
+                }}
+                className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition cursor-pointer shrink-0"
+                title="Close modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSaveEditedEntry} className="space-y-6">
+              
+              {/* Row 1: Game, Format, Gender */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+                {/* 1. Game / Sport */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono font-bold text-blue-600 dark:text-blue-400 uppercase">
+                    🎯 Select Game / Sport *
+                  </label>
+                  <select
+                    value={editSportId}
+                    onChange={(e) => {
+                      const newSport = e.target.value;
+                      setEditSportId(newSport);
+                      const formats = getFormatsForSport(newSport);
+                      if (!formats.some((f) => f.id === editMatchFormat)) {
+                        setEditMatchFormat(formats[0]?.id || 'Team');
+                      }
+                    }}
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
+                  >
+                    {ALL_12_SPORTS.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.icon} {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 2. Match Format */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
+                    🎾 Match Format *
+                  </label>
+                  <div className="flex flex-wrap gap-1.5 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 min-h-[48px] items-center">
+                    {getFormatsForSport(editSportId).map((fmt) => (
+                      <button
+                        key={fmt.id}
+                        type="button"
+                        onClick={() => setEditMatchFormat(fmt.id)}
+                        className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-extrabold transition cursor-pointer text-center min-h-[36px] ${
+                          editMatchFormat === fmt.id
+                            ? 'bg-blue-600 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        {fmt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. Gender Category */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
+                    ⚧️ Gender Category *
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 min-h-[48px] items-center">
+                    {[
+                      { id: 'Boys', label: 'Boys' },
+                      { id: 'Girls', label: 'Girls' },
+                      { id: 'Mixed', label: 'Mixed' }
+                    ].map((g) => (
+                      <button
+                        key={g.id}
+                        type="button"
+                        onClick={() => setEditMatchGender(g.id)}
+                        className={`py-2 px-1 rounded-xl text-xs font-extrabold transition cursor-pointer text-center min-h-[36px] ${
+                          editMatchGender === g.id
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        {g.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Athletics Sub-Event Selector */}
+              {editSportId.toLowerCase().includes('athletics') && (
+                <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 space-y-1.5 animate-fade-in">
+                  <label className="block text-xs font-mono font-black text-blue-600 dark:text-blue-400 uppercase">
+                    🏃 Select Athletics Event / Discipline *
+                  </label>
+                  <select
+                    value={editAthleticsSubEvent}
+                    onChange={(e) => setEditAthleticsSubEvent(e.target.value)}
+                    className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-slate-950 border border-blue-500/50 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:border-blue-500 outline-none min-h-[48px]"
+                  >
+                    {ATHLETICS_SUB_EVENTS.map((subEv) => (
+                      <option key={subEv} value={subEv}>
+                        🏃 {subEv}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Row 2: Winner & Runner-Up Cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 pt-2 border-t border-slate-200 dark:border-slate-800">
+                
+                {/* Winner Card */}
+                <div className="p-5 sm:p-6 rounded-3xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-800/60 space-y-4 shadow-sm">
+                  <div className="flex items-center justify-between pb-2 border-b border-emerald-200/50 dark:border-emerald-800/40">
+                    <span className="text-xs sm:text-sm font-mono font-black text-emerald-700 dark:text-emerald-400 uppercase flex items-center gap-2">
+                      🥇 Winner Details (1st Place)
+                    </span>
+                    <span className="px-3 py-1 rounded-xl bg-emerald-500 text-slate-950 font-mono font-black text-xs shadow-xs">
+                      +5 POINTS
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 text-xs sm:text-sm">
+                    <div className="space-y-1">
+                      <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
+                        👤 Winner Player Name {editMatchFormat === 'Single' || editMatchFormat === 'Individual' ? '*' : '(Optional)'}
+                      </label>
+                      <input
+                        type="text"
+                        value={editWinnerName}
+                        onChange={(e) => setEditWinnerName(e.target.value)}
+                        placeholder="Enter Winner Player Name"
+                        className="w-full px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-emerald-400 dark:border-emerald-700/60 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px]"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
+                        🛡️ Winner Team Name {editMatchFormat === 'Team' || editMatchFormat === 'Double' ? '*' : '(Optional)'}
+                      </label>
+                      <input
+                        type="text"
+                        value={editWinnerTeamName}
+                        onChange={(e) => setEditWinnerTeamName(e.target.value)}
+                        placeholder="e.g. MPEC Titans"
+                        className="w-full px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-emerald-400 dark:border-emerald-700/60 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px]"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
+                        🏫 Winner College Name *
+                      </label>
+                      <select
+                        value={editWinnerCollegeId}
+                        onChange={(e) => setEditWinnerCollegeId(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-emerald-400 dark:border-emerald-700/60 text-emerald-800 dark:text-emerald-300 font-bold focus:ring-2 focus:ring-emerald-500 outline-none min-h-[44px]"
+                      >
+                        {ALL_COLLEGES.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Winner Photo */}
+                    <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-emerald-300/60 dark:border-emerald-700/40">
+                      <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-emerald-400 bg-slate-100 dark:bg-slate-800 flex-shrink-0 flex items-center justify-center group shadow-xs">
+                        {editWinnerPhotoUrl ? (
+                          <>
+                            <img src={editWinnerPhotoUrl} alt="Winner" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenCropperForExisting('editWinner')}
+                                className="w-6 h-6 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                title="Zoom & Crop Photo"
+                              >
+                                <Crop className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditWinnerPhotoUrl('')}
+                                className="w-6 h-6 rounded-lg bg-red-600 hover:bg-red-500 text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                title="Remove photo"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <User className="w-6 h-6 text-slate-400" />
+                        )}
+                        {uploadingEditWinnerPhoto && (
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-[9px] font-mono">Uploading...</div>
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <label className="block text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                          📸 Winner Athlete Photo
+                        </label>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
+                            <Camera className="w-3.5 h-3.5" />
+                            <span>{editWinnerPhotoUrl ? 'Change Photo' : 'Upload Photo'}</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) {
+                                  handlePhotoFileSelect(e.target.files[0], 'editWinner');
+                                  e.target.value = '';
+                                }
+                              }}
+                            />
+                          </label>
+                          {editWinnerPhotoUrl && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenCropperForExisting('editWinner')}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-emerald-400 dark:border-emerald-700/60 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition cursor-pointer"
+                            >
+                              <Crop className="w-3 h-3" />
+                              <span>Zoom & Crop</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Winner Academic Credentials */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div>
+                        <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Roll No</label>
+                        <input
+                          type="text"
+                          value={editWinnerRollNo}
+                          onChange={(e) => setEditWinnerRollNo(e.target.value)}
+                          placeholder="2101640100012"
+                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-emerald-400/60 dark:border-emerald-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Course / Branch</label>
+                        <input
+                          type="text"
+                          value={editWinnerCourse}
+                          onChange={(e) => setEditWinnerCourse(e.target.value)}
+                          placeholder="B.Tech CSE"
+                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-emerald-400/60 dark:border-emerald-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Year / Sem</label>
+                        <input
+                          type="text"
+                          value={editWinnerYearSem}
+                          onChange={(e) => setEditWinnerYearSem(e.target.value)}
+                          placeholder="3rd Yr (6th Sem)"
+                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-emerald-400/60 dark:border-emerald-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Match Highlight Quote</label>
+                      <input
+                        type="text"
+                        value={editWinnerHighlights}
+                        onChange={(e) => setEditWinnerHighlights(e.target.value)}
+                        placeholder="e.g. Scored 18 smash winners in 3rd set"
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-emerald-400/60 dark:border-emerald-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Runner-Up Card */}
+                <div className="p-5 sm:p-6 rounded-3xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-300 dark:border-blue-800/60 space-y-4 shadow-sm">
+                  <div className="flex items-center justify-between pb-2 border-b border-blue-200/50 dark:border-blue-800/40">
+                    <span className="text-xs sm:text-sm font-mono font-black text-blue-700 dark:text-blue-400 uppercase flex items-center gap-2">
+                      🥈 Runner-Up Details (2nd Place)
+                    </span>
+                    <span className="px-3 py-1 rounded-xl bg-blue-500 text-white font-mono font-black text-xs shadow-xs">
+                      +3 POINTS
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 text-xs sm:text-sm">
+                    <div className="space-y-1">
+                      <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
+                        👤 Runner-Up Player Name {editMatchFormat === 'Single' || editMatchFormat === 'Individual' ? '*' : '(Optional)'}
+                      </label>
+                      <input
+                        type="text"
+                        value={editRunnerUpName}
+                        onChange={(e) => setEditRunnerUpName(e.target.value)}
+                        placeholder="Enter Runner-Up Player Name"
+                        className="w-full px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-blue-400 dark:border-blue-700/60 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-blue-500 outline-none min-h-[44px]"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
+                        🛡️ Runner-Up Team Name {editMatchFormat === 'Team' || editMatchFormat === 'Double' ? '*' : '(Optional)'}
+                      </label>
+                      <input
+                        type="text"
+                        value={editRunnerUpTeamName}
+                        onChange={(e) => setEditRunnerUpTeamName(e.target.value)}
+                        placeholder="e.g. MIPS Strikers"
+                        className="w-full px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-blue-400 dark:border-blue-700/60 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-blue-500 outline-none min-h-[44px]"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
+                        🏫 Runner-Up College Name *
+                      </label>
+                      <select
+                        value={editRunnerUpCollegeId}
+                        onChange={(e) => setEditRunnerUpCollegeId(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-blue-400 dark:border-blue-700/60 text-blue-800 dark:text-blue-300 font-bold focus:ring-2 focus:ring-blue-500 outline-none min-h-[44px]"
+                      >
+                        {ALL_COLLEGES.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Runner-Up Photo */}
+                    <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-blue-300/60 dark:border-blue-700/40">
+                      <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-blue-400 bg-slate-100 dark:bg-slate-800 flex-shrink-0 flex items-center justify-center group shadow-xs">
+                        {editRunnerUpPhotoUrl ? (
+                          <>
+                            <img src={editRunnerUpPhotoUrl} alt="Runner-Up" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenCropperForExisting('editRunnerUp')}
+                                className="w-6 h-6 rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                title="Zoom & Crop Photo"
+                              >
+                                <Crop className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditRunnerUpPhotoUrl('')}
+                                className="w-6 h-6 rounded-lg bg-red-600 hover:bg-red-500 text-white flex items-center justify-center cursor-pointer shadow-xs"
+                                title="Remove photo"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <User className="w-6 h-6 text-slate-400" />
+                        )}
+                        {uploadingEditRunnerUpPhoto && (
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-[9px] font-mono">Uploading...</div>
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <label className="block text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                          📸 Runner-Up Athlete Photo
+                        </label>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer transition shadow-2xs">
+                            <Camera className="w-3.5 h-3.5" />
+                            <span>{editRunnerUpPhotoUrl ? 'Change Photo' : 'Upload Photo'}</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) {
+                                  handlePhotoFileSelect(e.target.files[0], 'editRunnerUp');
+                                  e.target.value = '';
+                                }
+                              }}
+                            />
+                          </label>
+                          {editRunnerUpPhotoUrl && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenCropperForExisting('editRunnerUp')}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-blue-400 dark:border-blue-700/60 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-bold hover:bg-blue-100 transition cursor-pointer"
+                            >
+                              <Crop className="w-3.5 h-3.5" />
+                              <span>Zoom & Crop</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Runner-Up Academic Credentials */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div>
+                        <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Roll No</label>
+                        <input
+                          type="text"
+                          value={editRunnerUpRollNo}
+                          onChange={(e) => setEditRunnerUpRollNo(e.target.value)}
+                          placeholder="2201720200045"
+                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-blue-400/60 dark:border-blue-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Course / Branch</label>
+                        <input
+                          type="text"
+                          value={editRunnerUpCourse}
+                          onChange={(e) => setEditRunnerUpCourse(e.target.value)}
+                          placeholder="BCA"
+                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-blue-400/60 dark:border-blue-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Year / Sem</label>
+                        <input
+                          type="text"
+                          value={editRunnerUpYearSem}
+                          onChange={(e) => setEditRunnerUpYearSem(e.target.value)}
+                          placeholder="2nd Yr (4th Sem)"
+                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-blue-400/60 dark:border-blue-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">Match Highlight Quote</label>
+                      <input
+                        type="text"
+                        value={editRunnerUpHighlights}
+                        onChange={(e) => setEditRunnerUpHighlights(e.target.value)}
+                        placeholder="e.g. Fought valiantly in tournament final"
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-blue-400/60 dark:border-blue-700/40 text-slate-900 dark:text-white font-mono text-xs outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Modal Buttons */}
+              <div className="pt-4 flex flex-col-reverse sm:flex-row items-center justify-end gap-3 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingEntry(null);
+                  }}
+                  className="w-full sm:w-auto px-6 py-3 rounded-2xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer min-h-[48px]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit}
+                  className="w-full sm:w-auto px-8 py-3 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50 min-h-[48px]"
+                >
+                  {savingEdit ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Saving Changes...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Update / Save Result Entry (+5 & +3 Pts)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Registration Details Inspection Modal */}
+      <RegistrationDetailsModal
+        isOpen={isDetailsOpen}
+        registration={selectedParticipant}
+        onClose={() => { setIsDetailsOpen(false); setSelectedParticipant(null); }}
+      />
+
+      {/* ─── Athlete Photo Zoom & Crop Modal ─── */}
+      {photoCropperState.isOpen && photoCropperState.imageSrc && (
+        <ImageCropperModal
+          imageSrc={photoCropperState.imageSrc}
+          title={photoCropperState.title}
+          subtitle="Drag to reposition or zoom to center athlete's face (1:1 Leaderboard Avatar)"
+          aspectRatio="1:1"
+          shape="square"
+          cropButtonLabel="Crop & Save Photo"
+          skipButtonLabel="Use Original (No Crop)"
+          onClose={() => setPhotoCropperState((prev) => ({ ...prev, isOpen: false }))}
+          onCropComplete={handleCroppedPhotoComplete}
+          onUseOriginal={handleUseOriginalPhoto}
+        />
       )}
     </div>
   );

@@ -581,17 +581,51 @@ export const adminApi = {
           target: `Deleted match result & leaderboard entry #${id} from database`
         });
         return await adminApi.getResults();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || `Failed to delete match result (HTTP ${res.status})`);
       }
     } catch (err) {
       console.error('Error deleting match result from DB:', err);
+      throw err;
     }
-    return await adminApi.getResults();
   },
 
   saveResult: async (resultData) => {
     try {
-      const res = await fetch(apiUrl('/super-coordinator/leaderboard'), {
-        method: 'POST',
+      const isUpdate = Boolean(resultData?.id && !String(resultData.id).startsWith('temp-') && !String(resultData.id).startsWith('LB-NEW-'));
+      const endpoint = isUpdate
+        ? apiUrl(`/super-coordinator/leaderboard/${resultData.id}`)
+        : apiUrl('/super-coordinator/leaderboard');
+      const method = isUpdate ? 'PUT' : 'POST';
+
+      const res = await fetch(endpoint, {
+        method,
+        headers: getAdminHeaders(),
+        body: JSON.stringify(resultData)
+      });
+      if (res.ok) {
+        await adminApi.addAuditLog({
+          user: 'System Administrator',
+          role: 'ADMIN',
+          action: isUpdate ? 'Result Updated' : 'Result Declared',
+          target: `${isUpdate ? 'Updated' : 'Declared'} match result for ${resultData.sportName || 'Sport'} in database`
+        });
+        return await adminApi.getResults();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || `Failed to ${isUpdate ? 'update' : 'save'} match result (HTTP ${res.status})`);
+      }
+    } catch (err) {
+      console.error('Error saving match result to DB:', err);
+      throw err;
+    }
+  },
+
+  updateResult: async (id, resultData) => {
+    try {
+      const res = await fetch(apiUrl(`/super-coordinator/leaderboard/${id}`), {
+        method: 'PUT',
         headers: getAdminHeaders(),
         body: JSON.stringify(resultData)
       });
@@ -600,14 +634,17 @@ export const adminApi = {
           user: 'System Administrator',
           role: 'ADMIN',
           action: 'Result Updated',
-          target: `Saved match result for ${resultData.sportName || 'Sport'} in database`
+          target: `Updated match result #${id} in database`
         });
         return await adminApi.getResults();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || `Failed to update match result (HTTP ${res.status})`);
       }
     } catch (err) {
-      console.error('Error saving match result to DB:', err);
+      console.error('Error updating match result in DB:', err);
+      throw err;
     }
-    return await adminApi.getResults();
   },
 
   // ── Audit Logs ────────────────────────────────────────────────────────────

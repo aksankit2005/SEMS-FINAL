@@ -92,9 +92,9 @@ export const CricketGoLiveSetupModal = ({ match, targetVenue, onClose, onStartMa
     captain: isGully ? `${defaultTeam2} Captain` : 'Pat Cummins',
   });
 
-  // Step 3: Playing XI / Playing 6
-  const squadSize = isGully ? 6 : 11;
-  const subsSize = isGully ? 2 : 2;
+  // Step 3: Playing XI / Playing 5
+  const squadSize = isGully ? 5 : 11;
+  const subsSize = isGully ? 3 : 2;
 
   const [teamAPlayers, setTeamAPlayers] = useState(() => {
     if (isGully) {
@@ -538,11 +538,11 @@ export const CricketGoLiveSetupModal = ({ match, targetVenue, onClose, onStartMa
             </div>
           )}
 
-          {/* STEP 3: PLAYING XI */}
+          {/* STEP 3: PLAYING SQUAD */}
           {currentStep === 3 && (
             <div className="space-y-5 animate-fade-in">
               <h3 className="text-sm font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
-                <Users className="w-4 h-4" /> Step 3: Playing XI & Substitute Roster
+                <Users className="w-4 h-4" /> Step 3: Playing {isGully ? '5' : 'XI'} & Substitute Roster
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -550,8 +550,8 @@ export const CricketGoLiveSetupModal = ({ match, targetVenue, onClose, onStartMa
                 {/* Team A Roster */}
                 <div className="space-y-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
                   <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
-                    <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase">{teamA.name} Playing 11</span>
-                    <span className="text-[10px] font-mono text-slate-400">11 Players</span>
+                    <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase">{teamA.name} Playing {squadSize}</span>
+                    <span className="text-[10px] font-mono text-slate-400">{squadSize} Players</span>
                   </div>
 
                   <div className="space-y-2">
@@ -596,8 +596,8 @@ export const CricketGoLiveSetupModal = ({ match, targetVenue, onClose, onStartMa
                 {/* Team B Roster */}
                 <div className="space-y-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
                   <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
-                    <span className="text-xs font-black text-green-600 dark:text-green-400 uppercase">{teamB.name} Playing 11</span>
-                    <span className="text-[10px] font-mono text-slate-400">11 Players</span>
+                    <span className="text-xs font-black text-cyan-600 dark:text-cyan-400 uppercase">{teamB.name} Playing {squadSize}</span>
+                    <span className="text-[10px] font-mono text-slate-400">{squadSize} Players</span>
                   </div>
 
                   <div className="space-y-2">

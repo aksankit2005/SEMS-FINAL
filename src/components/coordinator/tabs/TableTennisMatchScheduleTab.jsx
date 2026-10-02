@@ -128,12 +128,12 @@ export const TableTennisMatchScheduleTab = ({ matches, user, onUpdateMatches, on
   const handleAddSlot = async (e) => {
     e.preventDefault();
 
-    if (!selectedEvent) {
+    if (!selectedEvent && !editingId) {
       addToast('No active event selected for match scheduling.', 'error');
       return;
     }
 
-    if (!isRegClosed) {
+    if (!editingId && !isRegClosed) {
       addToast('Registration must be closed before fixtures can be scheduled.', 'error');
       return;
     }
@@ -176,8 +176,8 @@ export const TableTennisMatchScheduleTab = ({ matches, user, onUpdateMatches, on
             team2: finalTeam2,
             team1Id: finalTeam1Id,
             team2Id: finalTeam2Id,
-            eventId: selectedEvent.id,
-            eventTitle: selectedEvent.title,
+            eventId: selectedEvent?.id || m.eventId,
+            eventTitle: selectedEvent?.title || m.eventTitle || form.eventTitle,
             tableNumber: form.tableNumber,
             date: form.date,
             time: form.time,
@@ -187,20 +187,8 @@ export const TableTennisMatchScheduleTab = ({ matches, user, onUpdateMatches, on
           : m
       );
       onUpdateMatches(updated);
-      await coordinatorApi.updateMatchScoring(editingId, {
-        team1: finalTeam1,
-        team2: finalTeam2,
-        team1Id: finalTeam1Id,
-        team2Id: finalTeam2Id,
-        eventId: selectedEvent.id,
-        eventTitle: selectedEvent.title,
-        tableNumber: form.tableNumber,
-        date: form.date,
-        time: form.time,
-        format: form.format,
-        category: form.category,
-      });
-      addToast('Table Tennis match slot updated!', 'success');
+      await coordinatorApi.saveMatches(updated);
+      addToast('Table Tennis match slot updated successfully!', 'success');
       setEditingId(null);
     } else {
       const newSlot = {
@@ -296,7 +284,7 @@ export const TableTennisMatchScheduleTab = ({ matches, user, onUpdateMatches, on
 
         {/* Form Box: Add Match Slot */}
         <div className={`p-6 rounded-3xl bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-cyan-500/30 shadow-soft dark:shadow-2xl space-y-4 ${
-          !isRegClosed ? 'opacity-60 pointer-events-none' : ''
+          !editingId && !isRegClosed ? 'opacity-60 pointer-events-none' : ''
         }`}>
           <form onSubmit={handleAddSlot} className="space-y-3.5">
             {/* Event Name */}
@@ -587,12 +575,15 @@ export const TableTennisMatchScheduleTab = ({ matches, user, onUpdateMatches, on
                   <button
                     onClick={() => {
                       setEditingId(m.id);
+                      if (m.eventId) setSelectedEventId(m.eventId);
                       setForm({
                         format: m.format || 'Singles',
                         category: m.category || 'Male',
                         eventTitle: m.eventTitle || createdEvents[0]?.title || 'Table Tennis Championship 2026',
                         team1: m.team1 || '',
                         team2: m.team2 || '',
+                        team1Id: m.team1Id || '',
+                        team2Id: m.team2Id || '',
                         team1Name: '',
                         team1Player1: '',
                         team1Player2: '',
