@@ -796,6 +796,25 @@ async deleteMatch(id) {
     throw error;
   }
 },
+
+  // Complete a match and persist status=COMPLETED to Backend API & localStorage
+  async completeMatch(matchId, matchData = {}) {
+    const payload = {
+      ...matchData,
+      status: 'COMPLETED',
+      completedAt: matchData.completedAt || new Date().toISOString()
+    };
+    try {
+      const res = await api.post(`/coordinator/matches/${matchId}/complete`, payload);
+      if (res.data?.match) {
+        return res.data.match;
+      }
+    } catch (e) {
+      console.warn('Backend completeMatch endpoint fallback:', e.message);
+    }
+    return await this.updateMatchScoring(matchId, payload);
+  },
+
   // Fetch real basketball player stats from Supabase
   async getBasketballMatchPlayers(matchId) {
     try {

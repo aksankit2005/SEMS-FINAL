@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   X, RotateCcw, Trophy, AlertCircle, RefreshCw, UserCheck, Activity, 
@@ -390,23 +390,121 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
     }
   }, [ballEvents, currentInnings, targetRuns, matchWinnerResult, batting1stTeamInitial, bowling1stTeamInitial, totalOversMax, battingTeam, bowlingTeam, isFreeHit, match, onMatchUpdated, activeStriker, activeNonStriker, activeBowler]);
 
+  // REF to guard against duplicate completion executions
+  const isFinishingRef = useRef(false);
+
+  // AUTOMATIC MATCH COMPLETION HANDLER (Saves status=COMPLETED, downloads PDF, syncs stores)
+  const triggerAutoCompleteMatch = useCallback(async (finalResult, eventsToFinalize = ballEvents) => {
+    if (isFinishingRef.current || match?.status === 'COMPLETED') return;
+    isFinishingRef.current = true;
+
+    const ev1 = eventsToFinalize.filter((b) => b.inningsId === 1);
+    const ev2 = eventsToFinalize.filter((b) => b.inningsId === 2);
+
+    const s1 = calculateInningsStats(
+      ev1,
+      batting1stTeamInitial,
+      bowling1stTeamInitial,
+      totalOversMax,
+      setupData.openingStriker || teamAPlayerList[0]?.name,
+      setupData.openingNonStriker || teamAPlayerList[1]?.name,
+      setupData.openingBowler || teamBPlayerList[teamBPlayerList.length - 1]?.name,
+      teamAPlayerList
+    );
+
+    const defaultInn2Squad = norm(bowling1stTeamInitial) === norm(teamA) ? teamAPlayerList : teamBPlayerList;
+    const defaultInn2BowlingSquad = norm(batting1stTeamInitial) === norm(teamA) ? teamAPlayerList : teamBPlayerList;
+
+    const s2 = calculateInningsStats(
+      ev2,
+      bowling1stTeamInitial,
+      batting1stTeamInitial,
+      totalOversMax,
+      secondInningsOpeners.striker || defaultInn2Squad[0]?.name,
+      secondInningsOpeners.nonStriker || defaultInn2Squad[1]?.name,
+      secondInningsOpeners.bowler || defaultInn2BowlingSquad[defaultInn2BowlingSquad.length - 1]?.name,
+      defaultInn2Squad
+    );
+
+    const finalTarget = targetRuns || (s1.runs + 1);
+
+    const completedObj = {
+      ...match,
+      status: 'COMPLETED',
+      winner: finalResult,
+      resultString: finalResult,
+      score1: s1.runs,
+      wickets1: s1.wickets,
+      overs1: s1.oversFormatted,
+      score2: s2.runs,
+      wickets2: s2.wickets,
+      overs2: s2.oversFormatted,
+      completedAt: new Date().toISOString(),
+      battingCard1: s1.battingStats,
+      bowlingCard1: s1.bowlingStats,
+      battingCard2: s2.battingStats,
+      bowlingCard2: s2.bowlingStats,
+      details: {
+        ...(match?.details || {}),
+        score1: s1.runs,
+        score2: s2.runs,
+        wickets1: s1.wickets,
+        wickets2: s2.wickets,
+        overs1: s1.oversFormatted,
+        overs2: s2.oversFormatted,
+        targetRuns: finalTarget,
+        resultString: finalResult,
+        winner: finalResult,
+        ballEvents: eventsToFinalize,
+        innings1: s1,
+        innings2: s2,
+        playerPerformances: {
+          batters: [...s1.battingStats, ...s2.battingStats],
+          bowlers: [...s1.bowlingStats, ...s2.bowlingStats],
+          fielders: [...s1.fieldingStats, ...s2.fieldingStats]
+        },
+        commentaryLog: s2.commentaryLog || s1.commentaryLog || []
+      }
+    };
+
+    setMatchWinnerResult(finalResult);
+    setMatchEndedModal(true);
+
+    try {
+      await coordinatorApi.completeMatch(match.id, completedObj);
+
+      try {
+        localStorage.removeItem(CONTROLLER_CACHE_KEY);
+      } catch (e) {
+        console.warn('LocalStorage cleanup warning:', e);
+      }
+
+      generateMatchResultPDF(completedObj, 'Cricket');
+
+      if (onMatchUpdated) onMatchUpdated(match.id, completedObj);
+      addToast(`🏆 Match Completed! ${finalResult}. Saved & PDF downloaded automatically.`, 'success');
+    } catch (err) {
+      console.error('Failed to complete match automatically:', err);
+      addToast('Failed to auto-complete match: ' + (err.message || 'Error'), 'error');
+      isFinishingRef.current = false;
+    }
+  }, [match, batting1stTeamInitial, bowling1stTeamInitial, totalOversMax, setupData, teamAPlayerList, teamBPlayerList, norm, secondInningsOpeners, targetRuns, CONTROLLER_CACHE_KEY, onMatchUpdated, addToast]);
+
   // Check Over completion / Innings break / Chase end
   const evaluateInningsTriggers = useCallback((newEvents, innNumber) => {
     const innEvents = newEvents.filter((b) => b.inningsId === innNumber);
     const innStats = calculateInningsStats(innEvents, battingTeam, bowlingTeam, totalOversMax);
 
-    // 1. Check 2nd Innings Target Chase Completion
+    // 1. Check 2nd Innings Target Chase Completion (AUTOMATIC FINISH)
     if (innNumber === 2 && targetRuns && innStats.runs >= targetRuns) {
       const wktsLeft = 10 - innStats.wickets;
       const winnerStr = `${bowling1stTeamInitial} won by ${wktsLeft} wicket${wktsLeft === 1 ? '' : 's'}!`;
-      setMatchWinnerResult(winnerStr);
-      setMatchEndedModal(true);
       syncLiveState(newEvents, 2, targetRuns, winnerStr);
-      persistStateSnapshot({ ballEvents: newEvents, currentInnings: 2, targetRuns });
+      triggerAutoCompleteMatch(winnerStr, newEvents);
       return;
     }
 
-    // 2. Check All Out or Overs Complete (AUTOMATIC INNINGS CHANGE DETECTION)
+    // 2. Check All Out or Overs Complete (AUTOMATIC INNINGS CHANGE DETECTION OR AUTOMATIC FINISH)
     if (innStats.isAllOut || innStats.isOversComplete) {
       if (innNumber === 1) {
         const calculatedTarget = innStats.runs + 1;
@@ -429,7 +527,7 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
         persistStateSnapshot({ ballEvents: newEvents, currentInnings: 1, targetRuns: calculatedTarget });
         return;
       } else {
-        // 2nd innings ended
+        // 2nd innings ended (AUTOMATIC FINISH)
         let winnerStr = '';
         if (innStats.runs >= targetRuns) {
           const wktsLeft = 10 - innStats.wickets;
@@ -440,10 +538,8 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
         } else {
           winnerStr = 'Match Tied! (Scores Level)';
         }
-        setMatchWinnerResult(winnerStr);
-        setMatchEndedModal(true);
         syncLiveState(newEvents, 2, targetRuns, winnerStr);
-        persistStateSnapshot({ ballEvents: newEvents, currentInnings: 2, targetRuns });
+        triggerAutoCompleteMatch(winnerStr, newEvents);
         return;
       }
     }
@@ -457,7 +553,7 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
         setNextBowlerModalOpen(true);
       }
     }
-  }, [battingTeam, bowlingTeam, totalOversMax, targetRuns, bowling1stTeamInitial, batting1stTeamInitial, activeBowler, syncLiveState, teamAPlayerList, teamBPlayerList, persistStateSnapshot]);
+  }, [battingTeam, bowlingTeam, totalOversMax, targetRuns, bowling1stTeamInitial, batting1stTeamInitial, activeBowler, syncLiveState, teamAPlayerList, teamBPlayerList, persistStateSnapshot, triggerAutoCompleteMatch]);
 
   // RECORD A CLEAN RUN DELIVERY (0, 1, 2, 3, 4, 6)
   const handleScoreRun = (runVal) => {
@@ -797,7 +893,7 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
     }
   };
 
-  // FINISH MATCH MANUALLY OR FROM MATCH ENDED MODAL
+  // FINISH MATCH MANUALLY FROM HEADER BUTTON
   const handleFinishMatch = async () => {
     const finalResult = matchWinnerResult || (
       currentInnings === 2 && currentStats.runs >= targetRuns
@@ -805,57 +901,7 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
         : `${batting1stTeamInitial} won by ${Math.max(1, (targetRuns || 0) - currentStats.runs)} runs!`
     );
 
-    const s1 = inn1Stats;
-    const s2 = currentInnings === 2 ? inn2Stats : { runs: 0, wickets: 0, oversFormatted: '0.0' };
-
-    const completedObj = {
-      ...match,
-      status: 'COMPLETED',
-      winner: finalResult,
-      resultString: finalResult,
-      score1: s1.runs,
-      wickets1: s1.wickets,
-      overs1: s1.oversFormatted,
-      score2: s2.runs,
-      wickets2: s2.wickets,
-      overs2: s2.oversFormatted,
-      completedAt: new Date().toISOString(),
-      battingCard1: s1.battingStats,
-      bowlingCard1: s1.bowlingStats,
-      battingCard2: s2.battingStats,
-      bowlingCard2: s2.bowlingStats,
-      details: {
-        ...(match?.details || {}),
-        score1: s1.runs,
-        score2: s2.runs,
-        wickets1: s1.wickets,
-        wickets2: s2.wickets,
-        overs1: s1.oversFormatted,
-        overs2: s2.oversFormatted,
-        targetRuns: targetRuns,
-        resultString: finalResult,
-        winner: finalResult,
-        ballEvents: ballEvents,
-        innings1: s1,
-        innings2: s2,
-        playerPerformances: {
-          batters: [...s1.battingStats, ...s2.battingStats],
-          bowlers: [...s1.bowlingStats, ...s2.bowlingStats],
-          fielders: [...s1.fieldingStats, ...s2.fieldingStats]
-        },
-        commentaryLog: currentStats.commentaryLog
-      }
-    };
-
-    try {
-      await coordinatorApi.completeMatch(match.id, completedObj);
-      generateMatchResultPDF(completedObj, 'Cricket');
-      if (onMatchUpdated) onMatchUpdated(match.id, completedObj);
-      addToast(`🏆 Official Cricket Match Finished! ${finalResult}. Complete record saved & PDF downloaded.`, 'success');
-      onClose();
-    } catch (err) {
-      addToast('Failed to complete match: ' + (err.message || 'Error'), 'error');
-    }
+    await triggerAutoCompleteMatch(finalResult, ballEvents);
   };
 
   // KEYBOARD SHORTCUTS (0-6 runs, W=wide, N=no ball, B=bye, L=leg bye, K=wicket, Ctrl+Z=undo)
@@ -1824,20 +1870,28 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
               </div>
             </div>
 
+            {/* Confirmation Note */}
+            <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center justify-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500" />
+              <span>Match status set to COMPLETED & Scorecard PDF downloaded automatically</span>
+            </div>
+
             {/* Actions */}
-            <div className="space-y-2 pt-2">
+            <div className="space-y-2 pt-1">
               <button
-                onClick={handleFinishMatch}
+                type="button"
+                onClick={() => setShowFullScorecard(true)}
                 className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-lg flex items-center justify-center gap-2 cursor-pointer"
               >
-                <CheckCircle2 className="w-4 h-4" /> Save Permanent Record & Export PDF Report
+                <FileText className="w-4 h-4" /> View Official Scorecard
               </button>
 
               <button
-                onClick={() => setShowFullScorecard(true)}
+                type="button"
+                onClick={onClose}
                 className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-300 dark:border-slate-700 cursor-pointer"
               >
-                Inspect Full Match Scorecard
+                Close & Return to Dashboard
               </button>
             </div>
 
