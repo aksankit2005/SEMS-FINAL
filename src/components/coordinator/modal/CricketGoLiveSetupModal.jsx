@@ -41,17 +41,55 @@ export const CricketGoLiveSetupModal = ({ match, targetVenue, onClose, onStartMa
     tossDecision: 'Bat',
   });
 
+  const DUMMY_TEAM_A_PLAYERS = [
+    { id: 'TA-1', name: 'Rohit Sharma', isCaptain: true, isKeeper: false },
+    { id: 'TA-2', name: 'Shubman Gill', isCaptain: false, isKeeper: false },
+    { id: 'TA-3', name: 'Virat Kohli', isCaptain: false, isKeeper: false },
+    { id: 'TA-4', name: 'Shreyas Iyer', isCaptain: false, isKeeper: false },
+    { id: 'TA-5', name: 'KL Rahul', isCaptain: false, isKeeper: true },
+    { id: 'TA-6', name: 'Hardik Pandya', isCaptain: false, isKeeper: false },
+    { id: 'TA-7', name: 'Ravindra Jadeja', isCaptain: false, isKeeper: false },
+    { id: 'TA-8', name: 'Axar Patel', isCaptain: false, isKeeper: false },
+    { id: 'TA-9', name: 'Kuldeep Yadav', isCaptain: false, isKeeper: false },
+    { id: 'TA-10', name: 'Jasprit Bumrah', isCaptain: false, isKeeper: false },
+    { id: 'TA-11', name: 'Mohammed Siraj', isCaptain: false, isKeeper: false },
+  ];
+
+  const DUMMY_TEAM_A_SUBS = [
+    { id: 'TA-SUB1', name: 'Suryakumar Yadav' },
+    { id: 'TA-SUB2', name: 'Mohammed Shami' },
+  ];
+
+  const DUMMY_TEAM_B_PLAYERS = [
+    { id: 'TB-1', name: 'Travis Head', isCaptain: false, isKeeper: false },
+    { id: 'TB-2', name: 'David Warner', isCaptain: false, isKeeper: false },
+    { id: 'TB-3', name: 'Steve Smith', isCaptain: false, isKeeper: false },
+    { id: 'TB-4', name: 'Marnus Labuschagne', isCaptain: false, isKeeper: false },
+    { id: 'TB-5', name: 'Glenn Maxwell', isCaptain: false, isKeeper: false },
+    { id: 'TB-6', name: 'Marcus Stoinis', isCaptain: false, isKeeper: false },
+    { id: 'TB-7', name: 'Alex Carey', isCaptain: false, isKeeper: true },
+    { id: 'TB-8', name: 'Pat Cummins', isCaptain: true, isKeeper: false },
+    { id: 'TB-9', name: 'Mitchell Starc', isCaptain: false, isKeeper: false },
+    { id: 'TB-10', name: 'Adam Zampa', isCaptain: false, isKeeper: false },
+    { id: 'TB-11', name: 'Josh Hazlewood', isCaptain: false, isKeeper: false },
+  ];
+
+  const DUMMY_TEAM_B_SUBS = [
+    { id: 'TB-SUB1', name: 'Nathan Lyon' },
+    { id: 'TB-SUB2', name: 'Cameron Green' },
+  ];
+
   // Step 2: Team Details
   const [teamA, setTeamA] = useState({
     name: defaultTeam1,
     logo: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=300&q=80',
-    captain: `${defaultTeam1} Captain`,
+    captain: isGully ? `${defaultTeam1} Captain` : 'Rohit Sharma',
   });
 
   const [teamB, setTeamB] = useState({
     name: defaultTeam2,
     logo: 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=300&q=80',
-    captain: `${defaultTeam2} Captain`,
+    captain: isGully ? `${defaultTeam2} Captain` : 'Pat Cummins',
   });
 
   // Step 3: Playing XI / Playing 6
@@ -59,33 +97,45 @@ export const CricketGoLiveSetupModal = ({ match, targetVenue, onClose, onStartMa
   const subsSize = isGully ? 2 : 2;
 
   const [teamAPlayers, setTeamAPlayers] = useState(() => {
-    return Array.from({ length: squadSize }, (_, i) => ({
-      id: `TA-${i + 1}`,
-      name: `${defaultTeam1} Player ${i + 1}`,
-      isCaptain: i === 0,
-      isKeeper: i === 1,
-    }));
+    if (isGully) {
+      return Array.from({ length: squadSize }, (_, i) => ({
+        id: `TA-${i + 1}`,
+        name: `${defaultTeam1} Player ${i + 1}`,
+        isCaptain: i === 0,
+        isKeeper: i === 1,
+      }));
+    }
+    return DUMMY_TEAM_A_PLAYERS;
   });
   const [teamASubs, setTeamASubs] = useState(() => {
-    return Array.from({ length: subsSize }, (_, i) => ({
-      id: `TA-SUB${i + 1}`,
-      name: `${defaultTeam1} Sub ${i + 1}`,
-    }));
+    if (isGully) {
+      return Array.from({ length: subsSize }, (_, i) => ({
+        id: `TA-SUB${i + 1}`,
+        name: `${defaultTeam1} Sub ${i + 1}`,
+      }));
+    }
+    return DUMMY_TEAM_A_SUBS;
   });
 
   const [teamBPlayers, setTeamBPlayers] = useState(() => {
-    return Array.from({ length: squadSize }, (_, i) => ({
-      id: `TB-${i + 1}`,
-      name: `${defaultTeam2} Player ${i + 1}`,
-      isCaptain: i === 0,
-      isKeeper: i === 1,
-    }));
+    if (isGully) {
+      return Array.from({ length: squadSize }, (_, i) => ({
+        id: `TB-${i + 1}`,
+        name: `${defaultTeam2} Player ${i + 1}`,
+        isCaptain: i === 0,
+        isKeeper: i === 1,
+      }));
+    }
+    return DUMMY_TEAM_B_PLAYERS;
   });
   const [teamBSubs, setTeamBSubs] = useState(() => {
-    return Array.from({ length: subsSize }, (_, i) => ({
-      id: `TB-SUB${i + 1}`,
-      name: `${defaultTeam2} Sub ${i + 1}`,
-    }));
+    if (isGully) {
+      return Array.from({ length: subsSize }, (_, i) => ({
+        id: `TB-SUB${i + 1}`,
+        name: `${defaultTeam2} Sub ${i + 1}`,
+      }));
+    }
+    return DUMMY_TEAM_B_SUBS;
   });
 
   // Fetch actual registered roster members if eventId is available

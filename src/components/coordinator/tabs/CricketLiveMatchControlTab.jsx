@@ -195,14 +195,35 @@ export const CricketLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
     }
   };
 
+  const DEFAULT_TEST_CRICKET_FIXTURES = [
+    {
+      id: 'M-CRK-101',
+      sportId: 'cricket',
+      sport: 'cricket',
+      sportName: 'Cricket',
+      eventTitle: 'Inter-College T20 Cricket Championship 2026',
+      format: 'Team',
+      category: 'Open',
+      team1: 'MPEC Titans XI',
+      team2: 'PSIT Super Kings',
+      tableNumber: 'Cricket Ground 1',
+      venue: 'Cricket Ground 1',
+      date: new Date().toISOString().split('T')[0],
+      time: '10:00 AM',
+      status: 'SCHEDULED',
+    }
+  ];
+
   // Scheduled matches eligible for Go Live
-  const scheduledMatches = (matches || []).filter((m) => {
+  const rawCricketMatches = (matches || []).filter((m) => {
     if (!m || m.status === 'COMPLETED' || m.status === 'FINISHED') return false;
     const mSport = (m.sport || m.sportId || '').toLowerCase();
     const mTitle = (m.eventTitle || m.title || '').toLowerCase();
     if (mSport.includes('gully') || mTitle.includes('gully')) return false;
     return true;
   });
+
+  const scheduledMatches = rawCricketMatches.length > 0 ? rawCricketMatches : DEFAULT_TEST_CRICKET_FIXTURES;
 
   return (
     <div className="space-y-6 animate-fade-in font-sans">

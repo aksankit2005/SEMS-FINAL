@@ -11,14 +11,35 @@ export const CricketMatchScheduleTab = ({ matches, user, onUpdateMatches, global
   const assignedSport = 'cricket';
   const sportName = 'Cricket';
 
+  const DEFAULT_TEST_CRICKET_FIXTURES = [
+    {
+      id: 'M-CRK-101',
+      sportId: 'cricket',
+      sport: 'cricket',
+      sportName: 'Cricket',
+      eventTitle: 'Inter-College T20 Cricket Championship 2026',
+      format: 'Team',
+      category: 'Open',
+      team1: 'MPEC Titans XI',
+      team2: 'PSIT Super Kings',
+      tableNumber: 'Cricket Ground 1',
+      venue: 'Cricket Ground 1',
+      date: new Date().toISOString().split('T')[0],
+      time: '10:00 AM',
+      status: 'SCHEDULED',
+    }
+  ];
+
   // Active scheduled matches for Cricket
-  const scheduledMatches = (matches || []).filter((m) => {
+  const rawCricketMatches = (matches || []).filter((m) => {
     if (!m || m.status === 'COMPLETED' || m.status === 'FINISHED') return false;
     const mSport = (m.sport || m.sportId || '').toLowerCase();
     const mTitle = (m.eventTitle || m.title || '').toLowerCase();
     if (mSport.includes('gully') || mTitle.includes('gully')) return false;
     return true;
   });
+
+  const scheduledMatches = rawCricketMatches.length > 0 ? rawCricketMatches : DEFAULT_TEST_CRICKET_FIXTURES;
 
   // Search filter
   const filteredMatches = scheduledMatches.filter((m) => {
@@ -35,7 +56,13 @@ export const CricketMatchScheduleTab = ({ matches, user, onUpdateMatches, global
 
   const [createdEvents, setCreatedEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState('');
-  const [eligibleCompetitors, setEligibleCompetitors] = useState({ teams: [], participants: [] });
+  const [eligibleCompetitors, setEligibleCompetitors] = useState({
+    teams: [
+      { id: 'team-mpec-titans', teamName: 'MPEC Titans XI', college: 'MPEC', displayName: 'MPEC Titans XI (MPEC)' },
+      { id: 'team-psit-kings', teamName: 'PSIT Super Kings', college: 'PSIT', displayName: 'PSIT Super Kings (PSIT)' },
+    ],
+    participants: []
+  });
   const [loadingCompetitors, setLoadingCompetitors] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
@@ -43,13 +70,13 @@ export const CricketMatchScheduleTab = ({ matches, user, onUpdateMatches, global
     format: 'Team',
     category: 'Open',
     eventTitle: 'Inter-College T20 Cricket Championship 2026',
-    team1: '',
-    team2: '',
-    team1Id: '',
-    team2Id: '',
+    team1: 'MPEC Titans XI',
+    team2: 'PSIT Super Kings',
+    team1Id: 'team-mpec-titans',
+    team2Id: 'team-psit-kings',
     tableNumber: 'Cricket Ground 1',
     date: new Date().toISOString().split('T')[0],
-    time: '09:00 AM',
+    time: '10:00 AM',
   });
 
   const activeEvents = createdEvents.filter((e) => e && e.status !== 'Draft' && e.status !== 'Completed');

@@ -44,27 +44,42 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
 
   // Setup data extraction
   const setupData = match?.setupData || {};
-  const teamA = setupData.teamA?.name || match?.team1 || 'Team A';
-  const teamB = setupData.teamB?.name || match?.team2 || 'Team B';
+  const teamA = setupData.teamA?.name || match?.team1 || 'MPEC Titans XI';
+  const teamB = setupData.teamB?.name || match?.team2 || 'PSIT Super Kings';
 
   const batting1stTeamInitial = setupData.battingTeamName || teamA;
   const bowling1stTeamInitial = setupData.bowlingTeamName || teamB;
 
   const totalOversMax = Number(setupData.matchDetails?.totalOvers || match?.totalOversMax || 20);
 
+  const DEFAULT_TEAM_A_PLAYERS = [
+    { name: 'Rohit Sharma' }, { name: 'Shubman Gill' }, { name: 'Virat Kohli' }, { name: 'Shreyas Iyer' },
+    { name: 'KL Rahul' }, { name: 'Hardik Pandya' }, { name: 'Ravindra Jadeja' }, { name: 'Axar Patel' },
+    { name: 'Kuldeep Yadav' }, { name: 'Jasprit Bumrah' }, { name: 'Mohammed Siraj' }
+  ];
+
+  const DEFAULT_TEAM_B_PLAYERS = [
+    { name: 'Travis Head' }, { name: 'David Warner' }, { name: 'Steve Smith' }, { name: 'Marnus Labuschagne' },
+    { name: 'Glenn Maxwell' }, { name: 'Marcus Stoinis' }, { name: 'Alex Carey' }, { name: 'Pat Cummins' },
+    { name: 'Mitchell Starc' }, { name: 'Adam Zampa' }, { name: 'Josh Hazlewood' }
+  ];
+
+  const DEFAULT_TEAM_A_SUBS = [{ name: 'Suryakumar Yadav' }, { name: 'Mohammed Shami' }];
+  const DEFAULT_TEAM_B_SUBS = [{ name: 'Nathan Lyon' }, { name: 'Cameron Green' }];
+
   // Playing XI Squads
   const [teamAPlayerList, setTeamAPlayerList] = useState(
-    setupData.teamAPlayers || Array.from({ length: 11 }, (_, i) => ({ name: `${teamA} Player ${i + 1}` }))
+    setupData.teamAPlayers || setupData.teamA?.players || DEFAULT_TEAM_A_PLAYERS
   );
   const [teamBPlayerList, setTeamBPlayerList] = useState(
-    setupData.teamBPlayers || Array.from({ length: 11 }, (_, i) => ({ name: `${teamB} Player ${i + 1}` }))
+    setupData.teamBPlayers || setupData.teamB?.players || DEFAULT_TEAM_B_PLAYERS
   );
 
   const [teamASubsList, setTeamASubsList] = useState(
-    setupData.teamASubs || Array.from({ length: 4 }, (_, i) => ({ name: `${teamA} Sub ${i + 1}` }))
+    setupData.teamASubs || setupData.teamA?.subs || DEFAULT_TEAM_A_SUBS
   );
   const [teamBSubsList, setTeamBSubsList] = useState(
-    setupData.teamBSubs || Array.from({ length: 4 }, (_, i) => ({ name: `${teamB} Sub ${i + 1}` }))
+    setupData.teamBSubs || setupData.teamB?.subs || DEFAULT_TEAM_B_SUBS
   );
 
   // Innings state: 1 or 2
@@ -91,13 +106,13 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
 
   // Active On-Field Batsmen and Bowler tracking
   const [activeStriker, setActiveStriker] = useState(
-    match?.striker?.name || setupData.openingStriker || currentBattingSquad[0]?.name || 'Striker'
+    match?.striker?.name || setupData.openingStriker || currentBattingSquad[0]?.name || 'Rohit Sharma'
   );
   const [activeNonStriker, setActiveNonStriker] = useState(
-    match?.nonStriker?.name || setupData.openingNonStriker || currentBattingSquad[1]?.name || 'Non-Striker'
+    match?.nonStriker?.name || setupData.openingNonStriker || currentBattingSquad[1]?.name || 'Shubman Gill'
   );
   const [activeBowler, setActiveBowler] = useState(
-    match?.bowler?.name || setupData.openingBowler || currentBowlingSquad[currentBowlingSquad.length - 1]?.name || 'Bowler'
+    match?.bowler?.name || setupData.openingBowler || currentBowlingSquad[currentBowlingSquad.length - 3]?.name || currentBowlingSquad[currentBowlingSquad.length - 1]?.name || 'Mitchell Starc'
   );
 
   // Previous over bowler tracking to enforce rule: Bowler cannot bowl 2 consecutive overs
