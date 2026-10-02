@@ -656,6 +656,9 @@ export const getSportResultDisplay = (r) => {
     const targetRuns = r.targetRuns || details.targetRuns || (Number(runs1) > 0 ? Number(runs1) + 1 : null);
     const resultString = str(r.resultString || details.resultString || (winner ? `${winner} won` : 'Match Completed'));
 
+    const motmObj = r.motm || details.motm || null;
+    const resolvedMvp = str(motmObj?.playerName || r.manOfTheMatch || details.manOfTheMatch || mvp, '');
+
     return {
       sportId: isGully ? 'gully-cricket' : 'cricket',
       sportName: isGully ? 'Gully Cricket' : 'Cricket',
@@ -669,7 +672,8 @@ export const getSportResultDisplay = (r) => {
       date,
       winner: winner || resultString,
       resultString,
-      mvp: mvp && mvp !== winner ? mvp : null,
+      mvp: resolvedMvp && resolvedMvp !== winner ? resolvedMvp : null,
+      motm: motmObj,
       cricket: {
         runs1,
         wickets1: wkts1,
@@ -680,7 +684,8 @@ export const getSportResultDisplay = (r) => {
         overs2: ov2,
         innings2Text: `${runs2}/${wkts2} (${ov2} ov)`,
         targetRuns,
-        resultString
+        resultString,
+        motm: motmObj || (resolvedMvp ? { playerName: resolvedMvp, teamName: '', performanceSummary: '' } : null)
       },
       summaryText: `${team1}: ${runs1}/${wkts1} (${ov1} ov) vs ${team2}: ${runs2}/${wkts2} (${ov2} ov) • ${resultString}`
     };

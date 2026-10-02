@@ -811,6 +811,9 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
     const cricketScore2 = cricketInnings2.runs !== undefined ? cricketInnings2.runs : (match.score2 !== undefined ? match.score2 : (cricketComputed?.innings2?.runs || 0));
     const cricketWickets2 = cricketInnings2.wickets !== undefined ? cricketInnings2.wickets : (match.wickets2 !== undefined ? match.wickets2 : (cricketComputed?.innings2?.wickets || 0));
     const cricketOvers2 = cricketInnings2.oversFormatted || match.overs2 || cricketComputed?.innings2?.oversFormatted || '0.0';
+    const cricketMotmObj = isCricketMatch ? (match.motm || cricketDetails.motm || null) : null;
+    const cricketMotmPlayer = cricketMotmObj?.playerName || match.manOfTheMatch || cricketDetails.manOfTheMatch || '';
+    const cricketMotmTeam = cricketMotmObj?.teamName || '';
 
     const roundsHistory = Array.isArray(match.roundsHistory) && match.roundsHistory.length > 0
       ? match.roundsHistory
@@ -1085,7 +1088,11 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
     doc.text(`Format: ${format}`, margin + 8, y + 8);
     doc.text(`Venue: ${sanitizeText(match.tableNumber || match.venue || 'Main Arena')}`, margin + 8, y + 16);
     doc.text(`Completed: ${completedAt}`, margin + (contentW / 2), y + 8);
-    doc.text(`Status: COMPLETED & VERIFIED`, margin + (contentW / 2), y + 16);
+    if (isCricketMatch && cricketMotmPlayer && cricketMotmPlayer !== 'To Be Announced') {
+      doc.text(`Player of Match: ${sanitizeText(cricketMotmPlayer)}${cricketMotmTeam ? ` (${sanitizeText(cricketMotmTeam)})` : ''}`, margin + (contentW / 2), y + 16);
+    } else {
+      doc.text(`Status: COMPLETED & VERIFIED`, margin + (contentW / 2), y + 16);
+    }
 
     // Signatures & Stamp Footer
     y += 34;
@@ -1245,7 +1252,10 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
 
       // Result and Player of the Match
       const resultString = sanitizeText(match.resultString || details.resultString || computedState.matchVerdict || match.winner || 'Match Completed');
-      const manOfTheMatch = sanitizeText(match.manOfTheMatch || details.mvp || details.playerOfMatch || match.winner || 'To Be Announced');
+      const motmObj = match.motm || details.motm || null;
+      const manOfTheMatch = sanitizeText(motmObj?.playerName || match.manOfTheMatch || details.mvp || details.playerOfMatch || match.winner || 'To Be Announced');
+      const motmTeam = sanitizeText(motmObj?.teamName || '');
+      const motmPerf = sanitizeText(motmObj?.performanceSummary || '');
 
       // Fielding Performance
       const fieldingList = details.playerPerformances?.fielders || computedState.allFielding || [];
@@ -1334,20 +1344,28 @@ export const generateMatchResultPDF = (match = {}, sportName = 'Sports') => {
       doc.text(sanitizeText(scoreSummaryLine), margin + 5, py + 18);
 
       // Player of Match Box on right
-      const potmBoxW = 62;
+      const potmBoxW = 66;
       const potmBoxX = pageW - margin - potmBoxW - 4;
       doc.setFillColor(15, 23, 42);
       doc.setDrawColor(245, 158, 11);
       doc.setLineWidth(0.5);
-      doc.roundedRect(potmBoxX, py + 3.5, potmBoxW, 16, 2, 2, 'FD');
+      doc.roundedRect(potmBoxX, py + 2.5, potmBoxW, 18, 2, 2, 'FD');
       doc.setTextColor(245, 158, 11);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(6.5);
-      doc.text('PLAYER OF MATCH', potmBoxX + (potmBoxW / 2), py + 8.5, { align: 'center' });
+      doc.text('PLAYER OF MATCH', potmBoxX + (potmBoxW / 2), py + 6.5, { align: 'center' });
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(7.5);
-      const potmDisplay = manOfTheMatch.length > 26 ? manOfTheMatch.substring(0, 24) + '...' : manOfTheMatch;
-      doc.text(potmDisplay, potmBoxX + (potmBoxW / 2), py + 14.5, { align: 'center' });
+      const playerTeamStr = motmTeam ? `${manOfTheMatch} (${motmTeam})` : manOfTheMatch;
+      const potmDisplay = playerTeamStr.length > 28 ? playerTeamStr.substring(0, 26) + '...' : playerTeamStr;
+      doc.text(potmDisplay, potmBoxX + (potmBoxW / 2), py + 11.5, { align: 'center' });
+      if (motmPerf) {
+        doc.setTextColor(52, 211, 153);
+        doc.setFontSize(5.8);
+        doc.setFont('helvetica', 'normal');
+        const perfDisplay = motmPerf.length > 42 ? motmPerf.substring(0, 40) + '...' : motmPerf;
+        doc.text(perfDisplay, potmBoxX + (potmBoxW / 2), py + 16.2, { align: 'center' });
+      }
 
       py += 27;
 

@@ -47,6 +47,28 @@ const SportResultSummary = ({ resultData }) => {
               <span>⚡</span> {display.resultString}
             </p>
           )}
+          {display.cricket?.motm && display.cricket.motm.playerName && (
+            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-0.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                  🏆 Man of the Match
+                </span>
+                {display.cricket.motm.teamName && (
+                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold">
+                    {display.cricket.motm.teamName}
+                  </span>
+                )}
+              </div>
+              <p className="font-bold text-[#211D2B] dark:text-[#F5F2FA] text-xs">
+                {display.cricket.motm.playerName}
+              </p>
+              {display.cricket.motm.performanceSummary && (
+                <p className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-medium">
+                  {display.cricket.motm.performanceSummary}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       );
 

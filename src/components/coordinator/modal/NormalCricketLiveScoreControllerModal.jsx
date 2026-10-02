@@ -15,7 +15,8 @@ import {
   calculateCompleteMatchState, 
   generateCricketCommentary, 
   formatBallsToOvers, 
-  formatDismissalText 
+  formatDismissalText,
+  compileCricketMatchPerformances 
 } from '../../../utils/cricketEngine';
 
 export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClose, onMatchUpdated }) => {
@@ -213,9 +214,18 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
     customSubName: '',
   });
 
-  const [matchEndedModal, setMatchEndedModal] = useState(false);
+  const [matchEndedModal, setMatchEndedModal] = useState(() => match?.status === 'COMPLETED');
   const [matchWinnerResult, setMatchWinnerResult] = useState(match?.resultString || match?.winner || '');
   const [showFullScorecard, setShowFullScorecard] = useState(false);
+
+  // Man of the Match (MOTM) Selection & State
+  const [confirmedMotm, setConfirmedMotm] = useState(() => {
+    return match?.motm || match?.details?.motm || cachedState?.motm || null;
+  });
+  const [selectedMotmPlayerName, setSelectedMotmPlayerName] = useState(() => {
+    return match?.motm?.playerName || match?.details?.motm?.playerName || '';
+  });
+  const [isEditingMotm, setIsEditingMotm] = useState(false);
 
   // Innings Management & Transition Modal State (Automatic & Manual)
   const [inningsTransitionModalOpen, setInningsTransitionModalOpen] = useState(false);
@@ -308,6 +318,120 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
       setTargetRuns(inn1Stats.runs + 1);
     }
   }, [inn1Stats.runs, targetRuns]);
+
+  // Live / Concluded Match Performance Data for MOTM
+  const currentMatchSnapshot = useMemo(() => {
+    return {
+      ...match,
+      ballEvents,
+      team1: teamA,
+      team2: teamB,
+      setupData: {
+        ...setupData,
+        teamA: { ...(setupData.teamA || {}), name: teamA, players: teamAPlayerList },
+        teamB: { ...(setupData.teamB || {}), name: teamB, players: teamBPlayerList },
+        battingTeamName: batting1stTeamInitial,
+        bowlingTeamName: bowling1stTeamInitial
+      },
+      details: {
+        ...(match?.details || {}),
+        ballEvents,
+        innings1: inn1Stats,
+        innings2: inn2Stats,
+        winner: matchWinnerResult,
+        resultString: matchWinnerResult
+      }
+    };
+  }, [match, ballEvents, teamA, teamB, setupData, teamAPlayerList, teamBPlayerList, batting1stTeamInitial, bowling1stTeamInitial, inn1Stats, inn2Stats, matchWinnerResult]);
+
+  const performanceData = useMemo(() => {
+    return compileCricketMatchPerformances(currentMatchSnapshot);
+  }, [currentMatchSnapshot]);
+
+  const activeSelectedMotmPlayer = useMemo(() => {
+    if (selectedMotmPlayerName) {
+      const found = performanceData.players.find(p => p.playerName === selectedMotmPlayerName);
+      if (found) return found;
+    }
+    return performanceData.topCandidates[0] || performanceData.players[0] || null;
+  }, [selectedMotmPlayerName, performanceData]);
+
+  // Handle Coordinator Confirmation of Man of the Match
+  const handleConfirmMOTM = async (playerToConfirm = activeSelectedMotmPlayer) => {
+    if (!playerToConfirm) {
+      addToast('Please select a player for Man of the Match.', 'warning');
+      return;
+    }
+
+    const motmObj = {
+      playerId: String(playerToConfirm.playerId || playerToConfirm.playerName || '').trim(),
+      playerName: String(playerToConfirm.playerName || '').trim(),
+      teamId: String(playerToConfirm.teamId || '').trim(),
+      teamName: String(playerToConfirm.teamName || '').trim(),
+      performanceSummary: String(playerToConfirm.performanceSummary || '').trim()
+    };
+
+    const finalResult = matchWinnerResult || match?.resultString || match?.winner || (
+      currentInnings === 2 && inn2Stats.runs >= targetRuns
+        ? `${bowling1stTeamInitial} won by ${10 - inn2Stats.wickets} wickets!`
+        : `${batting1stTeamInitial} won by ${Math.max(1, (targetRuns || 0) - inn2Stats.runs)} runs!`
+    );
+
+    const updatedCompletedObj = {
+      ...match,
+      status: 'COMPLETED',
+      winner: finalResult,
+      resultString: finalResult,
+      score1: inn1Stats.runs,
+      wickets1: inn1Stats.wickets,
+      overs1: inn1Stats.oversFormatted,
+      score2: inn2Stats.runs,
+      wickets2: inn2Stats.wickets,
+      overs2: inn2Stats.oversFormatted,
+      completedAt: match?.completedAt || new Date().toISOString(),
+      battingCard1: inn1Stats.battingStats,
+      bowlingCard1: inn1Stats.bowlingStats,
+      battingCard2: inn2Stats.battingStats,
+      bowlingCard2: inn2Stats.bowlingStats,
+      motm: motmObj,
+      manOfTheMatch: motmObj.playerName,
+      details: {
+        ...(match?.details || {}),
+        score1: inn1Stats.runs,
+        score2: inn2Stats.runs,
+        wickets1: inn1Stats.wickets,
+        wickets2: inn2Stats.wickets,
+        overs1: inn1Stats.oversFormatted,
+        overs2: inn2Stats.oversFormatted,
+        targetRuns: targetRuns || (inn1Stats.runs + 1),
+        resultString: finalResult,
+        winner: finalResult,
+        motm: motmObj,
+        manOfTheMatch: motmObj.playerName,
+        ballEvents,
+        innings1: inn1Stats,
+        innings2: inn2Stats,
+        playerPerformances: {
+          batters: [...inn1Stats.battingStats, ...inn2Stats.battingStats],
+          bowlers: [...inn1Stats.bowlingStats, ...inn2Stats.bowlingStats],
+          fielders: [...inn1Stats.fieldingStats, ...inn2Stats.fieldingStats]
+        },
+        commentaryLog: inn2Stats.commentaryLog || inn1Stats.commentaryLog || []
+      }
+    };
+
+    try {
+      await coordinatorApi.completeMatch(match.id, updatedCompletedObj);
+      setConfirmedMotm(motmObj);
+      setIsEditingMotm(false);
+      generateMatchResultPDF(updatedCompletedObj, 'Cricket');
+      if (onMatchUpdated) onMatchUpdated(match.id, updatedCompletedObj);
+      addToast(`🏆 Man of the Match confirmed: ${motmObj.playerName} (${motmObj.teamName})`, 'success');
+    } catch (err) {
+      console.error('Failed to confirm Man of the Match:', err);
+      addToast('Failed to save Man of the Match: ' + (err.message || 'Error'), 'error');
+    }
+  };
 
   // Sync state to backend API and localStorage
   const syncLiveState = useCallback(async (customBallEvents = ballEvents, customInn = currentInnings, customTarget = targetRuns, customResult = matchWinnerResult) => {
@@ -444,6 +568,8 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
       bowlingCard1: s1.bowlingStats,
       battingCard2: s2.battingStats,
       bowlingCard2: s2.bowlingStats,
+      motm: confirmedMotm || match?.motm || match?.details?.motm || null,
+      manOfTheMatch: confirmedMotm?.playerName || match?.manOfTheMatch || match?.details?.manOfTheMatch || '',
       details: {
         ...(match?.details || {}),
         score1: s1.runs,
@@ -455,6 +581,8 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
         targetRuns: finalTarget,
         resultString: finalResult,
         winner: finalResult,
+        motm: confirmedMotm || match?.motm || match?.details?.motm || null,
+        manOfTheMatch: confirmedMotm?.playerName || match?.manOfTheMatch || match?.details?.manOfTheMatch || '',
         ballEvents: eventsToFinalize,
         innings1: s1,
         innings2: s2,
@@ -1830,10 +1958,10 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
       {/* MODAL 6: MATCH ENDED CONCLUDED MODAL */}
       {matchEndedModal && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/90 backdrop-blur-md">
-          <div className="w-full max-w-lg bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-6 space-y-5 shadow-2xl text-center">
+          <div className="w-full max-w-xl max-h-[92vh] overflow-y-auto bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-2xl text-center custom-scrollbar">
             
-            <div className="w-16 h-16 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30 flex items-center justify-center mx-auto">
-              <Trophy className="w-8 h-8 animate-bounce" />
+            <div className="w-14 h-14 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30 flex items-center justify-center mx-auto">
+              <Trophy className="w-7 h-7 animate-bounce" />
             </div>
 
             <div className="space-y-1">
@@ -1844,7 +1972,7 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
             </div>
 
             {/* Winner Banner */}
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-amber-500/20 border border-amber-500/40 space-y-1">
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-amber-500/20 border border-amber-500/40 space-y-1">
               <span className="text-[10px] font-mono text-amber-700 dark:text-amber-300 font-bold uppercase">Official Winner Declaration</span>
               <p className="text-lg font-black text-amber-600 dark:text-amber-400">
                 🏆 {matchWinnerResult}
@@ -1868,6 +1996,204 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
                 </strong>
                 <span className="block text-[10px] text-slate-500">({currentInnings === 2 ? inn2Stats.oversFormatted : '0.0'} ov)</span>
               </div>
+            </div>
+
+            {/* MAN OF THE MATCH SECTION */}
+            <div className="p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/30 text-left space-y-3">
+              <div className="flex items-center justify-between border-b border-amber-500/20 pb-2">
+                <span className="text-[11px] font-mono font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider flex items-center gap-1.5">
+                  <Award className="w-4 h-4 text-amber-500" />
+                  Man of the Match
+                </span>
+                {confirmedMotm && !isEditingMotm && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    Official Award Confirmed
+                  </span>
+                )}
+              </div>
+
+              {/* If MOTM is already confirmed and not currently in edit mode: display confirmed MOTM card */}
+              {confirmedMotm && !isEditingMotm ? (
+                <div className="p-3.5 rounded-xl bg-white dark:bg-[#0B1120] border border-amber-500/40 shadow-sm space-y-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-0.5 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-mono text-slate-400 uppercase font-bold">Award Winner:</span>
+                        {confirmedMotm.teamName && (
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                            {confirmedMotm.teamName}
+                          </span>
+                        )}
+                      </div>
+                      <h4 className="text-base font-black text-slate-900 dark:text-white truncate">
+                        {confirmedMotm.playerName}
+                      </h4>
+                      {confirmedMotm.performanceSummary && (
+                        <p className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 pt-0.5">
+                          ⚡ {confirmedMotm.performanceSummary}
+                        </p>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedMotmPlayerName(confirmedMotm.playerName);
+                        setIsEditingMotm(true);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-300 dark:border-slate-700 transition flex items-center gap-1 cursor-pointer shrink-0"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Edit MOTM</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* MOTM Candidate Selection & Real-Time Performance View */
+                <div className="space-y-3">
+                  {/* Top Candidates Quick Chips */}
+                  {performanceData.topCandidates && performanceData.topCandidates.length > 0 && (
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                        ⭐ Top Match Candidates (Calculated from match stats):
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {performanceData.topCandidates.map((cand) => {
+                          const isSel = activeSelectedMotmPlayer?.playerName === cand.playerName;
+                          return (
+                            <button
+                              key={cand.playerName}
+                              type="button"
+                              onClick={() => setSelectedMotmPlayerName(cand.playerName)}
+                              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border ${
+                                isSel
+                                  ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md font-black'
+                                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-amber-500/40'
+                              }`}
+                            >
+                              <span>{cand.playerName}</span>
+                              <span className={`text-[10px] font-mono px-1 rounded ${isSel ? 'bg-amber-600/30 text-slate-950 font-black' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
+                                {cand.teamName ? (cand.teamName.length > 10 ? cand.teamName.substring(0, 8) + '..' : cand.teamName) : ''}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Player Dropdown from either team */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                      Select Player from Either Squad:
+                    </label>
+                    <select
+                      value={activeSelectedMotmPlayer?.playerName || ''}
+                      onChange={(e) => setSelectedMotmPlayerName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    >
+                      <optgroup label={`🏏 ${teamA}`}>
+                        {performanceData.players
+                          .filter((p) => norm(p.teamName) === norm(teamA))
+                          .map((p) => (
+                            <option key={p.playerName} value={p.playerName}>
+                              {p.playerName} ({teamA}) — {p.performanceSummary}
+                            </option>
+                          ))}
+                      </optgroup>
+                      <optgroup label={`🏏 ${teamB}`}>
+                        {performanceData.players
+                          .filter((p) => norm(p.teamName) === norm(teamB))
+                          .map((p) => (
+                            <option key={p.playerName} value={p.playerName}>
+                              {p.playerName} ({teamB}) — {p.performanceSummary}
+                            </option>
+                          ))}
+                      </optgroup>
+                    </select>
+                  </div>
+
+                  {/* Selected Player Detailed Live Performance Box */}
+                  {activeSelectedMotmPlayer && (
+                    <div className="p-3.5 rounded-xl bg-white dark:bg-[#0B1120] border border-amber-500/30 space-y-2 font-mono">
+                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                        <div>
+                          <span className="text-[9px] text-slate-400 uppercase font-bold block">Match Performance Details</span>
+                          <h4 className="text-sm font-black text-slate-900 dark:text-white font-sans">
+                            {activeSelectedMotmPlayer.playerName}
+                          </h4>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                          {activeSelectedMotmPlayer.teamName}
+                        </span>
+                      </div>
+
+                      {/* Batting, Bowling, Fielding Metrics Breakdown */}
+                      <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                        <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-0.5">
+                          <span className="text-[9px] text-slate-400 uppercase font-bold block">Batting</span>
+                          <span className="font-bold text-slate-900 dark:text-white block">
+                            {activeSelectedMotmPlayer.runs} ({activeSelectedMotmPlayer.balls}b)
+                          </span>
+                          <span className="text-[9px] text-slate-500 block">
+                            {activeSelectedMotmPlayer.fours}x4, {activeSelectedMotmPlayer.sixes}x6 • SR {activeSelectedMotmPlayer.strikeRate}
+                          </span>
+                          <span className="text-[9px] text-slate-400 block italic">
+                            {activeSelectedMotmPlayer.isOut ? activeSelectedMotmPlayer.dismissal : 'Not Out *'}
+                          </span>
+                        </div>
+
+                        <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-0.5">
+                          <span className="text-[9px] text-slate-400 uppercase font-bold block">Bowling</span>
+                          <span className="font-bold text-rose-600 dark:text-rose-400 block">
+                            {activeSelectedMotmPlayer.wickets} / {activeSelectedMotmPlayer.runsConceded}
+                          </span>
+                          <span className="text-[9px] text-slate-500 block">
+                            {activeSelectedMotmPlayer.overs} ov • Econ {activeSelectedMotmPlayer.economy}
+                          </span>
+                          <span className="text-[9px] text-slate-400 block">
+                            {activeSelectedMotmPlayer.maidens} M, {activeSelectedMotmPlayer.wides} Wd, {activeSelectedMotmPlayer.noBalls} Nb
+                          </span>
+                        </div>
+
+                        <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-0.5">
+                          <span className="text-[9px] text-slate-400 uppercase font-bold block">Fielding</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400 block">
+                            {activeSelectedMotmPlayer.catches} Catch{activeSelectedMotmPlayer.catches === 1 ? '' : 'es'}
+                          </span>
+                          <span className="text-[9px] text-slate-500 block">
+                            {activeSelectedMotmPlayer.runOuts} RO • {activeSelectedMotmPlayer.stumpings} St
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-500/10 p-2 rounded-lg">
+                        ⚡ {activeSelectedMotmPlayer.performanceSummary}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Confirm Button */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleConfirmMOTM(activeSelectedMotmPlayer)}
+                      className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-md flex items-center justify-center gap-1.5 cursor-pointer transition active:scale-98"
+                    >
+                      <Award className="w-4 h-4" /> Confirm Man of the Match
+                    </button>
+                    {confirmedMotm && (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingMotm(false)}
+                        className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold text-xs border border-slate-300 dark:border-slate-700 cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Confirmation Note */}
@@ -1914,6 +2240,8 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
             resultString: matchWinnerResult || match?.resultString,
             winner: matchWinnerResult || match?.winner,
             ballEvents,
+            motm: confirmedMotm || match?.motm || match?.details?.motm,
+            manOfTheMatch: confirmedMotm?.playerName || match?.manOfTheMatch || match?.details?.manOfTheMatch,
             details: {
               ...(match?.details || {}),
               ballEvents,
@@ -1922,6 +2250,8 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
               targetRuns,
               resultString: matchWinnerResult,
               winner: matchWinnerResult,
+              motm: confirmedMotm || match?.motm || match?.details?.motm,
+              manOfTheMatch: confirmedMotm?.playerName || match?.manOfTheMatch || match?.details?.manOfTheMatch,
               playerPerformances: {
                 batters: [...inn1Stats.battingStats, ...inn2Stats.battingStats],
                 bowlers: [...inn1Stats.bowlingStats, ...inn2Stats.bowlingStats],

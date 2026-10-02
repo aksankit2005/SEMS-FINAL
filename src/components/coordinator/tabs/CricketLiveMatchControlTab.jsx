@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Tv, Video, Eye, Trash2, Save, Square, UserCheck, Activity, Play, Pause, Trophy, Plus } from 'lucide-react';
+import { CheckCircle2, Tv, Video, Eye, Trash2, Save, Square, UserCheck, Activity, Play, Pause, Trophy, Plus, Award, FileText, Download } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
 import { getSportConfig } from '../../../data/sportsConfig';
@@ -7,10 +7,12 @@ import { extractYouTubeVideoId, getYouTubeEmbedUrl } from '../../../utils/youtub
 import { generateMatchResultPDF } from '../../../utils/pdfExporter';
 import { CricketGoLiveSetupModal } from '../modal/CricketGoLiveSetupModal';
 import { CricketLiveScoreControllerModal } from '../modal/CricketLiveScoreControllerModal';
+import { CricketScorecardModal } from '../modal/CricketScorecardModal';
 
 export const CricketLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }) => {
   const { addToast } = useToast();
   const assignedSport = 'cricket';
+  const [selectedScorecardMatch, setSelectedScorecardMatch] = useState(null);
 
   // Strictly 1 Cricket Ground
   const venueCards = ['Cricket Ground 1'];
@@ -225,6 +227,15 @@ export const CricketLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
 
   const scheduledMatches = rawCricketMatches.length > 0 ? rawCricketMatches : DEFAULT_TEST_CRICKET_FIXTURES;
 
+  // Completed cricket matches with results & MOTM
+  const completedCricketMatches = (matches || []).filter((m) => {
+    if (!m || (m.status !== 'COMPLETED' && m.status !== 'FINISHED')) return false;
+    const mSport = (m.sport || m.sportId || '').toLowerCase();
+    const mTitle = (m.eventTitle || m.title || '').toLowerCase();
+    if (mSport.includes('gully') || mTitle.includes('gully')) return false;
+    return true;
+  });
+
   return (
     <div className="space-y-6 animate-fade-in font-sans">
       
@@ -386,6 +397,101 @@ export const CricketLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
         })}
       </div>
 
+      {/* COMPLETED CRICKET MATCHES (OFFICIAL RECORDS & MOTM) */}
+      {completedCricketMatches.length > 0 && (
+        <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-amber-500" />
+              Completed Match Results & Official MOTM ({completedCricketMatches.length})
+            </h3>
+            <span className="text-xs font-mono text-slate-400">All Official Match Records</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {completedCricketMatches.map((m) => {
+              const motmObj = m.motm || m.details?.motm || null;
+              const motmName = motmObj?.playerName || m.manOfTheMatch || m.details?.manOfTheMatch;
+              const motmTeam = motmObj?.teamName || '';
+              const motmPerf = motmObj?.performanceSummary || '';
+
+              return (
+                <div
+                  key={m.id}
+                  className="p-5 rounded-3xl bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-xl space-y-3.5"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase">
+                      COMPLETED
+                    </span>
+                    <span className="text-xs font-mono text-slate-400">#{m.id}</span>
+                  </div>
+
+                  <div>
+                    <h4 className="text-base font-black text-slate-900 dark:text-white">
+                      {m.team1} vs {m.team2}
+                    </h4>
+                    <p className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 pt-0.5">
+                      🏆 {m.resultString || m.winner || 'Match Completed'}
+                    </p>
+                    <div className="text-xs font-mono text-slate-500 dark:text-slate-400 pt-1 flex items-center gap-3">
+                      <span>{m.team1}: {m.score1 ?? 0}/{m.wickets1 ?? 0} ({m.overs1 || '0.0'} ov)</span>
+                      <span>vs</span>
+                      <span>{m.team2}: {m.score2 ?? 0}/{m.wickets2 ?? 0} ({m.overs2 || '0.0'} ov)</span>
+                    </div>
+                  </div>
+
+                  {/* MAN OF THE MATCH CARD */}
+                  {motmName && (
+                    <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono font-bold uppercase text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                          <Award className="w-3.5 h-3.5 text-amber-500" /> Man of the Match
+                        </span>
+                        {motmTeam && (
+                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold">
+                            {motmTeam}
+                          </span>
+                        )}
+                      </div>
+                      <p className="font-bold text-slate-900 dark:text-white text-xs">
+                        {motmName}
+                      </p>
+                      {motmPerf && (
+                        <p className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-medium">
+                          {motmPerf}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                    <button
+                      onClick={() => setSelectedScorecardMatch(m)}
+                      className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>View Scorecard</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        generateMatchResultPDF(m, 'Cricket');
+                        addToast('Downloaded Cricket Match Scorecard PDF', 'success');
+                      }}
+                      className="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>PDF</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* GO LIVE MULTI-STEP SETUP WIZARD MODAL */}
       {activeGoLiveSetupMatch && (
         <CricketGoLiveSetupModal
@@ -416,6 +522,14 @@ export const CricketLiveMatchControlTab = ({ matches, user, onUpdateMatchScore }
               }));
             }
           }}
+        />
+      )}
+
+      {/* SCORECARD MODAL */}
+      {selectedScorecardMatch && (
+        <CricketScorecardModal
+          match={selectedScorecardMatch}
+          onClose={() => setSelectedScorecardMatch(null)}
         />
       )}
 

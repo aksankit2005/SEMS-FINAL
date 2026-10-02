@@ -309,7 +309,7 @@ export const calculateInningsStats = (
 
     // Track over index
     const thisOverIndex = Math.floor(Math.max(0, legalBalls - (isLegal ? 1 : 0)) / 6);
-    if (!bowlerObj.overRunsTracker[thisOverIndex]) {
+    if (bowlerObj && !bowlerObj.overRunsTracker[thisOverIndex]) {
       bowlerObj.overRunsTracker[thisOverIndex] = { runs: 0, legalCount: 0 };
     }
 
@@ -329,16 +329,19 @@ export const calculateInningsStats = (
     if (extraType === 'WIDE') {
       extras.wides += eRuns;
       extras.total += eRuns;
-      bowlerObj.wides += eRuns;
-      bowlerObj.runs += eRuns;
-      bowlerObj.overRunsTracker[thisOverIndex].runs += eRuns;
+      if (bowlerObj) {
+        bowlerObj.wides += eRuns;
+        bowlerObj.runs += eRuns;
+        if (bowlerObj.overRunsTracker[thisOverIndex]) bowlerObj.overRunsTracker[thisOverIndex].runs += eRuns;
+      }
     } else if (extraType === 'NO_BALL') {
       extras.noBalls += eRuns;
       extras.total += eRuns;
-      bowlerObj.noBalls += eRuns;
-      // No ball runs charged to bowler: 1 penalty + runs off the bat
-      bowlerObj.runs += (eRuns + bRuns);
-      bowlerObj.overRunsTracker[thisOverIndex].runs += (eRuns + bRuns);
+      if (bowlerObj) {
+        bowlerObj.noBalls += eRuns;
+        bowlerObj.runs += (eRuns + bRuns);
+        if (bowlerObj.overRunsTracker[thisOverIndex]) bowlerObj.overRunsTracker[thisOverIndex].runs += (eRuns + bRuns);
+      }
     } else if (extraType === 'BYE') {
       extras.byes += eRuns;
       extras.total += eRuns;
@@ -352,13 +355,15 @@ export const calculateInningsStats = (
       extras.total += eRuns;
     } else {
       // Clean bat delivery
-      bowlerObj.runs += bRuns;
-      bowlerObj.overRunsTracker[thisOverIndex].runs += bRuns;
+      if (bowlerObj) {
+        bowlerObj.runs += bRuns;
+        if (bowlerObj.overRunsTracker[thisOverIndex]) bowlerObj.overRunsTracker[thisOverIndex].runs += bRuns;
+      }
     }
 
-    if (isLegal) {
+    if (isLegal && bowlerObj) {
       bowlerObj.legalBalls += 1;
-      bowlerObj.overRunsTracker[thisOverIndex].legalCount += 1;
+      if (bowlerObj.overRunsTracker[thisOverIndex]) bowlerObj.overRunsTracker[thisOverIndex].legalCount += 1;
     }
 
     // 3. Wickets and Dismissal tracking
@@ -375,7 +380,6 @@ export const calculateInningsStats = (
       }
 
       const formattedDismissal = formatDismissalText(dType, currentBowler, fielderName);
-
       if (outBatter) {
         outBatter.dismissal = formattedDismissal;
         outBatter.isOut = !isRetHurt;
@@ -383,7 +387,7 @@ export const calculateInningsStats = (
 
       // Check if bowler is credited with wicket
       const bowlerCreditedTypes = ['bowled', 'caught', 'lbw', 'stumped', 'hit wicket'];
-      if (bowlerCreditedTypes.includes(dType.toLowerCase())) {
+      if (bowlerObj && bowlerCreditedTypes.includes(dType.toLowerCase())) {
         bowlerObj.wickets += 1;
       }
 
@@ -723,4 +727,246 @@ export const generateCricketCommentary = (bowlerName, strikerName, type, runVal 
   }
 
   return `${b} to ${s}. Delivery completed.`;
+};
+
+/**
+ * Compiles comprehensive player match performances from ball-by-ball match data
+ * across Batting, Bowling, and Fielding.
+ * Returns sorted list of all players with performance summaries and heuristic MOTM candidate ranking.
+ */
+export const compileCricketMatchPerformances = (match = {}) => {
+  const computed = calculateCompleteMatchState(match || {});
+  const setupData = match?.setupData || match?.details?.setupData || {};
+
+  const teamAName = setupData.teamA?.name || match?.team1 || match?.teamA?.name || 'Team A';
+  const teamBName = setupData.teamB?.name || match?.team2 || match?.teamB?.name || 'Team B';
+
+  const batting1stTeam = setupData.battingTeamName || teamAName;
+  const bowling1stTeam = setupData.bowlingTeamName || teamBName;
+
+  const teamAPlayers = setupData.teamAPlayers || setupData.teamA?.players || match?.teamAPlayerList || [];
+  const teamBPlayers = setupData.teamBPlayers || setupData.teamB?.players || match?.teamBPlayerList || [];
+
+  const inn1 = computed.innings1 || {};
+  const inn2 = computed.innings2 || {};
+
+  const playersMap = {};
+  const norm = (str) => String(str || '').trim().toLowerCase();
+
+  const getPlayer = (name, teamName) => {
+    if (!name) return null;
+    const cleanName = String(name).trim();
+    if (!cleanName || cleanName.includes('Opener ') || cleanName.includes('Bowler 1')) return null;
+
+    if (!playersMap[cleanName]) {
+      let inferredTeam = teamName;
+      if (!inferredTeam) {
+        if (teamAPlayers.some((p) => norm(p.name || p) === norm(cleanName))) {
+          inferredTeam = teamAName;
+        } else if (teamBPlayers.some((p) => norm(p.name || p) === norm(cleanName))) {
+          inferredTeam = teamBName;
+        } else {
+          inferredTeam = norm(batting1stTeam) === norm(teamAName) ? teamAName : teamBName;
+        }
+      }
+
+      const cleanId = `p_${cleanName.replace(/\s+/g, '_').toLowerCase()}`;
+      playersMap[cleanName] = {
+        id: cleanId,
+        playerId: cleanId,
+        name: cleanName,
+        playerName: cleanName,
+        teamName: inferredTeam,
+        // Batting
+        runs: 0,
+        balls: 0,
+        fours: 0,
+        sixes: 0,
+        strikeRate: '0.00',
+        dismissal: 'not out',
+        isOut: false,
+        hasBatted: false,
+        // Bowling
+        overs: '0.0',
+        legalBalls: 0,
+        maidens: 0,
+        runsConceded: 0,
+        wickets: 0,
+        economy: '0.00',
+        wides: 0,
+        noBalls: 0,
+        hasBowled: false,
+        // Fielding
+        catches: 0,
+        runOuts: 0,
+        stumpings: 0,
+        hasFielded: false,
+        // Score & Summary
+        candidateScore: 0,
+        performanceSummary: ''
+      };
+    }
+    return playersMap[cleanName];
+  };
+
+  // Seed with all known players from squads
+  [...teamAPlayers].forEach((p) => {
+    const pName = typeof p === 'string' ? p : p?.name;
+    getPlayer(pName, teamAName);
+  });
+  [...teamBPlayers].forEach((p) => {
+    const pName = typeof p === 'string' ? p : p?.name;
+    getPlayer(pName, teamBName);
+  });
+
+  // 1. Ingest Innings 1 Batters (batting1stTeam)
+  (inn1.battingStats || []).forEach((b) => {
+    const p = getPlayer(b.name, batting1stTeam);
+    if (p) {
+      p.runs = Number(b.runs) || 0;
+      p.balls = Number(b.balls) || 0;
+      p.fours = Number(b.fours) || 0;
+      p.sixes = Number(b.sixes) || 0;
+      p.strikeRate = b.strikeRate || (p.balls > 0 ? ((p.runs / p.balls) * 100).toFixed(2) : '0.00');
+      p.dismissal = b.dismissal || 'not out';
+      p.isOut = Boolean(b.isOut || (b.dismissal && b.dismissal !== 'not out'));
+      p.hasBatted = p.balls > 0 || p.runs > 0 || p.isOut;
+    }
+  });
+
+  // 2. Ingest Innings 1 Bowlers (bowling1stTeam)
+  (inn1.bowlingStats || []).forEach((bw) => {
+    const p = getPlayer(bw.name, bowling1stTeam);
+    if (p) {
+      p.overs = bw.overs || '0.0';
+      p.legalBalls = Number(bw.legalBalls) || parseOversToBalls(bw.overs);
+      p.maidens = Number(bw.maidens) || 0;
+      p.runsConceded = Number(bw.runs) || 0;
+      p.wickets = Number(bw.wickets) || 0;
+      p.economy = bw.economy || '0.00';
+      p.wides = Number(bw.wides) || 0;
+      p.noBalls = Number(bw.noBalls) || 0;
+      p.hasBowled = p.legalBalls > 0 || p.overs !== '0.0' || p.runsConceded > 0 || p.wickets > 0;
+    }
+  });
+
+  // 3. Ingest Innings 2 Batters (bowling1stTeam)
+  (inn2.battingStats || []).forEach((b) => {
+    const p = getPlayer(b.name, bowling1stTeam);
+    if (p) {
+      p.runs += Number(b.runs) || 0;
+      p.balls += Number(b.balls) || 0;
+      p.fours += Number(b.fours) || 0;
+      p.sixes += Number(b.sixes) || 0;
+      p.strikeRate = b.strikeRate || (p.balls > 0 ? ((p.runs / p.balls) * 100).toFixed(2) : '0.00');
+      p.dismissal = b.dismissal || 'not out';
+      p.isOut = Boolean(b.isOut || (b.dismissal && b.dismissal !== 'not out'));
+      p.hasBatted = p.balls > 0 || p.runs > 0 || p.isOut;
+    }
+  });
+
+  // 4. Ingest Innings 2 Bowlers (batting1stTeam)
+  (inn2.bowlingStats || []).forEach((bw) => {
+    const p = getPlayer(bw.name, batting1stTeam);
+    if (p) {
+      p.overs = bw.overs || '0.0';
+      p.legalBalls = Number(bw.legalBalls) || parseOversToBalls(bw.overs);
+      p.maidens = Number(bw.maidens) || 0;
+      p.runsConceded = Number(bw.runs) || 0;
+      p.wickets = Number(bw.wickets) || 0;
+      p.economy = bw.economy || '0.00';
+      p.wides = Number(bw.wides) || 0;
+      p.noBalls = Number(bw.noBalls) || 0;
+      p.hasBowled = p.legalBalls > 0 || p.overs !== '0.0' || p.runsConceded > 0 || p.wickets > 0;
+    }
+  });
+
+  // 5. Ingest Fielding across both innings
+  const allFielding = computed.allFielding || [];
+  allFielding.forEach((f) => {
+    const p = getPlayer(f.name);
+    if (p) {
+      p.catches += Number(f.catches) || 0;
+      p.runOuts += Number(f.runOuts) || 0;
+      p.stumpings += Number(f.stumpings) || 0;
+      p.hasFielded = p.catches > 0 || p.runOuts > 0 || p.stumpings > 0;
+    }
+  });
+
+  // 6. Generate Performance Summary & Heuristic Candidate Score
+  const winningTeam = computed.winner ? String(computed.winner) : '';
+
+  const playerList = Object.values(playersMap).map((p) => {
+    const parts = [];
+
+    // Batting summary part
+    if (p.hasBatted) {
+      let batPart = `${p.runs} Runs (${p.balls}b`;
+      const boundaries = [];
+      if (p.fours > 0) boundaries.push(`${p.fours}x4`);
+      if (p.sixes > 0) boundaries.push(`${p.sixes}x6`);
+      if (boundaries.length > 0) batPart += `, ${boundaries.join(', ')}`;
+      batPart += ')';
+      if (!p.isOut && p.dismissal === 'not out') batPart += ' *';
+      parts.push(batPart);
+    }
+
+    // Bowling summary part
+    if (p.hasBowled) {
+      parts.push(`${p.wickets} Wkts (${p.runsConceded}r in ${p.overs} ov)`);
+    }
+
+    // Fielding summary part
+    const fieldParts = [];
+    if (p.catches > 0) fieldParts.push(`${p.catches} Catch${p.catches > 1 ? 'es' : ''}`);
+    if (p.runOuts > 0) fieldParts.push(`${p.runOuts} Run Out${p.runOuts > 1 ? 's' : ''}`);
+    if (p.stumpings > 0) fieldParts.push(`${p.stumpings} Stumping${p.stumpings > 1 ? 's' : ''}`);
+    if (fieldParts.length > 0) {
+      parts.push(fieldParts.join(', '));
+    }
+
+    p.performanceSummary = parts.length > 0 ? parts.join(' • ') : 'Did not bat or bowl';
+
+    // Heuristic Score (for suggesting Top Candidates to Coordinator)
+    let score = 0;
+    if (p.hasBatted) {
+      score += p.runs;
+      if (p.runs >= 100) score += 40;
+      else if (p.runs >= 50) score += 20;
+      else if (p.runs >= 30) score += 10;
+      score += (p.fours * 1) + (p.sixes * 2);
+      if (!p.isOut && p.runs >= 15) score += 10;
+    }
+
+    if (p.hasBowled) {
+      score += (p.wickets * 25);
+      if (p.wickets >= 5) score += 30;
+      else if (p.wickets >= 3) score += 15;
+      score += (p.maidens * 10);
+      const econNum = parseFloat(p.economy) || 0;
+      if (p.legalBalls >= 12 && econNum > 0 && econNum <= 6.0) score += 15;
+    }
+
+    if (p.hasFielded) {
+      score += (p.catches * 10) + (p.runOuts * 15) + (p.stumpings * 12);
+    }
+
+    if (winningTeam && norm(p.teamName) && norm(winningTeam).includes(norm(p.teamName))) {
+      score += 5;
+    }
+
+    p.candidateScore = score;
+    return p;
+  });
+
+  playerList.sort((a, b) => b.candidateScore - a.candidateScore);
+
+  const topCandidates = playerList.filter((p) => p.candidateScore > 0).slice(0, 5);
+
+  return {
+    players: playerList,
+    topCandidates,
+    teamAName,
+    teamBName
+  };
 };

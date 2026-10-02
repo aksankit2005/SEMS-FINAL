@@ -719,6 +719,30 @@ export const LiveMatchViewerModal = ({ match: initialMatch, onClose }) => {
                       </span>
                     )}
                   </div>
+
+                  {/* Man of the Match Display (If Completed / Confirmed) */}
+                  {(match.motm || match.details?.motm) && (
+                    <div className="pt-2 text-left bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-xl space-y-0.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono font-bold uppercase text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                          <Award className="w-3 h-3 text-amber-500" /> Man of the Match
+                        </span>
+                        {(match.motm || match.details?.motm).teamName && (
+                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold">
+                            {(match.motm || match.details?.motm).teamName}
+                          </span>
+                        )}
+                      </div>
+                      <p className="font-bold text-slate-900 dark:text-white text-xs">
+                        {(match.motm || match.details?.motm).playerName}
+                      </p>
+                      {(match.motm || match.details?.motm).performanceSummary && (
+                        <p className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-medium">
+                          {(match.motm || match.details?.motm).performanceSummary}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : isChess ? (
                 <div className="text-center bg-white dark:bg-[#090D16] p-5 rounded-2xl border border-purple-500/30 shadow-md space-y-3">
