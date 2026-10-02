@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Download, Trophy, Shield, UserCheck, FileText, Activity, Users, Award, Radio } from 'lucide-react';
 import { generateMatchResultPDF, exportToCSV } from '../../../utils/pdfExporter';
 import { useToast } from '../../../context/ToastContext';
@@ -65,8 +66,8 @@ export const CricketScorecardModal = ({ match, onClose }) => {
     addToast('Exported Cricket Scorecard as CSV', 'success');
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md font-sans">
+  return createPortal(
+    <div className="fixed inset-0 z-[1000000] flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md font-sans">
       <div className="w-full max-w-5xl bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-5 sm:p-7 shadow-2xl space-y-6 max-h-[92vh] flex flex-col">
         
         {/* Header */}
@@ -527,6 +528,7 @@ export const CricketScorecardModal = ({ match, onClose }) => {
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

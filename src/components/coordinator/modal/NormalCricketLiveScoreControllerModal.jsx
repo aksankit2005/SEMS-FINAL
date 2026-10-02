@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, RotateCcw, Trophy, AlertCircle, RefreshCw, UserCheck, Activity, 
   Maximize2, Minimize2, Play, Pause, ChevronRight, FileText, CheckCircle2, 
-  Award, Shield, HelpCircle, Edit3, ArrowLeftRight, Radio, Plus, Zap
+  Award, Shield, HelpCircle, Edit3, ArrowLeftRight, Radio, Plus, Zap, ArrowRight, CornerDownLeft
 } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { coordinatorApi } from '../../../services/coordinatorApi';
@@ -20,8 +21,8 @@ import {
 export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClose, onMatchUpdated }) => {
   const { addToast } = useToast();
 
-  // Fullscreen state
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  // Fullscreen state & browser change listener
+  const [isFullscreen, setIsFullscreen] = useState(Boolean(document.fullscreenElement));
 
   const toggleBrowserFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -33,7 +34,15 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
     }
   };
 
-  // Lock background scroll
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
+
+  // Lock background scroll when controller is open
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -67,12 +76,34 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
   const DEFAULT_TEAM_A_SUBS = [{ name: 'Suryakumar Yadav' }, { name: 'Mohammed Shami' }];
   const DEFAULT_TEAM_B_SUBS = [{ name: 'Nathan Lyon' }, { name: 'Cameron Green' }];
 
+  // Dedicated Storage Key for Match Persistence (Ensures match state never resets on back / reopen)
+  const matchId = match?.id || match?._id || match?.tableNumber || 'cricket_live_match';
+  const CONTROLLER_CACHE_KEY = `sems_cricket_controller_state_${matchId}`;
+
+  const getCachedState = () => {
+    try {
+      const raw = localStorage.getItem(CONTROLLER_CACHE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {
+      console.warn('Error reading cricket match controller cache:', e);
+    }
+    return null;
+  };
+
+  const cachedState = useMemo(() => getCachedState(), [matchId]);
+
+  const getPlayerName = (p) => {
+    if (!p) return '';
+    if (typeof p === 'string') return p.trim();
+    return String(p.name || '').trim();
+  };
+
   // Playing XI Squads
   const [teamAPlayerList, setTeamAPlayerList] = useState(
-    setupData.teamAPlayers || setupData.teamA?.players || DEFAULT_TEAM_A_PLAYERS
+    cachedState?.teamAPlayerList || setupData.teamAPlayers || setupData.teamA?.players || DEFAULT_TEAM_A_PLAYERS
   );
   const [teamBPlayerList, setTeamBPlayerList] = useState(
-    setupData.teamBPlayers || setupData.teamB?.players || DEFAULT_TEAM_B_PLAYERS
+    cachedState?.teamBPlayerList || setupData.teamBPlayers || setupData.teamB?.players || DEFAULT_TEAM_B_PLAYERS
   );
 
   const [teamASubsList, setTeamASubsList] = useState(
@@ -82,8 +113,10 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
     setupData.teamBSubs || setupData.teamB?.subs || DEFAULT_TEAM_B_SUBS
   );
 
-  // Innings state: 1 or 2
-  const [currentInnings, setCurrentInnings] = useState(match?.currentInnings || 1);
+  // Innings state: 1 or 2 (Hydrate from cache or match)
+  const [currentInnings, setCurrentInnings] = useState(() => {
+    return cachedState?.currentInnings || match?.currentInnings || match?.details?.currentInnings || 1;
+  });
 
   // Active teams based on innings
   const battingTeam = currentInnings === 1 ? batting1stTeamInitial : bowling1stTeamInitial;
@@ -93,8 +126,11 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
   const currentBattingSquad = norm(battingTeam) === norm(teamA) ? teamAPlayerList : teamBPlayerList;
   const currentBowlingSquad = norm(bowlingTeam) === norm(teamA) ? teamAPlayerList : teamBPlayerList;
 
-  // SOURCE OF TRUTH: All ball events array
+  // SOURCE OF TRUTH: All ball events array (Hydrate from cache first)
   const [ballEvents, setBallEvents] = useState(() => {
+    if (Array.isArray(cachedState?.ballEvents) && cachedState.ballEvents.length > 0) {
+      return cachedState.ballEvents;
+    }
     if (Array.isArray(match?.ballEvents) && match.ballEvents.length > 0) {
       return match.ballEvents;
     }
@@ -104,26 +140,55 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
     return [];
   });
 
+  // Target for 2nd innings
+  const [targetRuns, setTargetRuns] = useState(() => {
+    return cachedState?.targetRuns ?? match?.targetRuns ?? match?.details?.targetRuns ?? null;
+  });
+
   // Active On-Field Batsmen and Bowler tracking
-  const [activeStriker, setActiveStriker] = useState(
-    match?.striker?.name || setupData.openingStriker || currentBattingSquad[0]?.name || 'Rohit Sharma'
-  );
-  const [activeNonStriker, setActiveNonStriker] = useState(
-    match?.nonStriker?.name || setupData.openingNonStriker || currentBattingSquad[1]?.name || 'Shubman Gill'
-  );
-  const [activeBowler, setActiveBowler] = useState(
-    match?.bowler?.name || setupData.openingBowler || currentBowlingSquad[currentBowlingSquad.length - 3]?.name || currentBowlingSquad[currentBowlingSquad.length - 1]?.name || 'Mitchell Starc'
-  );
+  const [activeStriker, setActiveStriker] = useState(() => {
+    return (
+      cachedState?.activeStriker ||
+      getPlayerName(match?.activeStriker) ||
+      getPlayerName(match?.striker) ||
+      setupData.openingStriker ||
+      currentBattingSquad[0]?.name ||
+      'Rohit Sharma'
+    );
+  });
+
+  const [activeNonStriker, setActiveNonStriker] = useState(() => {
+    return (
+      cachedState?.activeNonStriker ||
+      getPlayerName(match?.activeNonStriker) ||
+      getPlayerName(match?.nonStriker) ||
+      setupData.openingNonStriker ||
+      currentBattingSquad[1]?.name ||
+      'Shubman Gill'
+    );
+  });
+
+  const [activeBowler, setActiveBowler] = useState(() => {
+    return (
+      cachedState?.activeBowler ||
+      getPlayerName(match?.activeBowler) ||
+      getPlayerName(match?.bowler) ||
+      setupData.openingBowler ||
+      currentBowlingSquad[currentBowlingSquad.length - 1]?.name ||
+      'Mitchell Starc'
+    );
+  });
 
   // Previous over bowler tracking to enforce rule: Bowler cannot bowl 2 consecutive overs
-  const [lastOverBowler, setLastOverBowler] = useState('');
+  const [lastOverBowler, setLastOverBowler] = useState(() => {
+    return cachedState?.lastOverBowler || match?.lastOverBowler || '';
+  });
 
   // Free hit & Pause state
-  const [isFreeHit, setIsFreeHit] = useState(Boolean(match?.isFreeHit));
+  const [isFreeHit, setIsFreeHit] = useState(() => {
+    return Boolean(cachedState?.isFreeHit ?? match?.isFreeHit ?? false);
+  });
   const [isPaused, setIsPaused] = useState(false);
-
-  // Target for 2nd innings
-  const [targetRuns, setTargetRuns] = useState(match?.targetRuns || null);
 
   // Modals state
   const [wicketModalOpen, setWicketModalOpen] = useState(false);
@@ -148,18 +213,59 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
     customSubName: '',
   });
 
-  const [inningsBreakModalOpen, setInningsBreakModalOpen] = useState(false);
   const [matchEndedModal, setMatchEndedModal] = useState(false);
   const [matchWinnerResult, setMatchWinnerResult] = useState(match?.resultString || match?.winner || '');
   const [showFullScorecard, setShowFullScorecard] = useState(false);
 
-  // Second Innings Openers Selection Modal State
-  const [secondInningsSetupModal, setSecondInningsSetupModal] = useState(false);
-  const [secondInningsOpeners, setSecondInningsOpeners] = useState({
-    striker: '',
-    nonStriker: '',
-    bowler: ''
+  // Innings Management & Transition Modal State (Automatic & Manual)
+  const [inningsTransitionModalOpen, setInningsTransitionModalOpen] = useState(false);
+  const [transitionTargetInn, setTransitionTargetInn] = useState(2);
+  const [transitionCustomTarget, setTransitionCustomTarget] = useState('');
+  const [transitionReason, setTransitionReason] = useState('manual'); // 'auto_all_out', 'auto_overs_complete', 'manual'
+
+  // Second Innings Openers Selection
+  const [secondInningsOpeners, setSecondInningsOpeners] = useState(() => {
+    return cachedState?.secondInningsOpeners || {
+      striker: '',
+      nonStriker: '',
+      bowler: ''
+    };
   });
+
+  // Persist State Snapshot to LocalStorage
+  const persistStateSnapshot = useCallback((overrides = {}) => {
+    try {
+      const snapshot = {
+        matchId,
+        currentInnings: overrides.currentInnings ?? currentInnings,
+        ballEvents: overrides.ballEvents ?? ballEvents,
+        activeStriker: overrides.activeStriker ?? activeStriker,
+        activeNonStriker: overrides.activeNonStriker ?? activeNonStriker,
+        activeBowler: overrides.activeBowler ?? activeBowler,
+        lastOverBowler: overrides.lastOverBowler ?? lastOverBowler,
+        isFreeHit: overrides.isFreeHit ?? isFreeHit,
+        targetRuns: overrides.targetRuns ?? targetRuns,
+        secondInningsOpeners: overrides.secondInningsOpeners ?? secondInningsOpeners,
+        teamAPlayerList,
+        teamBPlayerList,
+        savedAt: new Date().toISOString()
+      };
+      localStorage.setItem(CONTROLLER_CACHE_KEY, JSON.stringify(snapshot));
+    } catch (e) {
+      console.warn('Failed to persist cricket controller state:', e);
+    }
+  }, [matchId, CONTROLLER_CACHE_KEY, currentInnings, ballEvents, activeStriker, activeNonStriker, activeBowler, lastOverBowler, isFreeHit, targetRuns, secondInningsOpeners, teamAPlayerList, teamBPlayerList]);
+
+  // Keep localStorage continuously synchronized on state updates
+  useEffect(() => {
+    persistStateSnapshot();
+  }, [currentInnings, ballEvents, activeStriker, activeNonStriker, activeBowler, lastOverBowler, isFreeHit, targetRuns, secondInningsOpeners, persistStateSnapshot]);
+
+  // Safe Exit Handler (Saves everything before closing)
+  const handleSafeClose = () => {
+    persistStateSnapshot();
+    onClose();
+  };
 
   // Calculate Innings 1 and Innings 2 Stats deterministically from ballEvents
   const innings1Events = useMemo(() => ballEvents.filter((b) => b.inningsId === 1), [ballEvents]);
@@ -196,13 +302,12 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
 
   const currentStats = currentInnings === 1 ? inn1Stats : inn2Stats;
 
-  // Keep targetRuns updated based on 1st innings total
+  // Set initial targetRuns if 1st innings has runs and targetRuns is unset
   useEffect(() => {
-    if (currentInnings === 2 || inn1Stats.runs > 0) {
-      const calculatedTarget = inn1Stats.runs + 1;
-      setTargetRuns(calculatedTarget);
+    if (inn1Stats.runs > 0 && !targetRuns) {
+      setTargetRuns(inn1Stats.runs + 1);
     }
-  }, [currentInnings, inn1Stats.runs]);
+  }, [inn1Stats.runs, targetRuns]);
 
   // Sync state to backend API and localStorage
   const syncLiveState = useCallback(async (customBallEvents = ballEvents, customInn = currentInnings, customTarget = targetRuns, customResult = matchWinnerResult) => {
@@ -232,6 +337,9 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
       striker: activeS.striker,
       nonStriker: activeS.nonStriker,
       bowler: activeS.bowler,
+      activeStriker,
+      activeNonStriker,
+      activeBowler,
 
       recentBalls: activeS.recentBalls,
       commentaryLog: activeS.commentaryLog,
@@ -259,6 +367,9 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
         targetRuns: customTarget || (s1.runs + 1),
         currentInnings: customInn,
         ballEvents: customBallEvents,
+        activeStriker,
+        activeNonStriker,
+        activeBowler,
         innings1: s1,
         innings2: s2,
         resultString: customResult,
@@ -277,7 +388,7 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
     } catch (err) {
       console.warn('Sync cricket score error:', err);
     }
-  }, [ballEvents, currentInnings, targetRuns, matchWinnerResult, batting1stTeamInitial, bowling1stTeamInitial, totalOversMax, battingTeam, bowlingTeam, isFreeHit, match, onMatchUpdated]);
+  }, [ballEvents, currentInnings, targetRuns, matchWinnerResult, batting1stTeamInitial, bowling1stTeamInitial, totalOversMax, battingTeam, bowlingTeam, isFreeHit, match, onMatchUpdated, activeStriker, activeNonStriker, activeBowler]);
 
   // Check Over completion / Innings break / Chase end
   const evaluateInningsTriggers = useCallback((newEvents, innNumber) => {
@@ -291,16 +402,31 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
       setMatchWinnerResult(winnerStr);
       setMatchEndedModal(true);
       syncLiveState(newEvents, 2, targetRuns, winnerStr);
+      persistStateSnapshot({ ballEvents: newEvents, currentInnings: 2, targetRuns });
       return;
     }
 
-    // 2. Check All Out or Overs Complete
+    // 2. Check All Out or Overs Complete (AUTOMATIC INNINGS CHANGE DETECTION)
     if (innStats.isAllOut || innStats.isOversComplete) {
       if (innNumber === 1) {
         const calculatedTarget = innStats.runs + 1;
         setTargetRuns(calculatedTarget);
-        setInningsBreakModalOpen(true);
+        setTransitionCustomTarget(String(calculatedTarget));
+        setTransitionTargetInn(2);
+        setTransitionReason(innStats.isAllOut ? 'auto_all_out' : 'auto_overs_complete');
+
+        const defaultInn2Squad = norm(bowling1stTeamInitial) === norm(teamA) ? teamAPlayerList : teamBPlayerList;
+        const defaultInn2BowlingSquad = norm(batting1stTeamInitial) === norm(teamA) ? teamAPlayerList : teamBPlayerList;
+
+        setSecondInningsOpeners((prev) => ({
+          striker: prev.striker || defaultInn2Squad[0]?.name || '',
+          nonStriker: prev.nonStriker || defaultInn2Squad[1]?.name || '',
+          bowler: prev.bowler || defaultInn2BowlingSquad[defaultInn2BowlingSquad.length - 1]?.name || ''
+        }));
+
+        setInningsTransitionModalOpen(true);
         syncLiveState(newEvents, 1, calculatedTarget);
+        persistStateSnapshot({ ballEvents: newEvents, currentInnings: 1, targetRuns: calculatedTarget });
         return;
       } else {
         // 2nd innings ended
@@ -317,6 +443,7 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
         setMatchWinnerResult(winnerStr);
         setMatchEndedModal(true);
         syncLiveState(newEvents, 2, targetRuns, winnerStr);
+        persistStateSnapshot({ ballEvents: newEvents, currentInnings: 2, targetRuns });
         return;
       }
     }
@@ -330,7 +457,7 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
         setNextBowlerModalOpen(true);
       }
     }
-  }, [battingTeam, bowlingTeam, totalOversMax, targetRuns, bowling1stTeamInitial, batting1stTeamInitial, activeBowler, syncLiveState]);
+  }, [battingTeam, bowlingTeam, totalOversMax, targetRuns, bowling1stTeamInitial, batting1stTeamInitial, activeBowler, syncLiveState, teamAPlayerList, teamBPlayerList, persistStateSnapshot]);
 
   // RECORD A CLEAN RUN DELIVERY (0, 1, 2, 3, 4, 6)
   const handleScoreRun = (runVal) => {
@@ -582,42 +709,92 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
     addToast(`Swapped Strike: ${activeNonStriker} is now on strike`, 'info');
   };
 
-  // START 2ND INNINGS
-  const handleInitiateSecondInnings = () => {
-    setInningsBreakModalOpen(false);
+  // INNINGS SWITCH & TRANSITION HANDLERS (MANUAL & AUTOMATIC)
+  const handleOpenManualInningsSwitch = () => {
+    const targetInn = currentInnings === 1 ? 2 : 1;
+    setTransitionTargetInn(targetInn);
+    setTransitionReason('manual');
 
     const defaultInn2Squad = norm(bowling1stTeamInitial) === norm(teamA) ? teamAPlayerList : teamBPlayerList;
     const defaultInn2BowlingSquad = norm(batting1stTeamInitial) === norm(teamA) ? teamAPlayerList : teamBPlayerList;
 
-    setSecondInningsOpeners({
-      striker: defaultInn2Squad[0]?.name || '',
-      nonStriker: defaultInn2Squad[1]?.name || '',
-      bowler: defaultInn2BowlingSquad[defaultInn2BowlingSquad.length - 1]?.name || ''
-    });
+    if (targetInn === 2) {
+      const calc = inn1Stats.runs > 0 ? (inn1Stats.runs + 1) : (targetRuns || 1);
+      setTransitionCustomTarget(String(targetRuns || calc));
+      setSecondInningsOpeners((prev) => ({
+        striker: prev.striker || defaultInn2Squad[0]?.name || '',
+        nonStriker: prev.nonStriker || defaultInn2Squad[1]?.name || '',
+        bowler: prev.bowler || defaultInn2BowlingSquad[defaultInn2BowlingSquad.length - 1]?.name || ''
+      }));
+    }
 
-    setSecondInningsSetupModal(true);
+    setInningsTransitionModalOpen(true);
   };
 
-  const handleConfirmStartSecondInnings = () => {
-    if (!secondInningsOpeners.striker || !secondInningsOpeners.nonStriker || !secondInningsOpeners.bowler) {
-      addToast('Please select Striker, Non-Striker, and Opening Bowler for 2nd Innings', 'warning');
-      return;
-    }
-    if (secondInningsOpeners.striker === secondInningsOpeners.nonStriker) {
-      addToast('Striker and Non-Striker cannot be the same player', 'error');
-      return;
-    }
+  const handleConfirmInningsTransition = () => {
+    if (transitionTargetInn === 2) {
+      const defaultInn2Squad = norm(bowling1stTeamInitial) === norm(teamA) ? teamAPlayerList : teamBPlayerList;
+      const defaultInn2BowlingSquad = norm(batting1stTeamInitial) === norm(teamA) ? teamAPlayerList : teamBPlayerList;
 
-    setCurrentInnings(2);
-    setActiveStriker(secondInningsOpeners.striker);
-    setActiveNonStriker(secondInningsOpeners.nonStriker);
-    setActiveBowler(secondInningsOpeners.bowler);
-    setLastOverBowler('');
-    setIsFreeHit(false);
+      const chosenStriker = secondInningsOpeners.striker || defaultInn2Squad[0]?.name || '';
+      const chosenNonStriker = secondInningsOpeners.nonStriker || defaultInn2Squad[1]?.name || '';
+      const chosenBowler = secondInningsOpeners.bowler || defaultInn2BowlingSquad[defaultInn2BowlingSquad.length - 1]?.name || '';
 
-    setSecondInningsSetupModal(false);
-    syncLiveState(ballEvents, 2, targetRuns);
-    addToast(`🏏 2nd Innings Started! ${bowling1stTeamInitial} needs ${targetRuns} runs to win.`, 'success');
+      if (!chosenStriker || !chosenNonStriker || !chosenBowler) {
+        addToast('Please select Striker, Non-Striker, and Opening Bowler for 2nd Innings', 'warning');
+        return;
+      }
+      if (chosenStriker === chosenNonStriker) {
+        addToast('Striker and Non-Striker cannot be the same player', 'error');
+        return;
+      }
+
+      const parsedTarget = Math.max(1, Number(transitionCustomTarget) || (inn1Stats.runs + 1));
+      setTargetRuns(parsedTarget);
+      setCurrentInnings(2);
+      setActiveStriker(chosenStriker);
+      setActiveNonStriker(chosenNonStriker);
+      setActiveBowler(chosenBowler);
+      setLastOverBowler('');
+      setIsFreeHit(false);
+
+      persistStateSnapshot({
+        currentInnings: 2,
+        targetRuns: parsedTarget,
+        activeStriker: chosenStriker,
+        activeNonStriker: chosenNonStriker,
+        activeBowler: chosenBowler,
+        secondInningsOpeners: { striker: chosenStriker, nonStriker: chosenNonStriker, bowler: chosenBowler }
+      });
+
+      syncLiveState(ballEvents, 2, parsedTarget);
+      setInningsTransitionModalOpen(false);
+      addToast(`🏏 2nd Innings Started! ${bowling1stTeamInitial} needs ${parsedTarget} runs to win.`, 'success');
+    } else {
+      // Switching back to 1st Innings
+      setCurrentInnings(1);
+      const defaultInn1Squad = norm(batting1stTeamInitial) === norm(teamA) ? teamAPlayerList : teamBPlayerList;
+      const defaultInn1BowlingSquad = norm(bowling1stTeamInitial) === norm(teamA) ? teamAPlayerList : teamBPlayerList;
+
+      const restoredStriker = inn1Stats.striker?.name || setupData.openingStriker || defaultInn1Squad[0]?.name;
+      const restoredNonStriker = inn1Stats.nonStriker?.name || setupData.openingNonStriker || defaultInn1Squad[1]?.name;
+      const restoredBowler = inn1Stats.bowler?.name || setupData.openingBowler || defaultInn1BowlingSquad[defaultInn1BowlingSquad.length - 1]?.name;
+
+      setActiveStriker(restoredStriker);
+      setActiveNonStriker(restoredNonStriker);
+      setActiveBowler(restoredBowler);
+
+      persistStateSnapshot({
+        currentInnings: 1,
+        activeStriker: restoredStriker,
+        activeNonStriker: restoredNonStriker,
+        activeBowler: restoredBowler
+      });
+
+      syncLiveState(ballEvents, 1, targetRuns);
+      setInningsTransitionModalOpen(false);
+      addToast(`Switched back to 1st Innings (${batting1stTeamInitial} Batting)`, 'info');
+    }
   };
 
   // FINISH MATCH MANUALLY OR FROM MATCH ENDED MODAL
@@ -683,7 +860,7 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
 
   // KEYBOARD SHORTCUTS (0-6 runs, W=wide, N=no ball, B=bye, L=leg bye, K=wicket, Ctrl+Z=undo)
   const handleKeyDown = useCallback((e) => {
-    if (wicketModalOpen || nextBowlerModalOpen || extraCustomModalOpen || inningsBreakModalOpen || matchEndedModal || showFullScorecard || secondInningsSetupModal) {
+    if (wicketModalOpen || nextBowlerModalOpen || extraCustomModalOpen || inningsTransitionModalOpen || matchEndedModal || showFullScorecard || substituteModalOpen) {
       return;
     }
 
@@ -703,7 +880,7 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
     } else if (key === 'z' && (e.ctrlKey || e.metaKey)) {
       handleUndo();
     }
-  }, [wicketModalOpen, nextBowlerModalOpen, extraCustomModalOpen, inningsBreakModalOpen, matchEndedModal, showFullScorecard, secondInningsSetupModal, handleScoreRun, handleScoreExtra, handleInitiateWicket, handleUndo]);
+  }, [wicketModalOpen, nextBowlerModalOpen, extraCustomModalOpen, inningsTransitionModalOpen, matchEndedModal, showFullScorecard, substituteModalOpen, handleScoreRun, handleScoreExtra, handleInitiateWicket, handleUndo]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -715,8 +892,8 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
   const remainingBalls = currentInnings === 2 ? Math.max(0, totalOversMax * 6 - currentStats.legalBalls) : null;
   const requiredRunRate = remainingBalls && remainingBalls > 0 ? ((remainingRuns / (remainingBalls / 6))).toFixed(2) : '0.00';
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-sans overflow-hidden select-none transition-colors">
+  return createPortal(
+    <div className="fixed inset-0 w-screen h-screen z-[999999] flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-sans overflow-hidden select-none transition-colors">
       
       {/* 1. TOP STICKY LIVE SCOREBAR */}
       <header className="sticky top-0 z-40 bg-white dark:bg-[#0B1120] border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex flex-wrap items-center justify-between gap-3 shadow-xl shrink-0 transition-colors">
@@ -741,6 +918,11 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
             <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">
               Overs <span className="font-bold text-slate-900 dark:text-white text-sm">{currentStats.oversFormatted}</span> / {totalOversMax}
             </div>
+
+            {/* Innings indicator pill */}
+            <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-mono font-bold uppercase border border-indigo-500/20">
+              Inn {currentInnings}
+            </span>
           </div>
         </div>
 
@@ -763,6 +945,16 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
+          {/* Manual / Auto Innings Switch Button */}
+          <button
+            onClick={handleOpenManualInningsSwitch}
+            className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-black text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+            title="Change Innings (Switch to 2nd innings or back to 1st innings at any time)"
+          >
+            <ArrowLeftRight className="w-3.5 h-3.5" />
+            <span>Change Innings ({currentInnings === 1 ? '1st ➔ 2nd' : '2nd ➔ 1st'})</span>
+          </button>
+
           <button
             onClick={() => setIsPaused(!isPaused)}
             className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1 cursor-pointer ${
@@ -798,15 +990,17 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
 
           <button
             onClick={toggleBrowserFullscreen}
-            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 transition cursor-pointer"
-            title="Toggle Fullscreen"
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 transition cursor-pointer flex items-center gap-1"
+            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
           >
-            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            {isFullscreen ? <Minimize2 className="w-4 h-4 text-emerald-500" /> : <Maximize2 className="w-4 h-4" />}
+            <span className="text-[11px] font-bold hidden sm:inline">{isFullscreen ? 'Exit Full' : 'Fullscreen'}</span>
           </button>
 
           <button
-            onClick={onClose}
-            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-700 transition cursor-pointer"
+            onClick={handleSafeClose}
+            className="p-2 rounded-xl bg-slate-100 hover:bg-rose-500 hover:text-white dark:bg-slate-800 text-slate-500 border border-slate-300 dark:border-slate-700 transition cursor-pointer"
+            title="Back to Console (Match progress will be preserved)"
           >
             <X className="w-5 h-5" />
           </button>
@@ -1368,99 +1562,221 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
         </div>
       )}
 
-      {/* MODAL 4: INNINGS BREAK */}
-      {inningsBreakModalOpen && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/90 backdrop-blur-md">
-          <div className="w-full max-w-lg bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-6 space-y-5 shadow-2xl text-center">
-            <Trophy className="w-12 h-12 text-amber-500 mx-auto animate-bounce" />
-            <h3 className="text-xl font-black text-slate-900 dark:text-white">1st Innings Completed!</h3>
+      {/* MODAL 4: UNIFIED INNINGS TRANSITION & TARGET SETUP (AUTOMATIC & MANUAL) */}
+      {inningsTransitionModalOpen && (
+        <div className="fixed inset-0 z-[1000000] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <div className="w-full max-w-xl bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-6 space-y-5 shadow-2xl">
             
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
-              <span className="text-xs text-slate-400 uppercase font-mono">{batting1stTeamInitial} Final Score</span>
-              <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
-                {inn1Stats.runs} / {inn1Stats.wickets}
-              </p>
-              <span className="text-xs text-slate-500 font-mono block">
-                Overs: {inn1Stats.oversFormatted} / {totalOversMax} • CRR: {inn1Stats.currentRunRate}
-              </span>
-              <div className="pt-2 text-sm text-amber-600 dark:text-amber-400 font-bold font-mono">
-                Target for {bowling1stTeamInitial}: <strong>{targetRuns} Runs</strong> (RRR: {(targetRuns / totalOversMax).toFixed(2)})
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                  <ArrowLeftRight className="w-5 h-5" />
+                </span>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                    {transitionReason === 'auto_all_out'
+                      ? '1st Innings Ended (All Out)!'
+                      : transitionReason === 'auto_overs_complete'
+                      ? '1st Innings Completed (Overs Finished)!'
+                      : 'Manual Innings Management & Switch'}
+                  </h3>
+                  <p className="text-xs text-slate-500 font-mono">
+                    Currently Active: Innings {currentInnings} ({battingTeam} Batting)
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setInningsTransitionModalOpen(false)}
+                className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Innings Selector Tabs (Coordinator can choose 1st or 2nd innings) */}
+            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setTransitionTargetInn(1)}
+                className={`py-2 px-3 rounded-xl text-xs font-black transition cursor-pointer ${
+                  transitionTargetInn === 1
+                    ? 'bg-emerald-600 text-white shadow-md'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                1st Innings ({batting1stTeamInitial} Bat)
+              </button>
+              <button
+                type="button"
+                onClick={() => setTransitionTargetInn(2)}
+                className={`py-2 px-3 rounded-xl text-xs font-black transition cursor-pointer ${
+                  transitionTargetInn === 2
+                    ? 'bg-emerald-600 text-white shadow-md'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                2nd Innings ({bowling1stTeamInitial} Bat & Chase)
+              </button>
+            </div>
+
+            {/* 1st Innings Performance Card */}
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase font-mono font-bold">1st Innings Score ({batting1stTeamInitial})</span>
+                <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                  {inn1Stats.runs} / {inn1Stats.wickets} <span className="text-xs text-slate-500 font-normal">({inn1Stats.oversFormatted} ov)</span>
+                </p>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] text-slate-400 uppercase font-mono font-bold">Current Run Rate</span>
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-300 font-mono">
+                  CRR: {inn1Stats.currentRunRate}
+                </p>
               </div>
             </div>
 
-            <button
-              onClick={handleInitiateSecondInnings}
-              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-lg cursor-pointer"
-            >
-              Set 2nd Innings Openers & Start Chase →
-            </button>
-          </div>
-        </div>
-      )}
+            {/* Target & Openers Configuration for 2nd Innings */}
+            {transitionTargetInn === 2 && (
+              <div className="space-y-4 pt-1">
+                {/* Target Configuration Input */}
+                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase flex items-center gap-1.5">
+                      <Trophy className="w-4 h-4 text-amber-500" /> Target Runs for {bowling1stTeamInitial}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setTransitionCustomTarget(String(inn1Stats.runs + 1))}
+                      className="text-[11px] text-amber-600 dark:text-amber-400 font-bold hover:underline cursor-pointer"
+                    >
+                      Reset to Standard (+1: {inn1Stats.runs + 1})
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="number"
+                      min="1"
+                      value={transitionCustomTarget}
+                      onChange={(e) => setTransitionCustomTarget(e.target.value)}
+                      placeholder={String(inn1Stats.runs + 1)}
+                      className="w-32 px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-amber-500/40 text-sm font-black font-mono text-slate-900 dark:text-white"
+                    />
+                    <div className="text-xs font-mono text-slate-600 dark:text-slate-400">
+                      Need <strong>{transitionCustomTarget || (inn1Stats.runs + 1)} runs</strong> to win in {totalOversMax} overs (RRR: {((Number(transitionCustomTarget || inn1Stats.runs + 1)) / totalOversMax).toFixed(2)})
+                    </div>
+                  </div>
+                </div>
 
-      {/* MODAL 5: 2ND INNINGS OPENERS SELECTION */}
-      {secondInningsSetupModal && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/90 backdrop-blur-md">
-          <div className="w-full max-w-md bg-white dark:bg-[#0B1120] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-2xl">
-            <h3 className="text-lg font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
-              🏏 2nd Innings — Select Openers
-            </h3>
-            <p className="text-xs text-slate-500">
-              Batting: <strong>{bowling1stTeamInitial}</strong> (Target: {targetRuns}) • Bowling: <strong>{batting1stTeamInitial}</strong>
-            </p>
+                {/* Openers Selection */}
+                <div className="space-y-3 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px]">
+                      Select 2nd Innings Starting Lineup
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const sq2 = norm(bowling1stTeamInitial) === norm(teamA) ? teamAPlayerList : teamBPlayerList;
+                        const bsq2 = norm(batting1stTeamInitial) === norm(teamA) ? teamAPlayerList : teamBPlayerList;
+                        setSecondInningsOpeners({
+                          striker: sq2[0]?.name || '',
+                          nonStriker: sq2[1]?.name || '',
+                          bowler: bsq2[bsq2.length - 1]?.name || ''
+                        });
+                      }}
+                      className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold hover:underline cursor-pointer"
+                    >
+                      Auto-fill Squad Openers
+                    </button>
+                  </div>
 
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-slate-400 uppercase mb-1">Striker ({bowling1stTeamInitial})</label>
-                <select
-                  value={secondInningsOpeners.striker}
-                  onChange={(e) => setSecondInningsOpeners({ ...secondInningsOpeners, striker: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 font-bold"
-                >
-                  <option value="">Select Striker...</option>
-                  {(norm(bowling1stTeamInitial) === norm(teamA) ? teamAPlayerList : teamBPlayerList).map((p) => (
-                    <option key={p.name} value={p.name}>{p.name}</option>
-                  ))}
-                </select>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-bold text-slate-400 uppercase mb-1">
+                        Striker ({bowling1stTeamInitial})
+                      </label>
+                      <select
+                        value={secondInningsOpeners.striker}
+                        onChange={(e) => setSecondInningsOpeners({ ...secondInningsOpeners, striker: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 font-bold text-slate-900 dark:text-white"
+                      >
+                        <option value="">Select Striker...</option>
+                        {(norm(bowling1stTeamInitial) === norm(teamA) ? teamAPlayerList : teamBPlayerList).map((p) => (
+                          <option key={p.name} value={p.name}>{p.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-400 uppercase mb-1">
+                        Non-Striker ({bowling1stTeamInitial})
+                      </label>
+                      <select
+                        value={secondInningsOpeners.nonStriker}
+                        onChange={(e) => setSecondInningsOpeners({ ...secondInningsOpeners, nonStriker: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 font-bold text-slate-900 dark:text-white"
+                      >
+                        <option value="">Select Non-Striker...</option>
+                        {(norm(bowling1stTeamInitial) === norm(teamA) ? teamAPlayerList : teamBPlayerList).map((p) => (
+                          <option key={p.name} value={p.name} disabled={p.name === secondInningsOpeners.striker}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-400 uppercase mb-1">
+                      Opening Bowler ({batting1stTeamInitial})
+                    </label>
+                    <select
+                      value={secondInningsOpeners.bowler}
+                      onChange={(e) => setSecondInningsOpeners({ ...secondInningsOpeners, bowler: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 font-bold text-amber-500"
+                    >
+                      <option value="">Select Opening Bowler...</option>
+                      {(norm(batting1stTeamInitial) === norm(teamA) ? teamAPlayerList : teamBPlayerList).map((p) => (
+                        <option key={p.name} value={p.name}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
+            )}
 
-              <div>
-                <label className="block font-bold text-slate-400 uppercase mb-1">Non-Striker ({bowling1stTeamInitial})</label>
-                <select
-                  value={secondInningsOpeners.nonStriker}
-                  onChange={(e) => setSecondInningsOpeners({ ...secondInningsOpeners, nonStriker: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 font-bold"
-                >
-                  <option value="">Select Non-Striker...</option>
-                  {(norm(bowling1stTeamInitial) === norm(teamA) ? teamAPlayerList : teamBPlayerList).map((p) => (
-                    <option key={p.name} value={p.name} disabled={p.name === secondInningsOpeners.striker}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
+            {/* Note for 1st Innings Selection */}
+            {transitionTargetInn === 1 && (
+              <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-xs text-blue-700 dark:text-blue-300 space-y-1">
+                <strong>Switching to 1st Innings:</strong>
+                <p>
+                  This will set {batting1stTeamInitial} as the active batting team and allow adding deliveries or correcting scores in the 1st innings.
+                </p>
               </div>
+            )}
 
-              <div>
-                <label className="block font-bold text-slate-400 uppercase mb-1">Opening Bowler ({batting1stTeamInitial})</label>
-                <select
-                  value={secondInningsOpeners.bowler}
-                  onChange={(e) => setSecondInningsOpeners({ ...secondInningsOpeners, bowler: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 font-bold text-amber-500"
-                >
-                  <option value="">Select Opening Bowler...</option>
-                  {(norm(batting1stTeamInitial) === norm(teamA) ? teamAPlayerList : teamBPlayerList).map((p) => (
-                    <option key={p.name} value={p.name}>{p.name}</option>
-                  ))}
-                </select>
-              </div>
+            {/* Actions */}
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setInningsTransitionModalOpen(false)}
+                className="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-300 dark:border-slate-700 cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmInningsTransition}
+                className="flex-2 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-lg cursor-pointer flex items-center justify-center gap-2"
+              >
+                <span>
+                  {transitionTargetInn === 2 ? 'Start 2nd Innings Chase →' : 'Confirm Switch to 1st Innings'}
+                </span>
+              </button>
             </div>
 
-            <button
-              onClick={handleConfirmStartSecondInnings}
-              className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md cursor-pointer"
-            >
-              Start 2nd Innings Live Chase →
-            </button>
           </div>
         </div>
       )}
@@ -1563,6 +1879,7 @@ export const NormalCricketLiveScoreControllerModal = ({ match, venueName, onClos
         />
       )}
 
-    </div>
+    </div>,
+    document.body
   );
 };
