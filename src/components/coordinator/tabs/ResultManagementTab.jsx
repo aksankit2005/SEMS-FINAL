@@ -28,10 +28,12 @@ export const ResultManagementTab = ({ user }) => {
   const assignedSport = (user?.assignedSport || 'badminton').toLowerCase();
   const isChess = assignedSport === 'chess';
   const isBadminton = assignedSport === 'badminton';
-  const isCricket = assignedSport.includes('cricket') && !assignedSport.includes('gully');
+  const isCricket = assignedSport.includes('cricket');
+  const isGully = assignedSport.includes('gully');
+  const isNormalCricket = isCricket && !isGully;
   const [selectedCricketScorecard, setSelectedCricketScorecard] = useState(null);
   const sportId = user?.assignedSport || 'badminton';
-  const sportName = user?.sportName || (isChess ? 'Chess' : 'Badminton');
+  const sportName = user?.sportName || (isChess ? 'Chess' : isGully ? 'Gully Cricket' : isCricket ? 'Cricket' : 'Badminton');
   const resultsKey = `sems_completed_results_${sportId}`;
 
   // Helper to generate default mock results
@@ -254,16 +256,77 @@ export const ResultManagementTab = ({ user }) => {
         { set: 3, score1: 0, score2: 0 },
       ];
     }
+    const det = r.details || {};
     setEditingResult(r);
     setEditForm({
       winner: r.winner || r.team1,
       scoreSummary: r.scoreSummary || r.scoreText || '',
+      runs1: r.score1 ?? det.score1 ?? det.runs1 ?? 0,
+      wickets1: r.wickets1 ?? det.wickets1 ?? 0,
+      overs1: r.overs1 || det.overs1 || (isGully ? '6.0' : '20.0'),
+      runs2: r.score2 ?? det.score2 ?? det.runs2 ?? 0,
+      wickets2: r.wickets2 ?? det.wickets2 ?? 0,
+      overs2: r.overs2 || det.overs2 || (isGully ? '6.0' : '20.0'),
       sets,
     });
   };
 
   const handleSaveEdit = async () => {
     if (!editingResult) return;
+
+    if (isCricket) {
+      const r1 = Number(editForm.runs1 || 0);
+      const w1 = Number(editForm.wickets1 || 0);
+      const o1 = editForm.overs1 || '0.0';
+      const r2 = Number(editForm.runs2 || 0);
+      const w2 = Number(editForm.wickets2 || 0);
+      const o2 = editForm.overs2 || '0.0';
+
+      const computedSummary = editForm.scoreSummary.trim() ||
+        `${editingResult.team1}: ${r1}/${w1} (${o1} ov) vs ${editingResult.team2}: ${r2}/${w2} (${o2} ov) • Winner: ${editForm.winner}`;
+
+      const updatedObj = {
+        ...editingResult,
+        winner: editForm.winner,
+        score1: r1,
+        score2: r2,
+        wickets1: w1,
+        wickets2: w2,
+        overs1: o1,
+        overs2: o2,
+        scoreSummary: computedSummary,
+        scoreText: computedSummary,
+        resultString: computedSummary,
+        details: {
+          ...(editingResult.details || {}),
+          score1: r1,
+          score2: r2,
+          wickets1: w1,
+          wickets2: w2,
+          overs1: o1,
+          overs2: o2,
+          winner: editForm.winner,
+          resultString: computedSummary,
+        },
+        updatedAt: new Date().toISOString()
+      };
+
+      try {
+        await coordinatorApi.completeMatch(editingResult.id, updatedObj);
+      } catch (e) {
+        console.warn('Backend sync edit result fallback:', e);
+      }
+
+      const updatedList = resultsList.map((item) => (item.id === editingResult.id ? updatedObj : item));
+      setResultsList(updatedList);
+      localStorage.setItem(resultsKey, JSON.stringify(updatedList));
+
+      window.dispatchEvent(new Event('sems_results_updated'));
+      window.dispatchEvent(new Event('storage'));
+      setEditingResult(null);
+      addToast(`${isGully ? 'Gully Cricket' : 'Cricket'} match result updated successfully!`, 'success');
+      return;
+    }
 
     const currentSets = editForm.sets || [];
     const setsWon1 = currentSets.filter((s) => Number(s.score1 || 0) > Number(s.score2 || 0)).length;
@@ -663,7 +726,7 @@ export const ResultManagementTab = ({ user }) => {
                             </button>
                           )}
 
-                          {isCricket && (
+                          {isNormalCricket && (
                             <button
                               onClick={() => setSelectedCricketScorecard(r)}
                               className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30 text-emerald-600 dark:text-emerald-300 font-bold text-xs border border-emerald-200 dark:border-emerald-500/30 transition flex items-center gap-1 cursor-pointer"
@@ -766,10 +829,29 @@ export const ResultManagementTab = ({ user }) => {
                 </div>
               </div>
 
-              {/* Set Scores Breakdown */}
+              {/* Set or Innings Scores Breakdown */}
               <div className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/20 space-y-2">
-                <p className="text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider">Set-by-Set Score Breakdown</p>
-                {selectedDetailResult.setsHistory && Array.isArray(selectedDetailResult.setsHistory) && selectedDetailResult.setsHistory.length > 0 ? (
+                <p className="text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider">
+                  {isCricket ? 'Innings Score Breakdown' : 'Set-by-Set Score Breakdown'}
+                </p>
+                {isCricket ? (
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="p-2.5 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-center font-mono">
+                      <p className="text-[10px] text-slate-400 font-bold uppercase truncate">{selectedDetailResult.team1}</p>
+                      <p className="font-black text-emerald-600 dark:text-emerald-400 text-sm mt-0.5">
+                        {selectedDetailResult.score1 || selectedDetailResult.details?.score1 || 0}/{selectedDetailResult.wickets1 || selectedDetailResult.details?.wickets1 || 0}
+                      </p>
+                      <p className="text-[10px] text-slate-500">({selectedDetailResult.overs1 || selectedDetailResult.details?.overs1 || (isGully ? '6.0' : '20.0')} ov)</p>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-center font-mono">
+                      <p className="text-[10px] text-slate-400 font-bold uppercase truncate">{selectedDetailResult.team2}</p>
+                      <p className="font-black text-cyan-600 dark:text-cyan-400 text-sm mt-0.5">
+                        {selectedDetailResult.score2 || selectedDetailResult.details?.score2 || 0}/{selectedDetailResult.wickets2 || selectedDetailResult.details?.wickets2 || 0}
+                      </p>
+                      <p className="text-[10px] text-slate-500">({selectedDetailResult.overs2 || selectedDetailResult.details?.overs2 || (isGully ? '6.0' : '20.0')} ov)</p>
+                    </div>
+                  </div>
+                ) : selectedDetailResult.setsHistory && Array.isArray(selectedDetailResult.setsHistory) && selectedDetailResult.setsHistory.length > 0 ? (
                   <div className="grid grid-cols-3 gap-2 pt-1">
                     {selectedDetailResult.setsHistory.map((s, idx) => (
                       <div key={idx} className="p-2.5 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-center font-mono">
@@ -787,7 +869,7 @@ export const ResultManagementTab = ({ user }) => {
 
               <div className="pt-2 text-center">
                 <button
-                  onClick={() => generateMatchResultPDF(selectedDetailResult, 'Badminton')}
+                  onClick={() => generateMatchResultPDF(selectedDetailResult, selectedDetailResult.sportName || selectedDetailResult.sport || (isGully ? 'Gully Cricket' : isCricket ? 'Cricket' : 'Badminton'))}
                   className="w-full py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Download className="w-4 h-4" />
@@ -857,43 +939,124 @@ export const ResultManagementTab = ({ user }) => {
                 </div>
               </div>
 
-              {/* Set Scores Editing */}
-              {editForm.sets && editForm.sets.length > 0 && (
-                <div className="space-y-2">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Set Scores (Player 1 - Player 2)</label>
-                  <div className="space-y-2">
-                    {editForm.sets.map((s, idx) => (
-                      <div key={idx} className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800">
-                        <span className="text-xs font-bold text-slate-500 w-14 shrink-0">Set {idx + 1}:</span>
-                        <div className="flex items-center gap-2 flex-1">
-                          <input
-                            type="number"
-                            min="0"
-                            value={s.score1}
-                            onChange={(e) => {
-                              const val = Math.max(0, parseInt(e.target.value) || 0);
-                              const updatedSets = editForm.sets.map((setObj, i) => i === idx ? { ...setObj, score1: val } : setObj);
-                              setEditForm((prev) => ({ ...prev, sets: updatedSets }));
-                            }}
-                            className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-center font-bold text-slate-900 dark:text-white"
-                          />
-                          <span className="text-slate-400 font-bold">-</span>
-                          <input
-                            type="number"
-                            min="0"
-                            value={s.score2}
-                            onChange={(e) => {
-                              const val = Math.max(0, parseInt(e.target.value) || 0);
-                              const updatedSets = editForm.sets.map((setObj, i) => i === idx ? { ...setObj, score2: val } : setObj);
-                              setEditForm((prev) => ({ ...prev, sets: updatedSets }));
-                            }}
-                            className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-center font-bold text-slate-900 dark:text-white"
-                          />
-                        </div>
+              {/* Score Editing: Cricket Innings vs Racket Sets */}
+              {isCricket ? (
+                <div className="space-y-3">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 space-y-2">
+                    <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                      {editingResult.team1} (Innings 1)
+                    </span>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="text-[10px] text-slate-400 font-bold block mb-1">Runs</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={editForm.runs1}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, runs1: Math.max(0, parseInt(e.target.value) || 0) }))}
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 font-bold text-center text-slate-900 dark:text-white"
+                        />
                       </div>
-                    ))}
+                      <div>
+                        <label className="text-[10px] text-slate-400 font-bold block mb-1">Wickets</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="10"
+                          value={editForm.wickets1}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, wickets1: Math.max(0, parseInt(e.target.value) || 0) }))}
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 font-bold text-center text-slate-900 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-slate-400 font-bold block mb-1">Overs</label>
+                        <input
+                          type="text"
+                          value={editForm.overs1}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, overs1: e.target.value }))}
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 font-bold text-center text-slate-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 space-y-2">
+                    <span className="text-[10px] uppercase font-bold text-cyan-600 dark:text-cyan-400 font-mono">
+                      {editingResult.team2} (Innings 2)
+                    </span>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="text-[10px] text-slate-400 font-bold block mb-1">Runs</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={editForm.runs2}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, runs2: Math.max(0, parseInt(e.target.value) || 0) }))}
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 font-bold text-center text-slate-900 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-slate-400 font-bold block mb-1">Wickets</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="10"
+                          value={editForm.wickets2}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, wickets2: Math.max(0, parseInt(e.target.value) || 0) }))}
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 font-bold text-center text-slate-900 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-slate-400 font-bold block mb-1">Overs</label>
+                        <input
+                          type="text"
+                          value={editForm.overs2}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, overs2: e.target.value }))}
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 font-bold text-center text-slate-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
+              ) : (
+                /* Set Scores Editing */
+                editForm.sets && editForm.sets.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Set Scores (Player 1 - Player 2)</label>
+                    <div className="space-y-2">
+                      {editForm.sets.map((s, idx) => (
+                        <div key={idx} className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800">
+                          <span className="text-xs font-bold text-slate-500 w-14 shrink-0">Set {idx + 1}:</span>
+                          <div className="flex items-center gap-2 flex-1">
+                            <input
+                              type="number"
+                              min="0"
+                              value={s.score1}
+                              onChange={(e) => {
+                                const val = Math.max(0, parseInt(e.target.value) || 0);
+                                const updatedSets = editForm.sets.map((setObj, i) => i === idx ? { ...setObj, score1: val } : setObj);
+                                setEditForm((prev) => ({ ...prev, sets: updatedSets }));
+                              }}
+                              className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-center font-bold text-slate-900 dark:text-white"
+                            />
+                            <span className="text-slate-400 font-bold">-</span>
+                            <input
+                              type="number"
+                              min="0"
+                              value={s.score2}
+                              onChange={(e) => {
+                                const val = Math.max(0, parseInt(e.target.value) || 0);
+                                const updatedSets = editForm.sets.map((setObj, i) => i === idx ? { ...setObj, score2: val } : setObj);
+                                setEditForm((prev) => ({ ...prev, sets: updatedSets }));
+                              }}
+                              className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-center font-bold text-slate-900 dark:text-white"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
               )}
 
               {/* Custom Score Summary / Note */}

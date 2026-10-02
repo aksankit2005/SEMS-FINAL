@@ -62,7 +62,16 @@ export const LeaderboardPage = () => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const [activeTab, setActiveTab] = useState('standings'); // 'standings' | 'showcase'
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam === 'showcase' || tabParam === 'medals' || window.location.hash.includes('medals') || window.location.hash.includes('showcase')) {
+        return 'showcase';
+      }
+    }
+    return 'standings';
+  });
   const [selectedCollegeModal, setSelectedCollegeModal] = useState(null);
 
   // Standings table search
@@ -76,6 +85,8 @@ export const LeaderboardPage = () => {
   const [showcaseSearch, setShowcaseSearch] = useState('');
 
   const [medalsVersion, setMedalsVersion] = useState(0);
+  const [realMedalists, setRealMedalists] = useState([]);
+  const [loadingMedalists, setLoadingMedalists] = useState(true);
 
   const normalizeStandings = (data) => {
     if (!Array.isArray(data)) return [];
@@ -96,46 +107,76 @@ export const LeaderboardPage = () => {
 
   useEffect(() => {
     if (Array.isArray(leaderboard) && leaderboard.length > 0) {
-      setStandings(normalizeStandings(leaderboard));
+      setStandings((prev) => {
+        const next = normalizeStandings(leaderboard);
+        if (JSON.stringify(prev) === JSON.stringify(next)) return prev;
+        return next;
+      });
+    } else {
+      const computed = normalizeStandings(computeStandings());
+      setStandings((prev) => (prev.length > 0 ? prev : computed));
     }
   }, [leaderboard]);
 
+  // Fetch medalists once on mount and update on relevant tournament events
   useEffect(() => {
-    const refresh = async () => {
+    let isMounted = true;
+    let lastRefreshTime = 0;
+
+    const fetchMedalists = async (silent = false) => {
+      if (!silent) {
+        setLoadingMedalists(true);
+      }
       try {
-        const res = await fetch(apiUrl('/leaderboard'));
-        if (res.ok) {
+        const res = await fetch(apiUrl('/leaderboard/medalists'));
+        if (res.ok && isMounted) {
           const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setStandings(normalizeStandings(data));
+          if (Array.isArray(data)) {
+            setRealMedalists((prev) => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              return data;
+            });
             return;
           }
         }
-      } catch (e) { }
+      } catch (e) {
+        console.warn('Notice fetching public medalists from server:', e);
+      } finally {
+        if (isMounted) {
+          setLoadingMedalists(false);
+        }
+      }
+    };
 
-      if (leaderboard && leaderboard.length > 0) {
-        setStandings(normalizeStandings(leaderboard));
+    // Initial load
+    fetchMedalists(false);
+
+    // Event handler for realtime updates
+    const handleUpdate = (e) => {
+      // If it's a storage event, only care if it's specifically for medals or standings
+      if (e?.type === 'storage' && e.key && e.key !== 'sems_custom_medal_entries' && e.key !== 'sems_super_coord_leaderboard') {
         return;
       }
+      const now = Date.now();
+      if (now - lastRefreshTime < 2500) return; // Throttle to prevent multiple rapid executions
+      lastRefreshTime = now;
 
-      setStandings(normalizeStandings(computeStandings()));
-    };
-
-    if (!leaderboard || leaderboard.length === 0) {
-      refresh();
-    }
-
-    const handler = () => {
-      refresh();
+      // Silent background refresh (no loader unmounting existing cards)
+      fetchMedalists(true);
       setMedalsVersion((v) => v + 1);
     };
-    window.addEventListener('sems_leaderboard_updated', handler);
-    window.addEventListener('storage', handler);
+
+    window.addEventListener('sems_leaderboard_updated', handleUpdate);
+    window.addEventListener('sems_results_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+
     return () => {
-      window.removeEventListener('sems_leaderboard_updated', handler);
-      window.removeEventListener('storage', handler);
+      isMounted = false;
+      window.removeEventListener('sems_leaderboard_updated', handleUpdate);
+      window.removeEventListener('sems_results_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
     };
-  }, [leaderboard]);
+  }, []);
 
   const filteredStandings = standings.filter((item) => {
     const colName = String(item.college || item.name || '').toLowerCase();
@@ -147,8 +188,13 @@ export const LeaderboardPage = () => {
   const top3 = standings.slice(0, 3);
   const hasData = standings.length > 0;
 
-  // All student medalists (reactive to medalsVersion)
-  const allMedalists = useMemo(() => getFlattenedMedalists(), [medalsVersion]);
+  // All student medalists (reactive to real backend data & medalsVersion)
+  const allMedalists = useMemo(() => {
+    if (realMedalists && realMedalists.length > 0) {
+      return realMedalists;
+    }
+    return getFlattenedMedalists();
+  }, [realMedalists, medalsVersion]);
 
   // Distinct sports from medalists
   const distinctSports = useMemo(() => {
@@ -274,6 +320,32 @@ export const LeaderboardPage = () => {
         {/* ════════════════ TAB 1: COLLEGE STANDINGS & PODIUM ════════════════ */}
         {activeTab === 'standings' && (
           <div className="space-y-6 animate-in fade-in duration-200">
+            
+            {/* Quick Switch Banner to Student Cards */}
+            {allMedalists.length > 0 && (
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-[#7156A5]/10 via-[#B8A5E5]/10 to-[#7156A5]/10 border border-[#7156A5]/30 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-3 text-left">
+                  <span className="text-2xl">🥇</span>
+                  <div>
+                    <h4 className="font-bold text-xs sm:text-sm text-[#211D2B] dark:text-[#F5F2FA]">
+                      {allMedalists.length} Official Student Champions & Medalists Declared!
+                    </h4>
+                    <p className="text-[11px] font-mono text-[#686370] dark:text-[#AAA4B8]">
+                      Click to view student athlete photographs, colleges, roll numbers, and highlight quotes.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('showcase')}
+                  className="px-4 py-2 rounded-xl bg-[#7156A5] hover:bg-[#5D448B] text-white text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer shadow-sm w-full sm:w-auto justify-center"
+                >
+                  <span>View Student Winner Cards</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
             {/* ─── TOP 3 PODIUM OR EMPTY STATE ─── */}
             {!hasData ? (
               <div className="text-center py-16 rounded-2xl border p-8 max-w-lg mx-auto transition-all bg-[#FFFFFF] dark:bg-[#0D101A] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] shadow-2xs">
@@ -700,14 +772,26 @@ export const LeaderboardPage = () => {
             </div>
 
             {/* Student Cards Grid */}
-            {filteredMedalists.length === 0 ? (
+            {loadingMedalists && allMedalists.length === 0 ? (
               <div className="text-center py-20 rounded-2xl border p-8 max-w-md mx-auto bg-[#FFFFFF] dark:bg-[#0D101A] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] shadow-2xs">
-                <Medal className="w-12 h-12 text-[#686370] dark:text-[#AAA4B8] mx-auto mb-3 opacity-50" />
+                <div className="w-10 h-10 border-3 border-[#7156A5] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                 <h3 className="text-base font-bold font-spatial-display uppercase tracking-wide text-[#211D2B] dark:text-[#F5F2FA]">
-                  No Student Medalists Found
+                  Loading Official Medalists...
                 </h3>
                 <p className="text-xs font-mono mt-1 text-[#686370] dark:text-[#AAA4B8]">
-                  Try adjusting your sport, college, or search query.
+                  Fetching declared champions and photos from tournament database.
+                </p>
+              </div>
+            ) : filteredMedalists.length === 0 ? (
+              <div className="text-center py-20 rounded-2xl border p-8 max-w-lg mx-auto bg-[#FFFFFF] dark:bg-[#0D101A] border-[#E5E1E8] dark:border-[rgba(184,165,229,0.16)] shadow-2xs">
+                <Medal className="w-12 h-12 text-[#A98B57] dark:text-[#D2AB45] mx-auto mb-3 opacity-60" />
+                <h3 className="text-base font-bold font-spatial-display uppercase tracking-wide text-[#211D2B] dark:text-[#F5F2FA]">
+                  {allMedalists.length === 0 ? 'No Official Winners Declared Yet' : 'No Matching Student Medalists Found'}
+                </h3>
+                <p className="text-xs font-mono mt-1 text-[#686370] dark:text-[#AAA4B8] max-w-sm mx-auto">
+                  {allMedalists.length === 0 
+                    ? 'Official match results, winner photographs, and student credentials will appear here live once declared by the Super Coordinator.'
+                    : 'Try adjusting your sport, college, or search query.'}
                 </p>
               </div>
             ) : (
@@ -752,6 +836,7 @@ export const LeaderboardPage = () => {
         onClose={() => setSelectedCollegeModal(null)}
         college={selectedCollegeModal}
         standingsRank={selectedCollegeModal?.rankNumber}
+        medalistsList={allMedalists}
       />
     </div>
   );

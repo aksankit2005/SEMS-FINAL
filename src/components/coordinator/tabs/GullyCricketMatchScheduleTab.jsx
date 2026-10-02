@@ -130,12 +130,12 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
   const handleAddSlot = async (e) => {
     e.preventDefault();
 
-    if (!selectedEvent) {
+    if (!selectedEvent && !editingId) {
       addToast('No active event selected for match scheduling.', 'error');
       return;
     }
 
-    if (!isRegClosed) {
+    if (!editingId && !isRegClosed) {
       addToast('Registration must be closed before fixtures can be scheduled.', 'error');
       return;
     }
@@ -167,8 +167,8 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
             matchTitle: `${finalTeam1} vs ${finalTeam2}`,
             format: form.format,
             category: form.category,
-            eventId: selectedEvent.id,
-            eventTitle: selectedEvent.title,
+            eventId: selectedEvent?.id || m.eventId,
+            eventTitle: selectedEvent?.title || m.eventTitle || form.eventTitle,
             tableNumber: form.tableNumber,
             date: form.date,
             time: form.time,
@@ -176,19 +176,7 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
           : m
       );
       onUpdateMatches(updated);
-      await coordinatorApi.updateMatchScoring(editingId, {
-        team1: finalTeam1,
-        team2: finalTeam2,
-        team1Id: finalTeam1Id,
-        team2Id: finalTeam2Id,
-        eventId: selectedEvent.id,
-        eventTitle: selectedEvent.title,
-        tableNumber: form.tableNumber,
-        date: form.date,
-        time: form.time,
-        format: form.format,
-        category: form.category,
-      });
+      await coordinatorApi.saveMatches(updated);
       setEditingId(null);
       addToast('Gully Cricket match schedule updated successfully', 'success');
     } else {
@@ -243,6 +231,7 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
 
   const handleEdit = (m) => {
     setEditingId(m.id);
+    if (m.eventId) setSelectedEventId(m.eventId);
     setForm({
       format: m.format || '6-Overs Fast Box',
       category: m.category || 'Open',
@@ -313,7 +302,7 @@ export const GullyCricketMatchScheduleTab = ({ matches, user, onUpdateMatches, o
           )}
 
           <div className={`bg-white dark:bg-[#0F172A] p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5 sticky top-24 ${
-            !isRegClosed ? 'opacity-60 pointer-events-none' : ''
+            !editingId && !isRegClosed ? 'opacity-60 pointer-events-none' : ''
           }`}>
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">

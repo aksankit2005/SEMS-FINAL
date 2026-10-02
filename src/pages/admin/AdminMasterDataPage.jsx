@@ -202,12 +202,11 @@ export const AdminMasterDataPage = () => {
       } else if (isGully) {
         matchesSport = pSportKey.includes('gully') || pSportName.includes('gully');
       } else {
-        matchesSport = pSportKey === sSportKey ||
-          pSportName === sSportKey ||
-          pSportKey.includes(sSportKey) ||
-          sSportKey.includes(pSportKey) ||
-          (p.sportName || '').toLowerCase().includes(selectedSport.toLowerCase()) ||
-          selectedSport.toLowerCase().includes((p.sportName || '').toLowerCase());
+        matchesSport = (
+          (pSportKey && (pSportKey === sSportKey || pSportKey.includes(sSportKey))) ||
+          (pSportName && (pSportName === sSportKey || pSportName.includes(sSportKey))) ||
+          ((p.sportName || '').toLowerCase() === selectedSport.toLowerCase())
+        );
       }
     }
 

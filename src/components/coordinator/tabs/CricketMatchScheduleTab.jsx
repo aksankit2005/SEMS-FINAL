@@ -161,12 +161,12 @@ export const CricketMatchScheduleTab = ({ matches, user, onUpdateMatches, global
   const handleAddSlot = async (e) => {
     e.preventDefault();
 
-    if (!selectedEvent) {
+    if (!selectedEvent && !editingId) {
       addToast('No active event selected for match scheduling.', 'error');
       return;
     }
 
-    if (!isRegClosed) {
+    if (!editingId && !isRegClosed) {
       addToast('Registration must be closed before fixtures can be scheduled.', 'error');
       return;
     }
@@ -195,8 +195,8 @@ export const CricketMatchScheduleTab = ({ matches, user, onUpdateMatches, global
             team2: finalTeam2,
             team1Id: finalTeam1Id,
             team2Id: finalTeam2Id,
-            eventId: selectedEvent.id,
-            eventTitle: selectedEvent.title,
+            eventId: selectedEvent?.id || m.eventId,
+            eventTitle: selectedEvent?.title || m.eventTitle || form.eventTitle,
             tableNumber: form.tableNumber,
             date: form.date,
             time: form.time,
@@ -206,20 +206,8 @@ export const CricketMatchScheduleTab = ({ matches, user, onUpdateMatches, global
           : m
       );
       onUpdateMatches(updated);
-      await coordinatorApi.updateMatchScoring(editingId, {
-        team1: finalTeam1,
-        team2: finalTeam2,
-        team1Id: finalTeam1Id,
-        team2Id: finalTeam2Id,
-        eventId: selectedEvent.id,
-        eventTitle: selectedEvent.title,
-        tableNumber: form.tableNumber,
-        date: form.date,
-        time: form.time,
-        format: 'Team',
-        category: form.category,
-      });
-      addToast('Cricket match fixture updated!', 'success');
+      await coordinatorApi.saveMatches(updated);
+      addToast('Cricket match fixture updated successfully!', 'success');
       setEditingId(null);
     } else {
       const newSlot = {
@@ -308,7 +296,7 @@ export const CricketMatchScheduleTab = ({ matches, user, onUpdateMatches, global
 
         {/* Form Box */}
         <div className={`p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-soft dark:shadow-2xl space-y-4 ${
-          !isRegClosed ? 'opacity-60 pointer-events-none' : ''
+          !editingId && !isRegClosed ? 'opacity-60 pointer-events-none' : ''
         }`}>
           <form onSubmit={handleAddSlot} className="space-y-4">
 
@@ -545,12 +533,15 @@ export const CricketMatchScheduleTab = ({ matches, user, onUpdateMatches, global
                   <button
                     onClick={() => {
                       setEditingId(m.id);
+                      if (m.eventId) setSelectedEventId(m.eventId);
                       setForm({
                         format: 'Team',
                         category: m.category || 'Open',
                         eventTitle: m.eventTitle || createdEvents[0]?.title || 'Inter-College T20 Cricket Championship 2026',
                         team1: m.team1 || '',
                         team2: m.team2 || '',
+                        team1Id: m.team1Id || '',
+                        team2Id: m.team2Id || '',
                         tableNumber: m.tableNumber || 'Cricket Ground 1',
                         date: m.date || new Date().toISOString().split('T')[0],
                         time: m.time || '09:00 AM',

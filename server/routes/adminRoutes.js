@@ -8,9 +8,8 @@ import {
   getSuperCoordinatorCoordinators,
   getLeaderboardEntries,
   saveLeaderboardEntry,
+  updateLeaderboardEntry,
   deleteLeaderboardEntry,
-  getHeroSlidesDB,
-  saveHeroSlidesDB,
   changeSuperCoordinatorPasswordDB,
   getCoordinatorsDB,
   saveCoordinatorDB,
@@ -116,16 +115,15 @@ router.delete('/admin/events/:id', verifyAdminToken, deleteCoordinatorEventDB);
 router.get('/super-coordinator/coordinators', verifySuperCoordinatorToken, getSuperCoordinatorCoordinators);
 router.get('/super-coordinator/leaderboard', verifySuperCoordinatorToken, getLeaderboardEntries);
 router.post('/super-coordinator/leaderboard', verifySuperCoordinatorToken, saveLeaderboardEntry);
+router.put('/super-coordinator/leaderboard/:id', verifySuperCoordinatorToken, updateLeaderboardEntry);
 router.delete('/super-coordinator/leaderboard/:id', verifySuperCoordinatorToken, deleteLeaderboardEntry);
-router.get('/super-coordinator/hero-slides', verifySuperCoordinatorToken, getHeroSlidesDB);
-router.post('/super-coordinator/hero-slides', verifySuperCoordinatorToken, saveHeroSlidesDB);
 router.get('/super-coordinator/cloudinary-signature', verifySuperCoordinatorToken, getCloudinarySignature);
 router.post('/super-coordinator/change-password', verifySuperCoordinatorToken, changeSuperCoordinatorPasswordDB);
 
-// Master Data Single and Bulk Delete Endpoints
-router.delete('/admin/master-data/bulk', verifyAdminOrSuperCoordinatorToken, bulkDeleteMasterDataDB);
-router.delete('/admin/master-data/:id', verifyAdminOrSuperCoordinatorToken, deleteMasterDataDB);
-router.delete('/super-coordinator/master-data/bulk', verifyAdminOrSuperCoordinatorToken, bulkDeleteMasterDataDB);
-router.delete('/super-coordinator/master-data/:id', verifyAdminOrSuperCoordinatorToken, deleteMasterDataDB);
+// Master Data Single and Bulk Delete Endpoints (Strictly Admin Only)
+router.delete('/admin/master-data/bulk', verifyAdminToken, bulkDeleteMasterDataDB);
+router.delete('/admin/master-data/:id', verifyAdminToken, deleteMasterDataDB);
+router.delete('/super-coordinator/master-data/bulk', verifyAdminToken, bulkDeleteMasterDataDB);
+router.delete('/super-coordinator/master-data/:id', verifyAdminToken, deleteMasterDataDB);
 
 export default router;
