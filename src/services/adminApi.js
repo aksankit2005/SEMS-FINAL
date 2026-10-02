@@ -471,6 +471,33 @@ export const adminApi = {
     }
   },
 
+  enterCoordinatorPortal: async (coordInput) => {
+    const coordId = typeof coordInput === 'object' ? coordInput.id : coordInput;
+    const coordUser = typeof coordInput === 'object' ? coordInput.username : null;
+    const assignedSport = typeof coordInput === 'object' ? (coordInput.assignedSport || coordInput.sportName) : null;
+    const sportName = typeof coordInput === 'object' ? coordInput.sportName : null;
+
+    try {
+      const res = await fetch(apiUrl('/admin/coordinator-entry'), {
+        method: 'POST',
+        headers: getAdminHeaders(),
+        body: JSON.stringify({
+          coordinatorId: coordId,
+          username: coordUser,
+          assignedSport,
+          sportName
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data;
+      }
+    } catch (e) {
+      console.warn('Backend direct coordinator entry failed, will use fallback:', e);
+    }
+    return null;
+  },
+
   // ── Announcements Management ──────────────────────────────────────────────
   getAnnouncements: async () => {
     try {

@@ -162,7 +162,7 @@ export const COORDINATOR_ACCOUNTS = [
 ];
 
 export const getSportRoute = (assignedSport) => {
-  const normalized = (assignedSport || '').toLowerCase().trim().replace(/_/g, '-');
+  const normalized = (assignedSport || '').toLowerCase().trim().replace(/[\s_]+/g, '-');
   const routes = {
     'badminton': '/coordinator/badminton',
     'cricket': '/coordinator/cricket',
@@ -214,6 +214,7 @@ export const coordinatorApi = {
   logout() {
     localStorage.removeItem('sems_coordinator_token');
     localStorage.removeItem('sems_coordinator_user');
+    localStorage.removeItem('sems_coordinator_entered_by_admin');
     window.dispatchEvent(new Event('sems-auth-change'));
   },
 

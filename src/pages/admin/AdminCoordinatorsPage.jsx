@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../../services/adminApi';
+import { getSportRoute } from '../../services/coordinatorApi';
 import { useToast } from '../../context/ToastContext';
 import { ALL_12_SPORTS, ALL_COLLEGES, matchesCollegeFilter } from '../../services/superCoordinatorApi';
 import { CoordinatorFormModal } from '../../components/admin/CoordinatorFormModal';
@@ -21,13 +23,17 @@ import {
   RefreshCw,
   Building,
   Crown,
-  Camera
+  Camera,
+  LogIn,
+  ExternalLink
 } from 'lucide-react';
 
 export const AdminCoordinatorsPage = () => {
+  const navigate = useNavigate();
   const { addToast } = useToast();
   const [coordinators, setCoordinators] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [enteringCoordId, setEnteringCoordId] = useState(null);
 
   // Filters State
   const [filterRole, setFilterRole] = useState('ALL');
@@ -124,6 +130,57 @@ export const AdminCoordinatorsPage = () => {
       addToast(err.message || 'Failed to delete account', 'error');
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  // Direct Entry Handler (Admin access to coordinator portal without manual login)
+  const handleEnterCoordinatorPortal = async (coordinator) => {
+    setEnteringCoordId(coordinator.id);
+    try {
+      const sportKey = coordinator.assignedSport || coordinator.sportName?.toLowerCase().replace(/[\s_]+/g, '-') || 'cricket';
+      const sportName = coordinator.sportName || coordinator.name || 'Sport';
+
+      addToast(`Accessing ${sportName} Portal directly as Admin...`, 'info');
+
+      // Attempt to get backend-authenticated coordinator session token
+      const result = await adminApi.enterCoordinatorPortal(coordinator);
+
+      let token = result?.token;
+      let user = result?.user;
+
+      if (!token || !user) {
+        // Fallback for offline or direct client-side session
+        const adminToken = localStorage.getItem('sems_admin_token') || `admin_direct_${Date.now()}`;
+        token = adminToken;
+        user = {
+          id: coordinator.id || `sc_${sportKey}`,
+          name: coordinator.name,
+          coordinatorName: coordinator.name,
+          username: coordinator.username,
+          email: coordinator.email,
+          phone: coordinator.phone,
+          assignedSport: sportKey,
+          sportName: sportName,
+          role: 'sport_coordinator',
+          enteredByAdmin: true
+        };
+      }
+
+      // Store coordinator credentials in localStorage
+      localStorage.setItem('sems_coordinator_token', token);
+      localStorage.setItem('sems_coordinator_user', JSON.stringify(user));
+      localStorage.setItem('sems_coordinator_entered_by_admin', 'true');
+
+      // Notify any auth listeners
+      window.dispatchEvent(new Event('sems-auth-change'));
+
+      const targetRoute = getSportRoute(user.assignedSport || sportKey);
+      navigate(targetRoute);
+    } catch (err) {
+      console.error('Error entering coordinator portal:', err);
+      addToast('Failed to enter coordinator portal', 'error');
+    } finally {
+      setEnteringCoordId(null);
     }
   };
 
@@ -364,6 +421,19 @@ export const AdminCoordinatorsPage = () => {
                           </span>
                         </td>
                         <td className="py-3 px-3 whitespace-nowrap text-right space-x-1">
+                          <button
+                            onClick={() => handleEnterCoordinatorPortal(coordinator)}
+                            disabled={enteringCoordId === coordinator.id}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 active:scale-95 text-emerald-600 dark:text-emerald-400 font-bold text-[11px] border border-emerald-500/30 transition-all cursor-pointer inline-flex items-center gap-1 shadow-sm disabled:opacity-50"
+                            title={`Direct Entry: Open ${coordinator.sportName || 'Sport'} Portal as Admin`}
+                          >
+                            {enteringCoordId === coordinator.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <LogIn className="w-3.5 h-3.5" />
+                            )}
+                            <span>Enter Portal</span>
+                          </button>
                           <button
                             onClick={() => { setSelectedCoord(coordinator); setIsFormOpen(true); }}
                             className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-[11px] border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"

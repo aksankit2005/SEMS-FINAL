@@ -17,6 +17,7 @@ import {
   toggleCoordinatorStatusDB,
   resetCoordinatorPasswordDB,
   deleteCoordinatorDB,
+  enterCoordinatorPortalDB,
   getDashboardStatsDB,
   getAuditLogsDB,
   createAuditLogDB,
@@ -71,6 +72,7 @@ router.post('/admin/coordinators', verifyAdminToken, saveCoordinatorDB);
 router.patch('/admin/coordinators/:id/status', verifyAdminToken, toggleCoordinatorStatusDB);
 router.post('/admin/coordinators/:id/reset-password', verifyAdminToken, resetCoordinatorPasswordDB);
 router.delete('/admin/coordinators/:id', verifyAdminToken, deleteCoordinatorDB);
+router.post('/admin/coordinator-entry', verifyAdminToken, enterCoordinatorPortalDB);
 
 // Student & Team Registrations endpoints (Admin Protected)
 router.get('/admin/registrations', verifyAdminToken, getAdminRegistrationsDB);

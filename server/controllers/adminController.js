@@ -2273,3 +2273,78 @@ export const getAdminResultsDB = async (req, res) => {
   }
 };
 
+// ── Direct Coordinator Entry for Admin ────────────────────────────────────
+export const enterCoordinatorPortalDB = async (req, res) => {
+  try {
+    const { coordinatorId, username, assignedSport, sportName } = req.body;
+
+    let targetCoord = null;
+    if (username) {
+      const qRes = await queryDb('SELECT * FROM sport_coordinators WHERE LOWER(username) = $1', [username.toLowerCase().trim()]);
+      if (qRes && qRes.rows.length > 0) targetCoord = qRes.rows[0];
+    }
+    if (!targetCoord && coordinatorId) {
+      const cleanId = String(coordinatorId).replace(/^sc_/, '');
+      const qRes = await queryDb('SELECT * FROM sport_coordinators WHERE id = $1', [cleanId]);
+      if (qRes && qRes.rows.length > 0) targetCoord = qRes.rows[0];
+    }
+    if (!targetCoord && assignedSport) {
+      const qRes = await queryDb('SELECT * FROM sport_coordinators WHERE LOWER(assigned_sport) = $1', [assignedSport.toLowerCase().trim()]);
+      if (qRes && qRes.rows.length > 0) targetCoord = qRes.rows[0];
+    }
+
+    const sportKey = targetCoord?.assigned_sport || assignedSport || 'cricket';
+    const sName = targetCoord?.sport_name || sportName || 'Sport';
+    const coordName = targetCoord?.coordinator_name || targetCoord?.name || 'Coordinator';
+    const coordUser = targetCoord?.username || username || `coord_${sportKey.replace(/-/g, '_')}`;
+    const coordEmail = targetCoord?.email || '';
+
+    // Generate valid JWT token for coordinator portal access with admin attribution
+    const token = jwt.sign(
+      {
+        id: targetCoord?.id || `admin_gen_${Date.now()}`,
+        username: coordUser,
+        assignedSport: sportKey,
+        sportName: sName,
+        coordinatorName: coordName,
+        email: coordEmail,
+        role: 'sport_coordinator',
+        enteredByAdmin: true,
+        adminUserId: req.user?.id,
+        adminUsername: req.user?.username
+      },
+      envConfig.jwtSecret,
+      { expiresIn: '24h' }
+    );
+
+    await logAuditEvent({
+      userId: req.user?.id,
+      actorName: req.user?.username || 'Admin',
+      role: 'ADMIN',
+      action: 'Coordinator Direct Entry',
+      entity: `Admin direct access into portal for ${coordName} (${sName}) without login`,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+    });
+
+    return res.json({
+      success: true,
+      token,
+      user: {
+        id: targetCoord?.id || `sc_${sportKey}`,
+        username: coordUser,
+        assignedSport: sportKey,
+        sportName: sName,
+        coordinatorName: coordName,
+        name: coordName,
+        email: coordEmail,
+        role: 'sport_coordinator',
+        enteredByAdmin: true
+      }
+    });
+  } catch (error) {
+    console.error('Error generating direct coordinator entry token for admin:', error);
+    return res.status(500).json({ message: 'Internal server error entering coordinator portal' });
+  }
+};
+
+

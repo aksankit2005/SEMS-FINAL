@@ -71,10 +71,11 @@ export const verifyCoordinatorToken = async (req, res, next) => {
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, envConfig.jwtSecret);
-    if (decoded.role !== 'sport_coordinator') {
+    const role = (decoded.role || '').toLowerCase();
+    if (role !== 'sport_coordinator' && role !== 'admin') {
       return res.status(403).json({ message: 'Access denied. Sport Coordinator role required.' });
     }
-    if (decoded.username) {
+    if (decoded.username && !decoded.enteredByAdmin && role !== 'admin') {
       try {
         const userKey = decoded.username.toLowerCase().replace(/-/g, '_');
         const dbRes = await queryDb('SELECT status FROM sport_coordinators WHERE LOWER(username) = $1', [userKey]);
